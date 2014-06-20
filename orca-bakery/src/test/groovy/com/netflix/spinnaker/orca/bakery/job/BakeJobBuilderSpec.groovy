@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.netflix.spinnaker.orca.bakery.job
 
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
@@ -17,39 +33,40 @@ import spock.lang.Subject
 
 class BakeJobBuilderSpec extends Specification {
 
-    @Subject builder = new BakeJobBuilder()
+  @Subject
+    builder = new BakeJobBuilder()
 
-    def applicationContext = new StaticApplicationContext()
-    def txMan = Stub(PlatformTransactionManager)
-    def repository = Stub(JobRepository)
-    def jobs = new JobBuilderFactory(repository)
-    def steps = new StepBuilderFactory(repository, txMan)
+  def applicationContext = new StaticApplicationContext()
+  def txMan = Stub(PlatformTransactionManager)
+  def repository = Stub(JobRepository)
+  def jobs = new JobBuilderFactory(repository)
+  def steps = new StepBuilderFactory(repository, txMan)
 
-    def bakery = Mock(BakeryService)
+  def bakery = Mock(BakeryService)
 
-    def setup() {
-        registerMockBean("bakery", bakery)
+  def setup() {
+    registerMockBean("bakery", bakery)
 
-        builder.steps = steps
-        builder.applicationContext = applicationContext
+    builder.steps = steps
+    builder.applicationContext = applicationContext
+  }
+
+  def "builds a bake workflow"() {
+    when:
+    def job = builder.build(jobs.get("BakeJobBuilderSpecJob")).build()
+
+    then:
+    job instanceof SimpleJob
+    def steps = job.stepNames.collect {
+      job.getStep(it)
     }
+    steps.size() == 2
+    steps.every { it instanceof TaskletStep }
+    steps.every { ((TaskletStep) it).tasklet instanceof TaskTaskletAdapter }
+    steps.tasklet.taskType == [CreateBakeTask, MonitorBakeTask]
+  }
 
-    def "builds a bake workflow"() {
-        when:
-        def job = builder.build(jobs.get("BakeJobBuilderSpecJob")).build()
-
-        then:
-        job instanceof SimpleJob
-        def steps = job.stepNames.collect {
-            job.getStep(it)
-        }
-        steps.size() == 2
-        steps.every { it instanceof TaskletStep }
-        steps.every { ((TaskletStep)it).tasklet instanceof TaskTaskletAdapter }
-        steps.tasklet.taskType == [CreateBakeTask, MonitorBakeTask]
-    }
-
-    private void registerMockBean(String name, bean) {
-        applicationContext.registerBeanDefinition name, new GenericBeanDefinition(source: bean)
-    }
+  private void registerMockBean(String name, bean) {
+    applicationContext.registerBeanDefinition name, new GenericBeanDefinition(source: bean)
+  }
 }
