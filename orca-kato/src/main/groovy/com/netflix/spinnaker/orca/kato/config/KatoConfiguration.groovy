@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.kato.config
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.kato.api.KatoService
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -27,7 +27,6 @@ import retrofit.Endpoint
 import retrofit.RestAdapter
 import retrofit.RestAdapter.LogLevel
 import retrofit.client.Client
-
 import static retrofit.Endpoints.newFixedEndpoint
 
 @Configuration

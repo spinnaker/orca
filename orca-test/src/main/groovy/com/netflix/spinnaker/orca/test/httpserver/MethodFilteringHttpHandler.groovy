@@ -16,9 +16,8 @@
 
 package com.netflix.spinnaker.orca.test.httpserver
 
-import com.sun.net.httpserver.HttpExchange
 import groovy.transform.CompileStatic
-
+import com.sun.net.httpserver.HttpExchange
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD
 
 @CompileStatic

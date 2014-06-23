@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.test.httpserver
 
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpHandler
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpHandler
 
 @CompileStatic
 abstract class HttpHandlerChain implements HttpHandler {

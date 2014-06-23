@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.bakery.api
 
+import spock.lang.Specification
+import spock.lang.Subject
 import com.netflix.spinnaker.orca.bakery.api.Bake.Label
 import com.netflix.spinnaker.orca.bakery.api.Bake.OperatingSystem
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
@@ -23,9 +25,6 @@ import com.netflix.spinnaker.orca.test.HttpServerRule
 import org.junit.Rule
 import retrofit.RetrofitError
 import retrofit.client.OkClient
-import spock.lang.Specification
-import spock.lang.Subject
-
 import static com.google.common.net.HttpHeaders.LOCATION
 import static java.net.HttpURLConnection.*
 import static retrofit.Endpoints.newFixedEndpoint
@@ -33,11 +32,9 @@ import static retrofit.RestAdapter.LogLevel.FULL
 
 class BakeryServiceSpec extends Specification {
 
-  @Rule
-  HttpServerRule httpServer = new HttpServerRule()
+  @Rule HttpServerRule httpServer = new HttpServerRule()
 
-  @Subject
-  BakeryService bakery
+  @Subject BakeryService bakery
 
   final region = "us-west-1"
   final bake = new Bake("rfletcher", "orca", Label.release, OperatingSystem.ubuntu)

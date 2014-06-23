@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.smoke
 
+import javax.sql.DataSource
 import groovy.transform.CompileStatic
 import org.springframework.batch.core.configuration.ListableJobLocator
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing
@@ -34,8 +35,6 @@ import org.springframework.core.io.ResourceLoader
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator
-
-import javax.sql.DataSource
 
 /**
  * This is a bare-bones configuration for running end-to-end Spring batch tests.

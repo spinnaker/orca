@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import spock.lang.Specification
+import spock.lang.Unroll
 import org.springframework.batch.core.JobParametersBuilder
 import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.batch.core.scope.context.StepContext
 import org.springframework.batch.test.MetaDataInstanceFactory
-import spock.lang.Specification
-import spock.lang.Unroll
 
 class ChunkContextAdapterSpec extends Specification {
 
@@ -56,12 +56,12 @@ class ChunkContextAdapterSpec extends Specification {
 
     where:
     stepContextValue | jobContextValue | jobParamValue || expected
-    "step" | null  | null    || "step"
-    null   | "job" | null    || "job"
-    null   | null  | "param" || "param"
-    null   | null  | null    || null
-    "step" | "job" | "param" || "step"
-    null   | "job" | "param" || "job"
+    "step"           | null            | null          || "step"
+    null             | "job"           | null          || "job"
+    null             | null            | "param"       || "param"
+    null             | null            | null          || null
+    "step"           | "job"           | "param"       || "step"
+    null             | "job"           | "param"       || "job"
 
     and:
     key = "foo"

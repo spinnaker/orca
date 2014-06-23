@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.batch
 
-import com.netflix.spinnaker.orca.TaskResult
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
+import com.netflix.spinnaker.orca.TaskResult
 import org.springframework.batch.core.ExitStatus
 import org.springframework.batch.repeat.RepeatStatus
 

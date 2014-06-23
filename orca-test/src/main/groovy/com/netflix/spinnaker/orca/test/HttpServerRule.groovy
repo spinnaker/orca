@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.test
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.test.httpserver.HandlerResponseBuilder
 import com.netflix.spinnaker.orca.test.httpserver.HttpHandlerChain
 import com.sun.net.httpserver.HttpServer
-import groovy.transform.CompileStatic
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement

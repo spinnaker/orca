@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.api
 
-import com.google.common.base.Optional
 import groovy.transform.CompileStatic
+import com.google.common.base.Optional
 
 @CompileStatic
 class DeployOperation extends Operation {

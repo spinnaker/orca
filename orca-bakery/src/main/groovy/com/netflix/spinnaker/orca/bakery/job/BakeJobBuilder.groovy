@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.bakery.job
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.bakery.tasks.CreateBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask
-import groovy.transform.CompileStatic
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
 import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.job.builder.SimpleJobBuilder
@@ -27,7 +27,6 @@ import org.springframework.batch.core.step.tasklet.Tasklet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
-
 import static com.netflix.spinnaker.orca.batch.TaskTaskletAdapter.decorate
 
 @Component

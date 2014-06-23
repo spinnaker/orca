@@ -16,13 +16,12 @@
 
 package com.netflix.spinnaker.orca.kato.api
 
+import spock.lang.Specification
+import spock.lang.Subject
 import com.netflix.spinnaker.orca.kato.config.KatoConfiguration
 import com.netflix.spinnaker.orca.test.HttpServerRule
 import org.junit.Rule
 import retrofit.client.OkClient
-import spock.lang.Specification
-import spock.lang.Subject
-
 import static java.net.HttpURLConnection.HTTP_ACCEPTED
 import static retrofit.Endpoints.newFixedEndpoint
 import static retrofit.RestAdapter.LogLevel.FULL

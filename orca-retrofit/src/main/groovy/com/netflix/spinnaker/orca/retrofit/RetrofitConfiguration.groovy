@@ -28,13 +28,11 @@ import retrofit.client.OkClient
 @EnableBatchProcessing
 @CompileStatic
 class RetrofitConfiguration {
-  @Bean
-  Client retrofitClient() {
+  @Bean Client retrofitClient() {
     new OkClient()
   }
 
-  @Bean
-  LogLevel retrofitLogLevel() {
+  @Bean LogLevel retrofitLogLevel() {
     LogLevel.BASIC
   }
 }

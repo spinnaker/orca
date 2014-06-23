@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.batch
 
-import com.netflix.spinnaker.orca.Task
 import groovy.transform.CompileStatic
+import com.netflix.spinnaker.orca.Task
 import org.springframework.batch.core.StepContribution
 import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.batch.core.step.tasklet.Tasklet

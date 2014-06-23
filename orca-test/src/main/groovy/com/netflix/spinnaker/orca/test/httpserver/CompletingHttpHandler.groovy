@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.test.httpserver
 
-import com.sun.net.httpserver.HttpExchange
 import groovy.transform.CompileStatic
+import com.sun.net.httpserver.HttpExchange
 
 @CompileStatic
 class CompletingHttpHandler extends HttpHandlerChain {

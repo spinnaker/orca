@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import groovy.transform.CompileStatic
 import com.google.common.collect.ImmutableMap
 import com.netflix.spinnaker.orca.TaskContext
-import groovy.transform.CompileStatic
 import org.springframework.batch.core.scope.context.ChunkContext
 
 @CompileStatic

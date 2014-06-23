@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.test
 import groovy.transform.CompileStatic
 import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
-
 import static java.util.concurrent.TimeUnit.SECONDS
 
 @CompileStatic

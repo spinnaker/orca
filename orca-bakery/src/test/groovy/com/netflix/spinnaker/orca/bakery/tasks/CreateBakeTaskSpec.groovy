@@ -16,21 +16,19 @@
 
 package com.netflix.spinnaker.orca.bakery.tasks
 
+import spock.lang.Specification
+import spock.lang.Subject
 import com.netflix.spinnaker.orca.SimpleTaskContext
 import com.netflix.spinnaker.orca.bakery.api.Bake
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import rx.Observable
-import spock.lang.Specification
-import spock.lang.Subject
-
 import static com.netflix.spinnaker.orca.bakery.api.BakeStatus.State.RUNNING
 import static java.util.UUID.randomUUID
 
 class CreateBakeTaskSpec extends Specification {
 
-  @Subject
-    task = new CreateBakeTask()
+  @Subject task = new CreateBakeTask()
   def context = new SimpleTaskContext()
   def runningStatus = new BakeStatus(id: randomUUID(), state: RUNNING)
 

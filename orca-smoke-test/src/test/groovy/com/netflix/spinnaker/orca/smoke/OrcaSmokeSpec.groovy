@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.smoke
 
+import spock.lang.IgnoreIf
+import spock.lang.Specification
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.bakery.job.BakeJobBuilder
 import org.springframework.batch.core.BatchStatus
@@ -25,9 +27,6 @@ import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ContextConfiguration
-import spock.lang.IgnoreIf
-import spock.lang.Specification
-
 import static com.netflix.spinnaker.orca.test.Network.isReachable
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS
 
@@ -36,14 +35,9 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 @DirtiesContext(classMode = AFTER_CLASS)
 class OrcaSmokeSpec extends Specification {
 
-  @Autowired
-  JobLauncher jobLauncher
-
-  @Autowired
-  BakeJobBuilder bakeJobBuilder
-
-  @Autowired
-  JobBuilderFactory jobs
+  @Autowired JobLauncher jobLauncher
+  @Autowired BakeJobBuilder bakeJobBuilder
+  @Autowired JobBuilderFactory jobs
 
   def "can bake and monitor to completion"() {
     given:

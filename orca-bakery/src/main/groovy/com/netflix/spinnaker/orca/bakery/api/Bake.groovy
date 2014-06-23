@@ -16,17 +16,16 @@
 
 package com.netflix.spinnaker.orca.bakery.api
 
-import com.google.gson.annotations.SerializedName
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
+import com.google.gson.annotations.SerializedName
 
 @Immutable
 @CompileStatic
 class Bake {
 
   String user
-  @SerializedName("package")
-  String packageName
+  @SerializedName("package") String packageName
   Label baseLabel
   OperatingSystem baseOs
 

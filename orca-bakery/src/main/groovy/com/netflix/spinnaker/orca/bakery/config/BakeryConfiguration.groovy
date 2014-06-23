@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.bakery.config
 
+import groovy.transform.CompileStatic
 import com.google.gson.GsonBuilder
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.bakery.job.BakeJobBuilder
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -30,7 +30,6 @@ import retrofit.RestAdapter
 import retrofit.RestAdapter.LogLevel
 import retrofit.client.Client
 import retrofit.converter.GsonConverter
-
 import static com.google.gson.FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES
 import static retrofit.Endpoints.newFixedEndpoint
 

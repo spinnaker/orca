@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca
 
-import com.google.common.collect.ImmutableMap
 import groovy.transform.CompileStatic
+import com.google.common.collect.ImmutableMap
 
 @CompileStatic
 final class DefaultTaskResult implements TaskResult {

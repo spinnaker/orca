@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import spock.lang.Specification
+import spock.lang.Subject
+import spock.lang.Unroll
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskContext
@@ -25,10 +28,6 @@ import org.springframework.batch.core.StepContribution
 import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.batch.core.scope.context.StepContext
 import org.springframework.batch.repeat.RepeatStatus
-import spock.lang.Specification
-import spock.lang.Subject
-import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.TaskResult.Status.SUCCEEDED
 import static org.springframework.batch.test.MetaDataInstanceFactory.createStepExecution
 
@@ -36,8 +35,7 @@ class TaskTaskletAdapterSpec extends Specification {
 
   def step = Mock(Task)
 
-  @Subject
-  def tasklet = new TaskTaskletAdapter(step)
+  @Subject tasklet = new TaskTaskletAdapter(step)
 
   def stepExecution = createStepExecution()
   def stepContext = new StepContext(stepExecution)
@@ -82,7 +80,7 @@ class TaskTaskletAdapterSpec extends Specification {
     stepContribution.exitStatus == exitStatus
 
     where:
-    taskResultStatus | repeatStatus | exitStatus
+    taskResultStatus            | repeatStatus             | exitStatus
     SUCCEEDED                   | RepeatStatus.FINISHED    | ExitStatus.COMPLETED
     TaskResult.Status.FAILED    | RepeatStatus.FINISHED    | ExitStatus.FAILED
     TaskResult.Status.RUNNING   | RepeatStatus.CONTINUABLE | ExitStatus.EXECUTING

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import spock.lang.Specification
 import com.netflix.spinnaker.orca.smoke.BatchTestConfiguration
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.JobExecution
@@ -32,8 +33,6 @@ import org.springframework.batch.test.JobLauncherTestUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ContextConfiguration
-import spock.lang.Specification
-
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS
 
 /**
@@ -43,21 +42,14 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 @DirtiesContext(classMode = AFTER_CLASS)
 abstract class BatchExecutionSpec extends Specification implements JobFactory {
 
-  @Autowired
-  private JobBuilderFactory jobs
-  @Autowired
-  protected StepBuilderFactory steps
+  @Autowired private JobBuilderFactory jobs
+  @Autowired protected StepBuilderFactory steps
 
-  @Autowired
-  private JobLauncher jobLauncher
-  @Autowired
-  private JobRepository jobRepository
-  @Autowired
-  private JobExplorer jobExplorer
-  @Autowired
-  private JobOperator jobOperator
-  @Autowired
-  private JobRegistry jobRegistry
+  @Autowired private JobLauncher jobLauncher
+  @Autowired private JobRepository jobRepository
+  @Autowired private JobExplorer jobExplorer
+  @Autowired private JobOperator jobOperator
+  @Autowired private JobRegistry jobRegistry
 
   private jobLauncherTestUtils = new JobLauncherTestUtils()
 
