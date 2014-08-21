@@ -63,7 +63,7 @@ class DestroyAsgTaskSpec extends Specification {
 
     then:
     operations.size() == 1
-    with(operations[0].deleteAsgDescription) {
+    with(operations[0].destroyAsgDescription) {
       it instanceof DestroyAsgOperation
       asgName == destroyASGConfig.asgName
       regions == destroyASGConfig.regions

@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-
-
 package com.netflix.spinnaker.orca.pipeline
 
 import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.batch.RetryableTaskTaskletAdapter
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
 import com.netflix.spinnaker.orca.spring.AutowiredComponentBuilder
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
 import org.springframework.batch.core.job.builder.JobBuilderHelper
 import org.springframework.batch.core.step.tasklet.Tasklet
 import org.springframework.beans.factory.annotation.Autowired
+import static com.netflix.spinnaker.orca.batch.TaskTaskletAdapter.decorate
 
 /**
  * Base class for a component that constructs a _stage_ to be run as (part of) a _pipeline_.
@@ -36,6 +32,19 @@ import org.springframework.beans.factory.annotation.Autowired
 abstract class StageBuilderSupport<B extends JobBuilderHelper<B>> implements AutowiredComponentBuilder, StageBuilder<B> {
 
   protected StepBuilderFactory steps
+  private final String name
+
+  StageBuilderSupport(String name) {
+    this.name = name
+  }
+
+  /**
+   * @return the stage name used by Mayo when configuring pipelines.
+   */
+  @Override
+  final String getName() {
+    name
+  }
 
   /**
    * Builds and autowires a task.
@@ -47,20 +56,11 @@ abstract class StageBuilderSupport<B extends JobBuilderHelper<B>> implements Aut
   protected Tasklet buildTask(Class<? extends Task> taskType) {
     def task = taskType.newInstance()
     autowire task
-    if (task instanceof RetryableTask) {
-      new RetryableTaskTaskletAdapter(task)
-    } else {
-      TaskTaskletAdapter.decorate task
-    }
+    decorate task
   }
 
   @Autowired
   void setSteps(StepBuilderFactory steps) {
     this.steps = steps
   }
-
-  /**
-   * Default implementation simply creates a +JobParameter+ for every entry in +configuration+. Implementations can
-   * override this as necessary.
-   */
 }

@@ -14,61 +14,44 @@
  * limitations under the License.
  */
 
-
-
-
-
 package com.netflix.spinnaker.orca.test.batch
 
-import javax.sql.DataSource
 import groovy.transform.CompileStatic
+import com.netflix.spinnaker.kork.jedis.JedisConfig
+import com.netflix.spinnaker.orca.batch.core.configuration.annotation.JedisBatchConfigurer
+import com.netflix.spinnaker.orca.batch.core.explore.support.JedisJobExplorerFactoryBean
 import org.springframework.batch.core.configuration.ListableJobLocator
+import org.springframework.batch.core.configuration.annotation.BatchConfigurer
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing
 import org.springframework.batch.core.explore.JobExplorer
-import org.springframework.batch.core.explore.support.JobExplorerFactoryBean
 import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.batch.core.launch.JobOperator
 import org.springframework.batch.core.launch.support.SimpleJobOperator
 import org.springframework.batch.core.repository.JobRepository
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.FactoryBean
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.PropertySource
-import org.springframework.core.env.Environment
-import org.springframework.core.io.ResourceLoader
-import org.springframework.jdbc.datasource.SingleConnectionDataSource
-import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator
+import org.springframework.context.annotation.Import
+import redis.clients.jedis.JedisCommands
 
 /**
  * This is a bare-bones configuration for running end-to-end Spring batch tests.
  */
 @Configuration
 @EnableBatchProcessing
-@PropertySource("classpath:batch.properties")
+// TODO: this probably shouldn't be directly imported as it's conditional
+@Import(JedisConfig)
 @CompileStatic
 class BatchTestConfiguration {
 
-  @Autowired private Environment env
-  @Autowired private ResourceLoader resourceLoader
-
-  @Bean(destroyMethod = "destroy")
-  DataSource dataSource() {
-    def ds = new SingleConnectionDataSource()
-    ds.driverClassName = env.getProperty("batch.jdbc.driver")
-    ds.url = env.getProperty("batch.jdbc.url")
-    ds.username = env.getProperty("batch.jdbc.user")
-    ds.password = env.getProperty("batch.jdbc.password")
-
-    def populator = new ResourceDatabasePopulator()
-    populator.addScript(resourceLoader.getResource(env.getProperty("batch.schema.script")))
-    DatabasePopulatorUtils.execute(populator, ds)
-
-    return ds
+  // required for the configuration from JedisConfig to work properly
+  @Bean PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() {
+    new PropertyPlaceholderConfigurer()
   }
 
-  @Bean JobExplorerFactoryBean jobExplorerFactoryBean(DataSource dataSource) {
-    new JobExplorerFactoryBean(dataSource: dataSource)
+  @Bean BatchConfigurer batchConfigurer(JedisCommands jedis) {
+    new JedisBatchConfigurer(jedis)
   }
 
   @Bean

@@ -16,9 +16,10 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import groovy.transform.CompileStatic
+import javax.annotation.PostConstruct
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import groovy.transform.CompileStatic
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.JobExecution
 import org.springframework.batch.core.JobParameters
@@ -47,13 +48,29 @@ class PipelineStarter {
   @Autowired private StepBuilderFactory steps
   @Autowired private ObjectMapper mapper
 
+  private final Map<String, StageBuilder> stageBuilders = [:]
+
   /**
-   * Builds and executes a _pipeline_ based on the
-   * @param configJson
-   * @return
+   * Builds and launches a _pipeline_ based on config from _Mayo_.
+   *
+   * @param configJson _Mayo_ pipeline configuration.
+   * @return an execution representing the job that was created.
    */
   JobExecution start(String configJson) {
     launcher.run(pipelineFrom(parseConfig(configJson)), new JobParameters())
+  }
+
+  @PostConstruct
+  void initialize() {
+    applicationContext.getBeansOfType(StageBuilder).values().each {
+      stageBuilders[it.name] = it
+    }
+    applicationContext.getBeansOfType(StandaloneTask).values().each {
+      def builder = new SimpleStageBuilder(it.name, it)
+      applicationContext.autowireCapableBeanFactory.autowireBean(builder)
+      // TODO: this should be a prototype scoped bean or use a factory I guess
+      stageBuilders[it.name] = builder
+    }
   }
 
   private List<Map<String, ?>> parseConfig(String configJson) {
@@ -86,8 +103,11 @@ class PipelineStarter {
   }
 
   private JobBuilderHelper stageFromConfig(SimpleJobBuilder jobBuilder, Map stepConfig) {
-    def stageBuilder = applicationContext.getBean("${stepConfig.type}StageBuilder", StageBuilder)
-    stageBuilder.build(jobBuilder)
+    if (stageBuilders.containsKey(stepConfig.type)) {
+      stageBuilders.get(stepConfig.type).build(jobBuilder)
+    } else {
+      throw new NoSuchStageException(stepConfig.type as String)
+    }
   }
 
   private Job job(JobBuilderHelper jobBuilder) {

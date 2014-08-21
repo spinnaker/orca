@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-
-
 package com.netflix.spinnaker.orca.pipeline
 
 import org.springframework.batch.core.job.builder.JobBuilder
@@ -25,6 +23,11 @@ import org.springframework.batch.core.job.builder.JobBuilderHelper
  * An object that constructs steps for a Spring Batch +Job+ relating to a specific Orca _stage_.
  */
 interface StageBuilder<B extends JobBuilderHelper<B>> {
+
+  /**
+   * @return the name that corresponds to Mayo config.
+   */
+  String getName()
 
   // TODO: may not need this method if we always have a config handling step first
   /**

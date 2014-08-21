@@ -37,17 +37,18 @@ class ResizeAsgTask implements Task {
   @Override
   TaskResult execute(TaskContext context) {
     def resizeAsgOperation = convert(context)
-    def taskId = kato.requestOperations([
-        [resizeAsgDescription: resizeAsgOperation]]).toBlockingObservable().first()
+    def taskId = kato.requestOperations([[resizeAsgDescription: resizeAsgOperation]])
+                     .toBlocking()
+                     .first()
     new DefaultTaskResult(TaskResult.Status.SUCCEEDED,
         ["deploy.account.name" : resizeAsgOperation.credentials,
          "kato.task.id"        : taskId,
-         "deploy.server.groups": [(resizeAsgOperation.region): [resizeAsgOperation.asgName]]])
+         "deploy.server.groups": [(resizeAsgOperation.regions): [resizeAsgOperation.asgName]]])
   }
 
   ResizeAsgOperation convert(TaskContext context) {
     mapper.copy()
-        .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
-        .convertValue(context.getInputs("resizeAsg"), ResizeAsgOperation)
+          .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+          .convertValue(context.getInputs("resizeAsg"), ResizeAsgOperation)
   }
 }

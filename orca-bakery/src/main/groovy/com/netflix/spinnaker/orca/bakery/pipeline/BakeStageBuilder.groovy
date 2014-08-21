@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-
-
-
-
 package com.netflix.spinnaker.orca.bakery.pipeline
 
 import groovy.transform.CompileStatic
@@ -32,17 +28,23 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class BakeStageBuilder extends LinearStageBuilder {
 
+  public static final String MAYO_CONFIG_TYPE = "bake"
+
+  BakeStageBuilder() {
+    super(MAYO_CONFIG_TYPE)
+  }
+
   @Override
   protected List<Step> buildSteps() {
     def step1 = steps.get("CreateBakeStep")
-        .tasklet(buildTask(CreateBakeTask))
-        .build()
+                     .tasklet(buildTask(CreateBakeTask))
+                     .build()
     def step2 = steps.get("MonitorBakeStep")
-        .tasklet(buildTask(MonitorBakeTask))
-        .build()
+                     .tasklet(buildTask(MonitorBakeTask))
+                     .build()
     def step3 = steps.get("CompletedBakeStep")
-        .tasklet(buildTask(CompletedBakeTask))
-        .build()
+                     .tasklet(buildTask(CompletedBakeTask))
+                     .build()
     [step1, step2, step3]
   }
 }

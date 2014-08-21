@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-
-
 package com.netflix.spinnaker.orca.batch.pipeline
 
-import spock.lang.Shared
-import spock.lang.Specification
-import spock.lang.Subject
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.pipeline.NoSuchStageException
 import com.netflix.spinnaker.orca.pipeline.PipelineStarter
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
@@ -34,6 +30,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.support.AbstractApplicationContext
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ContextConfiguration
+import spock.lang.Shared
+import spock.lang.Specification
+import spock.lang.Subject
 import static org.springframework.batch.repeat.RepeatStatus.FINISHED
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD
 
@@ -58,12 +57,25 @@ class PipelineConfigurationSpec extends Specification {
   def setup() {
     applicationContext.beanFactory.with {
       registerSingleton "mapper", mapper
-      registerSingleton "fooStageBuilder", new TestStageBuilder(fooTasklet, steps)
-      registerSingleton "barStageBuilder", new TestStageBuilder(barTasklet, steps)
-      registerSingleton "bazStageBuilder", new TestStageBuilder(bazTasklet, steps)
+      registerSingleton "fooStageBuilder", new TestStageBuilder("foo", fooTasklet, steps)
+      registerSingleton "barStageBuilder", new TestStageBuilder("bar", barTasklet, steps)
+      registerSingleton "bazStageBuilder", new TestStageBuilder("baz", bazTasklet, steps)
 
       autowireBean jobStarter
     }
+    jobStarter.initialize()
+  }
+
+  def "an unknown stage type results in an exception"() {
+    when:
+    jobStarter.start configJson
+
+    then:
+    thrown NoSuchStageException
+
+    where:
+    config = [[type: "qux"]]
+    configJson = mapper.writeValueAsString(config)
   }
 
   def "a single step is constructed from mayo's json config"() {

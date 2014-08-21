@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-
-
-
-
 package com.netflix.spinnaker.orca.bakery.tasks
 
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.DefaultTaskResult
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskContext
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
@@ -30,7 +26,10 @@ import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import org.springframework.beans.factory.annotation.Autowired
 
 @CompileStatic
-class MonitorBakeTask implements Task {
+class MonitorBakeTask implements RetryableTask {
+
+  long backoffPeriod = 1000
+  long timeout = 600000
 
   @Autowired BakeryService bakery
 
@@ -41,7 +40,7 @@ class MonitorBakeTask implements Task {
 
     // TODO: could skip the lookup if it's already complete as it will be for a previously requested bake
 
-    def newStatus = bakery.lookupStatus(region, previousStatus.id).toBlockingObservable().single()
+    def newStatus = bakery.lookupStatus(region, previousStatus.id).toBlocking().single()
 
     new DefaultTaskResult(mapStatus(newStatus), ["bake.status": newStatus])
   }

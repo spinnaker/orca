@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-
-
 package com.netflix.spinnaker.orca.batch
 
-import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.Task
 import org.springframework.batch.core.StepContribution
 import org.springframework.batch.core.scope.context.ChunkContext
-import org.springframework.batch.core.step.tasklet.Tasklet
 import org.springframework.batch.repeat.RepeatStatus
 import org.springframework.retry.backoff.FixedBackOffPolicy
 import org.springframework.retry.policy.SoftReferenceMapRetryContextCache
@@ -34,7 +29,7 @@ class RetryableTaskTaskletAdapter extends TaskTaskletAdapter {
 
   final RetryTemplate retryTemplate
 
-  RetryableTaskTaskletAdapter(RetryableTask task) {
+  protected RetryableTaskTaskletAdapter(RetryableTask task) {
     super(task)
     retryTemplate = new RetryTemplate()
     retryTemplate.retryContextCache = new SoftReferenceMapRetryContextCache()

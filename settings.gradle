@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-
-
-
-
 include "orca-core",
   "orca-retrofit",
   "orca-bakery",
+  "orca-jedis",
   "orca-kato",
   "orca-oort",
   "orca-test",
-  "orca-smoke-test"
+  "orca-smoke-test",
+  "orca-web"
 
 rootProject.name = "orca"
 
