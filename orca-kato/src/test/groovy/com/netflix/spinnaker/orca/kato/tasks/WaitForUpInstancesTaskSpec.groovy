@@ -20,6 +20,7 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Unroll
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.SimpleTaskContext
 import com.netflix.spinnaker.orca.TaskResult
@@ -74,5 +75,18 @@ class WaitForUpInstancesTaskSpec extends Specification {
     expect:
     task.execute(context).status == TaskResult.Status.SUCCEEDED
 
+  }
+
+  @Unroll
+  void "should be complete for all healthy instances"() {
+    expect:
+    task.hasSucceeded(instances) == hasSucceeded
+
+    where:
+    hasSucceeded  | instances
+    true          | []
+    true          | [[isHealthy: true]]
+    false         | [[isHealthy: true], [isHealthy: false]]
+    true          | [[isHealthy: true], [isHealthy: true]]
   }
 }
