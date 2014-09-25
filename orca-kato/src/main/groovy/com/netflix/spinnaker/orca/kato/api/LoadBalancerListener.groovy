@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
+package com.netflix.spinnaker.orca.kato.api
 
+import groovy.transform.CompileStatic
+import groovy.transform.EqualsAndHashCode
 
-
-
-apply from: "$rootDir/gradle/groovy-module.gradle"
-
-dependencies {
-  compile 'com.netflix.frigga:frigga:0.13'
-  compile project(":orca-retrofit")
-  compile project(":orca-oort")
-  compile project(":orca-mort")
-  testCompile project(":orca-test")
-  testCompile commonDependencies.objenesis
+@CompileStatic
+@EqualsAndHashCode
+class LoadBalancerListener {
+  String internalProtocol
+  String internalPort
+  String externalProtocol
+  String externalPort
 }

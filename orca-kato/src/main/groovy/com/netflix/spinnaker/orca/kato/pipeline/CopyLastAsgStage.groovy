@@ -16,21 +16,22 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.kato.tasks.CreateCopyLastAsgTask
 import com.netflix.spinnaker.orca.kato.tasks.MonitorKatoTask
+import com.netflix.spinnaker.orca.kato.tasks.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.kato.tasks.WaitForUpInstancesTask
-import com.netflix.spinnaker.orca.pipeline.LinearStageBuilder
-import groovy.transform.CompileStatic
+import com.netflix.spinnaker.orca.pipeline.LinearStage
 import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class CopyLastAsgStageBuilder extends LinearStageBuilder {
+class CopyLastAsgStage extends LinearStage {
 
   public static final String MAYO_CONFIG_TYPE = "copyLastAsg"
 
-  CopyLastAsgStageBuilder() {
+  CopyLastAsgStage() {
     super(MAYO_CONFIG_TYPE)
   }
 
@@ -42,10 +43,16 @@ class CopyLastAsgStageBuilder extends LinearStageBuilder {
         def step2 = steps.get("MonitorDeployStep")
                 .tasklet(buildTask(MonitorKatoTask))
                 .build()
-        def step3 = steps.get("WaitForUpInstancesStep")
+        def step3 = steps.get("ForceCacheRefreshStep")
+                .tasklet(buildTask(ServerGroupCacheForceRefreshTask))
+                .build()
+        def step4 = steps.get("WaitForUpInstancesStep")
                 .tasklet(buildTask(WaitForUpInstancesTask))
                 .build()
-        [step1, step2, step3]
+        def step5 = steps.get("ForceCacheRefreshStep")
+                .tasklet(buildTask(ServerGroupCacheForceRefreshTask))
+                .build()
+        [step1, step2, step3, step4, step5]
     }
 
 }

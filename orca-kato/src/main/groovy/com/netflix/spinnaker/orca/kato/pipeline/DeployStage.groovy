@@ -17,44 +17,41 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.kato.tasks.DestroyAsgTask
+import com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask
 import com.netflix.spinnaker.orca.kato.tasks.MonitorKatoTask
-import com.netflix.spinnaker.orca.kato.tasks.PreconfigureDestroyAsgTask
-import com.netflix.spinnaker.orca.kato.tasks.WaitForCapacityMatchTask
-import com.netflix.spinnaker.orca.pipeline.LinearStageBuilder
+import com.netflix.spinnaker.orca.kato.tasks.ServerGroupCacheForceRefreshTask
+import com.netflix.spinnaker.orca.kato.tasks.WaitForUpInstancesTask
+import com.netflix.spinnaker.orca.pipeline.LinearStage
 import org.springframework.batch.core.Step
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DestroyAsgStageBuilder extends LinearStageBuilder {
+class DeployStage extends LinearStage {
 
-  public static final String MAYO_CONFIG_TYPE = "destroyAsg"
-  @Autowired
-  ResizeAsgStageBuilder resizeAsgStageBuilder
+  public static final String MAYO_CONFIG_TYPE = "deploy"
 
-  DestroyAsgStageBuilder() {
+  DeployStage() {
     super(MAYO_CONFIG_TYPE)
   }
 
   @Override
   protected List<Step> buildSteps() {
-    def resizeSteps = resizeAsgStageBuilder.buildSteps()
-
-    def step1 = steps.get("PreconfigureResizeStep")
-                     .tasklet(buildTask(PreconfigureDestroyAsgTask))
+    def step1 = steps.get("CreateDeployStep")
+                     .tasklet(buildTask(CreateDeployTask))
                      .build()
-    def step2 = steps.get("DestroyAsgStep")
-                     .tasklet(buildTask(DestroyAsgTask))
-                     .build()
-    def step3 = steps.get("MonitorAsgStep")
+    def step2 = steps.get("MonitorDeployStep")
                      .tasklet(buildTask(MonitorKatoTask))
                      .build()
-    def step4 = steps.get("WaitForCapacityMatchStep")
-                     .tasklet(buildTask(WaitForCapacityMatchTask))
+    def step3 = steps.get("ForceCacheRefreshStep")
+                     .tasklet(buildTask(ServerGroupCacheForceRefreshTask))
                      .build()
-
-    [step1, resizeSteps, step2, step3, step4].flatten().toList()
+    def step4 = steps.get("WaitForUpInstancesStep")
+                     .tasklet(buildTask(WaitForUpInstancesTask))
+                     .build()
+    def step5 = steps.get("ForceCacheRefreshStep")
+                     .tasklet(buildTask(ServerGroupCacheForceRefreshTask))
+                     .build()
+    [step1, step2, step3, step4, step5]
   }
 }

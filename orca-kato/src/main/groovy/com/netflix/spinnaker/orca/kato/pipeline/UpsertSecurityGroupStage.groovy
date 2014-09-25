@@ -14,37 +14,44 @@
  * limitations under the License.
  */
 
+
+
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask
 import com.netflix.spinnaker.orca.kato.tasks.MonitorKatoTask
-import com.netflix.spinnaker.orca.kato.tasks.WaitForUpInstancesTask
-import com.netflix.spinnaker.orca.pipeline.LinearStageBuilder
+import com.netflix.spinnaker.orca.kato.tasks.TerminateInstancesTask
+import com.netflix.spinnaker.orca.kato.tasks.UpsertSecurityGroupTask
+import com.netflix.spinnaker.orca.kato.tasks.WaitForTerminatedInstancesTask
+import com.netflix.spinnaker.orca.kato.tasks.WaitForUpsertedSecurityGroupTask
+import com.netflix.spinnaker.orca.pipeline.LinearStage
+import groovy.transform.CompileStatic
 import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DeployStageBuilder extends LinearStageBuilder {
+class UpsertSecurityGroupStage extends LinearStage {
 
-  public static final String MAYO_CONFIG_TYPE = "deploy"
+  public static final String MAYO_CONFIG_TYPE = "upsertSecurityGroup"
 
-  DeployStageBuilder() {
+  UpsertSecurityGroupStage() {
     super(MAYO_CONFIG_TYPE)
   }
 
   @Override
   protected List<Step> buildSteps() {
-    def step1 = steps.get("CreateDeployStep")
-                     .tasklet(buildTask(CreateDeployTask))
-                     .build()
-    def step2 = steps.get("MonitorDeployStep")
-                     .tasklet(buildTask(MonitorKatoTask))
-                     .build()
-    def step3 = steps.get("WaitForUpInstancesStep")
-                     .tasklet(buildTask(WaitForUpInstancesTask))
-                     .build()
+    def step1 = steps.get("UpsertSecurityGroupStep")
+      .tasklet(buildTask(UpsertSecurityGroupTask))
+      .build()
+
+    def step2 = steps.get("MonitorUpsertStep")
+      .tasklet(buildTask(MonitorKatoTask))
+      .build()
+
+    def step3 = steps.get("WaitForUpsertedSecurityGroupStep")
+      .tasklet(buildTask(WaitForUpsertedSecurityGroupTask))
+      .build()
+
     [step1, step2, step3]
   }
 }

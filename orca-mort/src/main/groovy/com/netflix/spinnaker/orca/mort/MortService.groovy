@@ -15,16 +15,18 @@
  */
 
 
+package com.netflix.spinnaker.orca.mort
 
+import retrofit.client.Response
+import retrofit.http.GET
+import retrofit.http.Path
+import retrofit.http.Query
 
+interface MortService {
 
-apply from: "$rootDir/gradle/groovy-module.gradle"
+  @GET("/securityGroups/{account}/{type}/{securityGroupName}")
+  Response getSecurityGroup(
+    @Path("account") String account,
+    @Path("type") String type, @Path("securityGroupName") String securityGroupName, @Query("region") String region)
 
-dependencies {
-  compile 'com.netflix.frigga:frigga:0.13'
-  compile project(":orca-retrofit")
-  compile project(":orca-oort")
-  compile project(":orca-mort")
-  testCompile project(":orca-test")
-  testCompile commonDependencies.objenesis
 }

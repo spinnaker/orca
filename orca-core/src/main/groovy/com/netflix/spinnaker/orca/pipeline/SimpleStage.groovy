@@ -16,20 +16,23 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.Task
+import org.springframework.batch.core.Step
+import static com.netflix.spinnaker.orca.batch.TaskTaskletAdapter.decorate
 
-/**
- * Represents a `Task` that can be run on its own as a pipeline stage. Such tasks do _not_ need to have a
- * {@link Stage} registered in the application context, they just need to be registered in the application
- * context themselves.
- *
- * Retryable standalone tasks should implement this interface _and_ {@link com.netflix.spinnaker.orca.RetryableTask}.
- */
-interface StandaloneTask extends Task {
+@CompileStatic
+class SimpleStage extends LinearStage {
 
-  /**
-   * @return the name corresponding to the Mayo configuration for this task.
-   */
-  String getName()
+  private final Task task
 
+  SimpleStage(String name, Task task) {
+    super(name)
+    this.task = task
+  }
+
+  @Override
+  protected List<Step> buildSteps() {
+    [steps.get("${name}Step").tasklet(decorate(task)).build()]
+  }
 }

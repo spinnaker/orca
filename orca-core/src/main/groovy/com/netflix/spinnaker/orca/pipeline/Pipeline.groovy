@@ -16,20 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.Task
+interface Pipeline {
 
-/**
- * Represents a `Task` that can be run on its own as a pipeline stage. Such tasks do _not_ need to have a
- * {@link Stage} registered in the application context, they just need to be registered in the application
- * context themselves.
- *
- * Retryable standalone tasks should implement this interface _and_ {@link com.netflix.spinnaker.orca.RetryableTask}.
- */
-interface StandaloneTask extends Task {
-
-  /**
-   * @return the name corresponding to the Mayo configuration for this task.
-   */
-  String getName()
+  String getId()
 
 }

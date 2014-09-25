@@ -24,13 +24,11 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskContext
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.kato.api.KatoService
-import com.netflix.spinnaker.orca.kato.api.ops.DestroyAsgOperation
-import com.netflix.spinnaker.orca.kato.api.ops.TerminateInstancesOperation
-import groovy.transform.CompileStatic
+import com.netflix.spinnaker.orca.kato.api.ops.UpsertAmazonLoadBalancerOperation
 import org.springframework.beans.factory.annotation.Autowired
 
-@CompileStatic
-class TerminateInstancesTask implements Task {
+class UpsertAmazonLoadBalancerTask implements Task {
+
   @Autowired
   KatoService kato
 
@@ -39,23 +37,32 @@ class TerminateInstancesTask implements Task {
 
   @Override
   TaskResult execute(TaskContext context) {
-    def operation = convert(context)
-    def taskId = kato.requestOperations([[terminateInstancesDescription: operation]])
+    def upsertAmazonLoadBalancerOperation = convert(context)
+
+    def taskId = kato.requestOperations([[upsertAmazonLoadBalancerDescription: upsertAmazonLoadBalancerOperation]])
       .toBlocking()
       .first()
 
-    new DefaultTaskResult(TaskResult.Status.SUCCEEDED,
-      ["terminate.account.name" : operation.credentials,
-       "terminate.region"       : operation.region,
-       "kato.last.task.id"      : taskId,
-       "kato.task.id"           : taskId, // TODO retire this.
-       "terminate.instance.ids" : operation.instanceIds,
-      ])
+    Map outputs = [
+      "kato.last.task.id" : taskId,
+      "kato.task.id"      : taskId, // TODO retire this.
+      "upsert.account"    : upsertAmazonLoadBalancerOperation.credentials,
+      "upsert.regions"    : upsertAmazonLoadBalancerOperation.availabilityZones.keySet().join(',')
+    ]
+
+    if (upsertAmazonLoadBalancerOperation.clusterName) {
+      outputs."upsert.clusterName" = upsertAmazonLoadBalancerOperation.clusterName
+    }
+    if (upsertAmazonLoadBalancerOperation.name) {
+      outputs."upsert.name" = upsertAmazonLoadBalancerOperation.name
+    }
+
+    new DefaultTaskResult(TaskResult.Status.SUCCEEDED, outputs)
   }
 
-  TerminateInstancesOperation convert(TaskContext context) {
+  UpsertAmazonLoadBalancerOperation convert(TaskContext context) {
     mapper.copy()
       .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
-      .convertValue(context.getInputs("terminateInstances"), TerminateInstancesOperation)
+      .convertValue(context.getInputs("upsertAmazonLoadBalancer"), UpsertAmazonLoadBalancerOperation)
   }
 }

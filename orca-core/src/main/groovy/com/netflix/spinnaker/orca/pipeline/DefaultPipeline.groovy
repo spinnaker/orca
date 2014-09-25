@@ -17,22 +17,19 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.Task
-import org.springframework.batch.core.Step
-import static com.netflix.spinnaker.orca.batch.TaskTaskletAdapter.decorate
+import org.springframework.batch.core.JobExecution
 
 @CompileStatic
-class SimpleStageBuilder extends LinearStageBuilder {
+class DefaultPipeline implements Pipeline {
 
-  private final Task task
+  private final JobExecution jobExecution
 
-  SimpleStageBuilder(String name, Task task) {
-    super(name)
-    this.task = task
+  DefaultPipeline(JobExecution jobExecution) {
+    this.jobExecution = jobExecution
   }
 
   @Override
-  protected List<Step> buildSteps() {
-    [steps.get("${name}Step").tasklet(decorate(task)).build()]
+  String getId() {
+    jobExecution.id
   }
 }

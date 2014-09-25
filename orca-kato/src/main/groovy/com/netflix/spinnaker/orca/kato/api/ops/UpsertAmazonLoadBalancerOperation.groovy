@@ -14,33 +14,24 @@
  * limitations under the License.
  */
 
+package com.netflix.spinnaker.orca.kato.api.ops
 
-
-
-
-package com.netflix.spinnaker.orca.kato.api
-
+import com.google.common.base.Optional
+import com.netflix.spinnaker.orca.kato.api.LoadBalancerListener
+import com.netflix.spinnaker.orca.kato.api.Operation
 import groovy.transform.CompileStatic
-import groovy.transform.Immutable
+import groovy.transform.EqualsAndHashCode
 
-@Immutable
 @CompileStatic
-class Task {
+@EqualsAndHashCode
+class UpsertAmazonLoadBalancerOperation extends Operation {
+  Optional<String> clusterName
+  Optional<String> name
+  String subnetType
+  Optional<Set<String>> securityGroups
+  Map<String, List<String>> availabilityZones
+  String healthCheck
+  String credentials
+  List<LoadBalancerListener> listeners
 
-  String id
-  Status status
-  List<Map> resultObjects
-  List<StatusLine> history
-
-  @Immutable
-  static class Status {
-    boolean completed
-    boolean failed
-  }
-
-  @Immutable
-  static class StatusLine {
-    String phase
-    String status
-  }
 }
