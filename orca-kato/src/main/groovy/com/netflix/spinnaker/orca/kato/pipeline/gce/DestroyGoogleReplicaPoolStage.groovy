@@ -38,11 +38,11 @@ class DestroyGoogleReplicaPoolStage extends LinearStage {
 
   @Override
   protected List<Step> buildSteps() {
-    def resizeSteps = resizeGoogleReplicaPoolStage.buildSteps()
-
-    def step1 = steps.get("PreconfigureResizeStep")
-                     .tasklet(buildTask(PreconfigureDestroyGoogleReplicaPoolTask))
-                     .build()
+//    def resizeSteps = resizeGoogleReplicaPoolStage.buildSteps()
+//
+//    def step1 = steps.get("PreconfigureResizeStep")
+//                     .tasklet(buildTask(PreconfigureDestroyGoogleReplicaPoolTask))
+//                     .build()
     def step2 = steps.get("DestroyAsgStep")
                      .tasklet(buildTask(DestroyGoogleReplicaPoolTask))
                      .build()
@@ -52,13 +52,14 @@ class DestroyGoogleReplicaPoolStage extends LinearStage {
     def step4 = steps.get("ForceCacheRefreshStep")
                      .tasklet(buildTask(ServerGroupCacheForceRefreshTask))
                      .build()
-    def step5 = steps.get("WaitForCapacityMatchStep")
-                     .tasklet(buildTask(WaitForCapacityMatchTask))
-                     .build()
+//    def step5 = steps.get("WaitForCapacityMatchStep")
+//                     .tasklet(buildTask(WaitForCapacityMatchTask))
+//                     .build()
     def step6 = steps.get("SendNotificationStep")
                      .tasklet(buildTask(NotifyEchoTask))
                      .build()
 
-    [step1, resizeSteps, step2, step3, step4, step5, step6].flatten().toList()
+//    [step1, resizeSteps, step2, step3, step4, step5, step6].flatten().toList()
+    [step2, step3, step4, step6]
   }
 }
