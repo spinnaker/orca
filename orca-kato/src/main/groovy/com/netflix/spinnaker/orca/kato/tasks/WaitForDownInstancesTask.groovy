@@ -19,7 +19,10 @@ package com.netflix.spinnaker.orca.kato.tasks
 class WaitForDownInstancesTask extends AbstractWaitingForInstancesTask {
 
   @Override
-  protected boolean hasSucceeded(List instances) {
-    !instances.find { it.isHealthy }
+  protected boolean hasSucceeded(List instances, Collection<String> interestingHealthProviderNames) {
+    def healths = instances.health.findAll {
+      it.type in interestingHealthProviderNames
+    }
+    healths.any { it.state == 'Down' } && !healths.any { it.state == 'Up' }
   }
 }

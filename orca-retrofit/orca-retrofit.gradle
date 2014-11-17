@@ -17,7 +17,7 @@
 apply from: "$rootDir/gradle/groovy-module.gradle"
 
 dependencies {
-  compile project(":orca-core")
+  compile commonDependencies.springBatch
   compile commonDependencies.retrofit
   compile commonDependencies.rxJava
   compile commonDependencies.okHttp

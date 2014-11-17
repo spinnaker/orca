@@ -31,6 +31,11 @@ interface Stage extends Serializable {
   ImmutableMap<String, Serializable> getContext()
 
   /**
+   * @return pipeline that contains this stage
+   */
+  Pipeline getPipeline()
+
+  /**
    * Gets the last stage preceding this stage that has the specified type.
    */
   Stage preceding(String type)

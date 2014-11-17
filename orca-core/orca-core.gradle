@@ -21,5 +21,6 @@ dependencies {
   compile commonDependencies.jacksonDatabind
   compile commonDependencies.jacksonGuava
   compile commonDependencies.rxJava
+  compile project(":orca-mayo")
   testCompile project(":orca-test")
 }
