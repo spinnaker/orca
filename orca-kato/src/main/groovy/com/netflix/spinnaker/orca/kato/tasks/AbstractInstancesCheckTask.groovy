@@ -39,7 +39,7 @@ abstract class AbstractInstancesCheckTask implements RetryableTask {
 
   abstract protected Map<String, List<String>> getServerGroups(Stage stage)
 
-  abstract protected boolean hasSucceeded(List instances)
+  abstract protected boolean hasSucceeded(List instances, Collection<String> interestingHealthProviderNames)
 
   @Override
   TaskResult execute(Stage stage) {
@@ -79,7 +79,8 @@ abstract class AbstractInstancesCheckTask implements RetryableTask {
         }
 
         seenServerGroup[name] = true
-        def isComplete = hasSucceeded(instances)
+        Collection<String> interestingHealthProviderNames = stage.pipeline.config.interestingHealthProviderNames as Collection ?: ["Amazon", "LoadBalancer", "Discovery"] // TODO pull from app config
+        def isComplete = hasSucceeded(instances, interestingHealthProviderNames)
         if (!isComplete) {
           return new DefaultTaskResult(PipelineStatus.RUNNING)
         }

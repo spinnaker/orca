@@ -25,7 +25,7 @@ class WaitForCapacityMatchTask extends AbstractInstancesCheckTask {
   }
 
   @Override
-  protected boolean hasSucceeded(List instances) {
+  protected boolean hasSucceeded(List instances, Collection<String> interestingHealthProviderNames) {
     // By here, we will have already passed the minSize > # instances check in the super class
     true
   }

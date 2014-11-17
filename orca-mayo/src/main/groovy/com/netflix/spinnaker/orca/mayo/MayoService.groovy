@@ -19,10 +19,15 @@ package com.netflix.spinnaker.orca.mayo
 import retrofit.client.Response
 import retrofit.http.GET
 import retrofit.http.Headers
+import retrofit.http.Path
 
 interface MayoService {
 
   @GET("/pipelines")
   @Headers("Accept: application/json")
   Response getPipelines()
+
+  @GET("/application/{id}")
+  @Headers("Accept: application/json")
+  Response getApplication(@Path("id") String id)
 }

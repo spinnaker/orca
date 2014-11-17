@@ -32,6 +32,8 @@ class Pipeline implements Serializable {
   final Map<String, Serializable> trigger = [:]
   private final List<PipelineStage> stages = []
 
+  final Map<String, Serializable> config = [:]
+
   ImmutableMap<String, Serializable> getTrigger() {
     ImmutableMap.copyOf(trigger)
   }
