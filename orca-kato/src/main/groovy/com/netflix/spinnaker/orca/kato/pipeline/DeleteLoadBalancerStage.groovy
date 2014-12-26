@@ -30,11 +30,11 @@ import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DeleteAmazonLoadBalancerStage extends LinearStage {
+class DeleteLoadBalancerStage extends LinearStage {
 
-  public static final String MAYO_CONFIG_TYPE = "deleteAmazonLoadBalancer"
+  public static final String MAYO_CONFIG_TYPE = "deleteLoadBalancer"
 
-  DeleteAmazonLoadBalancerStage() {
+  DeleteLoadBalancerStage() {
     super(MAYO_CONFIG_TYPE)
   }
 
