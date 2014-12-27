@@ -13,40 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.kato.tasks.DeleteAmazonLoadBalancerForceRefreshTask
 import com.netflix.spinnaker.orca.kato.tasks.DeleteAmazonLoadBalancerTask
 import com.netflix.spinnaker.orca.kato.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.CompileStatic
 import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 /**
  * Created by aglover on 9/26/14.
+ *
+ * @deprecated use {@link DeleteLoadBalancerStage} instead.
  */
 
+@Deprecated
 @Component
 @CompileStatic
-class DeleteLoadBalancerStage extends LinearStage {
+class DeleteAmazonLoadBalancerStage extends DeleteLoadBalancerStage {
 
-  public static final String MAYO_CONFIG_TYPE = "deleteLoadBalancer"
+  public static final String MAYO_CONFIG_TYPE = "deleteAmazonLoadBalancer"
 
-  DeleteLoadBalancerStage() {
+  DeleteAmazonLoadBalancerStage() {
     super(MAYO_CONFIG_TYPE)
-  }
-
-  /**
-   * This constructor only exists so we can properly instantiate the deprecated subclass DeleteAmazonLoadBalancerStage.
-   * Once that deprecated subclass goes away, this constructor should be removed as well.
-   *
-   * @deprecated use DeleteLoadBalancerStage() instead.
-   */
-  @Deprecated
-  DeleteLoadBalancerStage(String stageName) {
-    super(stageName)
   }
 
   @Override
