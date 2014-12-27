@@ -39,7 +39,7 @@ class DeleteAmazonLoadBalancerStage extends DeleteLoadBalancerStage {
 
   public static final String MAYO_CONFIG_TYPE = "deleteAmazonLoadBalancer"
 
-  DeleteAmazonLoadBalancerStage() {
+  protected DeleteAmazonLoadBalancerStage() {
     super(MAYO_CONFIG_TYPE)
   }
 
