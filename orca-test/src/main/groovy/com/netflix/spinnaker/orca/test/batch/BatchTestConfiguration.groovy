@@ -29,11 +29,17 @@ import org.springframework.batch.core.launch.JobOperator
 import org.springframework.batch.core.launch.support.SimpleJobLauncher
 import org.springframework.batch.core.launch.support.SimpleJobOperator
 import org.springframework.batch.core.repository.JobRepository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.core.env.MapPropertySource
+import org.springframework.core.env.PropertySource
+import org.springframework.core.env.SystemEnvironmentPropertySource
+import org.springframework.core.task.TaskExecutor
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 /**
  * This is a bare-bones configuration for running end-to-end Spring batch tests.
@@ -49,18 +55,35 @@ class BatchTestConfiguration {
     new PropertyPlaceholderConfigurer()
   }
 
+  @Bean
+  PropertySource propertySource() {
+    new MapPropertySource("props", [multiThread: System.getProperty("multiThread")] as Map<String, Object>)
+  }
+
   // Single-threaded mode
   @Bean
-  BatchConfigurer batchConfigurer() {
+  BatchConfigurer batchConfigurer(@Value('${multiThread:false}') boolean multiThreaded, TaskExecutor taskExecutor) {
     new DefaultBatchConfigurer() {
       @Override
       public JobLauncher getJobLauncher() {
         def launcher = new SimpleJobLauncher()
         launcher.jobRepository = jobRepository
+        if (multiThreaded) {
+          launcher.taskExecutor = taskExecutor
+        }
         launcher.afterPropertiesSet()
         launcher
       }
     }
+  }
+
+  @Bean
+  TaskExecutor taskExecutor() {
+    def executor = new ThreadPoolTaskExecutor()
+    executor.maxPoolSize = 10
+    executor.corePoolSize = 10
+    executor.afterPropertiesSet()
+    executor
   }
 
   @Bean

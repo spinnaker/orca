@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.batch.lifecycle
 
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
+import java.util.concurrent.CountDownLatch
+import javax.annotation.PostConstruct
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.JobExecution
 import org.springframework.batch.core.JobParameter
@@ -32,6 +34,7 @@ import org.springframework.batch.core.launch.JobOperator
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.test.JobLauncherTestUtils
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ContextConfiguration
 import spock.lang.Specification
@@ -47,6 +50,7 @@ abstract class BatchExecutionSpec extends Specification implements JobFactory {
   @Autowired private JobBuilderFactory jobs
   @Autowired protected StepBuilderFactory steps
 
+  @Autowired protected ThreadPoolTaskExecutor taskExecutor
   @Autowired private JobLauncher jobLauncher
   @Autowired private JobRepository jobRepository
   @Autowired private JobExplorer jobExplorer
