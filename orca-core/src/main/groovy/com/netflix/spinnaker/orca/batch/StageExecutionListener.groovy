@@ -88,7 +88,7 @@ abstract class StageExecutionListener extends StepExecutionListenerSupport {
   // Maybe a special listener or a special task.
 
   private boolean isFirstTaskInStage(Stage stage, StepExecution stepExecution) {
-    stage.tasks.empty && !stage.startTime
+    stage.tasks.empty || !stage.startTime
   }
 
   private boolean isLastTaskInStage(Stage stage, StepExecution stepExecution) {
