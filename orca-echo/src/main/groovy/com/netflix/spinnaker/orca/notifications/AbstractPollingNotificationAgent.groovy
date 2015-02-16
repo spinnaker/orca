@@ -18,58 +18,76 @@ package com.netflix.spinnaker.orca.notifications
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.echo.EchoService
-import groovy.util.logging.Slf4j
-
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.annotation.PostConstruct
-import org.springframework.beans.factory.annotation.Autowired
+import javax.annotation.PreDestroy
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.annotations.VisibleForTesting
+import com.netflix.spinnaker.orca.echo.EchoEventPoller
+import net.greghaines.jesque.Job
+import net.greghaines.jesque.client.Client
+import rx.Observable
+import rx.Scheduler
+import rx.Subscription
+import rx.schedulers.Schedulers
 
-@Slf4j
-abstract class AbstractPollingNotificationAgent implements Runnable {
-  @Autowired
-  EchoService echoService
+@Log4j
+@CompileStatic
+abstract class AbstractPollingNotificationAgent {
 
-  @Autowired
-  ObjectMapper objectMapper
+  protected final ObjectMapper objectMapper
+  private final Client jesqueClient
+  protected final EchoEventPoller echoEventPoller
 
-  private long lastCheck = System.currentTimeMillis()
-  abstract long getPollingInterval()
-  abstract String getNotificationType()
-  abstract void handleNotification(List<Map> input)
+  private Scheduler scheduler = Schedulers.io()
+  private Subscription subscription
 
-  final List<NotificationHandler> allNotificationHandler
-  final List<NotificationHandler> agentNotificationHandlers = []
-
-  AbstractPollingNotificationAgent(List<NotificationHandler> notificationHandlers) {
-    this.allNotificationHandler = notificationHandlers
+  AbstractPollingNotificationAgent(ObjectMapper objectMapper,
+                                   EchoEventPoller echoEventPoller,
+                                   Client jesqueClient) {
+    this.objectMapper = objectMapper
+    this.echoEventPoller = echoEventPoller
+    this.jesqueClient = jesqueClient
   }
+
+  abstract long getPollingInterval()
+
+  abstract String getNotificationType()
+
+  protected abstract List<Map> filterEvents(List<Map> input)
 
   @PostConstruct
   void init() {
-    for (handler in allNotificationHandler) {
-      if (handler.handles(getNotificationType())) {
-        agentNotificationHandlers << handler
-      }
-    }
-    Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this, 0, pollingInterval, TimeUnit.SECONDS)
-  }
-
-  @Override
-  void run() {
-    try {
-      def response = echoService.getEvents(notificationType, lastCheck)
-      lastCheck = System.currentTimeMillis()
-      def maps = objectMapper.readValue(response.body.in().text, List)
-      handleNotification maps
-    } catch (e) {
-      log.error("Polling failed (notificationType: ${notificationType}, lastCheck: ${lastCheck}", e)
+    subscription = Observable.interval(pollingInterval, TimeUnit.SECONDS, scheduler).map {
+      def response = echoEventPoller.getEvents(notificationType)
+      objectMapper.readValue(response.body.in().text, List)
+    } doOnError { Throwable err ->
+      log.error "Error when fetching events", err
+    } retry() map {
+      filterEvents(it)
+    } flatMap(Observable.&from) subscribe { Map event ->
+      notify(event)
     }
   }
 
-  void notify(Map input) {
-    for (handler in agentNotificationHandlers) {
-      handler.handle input
-    }
+  @PreDestroy
+  void shutdown() {
+    subscription?.unsubscribe()
+  }
+
+  // TODO: can we just use logical names rather than handler classes?
+  abstract Class<? extends NotificationHandler> handlerType()
+
+  protected final void notify(Map<String, ?> input) {
+    jesqueClient.enqueue(
+      notificationType,
+      new Job(handlerType().name, input)
+    )
+  }
+
+  @VisibleForTesting
+  void setScheduler(Scheduler scheduler) {
+    this.scheduler = scheduler
   }
 }
