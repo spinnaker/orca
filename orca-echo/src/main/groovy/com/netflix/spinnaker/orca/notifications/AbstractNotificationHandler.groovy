@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.PipelineStarter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 
 abstract class AbstractNotificationHandler implements NotificationHandler {
   private final Logger log = LoggerFactory.getLogger(getClass());
@@ -38,6 +39,9 @@ abstract class AbstractNotificationHandler implements NotificationHandler {
   DiscoveryClient discoveryClient
 
   private final Map input
+
+  @Value('${notificationHandlers.enabled:true}')
+  Boolean notificationHandlersEnabled
 
   AbstractNotificationHandler(Map input) {
     this.input = input
@@ -57,13 +61,21 @@ abstract class AbstractNotificationHandler implements NotificationHandler {
   }
 
   boolean isInService() {
-    if (discoveryClient == null) {
-      log.info("no DiscoveryClient, assuming InService")
-      true
-    } else {
-      def remoteStatus = discoveryClient.instanceRemoteStatus
-      log.info("current remote status ${remoteStatus}")
-      remoteStatus == InstanceInfo.InstanceStatus.UP
+    if (!notificationHandlersEnabled) {
+      log.info("NotificationHandlers disabled via configuration")
+      return false
     }
+
+    if (discoveryClient == null) {
+      log.info("No DiscoveryClient found, assuming In Service")
+      return true
+    }
+
+    def remoteStatus = discoveryClient.instanceRemoteStatus
+    if (remoteStatus == InstanceInfo.InstanceStatus.UP) {
+      return true
+    }
+    log.info("NotificationHandlers disabled, current status ${remoteStatus}")
+    return false
   }
 }
