@@ -65,6 +65,7 @@ class BuildJobNotificationHandlerSpec extends Specification {
     handler.pipelineStarter = pipelineStarter
     handler.objectMapper = new OrcaObjectMapper()
     handler.pipelineIndexer = pipelineIndexer
+    handler.notificationHandlersEnabled = true
     return handler
   }
 
