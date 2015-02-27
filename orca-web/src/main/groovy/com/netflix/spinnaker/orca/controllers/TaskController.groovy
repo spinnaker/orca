@@ -29,13 +29,19 @@ class TaskController {
   ExecutionRepository executionRepository
 
   @RequestMapping(value = "/applications/{application}/tasks", method = RequestMethod.GET)
-  List<Orchestration> list(@PathVariable String application) {
-    executionRepository.retrieveOrchestrationsForApplication(application).collect { convert it }.sort { it.startTime ?: it.id }.reverse()
+  OrchestrationResults list(@PathVariable String application, @RequestParam(value = "page", required = false) Integer pageNumber, @RequestParam(value = "pageSize", required = false) Integer pageSize) {
+    List<OrchestrationViewModel> matches = executionRepository.retrieveOrchestrationsForApplication(application)
+      .collect { convert it }
+      .sort { it.startTime ?: it.id }
+      .reverse()
+
+    OrchestrationResults.build(matches, pageNumber, pageSize)
   }
 
   @RequestMapping(value = "/tasks", method = RequestMethod.GET)
-  List<OrchestrationViewModel> list() {
-    executionRepository.retrieveOrchestrations().collect { convert it }
+  OrchestrationResults list(@RequestParam(value = "page", required = false) Integer pageNumber, @RequestParam(value = "pageSize", required = false) Integer pageSize) {
+    List<OrchestrationViewModel> matches = executionRepository.retrieveOrchestrations().collect { convert it }
+    OrchestrationResults.build(matches, pageNumber, pageSize)
   }
 
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.GET)
@@ -75,7 +81,7 @@ class TaskController {
     executionRepository.retrievePipelinesForApplication(application)
   }
 
-  private OrchestrationViewModel convert(Orchestration orchestration) {
+  private static OrchestrationViewModel convert(Orchestration orchestration) {
     def variables = [:]
       for (stage in orchestration.stages) {
         for (entry in stage.context.entrySet()) {
@@ -85,5 +91,33 @@ class TaskController {
     new OrchestrationViewModel(id: orchestration.id, name: orchestration.description, status: orchestration.getStatus(),
       variables: variables.entrySet(), steps: orchestration.stages.tasks.flatten(), startTime: orchestration.startTime,
       endTime: orchestration.endTime)
+  }
+
+  static class OrchestrationResults {
+    List<OrchestrationViewModel> results
+    Integer totalMatches
+    Integer pageNumber
+    Integer pageSize
+
+    static OrchestrationResults build(List<OrchestrationViewModel> results, Integer pageNumber, Integer pageSize) {
+      new OrchestrationResults(
+        results: paginate(results, pageNumber, pageSize),
+        totalMatches: results.size(),
+        pageNumber: pageNumber,
+        pageSize: pageSize
+      )
+    }
+
+    private static List<OrchestrationViewModel> paginate(List<OrchestrationViewModel> matches, Integer pageNumber, Integer pageSize) {
+      if (!pageNumber || pageNumber < 1 || !pageSize || pageSize < 1) {
+        return matches
+      }
+
+      Integer startingIndex = pageSize * (pageNumber - 1)
+      Integer endIndex = Math.min(pageSize * pageNumber, matches.size())
+      boolean hasResults = startingIndex < endIndex
+      List<OrchestrationViewModel> toReturn = hasResults ? matches[startingIndex..endIndex - 1] : new ArrayList<OrchestrationViewModel>()
+      toReturn
+    }
   }
 }
