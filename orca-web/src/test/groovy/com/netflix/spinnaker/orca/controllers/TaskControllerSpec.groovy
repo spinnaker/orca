@@ -16,7 +16,8 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import com.fasterxml.jackson.core.type.TypeReference
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.model.OrchestrationViewModel
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
@@ -24,15 +25,11 @@ import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.OrchestrationStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import org.springframework.batch.core.JobExecution
-import org.springframework.batch.core.JobInstance
-import org.springframework.batch.core.JobParameters
-import org.springframework.batch.core.explore.JobExplorer
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import spock.lang.Unroll
 
 class TaskControllerSpec extends Specification {
 
@@ -78,7 +75,7 @@ class TaskControllerSpec extends Specification {
 
     then:
     executionRepository.retrieveOrchestrations() >> [new Orchestration(stages: [new OrchestrationStage(tasks: [new DefaultTask(name: 'jobOne'), new DefaultTask(name: 'jobTwo')])])]
-    with(new ObjectMapper().readValue(response.contentAsString, new TypeReference<List<OrchestrationViewModel>>() {}).first()) {
+    with(new ObjectMapper().readValue(response.contentAsString, TaskController.OrchestrationResults).results.first()) {
       steps.name == ['jobOne', 'jobTwo']
     }
 
@@ -109,12 +106,12 @@ class TaskControllerSpec extends Specification {
     then:
     1 * executionRepository.retrieveOrchestrations() >> []
     response.status == 200
-    response.contentAsString == '[]'
+    new ObjectMapper().readValue(response.contentAsString, TaskController.OrchestrationResults).results == []
   }
 
   void '/applications/{application}/tasks filters tasks by application'() {
     when:
-    def response = mockMvc.perform(get("/applications/$app/tasks")).andReturn().response
+    mockMvc.perform(get("/applications/$app/tasks")).andReturn().response
 
     then:
     1 * executionRepository.retrieveOrchestrationsForApplication(app)
@@ -122,6 +119,68 @@ class TaskControllerSpec extends Specification {
     where:
     app = "test"
   }
+
+  @Unroll
+  void 'get all tasks: #description'() {
+    when:
+    def response = mockMvc.perform(get("/tasks?$query")).andReturn().response
+    List results = new ObjectMapper().readValue(response.contentAsString, TaskController.OrchestrationResults).results
+
+    then:
+    1 * executionRepository.retrieveOrchestrations() >> [
+      new Orchestration(stages: [new OrchestrationStage(startTime: 1)], description: 'a'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 2)], description: 'b'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 3)], description: 'c'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 4)], description: 'd'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 5)], description: 'e')
+    ]
+    results.size() == expected.size()
+    results.name == expected
+
+    where:
+    query               || expected                  | description
+    ''                  || ['a', 'b', 'c', 'd', 'e'] | 'no parameters supplied, all results returned'
+    'page=1'            || ['a', 'b', 'c', 'd', 'e'] | 'only one pagination parameter supplied, all results returned'
+    'page=0&pageSize=2' || ['a', 'b', 'c', 'd', 'e'] | 'only valid pageSize parameter supplied, all results returned'
+    'page=1&pageSize=0' || ['a', 'b', 'c', 'd', 'e'] | 'only valid pageNumber parameter supplied, all results returned'
+    'page=1&pageSize=2' || ['a', 'b']                | 'valid parameters supplied, first page of results'
+    'page=2&pageSize=2' || ['c', 'd']                | 'valid parameters supplied, second page of results'
+    'page=3&pageSize=2' || ['e']                     | 'valid parameters supplied, third page of results'
+    'page=1&pageSize=5' || ['a', 'b', 'c', 'd', 'e'] | 'valid parameters supplied, exact number of results'
+    'page=1&pageSize=9' || ['a', 'b', 'c', 'd', 'e'] | 'valid parameters supplied, partial number of results available'
+  }
+
+  @Unroll
+  void 'get all application tasks: #description'() {
+    when:
+    def response = mockMvc.perform(get("/applications/app/tasks?$query")).andReturn().response
+    List results = new ObjectMapper().readValue(response.contentAsString, TaskController.OrchestrationResults).results
+
+    then:
+    1 * executionRepository.retrieveOrchestrationsForApplication('app') >> [
+      new Orchestration(stages: [new OrchestrationStage(startTime: 5)], description: 'a'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 4)], description: 'b'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 3)], description: 'c'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 2)], description: 'd'),
+      new Orchestration(stages: [new OrchestrationStage(startTime: 1)], description: 'e')
+    ]
+    results.size() == expected.size()
+    results.name == expected
+
+    where:
+    query               || expected                  | description
+    ''                  || ['a', 'b', 'c', 'd', 'e'] | 'no parameters supplied, all results returned'
+    'page=1'            || ['a', 'b', 'c', 'd', 'e'] | 'only one pagination parameter supplied, all results returned'
+    'page=0&pageSize=2' || ['a', 'b', 'c', 'd', 'e'] | 'only valid pageSize parameter supplied, all results returned'
+    'page=1&pageSize=0' || ['a', 'b', 'c', 'd', 'e'] | 'only valid pageNumber parameter supplied, all results returned'
+    'page=1&pageSize=2' || ['a', 'b']                | 'valid parameters supplied, first page of results'
+    'page=2&pageSize=2' || ['c', 'd']                | 'valid parameters supplied, second page of results'
+    'page=3&pageSize=2' || ['e']                     | 'valid parameters supplied, third page of results'
+    'page=1&pageSize=5' || ['a', 'b', 'c', 'd', 'e'] | 'valid parameters supplied, exact number of results'
+    'page=1&pageSize=9' || ['a', 'b', 'c', 'd', 'e'] | 'valid parameters supplied, partial number of results available'
+  }
+
+
 
   void '/pipelines should return a list of pipelines'() {
     when:
