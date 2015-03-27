@@ -17,11 +17,18 @@
 package com.netflix.spinnaker.orca.notifications.scheduling
 
 import com.netflix.spinnaker.orca.notifications.AbstractNotificationHandler
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import groovy.transform.CompileStatic
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  *
  */
+@CompileStatic
 class SuspendedPipelinesNotificationHandler extends AbstractNotificationHandler {
+
+  @Autowired
+  ExecutionRepository executionRepository
 
   String handlerType = SuspendedPipelinesPollingNotificationAgent.NOTIFICATION_TYPE
 
@@ -32,7 +39,7 @@ class SuspendedPipelinesNotificationHandler extends AbstractNotificationHandler 
   @Override
   void handle(Map pipeline) {
     try {
-      pipelineStarter.restart(pipeline.id)
+      pipelineStarter.resume(executionRepository.retrievePipeline(pipeline.id as String))
     } catch (e) {
       e.printStackTrace()
       throw e

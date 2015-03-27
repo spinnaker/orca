@@ -26,7 +26,6 @@ import net.greghaines.jesque.client.Client
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import rx.functions.Func1
-
 /**
  *
  */
