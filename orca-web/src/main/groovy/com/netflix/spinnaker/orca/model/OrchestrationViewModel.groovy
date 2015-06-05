@@ -27,7 +27,6 @@ class OrchestrationViewModel {
   ExecutionStatus status
   def variables
   List<Task> steps
-  Long buildTime
   Long startTime
   Long endTime
 }

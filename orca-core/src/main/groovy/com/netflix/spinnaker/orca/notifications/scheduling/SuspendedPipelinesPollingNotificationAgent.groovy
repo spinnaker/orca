@@ -15,34 +15,24 @@
  */
 
 package com.netflix.spinnaker.orca.notifications.scheduling
-
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationHandler
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import groovy.util.logging.Slf4j
 import net.greghaines.jesque.client.Client
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
-import rx.Observable
 import rx.functions.Func1
 
-@Slf4j
 @Component
-@ConditionalOnExpression(value = '${pollers.suspendedPipelines.enabled:true}')
 class SuspendedPipelinesPollingNotificationAgent extends AbstractPollingNotificationAgent {
 
   static final String NOTIFICATION_TYPE = "suspendedPipeline"
+  final long pollingInterval = 30
   final String notificationType = NOTIFICATION_TYPE
-
-  @Value('${pollers.suspendedPipelines.intervalMs:120000}')
-  long pollingIntervalMs
 
   @Autowired
   ExecutionRepository executionRepository
@@ -53,29 +43,25 @@ class SuspendedPipelinesPollingNotificationAgent extends AbstractPollingNotifica
   }
 
   @Override
-  long getPollingInterval() {
-    return pollingIntervalMs / 1000
+  protected List<Map> filterEvents(List<Map> pipelines) {
+    long now = new Date().time
+    def filteredEvents = pipelines.findAll {
+      (it.status == ExecutionStatus.SUSPENDED.name()) &&
+      it.stages.find { Map stage -> now >= extractScheduledTime(stage) } != null
+    } as List<Map>
+
+    return filteredEvents
   }
 
   @Override
-  protected Func1<Execution, Boolean> filter() {
-    return new Func1<Execution, Boolean>() {
+  protected Func1<Long, List<Map>> getEvents() {
+    return new Func1<Long, List<Map>>() {
       @Override
-      Boolean call(Execution execution) {
-        long now = new Date().time
-        return execution.status == ExecutionStatus.SUSPENDED && execution.stages.find {
-          now >= extractScheduledTime(it)
-        }
+      List<Map> call(Long aLong) {
+        List<Pipeline> pipelines = executionRepository.retrievePipelines()
+        return objectMapper.convertValue(pipelines, new TypeReference<List<Map>>() { })
       }
     }
-  }
-
-  @Override
-  protected Observable<Execution> getEvents() {
-    log.info("Starting Suspended Pipelines Polling Cycle")
-    return executionRepository.retrievePipelines().doOnCompleted({
-      log.info("Finished Suspended Pipelines Polling Cycle")
-    })
   }
 
   @Override
@@ -83,13 +69,13 @@ class SuspendedPipelinesPollingNotificationAgent extends AbstractPollingNotifica
     return SuspendedPipelinesNotificationHandler
   }
 
-  private static long extractScheduledTime(PipelineStage stage) {
+  private long extractScheduledTime(Map stage) {
     long scheduledTime = Long.MAX_VALUE
     try {
       scheduledTime = stage.scheduledTime != null && stage.scheduledTime as long != 0L ?
-        new Date(stage.scheduledTime as long).time : Long.MAX_VALUE
+          new Date(stage.scheduledTime as long).time : Long.MAX_VALUE
     } catch (Exception e) {
-      log.error("Unable to extract scheduled time", e)
+      e.printStackTrace()
     }
     return scheduledTime
   }

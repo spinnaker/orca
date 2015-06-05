@@ -42,7 +42,7 @@ interface ExecutionStore<T extends Execution> {
 
   Stage<T> retrieveStage(String id)
 
-  rx.Observable<T> all()
+  List<T> all()
 
-  rx.Observable<T> allForApplication(String application)
+  List<T> allForApplication(String application)
 }
