@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.ParallelStage
 import com.netflix.spinnaker.orca.pipeline.model.AbstractStage
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
@@ -64,6 +63,7 @@ class ParallelDeployStage extends ParallelStage {
         buildStep(stage, "setupParallelDeploy", new Task() {
           @Override
           TaskResult execute(Stage ignored) {
+            log.info("Setup Parallel Deploy")
             return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
           }
         })
@@ -85,7 +85,7 @@ class ParallelDeployStage extends ParallelStage {
       account: cluster.account ?: stage.context.account,
       cluster: cluster,
       type   : type,
-      name   : "Deploy in ${(cluster.availabilityZones as Map).keySet()[0]}"
+      name   : "Deploy in ${(cluster.availabilityZones as Map).keySet()[0]}" as String
     ]
   }
 

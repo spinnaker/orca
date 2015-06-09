@@ -15,6 +15,8 @@
  */
 
 package com.netflix.spinnaker.orca.pipeline.stages
+
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
@@ -65,7 +67,7 @@ class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
 
   void 'stage should be scheduled at #expectedTime when triggered at #scheduledTime with time windows #timeWindows'() {
     when:
-    Date result = SuspendExecutionDuringTimeWindowTask.calculateScheduledTime(scheduledTime, timeWindows)
+    Date result = new SuspendExecutionDuringTimeWindowTask().calculateScheduledTime(scheduledTime, timeWindows)
 
     then:
     result.equals(expectedTime)
@@ -117,7 +119,7 @@ class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
 
   void 'stage should be scheduled at #expectedTime when triggered at #scheduledTime with time windows #stage in stage context'() {
     when:
-    Date result = SuspendExecutionDuringTimeWindowTask.getTimeInWindow(stage, scheduledTime)
+    Date result = new SuspendExecutionDuringTimeWindowTask().getTimeInWindow(stage, scheduledTime)
 
     then:
     result.equals(expectedTime)
@@ -160,9 +162,57 @@ class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
     date("02/13 16:01:00")  | date("02/14 10:00:00")  | stage([window("10:00", "11:00"), window("13:00", "14:00"), window("15:00", "16:00")]) //*
   }
 
-//  def "pipline should be STOPPED if restrictExecutionDuringWindow is set to true and current time is not within window"() {
-//
-//  }
+  void "should run for `periodsToWaitBeforeSuspended` invocations before SUSPEND"() {
+    given:
+    def task = Spy(SuspendExecutionDuringTimeWindowTask) {
+      getTimeInWindow(_, _) >> { new Date() + 1 }
+    }
+
+    def otherPipelineStage = new PipelineStage()
+    otherPipelineStage.status = ExecutionStatus.NOT_STARTED
+
+    def stage = new PipelineStage(new Pipeline(stages: [otherPipelineStage]), "")
+
+    expect:
+    (1..(SuspendExecutionDuringTimeWindowTask.PERIODS_TO_WAIT_BEFORE_SUSPENDED - 1)).each {
+      def result = task.execute(stage)
+      assert result.stageOutputs.invocationCount == it
+      assert result.status == ExecutionStatus.RUNNING
+
+      stage = new PipelineStage(new Pipeline(stages: [otherPipelineStage]), "", new HashMap(result.stageOutputs))
+    }
+
+    def result = task.execute(stage)
+    result.status == ExecutionStatus.SUSPENDED
+    result.stageOutputs.invocationCount == 0
+  }
+
+  void "should reset `invocationCount` if another stage is RUNNING"() {
+    given:
+    def task = Spy(SuspendExecutionDuringTimeWindowTask) {
+      getTimeInWindow(_, _) >> { new Date() + 1 }
+    }
+
+    def otherPipelineStage = new PipelineStage()
+    otherPipelineStage.status = ExecutionStatus.NOT_STARTED
+
+    def stage = new PipelineStage(new Pipeline(stages: [otherPipelineStage]), "")
+    (1..(SuspendExecutionDuringTimeWindowTask.PERIODS_TO_WAIT_BEFORE_SUSPENDED - 3)).each {
+      def result = task.execute(stage)
+      assert result.stageOutputs.invocationCount == it
+      assert result.status == ExecutionStatus.RUNNING
+
+      stage = new PipelineStage(new Pipeline(stages: [otherPipelineStage]), "", new HashMap(result.stageOutputs))
+    }
+
+    when:
+    otherPipelineStage.status = ExecutionStatus.RUNNING
+    def result = task.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.RUNNING
+    result.stageOutputs.invocationCount == 0
+  }
 
   // helper methods
   // ------------------------------------------------------------------------------------------------------------------

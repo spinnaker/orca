@@ -21,19 +21,24 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 
 @Component
-@CompileStatic
 class WaitForRequisiteCompletionTask implements RetryableTask {
   long backoffPeriod = 5000
   long timeout = 7200000
 
   @Override
   TaskResult execute(Stage stage) {
+    def suspendedStages = stage.execution.stages.findAll { it.tasks*.status.contains(SUSPENDED) }
+    if (suspendedStages) {
+      // Another stage in this pipeline is suspended, we need to suspend otherwise it will never wake up
+      stage.scheduledTime = suspendedStages*.scheduledTime.min()
+      return new DefaultTaskResult(SUSPENDED)
+    }
+
     boolean allRequisiteStagesAreComplete = true
 
     def requisiteIds = stage.context.requisiteIds as List<String>
