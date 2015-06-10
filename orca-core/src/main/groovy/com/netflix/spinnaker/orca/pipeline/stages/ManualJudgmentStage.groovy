@@ -42,7 +42,7 @@ class ManualJudgmentStage extends LinearStage {
   @Component
   @VisibleForTesting
   public static class WaitForManualJudgmentTask implements RetryableTask {
-    long backoffPeriod = 1000
+    long backoffPeriod = 30000
     long timeout = Long.MAX_VALUE
 
     @Override

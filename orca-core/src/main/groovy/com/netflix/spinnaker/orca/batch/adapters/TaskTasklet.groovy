@@ -81,6 +81,7 @@ class TaskTasklet implements Tasklet {
         def stageOutputs = new HashMap(result.stageOutputs)
         if (result.status.complete) {
           stageOutputs.put('batch.task.id.' + taskName(chunkContext), chunkContext.stepContext.stepExecution.id)
+          stageOutputs.put('batch.job.id', chunkContext.stepContext.stepExecution.jobExecution.id)
         }
 
         storeExecutionResults(new DefaultTaskResult(result.status, stageOutputs, result.globalOutputs), stage, chunkContext)

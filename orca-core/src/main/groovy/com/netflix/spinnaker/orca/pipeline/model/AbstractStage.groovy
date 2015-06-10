@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.pipeline.model
 
 import com.fasterxml.jackson.annotation.JsonBackReference
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
@@ -29,7 +28,7 @@ import groovy.transform.CompileStatic
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import static ExecutionStatus.NOT_STARTED
+import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static java.util.Collections.EMPTY_MAP
 
 @CompileStatic
@@ -138,6 +137,10 @@ abstract class AbstractStage<T extends Execution> implements Stage<T>, Serializa
     }
     mergeCommit ptr, obj
     context = objectMapper.convertValue(rootNode, LinkedHashMap)
+  }
+
+  ExecutionStatus getStatus() {
+    return status
   }
 
   private JsonNode getPointer(String pointer, ObjectNode rootNode = contextToNode()) {

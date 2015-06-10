@@ -17,13 +17,17 @@
 package com.netflix.spinnaker.orca.pipeline.stages
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.DefaultTaskResult
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
+
+import static com.netflix.spinnaker.orca.ExecutionStatus.*
 
 /**
  * A stage that suspends execution of pipeline if the current stage is restricted to run during a time window and
@@ -46,7 +50,12 @@ class RestrictExecutionDuringTimeWindow extends LinearStage {
 
   @Component
   @VisibleForTesting
-  private static class SuspendExecutionDuringTimeWindowTask implements com.netflix.spinnaker.orca.Task {
+  static class SuspendExecutionDuringTimeWindowTask implements RetryableTask {
+    public static final int PERIODS_TO_WAIT_BEFORE_SUSPENDED = 5
+
+    long backoffPeriod = 6000
+    long timeout = 3600000
+
 
     private static final int HOUR_OF_DAY = Calendar.HOUR_OF_DAY
     private static final int MINUTE = Calendar.MINUTE
@@ -67,13 +76,26 @@ class RestrictExecutionDuringTimeWindow extends LinearStage {
       try {
         scheduledTime = getTimeInWindow(stage, getCurrentDate())
       } catch (Exception e) {
-        return new DefaultTaskResult(ExecutionStatus.FAILED, [failureReason: 'Exception occurred while calculating time window: ' + e.message])
+        return new DefaultTaskResult(FAILED, [failureReason: 'Exception occurred while calculating time window: ' + e.message])
       }
       if (now >= scheduledTime) {
-        return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+        return new DefaultTaskResult(SUCCEEDED)
       } else {
         stage.scheduledTime = scheduledTime.time
-        return new DefaultTaskResult(ExecutionStatus.SUSPENDED)
+        Long invocationCount = (stage.context.invocationCount as Long) ?: 0
+
+        def allStagesNotMe = stage.execution.stages.findAll {
+          ![MAYO_CONFIG_NAME, WaitForRequisiteCompletionStage.MAYO_CONFIG_TYPE].contains(it.type)
+        }
+        if (!allStagesNotMe*.status.contains(RUNNING)) {
+          invocationCount++
+          def status = (invocationCount >= PERIODS_TO_WAIT_BEFORE_SUSPENDED) ? SUSPENDED : RUNNING
+          return new DefaultTaskResult(status, [
+            invocationCount: (status == SUSPENDED) ? 0 : invocationCount
+          ])
+        }
+
+        return new DefaultTaskResult(RUNNING, [invocationCount: 0])
       }
     }
 
@@ -83,8 +105,9 @@ class RestrictExecutionDuringTimeWindow extends LinearStage {
      * @param scheduledTime
      * @return
      */
+    @PackageScope
     @VisibleForTesting
-    private static Date getTimeInWindow(Stage stage, Date scheduledTime) {  // Passing in the current date to allow unit testing
+    Date getTimeInWindow(Stage stage, Date scheduledTime) {  // Passing in the current date to allow unit testing
       try {
         Map restrictedExecutionWindow = stage.context.restrictedExecutionWindow as Map
         List whitelist = restrictedExecutionWindow.whitelist as List<Map>

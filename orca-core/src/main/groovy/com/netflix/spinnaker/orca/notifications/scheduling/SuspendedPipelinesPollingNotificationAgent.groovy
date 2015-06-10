@@ -41,7 +41,7 @@ class SuspendedPipelinesPollingNotificationAgent extends AbstractPollingNotifica
   static final String NOTIFICATION_TYPE = "suspendedPipeline"
   final String notificationType = NOTIFICATION_TYPE
 
-  @Value('${pollers.suspendedPipelines.intervalMs:120000}')
+  @Value('${pollers.suspendedPipelines.intervalMs:30000}')
   long pollingIntervalMs
 
   @Autowired
@@ -64,7 +64,7 @@ class SuspendedPipelinesPollingNotificationAgent extends AbstractPollingNotifica
       Boolean call(Execution execution) {
         long now = new Date().time
         return execution.status == ExecutionStatus.SUSPENDED && execution.stages.find {
-          now >= extractScheduledTime(it)
+          it.status == ExecutionStatus.SUSPENDED && now >= extractScheduledTime(it)
         }
       }
     }
