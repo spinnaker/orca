@@ -21,7 +21,7 @@ import spock.lang.Specification
 import spock.lang.Subject
 
 @Subject(ExecutionStore)
-abstract class PipelineStoreTck<T extends ExecutionStore> extends Specification {
+abstract class PipelineStoreTck<T extends ExecutionStore<Pipeline>> extends Specification {
 
   @Subject T pipelineStore
 
