@@ -74,10 +74,10 @@ class OperationsControllerSpec extends Specification {
     mayo.getPipelines('foo') >> { [] }
 
     when:
-    controller.orchestrate("foo", "123", "Unknown")
+    controller.orchestrateById('foo', '123', [type: 'cron', user: 'Anonymous'])
 
     then:
-    thrown(OperationsController.PipelineNotFoundException)
+    thrown(OperationsController.PipelineConfigNotFoundException)
   }
 
   def "invalid pipeline id returns a bad request response"() {
@@ -85,25 +85,22 @@ class OperationsControllerSpec extends Specification {
     mayo.getPipelines('foo') >> { [ [id: '456', name: 'bar'] ] }
 
     when:
-    controller.orchestrate("foo", "123", "Unknown")
+    controller.orchestrateById('foo', '123', [type: 'cron', user: 'Anonymous'])
 
     then:
-    thrown(OperationsController.PipelineNotFoundException)
+    thrown(OperationsController.PipelineConfigNotFoundException)
   }
 
   def "valid application and pipeline id should trigger the pipeline"() {
     given:
     mayo.getPipelines('foo') >> { [ [id: '123', name: 'bar'] ] }
-    controller.orchestrate([id: '123', name: 'bar'], "Unknown") >> {
-      [ref: '123']
-    }
-    pipelineStarter.start(_) >> { [id: '123', name: 'bar'] }
 
     when:
-    controller.orchestrate("foo", "123", "Unknown")
+    controller.orchestrateById('foo', '123', [type: 'cron', user: 'Anonymous'])
 
     then:
     noExceptionThrown()
+    1 * pipelineStarter.start(_) >> { [id: '123', name: 'bar'] }
   }
 
   def "uses trigger details from pipeline if present"() {

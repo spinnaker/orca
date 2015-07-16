@@ -62,24 +62,24 @@ class OperationsController {
   @Autowired
   ObjectMapper objectMapper
 
-  @RequestMapping(value = "/applications/{application}/startPipeline/{id}", method = RequestMethod.POST)
-  Map<String, String> orchestrate(@PathVariable String application,
-                                  @PathVariable String id,
-                                  @RequestParam(value = "user", required = false) String user) {
-    log.info("Getting pipeline config for ${id} within application ${application}...")
+  @RequestMapping(value = "/orchestrate/{application}/{pipelineId}", method = RequestMethod.POST)
+  Map<String, String> orchestrateById(@PathVariable String application,
+                                      @PathVariable String pipelineId,
+                                      @RequestBody Map trigger) {
+    log.info("Getting pipeline config for ${pipelineId} within application ${application}...")
     List<Map<String, Object>> pipelines = mayoService.getPipelines(application)
-    Map<String, Object> pipeline = pipelines?.find { it.id == id }
+    Map<String, Object> pipeline = pipelines?.find { it.id == pipelineId }
     if (pipeline) {
-      startPipeline(pipeline, user)
+      pipeline.trigger = trigger
+      startPipeline(pipeline, trigger.user)
     } else {
-      throw new PipelineNotFoundException("No pipeline found with id ${id} for application ${application}")
+      throw new PipelineConfigNotFoundException("No pipeline found with id ${pipelineId} for application ${application}")
     }
   }
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, String> orchestrate(@RequestBody Map pipeline,
                                   @RequestParam(value = "user", required = false) String user) {
-
     startPipeline(pipeline, user)
   }
 
@@ -213,6 +213,5 @@ class OperationsController {
 
   @InheritConstructors
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  static class PipelineNotFoundException extends IllegalArgumentException {}
-
+  static class PipelineConfigNotFoundException extends IllegalArgumentException {}
 }
