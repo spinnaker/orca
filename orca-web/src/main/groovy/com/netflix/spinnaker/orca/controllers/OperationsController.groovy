@@ -15,16 +15,24 @@
  */
 
 package com.netflix.spinnaker.orca.controllers
-
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.igor.IgorService
+import com.netflix.spinnaker.orca.mayo.MayoService
 import com.netflix.spinnaker.orca.pipeline.OrchestrationStarter
 import com.netflix.spinnaker.orca.pipeline.PipelineStarter
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.env.Environment
-import org.springframework.web.bind.annotation.*
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @Slf4j
@@ -36,13 +44,8 @@ class OperationsController {
   static final String PREFERRED_ARTIFACTS_PROP = OperationsController.simpleName + ".preferredArtifacts"
   static final String PREFERRED_ARTIFACTS_DEFAULT = ['deb', 'rpm', 'properties', 'yml', 'json', 'xml', 'html', 'txt'].join(',')
 
-  int getMaxArtifacts() {
-    environment.getProperty(MAX_ARTIFACTS_PROP, Integer, MAX_ARTIFACTS_DEFAULT)
-  }
-
-  List<String> getPreferredArtifacts() {
-    environment.getProperty(PREFERRED_ARTIFACTS_PROP, String, PREFERRED_ARTIFACTS_DEFAULT).split(',')
-  }
+  @Autowired
+  MayoService mayoService
 
   @Autowired
   PipelineStarter pipelineStarter
@@ -59,11 +62,53 @@ class OperationsController {
   @Autowired
   ObjectMapper objectMapper
 
-  @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
-  Map<String, String> orchestrate(
-    @RequestBody Map pipeline,
-    @RequestParam(value = "user", required = false) String user) {
+  @RequestMapping(value = "/applications/{application}/startPipeline/{id}", method = RequestMethod.POST)
+  Map<String, String> orchestrate(@PathVariable String application,
+                                  @PathVariable String id,
+                                  @RequestParam(value = "user", required = false) String user) {
+    log.info("Getting pipeline config for ${id} within application ${application}...")
+    List<Map<String, Object>> pipelines = mayoService.getPipelines(application)
+    Map<String, Object> pipeline = pipelines?.find { it.id == id }
+    if (pipeline) {
+      startPipeline(pipeline, user)
+    } else {
+      throw new PipelineNotFoundException("No pipeline found with id ${id} for application ${application}")
+    }
+  }
 
+  @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
+  Map<String, String> orchestrate(@RequestBody Map pipeline,
+                                  @RequestParam(value = "user", required = false) String user) {
+
+    startPipeline(pipeline, user)
+  }
+
+  @RequestMapping(value = "/ops", method = RequestMethod.POST)
+  Map<String, String> ops(@RequestBody List<Map> input) {
+    startTask([application: null, name: null, appConfig: null, stages: input])
+  }
+
+  @RequestMapping(value = "/ops", consumes = "application/context+json", method = RequestMethod.POST)
+  Map<String, String> ops(@RequestBody Map input) {
+    startTask([application: input.application, name: input.description, appConfig: input.appConfig, stages: input.job])
+  }
+
+  @RequestMapping(value = "/health", method = RequestMethod.GET)
+  Boolean health() {
+    true
+  }
+
+  // ***
+
+  int getMaxArtifacts() {
+    environment.getProperty(MAX_ARTIFACTS_PROP, Integer, MAX_ARTIFACTS_DEFAULT)
+  }
+
+  List<String> getPreferredArtifacts() {
+    environment.getProperty(PREFERRED_ARTIFACTS_PROP, String, PREFERRED_ARTIFACTS_DEFAULT).split(',')
+  }
+
+  private Map<String, String> startPipeline(Map pipeline, String user) {
     def json = objectMapper.writeValueAsString(pipeline)
     log.info('received pipeline {}:{}', pipeline.id, json)
 
@@ -96,6 +141,20 @@ class OperationsController {
     def processedPipeline = ContextParameterProcessor.process(pipeline, augmentedContext)
 
     startPipeline(processedPipeline)
+  }
+
+  private Map<String, String> startPipeline(Map config) {
+    def json = objectMapper.writeValueAsString(config)
+    def pipeline = pipelineStarter.start(json)
+    log.info('requested pipeline {}:{}', pipeline.id, json)
+    [ref: "/pipelines/${pipeline.id}".toString()]
+  }
+
+  private Map<String, String> startTask(Map config) {
+    def json = objectMapper.writeValueAsString(config)
+    def pipeline = orchestrationStarter.start(json)
+    log.info('requested task {}:{}', pipeline.id, json)
+    [ref: "/tasks/${pipeline.id}".toString()]
   }
 
   private void getBuildInfo(Map trigger) {
@@ -152,32 +211,8 @@ class OperationsController {
     }.take(maxArtifacts)
   }
 
-  @RequestMapping(value = "/ops", method = RequestMethod.POST)
-  Map<String, String> ops(@RequestBody List<Map> input) {
-    startTask([application: null, name: null, appConfig: null, stages: input])
-  }
+  @InheritConstructors
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  static class PipelineNotFoundException extends IllegalArgumentException {}
 
-  @RequestMapping(value = "/ops", consumes = "application/context+json", method = RequestMethod.POST)
-  Map<String, String> ops(@RequestBody Map input) {
-    startTask([application: input.application, name: input.description, appConfig: input.appConfig, stages: input.job])
-  }
-
-  @RequestMapping(value = "/health", method = RequestMethod.GET)
-  Boolean health() {
-    true
-  }
-
-  private Map<String, String> startPipeline(Map config) {
-    def json = objectMapper.writeValueAsString(config)
-    def pipeline = pipelineStarter.start(json)
-    log.info('requested pipeline {}:{}', pipeline.id, json)
-    [ref: "/pipelines/${pipeline.id}".toString()]
-  }
-
-  private Map<String, String> startTask(Map config) {
-    def json = objectMapper.writeValueAsString(config)
-    def pipeline = orchestrationStarter.start(json)
-    log.info('requested task {}:{}', pipeline.id, json)
-    [ref: "/tasks/${pipeline.id}".toString()]
-  }
 }
