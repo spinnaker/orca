@@ -86,7 +86,7 @@ class TargetReferenceSupport {
     }
 
     def names = Names.parseName(config.cluster ?: config.asgName)
-    def existingServerGroups = getExistingServerGroups(names.app, config.credentials, names.cluster, config.providerType)
+    def existingServerGroups = getExistingServerGroups(names.app, config.credentials, names.cluster, config.cloudProvider ?: config.providerType)
     if (!existingServerGroups) {
       if (isDynamicallyBound(stage)) {
         return config.locations.collect {
@@ -149,8 +149,10 @@ class TargetReferenceSupport {
   }
 
   TargetReference getDynamicallyBoundTargetAsgReference(Stage stage) {
+    // TODO(ttomsu): This is still ugly - find a way to clean up regional vs. zonal resources.
+    def locations = stage.context.regions ?: stage.context.zones
     def target = getTargetAsgReferences(stage).find {
-      ((List) stage.context.regions).contains(it.region)
+      ((List) locations)?.contains(it.region)
     }
     if (!target.asg) {
       throw new TargetReferenceNotFoundException("No target found for cluster '${target.cluster}' in region '${target.region}'")
@@ -171,7 +173,7 @@ class TargetReferenceSupport {
   }
 
   Map<String, List<Map>> getServerGroupsByLocation(TargetReferenceConfiguration config, List<Map> existingServerGroups) {
-    if (config.providerType == "gce") {
+    if (config.cloudProvider == "gce") {
       return existingServerGroups.groupBy { Map sg -> sg.zones[0] }
     }
     return existingServerGroups.groupBy { Map sg -> sg.region }
@@ -184,9 +186,9 @@ class TargetReferenceSupport {
       config.target == TargetReferenceConfiguration.Target.oldest_asg_dynamic
   }
 
-  List<Map> getExistingServerGroups(String app, String account, String cluster, String providerType) {
+  List<Map> getExistingServerGroups(String app, String account, String cluster, String cloudProvider) {
     try {
-      def response = oort.getCluster(app, account, cluster, providerType)
+      def response = oort.getCluster(app, account, cluster, cloudProvider)
       def json = response.body.in().text
       def map = mapper.readValue(json, Map)
       map.serverGroups as List<Map>

@@ -114,7 +114,7 @@ class ResizeSupportSpec extends Specification {
 
   def "should use GCE-specific modifications"() {
     setup:
-      context.provider = "gce"
+      context.cloudProvider = "gce"
       context.scaleNum = 2
       context.action = "scale_up"
       context.target = "current_asg_dynamic"
@@ -131,15 +131,15 @@ class ResizeSupportSpec extends Specification {
         action         : "scale_up",
         asgName        : "testapp-asg-v001",
         capacity       : [min:12, desired:12, max:12],
+        cloudProvider  : "gce",
         cluster        : "testapp-asg",
         credentials    : "test",
         numReplicas    : 12,
-        provider       : "gce",
         regions        : ["us-west-1"],
         replicaPoolName: "testapp-asg-v001",
         scaleNum       : 2,
         target         : "current_asg_dynamic",
-        zones          : ["north-pole"],
+        zone           : "north-pole", // TODO(ttomsu): should this be zones?
         asgName        : "testapp-asg-v001",
         capacity       : [min: 12, desired: 12, max: 12]
       ]

@@ -35,6 +35,8 @@ import static com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwne
 @CompileStatic
 abstract class LinearStage extends StageBuilder implements StepProvider {
 
+  protected boolean newCloudProviderStyle = false
+
   LinearStage(String name) {
     super(name)
   }
