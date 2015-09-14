@@ -88,7 +88,7 @@ class ResizeSupport {
         description.capacity = mergeConfiguredCapacityWithCurrent(capacity, currentMin, currentDesired, currentMax)
       }
 
-      if (description.provider == "gce") {
+      if (description.provider == "gce" || description.cloudProvider == "gce") {
         augmentDescriptionForGCE(description, target)
       }
       descriptions[asg.name as String] = description
@@ -125,7 +125,7 @@ class ResizeSupport {
   }
 
   private augmentDescriptionForGCE(Map description, TargetReference target) {
-    description.zones = target.asg.zones
+    description.zone = target.asg.zones[0]
     description.numReplicas = description.capacity.desired
     description.replicaPoolName = description.asgName
   }

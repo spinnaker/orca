@@ -30,7 +30,8 @@ class TargetReferenceConfiguration {
   String credentials
   List<String> regions
   List<String> zones
-  String providerType = "aws"
+  @Deprecated String providerType = "aws"
+  String cloudProvider
 
   List<String> getLocations() {
     if (regions && !regions.isEmpty()) {
