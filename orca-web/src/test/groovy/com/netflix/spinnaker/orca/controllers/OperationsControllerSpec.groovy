@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import com.netflix.spinnaker.orca.mayo.MayoService
 import org.springframework.mock.env.MockEnvironment
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -35,10 +36,11 @@ class OperationsControllerSpec extends Specification {
 
   def pipelineStarter = Mock(PipelineStarter)
   def igor = Stub(IgorService)
+  def mayo = Stub(MayoService)
   def mapper = new OrcaObjectMapper()
   def env = new MockEnvironment()
   @Subject
-    controller = new OperationsController(objectMapper: mapper, pipelineStarter: pipelineStarter, igorService: igor, environment: env)
+    controller = new OperationsController(objectMapper: mapper, mayoService: mayo, pipelineStarter: pipelineStarter, igorService: igor, environment: env)
 
   @Unroll
   void '#endpoint accepts #contentType'() {
@@ -65,6 +67,40 @@ class OperationsControllerSpec extends Specification {
 
   private Map slurp(String json) {
     new JsonSlurper().parseText(json)
+  }
+
+  def "invalid application name returns a bad request response"() {
+    given:
+    mayo.getPipelines('foo') >> { [] }
+
+    when:
+    controller.orchestrateById('foo', '123', [type: 'cron', user: 'Anonymous'])
+
+    then:
+    thrown(OperationsController.PipelineConfigNotFoundException)
+  }
+
+  def "invalid pipeline id returns a bad request response"() {
+    given:
+    mayo.getPipelines('foo') >> { [ [id: '456', name: 'bar'] ] }
+
+    when:
+    controller.orchestrateById('foo', '123', [type: 'cron', user: 'Anonymous'])
+
+    then:
+    thrown(OperationsController.PipelineConfigNotFoundException)
+  }
+
+  def "valid application and pipeline id should trigger the pipeline"() {
+    given:
+    mayo.getPipelines('foo') >> { [ [id: '123', name: 'bar'] ] }
+
+    when:
+    controller.orchestrateById('foo', '123', [type: 'cron', user: 'Anonymous'])
+
+    then:
+    noExceptionThrown()
+    1 * pipelineStarter.start(_) >> { [id: '123', name: 'bar'] }
   }
 
   def "uses trigger details from pipeline if present"() {
