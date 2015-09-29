@@ -39,6 +39,11 @@ class BakeStatus implements Serializable {
   Result result
 
   /**
+   * A URI reference to the bake details
+   */
+  String resourceUri
+
+  /**
    * The bake id that can be used to find the details of the bake.
    *
    * @see BakeryService#lookupBake
