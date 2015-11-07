@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google, Inc.
+ * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class UpsertCloudFoundryLoadBalancerStage extends LinearStage {
 
-  public static final String PIPELINE_CONFIG_TYPE = "upsertAmazonLoadBalancer_cf"
+  public static final String PIPELINE_CONFIG_TYPE = "upsertLoadBalancer_cf"
 
   UpsertCloudFoundryLoadBalancerStage() {
     super(PIPELINE_CONFIG_TYPE)
