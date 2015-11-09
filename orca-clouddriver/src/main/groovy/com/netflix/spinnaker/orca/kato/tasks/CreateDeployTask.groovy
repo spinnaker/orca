@@ -113,15 +113,20 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task {
     Stage previousStage = getPreviousStageWithImage(stage, targetRegion)
     def result = [:]
     if (previousStage) {
-      result.amiName = previousStage.context.ami
-      result.imageId = previousStage.context.imageId
+      if (previousStage.context.containsKey("amiDetails")) {
+        result.amiName = previousStage.context.amiDetails.ami
+        result.imageId = previousStage.context.amiDetails.imageId
+      } else {
+        result.amiName = previousStage.context.ami
+        result.imageId = previousStage.context.imageId
+      }
       callback(result)
     }
   }
 
   private Stage getPreviousStageWithImage(Stage stage, String targetRegion) {
     getAncestors(stage).find {
-      it.context.ami && it.context.region == targetRegion
+      (it.context.containsKey("ami") || it.context.containsKey("amiDetails")) && it.context.region == targetRegion
     }
   }
 
