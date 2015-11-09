@@ -16,9 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline.model
 
-import com.netflix.spinnaker.orca.ExecutionStatus
-
 import java.util.concurrent.atomic.AtomicInteger
+import com.netflix.spinnaker.orca.ExecutionStatus
 
 class ImmutableStageSupport {
 
@@ -189,7 +188,7 @@ class ImmutableStageSupport {
 
     @Override
     Collection<String> getRequisiteStageRefIds() {
-      Collections.unmodifiableCollection(self.requisiteStageRefIds)
+      self.requisiteStageRefIds != null ? Collections.unmodifiableCollection(self.requisiteStageRefIds) : null
     }
 
     @Override

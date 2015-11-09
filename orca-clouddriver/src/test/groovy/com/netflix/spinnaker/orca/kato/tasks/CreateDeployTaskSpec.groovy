@@ -263,16 +263,33 @@ class CreateDeployTaskSpec extends Specification {
     ]
 
     and:
-    def bakeStage = new PipelineStage(stage.execution, "bake", [ami: amiName, region: deployRegion])
-    bakeStage.refId = "1"
-    stage.execution.stages << bakeStage
+    def bakeStage1 = new PipelineStage(stage.execution, "bake")
+    bakeStage1.id = UUID.randomUUID()
+    bakeStage1.refId = "1a"
+    stage.execution.stages << bakeStage1
+
+    def bakeSynthetic1 = new PipelineStage(stage.execution, "bake in $deployRegion", [ami: amiName, region: deployRegion])
+    bakeSynthetic1.id = UUID.randomUUID()
+    bakeSynthetic1.parentStageId = bakeStage1.id
+    stage.execution.stages << bakeSynthetic1
+
+    def bakeStage2 = new PipelineStage(stage.execution, "bake")
+    bakeStage2.id = UUID.randomUUID()
+    bakeStage2.refId = "2a"
+    stage.execution.stages << bakeStage2
+
+    def bakeSynthetic2 = new PipelineStage(stage.execution, "bake in $deployRegion", [ami: "parallel-branch-ami", region: deployRegion])
+    bakeSynthetic2.id = UUID.randomUUID()
+    bakeSynthetic2.parentStageId = bakeStage2.id
+    stage.execution.stages << bakeSynthetic2
 
     def intermediateStage = new PipelineStage(stage.execution, "whatever")
-    intermediateStage.refId = "2"
+    intermediateStage.id = UUID.randomUUID()
+    intermediateStage.refId = "1b"
     stage.execution.stages << intermediateStage
 
     and:
-    intermediateStage.requisiteStageRefIds = [bakeStage.refId]
+    intermediateStage.requisiteStageRefIds = [bakeStage1.refId]
     stage.requisiteStageRefIds = [intermediateStage.refId]
 
     when:
