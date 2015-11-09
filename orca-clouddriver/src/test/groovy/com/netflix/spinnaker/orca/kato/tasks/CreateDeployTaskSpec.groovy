@@ -59,6 +59,7 @@ class CreateDeployTaskSpec extends Specification {
 
     stage.execution.stages.add(stage)
     stage.context = deployConfig
+    stage.requisiteStageRefIds = []
   }
 
   def cleanup() {
@@ -261,9 +262,18 @@ class CreateDeployTaskSpec extends Specification {
       ["ami": "also-not-my-ami", "region": deployRegion]
     ]
 
-
+    and:
     def bakeStage = new PipelineStage(stage.execution, "bake", [ami: amiName, region: deployRegion])
-    stage.execution.stages.add(0, bakeStage)
+    bakeStage.refId = "1"
+    stage.execution.stages << bakeStage
+
+    def intermediateStage = new PipelineStage(stage.execution, "whatever")
+    intermediateStage.refId = "2"
+    stage.execution.stages << intermediateStage
+
+    and:
+    intermediateStage.requisiteStageRefIds = [bakeStage.refId]
+    stage.requisiteStageRefIds = [intermediateStage.refId]
 
     when:
     task.execute(stage.asImmutable())
