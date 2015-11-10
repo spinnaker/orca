@@ -130,7 +130,7 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task {
     }
   }
 
-  def List<Stage> getAncestors(Stage stage) {
+  private List<Stage> getAncestors(Stage stage) {
     if (stage.requisiteStageRefIds) {
       def previousStages = stage.execution.stages.findAll {
         it.refId in stage.requisiteStageRefIds
