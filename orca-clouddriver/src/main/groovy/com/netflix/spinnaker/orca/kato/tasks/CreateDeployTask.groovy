@@ -140,7 +140,8 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task {
       }
       return (previousStages + syntheticStages) + previousStages.collect { getAncestors(it) }.flatten()
     } else if (stage.parentStageId) {
-      return getAncestors(stage.execution.stages.find { it.id == stage.parentStageId })
+      def parent = stage.execution.stages.find { it.id == stage.parentStageId }
+      return ([parent] + getAncestors(parent)).flatten()
     } else {
       return []
     }
