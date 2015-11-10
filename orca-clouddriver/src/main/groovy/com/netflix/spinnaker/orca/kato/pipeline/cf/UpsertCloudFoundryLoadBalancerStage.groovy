@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google, Inc.
+ * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.kato.pipeline.gce
+package com.netflix.spinnaker.orca.kato.pipeline.cf
 
-import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
-import com.netflix.spinnaker.orca.kato.tasks.gce.UpsertGoogleLoadBalancerTask
+import com.netflix.spinnaker.orca.kato.tasks.cf.UpsertCloudFoundryLoadBalancerTask
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
@@ -26,19 +25,19 @@ import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class UpsertGoogleLoadBalancerStage extends LinearStage {
+class UpsertCloudFoundryLoadBalancerStage extends LinearStage {
 
-  public static final String PIPELINE_CONFIG_TYPE = "upsertLoadBalancer_gce"
+  public static final String PIPELINE_CONFIG_TYPE = "upsertLoadBalancer_cf"
 
-  UpsertGoogleLoadBalancerStage() {
+  UpsertCloudFoundryLoadBalancerStage() {
     super(PIPELINE_CONFIG_TYPE)
   }
 
   @Override
   public List<Step> buildSteps(Stage stage) {
-    def step1 = buildStep(stage, "upsertGoogleLoadBalancer", UpsertGoogleLoadBalancerTask)
-    def step2 = buildStep(stage, "monitorUpsert", MonitorKatoTask)
-    // TODO(duftler): Implement DeleteGoogleLoadBalancerForceRefreshTask.
-    [step1, step2]
+    def step1 = buildStep(stage, "createCloudFoundryLoadBalancer", UpsertCloudFoundryLoadBalancerTask)
+//    def step2 = buildStep(stage, "monitorUpsert", MonitorKatoTask)
+//    // TODO(duftler): Implement DeleteGoogleLoadBalancerForceRefreshTask.
+    [step1]
   }
 }

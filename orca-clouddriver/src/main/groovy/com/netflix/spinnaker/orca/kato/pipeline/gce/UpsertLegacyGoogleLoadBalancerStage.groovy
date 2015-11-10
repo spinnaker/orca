@@ -24,13 +24,17 @@ import groovy.transform.CompileStatic
 import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
+/**
+ * @deprecated New code should invoke the TYPE found in {@link UpsertGoogleLoadBalancerStage}
+ */
 @Component
 @CompileStatic
-class UpsertGoogleLoadBalancerStage extends LinearStage {
+@Deprecated
+class UpsertLegacyGoogleLoadBalancerStage extends LinearStage {
 
-  public static final String PIPELINE_CONFIG_TYPE = "upsertLoadBalancer_gce"
+  public static final String PIPELINE_CONFIG_TYPE = "upsertAmazonLoadBalancer_gce"
 
-  UpsertGoogleLoadBalancerStage() {
+  UpsertLegacyGoogleLoadBalancerStage() {
     super(PIPELINE_CONFIG_TYPE)
   }
 

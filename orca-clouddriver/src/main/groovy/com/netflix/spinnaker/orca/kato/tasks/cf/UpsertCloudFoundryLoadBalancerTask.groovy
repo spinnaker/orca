@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,45 +14,43 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.kato.tasks
+package com.netflix.spinnaker.orca.kato.tasks.cf
 
-import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
-import com.netflix.spinnaker.orca.kato.pipeline.UpsertLegacyAmazonLoadBalancerStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-@CompileStatic
-class UpsertAmazonDNSTask implements Task {
+class UpsertCloudFoundryLoadBalancerTask implements Task {
 
   @Autowired
   KatoService kato
 
   @Override
   TaskResult execute(Stage stage) {
-    def operation = [type       : stage.context.recordType, name: stage.context.name, hostedZoneName: stage.context.hostedZone,
-                     credentials: stage.context.credentials]
-
-    def upsertElbStage = stage.preceding(UpsertLegacyAmazonLoadBalancerStage.PIPELINE_CONFIG_TYPE)
-    if (upsertElbStage) {
-      operation.target = upsertElbStage.context.dnsName
-    } else {
-      operation.target = stage.context.target
-    }
-
-    def taskId = kato.requestOperations([[upsertAmazonDNSDescription: operation]]).toBlocking().first()
+    def taskId = kato.requestOperations('cf', [['createCloudFoundryLoadBalancerDescription': stage.context]])
+                      .toBlocking()
+                      .first()
 
     Map outputs = [
-        "notification.type": "upsertamazondns",
-        "kato.last.task.id": taskId
+        "notification.type": "createcloudfoundryloadbalancer",
+        "kato.last.task.id": taskId,
+        "upsert.account"   : stage.context.credentials
     ]
 
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs)
+    if (stage.context.clusterName) {
+      outputs.clusterName = stage.context.clusterName
+    }
+
+    if (stage.context.name) {
+      outputs.name = stage.context.name
+    }
+
+    new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs)
   }
 }
