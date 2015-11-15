@@ -10,7 +10,7 @@ fi
 
 # check that user exists
 if [ -z `getent passwd spinnaker` ]; then
-  useradd --gid spinnaker spinnaker
+  useradd --gid spinnaker spinnaker --home-dir /opt/spinnaker
 fi
 
 # Create log directory
