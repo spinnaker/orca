@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component
 @Slf4j
 @Component
 @Deprecated
-class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task {
+class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task, DeploymentDetailsAware {
 
   static final List<String> DEFAULT_VPC_SECURITY_GROUPS = ["nf-infrastructure-vpc", "nf-datacenter-vpc"]
   static final List<String> DEFAULT_SECURITY_GROUPS = ["nf-infrastructure", "nf-datacenter"]
@@ -105,61 +105,6 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task {
     }
     operation.keyPair = (operation.keyPair ?: "nf-${operation.credentials}-keypair-a").toString()
     return operation
-  }
-
-  private void withImageFromPrecedingStage(
-    Stage stage,
-    String targetRegion,
-    Closure callback) {
-    Stage previousStage = getPreviousStageWithImage(stage, targetRegion)
-    def result = [:]
-    if (previousStage) {
-      if (previousStage.context.containsKey("amiDetails")) {
-        result.amiName = previousStage.context.amiDetails.ami
-        result.imageId = previousStage.context.amiDetails.imageId
-      } else {
-        result.amiName = previousStage.context.ami
-        result.imageId = previousStage.context.imageId
-      }
-      callback(result)
-    }
-  }
-
-  private Stage getPreviousStageWithImage(Stage stage, String targetRegion) {
-    getAncestors(stage).find {
-      (it.context.containsKey("ami") || it.context.containsKey("amiDetails")) && it.context.region == targetRegion
-    }
-  }
-
-  private List<Stage> getAncestors(Stage stage) {
-    if (stage.requisiteStageRefIds) {
-      def previousStages = stage.execution.stages.findAll {
-        it.refId in stage.requisiteStageRefIds
-      }
-      def syntheticStages = stage.execution.stages.findAll {
-        it.parentStageId in previousStages*.id
-      }
-      return (previousStages + syntheticStages) + previousStages.collect { getAncestors(it) }.flatten()
-    } else if (stage.parentStageId) {
-      def parent = stage.execution.stages.find { it.id == stage.parentStageId }
-      return ([parent] + getAncestors(parent)).flatten()
-    } else {
-      return []
-    }
-  }
-
-  private void withImageFromDeploymentDetails(
-    Stage stage,
-    String targetRegion,
-    Closure callback) {
-    def result = [:]
-    def deploymentDetails = (stage.context.deploymentDetails ?: []) as List<Map>
-    if (deploymentDetails) {
-      result.amiName = deploymentDetails.find { it.region == targetRegion }?.ami
-      // docker image ids are not region or cloud provider specific so no need to filter by region
-      result.imageId = deploymentDetails.first().imageId
-      callback(result)
-    }
   }
 
   @CompileStatic(TypeCheckingMode.SKIP)
