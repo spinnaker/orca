@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.pipeline.CreateServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.ParallelStage
 import com.netflix.spinnaker.orca.pipeline.model.AbstractStage
@@ -57,8 +58,15 @@ class ParallelDeployStage extends ParallelStage {
       def nextStage = newStage(
         stage.execution, context.type as String, context.name as String, new HashMap(context), stage, Stage.SyntheticStageOwner.STAGE_AFTER
       )
-      ((AbstractStage) nextStage).type = PIPELINE_CONFIG_TYPE
-      stage.execution.stages.add(nextStage)
+
+      def existingStage = stage.execution.stages.find { it.id == nextStage.id }
+      nextStage = existingStage ?: nextStage
+
+      if (!existingStage) {
+        // in the case of a restart, this stage will already have been added to the execution
+        ((AbstractStage) nextStage).type = PIPELINE_CONFIG_TYPE
+        stage.execution.stages.add(nextStage)
+      }
 
       def flowBuilder = new FlowBuilder<Flow>(context.name as String).start(
         buildStep(stage, "setupParallelDeploy", new Task() {
@@ -76,7 +84,7 @@ class ParallelDeployStage extends ParallelStage {
 
   @CompileDynamic
   protected Map<String, Object> clusterContext(Stage stage, Map defaultStageContext, Map cluster) {
-    def type = DeployStage.PIPELINE_CONFIG_TYPE
+    def type = CreateServerGroupStage.PIPELINE_CONFIG_TYPE
 
     if (cluster.providerType && !(cluster.providerType in ['aws', 'titan'])) {
       type += "_$cluster.providerType"

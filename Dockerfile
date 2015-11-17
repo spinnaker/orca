@@ -1,11 +1,13 @@
 FROM java:8
 
-MAINTAINER clin@netflix.com
+MAINTAINER delivery-engineering@netflix.com
 
 COPY . workdir/
 
 WORKDIR workdir
 
-RUN ./gradlew build -x test
+RUN ./gradlew buildDeb -x test
 
-CMD ["./gradlew", "bootRun"]
+RUN dpkg -i ./orca-web/build/distributions/*.deb
+
+CMD ["/opt/orca/bin/orca"]

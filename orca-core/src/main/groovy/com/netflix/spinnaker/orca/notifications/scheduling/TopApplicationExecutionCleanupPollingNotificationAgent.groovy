@@ -26,6 +26,7 @@ import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
@@ -44,7 +45,7 @@ import static com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 
 @Slf4j
 @Component
-@ConditionalOnProperty(value = 'pollers.topApplicationExecutionCleanup.enabled')
+@ConditionalOnExpression(value = '${pollers.topApplicationExecutionCleanup.enabled:false}')
 class TopApplicationExecutionCleanupPollingNotificationAgent implements ApplicationListener<EurekaStatusChangedEvent> {
 
   private Scheduler scheduler = Schedulers.io()
@@ -70,11 +71,8 @@ class TopApplicationExecutionCleanupPollingNotificationAgent implements Applicat
   @Value('${pollers.topApplicationExecutionCleanup.intervalMs:3600000}')
   long pollingIntervalMs
 
-  @Value('${pollers.topApplicationExecutionCleanup.threshold:50}')
+  @Value('${pollers.topApplicationExecutionCleanup.threshold:2500}')
   int threshold
-
-  @Value('${pollers.topApplicationExecutionCleanup.minimumNumberOfExecutionsToKeepPerPipeline:5}')
-  int minimumNumberOfExecutionsToKeepPerPipeline
 
   @PreDestroy
   void stopPolling() {
@@ -106,18 +104,14 @@ class TopApplicationExecutionCleanupPollingNotificationAgent implements Applicat
   void tick() {
     def jedis = jedisPool.resource
     try {
-      jedis.keys("*:app:*").each { String id ->
+      jedis.keys("orchestration:app:*").each { String id ->
         if (jedis.scard(id) > threshold) {
           def (type, ignored, application) = id.split(":")
           switch (type) {
-            case "pipeline":
-              log.info("Cleaning up pipeline executions (application: ${application}, threshold: ${threshold})")
-              cleanup(executionRepository.retrievePipelinesForApplication(application), application, "pipeline")
-              break
             case "orchestration":
               log.info("Cleaning up orchestration executions (application: ${application}, threshold: ${threshold})")
 
-              def executionCriteria = new ExecutionRepository.ExecutionCriteria(limit: 500)
+              def executionCriteria = new ExecutionRepository.ExecutionCriteria(limit: Integer.MAX_VALUE)
               cleanup(executionRepository.retrieveOrchestrationsForApplication(application, executionCriteria), application, "orchestration")
               break
             default:
@@ -135,32 +129,10 @@ class TopApplicationExecutionCleanupPollingNotificationAgent implements Applicat
   private void cleanup(Observable<Execution> observable, String application, String type) {
     def executions = observable.filter(filter).map(mapper).toList().toBlocking().single().sort { it.startTime }
     if (executions.size() > threshold) {
-      Set<String> executionIdsToKeep = []
-      if (type == "pipeline") {
-        /*
-         * Group by pipeline config id and keep the newest `minimumNumberOfExecutionsToKeepPerPipeline`
-         */
-        executions.groupBy { it.pipelineConfigId }.values().each { List<Map> executionsByPipelineConfigId ->
-          executionsByPipelineConfigId.reverse().eachWithIndex { Map entry, int index ->
-            if (index < minimumNumberOfExecutionsToKeepPerPipeline) {
-              executionIdsToKeep << entry.id
-            }
-          }
-        }
-      }
-
       executions[0..(executions.size() - threshold - 1)].each {
         def startTime = it.startTime ?: (it.buildTime ?: 0)
-        if (executionIdsToKeep.contains(it.id)) {
-          log.info("Preserving ${type} execution ${it.id} (startTime: ${new Date(startTime)}, application: ${application}, pipelineConfigId: ${it.pipelineConfigId})")
-          return
-        }
-
         log.info("Deleting ${type} execution ${it.id} (startTime: ${new Date(startTime)}, application: ${application}, pipelineConfigId: ${it.pipelineConfigId}, status: ${it.status})")
         switch (type) {
-          case "pipeline":
-            executionRepository.deletePipeline(it.id as String)
-            break
           case "orchestration":
             executionRepository.deleteOrchestration(it.id as String)
             break
