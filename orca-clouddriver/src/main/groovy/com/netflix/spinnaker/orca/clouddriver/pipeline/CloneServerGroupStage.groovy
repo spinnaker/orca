@@ -21,11 +21,9 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.CloneServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.WaitForUpInstancesTask
-import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.batch.core.Step
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Slf4j
@@ -33,9 +31,6 @@ import org.springframework.stereotype.Component
 class CloneServerGroupStage extends AbstractDeployStrategyStage {
 
   public static final String PIPELINE_CONFIG_TYPE = "cloneServerGroup"
-
-  @Autowired(required = false)
-  List<DiffTask> diffTasks
 
   CloneServerGroupStage() {
     super(PIPELINE_CONFIG_TYPE)
@@ -47,32 +42,12 @@ class CloneServerGroupStage extends AbstractDeployStrategyStage {
 
   @Override
   List<Step> basicSteps(Stage stage) {
-    def steps = []
-
-    steps << buildStep(stage, "cloneServerGroup", CloneServerGroupTask)
-    steps << buildStep(stage, "monitorDeploy", MonitorKatoTask)
-    steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
-    steps << buildStep(stage, "waitForUpInstances", WaitForUpInstancesTask)
-    steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
-
-    if (diffTasks) {
-      diffTasks.each { DiffTask diffTask ->
-        try {
-          steps << buildStep(stage, CloneServerGroupStage.getDiffTaskName(diffTask.class.simpleName), diffTask.class)
-        } catch (Exception e) {
-          log.error("Unable to build diff task (name: ${diffTask.class.simpleName}: executionId: ${stage.execution.id})", e)
-        }
-      }
-    }
-
-    return steps
-  }
-
-  static String getDiffTaskName(String className) {
-    try {
-      className = className[0].toLowerCase() + className.substring(1)
-      className = className.replaceAll("Task", "")
-    } catch (e) {}
-    return className
+    [
+        buildStep(stage, "cloneServerGroup", CloneServerGroupTask),
+        buildStep(stage, "monitorDeploy", MonitorKatoTask),
+        buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+        buildStep(stage, "waitForUpInstances", WaitForUpInstancesTask),
+        buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+    ]
   }
 }

@@ -21,34 +21,63 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @Component
-class ModifyAsgLaunchConfigurationTask implements Task {
+@Slf4j
+class ModifyAsgLaunchConfigurationTask implements Task, DeploymentDetailsAware {
   @Autowired
   KatoService kato
 
+  @Value('${default.bake.account:default}')
+  String defaultBakeAccount
+
   @Override
   TaskResult execute(Stage stage) {
-    def deploymentDetails = (stage.context.deploymentDetails ?: []) as List<Map>
     def operationConfig = new HashMap(stage.context)
-    if (!stage.context.amiName && deploymentDetails) {
-      operationConfig.amiName = deploymentDetails.find { it.region == stage.context.region }?.ami
+    operationConfig.amiName = getImage(stage)
+
+    def ops = []
+    if (stage.context.credentials != defaultBakeAccount) {
+      ops << [allowLaunchDescription: convertAllowLaunch(stage.context.credentials, defaultBakeAccount,
+                                                         stage.context.region, operationConfig.amiName)]
+      log.info("Generated `allowLaunchDescription` (allowLaunchDescription: ${ops})")
     }
-    def operation = [modifyAsgLaunchConfigurationDescription: operationConfig]
-    def ops = [operation]
-    def taskId = kato.requestOperations(ops)
-      .toBlocking()
-      .first()
+
+    ops << [modifyAsgLaunchConfigurationDescription: operationConfig]
+
+    def taskId = kato.requestOperations(CloudProviderAware.DEFAULT_CLOUD_PROVIDER, ops)
+                     .toBlocking()
+                     .first()
     new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [
-      "notification.type"     : "modifyasglaunchconfiguration",
+      "notification.type"                        : "modifyasglaunchconfiguration",
       "modifyasglaunchconfiguration.account.name": stage.context.credentials,
       "modifyasglaunchconfiguration.region"      : stage.context.region,
-      "kato.last.task.id"     : taskId,
-      "kato.task.id"          : taskId, // TODO retire this.
-      "deploy.server.groups"  : [(stage.context.region): [stage.context.asgName]]
+      "kato.last.task.id"                        : taskId,
+      "kato.task.id"                             : taskId, // TODO retire this.
+      "deploy.server.groups"                     : [(stage.context.region): [stage.context.asgName]]
     ])
+  }
+
+  private String getImage(Stage stage) {
+    String amiName = stage.context.amiName
+    String targetRegion = stage.context.region
+    withImageFromPrecedingStage(stage, targetRegion) {
+      amiName = amiName ?: it.amiName
+    }
+
+    withImageFromDeploymentDetails(stage, targetRegion) {
+      amiName = amiName ?: it.amiName
+    }
+    return amiName
+  }
+
+  private static Map convertAllowLaunch(String targetAccount, String sourceAccount, String region, String ami) {
+    [account: targetAccount, credentials: sourceAccount, region: region, amiName: ami]
   }
 }

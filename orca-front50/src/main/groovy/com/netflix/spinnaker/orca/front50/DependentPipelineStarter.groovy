@@ -50,11 +50,11 @@ class DependentPipelineStarter {
     ]
 
     if( parentPipeline instanceof Pipeline){
-      pipelineConfig.trigger.name = parentPipeline.name
+      pipelineConfig.trigger.parentPipelineName = parentPipeline.name
       pipelineConfig.trigger.isPipeline = true
     }
 
-    if (pipelineConfig.parameterConfig) {
+    if (pipelineConfig.parameterConfig || !suppliedParameters.empty) {
       if (!pipelineConfig.trigger.parameters) {
         pipelineConfig.trigger.parameters = [:]
       }

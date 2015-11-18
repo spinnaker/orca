@@ -11,6 +11,7 @@ import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -36,13 +37,15 @@ import static java.lang.System.currentTimeMillis
 class JedisExecutionRepository implements ExecutionRepository {
 
   private static final TypeReference<List<Task>> LIST_OF_TASKS = new TypeReference<List<Task>>() {}
-  private static final TypeReference<Map<String, Object>> MAP_STRING_TO_OBJECT = new TypeReference<Map<String, Object>>() {
-  }
+  private static final TypeReference<Map<String, Object>> MAP_STRING_TO_OBJECT = new TypeReference<Map<String, Object>>() {}
   private final Pool<Jedis> jedisPool
   private final ObjectMapper mapper = new OrcaObjectMapper()
   private final int chunkSize
   private final Scheduler queryAllScheduler
   private final Scheduler queryByAppScheduler
+
+  @Autowired
+  StageNavigator stageNavigator
 
   @Autowired
   JedisExecutionRepository(
@@ -139,7 +142,7 @@ class JedisExecutionRepository implements ExecutionRepository {
 
   @Override
   void updateStatus(String id, ExecutionStatus status) {
-    withJedis {Jedis jedis->
+    withJedis { Jedis jedis ->
       String key
       if (jedis.exists("pipeline:$id")) {
         key = "pipeline:$id"
@@ -217,7 +220,9 @@ class JedisExecutionRepository implements ExecutionRepository {
         def allowedExecutionStatuses = criteria.statuses*.toString() as Set<String>
 
         def pipeline = jedis.pipelined()
-        def fetches = pipelineKeys.collect { pipeline.hget("pipeline:${it}" as String, "status") }
+        def fetches = pipelineKeys.collect {
+          pipeline.hget("pipeline:${it}" as String, "status")
+        }
         pipeline.sync()
 
         fetches.eachWithIndex { Response<String> entry, int index ->
@@ -271,7 +276,9 @@ class JedisExecutionRepository implements ExecutionRepository {
         def allowedExecutionStatuses = criteria.statuses*.toString() as Set<String>
 
         def pipeline = jedis.pipelined()
-        def fetches = orchestrationKeys.collect { pipeline.hget("orchestration:${it}" as String, "status") }
+        def fetches = orchestrationKeys.collect {
+          pipeline.hget("orchestration:${it}" as String, "status")
+        }
         pipeline.sync()
 
         fetches.eachWithIndex { Response<String> entry, int index ->
@@ -384,6 +391,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       def stageIds = map.stageIndex.tokenize(",")
       stageIds.each { stageId ->
         def stage = execution instanceof Pipeline ? new PipelineStage() : new OrchestrationStage()
+        stage.stageNavigator = stageNavigator
         stage.id = stageId
         stage.refId = map["stage.${stageId}.refId".toString()]
         stage.type = map["stage.${stageId}.type".toString()]
@@ -421,8 +429,12 @@ class JedisExecutionRepository implements ExecutionRepository {
   private <T extends Execution> T sortStages(JedisCommands jedis, T execution, Class<T> type) {
     List<Stage<T>> reorderedStages = []
 
-    def childStagesByParentStageId = execution.stages.findAll { it.parentStageId != null }.groupBy { it.parentStageId }
-    execution.stages.findAll { it.parentStageId == null }.each { Stage<T> parentStage ->
+    def childStagesByParentStageId = execution.stages.findAll {
+      it.parentStageId != null
+    }.groupBy { it.parentStageId }
+    execution.stages.findAll {
+      it.parentStageId == null
+    }.each { Stage<T> parentStage ->
       reorderedStages << parentStage
 
       def children = childStagesByParentStageId[parentStage.id] ?: []
@@ -433,8 +445,12 @@ class JedisExecutionRepository implements ExecutionRepository {
       }
     }
 
-    List<Stage<T>> retrievedStages = retrieveStages(jedis, type, reorderedStages.collect { it.id })
-    def retrievedStagesById = retrievedStages.findAll { it?.id }.groupBy { it.id } as Map<String, Stage>
+    List<Stage<T>> retrievedStages = retrieveStages(jedis, type, reorderedStages.collect {
+      it.id
+    })
+    def retrievedStagesById = retrievedStages.findAll { it?.id }.groupBy {
+      it.id
+    } as Map<String, Stage>
     execution.stages = reorderedStages.collect {
       def explicitStage = retrievedStagesById[it.id] ? retrievedStagesById[it.id][0] : it
       explicitStage.execution = execution
