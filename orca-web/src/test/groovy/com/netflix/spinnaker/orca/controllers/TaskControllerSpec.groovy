@@ -138,9 +138,9 @@ class TaskControllerSpec extends Specification {
     given:
     def now = new Date()
     def tasks = [
-      [executionStartTime: (now - daysOfExecutionHistory).time - 1, id: 'too-old'] as Orchestration,
-      [executionStartTime: (now - daysOfExecutionHistory).time + 1, id: 'not-too-old'] as Orchestration,
-      [executionStartTime: (now - 1).time, id: 'pretty-new'] as Orchestration,
+      [startTime: (now - daysOfExecutionHistory).time - 1, id: 'too-old'] as Orchestration,
+      [startTime: (now - daysOfExecutionHistory).time + 1, id: 'not-too-old'] as Orchestration,
+      [startTime: (now - 1).time, id: 'pretty-new'] as Orchestration,
       [id: 'not-started-1'] as Orchestration,
       [id: 'not-started-2'] as Orchestration
     ]
@@ -211,10 +211,10 @@ class TaskControllerSpec extends Specification {
     1 * front50Service.getPipelines(app) >> { [[id: "1"], [id: "2"]] }
     1 * front50Service.getStrategies(app) >> { [] }
     1 * executionRepository.retrievePipelinesForPipelineConfigId("1", _) >> rx.Observable.from(pipelines.findAll {it.pipelineConfigId == "1"}.collect {
-      new Pipeline(id: it.id, executionStartTime: it.startTime, pipelineConfigId: it.pipelineConfigId)
+      new Pipeline(id: it.id, startTime: it.startTime, pipelineConfigId: it.pipelineConfigId)
     })
     1 * executionRepository.retrievePipelinesForPipelineConfigId("2", _) >> rx.Observable.from(pipelines.findAll {it.pipelineConfigId == "2"}.collect {
-      new Pipeline(id: it.id, executionStartTime: it.startTime, pipelineConfigId: it.pipelineConfigId)
+      new Pipeline(id: it.id, startTime: it.startTime, pipelineConfigId: it.pipelineConfigId)
     })
     results.id == ['not-started', 'also-not-started', 'older2', 'older1', 'newer']
   }

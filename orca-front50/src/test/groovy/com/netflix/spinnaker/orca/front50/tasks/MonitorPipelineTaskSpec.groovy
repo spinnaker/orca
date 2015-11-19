@@ -44,7 +44,7 @@ class MonitorPipelineTaskSpec extends Specification {
     def pipeline = new Pipeline().builder().withStage(
       com.netflix.spinnaker.orca.front50.pipeline.PipelineStage.PIPELINE_CONFIG_TYPE, "pipeline", [:]
     ).build()
-    pipeline.executionStatus = providedStatus
+    pipeline.status = providedStatus
 
     repo.retrievePipeline(_) >> pipeline
 

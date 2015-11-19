@@ -44,7 +44,7 @@ class PipelineSpec extends Specification {
 
   def "a v2 pipeline's status is 'executionStatus'"() {
     when:
-    pipeline.executionStatus = RUNNING
+    pipeline.status = RUNNING
     pipeline.stages[0].status = TERMINAL
     pipeline.stages[1].status = TERMINAL
     pipeline.stages[2].status = TERMINAL

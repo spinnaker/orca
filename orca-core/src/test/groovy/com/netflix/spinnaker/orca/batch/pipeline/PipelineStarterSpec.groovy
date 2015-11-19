@@ -151,7 +151,7 @@ class PipelineStarterSpec extends Specification {
         if (config.limitConcurrent) {
           pipeline.limitConcurrent = config.limitConcurrent
         }
-        pipeline.executionStatus = executionStatus
+        pipeline.status = executionStatus
         return pipeline
       }
     }

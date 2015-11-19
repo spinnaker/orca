@@ -319,10 +319,10 @@ class JedisExecutionRepository implements ExecutionRepository {
       limitConcurrent  : String.valueOf(execution.limitConcurrent),
       buildTime        : Long.toString(execution.buildTime ?: 0L),
       // TODO: modify these lines once we eliminate dynamic time properties
-      startTime        : (execution.executionStartTime ?: execution.startTime)?.toString(),
-      endTime          : (execution.executionEndTime ?: execution.endTime)?.toString(),
+      startTime        : (execution.startTime ?: execution.startTime)?.toString(),
+      endTime          : (execution.endTime ?: execution.endTime)?.toString(),
       executingInstance: execution.executingInstance,
-      status           : execution.executionStatus?.name(),
+      status           : execution.status?.name(),
       authentication   : mapper.writeValueAsString(execution.authentication)
     ]
     // TODO: store separately? Seems crazy to be using a hash rather than a set
@@ -383,10 +383,10 @@ class JedisExecutionRepository implements ExecutionRepository {
       execution.parallel = Boolean.parseBoolean(map.parallel)
       execution.limitConcurrent = Boolean.parseBoolean(map.limitConcurrent)
       execution.buildTime = map.buildTime?.toLong()
-      execution.executionStartTime = map.startTime?.toLong()
-      execution.executionEndTime = map.endTime?.toLong()
+      execution.startTime = map.startTime?.toLong()
+      execution.endTime = map.endTime?.toLong()
       execution.executingInstance = map.executingInstance
-      execution.executionStatus = map.status ? ExecutionStatus.valueOf(map.status) : null
+      execution.status = map.status ? ExecutionStatus.valueOf(map.status) : null
       execution.authentication = mapper.readValue(map.authentication, Execution.AuthenticationDetails)
       def stageIds = map.stageIndex.tokenize(",")
       stageIds.each { stageId ->

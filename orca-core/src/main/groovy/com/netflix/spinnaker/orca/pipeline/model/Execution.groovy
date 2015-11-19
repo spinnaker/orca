@@ -39,9 +39,9 @@ abstract class Execution<T> implements Serializable {
   final Map<String, Object> context = [:]
   List<Stage<T>> stages = []
 
-  Long executionStartTime
-  Long executionEndTime
-  ExecutionStatus executionStatus = NOT_STARTED
+  Long startTime
+  Long endTime
+  ExecutionStatus status = NOT_STARTED
 
   AuthenticationDetails authentication
 
@@ -54,18 +54,6 @@ abstract class Execution<T> implements Serializable {
     stages.find {
       it.type == type
     }
-  }
-
-  Long getStartTime() {
-    return executionStartTime
-  }
-
-  Long getEndTime() {
-    return executionEndTime
-  }
-
-  ExecutionStatus getStatus() {
-    return executionStatus
   }
 
   Execution<T> asImmutable() {

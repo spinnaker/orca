@@ -42,7 +42,7 @@ class PipelineStarterListenerSpec extends Specification {
     listener.startTracker.getAllStartedExecutions() >> [completedId]
     listener.startTracker.getQueuedPipelines(_) >> [nextId]
     listener.executionRepository.retrievePipeline(_) >> { String id ->
-      new Pipeline(id: id, pipelineConfigId: pipelineConfigId, canceled: true, executionStatus: CANCELED)
+      new Pipeline(id: id, pipelineConfigId: pipelineConfigId, canceled: true, status: CANCELED)
     }
 
     when:
@@ -66,7 +66,7 @@ class PipelineStarterListenerSpec extends Specification {
     listener.startTracker.getAllStartedExecutions() >> [completedId]
     listener.startTracker.getQueuedPipelines(_) >> nextIds
     listener.executionRepository.retrievePipeline(_) >> { String id ->
-      new Pipeline(id: id, pipelineConfigId: pipelineConfigId, canceled: true, executionStatus: CANCELED)
+      new Pipeline(id: id, pipelineConfigId: pipelineConfigId, canceled: true, status: CANCELED)
     }
 
     when:
@@ -94,7 +94,7 @@ class PipelineStarterListenerSpec extends Specification {
 
     then:
     1 * listener.startTracker.getAllStartedExecutions() >> ['123']
-    1 * listener.executionRepository.retrievePipeline(_) >> new Pipeline(id: '123', canceled: true, executionStatus: CANCELED)
+    1 * listener.executionRepository.retrievePipeline(_) >> new Pipeline(id: '123', canceled: true, status: CANCELED)
     1 * listener.startTracker.markAsFinished(null, '123')
     0 * _._
   }
@@ -106,9 +106,9 @@ class PipelineStarterListenerSpec extends Specification {
     then:
     1 * listener.startTracker.getAllStartedExecutions() >> ['123', '124', '125', '126']
     1 * listener.executionRepository.retrievePipeline('123') >> new Pipeline(id: '123')
-    1 * listener.executionRepository.retrievePipeline('124') >> new Pipeline(id: '124', canceled: true, executionStatus: CANCELED)
+    1 * listener.executionRepository.retrievePipeline('124') >> new Pipeline(id: '124', canceled: true, status: CANCELED)
     1 * listener.executionRepository.retrievePipeline('125') >> new Pipeline(id: '125')
-    1 * listener.executionRepository.retrievePipeline('126') >> new Pipeline(id: '126', canceled: true, executionStatus: CANCELED)
+    1 * listener.executionRepository.retrievePipeline('126') >> new Pipeline(id: '126', canceled: true, status: CANCELED)
     1 * listener.startTracker.markAsFinished(null, '124')
     1 * listener.startTracker.markAsFinished(null, '126')
     0 * _._

@@ -46,7 +46,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
     def pipeline = new Pipeline()
     pipeline.id = "ID1"
     pipeline.pipelineConfigId = "P1"
-    pipeline.executionStartTime = 1000
+    pipeline.startTime = 1000
 
     and:
     def mapper = new TopApplicationExecutionCleanupPollingNotificationAgent().mapper

@@ -135,7 +135,7 @@ class PipelineRecoveryListenerSpec extends Specification {
   }
 
   private Pipeline pipelineWithStatus(ExecutionStatus status, String executingInstance) {
-    def pipeline = new Pipeline(id: UUID.randomUUID(), executingInstance: executingInstance, executionStatus: status)
+    def pipeline = new Pipeline(id: UUID.randomUUID(), executingInstance: executingInstance, status: status)
     if (status == CANCELED) {
       pipeline.canceled = true
     }
