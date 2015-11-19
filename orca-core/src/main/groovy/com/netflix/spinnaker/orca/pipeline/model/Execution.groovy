@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.CompileStatic
-import static com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 
 @CompileStatic
@@ -66,10 +65,6 @@ abstract class Execution<T> implements Serializable {
   }
 
   ExecutionStatus getStatus() {
-    if (canceled) {
-      return CANCELED
-    }
-
     return executionStatus
   }
 
