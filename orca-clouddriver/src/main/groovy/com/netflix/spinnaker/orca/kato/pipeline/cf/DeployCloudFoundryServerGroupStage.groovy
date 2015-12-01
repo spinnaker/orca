@@ -1,5 +1,6 @@
 package com.netflix.spinnaker.orca.kato.pipeline.cf
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
+import com.netflix.spinnaker.orca.clouddriver.tasks.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.WaitForUpInstancesTask
 import com.netflix.spinnaker.orca.kato.tasks.cf.CreateCloudFoundryDeployTask
 import com.netflix.spinnaker.orca.pipeline.LinearStage
@@ -23,9 +24,8 @@ class DeployCloudFoundryServerGroupStage extends LinearStage {
 
     steps << buildStep(stage, "createDeploy", CreateCloudFoundryDeployTask)
     steps << buildStep(stage, "monitorDeploy", MonitorKatoTask)
-//    steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+    steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     steps << buildStep(stage, "waitForUpInstances", WaitForUpInstancesTask)
-//    steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
 
     steps
   }
