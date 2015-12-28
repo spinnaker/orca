@@ -57,6 +57,37 @@ class DetermineSourceServerGroupTaskSpec extends Specification {
     asgName = 'foo-test-v000'
   }
 
+  void 'should include source.zone and source.serverGroupName in context, if present'() {
+    given:
+    Stage stage = new PipelineStage(new Pipeline(), 'deploy', 'deploy', [
+      account          : account,
+      application      : 'foo',
+      availabilityZones: [(region): []]])
+
+    def resolver = Mock(SourceResolver)
+
+    when:
+    def result = new DetermineSourceServerGroupTask(sourceResolver: resolver).execute(stage)
+
+    then:
+    1 * resolver.getSource(_) >> new StageData.Source(account: account, region: region, zone: zone, asgName: asgName, serverGroupName: serverGroupName)
+
+    and:
+    result.stageOutputs.source.account == account
+    result.stageOutputs.source.region == region
+    result.stageOutputs.source.zone == zone
+    result.stageOutputs.source.asgName == asgName
+    result.stageOutputs.source.serverGroupName == serverGroupName
+    result.stageOutputs.source.useSourceCapacity == null
+
+    where:
+    account = 'test'
+    region = 'us-east-1'
+    zone = 'us-east-1a'
+    asgName = 'foo-test-v000'
+    serverGroupName = 'foo-test-v000'
+  }
+
   void 'should useSourceCapacity from context if not provided in Source'() {
     given:
     Stage stage = new PipelineStage(new Pipeline(), 'deploy', 'deploy', [useSourceCapacity: contextUseSourceCapacity, account: account, application: application, availabilityZones: [(region): []]])
