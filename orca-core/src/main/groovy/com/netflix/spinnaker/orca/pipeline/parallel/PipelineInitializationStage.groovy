@@ -16,23 +16,19 @@
 
 package com.netflix.spinnaker.orca.pipeline.parallel
 
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @CompileStatic
 @Component
-class PipelineInitializationStage extends LinearStage {
-  static final String PIPELINE_CONFIG_TYPE = "pipelineInitialization"
-
-  PipelineInitializationStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class PipelineInitializationStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [buildStep(stage, "initialize", PipelineInitializationTask)]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return Collections.singletonList(
+      new StageDefinitionBuilder.TaskDefinition("initialize", PipelineInitializationTask)
+    );
   }
 }

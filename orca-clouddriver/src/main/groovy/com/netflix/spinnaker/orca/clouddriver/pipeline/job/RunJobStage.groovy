@@ -19,25 +19,19 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.job
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.RunJobTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.WaitOnJobCompletion
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Component
-class RunJobStage extends LinearStage {
-  public static final String PIPELINE_CONFIG_TYPE = "runJob"
-
-  RunJobStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class RunJobStage implements StageDefinitionBuilder {
   @Override
-  List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "runJob", RunJobTask),
-      buildStep(stage, "monitorDeploy", MonitorKatoTask),
-      buildStep(stage, "waitOnJobCompletion", WaitOnJobCompletion),
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("runJob", RunJobTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorDeploy", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("waitOnJobCompletion", WaitOnJobCompletion)
     ]
   }
 }

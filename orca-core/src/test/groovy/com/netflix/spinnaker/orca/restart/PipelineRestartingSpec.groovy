@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.restart
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.config.JesqueConfiguration
@@ -63,7 +64,7 @@ class PipelineRestartingSpec extends Specification {
     def testStage = new AutowiredTestStage("test", task1, task2)
     applicationContext.with {
       register(EmbeddedRedisConfiguration, JesqueConfiguration,
-               BatchTestConfiguration, OrcaConfiguration, OrcaPersistenceConfiguration,
+               BatchTestConfiguration, SpringBatchConfiguration, OrcaConfiguration, OrcaPersistenceConfiguration,
                JobCompletionListener, TestConfiguration)
       beanFactory.registerSingleton("testStage", testStage)
       refresh()

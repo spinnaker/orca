@@ -19,37 +19,19 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.UpdateLaunchConfigTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Component
-class UpdateLaunchConfigStage extends LinearStage {
-  public static final String PIPELINE_CONFIG_TYPE = "updateLaunchConfig"
-
-  UpdateLaunchConfigStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
-  /**
-   * This constructor only exists so we can properly instantiate the deprecated subclass
-   * ModifyAsgLaunchConfigurationStage. Once that deprecated subclass goes away, this constructor should be removed as
-   * well.
-   *
-   * @deprecated use UpdateLaunchConfigStage() instead.
-   */
-  @Deprecated
-  UpdateLaunchConfigStage(String type) {
-    super(type)
-  }
-
+class UpdateLaunchConfigStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-        buildStep(stage, "updateLaunchConfig", UpdateLaunchConfigTask),
-        buildStep(stage, "monitorModification", MonitorKatoTask),
-        buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+  <T extends Execution<T>> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+        new StageDefinitionBuilder.TaskDefinition("updateLaunchConfig", UpdateLaunchConfigTask),
+        new StageDefinitionBuilder.TaskDefinition("monitorModification", MonitorKatoTask),
+        new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     ]
   }
 }

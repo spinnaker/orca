@@ -23,38 +23,33 @@ import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StartJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
 @CompileStatic
-class JenkinsStage extends LinearStage implements RestartableStage, CancellableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "jenkins"
-
+class JenkinsStage implements StageDefinitionBuilder, RestartableStage, CancellableStage {
   @Autowired StopJenkinsJobTask stopJenkinsJobTask
 
-  JenkinsStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "startJenkinsJob", StartJenkinsJobTask),
-      buildStep(stage, "waitForJenkinsJobStart", MonitorQueuedJenkinsJobTask),
-      buildStep(stage, "monitorJenkinsJob", MonitorJenkinsJobTask)
-    ]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return Arrays.asList(
+      new StageDefinitionBuilder.TaskDefinition("startJenkinsJob", StartJenkinsJobTask.class),
+      new StageDefinitionBuilder.TaskDefinition("waitForJenkinsJobStart", MonitorQueuedJenkinsJobTask.class),
+      new StageDefinitionBuilder.TaskDefinition("monitorJenkinsJob", MonitorJenkinsJobTask.class)
+    );
   }
 
   @Override
   Stage prepareStageForRestart(Stage stage) {
-    stage = super.prepareStageForRestart(stage)
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
     stage.startTime = null
     stage.endTime = null
 
@@ -64,7 +59,7 @@ class JenkinsStage extends LinearStage implements RestartableStage, CancellableS
     stage.context.remove("buildInfo")
     stage.context.remove("buildNumber")
 
-    stage.tasks.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
+    stage.tasks.each { Task task ->
       task.startTime = null
       task.endTime = null
       task.status = ExecutionStatus.NOT_STARTED

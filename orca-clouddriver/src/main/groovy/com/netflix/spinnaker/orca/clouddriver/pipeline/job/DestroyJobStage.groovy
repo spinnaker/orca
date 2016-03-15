@@ -20,6 +20,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobForceCacheRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask
 import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.batch.core.Step
@@ -27,20 +29,13 @@ import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DestroyJobStage extends LinearStage {
-
-  public static final String PIPELINE_CONFIG_TYPE = "destroyJob"
-
-  DestroyJobStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class DestroyJobStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-        buildStep(stage, "destroyJob", DestroyJobTask),
-        buildStep(stage, "monitorDestroy", MonitorKatoTask),
-        buildStep(stage, "forceCacheRefresh", DestroyJobForceCacheRefreshTask),
+  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("destroyJob", DestroyJobTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorDestroy", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", DestroyJobForceCacheRefreshTask),
     ]
   }
 }

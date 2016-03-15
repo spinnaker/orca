@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.OrchestrationStarter
+import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
 import com.netflix.spinnaker.orca.pipeline.PipelineStarter
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -38,6 +39,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @Slf4j
 class OperationsController {
+  @Autowired
+  PipelineLauncher pipelineLauncher
+
   @Autowired
   PipelineStarter pipelineStarter
 
@@ -164,7 +168,14 @@ class OperationsController {
   private Map<String, String> startPipeline(Map config) {
     def json = objectMapper.writeValueAsString(config)
     log.info('requested pipeline: {}', json)
-    def pipeline = pipelineStarter.start(json)
+
+    def pipeline
+    if (config.executionEngine == "v2") {
+      pipeline = pipelineLauncher.start(json)
+    } else {
+      pipeline = pipelineStarter.start(json)
+    }
+
     [ref: "/pipelines/${pipeline.id}".toString()]
   }
 
