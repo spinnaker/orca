@@ -19,13 +19,10 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGroupTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DisableServerGroupTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForAllInstancesNotUpTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForDestroyedServerGroupTask
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.*
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -36,27 +33,22 @@ class DestroyServerGroupStage extends TargetServerGroupLinearStageSupport {
   @Autowired
   DisableServerGroupStage disableServerGroupStage
 
-  DestroyServerGroupStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
   @Override
-  public List<Step> buildSteps(Stage stage) {
+  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     try {
-      composeTargets(stage)
+      composeTargets(parentStage)
 
-      List steps = [
-        buildStep(stage, "disableServerGroup", DisableServerGroupTask),
-        buildStep(stage, "monitorServerGroup", MonitorKatoTask),
-        buildStep(stage, "waitForNotUpInstances", WaitForAllInstancesNotUpTask),
-        buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-        buildStep(stage, "destroyServerGroup", DestroyServerGroupTask),
-        buildStep(stage, "monitorServerGroup", MonitorKatoTask),
-        buildStep(stage, "waitForDestroyedServerGroup", WaitForDestroyedServerGroupTask),
+      [
+        new StageDefinitionBuilder.TaskDefinition("disableServerGroup", DisableServerGroupTask),
+        new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
+        new StageDefinitionBuilder.TaskDefinition("waitForNotUpInstances", WaitForAllInstancesNotUpTask),
+        new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+        new StageDefinitionBuilder.TaskDefinition("destroyServerGroup", DestroyServerGroupTask),
+        new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
+        new StageDefinitionBuilder.TaskDefinition("waitForDestroyedServerGroup", WaitForDestroyedServerGroupTask),
       ]
-
     } catch (TargetServerGroup.NotFoundException ignored) {
-      [buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)]
+      [new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)]
     }
   }
 }

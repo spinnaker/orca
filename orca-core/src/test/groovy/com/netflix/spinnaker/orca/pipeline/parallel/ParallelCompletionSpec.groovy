@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.parallel
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.config.JesqueConfiguration
@@ -57,6 +58,7 @@ class ParallelCompletionSpec extends Specification {
         TestConfiguration,
         JobCompletionListener,
         BatchTestConfiguration,
+        SpringBatchConfiguration,
         OrcaConfiguration,
         OrcaPersistenceConfiguration,
         StageDetailsTask

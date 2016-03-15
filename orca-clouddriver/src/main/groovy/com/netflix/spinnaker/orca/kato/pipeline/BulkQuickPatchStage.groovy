@@ -21,31 +21,25 @@ import com.netflix.spinnaker.orca.kato.tasks.quip.InstanceHealthCheckTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.MonitorQuipTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.TriggerQuipTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.VerifyQuipTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
 @CompileStatic
-class BulkQuickPatchStage extends LinearStage {
-
-  public static final String PIPELINE_CONFIG_TYPE = "bulkQuickPatch"
-
-  BulkQuickPatchStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class BulkQuickPatchStage implements StageDefinitionBuilder {
   @Override
-  List<Step> buildSteps(Stage stage) {
-    def step1 = buildStep(stage, "verifyQuipIsRunning", VerifyQuipTask)
-    def step2 = buildStep(stage, "triggerQuip", TriggerQuipTask)
-    def step3 = buildStep(stage, "monitorQuip", MonitorQuipTask)
-    def step4 = buildStep(stage, "instanceHealthCheck", InstanceHealthCheckTask)
-    def step5 = buildStep(stage, "waitForDiscoveryState", WaitForUpInstanceHealthTask)
-    [step1, step2, step3, step4, step5]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return Arrays.asList(
+      new StageDefinitionBuilder.TaskDefinition("verifyQuipIsRunning", VerifyQuipTask),
+      new StageDefinitionBuilder.TaskDefinition("triggerQuip", TriggerQuipTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorQuip", MonitorQuipTask),
+      new StageDefinitionBuilder.TaskDefinition("instanceHealthCheck", InstanceHealthCheckTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForDiscoveryState", WaitForUpInstanceHealthTask)
+    );
   }
 }

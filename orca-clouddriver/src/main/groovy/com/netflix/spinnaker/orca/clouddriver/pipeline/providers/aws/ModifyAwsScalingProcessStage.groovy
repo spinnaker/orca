@@ -27,43 +27,43 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.scalingprocess
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.scalingprocess.SuspendAwsScalingProcessTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
 class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
-
-  static final String PIPELINE_CONFIG_TYPE = "modifyAwsScalingProcess"
-
   ModifyAwsScalingProcessStage() {
-    super(PIPELINE_CONFIG_TYPE)
     name = "Modify Scaling Process"
   }
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    composeTargets(stage)
+  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
+    return composeTargets(parentStage);
+  }
 
-    def data = stage.mapTo(StageData)
+  @Override
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    def data = parentStage.mapTo(StageData)
     switch (data.action) {
       case StageAction.suspend:
         return [
-          buildStep(stage, "suspend", SuspendAwsScalingProcessTask),
-          buildStep(stage, "monitor", MonitorKatoTask),
-          buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-          buildStep(stage, "waitForScalingProcesses", WaitForScalingProcess)
+          new StageDefinitionBuilder.TaskDefinition("suspend", SuspendAwsScalingProcessTask),
+          new StageDefinitionBuilder.TaskDefinition("monitor", MonitorKatoTask),
+          new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+          new StageDefinitionBuilder.TaskDefinition("waitForScalingProcesses", WaitForScalingProcess)
         ]
       case StageAction.resume:
         return [
-          buildStep(stage, "resume", ResumeAwsScalingProcessTask),
-          buildStep(stage, "monitor", MonitorKatoTask),
-          buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-          buildStep(stage, "waitForScalingProcesses", WaitForScalingProcess)
+          new StageDefinitionBuilder.TaskDefinition("resume", ResumeAwsScalingProcessTask),
+          new StageDefinitionBuilder.TaskDefinition("monitor", MonitorKatoTask),
+          new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+          new StageDefinitionBuilder.TaskDefinition("waitForScalingProcesses", WaitForScalingProcess)
         ]
     }
     throw new RuntimeException("No action specified!")
