@@ -16,10 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.batch.core.Step
 
 interface StepProvider {
   String getType()
-  List<Step> buildSteps(Stage stage)
+
+  public <T extends Execution<T>> List<Step> buildSteps(Stage<T> stage)
 }

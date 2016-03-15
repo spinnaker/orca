@@ -16,15 +16,14 @@
 
 package com.netflix.spinnaker.orca.pipeline.model
 
+import groovy.transform.CompileStatic
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.google.common.collect.ImmutableList
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.security.AuthenticatedRequest
-import groovy.transform.CompileStatic
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 
 @CompileStatic
-abstract class Execution<T> implements Serializable {
+abstract class Execution<T extends Execution<T>> implements Serializable {
   String id
   String application
   String executingInstance
@@ -56,46 +55,6 @@ abstract class Execution<T> implements Serializable {
   Stage namedStage(String type) {
     stages.find {
       it.type == type
-    }
-  }
-
-  Execution<T> asImmutable() {
-    def self = this
-
-    new Execution<T>() {
-      @Override
-      String getId() {
-        self.id
-      }
-
-      @Override
-      void setId(String id) {
-
-      }
-
-      @Override
-      List<Stage> getStages() {
-        ImmutableList.copyOf(self.stages)
-      }
-
-      @Override
-      void setStages(List<Stage<T>> stages) {
-
-      }
-
-      @Override
-      Stage namedStage(String type) {
-        self.namedStage(type).asImmutable()
-      }
-
-      @Override
-      Execution asImmutable() {
-        this
-      }
-
-      String getExecutingInstance() {
-        self.executingInstance
-      }
     }
   }
 

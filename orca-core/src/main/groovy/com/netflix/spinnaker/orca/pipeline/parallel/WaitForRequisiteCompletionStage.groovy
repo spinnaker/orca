@@ -16,23 +16,23 @@
 
 package com.netflix.spinnaker.orca.pipeline.parallel
 
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
+
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 
 @CompileStatic
 @Component
-class WaitForRequisiteCompletionStage extends LinearStage {
-  static final String PIPELINE_CONFIG_TYPE = "waitForRequisiteCompletion"
-
-  WaitForRequisiteCompletionStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
+class WaitForRequisiteCompletionStage implements StageDefinitionBuilder {
+  public static final String PIPELINE_CONFIG_TYPE = getType(WaitForRequisiteCompletionStage)
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [buildStep(stage, "waitForRequisiteTasks", WaitForRequisiteCompletionTask)]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("waitForRequisiteTasks", WaitForRequisiteCompletionTask)
+    ]
   }
 }
