@@ -20,34 +20,32 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.batch.RestartableStage
 import com.netflix.spinnaker.orca.front50.tasks.MonitorPipelineTask
 import com.netflix.spinnaker.orca.front50.tasks.StartPipelineTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
+
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 
 
 @Component
 @CompileStatic
-class PipelineStage extends LinearStage implements RestartableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "pipeline"
-
-  PipelineStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
+class PipelineStage implements StageDefinitionBuilder, RestartableStage {
+  public static final String PIPELINE_CONFIG_TYPE = getType(PipelineStage)
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "startPipeline", StartPipelineTask),
-      buildStep(stage, "monitorPipeline", MonitorPipelineTask)
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("startPipeline", StartPipelineTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorPipeline", MonitorPipelineTask)
     ]
   }
 
   @Override
   Stage prepareStageForRestart(Stage stage) {
-    stage = super.prepareStageForRestart(stage)
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
     stage.startTime = null
     stage.endTime = null
 

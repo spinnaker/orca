@@ -21,33 +21,29 @@ import com.netflix.spinnaker.orca.batch.RestartableStage
 import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StartScriptTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class ScriptStage extends LinearStage implements RestartableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "script"
-
-  ScriptStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
+class ScriptStage implements StageDefinitionBuilder, RestartableStage {
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "startScript", StartScriptTask),
-      buildStep(stage, "waitForScriptStart", MonitorQueuedJenkinsJobTask),
-      buildStep(stage, "monitorScript", MonitorJenkinsJobTask)
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+        new StageDefinitionBuilder.TaskDefinition("startScript", StartScriptTask),
+        new StageDefinitionBuilder.TaskDefinition("waitForScriptStart", MonitorQueuedJenkinsJobTask),
+        new StageDefinitionBuilder.TaskDefinition("monitorScript", MonitorJenkinsJobTask)
     ]
   }
 
   @Override
   Stage prepareStageForRestart(Stage stage) {
-    stage = super.prepareStageForRestart(stage)
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
     stage.startTime = null
     stage.endTime = null
 
@@ -57,7 +53,7 @@ class ScriptStage extends LinearStage implements RestartableStage {
     stage.context.remove("buildInfo")
     stage.context.remove("buildNumber")
 
-    stage.tasks.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
+    stage.tasks.each { Task task ->
       task.startTime = null
       task.endTime = null
       task.status = ExecutionStatus.NOT_STARTED

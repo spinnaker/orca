@@ -22,9 +22,9 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesT
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DeployStrategyStage
 import com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -43,22 +43,22 @@ class DeployStage extends DeployStrategyStage {
 
   @VisibleForTesting
   @Override
-  protected List<Step> basicSteps(Stage stage) {
-    def steps = []
-
-    steps << buildStep(stage, "createDeploy", CreateDeployTask)
-    steps << buildStep(stage, "monitorDeploy", MonitorKatoTask)
-    steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
-    steps << buildStep(stage, "waitForUpInstances", WaitForUpInstancesTask)
-    steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+  protected List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage) {
+    def tasks = [
+      new StageDefinitionBuilder.TaskDefinition("createDeploy", CreateDeployTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorDeploy", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+    ]
 
     if (diffTasks) {
       diffTasks.each { DiffTask diffTask ->
-        steps << buildStep(stage, getDiffTaskName(diffTask.class.simpleName), diffTask.class)
+        tasks << new StageDefinitionBuilder.TaskDefinition(getDiffTaskName(diffTask.class.simpleName), diffTask.class)
       }
     }
 
-    return steps
+    return tasks
   }
 
   private String getDiffTaskName(String className) {

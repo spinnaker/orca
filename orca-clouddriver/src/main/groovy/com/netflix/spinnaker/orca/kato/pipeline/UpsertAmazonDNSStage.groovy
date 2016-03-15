@@ -16,28 +16,22 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.kato.tasks.UpsertAmazonDNSTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @CompileStatic
 @Component
-class UpsertAmazonDNSStage extends LinearStage {
-
-  public static final String PIPELINE_CONFIG_TYPE = "upsertAmazonDNS"
-
-  UpsertAmazonDNSStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class UpsertAmazonDNSStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    def step1 = buildStep(stage, "upsertAmazonDNS", UpsertAmazonDNSTask)
-    def step2 = buildStep(stage, "monitorUpsertDNS", MonitorKatoTask)
-    [step1, step2]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("upsertAmazonDNS", UpsertAmazonDNSTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorUpsertDNS", MonitorKatoTask)
+    ]
   }
 }

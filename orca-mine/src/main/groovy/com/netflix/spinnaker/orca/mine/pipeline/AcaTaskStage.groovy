@@ -21,34 +21,26 @@ import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorAcaTaskTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterAcaTaskTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
-import org.springframework.beans.factory.annotation.Autowire
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
-class AcaTaskStage extends LinearStage implements CancellableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "acaTask"
-
-  AcaTaskStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired
   MineService mineService
 
-
   @Override
-  List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "registerGenericCanary", RegisterAcaTaskTask),
-      buildStep(stage, "monitorGenericCanary", MonitorAcaTaskTask),
-      buildStep(stage, "completeCanary", CompleteCanaryTask)
-    ]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return Arrays.asList(
+      new StageDefinitionBuilder.TaskDefinition("registerGenericCanary", RegisterAcaTaskTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorGenericCanary", MonitorAcaTaskTask),
+      new StageDefinitionBuilder.TaskDefinition("completeCanary", CompleteCanaryTask)
+    );
   }
 
   @Override

@@ -30,11 +30,12 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 
 @Slf4j
 @Component
 class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
-  String serverGroupAction = ResizeServerGroupStage.TYPE
+  String serverGroupAction = getType(ResizeServerGroupStage)
 
   @Autowired
   OortHelper oortHelper

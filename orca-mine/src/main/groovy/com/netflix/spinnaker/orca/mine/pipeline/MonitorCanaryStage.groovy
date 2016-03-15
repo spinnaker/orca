@@ -24,34 +24,28 @@ import com.netflix.spinnaker.orca.mine.tasks.CleanupCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterCanaryTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
-class MonitorCanaryStage extends LinearStage implements CancellableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "monitorCanary"
-
-  @Autowired DeployCanaryStage deployCanaryStage
-  @Autowired MineService mineService
-
-  MonitorCanaryStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
+class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
+  @Autowired
+  MineService mineService
 
   @Override
-  List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "registerCanary", RegisterCanaryTask),
-      buildStep(stage, "monitorCanary", MonitorCanaryTask),
-      buildStep(stage, "cleanupCanary", CleanupCanaryTask),
-      buildStep(stage, "monitorCleanup", MonitorKatoTask),
-      buildStep(stage, "completeCanary", CompleteCanaryTask)
-    ]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return Arrays.asList(
+      new StageDefinitionBuilder.TaskDefinition("registerCanary", RegisterCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorCanary", MonitorCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("cleanupCanary", CleanupCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorCleanup", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("completeCanary", CompleteCanaryTask)
+    );
   }
 
   @Override
@@ -60,7 +54,7 @@ class MonitorCanaryStage extends LinearStage implements CancellableStage {
     log.info("Canceled canary in mine (canaryId: ${stage.context.canary.id}, stageId: ${stage.id}, executionId: ${stage.execution.id})")
 
     def canary = stage.ancestors { Stage s, StageBuilder stageBuilder -> stageBuilder instanceof CanaryStage }[0]
-    def cancelResult = ((CanaryStage) canary.stageBuilder).cancel(canary.stage)
+    def cancelResult = ((CancellableStage) canary.stageBuilder).cancel(canary.stage)
     cancelResult.details.put("canary", cancelCanaryResults)
 
     return cancelResult

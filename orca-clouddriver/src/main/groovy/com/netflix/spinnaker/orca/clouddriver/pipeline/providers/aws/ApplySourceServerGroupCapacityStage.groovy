@@ -19,9 +19,9 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 /**
@@ -33,19 +33,13 @@ import org.springframework.stereotype.Component
  * - restoring min after the deploy has completed ({@link ApplySourceServerGroupCapacityTask})
  */
 @Component
-class ApplySourceServerGroupCapacityStage extends LinearStage {
-  public static final String PIPELINE_CONFIG_TYPE = "applySourceServerGroupCapacity"
-
-  ApplySourceServerGroupCapacityStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "restoreMinCapacity", ApplySourceServerGroupCapacityTask),
-      buildStep(stage, "waitForCapacityMatch", MonitorKatoTask),
-      buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("restoreMinCapacity", ApplySourceServerGroupCapacityTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForCapacityMatch", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     ]
   }
 }

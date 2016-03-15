@@ -44,6 +44,8 @@ dependencies {
   compile project(":orca-igor")
   compile project(":orca-eureka")
   compile project(":orca-tide")
+  compile project(":orca-akka")
+  compile project(":orca-spring-batch")
 
   runtime spinnaker.dependency("kork")
   compile spinnaker.dependency("korkWeb")

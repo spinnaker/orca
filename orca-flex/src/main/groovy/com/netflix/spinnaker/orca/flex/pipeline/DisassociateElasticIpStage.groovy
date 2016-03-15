@@ -17,24 +17,19 @@
 package com.netflix.spinnaker.orca.flex.pipeline
 
 import com.netflix.spinnaker.orca.flex.tasks.DisassociateElasticIpTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DisassociateElasticIpStage extends LinearStage {
-  public static final String PIPELINE_CONFIG_TYPE = "disassociateElasticIp"
-
-  DisassociateElasticIpStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class DisassociateElasticIpStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    def step1 = buildStep(stage, "disassociateElasticIp", DisassociateElasticIpTask)
-    [step1]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("disassociateElasticIp", DisassociateElasticIpTask)
+    ]
   }
 }
