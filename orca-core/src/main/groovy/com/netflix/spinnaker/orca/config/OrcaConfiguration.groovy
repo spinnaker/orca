@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.config
 
+import com.netflix.spinnaker.orca.listeners.ExecutionPropagationListener
+import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
+import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.batch.ExecutionPropagationListener
 import com.netflix.spinnaker.orca.libdiffs.ComparableLooseVersion
@@ -31,22 +34,24 @@ import org.springframework.context.ApplicationContext
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.ThreadPoolExecutor
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.ValueFunction
-import com.netflix.spinnaker.orca.batch.StageStatusPropagationListener
-import com.netflix.spinnaker.orca.batch.StageTaskPropagationListener
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.*
 import com.netflix.spinnaker.orca.batch.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
+import com.netflix.spinnaker.orca.libdiffs.ComparableLooseVersion
+import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion
 import com.netflix.spinnaker.orca.notifications.scheduling.SuspendedPipelinesNotificationHandler
 import com.netflix.spinnaker.orca.pipeline.OrchestrationStarter
 import com.netflix.spinnaker.orca.pipeline.PipelineStarterListener
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineStack
 import com.netflix.spinnaker.orca.pipeline.persistence.memory.InMemoryPipelineStack
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import org.springframework.batch.core.configuration.ListableJobLocator
 import org.springframework.batch.core.configuration.annotation.BatchConfigurer
 import org.springframework.batch.core.explore.JobExplorer
@@ -55,6 +60,8 @@ import org.springframework.batch.core.launch.JobOperator
 import org.springframework.batch.core.launch.support.SimpleJobOperator
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.*
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -145,7 +152,7 @@ class OrcaConfiguration {
                                         List<ExceptionHandler> exceptionHandlers,
                                         StageNavigator stageNavigator,
                                         Registry registry) {
-    new TaskTaskletAdapter(executionRepository, exceptionHandlers, stageNavigator, registry)
+    new TaskTaskletAdapterImpl(executionRepository, exceptionHandlers, stageNavigator, registry)
   }
 
   @Bean
@@ -168,25 +175,25 @@ class OrcaConfiguration {
      */
     def compositeStepExecutionListener = new CompositeStepExecutionListener()
     compositeStepExecutionListener.setListeners([
-      new StageTaskPropagationListener(executionRepository) {
+      new StageTaskPropagationListener() {
         @Override
         void afterTask(Stage stage, StepExecution stepExecution) {
           // do nothing
         }
       },
-      new StageStatusPropagationListener(executionRepository)  {
+      new StageStatusPropagationListener()  {
         @Override
         void afterTask(Stage stage, StepExecution stepExecution) {
           // do nothing
         }
       },
-      new StageStatusPropagationListener(executionRepository) {
+      new StageStatusPropagationListener() {
         @Override
         void beforeTask(Stage stage, StepExecution stepExecution) {
           // do nothing
         }
       },
-      new StageTaskPropagationListener(executionRepository)  {
+      new StageTaskPropagationListener()  {
         @Override
         void beforeTask(Stage stage, StepExecution stepExecution) {
           // do nothing
@@ -197,15 +204,15 @@ class OrcaConfiguration {
   }
 
   @Bean
-  ExecutionPropagationListener executionPropagationListenerBefore(ExecutionRepository executionRepository) {
+  ExecutionPropagationListener executionPropagationListenerBefore() {
     // need a dedicated beforeJob listener due to how spring boot ordered listeners
-    new ExecutionPropagationListener(executionRepository, true, false)
+    new ExecutionPropagationListener(true, false)
   }
 
   @Bean
-  ExecutionPropagationListener executionPropagationListenerAfter(ExecutionRepository executionRepository) {
+  ExecutionPropagationListener executionPropagationListenerAfter() {
     // need a dedicated afterJob listener due to how spring boot ordered listeners
-    new ExecutionPropagationListener(executionRepository, false, true)
+    new ExecutionPropagationListener(false, true)
   }
 
   @Bean

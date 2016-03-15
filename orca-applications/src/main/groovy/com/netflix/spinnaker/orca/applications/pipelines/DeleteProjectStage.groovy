@@ -22,25 +22,21 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DeleteProjectStage extends LinearStage {
-  public static final String PIPELINE_CONFIG_TYPE = "deleteProject"
-
-  DeleteProjectStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class DeleteProjectStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [buildStep(stage, "deleteProject", DeleteProjectTask)]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return Collections.singletonList(
+      new StageDefinitionBuilder.TaskDefinition("deleteProject", DeleteProjectTask)
+    );
   }
 
   @Component

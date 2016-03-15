@@ -126,6 +126,11 @@ class Pipeline extends Execution<Pipeline> {
       return this
     }
 
+    Builder withId(id = UUID.randomUUID().toString()) {
+      pipeline.id = id
+      return this
+    }
+
     Builder withGlobalContext(Map<String, Object> context) {
       pipeline.context.clear()
       pipeline.context.putAll(context)
