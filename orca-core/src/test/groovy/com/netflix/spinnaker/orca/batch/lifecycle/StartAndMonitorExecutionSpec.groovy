@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.batch.lifecycle
 
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import org.springframework.batch.core.ExitStatus
 import org.springframework.batch.core.Job
@@ -94,7 +94,7 @@ class StartAndMonitorExecutionSpec extends AbstractBatchLifecycleSpec {
       startTask: startTask,
       detailsTask: detailsTask,
       monitorTask: monitorTask,
-      taskTaskletAdapter: new TaskTaskletAdapter(executionRepository, [])
+      taskTaskletAdapters: [new TaskTaskletAdapterImpl(executionRepository, [])]
     )
     stageBuilder.applicationContext = applicationContext
     stageBuilder.build(flowBuilder, pipeline.namedStage("startAndMonitor"))
