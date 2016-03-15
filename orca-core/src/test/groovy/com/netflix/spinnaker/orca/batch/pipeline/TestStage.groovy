@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca.batch.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.StageStatusPropagationListener
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import groovy.transform.CompileStatic
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.StepExecutionListener
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
@@ -39,7 +39,7 @@ class TestStage extends LinearStage {
   TestStage(String name, StepBuilderFactory steps, ExecutionRepository executionRepository, Task... tasks) {
     super(name)
     this.steps = steps
-    this.taskTaskletAdapter = new TaskTaskletAdapter(executionRepository, [])
+    this.taskTaskletAdapters = [new TaskTaskletAdapterImpl(executionRepository, [])]
     this.taskListeners = [
       new StageStatusPropagationListener(executionRepository)
     ] as List<StepExecutionListener>

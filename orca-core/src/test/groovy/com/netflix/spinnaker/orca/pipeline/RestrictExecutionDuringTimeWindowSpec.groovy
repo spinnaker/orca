@@ -15,10 +15,13 @@
  */
 
 package com.netflix.spinnaker.orca.pipeline
+
+import java.text.SimpleDateFormat
 import com.netflix.spinnaker.kork.eureka.EurekaComponents
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.lifecycle.AbstractBatchLifecycleSpec
 import com.netflix.spinnaker.orca.config.JesqueConfiguration
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
@@ -34,9 +37,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.test.context.ContextConfiguration
 import spock.lang.Unroll
-
-import java.text.SimpleDateFormat
-
 import static com.netflix.spinnaker.orca.batch.PipelineInitializerTasklet.initializationStep
 import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.SuspendExecutionDuringTimeWindowTask
 import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.SuspendExecutionDuringTimeWindowTask.HourMinute
@@ -174,7 +174,7 @@ class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
   protected Job configureJob(JobBuilder jobBuilder) {
     def stage = pipeline.namedStage("stage2")
     def builder = jobBuilder.flow(initializationStep(steps, pipeline))
-    def stageBuilder = new InjectStageBuilder(applicationContext, steps, new TaskTaskletAdapter(executionRepository, []))
+    def stageBuilder = new InjectStageBuilder(applicationContext, steps, new TaskTaskletAdapterImpl(executionRepository, []))
     stageBuilder.build(builder, stage).build().build()
   }
 
@@ -184,7 +184,7 @@ class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
       setApplicationContext(applicationContext)
       setTaskListeners(listeners)
       setSteps(steps)
-      setTaskTaskletAdapter(adapter)
+      setTaskTaskletAdapters([adapter])
     }
 
     @Override

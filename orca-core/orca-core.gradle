@@ -30,4 +30,5 @@ dependencies {
   compile spinnaker.dependency('kork')
   testCompile project(":orca-test")
   compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.3"
+  compile "com.typesafe.akka:akka-cluster-sharding_2.11:2.4.1"
 }

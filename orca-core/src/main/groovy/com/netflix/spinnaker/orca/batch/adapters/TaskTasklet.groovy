@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.batch.adapters
 
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.*
@@ -29,8 +31,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Task as TaskModel
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import com.netflix.spinnaker.security.User
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.ExitStatus
 import org.springframework.batch.core.StepContribution
@@ -103,21 +103,24 @@ class TaskTasklet implements Tasklet {
           stageOutputs.put('batch.task.id.' + taskName(chunkContext), chunkContext.stepContext.stepExecution.id)
         }
 
-        storeExecutionResults(new DefaultTaskResult(result.status, stageOutputs, result.globalOutputs), stage,
-                              chunkContext)
+        storeExecutionResults(new DefaultTaskResult(result.status, stageOutputs, result.globalOutputs), stage, chunkContext)
 
-        def batchStepStatus = BatchStepStatus.mapResult(result)
-        chunkContext.stepContext.stepExecution.with {
-          executionContext.put("orcaTaskStatus", result.status)
-          status = batchStepStatus.batchStatus
-          jobExecution.status = batchStepStatus.batchStatus
-        }
-        contribution.exitStatus = batchStepStatus.exitStatus
-        return batchStepStatus.repeatStatus
+        return taskToBatchStatus(contribution, chunkContext, result.status)
       }
     } finally {
       save(stage, chunkContext)
     }
+  }
+
+  private RepeatStatus taskToBatchStatus(StepContribution contribution, ChunkContext chunkContext, ExecutionStatus taskStatus) {
+    def batchStepStatus = BatchStepStatus.mapResult(taskStatus)
+    chunkContext.stepContext.stepExecution.with {
+      executionContext.put("orcaTaskStatus", taskStatus)
+      status = batchStepStatus.batchStatus
+      jobExecution.status = batchStepStatus.batchStatus
+    }
+    contribution.exitStatus = batchStepStatus.exitStatus
+    return batchStepStatus.repeatStatus
   }
 
   private static TaskResult applyStageStatusOverrides(Stage stage, TaskResult result) {

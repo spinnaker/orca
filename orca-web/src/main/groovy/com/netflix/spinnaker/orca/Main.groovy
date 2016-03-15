@@ -19,8 +19,13 @@ package com.netflix.spinnaker.orca
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.ErrorConfiguration
 import com.netflix.spinnaker.config.TomcatConfiguration
+import com.netflix.spinnaker.orca.actorsystem.ActorSystemConfiguration
+import com.netflix.spinnaker.orca.actorsystem.AkkaClusterConfiguration
+import com.netflix.spinnaker.orca.actorsystem.DummyActorConfig
+import com.netflix.spinnaker.orca.actorsystem.task.TaskActorFactory
 import com.netflix.spinnaker.orca.applications.config.ApplicationConfig
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
+import com.netflix.spinnaker.orca.batch.AkkaTaskTaskletAdapter
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
 import com.netflix.spinnaker.orca.config.JesqueConfiguration
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
@@ -73,7 +78,12 @@ import org.springframework.scheduling.annotation.EnableAsync
   MineConfiguration,
   MaheConfiguration,
   TideConfiguration,
-  ApplicationConfig
+  ApplicationConfig,
+  ActorSystemConfiguration,
+  AkkaClusterConfiguration,
+  DummyActorConfig,
+  TaskActorFactory,
+  AkkaTaskTaskletAdapter
 ])
 class Main extends SpringBootServletInitializer {
   static final Map<String, String> DEFAULT_PROPS = [
