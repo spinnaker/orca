@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.pipeline
 
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -42,7 +42,6 @@ import org.springframework.context.support.AbstractApplicationContext
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ContextConfiguration
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisPool
 import redis.clients.util.Pool
 import spock.lang.AutoCleanup
 import spock.lang.Shared
@@ -71,7 +70,7 @@ class PipelineJobBuilderSpec extends Specification {
 
   def pipelineInitializationStage = new PipelineInitializationStage()
   def waitForRequisiteCompletionStage = new WaitForRequisiteCompletionStage()
-  def taskTaskletAdapter = new TaskTaskletAdapter(executionRepository, [])
+  def taskTaskletAdapter = new TaskTaskletAdapterImpl(executionRepository, [])
 
   @Shared
   def jobBuilder

@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.ExecutionPropagationListener
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -75,7 +75,7 @@ class ExecutionCancellationSpec extends AbstractBatchLifecycleSpec {
       .flow(initializationStep(steps, pipeline))
     def stageBuilder = new CancellationStageBuilder(
       steps: steps,
-      taskTaskletAdapter: new TaskTaskletAdapter(executionRepository, [])
+      taskTaskletAdapters: [new TaskTaskletAdapterImpl(executionRepository, [])]
     )
     stageBuilder.applicationContext = applicationContext
     stageBuilder.build(builder, stage).build().build()
