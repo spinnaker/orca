@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca.restart
 
+import groovy.transform.CompileStatic
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.StageBuilder
@@ -33,7 +35,6 @@ import com.netflix.spinnaker.orca.test.JobCompletionListener
 import com.netflix.spinnaker.orca.test.TestConfiguration
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
-import groovy.transform.CompileStatic
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.configuration.JobRegistry
 import org.springframework.batch.core.explore.JobExplorer
@@ -43,8 +44,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import spock.lang.AutoCleanup
 import spock.lang.Specification
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner.STAGE_AFTER
-import static com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner.STAGE_BEFORE
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static java.lang.System.currentTimeMillis
 
 class SyntheticStageRestartingSpec extends Specification {
@@ -69,7 +70,7 @@ class SyntheticStageRestartingSpec extends Specification {
     def testStage = new SimpleSyntheticStage("test", beforeStage, mainTask, afterStage)
     applicationContext.with {
       register(EmbeddedRedisConfiguration, JesqueConfiguration,
-               BatchTestConfiguration, OrcaConfiguration, OrcaPersistenceConfiguration,
+               BatchTestConfiguration, SpringBatchConfiguration, OrcaConfiguration, OrcaPersistenceConfiguration,
                JobCompletionListener, TestConfiguration)
       beanFactory.registerSingleton("testStage", testStage)
       beanFactory.registerSingleton("beforeStage", beforeStage)

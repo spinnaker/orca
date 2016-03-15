@@ -17,10 +17,13 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.DefaultTaskResult
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.batch.StageBuilder
-import com.netflix.spinnaker.orca.batch.StageExecutionListener
+import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
+import com.netflix.spinnaker.orca.listeners.Persister
+import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.TerminateInstancesTask
@@ -36,7 +39,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.transform.CompileStatic
 import org.slf4j.LoggerFactory
-import org.springframework.batch.core.StepExecution
 import org.springframework.batch.core.job.builder.FlowBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -70,8 +72,12 @@ class RollingPushStage extends StageBuilder {
     jobBuilder.next(buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask))
     jobBuilder.next(buildStep(stage, "waitForNewInstances", WaitForNewInstanceLaunchTask))
     jobBuilder.next(buildStep(stage, "waitForUpInstances", WaitForUpInstanceHealthTask))
-    def endOfCycle = buildStep(stage, "checkForRemainingTerminations", CheckForRemainingTerminationsTask,
-                               new RedirectResetListener(executionRepository))
+    def endOfCycle = buildStep(
+      stage,
+      "checkForRemainingTerminations",
+      CheckForRemainingTerminationsTask,
+      getExecutionListenerProvider().wrap(new RedirectResetListener())
+    )
     jobBuilder.next(endOfCycle)
     jobBuilder.on(REDIRECT.name()).to(startOfCycle)
     jobBuilder.from(endOfCycle).on('**').to(buildStep(stage, "pushComplete", pushComplete()))
@@ -92,19 +98,20 @@ class RollingPushStage extends StageBuilder {
    * A listener that resets the task status of everything in a loop so that it can be re-run without interfering
    * with restart semantics.
    */
-  static class RedirectResetListener extends StageExecutionListener {
-    protected RedirectResetListener(ExecutionRepository executionRepository) {
-      super(executionRepository)
-    }
+  static class RedirectResetListener implements StageListener {
 
     @Override
-    void afterTask(Stage stage, StepExecution stepExecution) {
-      if (stepExecution.exitStatus.exitCode == REDIRECT.name()) {
+    void afterTask(Persister persister,
+                   Stage stage,
+                   com.netflix.spinnaker.orca.pipeline.model.Task task,
+                   ExecutionStatus executionStatus,
+                   boolean wasSuccessful) {
+      if (executionStatus == REDIRECT) {
         stage.tasks[1..10].each {
           it.status = NOT_STARTED
           it.endTime = null
         }
-        executionRepository.storeStage(stage)
+        persister.save(stage)
       }
     }
   }

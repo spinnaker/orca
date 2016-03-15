@@ -16,11 +16,32 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
+import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
+import com.netflix.spinnaker.orca.clouddriver.InstanceService
+import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
+import org.springframework.batch.core.repository.JobRepository
+import org.springframework.context.ApplicationContext
+import org.springframework.context.support.GenericApplicationContext
+import org.springframework.transaction.PlatformTransactionManager
+import redis.clients.jedis.Jedis
+import redis.clients.util.Pool
+import retrofit.RetrofitError
+import retrofit.client.Response
+import retrofit.mime.TypedByteArray
+import spock.lang.AutoCleanup
+import spock.lang.Shared
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.InheritConstructors
 import org.springframework.batch.core.Step
@@ -32,9 +53,19 @@ class QuickPatchStageSpec extends Specification {
 
   def oortHelper = Mock(OortHelper)
   def bulkQuickPatchStage = Mock(BulkQuickPatchStage)
-  def step = Stub(Step)
 
-  @Subject quickPatchStage = new NoBatchQuickPatchStage(oortHelper: oortHelper, bulkQuickPatchStage: bulkQuickPatchStage, step: step)
+  @Subject quickPatchStage = new QuickPatchStage(oortHelper: oortHelper, bulkQuickPatchStage: bulkQuickPatchStage, step: step)
+
+  InstanceService instanceService = Mock(InstanceService)
+
+  void setup() {
+    GroovyMock(OortHelper, global: true)
+    quickPatchStage.objectMapper = objectMapper
+    quickPatchStage.oortService = oort
+    quickPatchStage.bulkQuickPatchStage = bulkQuickPatchStage
+    quickPatchStage.INSTANCE_VERSION_SLEEP = 1
+    quickPatchStage.oortHelper = oortHelper
+  }
 
   def "no-ops if there are no instances"() {
     given:
@@ -45,7 +76,7 @@ class QuickPatchStageSpec extends Specification {
     stage.status == ExecutionStatus.NOT_STARTED
 
     when:
-    def steps = quickPatchStage.buildSteps(stage)
+    quickPatchStage.aroundStages(stage)
 
     then:
     1 * oortHelper.getInstancesForCluster(_, null, true, false) >> [:]
@@ -57,31 +88,51 @@ class QuickPatchStageSpec extends Specification {
     where:
     context = [:]
   }
+
   def "configures bulk quickpatch"() {
     given:
-    def stage = new PipelineStage(new Pipeline(), "quickPatch", stageContext)
+    def config = [
+      application: "deck",
+      clusterName: "deck-cluster",
+      account    : "account",
+      region     : "us-east-1",
+      baseOs     : "ubuntu"
+    ]
+
+    and:
+    oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
+
+    def stage = new PipelineStage(new Pipeline(), "quickPatch", config)
+    stage.beforeStages = new NeverClearedArrayList()
+    stage.afterStages = new NeverClearedArrayList()
 
     when:
-    def steps = quickPatchStage.buildSteps(stage)
+    def syntheticStages = quickPatchStage.aroundStages(stage)
 
     then:
-    1 * oortHelper.getInstancesForCluster(_, null, true, false) >> instances
-    steps == [step]
-    !stage.initializationStage
-    stage.status == ExecutionStatus.NOT_STARTED
-    stage.afterStages.size() == 1
-    with(stage.afterStages[0]) {
-      name == "bulkQuickPatchStage"
-      stageBuilder == bulkQuickPatchStage
-      context.instances == instances
+    syntheticStages.size() == 1
+    syntheticStages*.type == [bulkQuickPatchStage.type]
+
+    and:
+    with(syntheticStages[0].context) {
+      application == "deck"
+      account == "account"
+      region == "us-east-1"
+      clusterName == "deck-cluster"
+      instanceIds == ["i-1234", "i-2345"]
+      instances.size() == expectedInstances.size()
+      instances.every {
+        it.value.hostName == expectedInstances.get(it.key).hostName
+        it.value.healthCheck == expectedInstances.get(it.key).healthCheck
+      }
     }
     0 * _
 
     where:
-    instances = (1..10).collect(this.&mkInstance).collectEntries { [(it.instanceId):it] }
-    stageContext = [
-      rollingPatch: false
-    ]
+    asgNames = ["deck-prestaging-v300"]
+    instance1 = [instanceId: "i-1234", publicDnsName: "foo.com", health: [[foo: "bar"], [healthCheckUrl: "http://foo.com:7001/healthCheck"]]]
+    instance2 = [instanceId: "i-2345", publicDnsName: "foo2.com", health: [[foo2: "bar"], [healthCheckUrl: "http://foo2.com:7001/healthCheck"]]]
+    expectedInstances = ["i-1234": [hostName: "foo.com", healthCheckUrl: "http://foo.com:7001/healthCheck"], "i-2345": [hostName: "foo2.com", healthCheckUrl: "http://foo.com:7001/healthCheck"]]
   }
 
   def "configures rolling quickpatch"() {
@@ -89,25 +140,44 @@ class QuickPatchStageSpec extends Specification {
     def stage = new PipelineStage(new Pipeline(), "quickPatch", stageContext)
 
     when:
-    def steps = quickPatchStage.buildSteps(stage)
+    def syntheticStages = quickPatchStage.aroundStages(stage)
 
     then:
-    1 * oortHelper.getInstancesForCluster(_, null, true, false) >> instances
-    steps == [step]
-    !stage.initializationStage
-    stage.status == ExecutionStatus.NOT_STARTED
-    stage.afterStages.size() == instances.size()
-    def stageInstances = [] as Set
-    stage.afterStages.each {
-      with(it) {
-        name == "bulkQuickPatchStage"
-        stageBuilder == bulkQuickPatchStage
-        context.instances.size() == 1
-        stageInstances.addAll(context.instances.keySet()) == true
+    1 * oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
+
+    and:
+    syntheticStages.size() == 2
+
+    and:
+    syntheticStages*.type.unique() == [bulkQuickPatchStage.type]
+
+    and:
+    with(syntheticStages[0].context) {
+      application == "deck"
+      account == "account"
+      region == "us-east-1"
+      clusterName == config.clusterName
+      instanceIds == ["i-1234"]
+      instances.size() == 1
+      instances.every {
+        it.value.hostName == expectedInstances.get(it.key).hostName
+        it.value.healthCheck == expectedInstances.get(it.key).healthCheck
       }
     }
-    stageInstances.sort() == instances.keySet().sort()
-    0 * _
+
+    and:
+    with(syntheticStages[1].context) {
+      application == "deck"
+      account == "account"
+      region == "us-east-1"
+      clusterName == config.clusterName
+      instanceIds == ["i-2345"]
+      instances.size() == 1
+      instances.every {
+        it.value.hostName == expectedInstances.get(it.key).hostName
+        it.value.healthCheck == expectedInstances.get(it.key).healthCheck
+      }
+    }
 
     where:
     instances = (1..10).collect(this.&mkInstance).collectEntries { [(it.instanceId):it] }
@@ -122,19 +192,91 @@ class QuickPatchStageSpec extends Specification {
       hostName: "h${id}.foo.com",
       healthCheckUrl: "/health"
     ]
+    def stage = new PipelineStage(new Pipeline(), "quickPatch", config)
+
+    and:
+    stage.beforeStages = new NeverClearedArrayList()
+    stage.afterStages = new NeverClearedArrayList()
+    expectedInstances.size() * quickPatchStage.createInstanceService(_) >> instanceService
+    1 * instanceService.getCurrentVersion(_) >>> new Response(
+      "foo", 200, "ok", [],
+      new TypedByteArray(
+        "application/json",
+        objectMapper.writeValueAsBytes(["version": "1.21"])
+      )
+    )
+    1 * instanceService.getCurrentVersion(_) >>> new Response(
+      "foo", 200, "ok", [],
+      new TypedByteArray(
+        "application/json",
+        objectMapper.writeValueAsBytes(["version": "1.2"])
+      )
+    )
+    when:
+    def syntheticStages = quickPatchStage.aroundStages(stage)
+
+    then:
+    1 * oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
+
+    and:
+    stage.context.skippedInstances.'i-2345'
+    syntheticStages.size() == 1
+    with(syntheticStages[0].context) {
+      application == application
+      account == account
+      region == region
+      clusterName == config.clusterName
+      instanceIds == ["i-1234"]
+      instances.size() == 1
+      instances.every {
+        it.value.hostName == expectedInstances.get(it.key).hostName
+        it.value.healthCheck == expectedInstances.get(it.key).healthCheck
+      }
+    }
+    where:
+    application = "deck"
+    region = "us-east-1"
+    account = "account"
+    asgNames = ["deck-prestaging-v300"]
+    instance1 = [instanceId: "i-1234", publicDnsName: "foo.com", health: [[foo: "bar"], [healthCheckUrl: "http://foo.com:7001/healthCheck"]]]
+    instance2 = [instanceId: "i-2345", publicDnsName: "foo2.com", health: [[foo2: "bar"], [healthCheckUrl: "http://foo2.com:7001/healthCheck"]]]
+    expectedInstances = ["i-1234": [hostName: "foo.com", healthCheckUrl: "http://foo.com:7001/healthCheck"], "i-2345": [hostName: "foo2.com", healthCheckUrl: "http://foo.com:7001/healthCheck"]]
   }
 
-  /**
-   * This noops out the spring batch aspects of stage building which aren't really a concern for the purposes
-   * of this test
-   */
-  @InheritConstructors
-  static class NoBatchQuickPatchStage extends QuickPatchStage {
-    Step step
+  def "skipUpToDate with getVersion retries"() {
+    given:
+    def config = [
+      application : application,
+      clusterName : "deck-cluster",
+      account     : account,
+      region      : region,
+      baseOs      : "ubuntu",
+      skipUpToDate: true,
+      patchVersion: "1.2",
+      package     : "deck"
+    ]
+    def stage = new PipelineStage(new Pipeline(), "quickPatch", config)
+    1 * quickPatchStage.createInstanceService(_) >> instanceService
+    4 * instanceService.getCurrentVersion(_) >> { throw new RetrofitError(null, null, null, null, null, null, null) }
+    1 * instanceService.getCurrentVersion(_) >>> new Response(
+      "foo", 200, "ok", [],
+      new TypedByteArray(
+        "application/json",
+        objectMapper.writeValueAsBytes(["version": "1.21"])
+      )
+    )
 
-    @Override
-    protected Step buildStep(Stage stage, String taskName, Class<? extends Task> taskType, StepExecutionListener... listeners) {
-      return step
-    }
+    when:
+    quickPatchStage.aroundStages(stage)
+
+    then:
+    1 * oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
+
+    where:
+    application = "deck"
+    region = "us-east-1"
+    account = "account"
+    asgNames = ["deck-prestaging-v300"]
+    expectedInstances = ["i-1234": [hostName: "foo.com", healthCheckUrl: "http://foo.com:7001/healthCheck"]]
   }
 }

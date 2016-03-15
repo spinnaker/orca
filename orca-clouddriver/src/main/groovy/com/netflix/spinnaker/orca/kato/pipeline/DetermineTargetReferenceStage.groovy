@@ -17,25 +17,24 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.kato.tasks.DetermineTargetReferenceTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
+
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 
 @Component
 @CompileStatic
 @Deprecated
-class DetermineTargetReferenceStage extends LinearStage {
-
-  static final String PIPELINE_CONFIG_TYPE = "determineTargetReference"
-
-  DetermineTargetReferenceStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
+class DetermineTargetReferenceStage implements StageDefinitionBuilder {
+  public static final String PIPELINE_CONFIG_TYPE = getType(DetermineTargetReferenceStage)
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [ buildStep(stage, "determineTargetReference", DetermineTargetReferenceTask) ]
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("determineTargetReference", DetermineTargetReferenceTask)
+    ]
   }
 }

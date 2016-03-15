@@ -20,8 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.ErrorConfiguration
 import com.netflix.spinnaker.config.TomcatConfiguration
 import com.netflix.spinnaker.kork.PlatformComponents
+import com.netflix.spinnaker.orca.actorsystem.ActorSystemConfiguration
+import com.netflix.spinnaker.orca.actorsystem.AkkaClusterConfiguration
+import com.netflix.spinnaker.orca.actorsystem.DummyActorConfig
+import com.netflix.spinnaker.orca.actorsystem.task.TaskActorFactory
 import com.netflix.spinnaker.orca.applications.config.ApplicationConfig
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
+import com.netflix.spinnaker.orca.batch.AkkaTaskTaskletAdapter
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
 import com.netflix.spinnaker.orca.config.JesqueConfiguration
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
@@ -46,6 +51,7 @@ import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAuto
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.context.web.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
@@ -75,7 +81,15 @@ import org.springframework.scheduling.annotation.EnableAsync
   MineConfiguration,
   MaheConfiguration,
   TideConfiguration,
-  ApplicationConfig
+  ApplicationConfig,
+  ActorSystemConfiguration,
+  AkkaClusterConfiguration,
+  DummyActorConfig,
+  TaskActorFactory,
+  AkkaTaskTaskletAdapter
+])
+@ComponentScan([
+  "com.netflix.spinnaker.config"
 ])
 class Main extends SpringBootServletInitializer {
   static final Map<String, String> DEFAULT_PROPS = [

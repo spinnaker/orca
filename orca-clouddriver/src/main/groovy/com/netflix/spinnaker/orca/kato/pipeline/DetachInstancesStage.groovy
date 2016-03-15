@@ -17,32 +17,26 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.kato.tasks.DetachInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DetachInstancesStage extends LinearStage {
-  public static final String PIPELINE_CONFIG_TYPE = "detachInstances"
-
-  DetachInstancesStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class DetachInstancesStage implements StageDefinitionBuilder {
   @Override
-  List<Step> buildSteps(Stage stage) {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
-      buildStep(stage, "detachInstances", DetachInstancesTask),
-      buildStep(stage, "monitorDetach", MonitorKatoTask),
-      buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-      buildStep(stage, "waitForTerminatedInstances", WaitForTerminatedInstancesTask),
+      new StageDefinitionBuilder.TaskDefinition("detachInstances", DetachInstancesTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorDetach", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForTerminatedInstances", WaitForTerminatedInstancesTask)
     ]
   }
 }
