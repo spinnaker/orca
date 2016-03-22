@@ -16,16 +16,17 @@
 
 package com.netflix.spinnaker.orca.batch.lifecycle
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.batch.core.*
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
 import org.springframework.batch.core.job.builder.FlowBuilder
@@ -149,7 +150,7 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
   protected Job configureJob(JobBuilder jobBuilder) {
     def stage = pipeline.namedStage("stage2")
     def builder = jobBuilder.flow(initializationStep(steps, pipeline))
-    def stageBuilder = new InjectStageBuilder(steps, new TaskTaskletAdapter(executionRepository, []))
+    def stageBuilder = new InjectStageBuilder(steps, new TaskTaskletAdapterImpl(executionRepository, []))
     stageBuilder.applicationContext = applicationContext
     stageBuilder.build(builder, stage).build().build()
   }
@@ -197,11 +198,11 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
       super("stage2")
       setTaskListeners(listeners)
       setSteps(steps)
-      setTaskTaskletAdapter(adapter)
+      setTaskTaskletAdapters([adapter])
       stageBuilder1.steps = steps
-      stageBuilder1.taskTaskletAdapter = adapter
+      stageBuilder1.taskTaskletAdapters = [adapter]
       stageBuilder2.steps = steps
-      stageBuilder2.taskTaskletAdapter = adapter
+      stageBuilder2.taskTaskletAdapters = [adapter]
     }
 
     @Override

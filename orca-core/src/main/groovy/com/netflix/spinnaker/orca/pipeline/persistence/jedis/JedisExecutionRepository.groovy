@@ -1,6 +1,9 @@
 package com.netflix.spinnaker.orca.pipeline.persistence.jedis
 
 import java.util.function.Function
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
@@ -12,9 +15,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundExceptio
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -447,51 +447,6 @@ class JedisExecutionRepository implements ExecutionRepository {
     } else {
       throw new ExecutionNotFoundException("No ${type.simpleName} found for $id")
     }
-  }
-
-  @Deprecated
-  @CompileDynamic
-  private <T extends Execution> T sortStages(JedisCommands jedis, T execution, Class<T> type) {
-    List<Stage<T>> reorderedStages = []
-
-    def childStagesByParentStageId = execution.stages.findAll {
-      it.parentStageId != null
-    }.groupBy { it.parentStageId }
-    execution.stages.findAll {
-      it.parentStageId == null
-    }.each { Stage<T> parentStage ->
-      reorderedStages << parentStage
-
-      def children = childStagesByParentStageId[parentStage.id] ?: []
-      while (!children.isEmpty()) {
-        def child = children.remove(0)
-        children.addAll(0, childStagesByParentStageId[child.id] ?: [])
-        reorderedStages << child
-      }
-    }
-
-    List<Stage<T>> retrievedStages = retrieveStages(jedis, type, reorderedStages.collect {
-      it.id
-    })
-    def retrievedStagesById = retrievedStages.findAll { it?.id }.groupBy {
-      it.id
-    } as Map<String, Stage>
-    execution.stages = reorderedStages.collect {
-      def explicitStage = retrievedStagesById[it.id] ? retrievedStagesById[it.id][0] : it
-      explicitStage.execution = execution
-      return explicitStage
-    }
-    return execution
-  }
-
-  @Deprecated
-  private <T extends Execution> List<Stage<T>> retrieveStages(Jedis jedis, Class<T> type, List<String> ids) {
-    def pipeline = jedis.pipelined()
-    ids.each { id ->
-      pipeline.hget("${type.simpleName.toLowerCase()}:stage:${id}", "config")
-    }
-    def results = pipeline.syncAndReturnAll()
-    return results.collect { it ? mapper.readValue(it as String, Stage) : null }
   }
 
   private <T extends Execution> void deleteInternal(Jedis jedis, Class<T> type, String id) {
