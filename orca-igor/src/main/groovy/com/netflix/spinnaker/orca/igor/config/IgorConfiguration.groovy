@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import retrofit.Endpoint
 import retrofit.RestAdapter
-import retrofit.client.Client
 import retrofit.client.OkClient
 import retrofit.converter.JacksonConverter
 
