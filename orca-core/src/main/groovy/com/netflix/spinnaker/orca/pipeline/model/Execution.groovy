@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.model
 
+import groovy.transform.CompileStatic
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.google.common.collect.ImmutableList
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.security.AuthenticatedRequest
-import groovy.transform.CompileStatic
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 
 @CompileStatic
-abstract class Execution<T> implements Serializable {
+abstract class Execution<T extends Execution> implements Serializable {
   String id
   String application
   String executingInstance
