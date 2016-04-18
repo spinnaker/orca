@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 import static java.util.Collections.singleton;
 
 @Component
-public class WaitStageDefinitionBuilder extends StageDefinitionBuilderSupport {
+public class WaitStageDefinitionBuilder implements StageDefinitionBuilder {
   @Override public Iterable<TaskDefinition> taskGraph() {
     return singleton(new TaskDefinition("1", "wait", WaitTask.class));
   }

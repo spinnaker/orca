@@ -87,7 +87,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
         registerSingleton("objectMapper", objectMapper)
         registerSingleton("executionRunner", runner)
         registerSingleton("instanceInfo", instanceInfo)
-        registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilderSupport() {
+        registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
           @Override
           String getType() {
             return "whatever"
@@ -111,7 +111,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
         registerSingleton("objectMapper", objectMapper)
         registerSingleton("executionRunner", runner)
         registerSingleton("instanceInfo", instanceInfo)
-        registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilderSupport() {
+        registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
           @Override
           String getType() {
             return "whatever"
