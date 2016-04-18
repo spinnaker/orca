@@ -18,14 +18,21 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import java.io.Serializable;
 import com.netflix.spinnaker.orca.Task;
+import static java.util.Collections.emptySet;
 
 public interface StageDefinitionBuilder {
 
-  Iterable<TaskDefinition> taskGraph();
+  default Iterable<TaskDefinition> taskGraph() {
+    return emptySet();
+  }
 
-  Iterable<StageDefinitionBuilder> preStages();
+  default Iterable<StageDefinitionBuilder> preStages() {
+    return emptySet();
+  }
 
-  Iterable<StageDefinitionBuilder> postStages();
+  default Iterable<StageDefinitionBuilder> postStages() {
+    return emptySet();
+  }
 
   /**
    * @return the stage type this builder handles.
