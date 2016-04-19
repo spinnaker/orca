@@ -80,6 +80,13 @@ public abstract class ExecutionLauncher<T extends Execution> {
         execution.getStages().add(index, preStage);
       });
     builder
+      .postStages()
+      .forEach(preStage -> {
+        T execution = stage.getExecution();
+        int index = execution.getStages().indexOf(stage);
+        execution.getStages().add(index + 1, preStage);
+      });
+    builder
       .taskGraph()
       .forEach(taskDef -> {
         DefaultTask task = new DefaultTask();
