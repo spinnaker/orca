@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static java.lang.String.format;
 
 public abstract class ExecutionLauncher<T extends Execution> {
 
@@ -51,7 +53,7 @@ public abstract class ExecutionLauncher<T extends Execution> {
 
   public T start(String configJson) throws IOException {
     final T execution = parse(configJson);
-    planTasks(execution);
+    planStages(execution);
     if (shouldQueue(execution)) {
       log.info("Queueing {}", execution.getId());
     } else {
@@ -60,28 +62,40 @@ public abstract class ExecutionLauncher<T extends Execution> {
     return execution;
   }
 
-  private void planTasks(T execution) {
+  private void planStages(T execution) {
     Stream<Stage> stream = execution
       .getStages()
       .stream();
-    stream
-      .forEach(stage -> {
-        Optional<StageDefinitionBuilder> maybeStageDefinitionBuilder = stageDefinitionBuilders
-          .stream()
-          .filter(builder -> builder.getType().equals(stage.getType()))
-          .findFirst();
-        maybeStageDefinitionBuilder
-          .orElseThrow(RuntimeException::new)
-          .taskGraph()
-          .forEach(taskDef -> {
-            DefaultTask task = new DefaultTask();
-            task.setId(taskDef.getId());
-            task.setName(taskDef.getName());
-            task.setStatus(NOT_STARTED);
-            stage.getTasks().add(task);
-          });
+    stream.forEach(this::planStage);
+  }
+
+  private void planStage(Stage<T> stage) {
+    Optional<StageDefinitionBuilder> maybeStageDefinitionBuilder = stageDefinitionBuilders
+      .stream()
+      .filter(builder -> builder.getType().equals(stage.getType()))
+      .findFirst();
+    StageDefinitionBuilder builder = maybeStageDefinitionBuilder
+      .orElseThrow(() -> new NoSuchStageDefinitionBuilder(stage.getType()));
+    builder
+      .preStages()
+      .forEach(preStageBuilder -> {
+        T execution = stage.getExecution();
+        int index = execution.getStages().indexOf(stage);
+        Stage<T> preStage = createPreStage(execution, preStageBuilder.getType(), );
+        execution.getStages().add(index, preStage);
+      });
+    builder
+      .taskGraph()
+      .forEach(taskDef -> {
+        DefaultTask task = new DefaultTask();
+        task.setId(taskDef.getId());
+        task.setName(taskDef.getName());
+        task.setStatus(NOT_STARTED);
+        stage.getTasks().add(task);
       });
   }
+
+  protected abstract Stage<T> createPreStage(T execution, String type, String name, Map<String, Object> context, Stage<T> parent);
 
   protected abstract T parse(String configJson) throws IOException;
 
@@ -105,4 +119,11 @@ public abstract class ExecutionLauncher<T extends Execution> {
     @Override public void start(Execution execution) {
     }
   }
+
+  static class NoSuchStageDefinitionBuilder extends RuntimeException {
+    public NoSuchStageDefinitionBuilder(String type) {
+      super(format("No StageDefinitionBuilder implementation for %s found", type));
+    }
+  }
 }
+

@@ -16,14 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
-import com.netflix.frigga.Names
-import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.InheritConstructors
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
-
-import javax.security.auth.callback.LanguageCallback
+import com.netflix.frigga.Names
+import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 
 /**
  * A TargetServerGroup is a ServerGroup that is dynamically resolved using a target like "current" or "oldest".
@@ -126,10 +124,25 @@ class TargetServerGroup {
      * These are all lower case because we expect them to be defined in the pipeline as lowercase.
      */
     enum Target {
+      /**
+       * "Newest Server Group"
+       */
       current_asg_dynamic,
+      /**
+       * "Previous Server Group"
+       */
       ancestor_asg_dynamic,
+      /**
+       * "Oldest Server Group"
+       */
       oldest_asg_dynamic,
+      /**
+       * "(Deprecated) Current Server Group"
+       */
       @Deprecated current_asg,
+      /**
+       * "(Deprecated) Last Server Group"
+       */
       @Deprecated ancestor_asg,
 
       boolean isDynamic() {
