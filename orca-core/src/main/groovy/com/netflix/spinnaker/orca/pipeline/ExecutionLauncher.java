@@ -17,10 +17,9 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.List;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
@@ -63,25 +62,21 @@ public abstract class ExecutionLauncher<T extends Execution> {
   }
 
   private void planStages(T execution) {
-    Stream<Stage> stream = execution
-      .getStages()
-      .stream();
-    stream.forEach(this::planStage);
+    List<Stage<T>> stages = new ArrayList<Stage<T>>(execution.getStages()); // need to clone because we'll be modifying the list
+    stages.stream().forEach(this::planStage);
   }
 
   private void planStage(Stage<T> stage) {
-    Optional<StageDefinitionBuilder> maybeStageDefinitionBuilder = stageDefinitionBuilders
+    StageDefinitionBuilder builder = stageDefinitionBuilders
       .stream()
-      .filter(builder -> builder.getType().equals(stage.getType()))
-      .findFirst();
-    StageDefinitionBuilder builder = maybeStageDefinitionBuilder
+      .filter(builder1 -> builder1.getType().equals(stage.getType()))
+      .findFirst()
       .orElseThrow(() -> new NoSuchStageDefinitionBuilder(stage.getType()));
     builder
       .preStages()
-      .forEach(preStageBuilder -> {
+      .forEach(preStage -> {
         T execution = stage.getExecution();
         int index = execution.getStages().indexOf(stage);
-        Stage<T> preStage = createPreStage(execution, preStageBuilder.getType(), );
         execution.getStages().add(index, preStage);
       });
     builder
@@ -94,8 +89,6 @@ public abstract class ExecutionLauncher<T extends Execution> {
         stage.getTasks().add(task);
       });
   }
-
-  protected abstract Stage<T> createPreStage(T execution, String type, String name, Map<String, Object> context, Stage<T> parent);
 
   protected abstract T parse(String configJson) throws IOException;
 
