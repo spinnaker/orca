@@ -105,6 +105,42 @@ abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLau
     ]
     json = objectMapper.writeValueAsString(config)
   }
+
+  def "builds tasks for each post-stage"() {
+    given:
+    def stageDefBuilders = stageTypes.collect { stageType ->
+      def postStage1 = new PipelineStage(null, "${stageType}_post1")
+      def postStage2 = new PipelineStage(null, "${stageType}_post2")
+      Stub(StageDefinitionBuilder) {
+        getType() >> stageType
+        taskGraph() >> [new TaskDefinition("1", "1", Task)]
+        postStages() >> [postStage1, postStage2]
+      }
+    }
+    @Subject def launcher = create(*stageDefBuilders)
+
+    and:
+    def pipeline = new BlockingVariable<Pipeline>()
+    runner.start(_) >> { Pipeline p -> pipeline.set(p) }
+
+    when:
+    launcher.start(json)
+
+    then:
+    pipeline.get().stages.type == stageTypes.collect { stageType ->
+      [stageType, "${stageType}_post1", "${stageType}_post2"]
+    }.flatten()
+
+    where:
+    stageTypes = ["foo", "bar"]
+    config = [
+      id    : "whatever",
+      stages: stageTypes.collect {
+        [(TYPE_IDENTIFIER): "PipelineStage", type: it]
+      }
+    ]
+    json = objectMapper.writeValueAsString(config)
+  }
 }
 
 class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLauncher> {
