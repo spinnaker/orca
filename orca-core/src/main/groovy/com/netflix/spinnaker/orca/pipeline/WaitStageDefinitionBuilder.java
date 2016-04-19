@@ -25,8 +25,4 @@ public class WaitStageDefinitionBuilder implements StageDefinitionBuilder {
   @Override public Iterable<TaskDefinition> taskGraph() {
     return singleton(new TaskDefinition("1", "wait", WaitTask.class));
   }
-
-  @Override public String getType() {
-    return "wait";
-  }
 }

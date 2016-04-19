@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.io.Serializable;
 import com.netflix.spinnaker.orca.Task;
+import lombok.Value;
 import static java.util.Collections.emptySet;
 
 public interface StageDefinitionBuilder {
@@ -37,29 +37,15 @@ public interface StageDefinitionBuilder {
   /**
    * @return the stage type this builder handles.
    */
-  String getType();
+  default String getType() {
+    String className = getClass().getSimpleName();
+    return className.substring(0, 1).toLowerCase() + className.substring(1).replaceFirst("StageDefinitionBuilder$", "");
+  }
 
-  class TaskDefinition implements Serializable {
-    private final String id;
-    private final String name;
-    private final Class<? extends Task> implementingClass;
-
-    public TaskDefinition(String id, String name, Class<? extends Task> implementingClass) {
-      this.id = id;
-      this.name = name;
-      this.implementingClass = implementingClass;
-    }
-
-    public String getId() {
-      return id;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public Class<? extends Task> getImplementingClass() {
-      return implementingClass;
-    }
+  @Value
+  class TaskDefinition {
+    String id;
+    String name;
+    Class<? extends Task> implementingClass;
   }
 }
