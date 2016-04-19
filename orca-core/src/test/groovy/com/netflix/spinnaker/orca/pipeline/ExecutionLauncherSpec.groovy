@@ -21,6 +21,7 @@ import com.netflix.appinfo.InstanceInfo
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification
@@ -71,20 +72,16 @@ abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLau
 
   def "builds tasks for each pre-stage"() {
     given:
-    def preStage1 = Stub(StageDefinitionBuilder) {
-      getType() >> "pre1"
-      taskGraph() >> [new TaskDefinition("1", "pre1_1", Task)]
+    def stageDefBuilders = stageTypes.collect { stageType ->
+      def preStage1 = new PipelineStage(null, "${stageType}_pre1")
+      def preStage2 = new PipelineStage(null, "${stageType}_pre2")
+      Stub(StageDefinitionBuilder) {
+        getType() >> stageType
+        taskGraph() >> [new TaskDefinition("1", "1", Task)]
+        preStages() >> [preStage1, preStage2]
+      }
     }
-    def preStage2 = Stub(StageDefinitionBuilder) {
-      getType() >> "pre2"
-      taskGraph() >> [new TaskDefinition("1", "pre2_1", Task)]
-    }
-    def stageDefBuilder = Stub(StageDefinitionBuilder) {
-      getType() >> stageType
-      taskGraph() >> [new TaskDefinition("1", "1", Task)]
-      preStages() >> [preStage1, preStage2]
-    }
-    @Subject def launcher = create(stageDefBuilder)
+    @Subject def launcher = create(*stageDefBuilders)
 
     and:
     def pipeline = new BlockingVariable<Pipeline>()
@@ -94,17 +91,17 @@ abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLau
     launcher.start(json)
 
     then:
-    with(pipeline.get().stages) {
-      tasks.name.flatten() == ["pre1_1", "pre2_1", "1"]
-    }
+    pipeline.get().stages.type == stageTypes.collect { stageType ->
+      ["${stageType}_pre1", "${stageType}_pre2", stageType]
+    }.flatten()
 
     where:
-    stageType = "foo"
+    stageTypes = ["foo", "bar"]
     config = [
       id    : "whatever",
-      stages: [
-        [(TYPE_IDENTIFIER): "PipelineStage", type: stageType]
-      ]
+      stages: stageTypes.collect {
+        [(TYPE_IDENTIFIER): "PipelineStage", type: it]
+      }
     ]
     json = objectMapper.writeValueAsString(config)
   }
