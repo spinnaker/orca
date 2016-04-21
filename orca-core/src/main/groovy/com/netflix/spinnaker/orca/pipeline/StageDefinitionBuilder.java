@@ -16,24 +16,25 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
+import java.util.List;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import lombok.Value;
-import static java.util.Collections.emptySet;
+import static java.util.Collections.emptyList;
 
 public interface StageDefinitionBuilder {
 
-  default Iterable<TaskDefinition> taskGraph() {
-    return emptySet();
+  default List<TaskDefinition> taskGraph() {
+    return emptyList();
   }
 
-  default <T extends Execution> Iterable<Stage<T>> preStages() {
-    return emptySet();
+  default <T extends Execution> List<Stage<T>> preStages() {
+    return emptyList();
   }
 
-  default <T extends Execution> Iterable<Stage<T>> postStages() {
-    return emptySet();
+  default <T extends Execution> List<Stage<T>> postStages() {
+    return emptyList();
   }
 
   /**
