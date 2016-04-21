@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
+import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static java.lang.String.format;
 
@@ -62,29 +63,28 @@ public abstract class ExecutionLauncher<T extends Execution> {
   }
 
   private void planStages(T execution) {
-    List<Stage<T>> stages = new ArrayList<Stage<T>>(execution.getStages()); // need to clone because we'll be modifying the list
+    List<Stage<T>> stages = new ArrayList<>(execution.getStages()); // need to clone because we'll be modifying the list
     stages.stream().forEach(this::planStage);
   }
 
   private void planStage(Stage<T> stage) {
-    StageDefinitionBuilder builder = stageDefinitionBuilders
-      .stream()
-      .filter(builder1 -> builder1.getType().equals(stage.getType()))
-      .findFirst()
-      .orElseThrow(() -> new NoSuchStageDefinitionBuilder(stage.getType()));
+    StageDefinitionBuilder builder = findBuilderForStage(stage);
     builder
       .preStages()
       .forEach(preStage -> {
-        T execution = stage.getExecution();
-        int index = execution.getStages().indexOf(stage);
-        execution.getStages().add(index, preStage);
+        List<Stage> stages = stage.getExecution().getStages();
+        int index = stages.indexOf(stage);
+        stages.add(index, preStage);
+        planStage((Stage<T>) preStage);
       });
-    builder
-      .postStages()
-      .forEach(preStage -> {
-        T execution = stage.getExecution();
-        int index = execution.getStages().indexOf(stage);
-        execution.getStages().add(index + 1, preStage);
+    reverse(
+      builder
+        .postStages())
+      .forEach(postStage -> {
+        List<Stage> stages = stage.getExecution().getStages();
+        int index = stages.indexOf(stage);
+        stages.add(index + 1, postStage);
+        planStage((Stage<T>) postStage);
       });
     builder
       .taskGraph()
@@ -95,6 +95,14 @@ public abstract class ExecutionLauncher<T extends Execution> {
         task.setStatus(NOT_STARTED);
         stage.getTasks().add(task);
       });
+  }
+
+  private StageDefinitionBuilder findBuilderForStage(Stage<T> stage) {
+    return stageDefinitionBuilders
+      .stream()
+      .filter(builder1 -> builder1.getType().equals(stage.getType()))
+      .findFirst()
+      .orElseThrow(() -> new NoSuchStageDefinitionBuilder(stage.getType()));
   }
 
   protected abstract T parse(String configJson) throws IOException;
@@ -120,7 +128,7 @@ public abstract class ExecutionLauncher<T extends Execution> {
     }
   }
 
-  static class NoSuchStageDefinitionBuilder extends RuntimeException {
+  public static class NoSuchStageDefinitionBuilder extends RuntimeException {
     public NoSuchStageDefinitionBuilder(String type) {
       super(format("No StageDefinitionBuilder implementation for %s found", type));
     }

@@ -16,13 +16,14 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
+import java.util.List;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import org.springframework.stereotype.Component;
-import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 
 @Component
 public class WaitStageDefinitionBuilder implements StageDefinitionBuilder {
-  @Override public Iterable<TaskDefinition> taskGraph() {
-    return singleton(new TaskDefinition("1", "wait", WaitTask.class));
+  @Override public List<TaskDefinition> taskGraph() {
+    return singletonList(new TaskDefinition("1", "wait", WaitTask.class));
   }
 }
