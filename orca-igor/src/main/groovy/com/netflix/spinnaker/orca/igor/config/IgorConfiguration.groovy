@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
+import com.squareup.okhttp.OkHttpClient
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -30,8 +31,11 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import retrofit.Endpoint
 import retrofit.RestAdapter
-import retrofit.client.Client
+import retrofit.client.OkClient
 import retrofit.converter.JacksonConverter
+
+import java.util.concurrent.TimeUnit
+
 import static retrofit.Endpoints.newFixedEndpoint
 
 @Configuration
@@ -41,8 +45,13 @@ import static retrofit.Endpoints.newFixedEndpoint
 @ComponentScan("com.netflix.spinnaker.orca.igor")
 class IgorConfiguration {
 
-  @Autowired Client retrofitClient
   @Autowired RestAdapter.LogLevel retrofitLogLevel
+
+  @Value('${client.connectTimeout:20000}')
+  int clientConnectTimeout
+
+  @Value('${client.readTimeout:30000}')
+  int clientReadTimeout
 
   @Bean
   Endpoint igorEndpoint(
@@ -52,9 +61,13 @@ class IgorConfiguration {
 
   @Bean
   IgorService igorService(Endpoint igorEndpoint, ObjectMapper mapper) {
+    OkHttpClient httpClient = new OkHttpClient()
+    httpClient.setReadTimeout(clientReadTimeout, TimeUnit.MILLISECONDS)
+    httpClient.setConnectTimeout(clientConnectTimeout,TimeUnit.MILLISECONDS)
+
     new RestAdapter.Builder()
       .setEndpoint(igorEndpoint)
-      .setClient(retrofitClient)
+      .setClient(new OkClient(httpClient))
       .setLogLevel(retrofitLogLevel)
       .setLog(new RetrofitSlf4jLog(IgorService))
       .setConverter(new JacksonConverter(mapper))
