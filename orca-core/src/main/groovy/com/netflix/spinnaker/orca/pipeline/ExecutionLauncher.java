@@ -27,8 +27,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.stereotype.Component;
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static java.lang.String.format;
@@ -118,14 +116,6 @@ public abstract class ExecutionLauncher<T extends Execution> {
 
   public interface ExecutionRunner {
     void start(Execution execution);
-  }
-
-  // TODO: remove this – just need it to make spring context valid
-  @Component
-  @ConditionalOnMissingBean(ExecutionRunner.class)
-  public static class NoOpExecutionRunner implements ExecutionRunner {
-    @Override public void start(Execution execution) {
-    }
   }
 
   public static class NoSuchStageDefinitionBuilder extends RuntimeException {
