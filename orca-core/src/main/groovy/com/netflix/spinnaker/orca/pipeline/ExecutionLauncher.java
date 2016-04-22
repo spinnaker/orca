@@ -50,10 +50,10 @@ public abstract class ExecutionLauncher<T extends Execution> {
 
   public T start(String configJson) throws IOException {
     final T execution = parse(configJson);
-    planStages(execution);
     if (shouldQueue(execution)) {
       log.info("Queueing {}", execution.getId());
     } else {
+      planStages(execution);
       runner.start(execution);
     }
     return execution;
