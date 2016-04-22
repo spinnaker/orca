@@ -25,15 +25,14 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static java.lang.String.format;
 
+@Slf4j
 public abstract class ExecutionLauncher<T extends Execution> {
 
-  protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
   protected final InstanceInfo currentInstance;
   private final ExecutionRunner runner;
