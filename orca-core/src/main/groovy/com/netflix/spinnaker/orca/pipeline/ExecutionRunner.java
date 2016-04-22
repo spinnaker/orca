@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher.ExecutionRunner;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import org.springframework.stereotype.Component;
+import static java.lang.String.format;
 
-/**
- * TODO: remove this – just need it to make spring context valid
- */
-@Component
-public class NoOpExecutionRunner implements ExecutionRunner {
-  @Override public void start(Execution execution) {
+public interface ExecutionRunner {
+  <T extends Execution> void start(T execution);
+
+  class NoSuchStageDefinitionBuilder extends RuntimeException {
+    public NoSuchStageDefinitionBuilder(String type) {
+      super(format("No StageDefinitionBuilder implementation for %s found", type));
+    }
   }
 }

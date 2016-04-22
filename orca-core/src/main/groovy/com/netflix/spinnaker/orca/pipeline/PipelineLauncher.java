@@ -48,7 +48,7 @@ class PipelineLauncher extends ExecutionLauncher<Pipeline> {
                           ExecutionRunner runner,
                           Collection<StageDefinitionBuilder> stageDefinitionBuilders,
                           PipelineStartTracker startTracker) {
-    super(objectMapper, currentInstance, runner, stageDefinitionBuilders);
+    super(objectMapper, currentInstance, runner);
     this.startTracker = startTracker;
   }
 
