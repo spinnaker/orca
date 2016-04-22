@@ -32,7 +32,6 @@ dependencies {
   compile spinnaker.dependency('spectatorApi')
   compile spinnaker.dependency('kork')
   compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.3"
-  compile "com.typesafe.akka:akka-cluster-sharding_2.11:2.4.1"
 
   testCompile project(":orca-test")
 }
