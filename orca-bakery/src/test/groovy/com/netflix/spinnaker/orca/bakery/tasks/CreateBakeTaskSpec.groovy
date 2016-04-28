@@ -292,29 +292,6 @@ class CreateBakeTaskSpec extends Specification {
   }
 
   @Unroll
-  def "fails if pipeline trigger or context includes artifacts but no artifact for the bake package"() {
-    given:
-    Pipeline pipelineWithTrigger = new Pipeline.Builder().withTrigger([buildInfo: triggerInfo]).build()
-    Stage stage = new PipelineStage(pipelineWithTrigger, "bake", bakeConfig).asImmutable()
-    bakeConfig.buildInfo = contextInfo
-
-    when:
-    task.execute(stage)
-
-    then:
-    IllegalStateException ise = thrown(IllegalStateException)
-    ise.message.startsWith("Unable to find deployable artifact starting with hodor_ and ending with .deb in")
-
-    where:
-    contextInfo         | triggerInfo
-    null                | buildInfoNoMatch
-    buildInfoNoMatch    | null
-    buildInfoNoMatch    | buildInfoNoMatch
-    buildInfoNoMatch    | invalidArtifactList
-    invalidArtifactList | buildInfoNoMatch
-  }
-
-  @Unroll
   def "fails if pipeline trigger and context includes artifacts have a different match"() {
     given:
     Pipeline pipelineWithTrigger = new Pipeline.Builder().withTrigger([buildInfo: buildInfo]).build()
