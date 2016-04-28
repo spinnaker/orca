@@ -37,7 +37,7 @@ public abstract class ExecutionLauncher<T extends Execution> {
     this.runner = runner;
   }
 
-  public T start(String configJson) throws IOException {
+  public T start(String configJson) throws Exception {
     final T execution = parse(configJson);
     if (shouldQueue(execution)) {
       log.info("Queueing {}", execution.getId());

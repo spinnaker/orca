@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline;
+apply plugin: "io.franzbecker.gradle-lombok"
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import static java.lang.String.format;
+dependencies {
+  compile project(":orca-core")
+  testCompile project(":orca-test")
+}
 
-public interface ExecutionRunner {
-  <T extends Execution> void start(T execution) throws Exception;
-
-  class NoSuchStageDefinitionBuilder extends RuntimeException {
-    public NoSuchStageDefinitionBuilder(String type) {
-      super(format("No StageDefinitionBuilder implementation for %s found", type));
-    }
-  }
+lombok {
+  version = "1.16.8"
 }

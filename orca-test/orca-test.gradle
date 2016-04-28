@@ -15,6 +15,7 @@
  */
 
 dependencies {
+  compile project(":orca-core")
   compile spinnaker.dependency('spock')
   compile spinnaker.dependency('spockSpring')
   compile spinnaker.dependency('junit')
