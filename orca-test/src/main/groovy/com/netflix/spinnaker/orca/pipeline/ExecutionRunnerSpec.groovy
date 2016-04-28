@@ -71,7 +71,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
-          taskGraph() >> [new TaskDefinition("1", "1", Task)]
+          taskGraph() >> [new TaskDefinition("1", "${stageType}_1", Task)]
           preStages() >> [preStage1, preStage2]
         },
         Stub(StageDefinitionBuilder) {
@@ -106,7 +106,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
-          taskGraph() >> [new TaskDefinition("1", "1", Task)]
+          taskGraph() >> [new TaskDefinition("1", "${stageType}_1", Task)]
           postStages() >> [postStage1, postStage2]
         },
         Stub(StageDefinitionBuilder) {

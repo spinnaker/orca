@@ -37,7 +37,7 @@ public class ExecutionRunnerSupport implements ExecutionRunner {
     this.stageDefinitionBuilders = stageDefinitionBuilders;
   }
 
-  @Override public <T extends Execution> void start(T execution) {
+  @Override public <T extends Execution> void start(T execution) throws Exception {
     List<Stage<T>> stages = new ArrayList<>(execution.getStages()); // need to clone because we'll be modifying the list
     stages.stream().forEach(this::planStage);
   }
