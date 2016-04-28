@@ -170,6 +170,8 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 class NoOpExecutionRunnerSpec extends ExecutionRunnerSpec<ExecutionRunnerSupport> {
   @Override
   ExecutionRunnerSupport create(StageDefinitionBuilder... stageDefBuilders) {
-    return new ExecutionRunnerSupport(stageDefBuilders.toList())
+    return new ExecutionRunnerSupport(stageDefBuilders.toList()) {
+      // do nothing
+    }
   }
 }
