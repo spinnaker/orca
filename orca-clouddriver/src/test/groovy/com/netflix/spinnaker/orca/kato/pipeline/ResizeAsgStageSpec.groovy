@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference
@@ -61,7 +61,7 @@ class ResizeAsgStageSpec extends Specification {
 
   def setup() {
     stageBuilder.steps = new StepBuilderFactory(Stub(JobRepository), Stub(PlatformTransactionManager))
-    stageBuilder.taskTaskletAdapter = new TaskTaskletAdapter(executionRepository, [])
+    stageBuilder.taskTaskletAdapters = [new TaskTaskletAdapterImpl(executionRepository, [])]
     stageBuilder.applicationContext = Stub(ApplicationContext) {
       getBean(_) >> { Class type -> type.newInstance() }
     }

@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
+import groovy.util.logging.Slf4j
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Function
 import com.google.common.base.Optional
@@ -26,10 +30,6 @@ import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import com.netflix.spinnaker.security.AuthenticatedRequest
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.transform.PackageScope
-import groovy.util.logging.Slf4j
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.StepExecutionListener
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.core.task.SimpleAsyncTaskExecutor
+import static java.lang.Boolean.parseBoolean
 import static java.util.Collections.EMPTY_LIST
 
 /**
@@ -58,7 +59,7 @@ abstract class StageBuilder implements ApplicationContextAware {
   final String type
 
   private StepBuilderFactory steps
-  private TaskTaskletAdapter taskTaskletAdapter
+  private Collection<TaskTaskletAdapter> taskTaskletAdapters
   private List<StepExecutionListener> taskListeners
   private ApplicationContext applicationContext
 
@@ -115,17 +116,17 @@ abstract class StageBuilder implements ApplicationContextAware {
   Stage prepareStageForRestart(Stage stage) {
     stage.execution.canceled = false
     stage.execution.stages
-         .findAll { it.status == ExecutionStatus.CANCELED }
-         .each { Stage it ->
-           it.status = ExecutionStatus.NOT_STARTED
-           it.tasks
-             .findAll { it.status == ExecutionStatus.CANCELED }
-             .each { task ->
-               task.startTime = null
-               task.endTime = null
-               task.status = ExecutionStatus.NOT_STARTED
-             }
-         }
+      .findAll { it.status == ExecutionStatus.CANCELED }
+      .each { Stage it ->
+      it.status = ExecutionStatus.NOT_STARTED
+      it.tasks
+        .findAll { it.status == ExecutionStatus.CANCELED }
+        .each { task ->
+        task.startTime = null
+        task.endTime = null
+        task.status = ExecutionStatus.NOT_STARTED
+      }
+    }
     stage.tasks.find { it.status.halt }.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
       task.startTime = null
       task.endTime = null
@@ -270,8 +271,13 @@ abstract class StageBuilder implements ApplicationContextAware {
    * @return a +Step+ that will execute the specified +Task+.
    */
   protected Step buildStep(Stage stage, String taskName, Task task, StepExecutionListener... listeners) {
-    createStepWithListeners(stage, taskName, listeners)
-      .tasklet(taskTaskletAdapter.decorate(task))
+    def builder = createStepWithListeners(stage, taskName, listeners)
+    def adapter = taskTaskletAdapters.find {
+      parseBoolean(stage.context.runWithAkka as String) || parseBoolean(stage.execution.context.runWithAkka as String) ? it.akkaEnabled() : !it.akkaEnabled()
+    }
+    builder = builder
+      .tasklet(adapter.decorate(task))
+    builder
       .allowStartIfComplete(this instanceof RestartableStage)
       .build()
   }
@@ -305,8 +311,8 @@ abstract class StageBuilder implements ApplicationContextAware {
   }
 
   @Autowired
-  void setTaskTaskletAdapter(TaskTaskletAdapter taskTaskletAdapter) {
-    this.taskTaskletAdapter = taskTaskletAdapter
+  void setTaskTaskletAdapters(Collection<? extends TaskTaskletAdapter> taskTaskletAdapters) {
+    this.taskTaskletAdapters = taskTaskletAdapters
   }
 
   @Autowired

@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import groovy.transform.CompileStatic
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
-import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.adapters.RetryableTaskTasklet
@@ -35,8 +35,14 @@ import org.springframework.retry.backoff.Sleeper
 import org.springframework.retry.backoff.ThreadWaitSleeper
 import static org.springframework.retry.interceptor.RetryInterceptorBuilder.stateless
 
+interface TaskTaskletAdapter {
+  Tasklet decorate(Task task)
+
+  boolean akkaEnabled()
+}
+
 @CompileStatic
-class TaskTaskletAdapter {
+class TaskTaskletAdapterImpl implements TaskTaskletAdapter {
 
   private static final Sleeper DEFAULT_SLEEPER = new ThreadWaitSleeper()
 
@@ -46,16 +52,17 @@ class TaskTaskletAdapter {
   private final Sleeper sleeper
 
   @Autowired
-  TaskTaskletAdapter(ExecutionRepository executionRepository,
-                     List<ExceptionHandler> exceptionHandlers,
-                     Registry registry = new NoopRegistry(),
-                     Sleeper sleeper = DEFAULT_SLEEPER) {
+  TaskTaskletAdapterImpl(ExecutionRepository executionRepository,
+                         List<ExceptionHandler> exceptionHandlers,
+                         Registry registry = new NoopRegistry(),
+                         Sleeper sleeper = DEFAULT_SLEEPER) {
     this.executionRepository = executionRepository
     this.exceptionHandlers = exceptionHandlers
     this.registry = registry
     this.sleeper = sleeper
   }
 
+  @Override
   Tasklet decorate(Task task) {
     if (task instanceof RetryableTask) {
       def tasklet = new RetryableTaskTasklet(task, executionRepository, exceptionHandlers, registry)
@@ -75,4 +82,8 @@ class TaskTaskletAdapter {
     }
   }
 
+  @Override
+  boolean akkaEnabled() {
+    return false
+  }
 }
