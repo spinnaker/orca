@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.appinfo.InstanceInfo
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification
@@ -32,6 +33,7 @@ abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLau
   @Shared def objectMapper = new ObjectMapper()
   @Shared def instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("orca").setHostName("localhost").build()
   def runner = Mock(ExecutionRunner)
+  def executionRepository = Mock(ExecutionRepository)
 
 }
 
@@ -41,7 +43,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
 
   @Override
   PipelineLauncher create(StageDefinitionBuilder... stageDefBuilders) {
-    return new PipelineLauncher(objectMapper, instanceInfo, runner, stageDefBuilders.toList(), startTracker)
+    return new PipelineLauncher(objectMapper, instanceInfo, executionRepository, runner, stageDefBuilders.toList(), startTracker)
   }
 
   def "can autowire pipeline launcher with optional dependencies"() {
@@ -50,6 +52,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
     context.with {
       beanFactory.with {
         registerSingleton("objectMapper", objectMapper)
+        registerSingleton("executionRepository", executionRepository)
         registerSingleton("executionRunner", runner)
         registerSingleton("instanceInfo", instanceInfo)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
@@ -74,6 +77,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
     context.with {
       beanFactory.with {
         registerSingleton("objectMapper", objectMapper)
+        registerSingleton("executionRepository", executionRepository)
         registerSingleton("executionRunner", runner)
         registerSingleton("instanceInfo", instanceInfo)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
@@ -102,28 +106,11 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
     launcher.start(json)
 
     then:
+    1 * executionRepository.store(_)
     0 * runner.start(_)
 
     where:
-    config = [pipelineConfigId: "whatever", stages: []]
-    json = objectMapper.writeValueAsString(config)
-  }
-
-  def "does not start pipeline if it does not have a pipeline config id"() {
-    given:
-    startTracker.queueIfNotStarted(*_) >> false
-
-    and:
-    @Subject def launcher = create()
-
-    when:
-    launcher.start(json)
-
-    then:
-    0 * runner.start(_)
-
-    where:
-    config = [stages: []]
+    config = [id: "whatever", stages: [], limitConcurrent: true]
     json = objectMapper.writeValueAsString(config)
   }
 

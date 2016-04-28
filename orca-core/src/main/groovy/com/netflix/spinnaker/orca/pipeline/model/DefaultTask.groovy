@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 
 class DefaultTask implements Task, Serializable {
   String id
+  Class implementingClass
   String name
   Long startTime
   Long endTime

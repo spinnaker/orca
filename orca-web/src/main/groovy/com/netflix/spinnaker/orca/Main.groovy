@@ -50,6 +50,7 @@ import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAuto
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.context.web.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
@@ -84,6 +85,9 @@ import org.springframework.scheduling.annotation.EnableAsync
   DummyActorConfig,
   TaskActorFactory,
   AkkaTaskTaskletAdapter
+])
+@ComponentScan([
+  "com.netflix.spinnaker.config"
 ])
 class Main extends SpringBootServletInitializer {
   static final Map<String, String> DEFAULT_PROPS = [

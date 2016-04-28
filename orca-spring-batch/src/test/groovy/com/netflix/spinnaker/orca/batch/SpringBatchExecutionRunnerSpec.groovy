@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import com.netflix.spinnaker.orca.Task
@@ -42,7 +44,7 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
   @Autowired JobBuilderFactory jobs
   @Autowired StepBuilderFactory steps
   @Autowired TaskTaskletAdapter taskTaskletAdapter
-  @Autowired(required = false) Map<String, Task> tasks
+  @Autowired(required = false) Collection<Task> tasks = []
   @Autowired JobLauncher jobLauncher
   def executionRepository = Stub(ExecutionRepository)
 
@@ -64,13 +66,9 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
   @Override
   ExecutionRunner create(StageDefinitionBuilder... stageDefBuilders) {
     startContext { beanFactory ->
-      stageDefBuilders.each { stageDefBuilder ->
-        stageDefBuilder.taskGraph().each { taskDef ->
-          beanFactory.registerSingleton(taskDef.name, Mock(Task))
-        }
-      }
+      beanFactory.registerSingleton("task1", new TestTask(delegate: Mock(Task)))
     }
-    return new SpringBatchExecutionRunner(stageDefBuilders.toList(), jobLauncher, jobRegistry, jobs, steps, taskTaskletAdapter, tasks)
+    return new SpringBatchExecutionRunner(stageDefBuilders.toList(), executionRepository, jobLauncher, jobRegistry, jobs, steps, taskTaskletAdapter, tasks)
   }
 
   def "creates a batch job and runs it"() {
@@ -80,7 +78,7 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
     and:
     def stageDefinitionBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      taskGraph() >> [new StageDefinitionBuilder.TaskDefinition("1", "task1", Task)]
+      taskGraph() >> [new StageDefinitionBuilder.TaskDefinition("1", "task1", TestTask)]
     }
     @Subject runner = create(stageDefinitionBuilder)
 
@@ -88,10 +86,15 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
     runner.start(execution)
 
     then:
-    1 * tasks["task1"].execute(_)
+    1 * tasks[0].delegate.execute(_)
 
     where:
     stageType = "foo"
     execution = Pipeline.builder().withId("1").withStage(stageType).build()
+  }
+
+  static class TestTask implements Task {
+    @Delegate
+    Task delegate
   }
 }

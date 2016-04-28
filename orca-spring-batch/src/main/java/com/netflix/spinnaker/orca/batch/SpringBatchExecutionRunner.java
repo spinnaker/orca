@@ -19,11 +19,13 @@ package com.netflix.spinnaker.orca.batch;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunnerSupport;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.Task;
+import com.netflix.spinnaker.orca.pipeline.model.*;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -42,35 +44,48 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import static java.lang.String.format;
 
 public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
-
+  private final ExecutionRepository executionRepository;
   private final JobLauncher jobLauncher;
   private final JobRegistry jobRegistry;
   private final JobBuilderFactory jobs;
   private final StepBuilderFactory steps;
   private final TaskTaskletAdapter taskTaskletAdapter;
-  private final Map<String, com.netflix.spinnaker.orca.Task> tasks;
+  private final Map<Class, com.netflix.spinnaker.orca.Task> tasks;
 
   public SpringBatchExecutionRunner(
     Collection<StageDefinitionBuilder> stageDefinitionBuilders,
+    ExecutionRepository executionRepository,
     JobLauncher jobLauncher,
     JobRegistry jobRegistry,
     JobBuilderFactory jobs,
     StepBuilderFactory steps,
     TaskTaskletAdapter taskTaskletAdapter,
-    Map<String, com.netflix.spinnaker.orca.Task> tasks) {
+    Collection<com.netflix.spinnaker.orca.Task> tasks
+  ) {
     super(stageDefinitionBuilders);
+    this.executionRepository = executionRepository;
     this.jobLauncher = jobLauncher;
     this.jobRegistry = jobRegistry;
     this.jobs = jobs;
     this.steps = steps;
     this.taskTaskletAdapter = taskTaskletAdapter;
-    this.tasks = tasks;
+    this.tasks = tasks.stream().collect(Collectors.toMap(
+      com.netflix.spinnaker.orca.Task::getClass, Function.identity())
+    );
   }
 
-  @Override public <T extends Execution> void start(T execution) throws Exception {
+  @Override
+  public <T extends Execution> void start(T execution) throws Exception {
     super.start(execution);
-
     Job job = createJob(execution);
+
+    // TODO-AJ This is hokiepokie
+    if (execution instanceof Pipeline) {
+      executionRepository.store((Pipeline) execution);
+    } else {
+      executionRepository.store((Orchestration) execution);
+    }
+
     jobLauncher.run(job, createJobParameters(execution));
   }
 
@@ -126,7 +141,7 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   }
 
   private Tasklet buildTaskletForTask(Task task) {
-    return taskTaskletAdapter.decorate(tasks.get(task.getName()));
+    return taskTaskletAdapter.decorate(tasks.get(task.getImplementingClass()));
   }
 
   private <E extends Execution> String jobNameFor(E execution) {

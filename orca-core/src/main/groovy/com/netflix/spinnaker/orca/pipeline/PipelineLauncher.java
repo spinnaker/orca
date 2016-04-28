@@ -24,31 +24,34 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import static java.lang.Boolean.parseBoolean;
 
 @Component
-class PipelineLauncher extends ExecutionLauncher<Pipeline> {
+public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
 
   private final PipelineStartTracker startTracker;
 
   @Autowired(required = false)
   public PipelineLauncher(ObjectMapper objectMapper,
                           @Qualifier("instanceInfo") InstanceInfo currentInstance,
+                          ExecutionRepository executionRepository,
                           ExecutionRunner runner,
                           Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
-    this(objectMapper, currentInstance, runner, stageDefinitionBuilders, null);
+    this(objectMapper, currentInstance, executionRepository, runner, stageDefinitionBuilders, null);
   }
 
   @Autowired(required = false)
   public PipelineLauncher(ObjectMapper objectMapper,
                           @Qualifier("instanceInfo") InstanceInfo currentInstance,
+                          ExecutionRepository executionRepository,
                           ExecutionRunner runner,
                           Collection<StageDefinitionBuilder> stageDefinitionBuilders,
                           PipelineStartTracker startTracker) {
-    super(objectMapper, currentInstance, runner);
+    super(objectMapper, currentInstance, executionRepository, runner);
     this.startTracker = startTracker;
   }
 
@@ -69,7 +72,13 @@ class PipelineLauncher extends ExecutionLauncher<Pipeline> {
       .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
       .withExecutingInstance(currentInstance)
       .withNotifications((List<Map<String, Object>>) config.get("notifications"))
+      .withId()
       .build();
+  }
+
+  @Override
+  protected void persistExecution(Pipeline execution) {
+    executionRepository.store(execution);
   }
 
   private boolean getBoolean(Map<String, ?> map, String key) {
@@ -81,8 +90,9 @@ class PipelineLauncher extends ExecutionLauncher<Pipeline> {
   }
 
   @Override protected boolean shouldQueue(Pipeline execution) {
-    return startTracker == null ||
-      execution.getPipelineConfigId() == null ||
+    return execution.getPipelineConfigId() != null &&
+      execution.getLimitConcurrent() &&
+      startTracker != null &&
       startTracker.queueIfNotStarted(execution.getPipelineConfigId(), execution.getId());
   }
 }
