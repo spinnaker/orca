@@ -27,6 +27,8 @@ interface Task {
 
   String getId()
 
+  Class getImplementingClass()
+
   String getName()
 
   Long getStartTime()

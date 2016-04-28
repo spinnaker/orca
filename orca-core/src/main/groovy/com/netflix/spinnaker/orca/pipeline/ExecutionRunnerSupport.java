@@ -22,17 +22,12 @@ import java.util.List;
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 
-// TODO: this should probably become an abstract base class once some implementations exist
-@Component
-public class ExecutionRunnerSupport implements ExecutionRunner {
+public abstract class ExecutionRunnerSupport implements ExecutionRunner {
   private final Collection<StageDefinitionBuilder> stageDefinitionBuilders;
 
-  @Autowired
   public ExecutionRunnerSupport(Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
     this.stageDefinitionBuilders = stageDefinitionBuilders;
   }
@@ -68,6 +63,7 @@ public class ExecutionRunnerSupport implements ExecutionRunner {
         task.setId(taskDef.getId());
         task.setName(taskDef.getName());
         task.setStatus(NOT_STARTED);
+        task.setImplementingClass(taskDef.getImplementingClass());
         stage.getTasks().add(task);
       });
   }

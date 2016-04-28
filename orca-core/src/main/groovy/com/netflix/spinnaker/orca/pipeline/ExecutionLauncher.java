@@ -20,6 +20,7 @@ import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -27,18 +28,25 @@ public abstract class ExecutionLauncher<T extends Execution> {
 
   protected final ObjectMapper objectMapper;
   protected final InstanceInfo currentInstance;
+  protected final ExecutionRepository executionRepository;
+
   private final ExecutionRunner runner;
 
   protected ExecutionLauncher(ObjectMapper objectMapper,
                               InstanceInfo currentInstance,
+                              ExecutionRepository executionRepository,
                               ExecutionRunner runner) {
     this.objectMapper = objectMapper;
     this.currentInstance = currentInstance;
+    this.executionRepository = executionRepository;
     this.runner = runner;
   }
 
   public T start(String configJson) throws Exception {
     final T execution = parse(configJson);
+
+    persistExecution(execution);
+
     if (shouldQueue(execution)) {
       log.info("Queueing {}", execution.getId());
     } else {
@@ -50,6 +58,11 @@ public abstract class ExecutionLauncher<T extends Execution> {
   protected abstract T parse(String configJson) throws IOException;
 
   /**
+   * Persist the initial execution configuration.
+   */
+  protected abstract void persistExecution(T execution);
+
+  /**
    * Hook for subclasses to decide if this execution should be queued or start immediately.
    *
    * @return true if the stage should be queued.
@@ -57,4 +70,5 @@ public abstract class ExecutionLauncher<T extends Execution> {
   protected boolean shouldQueue(T execution) {
     return false;
   }
+
 }

@@ -19,6 +19,9 @@ package com.netflix.spinnaker.orca.test.batch
 import com.netflix.appinfo.InstanceInfo
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
+import com.netflix.spinnaker.orca.pipeline.ExecutionRunnerSupport
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import groovy.transform.CompileStatic
 import org.springframework.batch.core.configuration.ListableJobLocator
 import org.springframework.batch.core.configuration.annotation.BatchConfigurer
@@ -83,5 +86,11 @@ class BatchTestConfiguration {
   @Bean
   InstanceInfo instanceInfo() {
     InstanceInfo.Builder.newBuilder().setAppName("orca").setHostName("localhost").build()
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(ExecutionRunner)
+  ExecutionRunner executionRunner(Collection<StageDefinitionBuilder> stageDefinitionBuilders = []) {
+    return new ExecutionRunnerSupport(stageDefinitionBuilders) {}
   }
 }
