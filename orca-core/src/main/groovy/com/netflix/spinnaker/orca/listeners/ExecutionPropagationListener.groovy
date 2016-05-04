@@ -29,8 +29,7 @@ class ExecutionPropagationListener implements ExecutionListener {
   private boolean isBeforeJobEnabled = false
   private boolean isAfterJobEnabled = false
 
-  ExecutionPropagationListener(boolean isBeforeJobEnabled,
-                               boolean isAfterJobEnabled) {
+  ExecutionPropagationListener(boolean isBeforeJobEnabled, boolean isAfterJobEnabled) {
     this.isBeforeJobEnabled = isBeforeJobEnabled
     this.isAfterJobEnabled = isAfterJobEnabled
   }
