@@ -48,8 +48,7 @@ public class SpringBatchConfiguration {
                                              StepBuilderFactory stepBuilderFactory,
                                              TaskTaskletAdapter taskTaskletAdapter,
                                              Collection<Task> tasks,
-                                             Collection<StageListener> stageListeners,
-                                             Collection<ExecutionListener> executionListeners) {
+                                             ExecutionListenerProvider executionListenerProvider) {
     return new SpringBatchExecutionRunner(
       stageDefinitionBuilders,
       executionRepository,
@@ -59,8 +58,7 @@ public class SpringBatchConfiguration {
       stepBuilderFactory,
       taskTaskletAdapter,
       tasks,
-      stageListeners,
-      executionListeners
+      executionListenerProvider
     );
   }
 

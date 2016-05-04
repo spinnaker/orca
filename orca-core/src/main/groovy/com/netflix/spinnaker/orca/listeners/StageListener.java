@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.Task;
 import org.springframework.core.Ordered;
 
-public interface StageListener extends Ordered {
+public interface StageListener extends Ordered, Comparable<StageListener> {
   default void beforeTask(Persister persister, Stage stage, Task task) {
     // do nothing
   }
@@ -45,5 +45,10 @@ public interface StageListener extends Ordered {
   @Override
   default int getOrder() {
     return 0;
+  }
+
+  @Override
+  default int compareTo(StageListener o) {
+    return o.getOrder() - getOrder();
   }
 }
