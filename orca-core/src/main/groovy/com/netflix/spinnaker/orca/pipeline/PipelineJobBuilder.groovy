@@ -61,7 +61,7 @@ class PipelineJobBuilder extends ExecutionJobBuilder<Pipeline> {
   @PackageScope
   JobFlowBuilder buildStart(Pipeline pipeline) {
     def jobBuilder = jobs.get(jobNameFor(pipeline))
-    pipelineListeners.each {
+    getPipelineListeners().each {
       jobBuilder = jobBuilder.listener(it)
     }
     jobBuilder.flow(initializationStep(steps, pipeline))

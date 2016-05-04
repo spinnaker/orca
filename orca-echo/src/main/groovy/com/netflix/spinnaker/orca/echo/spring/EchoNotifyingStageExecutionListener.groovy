@@ -1,60 +1,60 @@
 package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.batch.StageExecutionListener
+import com.netflix.spinnaker.orca.listeners.Persister
+import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.BatchStatus
-import org.springframework.batch.core.ExitStatus
-import org.springframework.batch.core.StepExecution
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
- * Converts step execution events to Echo events.
+ * Converts execution events to Echo events.
  */
 @CompileStatic
 @Slf4j
-class EchoNotifyingStageExecutionListener extends StageExecutionListener {
+class EchoNotifyingStageExecutionListener implements StageListener {
 
   private final EchoService echoService
 
   @Autowired
-  EchoNotifyingStageExecutionListener(ExecutionRepository executionRepository, EchoService echoService) {
-    super(executionRepository)
+  EchoNotifyingStageExecutionListener(EchoService echoService) {
     this.echoService = echoService
   }
 
   @Override
-  void beforeTask(Stage stage, StepExecution stepExecution) {
-    if (stepExecution.status == BatchStatus.STARTED) {
-      recordEvent('task', 'starting', stage, stepExecution)
+  void beforeTask(Persister persister, Stage stage, Task task) {
+    if (task.status == ExecutionStatus.NOT_STARTED) {
+      // TODO-AJ validate that this listener fires prior to stage status propagation
+      recordEvent('task', 'starting', stage, task)
     }
   }
 
-  void afterTask(Stage stage, StepExecution stepExecution) {
-    if (stepExecution.status.running) {
+  @Override
+  void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
+    if (executionStatus == ExecutionStatus.RUNNING) {
       return
     }
-    recordEvent('task', (wasSuccessful(stepExecution) ? "complete" : "failed"), stage, stepExecution)
+
+    recordEvent('task', (wasSuccessful ? "complete" : "failed"), stage, task)
     if (stage.execution instanceof Pipeline) {
-      if (wasSuccessful(stepExecution)) {
-        if (stepExecution.stepName.contains('.stageEnd.')) {
-          recordEvent('stage', 'complete', stage, stepExecution)
-        } else if (stepExecution.stepName.contains('.stageStart.')) {
-          recordEvent('stage', 'starting', stage, stepExecution)
+      if (wasSuccessful) {
+        if (task.name.contains('stageEnd')) {
+          recordEvent('stage', 'complete', stage, task)
+        } else if (task.name.contains('stageStart')) {
+          recordEvent('stage', 'starting', stage, task)
         }
       } else {
-        recordEvent('stage', 'failed', stage, stepExecution)
+        recordEvent('stage', 'failed', stage, task)
       }
     }
   }
 
-  private void recordEvent(String type, String phase, Stage stage, StepExecution stepExecution) {
+  private void recordEvent(String type, String phase, Stage stage, Task task) {
     try {
       echoService.recordEvent(
         details: [
@@ -65,7 +65,7 @@ class EchoNotifyingStageExecutionListener extends StageExecutionListener {
         standalone : stage.execution instanceof Orchestration,
         canceled   : stage.execution.canceled,
         context    : stage.context,
-        taskName   : stepExecution.stepName,
+        taskName   : task.name,
         startTime  : stage.startTime,
         endTime    : stage.endTime,
         execution  : stage.execution,
@@ -73,17 +73,12 @@ class EchoNotifyingStageExecutionListener extends StageExecutionListener {
       ]
       )
     } catch (Exception e) {
-      log.error("Failed to send ${type} event ${phase} ${stage.execution.id} ${stepExecution.stepName}")
+      log.error("Failed to send ${type} event ${phase} ${stage.execution.id} ${task.name}", e)
     }
   }
 
-  /**
-   * Determines if the step was a success (from an Orca perspective). Note that
-   * even if the Orca task failed we'll get a `stepExecution.status` of
-   * `COMPLETED` as the error was handled.
-   */
-  private static boolean wasSuccessful(StepExecution stepExecution) {
-    ExecutionStatus orcaTaskStatus = (ExecutionStatus) stepExecution.executionContext.get("orcaTaskStatus")
-    stepExecution.exitStatus.exitCode == ExitStatus.COMPLETED.exitCode || orcaTaskStatus?.isSuccessful()
+  @Override
+  int getOrder() {
+    return 1
   }
 }

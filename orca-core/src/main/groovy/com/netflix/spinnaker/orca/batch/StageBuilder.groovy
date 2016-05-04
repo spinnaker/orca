@@ -1,7 +1,7 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -60,7 +60,7 @@ abstract class StageBuilder implements ApplicationContextAware {
 
   private StepBuilderFactory steps
   private Collection<TaskTaskletAdapter> taskTaskletAdapters
-  private List<StepExecutionListener> taskListeners
+  private ExecutionListenerProvider executionListenerProvider
   private ApplicationContext applicationContext
 
   @Autowired
@@ -316,8 +316,8 @@ abstract class StageBuilder implements ApplicationContextAware {
   }
 
   @Autowired
-  void setTaskListeners(List<StepExecutionListener> taskListeners) {
-    this.taskListeners = taskListeners
+  void setStepExecutionListenerProvider(ExecutionListenerProvider stepExecutionListenerProvider) {
+    this.executionListenerProvider = stepExecutionListenerProvider
   }
 
   @Override
@@ -332,7 +332,7 @@ abstract class StageBuilder implements ApplicationContextAware {
   @VisibleForTesting
   @PackageScope
   List<StepExecutionListener> getTaskListeners() {
-    Optional.fromNullable(taskListeners)
+    Optional.fromNullable(executionListenerProvider.allStepExecutionListeners() ?: [])
       .transform(ImmutableList.&copyOf as Function)
       .or(EMPTY_LIST)
   }

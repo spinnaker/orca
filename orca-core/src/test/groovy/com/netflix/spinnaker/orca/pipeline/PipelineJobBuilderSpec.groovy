@@ -17,9 +17,11 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.exceptions.DefaultExceptionHandler
+import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
@@ -29,6 +31,7 @@ import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionSt
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionTask
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
+import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
 import org.springframework.batch.core.job.builder.FlowJobBuilder
 import org.springframework.batch.core.job.builder.JobBuilderHelper
 import org.springframework.batch.core.job.builder.JobFlowBuilder
@@ -48,7 +51,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD
 
-@ContextConfiguration(classes = [BatchTestConfiguration])
+@ContextConfiguration(classes = [BatchTestConfiguration, SpringBatchConfiguration, OrcaConfiguration, EmbeddedRedisConfiguration])
 @DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
 class PipelineJobBuilderSpec extends Specification {
   @Shared @AutoCleanup("destroy") EmbeddedRedis embeddedRedis
@@ -70,7 +73,6 @@ class PipelineJobBuilderSpec extends Specification {
 
   def pipelineInitializationStage = new PipelineInitializationStage()
   def waitForRequisiteCompletionStage = new WaitForRequisiteCompletionStage()
-  def taskTaskletAdapter = new TaskTaskletAdapterImpl(executionRepository, [])
 
   @Shared
   def jobBuilder
@@ -79,12 +81,6 @@ class PipelineJobBuilderSpec extends Specification {
     applicationContext.beanFactory.with {
       registerSingleton PipelineInitializationStage.PIPELINE_CONFIG_TYPE, pipelineInitializationStage
       registerSingleton WaitForRequisiteCompletionStage.PIPELINE_CONFIG_TYPE, waitForRequisiteCompletionStage
-      registerSingleton "waitForRequisiteCompletionTask", new WaitForRequisiteCompletionTask()
-      registerSingleton "pipelineInitializationTask", new PipelineInitializationTask()
-      registerSingleton("stepExecutionListener", new StepExecutionListenerSupport())
-      registerSingleton("defaultExceptionHandler", new DefaultExceptionHandler())
-      registerSingleton "taskTaskletAdapter", taskTaskletAdapter
-      registerSingleton "stageDetailsTask", new StageDetailsTask()
 
       autowireBean waitForRequisiteCompletionStage
       autowireBean pipelineInitializationStage

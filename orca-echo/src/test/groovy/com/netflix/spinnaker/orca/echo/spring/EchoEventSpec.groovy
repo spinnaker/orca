@@ -1,5 +1,9 @@
 package com.netflix.spinnaker.orca.echo.spring
 
+import com.netflix.spinnaker.config.SpringBatchConfiguration
+import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
+import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
@@ -28,7 +32,14 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
  * ensure that we're making the right assumptions about the statuses we'll get
  * from Batch at runtime, etc.
  */
-@ContextConfiguration(classes = [BatchTestConfiguration, EmbeddedRedisConfiguration, JesqueConfiguration, OrcaConfiguration, TestConfiguration])
+@ContextConfiguration(classes = [
+  BatchTestConfiguration,
+  SpringBatchConfiguration,
+  EmbeddedRedisConfiguration,
+  JesqueConfiguration,
+  OrcaConfiguration,
+  TestConfiguration
+])
 @DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
 class EchoEventSpec extends Specification {
 
@@ -44,6 +55,8 @@ class EchoEventSpec extends Specification {
   PipelineStarter pipelineStarter
   @Autowired
   PipelineJobBuilder pipelineJobBuilder
+  @Autowired
+  ExecutionListenerProvider executionListenerProvider
   @Autowired
   ExecutionRepository executionRepository
 
@@ -64,9 +77,6 @@ class EchoEventSpec extends Specification {
 
   def setup() {
     applicationContext.beanFactory.with {
-      registerSingleton "echoPipelineListener", new EchoNotifyingPipelineExecutionListener(executionRepository, echoService)
-      registerSingleton "echoTaskListener", new EchoNotifyingStageExecutionListener(executionRepository, echoService)
-
       [task1, task2].eachWithIndex { task, i ->
         def name = "stage${i + 1}"
         def stage = new SimpleStage(name, task)
@@ -79,6 +89,9 @@ class EchoEventSpec extends Specification {
     }
     // needs to pick up the tasks
     pipelineJobBuilder.initialize()
+
+    ((SpringBatchExecutionListenerProvider) executionListenerProvider).executionListeners.add(0, new EchoNotifyingPipelineExecutionListener(echoService))
+    ((SpringBatchExecutionListenerProvider) executionListenerProvider).stageListeners.add(0, new EchoNotifyingStageExecutionListener(echoService))
   }
 
   def "events are raised in the correct order"() {

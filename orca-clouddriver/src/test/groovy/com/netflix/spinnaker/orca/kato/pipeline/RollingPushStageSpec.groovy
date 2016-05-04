@@ -1,5 +1,6 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
@@ -71,15 +72,15 @@ class RollingPushStageSpec extends Specification {
   def setup() {
     applicationContext.with {
       register(EmbeddedRedisConfiguration, JesqueConfiguration,
-               BatchTestConfiguration, OrcaConfiguration, OrcaPersistenceConfiguration,
+               BatchTestConfiguration, SpringBatchConfiguration, OrcaConfiguration, OrcaPersistenceConfiguration,
                JobCompletionListener, TestConfiguration)
       register(RollingPushStage)
+      register(RollingPushStage.RedirectResetListener)
       beanFactory.registerSingleton("endStage", endStage)
       ([preCycleTask, startOfCycleTask, endOfCycleTask] + cycleTasks).each { task ->
         beanFactory.registerSingleton(task.getClass().simpleName, task)
       }
       refresh()
-
       beanFactory.autowireBean(endStage)
       beanFactory.autowireBean(this)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,56 +14,44 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.batch
+package com.netflix.spinnaker.orca.listeners
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.StepExecution
-import org.springframework.beans.factory.annotation.Autowired
 
-@CompileStatic
 @Slf4j
-class StageStatusPropagationListener extends AbstractStagePropagationListener {
-
-  @Autowired
-  StageStatusPropagationListener(ExecutionRepository executionRepository) {
-    super(executionRepository)
-  }
-
+class StageStatusPropagationListener implements StageListener {
   @Override
-  void beforeTask(Stage stage, StepExecution stepExecution) {
+  void beforeTask(Persister persister, Stage stage, Task task) {
     if (stage.status?.complete) {
       return
     }
 
     stage.startTime = stage.startTime ?: System.currentTimeMillis()
     stage.status = ExecutionStatus.RUNNING
-    saveStage stage
+    persister.save(stage)
   }
 
   @Override
-  void afterTask(Stage stage, StepExecution stepExecution) {
-    def orcaTaskStatus = stepExecution.executionContext.get("orcaTaskStatus") as ExecutionStatus
-    if (orcaTaskStatus) {
+  void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
+    if (executionStatus) {
       def nonBookendTasks = stage.tasks.findAll { !DefaultTask.isBookend(it) }
-      if (orcaTaskStatus == ExecutionStatus.SUCCEEDED && (nonBookendTasks && nonBookendTasks[-1].status != ExecutionStatus.SUCCEEDED)) {
+      if (executionStatus == ExecutionStatus.SUCCEEDED && (nonBookendTasks && nonBookendTasks[-1].status != ExecutionStatus.SUCCEEDED)) {
         // mark stage as RUNNING as not all tasks have completed
         stage.status = ExecutionStatus.RUNNING
-        for (Task task : nonBookendTasks) {
-          if (task.status == ExecutionStatus.FAILED_CONTINUE) {
+        for (Task t : nonBookendTasks) {
+          if (t.status == ExecutionStatus.FAILED_CONTINUE) {
             // task fails and continue pipeline on failure is checked, set stage to the same status.
             stage.status = ExecutionStatus.FAILED_CONTINUE
           }
         }
       } else {
-        stage.status = orcaTaskStatus
+        stage.status = executionStatus
 
-        if (orcaTaskStatus.complete) {
+        if (executionStatus.complete) {
           stage.endTime = stage.endTime ?: System.currentTimeMillis()
         }
       }
@@ -71,6 +59,12 @@ class StageStatusPropagationListener extends AbstractStagePropagationListener {
       stage.endTime = System.currentTimeMillis()
       stage.status = ExecutionStatus.TERMINAL
     }
-    saveStage stage
+
+    persister.save(stage)
+  }
+
+  @Override
+  int getOrder() {
+    return -1
   }
 }

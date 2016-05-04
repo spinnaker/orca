@@ -17,7 +17,10 @@
 package com.netflix.spinnaker.orca.batch.pipeline
 
 import com.netflix.spinnaker.orca.test.TestConfiguration
-
+import com.netflix.spinnaker.config.SpringBatchConfiguration
+import com.netflix.spinnaker.orca.listeners.ExecutionListener
+import com.netflix.spinnaker.orca.listeners.Persister
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import java.util.concurrent.CountDownLatch
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -29,9 +32,7 @@ import com.netflix.spinnaker.orca.pipeline.PipelineStarter
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
-import org.springframework.batch.core.JobExecution
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
-import org.springframework.batch.core.listener.JobExecutionListenerSupport
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.AutoCleanup
@@ -46,9 +47,12 @@ class PipelineStatusSpec extends Specification {
   @Autowired PipelineStarter pipelineStarter
 
   def latch = new CountDownLatch(1)
-  def listener = new JobExecutionListenerSupport() {
+  def listener = new ExecutionListener() {
     @Override
-    void afterJob(JobExecution jobExecution) {
+    public void afterExecution(Persister persister,
+                               Execution execution,
+                               ExecutionStatus executionStatus,
+                               boolean wasSuccessful) {
       latch.countDown()
     }
   }
@@ -63,6 +67,7 @@ class PipelineStatusSpec extends Specification {
     applicationContext.with {
       register BatchTestConfiguration,
                TestConfiguration,
+               SpringBatchConfiguration,
                JesqueConfiguration,
                EmbeddedRedisConfiguration,
                OrcaConfiguration
