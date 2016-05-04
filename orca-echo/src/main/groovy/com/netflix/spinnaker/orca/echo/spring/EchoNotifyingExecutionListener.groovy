@@ -12,11 +12,11 @@ import org.springframework.core.annotation.Order
 @Slf4j
 @Order(0)
 @CompileStatic
-class EchoNotifyingPipelineExecutionListener implements ExecutionListener {
+class EchoNotifyingExecutionListener implements ExecutionListener {
 
   private final EchoService echoService
 
-  EchoNotifyingPipelineExecutionListener(EchoService echoService) {
+  EchoNotifyingExecutionListener(EchoService echoService) {
     this.echoService = echoService
   }
 

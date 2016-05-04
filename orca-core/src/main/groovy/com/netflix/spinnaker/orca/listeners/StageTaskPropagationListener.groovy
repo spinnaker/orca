@@ -39,4 +39,10 @@ class StageTaskPropagationListener implements StageListener {
     task.endTime = task.endTime ?: System.currentTimeMillis()
     persister.save(stage)
   }
+
+  @Override
+  int getOrder() {
+    // a lower priority than EchoNotifyingStageExecutionListener
+    return -1;
+  }
 }

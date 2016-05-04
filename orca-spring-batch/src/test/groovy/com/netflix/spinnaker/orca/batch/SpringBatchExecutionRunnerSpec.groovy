@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.StageListener
 import groovy.transform.stc.ClosureParams
@@ -79,8 +80,7 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
       steps,
       taskTaskletAdapter,
       tasks,
-      stageListeners,
-      executionListeners
+      new SpringBatchExecutionListenerProvider(executionRepository, stageListeners, executionListeners)
     )
   }
 

@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import org.springframework.core.Ordered;
 
-public interface ExecutionListener extends Ordered {
+public interface ExecutionListener extends Ordered, Comparable<ExecutionListener> {
   default void beforeExecution(Persister persister, Execution execution) {
     // do nothing
   }
@@ -34,5 +34,10 @@ public interface ExecutionListener extends Ordered {
 
   default int getOrder() {
     return 0;
+  }
+
+  @Override
+  default int compareTo(ExecutionListener o) {
+    return o.getOrder() - getOrder();
   }
 }
