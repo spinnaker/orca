@@ -142,7 +142,7 @@ interface Stage<T extends Execution> {
    * Returns the tasks that are associated with this stage. Tasks are the most granular unit of work in a stage.
    * Because tasks can be dynamically composed, this list is open updated during a stage's execution.
    *
-   * @see com.netflix.spinnaker.orca.batch.StageTaskPropagationListener
+   * @see com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener
    */
   List<Task> getTasks()
 

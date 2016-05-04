@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.batch.core.JobExecution
-import org.springframework.batch.core.JobExecutionListener
 import org.springframework.batch.core.JobParameter
 import org.springframework.batch.core.JobParameters
 import org.springframework.batch.core.JobParametersBuilder
@@ -36,7 +36,7 @@ class PipelineStarter extends ExecutionStarter<Pipeline> {
   @Autowired ExecutionRepository executionRepository
   @Autowired PipelineJobBuilder executionJobBuilder
   @Autowired(required = false) PipelineStartTracker startTracker
-  @Autowired(required = false) List<JobExecutionListener> pipelineListeners
+  @Autowired ExecutionListenerProvider executionListenerProvider
 
   PipelineStarter() {
     super("pipeline")
@@ -89,7 +89,7 @@ class PipelineStarter extends ExecutionStarter<Pipeline> {
   protected void onCompleteBeforeLaunch(Pipeline pipeline) {
     super.onCompleteBeforeLaunch(pipeline)
 
-    pipelineListeners?.each {
+    executionListenerProvider?.allJobExecutionListeners()?.each {
       it.afterJob(new JobExecution(0L, new JobParameters([pipeline: new JobParameter(pipeline.id)])))
     }
   }

@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.batch
 
-import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.listeners.ExecutionListener
+import com.netflix.spinnaker.orca.listeners.StageListener
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import com.netflix.spinnaker.orca.Task
@@ -45,6 +45,8 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
   @Autowired StepBuilderFactory steps
   @Autowired TaskTaskletAdapter taskTaskletAdapter
   @Autowired(required = false) Collection<Task> tasks = []
+  @Autowired(required = false) Collection<StageListener> stageListeners = []
+  @Autowired(required = false) Collection<ExecutionListener> executionListeners = []
   @Autowired JobLauncher jobLauncher
   def executionRepository = Stub(ExecutionRepository)
 
@@ -68,7 +70,18 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
     startContext { beanFactory ->
       beanFactory.registerSingleton("task1", new TestTask(delegate: Mock(Task)))
     }
-    return new SpringBatchExecutionRunner(stageDefBuilders.toList(), executionRepository, jobLauncher, jobRegistry, jobs, steps, taskTaskletAdapter, tasks)
+    return new SpringBatchExecutionRunner(
+      stageDefBuilders.toList(),
+      executionRepository,
+      jobLauncher,
+      jobRegistry,
+      jobs,
+      steps,
+      taskTaskletAdapter,
+      tasks,
+      stageListeners,
+      executionListeners
+    )
   }
 
   def "creates a batch job and runs it"() {

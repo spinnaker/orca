@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.batch
+package com.netflix.spinnaker.orca.listeners;
 
-import spock.lang.Specification
+import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
 
-class ExecutionPropagationListenerSpec extends Specification {
+public interface Persister {
+  void save(Stage stage);
 
+  boolean isCanceled(String executionId);
+
+  void updateStatus(String executionId, ExecutionStatus executionStatus);
 }

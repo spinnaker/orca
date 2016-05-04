@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.netflix.spinnaker.orca.batch.listeners.*;
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListener;
+import com.netflix.spinnaker.orca.listeners.ExecutionListener;
+import com.netflix.spinnaker.orca.listeners.StageListener;
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunnerSupport;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.*;
@@ -40,6 +44,7 @@ import org.springframework.batch.core.job.builder.FlowJobBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.NoSuchJobException;
+import org.springframework.batch.core.step.builder.TaskletStepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import static java.lang.String.format;
 
@@ -51,6 +56,8 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   private final StepBuilderFactory steps;
   private final TaskTaskletAdapter taskTaskletAdapter;
   private final Map<Class, com.netflix.spinnaker.orca.Task> tasks;
+  private final Collection<StageListener> stageListeners;
+  private final Collection<ExecutionListener> executionListeners;
 
   public SpringBatchExecutionRunner(
     Collection<StageDefinitionBuilder> stageDefinitionBuilders,
@@ -60,7 +67,9 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     JobBuilderFactory jobs,
     StepBuilderFactory steps,
     TaskTaskletAdapter taskTaskletAdapter,
-    Collection<com.netflix.spinnaker.orca.Task> tasks
+    Collection<com.netflix.spinnaker.orca.Task> tasks,
+    Collection<StageListener> stageListeners,
+    Collection<ExecutionListener> executionListeners
   ) {
     super(stageDefinitionBuilders);
     this.executionRepository = executionRepository;
@@ -72,6 +81,8 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     this.tasks = tasks.stream().collect(Collectors.toMap(
       com.netflix.spinnaker.orca.Task::getClass, Function.identity())
     );
+    this.stageListeners = stageListeners;
+    this.executionListeners = executionListeners;
   }
 
   @Override
@@ -101,9 +112,15 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   private <E extends Execution> Job createJob(E execution) throws NoSuchJobException, DuplicateJobException {
     String jobName = jobNameFor(execution);
     if (!jobRegistry.getJobNames().contains(jobName)) {
-      Job job = buildStepsForExecution(jobs.get(jobName), execution)
-        .build()
-        .build();
+      FlowJobBuilder flowJobBuilder = buildStepsForExecution(jobs.get(jobName), execution).build();
+
+      for (ExecutionListener listener : executionListeners) {
+        flowJobBuilder = flowJobBuilder.listener(
+          new SpringBatchExecutionListener(executionRepository, listener)
+        );
+      }
+
+      Job job = flowJobBuilder.build();
       jobRegistry.register(new ReferenceJobFactory(job));
     }
     return jobRegistry.getJob(jobName);
@@ -132,7 +149,15 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   }
 
   private <E extends Execution> FlowBuilder<FlowJobBuilder> buildStepForTask(FlowBuilder<FlowJobBuilder> flow, Stage<E> stage, Task task) {
-    Step step = steps.get(stepName(stage, task)).tasklet(buildTaskletForTask(task)).build();
+    TaskletStepBuilder stepBuilder = steps.get(stepName(stage, task)).tasklet(buildTaskletForTask(task));
+
+    for (StageListener listener : stageListeners) {
+      stepBuilder.listener(
+        new SpringBatchStageListener(executionRepository, listener)
+      );
+    }
+
+    Step step = stepBuilder.build();
     return flow.next(step);
   }
 

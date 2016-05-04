@@ -1,6 +1,7 @@
 package com.netflix.spinnaker.orca.restart
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.kork.eureka.EurekaComponents
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
@@ -54,7 +55,7 @@ class SyntheticStageRestartingSpec extends Specification {
     applicationContext.with {
       register(EmbeddedRedisConfiguration, JesqueConfiguration, EurekaComponents,
                BatchTestConfiguration, OrcaConfiguration, OrcaPersistenceConfiguration,
-               JobCompletionListener)
+               JobCompletionListener, SpringBatchConfiguration)
       beanFactory.registerSingleton("testStage", testStage)
       beanFactory.registerSingleton("beforeStage", beforeStage)
       beanFactory.registerSingleton("afterStage", afterStage)

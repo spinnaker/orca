@@ -65,16 +65,12 @@ class EchoConfiguration {
   }
 
   @Bean
-  EchoNotifyingStageExecutionListener echoNotifyingStageExecutionListener(
-    ExecutionRepository executionRepository,
-    EchoService echoService) {
-    new EchoNotifyingStageExecutionListener(executionRepository, echoService)
+  EchoNotifyingStageExecutionListener echoNotifyingStageExecutionListener(EchoService echoService) {
+    new EchoNotifyingStageExecutionListener(echoService)
   }
 
   @Bean
-  EchoNotifyingPipelineExecutionListener echoNotifyingPipelineExecutionListener(
-    ExecutionRepository executionRepository,
-    EchoService echoService) {
-    new EchoNotifyingPipelineExecutionListener(executionRepository, echoService)
+  EchoNotifyingPipelineExecutionListener echoNotifyingPipelineExecutionListener(EchoService echoService) {
+    new EchoNotifyingPipelineExecutionListener(echoService)
   }
 }

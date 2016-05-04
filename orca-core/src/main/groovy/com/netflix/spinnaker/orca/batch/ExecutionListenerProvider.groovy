@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
+
 package com.netflix.spinnaker.orca.batch
 
-import spock.lang.Specification
+import com.netflix.spinnaker.orca.listeners.ExecutionListener
+import com.netflix.spinnaker.orca.listeners.StageListener
+import org.springframework.batch.core.JobExecutionListener
+import org.springframework.batch.core.StepExecutionListener
 
-class ExecutionPropagationListenerSpec extends Specification {
+interface ExecutionListenerProvider {
+  StepExecutionListener wrap(StageListener stageListener)
 
+  JobExecutionListener wrap(ExecutionListener executionListener)
+
+  Collection<StepExecutionListener> allStepExecutionListeners()
+
+  Collection<JobExecutionListener> allJobExecutionListeners()
 }

@@ -16,10 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import com.netflix.spinnaker.config.SpringBatchConfiguration
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
+
 import java.text.SimpleDateFormat
 import com.netflix.spinnaker.kork.eureka.EurekaComponents
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.batch.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.lifecycle.AbstractBatchLifecycleSpec
@@ -43,11 +45,10 @@ import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWin
 import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.SuspendExecutionDuringTimeWindowTask.TimeWindow
 
 @Unroll
-@ContextConfiguration(classes = [EmbeddedRedisConfiguration, JesqueConfiguration, EurekaComponents, OrcaConfiguration])
+@ContextConfiguration(classes = [EmbeddedRedisConfiguration, JesqueConfiguration, EurekaComponents, OrcaConfiguration, SpringBatchConfiguration])
 class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
 
   @Autowired ApplicationContext applicationContext;
-  def listeners = [new StageStatusPropagationListener(executionRepository)]
   def task = Mock(Task)
 
   def setup() {
@@ -184,9 +185,9 @@ class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
     InjectStageBuilder(ApplicationContext applicationContext, StepBuilderFactory steps, TaskTaskletAdapter adapter) {
       super("stage2")
       setApplicationContext(applicationContext)
-      setTaskListeners(listeners)
       setSteps(steps)
       setTaskTaskletAdapters([adapter])
+      setStepExecutionListenerProvider(new SpringBatchExecutionListenerProvider(executionRepository, [], []))
     }
 
     @Override

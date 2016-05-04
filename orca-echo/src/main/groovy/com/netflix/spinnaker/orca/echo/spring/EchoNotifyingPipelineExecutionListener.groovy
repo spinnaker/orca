@@ -2,31 +2,26 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
+import com.netflix.spinnaker.orca.listeners.ExecutionListener
+import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.ExitStatus
-import org.springframework.batch.core.JobExecution
-import org.springframework.batch.core.JobExecutionListener
 import org.springframework.core.annotation.Order
 
 @Slf4j
 @Order(0)
 @CompileStatic
-class EchoNotifyingPipelineExecutionListener implements JobExecutionListener {
+class EchoNotifyingPipelineExecutionListener implements ExecutionListener {
 
-  protected final ExecutionRepository executionRepository
   private final EchoService echoService
 
-  EchoNotifyingPipelineExecutionListener(ExecutionRepository executionRepository, EchoService echoService) {
-    this.executionRepository = executionRepository
+  EchoNotifyingPipelineExecutionListener(EchoService echoService) {
     this.echoService = echoService
   }
 
   @Override
-  void beforeJob(JobExecution jobExecution) {
-    def execution = currentExecution(jobExecution)
+  void beforeExecution(Persister persister, Execution execution) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
         echoService.recordEvent(
@@ -36,7 +31,7 @@ class EchoNotifyingPipelineExecutionListener implements JobExecutionListener {
             application: execution.application,
           ],
           content: [
-            execution  : executionRepository.retrievePipeline(execution.id),
+            execution  : execution,
             executionId: execution.id
           ]
         )
@@ -47,18 +42,20 @@ class EchoNotifyingPipelineExecutionListener implements JobExecutionListener {
   }
 
   @Override
-  void afterJob(JobExecution jobExecution) {
-    def execution = currentExecution(jobExecution)
+  public void afterExecution(Persister persister,
+                             Execution execution,
+                             ExecutionStatus executionStatus,
+                             boolean wasSuccessful) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
         echoService.recordEvent(
           details: [
             source     : "orca",
-            type       : "orca:pipeline:${(wasSuccessful(jobExecution, execution) ? "complete" : "failed")}".toString(),
+            type       : "orca:pipeline:${wasSuccessful ? "complete" : "failed"}".toString(),
             application: execution.application,
           ],
           content: [
-            execution  : executionRepository.retrievePipeline(execution.id),
+            execution  : execution,
             executionId: execution.id
           ]
         )
@@ -66,25 +63,5 @@ class EchoNotifyingPipelineExecutionListener implements JobExecutionListener {
     } catch (Exception e) {
       log.error("Failed to send pipeline end event: ${execution?.id}")
     }
-  }
-
-  // TODO: this is dupe of method in StageExecutionListener
-  protected final Execution currentExecution(JobExecution jobExecution) {
-    if (jobExecution.jobParameters.parameters.containsKey("pipeline")) {
-      String id = jobExecution.jobParameters.getString("pipeline")
-      executionRepository.retrievePipeline(id)
-    } else {
-      String id = jobExecution.jobParameters.getString("orchestration")
-      executionRepository.retrieveOrchestration(id)
-    }
-  }
-
-  /**
-   * Determines if the step was a success (from an Orca perspective). Note that
-   * even if the Orca task failed we'll get a `jobExecution.status` of
-   * `COMPLETED` as the error was handled.
-   */
-  private static boolean wasSuccessful(JobExecution jobExecution, Execution currentExecution) {
-    jobExecution.exitStatus.exitCode == ExitStatus.COMPLETED.exitCode || currentExecution.status.isSuccessful()
   }
 }

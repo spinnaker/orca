@@ -16,11 +16,15 @@
 
 package com.netflix.spinnaker.orca.batch.lifecycle
 
+import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchStageListener
+import com.netflix.spinnaker.orca.listeners.ExecutionListener
+import com.netflix.spinnaker.orca.listeners.StageListener
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.batch.StageStatusPropagationListener
+import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.pipeline.LinearStage
@@ -35,7 +39,9 @@ import org.springframework.batch.core.step.AbstractStep
 import static com.netflix.spinnaker.orca.batch.PipelineInitializerTasklet.initializationStep
 
 class LinearStageSpec extends AbstractBatchLifecycleSpec {
-  List<StepExecutionListener> listeners = [new StageStatusPropagationListener(executionRepository)]
+  List<StepExecutionListener> listeners = [
+    new SpringBatchStageListener(executionRepository, new StageStatusPropagationListener())
+  ]
 
   Map<String, Object> ctx1 = [a: 1]
   Map<String, Object> ctx2 = [b: 2]
@@ -160,7 +166,27 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     StandaloneStageBuilder(String stageName, Task task) {
       super(stageName)
-      setTaskListeners(listeners)
+      setStepExecutionListenerProvider(new ExecutionListenerProvider() {
+        @Override
+        StepExecutionListener wrap(StageListener stageListener) {
+          return null
+        }
+
+        @Override
+        JobExecutionListener wrap(ExecutionListener executionListener) {
+          return null
+        }
+
+        @Override
+        Collection<StepExecutionListener> allStepExecutionListeners() {
+          return listeners
+        }
+
+        @Override
+        Collection<JobExecutionListener> allJobExecutionListeners() {
+          return []
+        }
+      })
       this.task = task
     }
 
@@ -196,7 +222,27 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     InjectStageBuilder(StepBuilderFactory steps, TaskTaskletAdapter adapter) {
       super("stage2")
-      setTaskListeners(listeners)
+      setStepExecutionListenerProvider(new ExecutionListenerProvider() {
+        @Override
+        StepExecutionListener wrap(StageListener stageListener) {
+          throw new UnsupportedOperationException()
+        }
+
+        @Override
+        JobExecutionListener wrap(ExecutionListener executionListener) {
+          return null
+        }
+
+        @Override
+        Collection<StepExecutionListener> allStepExecutionListeners() {
+          listeners
+        }
+
+        @Override
+        Collection<JobExecutionListener> allJobExecutionListeners() {
+          return []
+        }
+      })
       setSteps(steps)
       setTaskTaskletAdapters([adapter])
       stageBuilder1.steps = steps

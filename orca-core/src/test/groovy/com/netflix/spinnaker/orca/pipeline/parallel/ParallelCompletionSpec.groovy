@@ -1,6 +1,7 @@
 package com.netflix.spinnaker.orca.pipeline.parallel
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.kork.eureka.EurekaComponents
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
@@ -41,6 +42,7 @@ class ParallelCompletionSpec extends Specification {
         EurekaComponents,
         JobCompletionListener,
         BatchTestConfiguration,
+        SpringBatchConfiguration,
         OrcaConfiguration,
         OrcaPersistenceConfiguration,
         StageDetailsTask

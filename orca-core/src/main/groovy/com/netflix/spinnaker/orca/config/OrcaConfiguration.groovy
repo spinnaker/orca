@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.orca.config
 
+import com.netflix.spinnaker.orca.listeners.ExecutionPropagationListener
+import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
+import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener
+
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.ThreadPoolExecutor
@@ -141,25 +145,25 @@ class OrcaConfiguration {
   }
 
   @Bean
-  StageStatusPropagationListener stageStatusPropagationListener(ExecutionRepository executionRepository) {
-    new StageStatusPropagationListener(executionRepository)
+  StageStatusPropagationListener stageStatusPropagationListener() {
+    new StageStatusPropagationListener()
   }
 
   @Bean
-  StageTaskPropagationListener stageTaskPropagationListener(ExecutionRepository executionRepository) {
-    new StageTaskPropagationListener(executionRepository)
+  StageTaskPropagationListener stageTaskPropagationListener() {
+    new StageTaskPropagationListener()
   }
 
   @Bean
-  ExecutionPropagationListener executionPropagationListenerBefore(ExecutionRepository executionRepository) {
+  ExecutionPropagationListener executionPropagationListenerBefore() {
     // need a dedicated beforeJob listener due to how spring boot ordered listeners
-    new ExecutionPropagationListener(executionRepository, true, false)
+    new ExecutionPropagationListener(true, false)
   }
 
   @Bean
-  ExecutionPropagationListener executionPropagationListenerAfter(ExecutionRepository executionRepository) {
+  ExecutionPropagationListener executionPropagationListenerAfter() {
     // need a dedicated afterJob listener due to how spring boot ordered listeners
-    new ExecutionPropagationListener(executionRepository, false, true)
+    new ExecutionPropagationListener(false, true)
   }
 
   @Bean
