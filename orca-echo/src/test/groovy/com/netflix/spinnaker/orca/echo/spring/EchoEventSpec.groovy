@@ -3,7 +3,6 @@ package com.netflix.spinnaker.orca.echo.spring
 import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
 import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
-import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
@@ -90,8 +89,8 @@ class EchoEventSpec extends Specification {
     // needs to pick up the tasks
     pipelineJobBuilder.initialize()
 
-    ((SpringBatchExecutionListenerProvider) executionListenerProvider).executionListeners.add(0, new EchoNotifyingPipelineExecutionListener(echoService))
-    ((SpringBatchExecutionListenerProvider) executionListenerProvider).stageListeners.add(0, new EchoNotifyingStageExecutionListener(echoService))
+    ((SpringBatchExecutionListenerProvider) executionListenerProvider).executionListeners.add(0, new EchoNotifyingExecutionListener(echoService))
+    ((SpringBatchExecutionListenerProvider) executionListenerProvider).stageListeners.add(0, new EchoNotifyingStageListener(echoService))
   }
 
   def "events are raised in the correct order"() {

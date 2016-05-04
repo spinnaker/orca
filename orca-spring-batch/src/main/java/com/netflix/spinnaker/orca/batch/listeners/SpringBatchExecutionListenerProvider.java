@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.listeners.StageListener;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.StepExecutionListener;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +55,7 @@ public class SpringBatchExecutionListenerProvider implements ExecutionListenerPr
   public Collection<StepExecutionListener> allStepExecutionListeners() {
     return stageListeners
       .stream()
+      .sorted()
       .map(stageListener -> new SpringBatchStageListener(executionRepository, stageListener))
       .collect(Collectors.toList());
   }
@@ -64,6 +64,7 @@ public class SpringBatchExecutionListenerProvider implements ExecutionListenerPr
   public Collection<JobExecutionListener> allJobExecutionListeners() {
     return executionListeners
       .stream()
+      .sorted()
       .map(executionListener -> new SpringBatchExecutionListener(executionRepository, executionListener))
       .collect(Collectors.toList());
   }

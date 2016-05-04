@@ -7,22 +7,17 @@ import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.OrchestrationStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import org.springframework.batch.core.BatchStatus
-import org.springframework.batch.core.ExitStatus
-import org.springframework.batch.core.StepExecution
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-class EchoNotifyingStepExecutionListenerSpec extends Specification {
+class EchoNotifyingStageListenerSpec extends Specification {
 
   def echoService = Mock(EchoService)
-  def executionRepository = Stub(ExecutionRepository)
 
   @Subject
-  def echoListener = new EchoNotifyingStageExecutionListener(echoService)
+  def echoListener = new EchoNotifyingStageListener(echoService)
 
   @Shared
   def pipelineStage = new PipelineStage(new Pipeline(), "test")

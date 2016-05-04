@@ -4,6 +4,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.echo.EchoService
+import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -17,19 +18,18 @@ import org.springframework.beans.factory.annotation.Autowired
  */
 @CompileStatic
 @Slf4j
-class EchoNotifyingStageExecutionListener implements StageListener {
+class EchoNotifyingStageListener implements StageListener {
 
   private final EchoService echoService
 
   @Autowired
-  EchoNotifyingStageExecutionListener(EchoService echoService) {
+  EchoNotifyingStageListener(EchoService echoService) {
     this.echoService = echoService
   }
 
   @Override
   void beforeTask(Persister persister, Stage stage, Task task) {
     if (task.status == ExecutionStatus.NOT_STARTED) {
-      // TODO-AJ validate that this listener fires prior to stage status propagation
       recordEvent('task', 'starting', stage, task)
     }
   }
