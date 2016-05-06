@@ -40,7 +40,7 @@ class PackageInfoSpec extends Specification {
         false,
         mapper)
 
-      Map trigger = ["buildInfo": ["artifacts": filename ]]
+      Map trigger = ["buildInfo": ["artifacts": filename]]
       Map buildInfo = ["artifacts": []]
       Map request = ["package": requestPackage]
 
@@ -51,15 +51,37 @@ class PackageInfoSpec extends Specification {
       requestMap.package == result
 
     where:
-      filename                                      | requestPackage                                 | result
-      [["fileName": "test-package_1.0.0.deb"]]      | "test-package"                                 | "test-package_1.0.0"
-      [["fileName": "test-package_1.0.0.deb"]]      | "another-package"                              | "another-package"
-      [["fileName": "test-package_1.0.0.deb"]]      | "another-package test-package"                 | "another-package test-package_1.0.0"
+      filename                                    | requestPackage                                 | result
+      [["fileName": "test-package_1.0.0.deb"]]    | "test-package"                                 | "test-package_1.0.0"
+      [["fileName": "test-package_1.0.0.deb"]]    | "another-package test-package"                 | "another-package test-package_1.0.0"
 
       [["fileName": "first-package_1.0.1.deb"],
-       ["fileName": "second-package_2.3.42.deb"]]   | "first-package another-package second-package" |  "first-package_1.0.1 another-package second-package_2.3.42"
+       ["fileName": "second-package_2.3.42.deb"]] | "first-package another-package second-package" | "first-package_1.0.1 another-package second-package_2.3.42"
 
 
   }
 
+  def "At least one matching package should be in the context"() {
+    given:
+      Stage bakeStage = new PipelineStage()
+      PackageType packageType = PackageType.DEB
+      boolean extractBuildDetails = false
+      PackageInfo packageInfo = new PackageInfo(bakeStage,
+        packageType.packageType,
+        packageType.versionDelimiter,
+        extractBuildDetails,
+        false,
+        mapper)
+
+      Map trigger = ["buildInfo": ["artifacts": [["fileName": "test-package_1.0.0.deb"]]]]
+      Map buildInfo = ["artifacts": []]
+      Map request = ["package": "another-package"]
+
+    when:
+      packageInfo.createAugmentedRequest(trigger, buildInfo, request)
+
+    then:
+      def exception = thrown(IllegalStateException)
+      exception.message == "Unable to find deployable artifact starting with another-package_ and ending with .deb in [] and [[fileName:test-package_1.0.0.deb]]. Make sure your deb package file name complies with the naming convention: name_version-release_arch."
+  }
 }

@@ -90,7 +90,10 @@ class PackageInfo {
       return request
     }
 
-    def requestPackages = request.package.split(" ")
+    Boolean matched = false
+    String notMachedPrefix
+    String notMatchedFileExtension
+    List<String> requestPackages = request.package.split(" ")
 
     requestPackages.eachWithIndex { requestPackage, index ->
 
@@ -113,6 +116,7 @@ class PackageInfo {
         if (extractVersion) {
           packageVersion = extractPackageVersion(triggerArtifact, prefix, fileExtension)
         }
+        matched = true
       }
 
       if (buildArtifact) {
@@ -120,18 +124,26 @@ class PackageInfo {
         if (extractVersion) {
           packageVersion = extractPackageVersion(buildArtifact, prefix, fileExtension)
         }
+        matched = true
       }
 
       if (packageVersion) {
         request.put('packageVersion', packageVersion)
       }
 
-      // If the package cannot be found it's passed down as is
+      // When a package match one of the packages coming from the trigger or from the previous stage its name
+      // get replaced with the actual package name. Otherwise its just passed down to the bakery,
+      // letting the bakery to resolve it.
       if (!triggerArtifact && !buildArtifact) {
         packageName = requestPackage
       }
 
       if (packageName) {
+        // At least one matched package must be present it the context.
+        if (!matched) {
+          notMachedPrefix = prefix
+          notMatchedFileExtension = fileExtension
+        }
 
         requestPackages[index] = packageName
 
@@ -152,6 +164,11 @@ class PackageInfo {
           }
         }
       }
+    }
+
+    // If it hasn't been possible to match any package at all, raise an exception.
+    if (!matched) {
+      throw new IllegalStateException("Unable to find deployable artifact starting with ${notMachedPrefix} and ending with ${notMatchedFileExtension} in ${buildArtifacts} and ${triggerArtifacts}. Make sure your deb package file name complies with the naming convention: name_version-release_arch.")
     }
 
     request.replace('package', requestPackages.join(" "))
