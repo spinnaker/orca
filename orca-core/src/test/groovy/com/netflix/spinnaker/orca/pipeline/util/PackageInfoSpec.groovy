@@ -42,7 +42,7 @@ class PackageInfoSpec extends Specification {
 
       Map trigger = ["buildInfo": ["artifacts": filename]]
       Map buildInfo = ["artifacts": []]
-      Map request = ["package": requestPackage]
+      Map request = ["package": requestPackage, "allowMissingPackageInstallation" : true]
 
     when:
       Map requestMap = packageInfo.createAugmentedRequest(trigger, buildInfo, request)
@@ -53,6 +53,7 @@ class PackageInfoSpec extends Specification {
     where:
       filename                                    | requestPackage                                 | result
       [["fileName": "test-package_1.0.0.deb"]]    | "test-package"                                 | "test-package_1.0.0"
+      [["fileName": "test-package_1.0.0.deb"]]    | "another-package"                              | "another-package"
       [["fileName": "test-package_1.0.0.deb"]]    | "another-package test-package"                 | "another-package test-package_1.0.0"
 
       [["fileName": "first-package_1.0.1.deb"],
@@ -61,7 +62,7 @@ class PackageInfoSpec extends Specification {
 
   }
 
-  def "At least one matching package should be in the context"() {
+  def "Raise an exception if allowMissingPackageInstallation is false and there's no match"() {
     given:
       Stage bakeStage = new PipelineStage()
       PackageType packageType = PackageType.DEB
@@ -75,7 +76,7 @@ class PackageInfoSpec extends Specification {
 
       Map trigger = ["buildInfo": ["artifacts": [["fileName": "test-package_1.0.0.deb"]]]]
       Map buildInfo = ["artifacts": []]
-      Map request = ["package": "another-package"]
+      Map request = ["package": "another-package", "allowMissingPackageInstallation" : false]
 
     when:
       packageInfo.createAugmentedRequest(trigger, buildInfo, request)

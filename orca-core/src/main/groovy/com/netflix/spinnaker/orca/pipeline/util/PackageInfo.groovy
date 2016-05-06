@@ -91,8 +91,6 @@ class PackageInfo {
     }
 
     Boolean matched = false
-    String notMachedPrefix
-    String notMatchedFileExtension
     List<String> requestPackages = request.package.split(" ")
 
     requestPackages.eachWithIndex { requestPackage, index ->
@@ -139,10 +137,10 @@ class PackageInfo {
       }
 
       if (packageName) {
-        // At least one matched package must be present it the context.
-        if (!matched) {
-          notMachedPrefix = prefix
-          notMatchedFileExtension = fileExtension
+
+        // If it hasn't been possible to match a package and allowMissingPackageInstallation is false raise an exception.
+        if (!matched && !request.get("allowMissingPackageInstallation")) {
+          throw new IllegalStateException("Unable to find deployable artifact starting with ${prefix} and ending with ${fileExtension} in ${buildArtifacts} and ${triggerArtifacts}. Make sure your deb package file name complies with the naming convention: name_version-release_arch.")
         }
 
         requestPackages[index] = packageName
@@ -164,11 +162,6 @@ class PackageInfo {
           }
         }
       }
-    }
-
-    // If it hasn't been possible to match any package at all, raise an exception.
-    if (!matched) {
-      throw new IllegalStateException("Unable to find deployable artifact starting with ${notMachedPrefix} and ending with ${notMatchedFileExtension} in ${buildArtifacts} and ${triggerArtifacts}. Make sure your deb package file name complies with the naming convention: name_version-release_arch.")
     }
 
     request.replace('package', requestPackages.join(" "))
