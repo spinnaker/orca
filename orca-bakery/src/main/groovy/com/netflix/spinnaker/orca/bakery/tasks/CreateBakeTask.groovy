@@ -139,8 +139,10 @@ class CreateBakeTask implements RetryableTask {
       bakeRequest = bakeRequest.copyWith(cloudProviderType: null)
     }
 
+    // The allowMissingPackageInstallation only affect Orca behavior. We don't want to propagate it to any bakery
+    bakeRequest = bakeRequest.copyWith(allowMissingPackageInstallation: null)
     if (!roscoApisEnabled) {
-      bakeRequest = bakeRequest.copyWith(templateFileName: null, extendedAttributes: null, allowMissingPackageInstallation: null)
+      bakeRequest = bakeRequest.copyWith(templateFileName: null, extendedAttributes: null)
     }
 
     return bakeRequest

@@ -76,13 +76,13 @@ class PackageInfoSpec extends Specification {
 
       Map trigger = ["buildInfo": ["artifacts": [["fileName": "test-package_1.0.0.deb"]]]]
       Map buildInfo = ["artifacts": []]
-      Map request = ["package": "another-package", "allowMissingPackageInstallation" : false]
+      Map request = ["package": "foo bar", "allowMissingPackageInstallation" : false]
 
     when:
       packageInfo.createAugmentedRequest(trigger, buildInfo, request)
 
     then:
       def exception = thrown(IllegalStateException)
-      exception.message == "Unable to find deployable artifact starting with another-package_ and ending with .deb in [] and [[fileName:test-package_1.0.0.deb]]. Make sure your deb package file name complies with the naming convention: name_version-release_arch."
+      exception.message == "Unable to find deployable artifact starting with [foo_, bar_] and ending with .deb in [] and [[fileName:test-package_1.0.0.deb]]. Make sure your deb package file name complies with the naming convention: name_version-release_arch."
   }
 }

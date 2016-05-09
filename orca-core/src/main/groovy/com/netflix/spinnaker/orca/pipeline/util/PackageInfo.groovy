@@ -90,13 +90,14 @@ class PackageInfo {
       return request
     }
 
-    Boolean matched = false
+    List notMachedPrefixes = []
+    String fileExtension = ".${packageType}"
+
     List<String> requestPackages = request.package.split(" ")
 
     requestPackages.eachWithIndex { requestPackage, index ->
 
       String prefix = "${requestPackage}${versionDelimiter}"
-      String fileExtension = ".${packageType}"
 
       Map triggerArtifact = filterArtifacts(triggerArtifacts, prefix, fileExtension)
       Map buildArtifact = filterArtifacts(buildArtifacts, prefix, fileExtension)
@@ -114,7 +115,6 @@ class PackageInfo {
         if (extractVersion) {
           packageVersion = extractPackageVersion(triggerArtifact, prefix, fileExtension)
         }
-        matched = true
       }
 
       if (buildArtifact) {
@@ -122,7 +122,6 @@ class PackageInfo {
         if (extractVersion) {
           packageVersion = extractPackageVersion(buildArtifact, prefix, fileExtension)
         }
-        matched = true
       }
 
       if (packageVersion) {
@@ -134,14 +133,10 @@ class PackageInfo {
       // letting the bakery to resolve it.
       if (!triggerArtifact && !buildArtifact) {
         packageName = requestPackage
+        notMachedPrefixes.add(prefix)
       }
 
       if (packageName) {
-
-        // If it hasn't been possible to match a package and allowMissingPackageInstallation is false raise an exception.
-        if (!matched && !request.get("allowMissingPackageInstallation")) {
-          throw new IllegalStateException("Unable to find deployable artifact starting with ${prefix} and ending with ${fileExtension} in ${buildArtifacts} and ${triggerArtifacts}. Make sure your deb package file name complies with the naming convention: name_version-release_arch.")
-        }
 
         requestPackages[index] = packageName
 
@@ -162,6 +157,11 @@ class PackageInfo {
           }
         }
       }
+    }
+
+    // If it hasn't been possible to match a package and allowMissingPackageInstallation is false raise an exception.
+    if (!notMachedPrefixes.empty && !request.get("allowMissingPackageInstallation")) {
+      throw new IllegalStateException("Unable to find deployable artifact starting with ${notMachedPrefixes} and ending with ${fileExtension} in ${buildArtifacts} and ${triggerArtifacts}. Make sure your deb package file name complies with the naming convention: name_version-release_arch.")
     }
 
     request.replace('package', requestPackages.join(" "))
