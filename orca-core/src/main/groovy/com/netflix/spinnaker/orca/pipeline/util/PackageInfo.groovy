@@ -90,7 +90,7 @@ class PackageInfo {
       return request
     }
 
-    List notMachedPrefixes = []
+    List missingPrefixes = []
     String fileExtension = ".${packageType}"
 
     List<String> requestPackages = request.package.split(" ")
@@ -128,17 +128,16 @@ class PackageInfo {
         request.put('packageVersion', packageVersion)
       }
 
+      if (!triggerArtifact && !buildArtifact) {
+        missingPrefixes.add(prefix)
+      }
+
       // When a package match one of the packages coming from the trigger or from the previous stage its name
       // get replaced with the actual package name. Otherwise its just passed down to the bakery,
       // letting the bakery to resolve it.
-      if (!triggerArtifact && !buildArtifact) {
-        packageName = requestPackage
-        notMachedPrefixes.add(prefix)
-      }
+      requestPackages[index] = packageName ?: requestPackage
 
       if (packageName) {
-
-        requestPackages[index] = packageName
 
         if (extractBuildDetails) {
           def buildInfoUrl = buildArtifact ? buildInfo?.url : trigger?.buildInfo?.url
@@ -160,11 +159,11 @@ class PackageInfo {
     }
 
     // If it hasn't been possible to match a package and allowMissingPackageInstallation is false raise an exception.
-    if (!notMachedPrefixes.empty && !request.get("allowMissingPackageInstallation")) {
-      throw new IllegalStateException("Unable to find deployable artifact starting with ${notMachedPrefixes} and ending with ${fileExtension} in ${buildArtifacts} and ${triggerArtifacts}. Make sure your deb package file name complies with the naming convention: name_version-release_arch.")
+    if (missingPrefixes && !request.allowMissingPackageInstallation) {
+      throw new IllegalStateException("Unable to find deployable artifact starting with ${missingPrefixes} and ending with ${fileExtension} in ${buildArtifacts} and ${triggerArtifacts}. Make sure your deb package file name complies with the naming convention: name_version-release_arch.")
     }
 
-    request.replace('package', requestPackages.join(" "))
+    request.put('package', requestPackages.join(" "))
     return request
   }
 
