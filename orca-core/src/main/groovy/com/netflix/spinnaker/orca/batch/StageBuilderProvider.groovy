@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline.parallel
 
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import groovy.transform.CompileStatic
-import org.springframework.stereotype.Component
+package com.netflix.spinnaker.orca.batch
 
-@CompileStatic
-@Component
-class PipelineInitializationStage implements StageDefinitionBuilder {
-  @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
-    return Collections.singletonList(
-      new StageDefinitionBuilder.TaskDefinition("1", "initialize", PipelineInitializationTask)
-    );
-  }
+public interface StageBuilderProvider {
+  Collection<StageBuilder> all()
 }

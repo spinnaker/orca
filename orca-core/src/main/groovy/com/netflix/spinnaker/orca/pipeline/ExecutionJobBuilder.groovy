@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 
 import javax.annotation.PostConstruct
 import com.google.common.collect.ImmutableList
@@ -49,7 +50,7 @@ abstract class ExecutionJobBuilder<T extends Execution> {
 
   @PostConstruct
   void initialize() {
-    applicationContext.getBeansOfType(StageBuilder).values().each {
+    applicationContext.getBean(StageBuilderProvider).all().each {
       stages[it.type] = it
     }
   }
