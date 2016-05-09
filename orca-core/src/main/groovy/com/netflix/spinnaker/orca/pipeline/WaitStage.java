@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 import static java.util.Collections.singletonList;
 
 @Component
-public class WaitStageDefinitionBuilder implements StageDefinitionBuilder {
+public class WaitStage implements StageDefinitionBuilder {
   @Override public List<TaskDefinition> taskGraph() {
     return singletonList(new TaskDefinition("1", "wait", WaitTask.class));
   }

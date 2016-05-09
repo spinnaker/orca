@@ -23,38 +23,33 @@ import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StartJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import static java.util.Collections.singletonList
 
 @Slf4j
 @Component
 @CompileStatic
-class JenkinsStage extends LinearStage implements RestartableStage, CancellableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "jenkins"
-
+class JenkinsStage implements StageDefinitionBuilder, RestartableStage, CancellableStage {
   @Autowired StopJenkinsJobTask stopJenkinsJobTask
 
-  JenkinsStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "startJenkinsJob", StartJenkinsJobTask),
-      buildStep(stage, "waitForJenkinsJobStart", MonitorQueuedJenkinsJobTask),
-      buildStep(stage, "monitorJenkinsJob", MonitorJenkinsJobTask)
-    ]
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+    return Arrays.asList(
+      new StageDefinitionBuilder.TaskDefinition("1", "startJenkinsJob", StartJenkinsJobTask.class),
+      new StageDefinitionBuilder.TaskDefinition("2", "waitForJenkinsJobStart", MonitorQueuedJenkinsJobTask.class),
+      new StageDefinitionBuilder.TaskDefinition("3", "monitorJenkinsJob", MonitorJenkinsJobTask.class)
+    );
   }
 
   @Override
   Stage prepareStageForRestart(Stage stage) {
-    stage = super.prepareStageForRestart(stage)
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
     stage.startTime = null
     stage.endTime = null
 

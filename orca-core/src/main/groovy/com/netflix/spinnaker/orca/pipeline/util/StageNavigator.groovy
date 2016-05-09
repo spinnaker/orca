@@ -18,6 +18,7 @@
 package com.netflix.spinnaker.orca.pipeline.util
 
 import com.netflix.spinnaker.orca.batch.StageBuilder
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.context.ApplicationContext
@@ -45,7 +46,7 @@ class StageNavigator {
   }
 
   protected Collection<StageBuilder> stageBuilders() {
-    return applicationContext.getBeansOfType(StageBuilder)?.values() ?: []
+    return applicationContext.getBean(StageBuilderProvider)?.all() ?: []
   }
 
   private List<Stage> ancestors(Stage startingStage) {

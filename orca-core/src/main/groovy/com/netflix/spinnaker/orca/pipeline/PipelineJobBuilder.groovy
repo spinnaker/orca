@@ -21,7 +21,6 @@ import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.pipeline.model.AbstractStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.parallel.PipelineInitializationStage
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import org.springframework.batch.core.Job
@@ -85,7 +84,7 @@ class PipelineJobBuilder extends ExecutionJobBuilder<Pipeline> {
     } else {
       initializationStage = StageBuilder.newStage(
         pipeline,
-        PipelineInitializationStage.PIPELINE_CONFIG_TYPE,
+        "pipelineInitialization",
         "Initialize",
         [:],
         null as Stage,

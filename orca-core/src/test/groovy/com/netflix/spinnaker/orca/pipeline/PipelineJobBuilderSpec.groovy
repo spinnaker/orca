@@ -79,7 +79,7 @@ class PipelineJobBuilderSpec extends Specification {
 
   def setup() {
     applicationContext.beanFactory.with {
-      registerSingleton PipelineInitializationStage.PIPELINE_CONFIG_TYPE, pipelineInitializationStage
+      registerSingleton "pipelineInitialization", pipelineInitializationStage
       registerSingleton WaitForRequisiteCompletionStage.PIPELINE_CONFIG_TYPE, waitForRequisiteCompletionStage
 
       autowireBean waitForRequisiteCompletionStage
@@ -87,7 +87,6 @@ class PipelineJobBuilderSpec extends Specification {
     }
 
     waitForRequisiteCompletionStage.applicationContext = applicationContext
-    pipelineInitializationStage.applicationContext = applicationContext
 
     def helper = new SimpleJobBuilderHelper("")
     helper.repository(new SimpleJobRepository())

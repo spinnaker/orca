@@ -2,10 +2,12 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.config.SpringBatchConfiguration
 import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.config.JesqueConfiguration
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.echo.EchoService
@@ -58,6 +60,8 @@ class EchoEventSpec extends Specification {
   ExecutionListenerProvider executionListenerProvider
   @Autowired
   ExecutionRepository executionRepository
+  @Autowired
+  StageBuilderProvider stageBuilderProvider
 
   def task1 = Mock(Task)
   def task2 = Mock(Task)
@@ -75,22 +79,26 @@ class EchoEventSpec extends Specification {
   }
 
   def setup() {
+    def stageBuilders = []
     applicationContext.beanFactory.with {
       [task1, task2].eachWithIndex { task, i ->
         def name = "stage${i + 1}"
         def stage = new SimpleStage(name, task)
         autowireBean stage
-        registerSingleton name, stage
+        stageBuilders << stage
         stage.applicationContext = applicationContext
       }
+
       // needs to pick up the listeners
       autowireBean pipelineJobBuilder
     }
-    // needs to pick up the tasks
-    pipelineJobBuilder.initialize()
 
     ((SpringBatchExecutionListenerProvider) executionListenerProvider).executionListeners.add(0, new EchoNotifyingExecutionListener(echoService))
     ((SpringBatchExecutionListenerProvider) executionListenerProvider).stageListeners.add(0, new EchoNotifyingStageListener(echoService))
+    ((SpringBatchStageBuilderProvider) stageBuilderProvider).stageBuilders.addAll(stageBuilders)
+
+    // needs to pick up the tasks
+    pipelineJobBuilder.initialize()
   }
 
   def "events are raised in the correct order"() {
