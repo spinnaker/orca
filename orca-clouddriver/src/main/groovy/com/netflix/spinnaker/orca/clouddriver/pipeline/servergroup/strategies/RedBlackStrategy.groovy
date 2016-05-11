@@ -23,11 +23,11 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStag
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
-
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 @Component
@@ -72,7 +72,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
         "shrinkCluster",
         shrinkContext,
         stage,
-        Stage.SyntheticStageOwner.STAGE_AFTER
+        SyntheticStageOwner.STAGE_AFTER
       )
     }
 
@@ -88,7 +88,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
         "scaleDown",
         scaleDown,
         stage,
-        Stage.SyntheticStageOwner.STAGE_AFTER
+        SyntheticStageOwner.STAGE_AFTER
       )
     }
 
@@ -98,7 +98,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
       "disableCluster",
       baseContext + [remainingEnabledServerGroups: 1, preferLargerOverNewer: false],
       stage,
-      Stage.SyntheticStageOwner.STAGE_AFTER
+      SyntheticStageOwner.STAGE_AFTER
     )
 
     return stages

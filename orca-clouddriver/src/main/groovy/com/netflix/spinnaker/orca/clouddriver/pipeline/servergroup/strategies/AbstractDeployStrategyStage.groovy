@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
+import groovy.transform.Immutable
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwareStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
@@ -25,10 +27,8 @@ import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.Immutable
-import groovy.util.logging.Slf4j
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
-
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 @Slf4j
@@ -111,7 +111,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
           it.name,
           defaultContext + it.context,
           parentStage,
-          Stage.SyntheticStageOwner.STAGE_BEFORE
+          SyntheticStageOwner.STAGE_BEFORE
         )
       }
       it.afterStageDefinitions().each {
@@ -121,7 +121,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
           it.name,
           defaultContext + it.context,
           parentStage,
-          Stage.SyntheticStageOwner.STAGE_AFTER
+          SyntheticStageOwner.STAGE_AFTER
         )
       }
     }

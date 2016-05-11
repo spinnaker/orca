@@ -16,20 +16,21 @@
 
 package com.netflix.spinnaker.orca.batch.lifecycle
 
-import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
-import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
-import com.netflix.spinnaker.orca.batch.listeners.SpringBatchStageListener
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
+import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchStageListener
+import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.batch.core.*
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
 import org.springframework.batch.core.job.builder.FlowBuilder
@@ -80,7 +81,7 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     then:
     1 * task1.execute(_) >> { Stage stage ->
-      assert stage.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE
+      assert stage.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE
       new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
     }
     1 * task2.execute(_) >> { Stage stage ->
@@ -88,7 +89,7 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
       new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
     }
     1 * task3.execute(_) >> { Stage stage ->
-      assert stage.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER
+      assert stage.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER
       new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
     }
   }

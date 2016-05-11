@@ -16,22 +16,21 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.job.RunJobStage
-import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.ParallelStage
 import com.netflix.spinnaker.orca.pipeline.model.AbstractStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.batch.core.job.builder.FlowBuilder
 import org.springframework.batch.core.job.flow.Flow
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Slf4j
@@ -53,7 +52,7 @@ class ParallelRunJobsStage extends ParallelStage {
   protected List<Flow> buildFlows(Stage stage) {
     return parallelContexts(stage).collect { Map context ->
       def nextStage = newStage(
-        stage.execution, context.type as String, context.name as String, new HashMap(context), stage, Stage.SyntheticStageOwner.STAGE_AFTER
+        stage.execution, context.type as String, context.name as String, new HashMap(context), stage, SyntheticStageOwner.STAGE_AFTER
       )
 
       def existingStage = stage.execution.stages.find { it.id == nextStage.id }

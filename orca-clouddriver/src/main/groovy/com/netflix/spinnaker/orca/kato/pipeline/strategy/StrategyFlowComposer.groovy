@@ -21,5 +21,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 
 interface StrategyFlowComposer {
   public boolean replacesBasicSteps()
-  public <T extends Execution> List<Stage<T>> composeFlow(DeployStrategyStage builder, Stage<T> stage)
+
+  public <T extends Execution<T>> List<Stage<T>> composeFlow(DeployStrategyStage builder, Stage<T> stage)
 }

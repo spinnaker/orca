@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component
 @Component
 class UpdateLaunchConfigStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+  <T extends Execution<T>> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
         new StageDefinitionBuilder.TaskDefinition("updateLaunchConfig", UpdateLaunchConfigTask),
         new StageDefinitionBuilder.TaskDefinition("monitorModification", MonitorKatoTask),

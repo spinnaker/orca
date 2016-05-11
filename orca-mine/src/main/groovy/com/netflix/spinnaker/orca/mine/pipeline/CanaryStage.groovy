@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
+import java.util.concurrent.TimeUnit
+import groovy.util.logging.Slf4j
 import com.netflix.frigga.autoscaling.AutoScalingGroupNameBuilder
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.ShrinkClusterTask
@@ -23,11 +25,9 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.util.logging.Slf4j
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 @Slf4j
@@ -45,8 +45,8 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
     Map<String, Object> monitorContext = canaryStageId + [scaleUp: parentStage.context.scaleUp ?: [:]]
 
     return [
-      newStage(parentStage.execution, deployCanaryStage.type, "Deploy Canary", deployContext, parentStage, Stage.SyntheticStageOwner.STAGE_AFTER),
-      newStage(parentStage.execution, monitorCanaryStage.type, "Monitor Canary", monitorContext, parentStage, Stage.SyntheticStageOwner.STAGE_AFTER)
+      newStage(parentStage.execution, deployCanaryStage.type, "Deploy Canary", deployContext, parentStage, SyntheticStageOwner.STAGE_AFTER),
+      newStage(parentStage.execution, monitorCanaryStage.type, "Monitor Canary", monitorContext, parentStage, SyntheticStageOwner.STAGE_AFTER)
     ]
   }
 

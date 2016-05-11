@@ -18,14 +18,13 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
-
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 @Component
@@ -72,7 +71,7 @@ class CustomStrategy implements Strategy, ApplicationContextAware {
         "pipeline",
         modifyCtx,
         stage,
-        Stage.SyntheticStageOwner.STAGE_AFTER
+        SyntheticStageOwner.STAGE_AFTER
       )
     ]
   }

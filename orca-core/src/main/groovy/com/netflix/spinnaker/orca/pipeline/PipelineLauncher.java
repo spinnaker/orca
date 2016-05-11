@@ -22,11 +22,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.appinfo.InstanceInfo;
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import static java.lang.Boolean.parseBoolean;
 

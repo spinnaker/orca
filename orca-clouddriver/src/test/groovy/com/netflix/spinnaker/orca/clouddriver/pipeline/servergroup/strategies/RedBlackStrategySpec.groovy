@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterS
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import spock.lang.Specification
 
 class RedBlackStrategySpec extends Specification {
@@ -49,8 +49,8 @@ class RedBlackStrategySpec extends Specification {
 
     when:
       def syntheticStages = strat.composeFlow(stage)
-      def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
-      def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
+    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
       beforeStages.isEmpty()
@@ -70,8 +70,8 @@ class RedBlackStrategySpec extends Specification {
       ctx.maxRemainingAsgs = 10
       stage = new PipelineStage(new Pipeline(), "whatever", ctx)
       syntheticStages = strat.composeFlow(stage)
-      beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
-      afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
+    beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
       beforeStages.isEmpty()
@@ -84,8 +84,8 @@ class RedBlackStrategySpec extends Specification {
       ctx.scaleDown = true
       stage = new PipelineStage(new Pipeline(), "whatever", ctx)
       syntheticStages = strat.composeFlow(stage)
-      beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
-      afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
+    beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
       beforeStages.isEmpty()

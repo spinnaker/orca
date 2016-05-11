@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
@@ -26,8 +28,7 @@ import com.netflix.spinnaker.orca.kato.tasks.ResizeAsgTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
@@ -84,7 +85,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
           "determineTargetReferences",
           parentStage.context,
           parentStage,
-          Stage.SyntheticStageOwner.STAGE_BEFORE
+          SyntheticStageOwner.STAGE_BEFORE
         )
       }
       return stages
@@ -108,7 +109,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
           "resizeAsg",
           description,
           stage,
-          Stage.SyntheticStageOwner.STAGE_AFTER
+          SyntheticStageOwner.STAGE_AFTER
         )
       }
     }
@@ -130,7 +131,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
           "resizeAsg",
           resizeContext,
           stage,
-          Stage.SyntheticStageOwner.STAGE_AFTER
+          SyntheticStageOwner.STAGE_AFTER
         )
       } else {
         context.asgName = targetReference.asg.name
@@ -142,7 +143,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
         "resumeScalingProcesses",
         context + [action: "resume", processes: ["Launch", "Terminate"]],
         stage,
-        Stage.SyntheticStageOwner.STAGE_BEFORE
+        SyntheticStageOwner.STAGE_BEFORE
       )
 
       stages << newStage(
@@ -151,7 +152,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
         "suspendScalingProcesses",
         context + [action: "suspend"],
         stage,
-        Stage.SyntheticStageOwner.STAGE_AFTER
+        SyntheticStageOwner.STAGE_AFTER
       )
     }
 

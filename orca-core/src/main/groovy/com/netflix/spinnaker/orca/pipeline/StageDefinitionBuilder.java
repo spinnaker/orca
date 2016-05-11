@@ -17,23 +17,19 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import java.util.*;
-
-import com.netflix.spinnaker.orca.*;
+import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.*;
-import com.netflix.spinnaker.orca.pipeline.model.Task;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import lombok.Value;
-import com.netflix.spinnaker.orca.pipeline.model.Stage.*;
-
 import static java.util.Collections.emptyList;
 
 public interface StageDefinitionBuilder {
 
-  default <T extends Execution> List<TaskDefinition> taskGraph(Stage<T> parentStage) {
+  default <T extends Execution<T>> List<TaskDefinition> taskGraph(Stage<T> parentStage) {
     return emptyList();
   }
 
-  default <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
+  default <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> parentStage) {
     return emptyList();
   }
 
@@ -110,12 +106,12 @@ public interface StageDefinitionBuilder {
       return stage;
     }
 
-    public static Stage newStage(Execution execution,
-                                 String type,
-                                 String name,
-                                 Map<String, Object> context,
-                                 Stage parent,
-                                 SyntheticStageOwner stageOwner) {
+    public static <E extends Execution<E>> Stage<E> newStage(Execution execution,
+                                                             String type,
+                                                             String name,
+                                                             Map<String, Object> context,
+                                                             Stage parent,
+                                                             SyntheticStageOwner stageOwner) {
       Stage stage;
       if (execution instanceof Orchestration) {
         stage = new OrchestrationStage((Orchestration) execution, type, context);

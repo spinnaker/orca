@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.batch
 
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
@@ -28,6 +27,7 @@ import com.google.common.collect.ImmutableList
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import org.springframework.batch.core.Step
@@ -82,7 +82,7 @@ abstract class StageBuilder implements ApplicationContextAware {
    * @param stage the stage configuration.
    * @return the resulting builder after any steps are appended.
    */
-  final FlowBuilder build(FlowBuilder jobBuilder, Stage stage) {
+  final <Q> FlowBuilder<Q> build(FlowBuilder<Q> jobBuilder, Stage stage) {
     try {
       if (stage.execution.parallel) {
         return buildParallel(jobBuilder, stage)
@@ -164,7 +164,7 @@ abstract class StageBuilder implements ApplicationContextAware {
           "Wait For Parent Tasks",
           [requisiteIds: childStage.requisiteStageRefIds] as Map,
           null as Stage,
-          null as Stage.SyntheticStageOwner
+          null as SyntheticStageOwner
         )
         ((AbstractStage) waitForStage).id = "${childStage.id}-waitForRequisite"
 
@@ -176,7 +176,7 @@ abstract class StageBuilder implements ApplicationContextAware {
 
         // child stage should be added after the artificial join stage
         def childFlowBuilder = new FlowBuilder<Flow>("ChildExecution.${childStage.refId}.${childStage.id}")
-        flows << waitForBuilder.next(childStageBuilder.build(childFlowBuilder, childStage).build() as Flow).build()
+        flows << waitForBuilder.next(childStageBuilder.build(childFlowBuilder, childStage).build()).build()
       } else {
         // single parent child, no need for an artificial join stage
         def flowBuilder = new FlowBuilder<Flow>("ChildExecution.${childStage.refId}.${childStage.id}")
@@ -306,7 +306,7 @@ abstract class StageBuilder implements ApplicationContextAware {
   }
 
   static Stage newStage(Execution execution, String type, String name, Map<String, Object> context,
-                        Stage parent, Stage.SyntheticStageOwner stageOwner) {
+                        Stage parent, SyntheticStageOwner stageOwner) {
     return StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
       execution, type, name, context, parent, stageOwner
     )

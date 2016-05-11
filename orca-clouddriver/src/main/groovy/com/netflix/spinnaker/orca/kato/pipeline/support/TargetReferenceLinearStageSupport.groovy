@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
@@ -59,7 +60,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
 
     if (descriptionList.size()) {
       return descriptionList.collect {
-        newStage(stage.execution, this.type, this.type, it, stage, Stage.SyntheticStageOwner.STAGE_AFTER)
+        newStage(stage.execution, this.type, this.type, it, stage, SyntheticStageOwner.STAGE_AFTER)
       }
     }
     return []
@@ -99,7 +100,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
         "determineTargetReferences",
         injectedContext,
         stage,
-        Stage.SyntheticStageOwner.STAGE_BEFORE
+        SyntheticStageOwner.STAGE_BEFORE
       )
 
       if (configuredRegions.size() > 1) {
@@ -108,7 +109,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
           def description = new HashMap(stage.context)
           description.region = region
           stages << newStage(
-            stage.execution, this.type, this.type, description, stage, Stage.SyntheticStageOwner.STAGE_AFTER
+            stage.execution, this.type, this.type, description, stage, SyntheticStageOwner.STAGE_AFTER
           )
         }
       }

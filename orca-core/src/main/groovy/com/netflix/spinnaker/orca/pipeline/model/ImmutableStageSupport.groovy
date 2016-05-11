@@ -16,12 +16,11 @@
 
 package com.netflix.spinnaker.orca.pipeline.model
 
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.BiFunction
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-
-import java.util.concurrent.atomic.AtomicInteger
-import com.netflix.spinnaker.orca.ExecutionStatus
 
 class ImmutableStageSupport {
 
@@ -106,18 +105,18 @@ class ImmutableStageSupport {
     }
 
     @Override
-    void resolveStrategyParams() {
-
-    }
-
-    @Override
     Stage preceding(String type) {
       self.preceding(type)?.asImmutable()
     }
 
     @Override
-    List<StageNavigator.Result> ancestors(Closure<Boolean> matcher = { Stage stage, StageBuilder stageBuilder -> true }) {
+    List<StageNavigator.Result> ancestors(BiFunction<Stage<T>, StageBuilder, Boolean> matcher) {
       return self.ancestors(matcher)
+    }
+
+    @Override
+    List<StageNavigator.Result> ancestors() {
+      return ancestors { stage, builder -> true }
     }
 
     @Override
@@ -171,12 +170,12 @@ class ImmutableStageSupport {
     }
 
     @Override
-    Stage.SyntheticStageOwner getSyntheticStageOwner() {
+    SyntheticStageOwner getSyntheticStageOwner() {
       self.syntheticStageOwner
     }
 
     @Override
-    void setSyntheticStageOwner(Stage.SyntheticStageOwner syntheticStageOwner) {
+    void setSyntheticStageOwner(SyntheticStageOwner syntheticStageOwner) {
       fail()
     }
 

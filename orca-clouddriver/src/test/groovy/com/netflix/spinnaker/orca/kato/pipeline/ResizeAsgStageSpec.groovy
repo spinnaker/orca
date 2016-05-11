@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
@@ -25,8 +24,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
 import spock.lang.AutoCleanup
@@ -75,8 +73,8 @@ class ResizeAsgStageSpec extends Specification {
 
     when:
     def syntheticStages = stageBuilder.aroundStages(stage)
-    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE }
-    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER }
+    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
     1 * targetReferenceSupport.getTargetAsgReferences(stage) >> asgs.collect {
@@ -128,8 +126,8 @@ class ResizeAsgStageSpec extends Specification {
 
     when:
     def syntheticStages = stageBuilder.aroundStages(stage)
-    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE }
-    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER }
+    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
     1 * targetReferenceSupport.getTargetAsgReferences(stage) >> [targetRef]
@@ -170,8 +168,8 @@ class ResizeAsgStageSpec extends Specification {
 
     when:
     def syntheticStages = stageBuilder.aroundStages(stage)
-    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
-    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
+    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
     _ * targetReferenceSupport.isDynamicallyBound(_) >> true

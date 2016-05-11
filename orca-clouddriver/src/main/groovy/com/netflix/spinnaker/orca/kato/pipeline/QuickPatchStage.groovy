@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import java.util.concurrent.ConcurrentHashMap
+import groovy.util.logging.Slf4j
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
@@ -25,20 +27,17 @@ import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.util.OperatingSystem
 import com.netflix.spinnaker.orca.pipeline.util.PackageInfo
 import com.netflix.spinnaker.orca.pipeline.util.PackageType
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import retrofit.RestAdapter
 import retrofit.RetrofitError
 import retrofit.client.Client
-
-import java.util.concurrent.ConcurrentHashMap
-
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.*
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 /**
  * Wrapper stage over BuilkQuickPatchStage.  We do this so we can reuse the same steps whether or not we are doing
@@ -114,7 +113,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
           "bulkQuickPatchStage",
           nextStageContext,
           parentStage,
-          Stage.SyntheticStageOwner.STAGE_AFTER
+          SyntheticStageOwner.STAGE_AFTER
         )
       }
     } else { // quickpatch all instances in the asg at once
@@ -129,7 +128,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
         "bulkQuickPatchStage",
         nextStageContext,
         parentStage,
-        Stage.SyntheticStageOwner.STAGE_AFTER
+        SyntheticStageOwner.STAGE_AFTER
       )
     }
 

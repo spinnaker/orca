@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.orca.batch.stages;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.LinearStage;
@@ -23,11 +27,6 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.batch.core.Step;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class LinearStageDefinitionBuilder extends LinearStage {
   private final StageDefinitionBuilder delegate;
@@ -41,13 +40,13 @@ public class LinearStageDefinitionBuilder extends LinearStage {
   }
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
+  public <T extends Execution<T>> List<Step> buildSteps(Stage<T> stage) {
     Map<String, List<StageBuilder>> stageBuilders = stageBuilderProvider
       .all()
       .stream()
       .collect(Collectors.groupingBy(StageBuilder::getType));
 
-    Collection<Stage> aroundStages = delegate.aroundStages(stage);
+    Collection<Stage<T>> aroundStages = delegate.aroundStages(stage);
     aroundStages.forEach(s -> {
       switch(s.getSyntheticStageOwner()) {
         case STAGE_BEFORE:
@@ -61,7 +60,7 @@ public class LinearStageDefinitionBuilder extends LinearStage {
     });
 
     return delegate
-      .taskGraph((Stage<Execution>) stage)
+      .taskGraph(stage)
       .stream()
       .map(taskDefinition -> buildStep(stage, taskDefinition.getName(), taskDefinition.getImplementingClass()))
       .collect(Collectors.toList());

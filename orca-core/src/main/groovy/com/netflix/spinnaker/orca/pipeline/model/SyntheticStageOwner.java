@@ -14,17 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline;
+package com.netflix.spinnaker.orca.pipeline.model;
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import static java.lang.String.format;
-
-public interface ExecutionRunner {
-  <T extends Execution<T>> void start(T execution) throws Exception;
-
-  class NoSuchStageDefinitionBuilder extends RuntimeException {
-    public NoSuchStageDefinitionBuilder(String type) {
-      super(format("No StageDefinitionBuilder implementation for %s found", type));
-    }
-  }
+public enum SyntheticStageOwner {
+  STAGE_BEFORE, STAGE_AFTER;
 }

@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import java.util.List;
-
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
@@ -27,7 +26,7 @@ import static java.util.Collections.singletonList;
 @Component
 public class WaitStage implements StageDefinitionBuilder {
   @Override
-  public <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+  public <T extends Execution<T>> List<TaskDefinition> taskGraph(Stage<T> parentStage) {
     return singletonList(new TaskDefinition("wait", WaitTask.class));
   }
 }

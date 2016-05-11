@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -36,8 +36,8 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
 
     when:
     def syntheticStages = supportStage.composeTargets(stage)
-    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
-    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
+    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
     beforeStages.size() == stageNamesBefore.size()
@@ -60,8 +60,8 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
 
     when:
     def syntheticStages = supportStage.composeTargets(stage)
-    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
-    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
+    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
     beforeStages.size() == 1
@@ -81,8 +81,8 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
 
     when:
     def syntheticStages = supportStage.composeTargets(stage)
-    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
-    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
+    def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
     beforeStages.size() == 0

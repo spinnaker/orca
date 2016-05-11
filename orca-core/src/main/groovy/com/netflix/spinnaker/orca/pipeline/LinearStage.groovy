@@ -16,18 +16,18 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.pipeline.model.InjectedStageConfiguration
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner
-import groovy.transform.CompileStatic
-import groovy.transform.PackageScope
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.job.builder.FlowBuilder
-import static com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner.STAGE_AFTER
-import static com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner.STAGE_BEFORE
+import static SyntheticStageOwner.STAGE_AFTER
+import static SyntheticStageOwner.STAGE_BEFORE
 
 /**
  * A base class for +Stage+ implementations that just need to wire a linear sequence of steps.

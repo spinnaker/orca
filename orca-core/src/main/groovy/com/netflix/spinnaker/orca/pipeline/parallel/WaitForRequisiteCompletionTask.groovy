@@ -16,19 +16,19 @@
 
 package com.netflix.spinnaker.orca.pipeline.parallel
 
+import java.util.concurrent.TimeUnit
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 
 @Component
+@Slf4j
 @CompileStatic
 class WaitForRequisiteCompletionTask implements RetryableTask {
   long backoffPeriod = 5000

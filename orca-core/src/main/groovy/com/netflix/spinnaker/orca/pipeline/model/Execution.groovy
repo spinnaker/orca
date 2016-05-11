@@ -24,7 +24,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 
 @CompileStatic
-abstract class Execution<T extends Execution> implements Serializable {
+abstract class Execution<T extends Execution<T>> implements Serializable {
   String id
   String application
   String executingInstance

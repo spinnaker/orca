@@ -16,14 +16,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.kato.pipeline.Nameable
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.*
-import static com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner.*
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 
 @Slf4j
 abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBuilder, Nameable {

@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
@@ -88,7 +89,7 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
       Map enableServerGroupContext = new HashMap(parentStage.context)
       enableServerGroupContext.serverGroupName = restoreServerGroupName
       stages << StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
-        parentStage.execution, enableServerGroupStage.type, "enable", enableServerGroupContext, parentStage, Stage.SyntheticStageOwner.STAGE_AFTER
+        parentStage.execution, enableServerGroupStage.type, "enable", enableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
       )
 
       Map resizeServerGroupContext = new HashMap(parentStage.context) + [
@@ -101,13 +102,13 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
         asgName: restoreServerGroupName
       ]
       stages << StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
-        parentStage.execution, resizeServerGroupStage.type, "resize", resizeServerGroupContext, parentStage, Stage.SyntheticStageOwner.STAGE_AFTER
+        parentStage.execution, resizeServerGroupStage.type, "resize", resizeServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
       )
 
       Map disableServerGroupContext = new HashMap(parentStage.context)
       disableServerGroupContext.serverGroupName = rollbackServerGroupName
       stages << StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
-        parentStage.execution, disableServerGroupStage.type, "disable", disableServerGroupContext, parentStage, Stage.SyntheticStageOwner.STAGE_AFTER
+        parentStage.execution, disableServerGroupStage.type, "disable", disableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
       )
 
       return stages

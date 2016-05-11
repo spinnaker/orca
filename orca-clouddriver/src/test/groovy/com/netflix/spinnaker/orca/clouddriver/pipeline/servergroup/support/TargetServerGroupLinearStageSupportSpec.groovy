@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -42,8 +42,8 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
-    syntheticStages.getOrDefault(Stage.SyntheticStageOwner.STAGE_BEFORE, [])*.name == stageNamesBefore
-    syntheticStages.getOrDefault(Stage.SyntheticStageOwner.STAGE_AFTER, []).isEmpty()
+    syntheticStages.getOrDefault(SyntheticStageOwner.STAGE_BEFORE, [])*.name == stageNamesBefore
+    syntheticStages.getOrDefault(SyntheticStageOwner.STAGE_AFTER, []).isEmpty()
 
     where:
     parentStageId | stageNamesBefore               | description
@@ -64,12 +64,12 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_BEFORE].size() == 1
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER].size() == 3
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
+    syntheticStages[SyntheticStageOwner.STAGE_BEFORE].size() == 1
+    syntheticStages[SyntheticStageOwner.STAGE_AFTER].size() == 3
+    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
     stage.context[locationType] == "us-east-1"
     stage.context[oppositeLocationType] == null
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.context[locationType].flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
+    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.context[locationType].flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
 
     where:
     locationType | oppositeLocationType | cloudProvider
@@ -91,9 +91,9 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
       new TargetServerGroup(name: "asg-v002", region: "us-west-2"),
       new TargetServerGroup(name: "asg-v003", region: "eu-west-2"),
     ]
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_BEFORE] == null
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
+    syntheticStages[SyntheticStageOwner.STAGE_BEFORE] == null
+    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
+    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
     stage.context.region == "us-east-1"
   }
 
@@ -121,8 +121,8 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
         new TargetServerGroup(name: "asg-v001", region: "us-east-1"),
         new TargetServerGroup(name: "asg-v002", region: "us-west-1"),
     ]
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_BEFORE]*.name == beforeNames
-    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.name == ["testPostInjectable", "testPreInjectable", "testSupportStage", "testPostInjectable"]
+    syntheticStages[SyntheticStageOwner.STAGE_BEFORE]*.name == beforeNames
+    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.name == ["testPostInjectable", "testPreInjectable", "testSupportStage", "testPostInjectable"]
 
     where:
     target                | beforeNames                                         | shouldResolve

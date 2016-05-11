@@ -17,10 +17,12 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
+import java.util.function.BiFunction
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.context.ApplicationContext
 
 @CompileStatic
@@ -31,13 +33,13 @@ class StageNavigator {
     this.applicationContext = applicationContext
   }
 
-  List<Result> findAll(Stage startingStage, Closure<Boolean> matcher) {
+  public <T extends Execution<T>> List<Result> findAll(Stage startingStage, BiFunction<Stage<T>, StageBuilder, Boolean> matcher) {
     def stageBuilders = stageBuilders()
 
     def ancestors = [startingStage] + ancestors(startingStage)
     def results = ancestors.findAll { Stage stage ->
       def stageBuilder = stageBuilders.find { it.type == stage.type }
-      return matcher.call(stage, stageBuilder)
+      return matcher.apply(stage, stageBuilder)
     }.collect { Stage stage ->
       new Result(stage: stage, stageBuilder: stageBuilders.find { it.type == stage.type })
     }

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 
+import java.beans.Introspector
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractWaitForClusterWideClouddriverTask
@@ -23,8 +24,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-
-import java.beans.Introspector
 
 abstract class AbstractClusterWideClouddriverOperationStage implements StageDefinitionBuilder {
   abstract Class<? extends AbstractClusterWideClouddriverTask> getClusterOperationTask()
@@ -39,7 +38,7 @@ abstract class AbstractClusterWideClouddriverOperationStage implements StageDefi
   }
 
   @Override
-  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+  def <T extends Execution<T>> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     parentStage.resolveStrategyParams()
     def operationTask = clusterOperationTask
     String name = getStepName(operationTask.simpleName)
