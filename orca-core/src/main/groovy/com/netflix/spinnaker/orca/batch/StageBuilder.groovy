@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.batch
 
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
@@ -29,7 +30,6 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
-import com.netflix.spinnaker.security.AuthenticatedRequest
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.StepExecutionListener
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
@@ -108,42 +108,8 @@ abstract class StageBuilder implements ApplicationContextAware {
     }
   }
 
-  /**
-   * Prepares a stage for restarting by:
-   * - marking the halted task as NOT_STARTED and resetting its start and end times
-   * - marking the stage as RUNNING
-   */
   Stage prepareStageForRestart(Stage stage) {
-    stage.execution.canceled = false
-    stage.execution.stages
-      .findAll { it.status == ExecutionStatus.CANCELED }
-      .each { Stage it ->
-      it.status = ExecutionStatus.NOT_STARTED
-      it.tasks
-        .findAll { it.status == ExecutionStatus.CANCELED }
-        .each { task ->
-        task.startTime = null
-        task.endTime = null
-        task.status = ExecutionStatus.NOT_STARTED
-      }
-    }
-    stage.tasks.find { it.status.halt }.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
-      task.startTime = null
-      task.endTime = null
-      task.status = ExecutionStatus.NOT_STARTED
-    }
-    stage.context["restartDetails"] = [
-      "restartedBy": AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
-      "restartTime": System.currentTimeMillis()
-    ] as Map<String, Object>
-
-    if (stage.context.exception) {
-      stage.context.restartDetails["previousException"] = stage.context.exception
-      stage.context.remove("exception")
-    }
-    stage.status = ExecutionStatus.RUNNING
-
-    return stage
+    return StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
   }
 
   @Deprecated
@@ -170,7 +136,7 @@ abstract class StageBuilder implements ApplicationContextAware {
   @VisibleForTesting
   @PackageScope
   FlowBuilder buildDependentStages(FlowBuilder jobBuilder, Stage stage) {
-    def stageBuilders = applicationContext.getBeansOfType(StageBuilder).values()
+    def stageBuilders = applicationContext.getBean(StageBuilderProvider).all()
     def dependantStages = stage.execution.stages.findAll {
       it.requisiteStageRefIds?.contains(stage.refId)
     }
