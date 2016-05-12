@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
@@ -50,6 +51,9 @@ class QuickPatchStage extends LinearStage {
 
   @Autowired
   BulkQuickPatchStage bulkQuickPatchStage
+
+  @Autowired
+  StageBuilderProvider stageBuilderProvider
 
   @Autowired
   OortService oortService
@@ -100,25 +104,26 @@ class QuickPatchStage extends LinearStage {
 
     stage.context.put("version", version) // so the ui can display the discovered package version and we can verify for skipUpToDate
     def instances = getInstancesForCluster(stage)
+    def wrappedBulkQuickPatchStage = stageBuilderProvider.wrap(bulkQuickPatchStage)
 
-    if(instances.size() == 0) {
+    if (instances.size() == 0) {
       // skip since nothing to do
-    } else if(stage.context.rollingPatch) { // rolling means instances in the asg will be updated sequentially
+    } else if (stage.context.rollingPatch) { // rolling means instances in the asg will be updated sequentially
       instances.each { key, value ->
         def instance = [:]
         instance.put(key, value)
         def nextStageContext = [:]
         nextStageContext.putAll(stage.context)
-        nextStageContext << [instances : instance]
+        nextStageContext << [instances: instance]
         nextStageContext.put("instanceIds", [key]) // for WaitForDown/UpInstancesTask
-        injectAfter(stage, "bulkQuickPatchStage", bulkQuickPatchStage, nextStageContext)
+        injectAfter(stage, "bulkQuickPatchStage", wrappedBulkQuickPatchStage, nextStageContext)
       }
     } else { // quickpatch all instances in the asg at once
       def nextStageContext = [:]
       nextStageContext.putAll(stage.context)
-      nextStageContext << [instances : instances]
-      nextStageContext.put("instanceIds", instances.collect {key, value -> key}) // for WaitForDown/UpInstancesTask
-      injectAfter(stage, "bulkQuickPatchStage", bulkQuickPatchStage, nextStageContext)
+      nextStageContext << [instances: instances]
+      nextStageContext.put("instanceIds", instances.collect { key, value -> key }) // for WaitForDown/UpInstancesTask
+      injectAfter(stage, "bulkQuickPatchStage", wrappedBulkQuickPatchStage, nextStageContext)
     }
 
     stage.initializationStage = true
