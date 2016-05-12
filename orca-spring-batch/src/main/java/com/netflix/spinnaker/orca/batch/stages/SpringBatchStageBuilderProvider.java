@@ -55,4 +55,9 @@ public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
   public Collection<StageBuilder> all() {
     return stageBuilders;
   }
+
+  @Override
+  public StageBuilder wrap(StageDefinitionBuilder stageDefinitionBuilder) {
+    return new LinearStageDefinitionBuilder(stageDefinitionBuilder);
+  }
 }

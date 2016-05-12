@@ -24,34 +24,30 @@ import com.netflix.spinnaker.orca.mine.tasks.CleanupCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterCanaryTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
-class MonitorCanaryStage extends LinearStage implements CancellableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "monitorCanary"
+class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
+  @Autowired
+  DeployCanaryStage deployCanaryStage
 
-  @Autowired DeployCanaryStage deployCanaryStage
-  @Autowired MineService mineService
-
-  MonitorCanaryStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
+  @Autowired
+  MineService mineService
 
   @Override
-  List<Step> buildSteps(Stage stage) {
-    [
-      buildStep(stage, "registerCanary", RegisterCanaryTask),
-      buildStep(stage, "monitorCanary", MonitorCanaryTask),
-      buildStep(stage, "cleanupCanary", CleanupCanaryTask),
-      buildStep(stage, "monitorCleanup", MonitorKatoTask),
-      buildStep(stage, "completeCanary", CompleteCanaryTask)
-    ]
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+    return Arrays.asList(
+      new StageDefinitionBuilder.TaskDefinition("1", "registerCanary", RegisterCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("2", "monitorCanary", MonitorCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("3", "cleanupCanary", CleanupCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("4", "monitorCleanup", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("5", "completeCanary", CompleteCanaryTask)
+    );
   }
 
   @Override

@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
+import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
@@ -62,6 +63,8 @@ class QuickPatchStageSpec extends Specification {
 
   def objectMapper = new OrcaObjectMapper()
   def executionRepository = new JedisExecutionRepository(new NoopRegistry(), jedisPool, 1, 50)
+  def stageBuilderProvider = new SpringBatchStageBuilderProvider(Mock(ApplicationContext), [], [])
+
   InstanceService instanceService = Mock(InstanceService)
 
   void setup() {
@@ -77,6 +80,7 @@ class QuickPatchStageSpec extends Specification {
     quickPatchStage.bulkQuickPatchStage = bulkQuickPatchStage
     quickPatchStage.INSTANCE_VERSION_SLEEP = 1
     quickPatchStage.oortHelper = oortHelper
+    quickPatchStage.stageBuilderProvider = stageBuilderProvider
   }
 
   def "quick patch can't run due to too many asgs"() {
@@ -131,7 +135,7 @@ class QuickPatchStageSpec extends Specification {
     1 == stage.afterStages.size()
 
     and:
-    stage.afterStages*.stageBuilder.unique() == [bulkQuickPatchStage]
+    stage.afterStages*.stageBuilder.delegate.unique() == [bulkQuickPatchStage]
 
     and:
     with(stage.afterStages[0].context) {
@@ -170,7 +174,7 @@ class QuickPatchStageSpec extends Specification {
     2 == stage.afterStages.size()
 
     and:
-    stage.afterStages*.stageBuilder.unique() == [bulkQuickPatchStage]
+    stage.afterStages*.stageBuilder.delegate.unique() == [bulkQuickPatchStage]
 
     and:
     with(stage.afterStages[0].context) {
