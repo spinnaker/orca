@@ -34,19 +34,16 @@ import org.springframework.stereotype.Component
 @Component
 class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired
-  DeployCanaryStage deployCanaryStage
-
-  @Autowired
   MineService mineService
 
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("1", "registerCanary", RegisterCanaryTask),
-      new StageDefinitionBuilder.TaskDefinition("2", "monitorCanary", MonitorCanaryTask),
-      new StageDefinitionBuilder.TaskDefinition("3", "cleanupCanary", CleanupCanaryTask),
-      new StageDefinitionBuilder.TaskDefinition("4", "monitorCleanup", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("5", "completeCanary", CompleteCanaryTask)
+      new StageDefinitionBuilder.TaskDefinition("registerCanary", RegisterCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorCanary", MonitorCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("cleanupCanary", CleanupCanaryTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorCleanup", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("completeCanary", CompleteCanaryTask)
     );
   }
 

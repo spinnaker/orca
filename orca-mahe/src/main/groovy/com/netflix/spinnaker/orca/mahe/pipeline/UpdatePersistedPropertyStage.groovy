@@ -16,25 +16,33 @@
 
 package com.netflix.spinnaker.orca.mahe.pipeline
 
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.mahe.tasks.RollbackPropertyTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
-class UpdatePropertyStage extends LinearStage implements CancellableStage {
-  public static final String PIPELINE_CONFIG_TYPE = "updatePersistedProperty"
-
+class UpdatePersistedPropertyStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired MonitorCreatePropertyStage monitorCreatePropertyStage
   @Autowired RollbackPropertyTask rollbackPropertyTask
 
-  UpdatePropertyStage() {
-    super(PIPELINE_CONFIG_TYPE)
+  @Override
+  def <T extends Execution> List<Stage<T>> preStages(Stage<T> parentStage) {
+    return [
+      StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
+        parentStage.execution,
+        monitorCreatePropertyStage.getType(),
+        "Monitor Update Property",
+        parentStage.context + [propertyStageId: parentStage.id],
+        parentStage,
+        Stage.SyntheticStageOwner.STAGE_AFTER
+      )
+    ]
   }
 
   @Override
@@ -48,13 +56,4 @@ class UpdatePropertyStage extends LinearStage implements CancellableStage {
        deletedPropertiesResults: deletedProperties
     ])
   }
-
-  @Override
-  List<Step> buildSteps(Stage stage) {
-    Map propertyStageId = [propertyStageId: stage.id]
-    Map createPropertyContext = propertyStageId + stage.context
-    injectAfter(stage, "Monitor Update Property", monitorCreatePropertyStage, createPropertyContext)
-    []
-  }
 }
-

@@ -36,7 +36,7 @@ class UpsertProjectStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Collections.singletonList(
-      new StageDefinitionBuilder.TaskDefinition("1", "upsertProject", UpsertProjectTask)
+      new StageDefinitionBuilder.TaskDefinition("upsertProject", UpsertProjectTask)
     );
   }
 

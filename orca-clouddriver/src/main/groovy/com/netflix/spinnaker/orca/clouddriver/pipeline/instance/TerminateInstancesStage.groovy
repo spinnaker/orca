@@ -19,26 +19,17 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.instance
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.TerminateInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import org.springframework.stereotype.Component
 
 @Component
-class TerminateInstancesStage extends LinearStage {
-
-  public static final String PIPELINE_CONFIG_TYPE = "terminateInstances"
-
-  TerminateInstancesStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class TerminateInstancesStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return [
-        buildStep(stage, "terminateInstances", TerminateInstancesTask),
-        buildStep(stage, "monitorTermination", MonitorKatoTask),
-        buildStep(stage, "waitForTerminatedInstances", WaitForTerminatedInstancesTask),
+      new StageDefinitionBuilder.TaskDefinition("terminateInstances", TerminateInstancesTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorTermination", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForTerminatedInstances", WaitForTerminatedInstancesTask)
     ]
   }
 }

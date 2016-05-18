@@ -38,7 +38,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage {
 
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
-    return singletonList(new StageDefinitionBuilder.TaskDefinition("1", "waitForJudgment", WaitForManualJudgmentTask.class));
+    return [new StageDefinitionBuilder.TaskDefinition("waitForJudgment", WaitForManualJudgmentTask.class)]
   }
 
   @Override

@@ -33,11 +33,11 @@ class BulkQuickPatchStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("1", "verifyQuipIsRunning", VerifyQuipTask),
-      new StageDefinitionBuilder.TaskDefinition("2", "triggerQuip", TriggerQuipTask),
-      new StageDefinitionBuilder.TaskDefinition("3", "monitorQuip", MonitorQuipTask),
-      new StageDefinitionBuilder.TaskDefinition("4", "instanceHealthCheck", InstanceHealthCheckTask),
-      new StageDefinitionBuilder.TaskDefinition("5", "waitForDiscoveryState", WaitForUpInstanceHealthTask)
+      new StageDefinitionBuilder.TaskDefinition("verifyQuipIsRunning", VerifyQuipTask),
+      new StageDefinitionBuilder.TaskDefinition("triggerQuip", TriggerQuipTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorQuip", MonitorQuipTask),
+      new StageDefinitionBuilder.TaskDefinition("instanceHealthCheck", InstanceHealthCheckTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForDiscoveryState", WaitForUpInstanceHealthTask)
     );
   }
 }

@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
+import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
@@ -27,7 +29,16 @@ import spock.lang.Unroll
 class TargetServerGroupLinearStageSupportSpec extends Specification {
 
   def resolver = Spy(TargetServerGroupResolver)
-  def supportStage = new TestSupportStage(resolver: resolver)
+  def supportStage = new TestSupportStage() {
+    @Override
+    protected StageBuilderProvider getStageBuilderProvider() {
+      return new SpringBatchStageBuilderProvider(null, [], [])
+    }
+  }
+
+  void setup() {
+    supportStage.resolver = resolver
+  }
 
   @Unroll
   void "#description determineTargetReferences stage when target is dynamic and parentStageId is #parentStageId"() {

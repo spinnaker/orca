@@ -53,9 +53,6 @@ class QuickPatchStage extends LinearStage {
   BulkQuickPatchStage bulkQuickPatchStage
 
   @Autowired
-  StageBuilderProvider stageBuilderProvider
-
-  @Autowired
   OortService oortService
 
   @Autowired
@@ -104,7 +101,7 @@ class QuickPatchStage extends LinearStage {
 
     stage.context.put("version", version) // so the ui can display the discovered package version and we can verify for skipUpToDate
     def instances = getInstancesForCluster(stage)
-    def wrappedBulkQuickPatchStage = stageBuilderProvider.wrap(bulkQuickPatchStage)
+    def wrappedBulkQuickPatchStage = getStageBuilderProvider().wrap(bulkQuickPatchStage)
 
     if (instances.size() == 0) {
       // skip since nothing to do

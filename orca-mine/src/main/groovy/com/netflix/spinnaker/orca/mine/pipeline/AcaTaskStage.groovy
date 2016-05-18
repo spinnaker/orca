@@ -36,9 +36,9 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("1", "registerGenericCanary", RegisterAcaTaskTask),
-      new StageDefinitionBuilder.TaskDefinition("2", "monitorGenericCanary", MonitorAcaTaskTask),
-      new StageDefinitionBuilder.TaskDefinition("3", "completeCanary", CompleteCanaryTask)
+      new StageDefinitionBuilder.TaskDefinition("registerGenericCanary", RegisterAcaTaskTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorGenericCanary", MonitorAcaTaskTask),
+      new StageDefinitionBuilder.TaskDefinition("completeCanary", CompleteCanaryTask)
     );
   }
 

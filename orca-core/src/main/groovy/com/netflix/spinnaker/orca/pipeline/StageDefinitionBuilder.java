@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.*;
+import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.orca.pipeline.model.Task;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import lombok.Value;
+import com.netflix.spinnaker.orca.pipeline.model.Stage.*;
+
 import static java.util.Collections.emptyList;
 
 public interface StageDefinitionBuilder {
@@ -33,11 +33,11 @@ public interface StageDefinitionBuilder {
     return emptyList();
   }
 
-  default <T extends Execution> List<Stage<T>> preStages() {
+  default <T extends Execution> List<Stage<T>> preStages(Stage<T> parentStage) {
     return emptyList();
   }
 
-  default <T extends Execution> List<Stage<T>> postStages() {
+  default <T extends Execution> List<Stage<T>> postStages(Stage<T> parentStage) {
     return emptyList();
   }
 
@@ -45,8 +45,7 @@ public interface StageDefinitionBuilder {
    * @return the stage type this builder handles.
    */
   default String getType() {
-    String className = getClass().getSimpleName();
-    return className.substring(0, 1).toLowerCase() + className.substring(1).replaceFirst("StageDefinitionBuilder$", "").replaceFirst("Stage$", "");
+    return StageDefinitionBuilderSupport.getType(this.getClass());
   }
 
   default Stage prepareStageForRestart(Stage stage) {
@@ -55,12 +54,16 @@ public interface StageDefinitionBuilder {
 
   @Value
   class TaskDefinition {
-    String id;
     String name;
     Class<? extends com.netflix.spinnaker.orca.Task> implementingClass;
   }
 
   class StageDefinitionBuilderSupport {
+    public static String getType(Class<? extends StageDefinitionBuilder> clazz) {
+      String className = clazz.getSimpleName();
+      return className.substring(0, 1).toLowerCase() + className.substring(1).replaceFirst("StageDefinitionBuilder$", "").replaceFirst("Stage$", "");
+    }
+
     /**
      * Prepares a stage for restarting by:
      * - marking the halted task as NOT_STARTED and resetting its start and end times
@@ -107,6 +110,46 @@ public interface StageDefinitionBuilder {
       }});
 
       stage.setStatus(ExecutionStatus.RUNNING);
+
+      return stage;
+    }
+
+    public static Stage newStage(Execution execution,
+                                 String type,
+                                 String name,
+                                 Map<String, Object> context,
+                                 Stage parent,
+                                 SyntheticStageOwner stageOwner) {
+      Stage stage;
+      if (execution instanceof Orchestration) {
+        stage = new OrchestrationStage((Orchestration) execution, type, context);
+      } else {
+        stage = new PipelineStage((Pipeline) execution, type, name, context);
+      }
+
+      stage.setSyntheticStageOwner(stageOwner);
+
+      if (parent != null) {
+        stage.setParentStageId(parent.getId());
+
+        // Look upstream until you find the ultimate ancestor parent (parent w/ no parentStageId)
+        Collection<Stage> executionStages = execution.getStages();
+        while (parent.getParentStageId() != null) {
+          String parentStageId = parent.getParentStageId();
+          parent = executionStages
+            .stream()
+            .filter(s -> s.getId().equals(parentStageId))
+            .findFirst()
+            .orElse(null);
+        }
+      }
+
+      if (parent != null) {
+        String stageName = Optional.of(stage.getName()).map(s -> s.replaceAll("[^A-Za-z0-9]", "")).orElse(null);
+        ((AbstractStage) stage).setId(
+          parent.getId() + "-" + ((AbstractStage) parent).getStageCounter().incrementAndGet() + "-" + stageName
+        );
+      }
 
       return stage;
     }

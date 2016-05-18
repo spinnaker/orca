@@ -16,19 +16,24 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
 
 @Component
-class CustomStrategy implements Strategy {
+class CustomStrategy implements Strategy, ApplicationContextAware {
 
   final String name = "custom"
 
   @Autowired
   PipelineStage pipelineStage
+
+  ApplicationContext applicationContext
 
   @Override
   void composeFlow(Stage stage) {
@@ -57,11 +62,15 @@ class CustomStrategy implements Strategy {
       pipelineParameters : parameters
     ]
 
-    LinearStage.injectAfter(stage, "pipeline", pipelineStage, modifyCtx)
+    LinearStage.injectAfter(stage, "pipeline", getStageBuilderProvider().wrap(pipelineStage), modifyCtx)
   }
 
   @Override
   boolean replacesBasicSteps() {
     return true
+  }
+
+  StageBuilderProvider getStageBuilderProvider() {
+    return applicationContext.getBean(StageBuilderProvider)
   }
 }

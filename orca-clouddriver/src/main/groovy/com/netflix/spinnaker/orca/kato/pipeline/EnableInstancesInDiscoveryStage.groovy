@@ -39,9 +39,9 @@ class EnableInstancesInDiscoveryStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("1", "enableInstances", EnableInstancesInDiscoveryTask),
-      new StageDefinitionBuilder.TaskDefinition("2", "monitorInstances", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("3", "waitForDiscoveryState", WaitForUpInstanceHealthTask),
+      new StageDefinitionBuilder.TaskDefinition("enableInstances", EnableInstancesInDiscoveryTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorInstances", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForDiscoveryState", WaitForUpInstanceHealthTask),
     );
   }
 }

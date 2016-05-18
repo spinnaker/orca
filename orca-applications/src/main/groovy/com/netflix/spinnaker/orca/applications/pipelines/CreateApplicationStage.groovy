@@ -27,7 +27,7 @@ class CreateApplicationStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Collections.singletonList(
-      new StageDefinitionBuilder.TaskDefinition("1", "createApplication", UpsertApplicationTask)
+      new StageDefinitionBuilder.TaskDefinition("createApplication", UpsertApplicationTask)
     );
   }
 }

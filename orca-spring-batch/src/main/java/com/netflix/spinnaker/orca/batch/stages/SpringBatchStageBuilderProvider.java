@@ -58,6 +58,14 @@ public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
 
   @Override
   public StageBuilder wrap(StageDefinitionBuilder stageDefinitionBuilder) {
-    return new LinearStageDefinitionBuilder(stageDefinitionBuilder);
+    if (stageDefinitionBuilder == null) {
+      return null;
+    }
+
+    StageBuilder stageBuilder = new LinearStageDefinitionBuilder(stageDefinitionBuilder);
+    applicationContext.getAutowireCapableBeanFactory().autowireBean(stageBuilder);
+    stageBuilder.setApplicationContext(applicationContext);
+
+    return stageBuilder;
   }
 }

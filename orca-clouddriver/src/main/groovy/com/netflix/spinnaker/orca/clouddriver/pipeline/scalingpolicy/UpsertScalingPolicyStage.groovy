@@ -19,26 +19,17 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.scalingpolicy
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.scalingpolicy.UpsertScalingPolicyTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import org.springframework.stereotype.Component
 
 @Component
-class UpsertScalingPolicyStage extends LinearStage {
-
-  public static final String PIPELINE_CONFIG_TYPE = "upsertScalingPolicy"
-
-  UpsertScalingPolicyStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class UpsertScalingPolicyStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [
-        buildStep(stage, "upsertScalingPolicy", UpsertScalingPolicyTask),
-        buildStep(stage, "monitorUpsert", MonitorKatoTask),
-        buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("upsertScalingPolicy", UpsertScalingPolicyTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorUpsert", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     ]
   }
 }

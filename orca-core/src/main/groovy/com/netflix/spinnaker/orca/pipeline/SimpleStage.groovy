@@ -16,23 +16,28 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.Task
-import org.springframework.batch.core.Step
 
 @CompileStatic
-class SimpleStage extends LinearStage {
-
+class SimpleStage implements StageDefinitionBuilder {
+  private final String type
   private final Task task
 
-  SimpleStage(String name, Task task) {
-    super(name)
+  SimpleStage(String type, Task task) {
+    this.type = type
     this.task = task
   }
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [buildStep(stage, "task", task)]
+  String getType() {
+    return type
+  }
+
+  @Override
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+    return [
+        new StageDefinitionBuilder.TaskDefinition("task", task.class)
+    ]
   }
 }
