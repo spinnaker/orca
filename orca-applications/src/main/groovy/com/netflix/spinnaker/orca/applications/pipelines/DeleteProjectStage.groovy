@@ -34,7 +34,7 @@ class DeleteProjectStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Collections.singletonList(
-      new StageDefinitionBuilder.TaskDefinition("1", "deleteProject", DeleteProjectTask)
+      new StageDefinitionBuilder.TaskDefinition("deleteProject", DeleteProjectTask)
     );
   }
 

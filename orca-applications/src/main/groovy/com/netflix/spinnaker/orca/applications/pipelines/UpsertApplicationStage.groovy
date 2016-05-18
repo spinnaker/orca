@@ -27,7 +27,7 @@ class UpsertApplicationStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Collections.singletonList(
-      new StageDefinitionBuilder.TaskDefinition("1", "upsertApplication", UpsertApplicationTask)
+      new StageDefinitionBuilder.TaskDefinition("upsertApplication", UpsertApplicationTask)
     );
   }
 }

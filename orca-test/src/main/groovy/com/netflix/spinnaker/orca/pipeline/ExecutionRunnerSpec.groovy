@@ -46,7 +46,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     given:
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      taskGraph() >> [new TaskDefinition("1", "1", Task)]
+      taskGraph() >> [new TaskDefinition("1", Task)]
     }
     @Subject def runner = create(stageDefBuilder)
 
@@ -71,8 +71,8 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
-          taskGraph() >> [new TaskDefinition("1", "${stageType}_1", Task)]
-          preStages() >> [preStage1, preStage2]
+          taskGraph() >> [new TaskDefinition("${stageType}_1", Task)]
+          preStages(_) >> [preStage1, preStage2]
         },
         Stub(StageDefinitionBuilder) {
           getType() >> "${stageType}_pre1"
@@ -106,8 +106,8 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
-          taskGraph() >> [new TaskDefinition("1", "${stageType}_1", Task)]
-          postStages() >> [postStage1, postStage2]
+          taskGraph() >> [new TaskDefinition("${stageType}_1", Task)]
+          postStages(_) >> [postStage1, postStage2]
         },
         Stub(StageDefinitionBuilder) {
           getType() >> "${stageType}_post1"
@@ -139,17 +139,17 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def postStage = new PipelineStage(null, "${stageType}_post")
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      taskGraph() >> [new TaskDefinition("1", "${stageType}_1", Task)]
-      preStages() >> [preStage]
-      postStages() >> [postStage]
+      taskGraph() >> [new TaskDefinition("${stageType}_1", Task)]
+      preStages(_) >> [preStage]
+      postStages(_) >> [postStage]
     }
     def preStageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> "${stageType}_pre"
-      taskGraph() >> [new TaskDefinition("1", "${stageType}_pre_1", Task)]
+      taskGraph() >> [new TaskDefinition("${stageType}_pre_1", Task)]
     }
     def postStageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> "${stageType}_post"
-      taskGraph() >> [new TaskDefinition("1", "${stageType}_post_1", Task)]
+      taskGraph() >> [new TaskDefinition("${stageType}_post_1", Task)]
     }
     @Subject def runner = create(stageDefBuilder, preStageDefBuilder, postStageDefBuilder)
 

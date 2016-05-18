@@ -86,8 +86,6 @@ class PipelineJobBuilderSpec extends Specification {
       autowireBean pipelineInitializationStage
     }
 
-    waitForRequisiteCompletionStage.applicationContext = applicationContext
-
     def helper = new SimpleJobBuilderHelper("")
     helper.repository(new SimpleJobRepository())
 

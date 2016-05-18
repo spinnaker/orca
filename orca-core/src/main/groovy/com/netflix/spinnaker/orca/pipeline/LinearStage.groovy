@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline
 
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.batch.StageBuilder
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.pipeline.model.InjectedStageConfiguration
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner
@@ -151,5 +152,9 @@ abstract class LinearStage extends StageBuilder implements StepProvider {
       stage.execution.builtPipelineObjects << jobBuilder
     }
     return jobBuilder
+  }
+
+  protected StageBuilderProvider getStageBuilderProvider() {
+    return applicationContext.getBean(StageBuilderProvider)
   }
 }

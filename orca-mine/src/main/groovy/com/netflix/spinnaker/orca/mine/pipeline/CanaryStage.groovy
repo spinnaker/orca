@@ -50,7 +50,7 @@ class CanaryStage extends LinearStage implements CancellableStage {
     Map monitorContext = canaryStageId + [scaleUp: stage.context.scaleUp ?: [:]]
 
     injectAfter(stage, "Deploy Canary", deployCanaryStage, deployContext)
-    injectAfter(stage, "Monitor Canary", monitorCanaryStage, monitorContext)
+    injectAfter(stage, "Monitor Canary", getStageBuilderProvider().wrap(monitorCanaryStage), monitorContext)
     []
   }
 

@@ -16,31 +16,19 @@
 
 package com.netflix.spinnaker.orca.batch.pipeline
 
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
-import com.netflix.spinnaker.orca.pipeline.LinearStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import org.springframework.batch.core.Step
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
 
 /**
  * A stub +Stage+ implementation for unit tests that doesn't need to be Spring-wired in order to work. It will
  * just add one or more pre-defined +Tasks+ (probably mocks) to the pipeline.
  */
 @CompileStatic
-class TestStage extends LinearStage {
-
+class TestStage implements StageDefinitionBuilder {
   private final List<Task> tasks = []
 
-  TestStage(String name, StepBuilderFactory steps, ExecutionRepository executionRepository, Task... tasks) {
-    super(name)
-    this.steps = steps
-    this.taskTaskletAdapters = [new TaskTaskletAdapterImpl(executionRepository, [])]
-//    this.taskListeners = [
-//      new StageStatusPropagationListener(executionRepository)
-//    ] as List<StepExecutionListener>
+  TestStage(Task... tasks) {
     this.tasks.addAll tasks
   }
 
@@ -54,10 +42,10 @@ class TestStage extends LinearStage {
   }
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     def i = 1
-    tasks.collect { Task task ->
-      buildStep (stage, "task${i++}", task)
+    return tasks.collect {
+      new StageDefinitionBuilder.TaskDefinition("task${i++}", it.class)
     }
   }
 }

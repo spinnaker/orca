@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForCapacityMatchTask
@@ -59,7 +60,7 @@ class ResizeAsgStage extends LinearStage {
       // configure iff this stage has no parent or has a parent that is not a ResizeAsg stage
       configureTargets(stage)
       if (targetReferenceSupport.isDynamicallyBound(stage)) {
-        injectBefore(stage, "determineTargetReferences", determineTargetReferenceStage, stage.context)
+        injectBefore(stage, "determineTargetReferences", getStageBuilderProvider().wrap(determineTargetReferenceStage), stage.context)
       }
       stage.initializationStage = true
 

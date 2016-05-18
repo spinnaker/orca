@@ -19,25 +19,17 @@ package com.netflix.spinnaker.orca.kato.pipeline
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.kato.tasks.UpsertAsgScheduledActionsTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import org.springframework.stereotype.Component
 
 @Component
-class UpsertAsgScheduledActionsStage extends LinearStage {
-
-  public static final String PIPELINE_CONFIG_TYPE = "upsertAsgScheduledActions"
-
-  UpsertAsgScheduledActionsStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
+class UpsertAsgScheduledActionsStage implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    def step1 = buildStep(stage, "upsertAsgScheduledActions", UpsertAsgScheduledActionsTask)
-    def step2 = buildStep(stage, "monitorUpsert", MonitorKatoTask)
-    def step3 = buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
-    [step1, step2, step3]
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("upsertAsgScheduledActions", UpsertAsgScheduledActionsTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorUpsert", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+    ]
   }
 }

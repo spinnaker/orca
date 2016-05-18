@@ -19,7 +19,9 @@ package com.netflix.spinnaker.orca.kato.pipeline
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
+import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference
@@ -56,10 +58,17 @@ class ResizeAsgStageSpec extends Specification {
   def mapper = OrcaObjectMapper.DEFAULT
   def targetReferenceSupport = Mock(TargetReferenceSupport)
   def resizeSupport = new ResizeSupport(targetReferenceSupport: targetReferenceSupport)
-  def stageBuilder = new ResizeAsgStage(targetReferenceSupport: targetReferenceSupport, resizeSupport: resizeSupport)
+  def stageBuilder = new ResizeAsgStage() {
+    @Override
+    protected StageBuilderProvider getStageBuilderProvider() {
+      return new SpringBatchStageBuilderProvider(null, [], [])
+    }
+  }
   def executionRepository = new JedisExecutionRepository(new NoopRegistry(), jedisPool, 1, 50)
 
   def setup() {
+    stageBuilder.targetReferenceSupport = targetReferenceSupport
+    stageBuilder.resizeSupport = resizeSupport
     stageBuilder.steps = new StepBuilderFactory(Stub(JobRepository), Stub(PlatformTransactionManager))
     stageBuilder.taskTaskletAdapters = [new TaskTaskletAdapterImpl(executionRepository, [])]
     stageBuilder.applicationContext = Stub(ApplicationContext) {

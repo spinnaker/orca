@@ -222,5 +222,4 @@ interface Stage<T extends Execution> {
    * Enriches stage context if it supports strategies
    */
   void resolveStrategyParams()
-
 }

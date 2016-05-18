@@ -24,6 +24,6 @@ import static java.util.Collections.singletonList;
 @Component
 public class WaitStage implements StageDefinitionBuilder {
   @Override public List<TaskDefinition> taskGraph() {
-    return singletonList(new TaskDefinition("1", "wait", WaitTask.class));
+    return singletonList(new TaskDefinition("wait", WaitTask.class));
   }
 }

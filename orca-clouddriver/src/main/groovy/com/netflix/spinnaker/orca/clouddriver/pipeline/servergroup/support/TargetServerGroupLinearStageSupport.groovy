@@ -153,7 +153,7 @@ abstract class TargetServerGroupLinearStageSupport extends LinearStage implement
     }
 
     // For silly reasons, this must be added after the pre/post-DynamicInject to get the execution order right.
-    injectBefore(stage, DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE, determineTargetServerGroupStage, dtsgContext)
+    injectBefore(stage, DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE, getStageBuilderProvider().wrap(determineTargetServerGroupStage), dtsgContext)
   }
 
   protected List<Injectable> preStatic(Map descriptor) {}

@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepos
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.context.ApplicationContext
+import org.springframework.context.support.GenericApplicationContext
 import org.springframework.transaction.PlatformTransactionManager
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
@@ -55,7 +56,9 @@ class QuickPatchStageSpec extends Specification {
 
   Pool<Jedis> jedisPool = embeddedRedis.pool
 
-  @Subject quickPatchStage = Spy(QuickPatchStage)
+  @Subject quickPatchStage = Spy(QuickPatchStage) {
+    getStageBuilderProvider() >> { return new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], []) }
+  }
   def oort = Mock(OortService)
 
   def oortHelper = Mock(OortHelper)
@@ -63,7 +66,6 @@ class QuickPatchStageSpec extends Specification {
 
   def objectMapper = new OrcaObjectMapper()
   def executionRepository = new JedisExecutionRepository(new NoopRegistry(), jedisPool, 1, 50)
-  def stageBuilderProvider = new SpringBatchStageBuilderProvider(Mock(ApplicationContext), [], [])
 
   InstanceService instanceService = Mock(InstanceService)
 
@@ -80,7 +82,6 @@ class QuickPatchStageSpec extends Specification {
     quickPatchStage.bulkQuickPatchStage = bulkQuickPatchStage
     quickPatchStage.INSTANCE_VERSION_SLEEP = 1
     quickPatchStage.oortHelper = oortHelper
-    quickPatchStage.stageBuilderProvider = stageBuilderProvider
   }
 
   def "quick patch can't run due to too many asgs"() {
