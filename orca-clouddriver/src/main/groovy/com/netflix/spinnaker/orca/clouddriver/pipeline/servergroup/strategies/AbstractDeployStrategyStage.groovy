@@ -17,10 +17,8 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwareStage
-import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ApplySourceServerGroupCapacityStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.CaptureSourceServerGroupCapacityTask
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
@@ -73,10 +71,10 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
         cloudProvider: stageData.cloudProvider
       ]
       it.beforeStageDefinitions().each {
-        injectBefore(stage, it.name, it.stageBuilder, defaultContext + it.context)
+        injectBefore(stage, it.name, getStageBuilderProvider().wrap(it.stageDefinitionBuilder), defaultContext + it.context)
       }
       it.afterStageDefinitions().each {
-        injectAfter(stage, it.name, it.stageBuilder, defaultContext + it.context)
+        injectAfter(stage, it.name, getStageBuilderProvider().wrap(it.stageDefinitionBuilder), defaultContext + it.context)
       }
       it.additionalSteps().each {
         steps << buildStep(stage, it.name, it.taskClass)

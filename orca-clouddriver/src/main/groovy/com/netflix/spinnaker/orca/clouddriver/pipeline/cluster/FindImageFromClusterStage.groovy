@@ -17,21 +17,22 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import org.springframework.stereotype.Component
 
 @Component
-class FindImageFromClusterStage extends LinearStage {
+class FindImageFromClusterStage implements StageDefinitionBuilder {
   static final String PIPELINE_CONFIG_TYPE = "findImage"
 
-  FindImageFromClusterStage() {
-    super(PIPELINE_CONFIG_TYPE)
+  @Override
+  String getType() {
+    return PIPELINE_CONFIG_TYPE
   }
 
   @Override
-  public List<Stage> buildSteps(Stage stage) {
-    [buildStep(stage, "findImage", FindImageFromClusterTask)]
+  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+    return [
+        new StageDefinitionBuilder.TaskDefinition("findImage", FindImageFromClusterTask)
+    ]
   }
-
 }

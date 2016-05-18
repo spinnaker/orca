@@ -91,7 +91,7 @@ class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
     and:
     def stageDefinitionBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      taskGraph() >> [new StageDefinitionBuilder.TaskDefinition("1", "task1", TestTask)]
+      taskGraph() >> [new StageDefinitionBuilder.TaskDefinition("task1", TestTask)]
     }
     @Subject runner = create(stageDefinitionBuilder)
 

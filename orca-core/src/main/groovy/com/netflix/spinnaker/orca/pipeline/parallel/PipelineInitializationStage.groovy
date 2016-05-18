@@ -26,7 +26,7 @@ class PipelineInitializationStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Collections.singletonList(
-      new StageDefinitionBuilder.TaskDefinition("1", "initialize", PipelineInitializationTask)
+      new StageDefinitionBuilder.TaskDefinition("initialize", PipelineInitializationTask)
     );
   }
 }

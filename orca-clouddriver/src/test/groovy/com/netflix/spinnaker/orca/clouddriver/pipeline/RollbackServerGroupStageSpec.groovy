@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.EnableServerGroupStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -34,12 +35,16 @@ class RollbackServerGroupStageSpec extends Specification {
   @Shared
   def disableServerGroupStage = new DisableServerGroupStage()
 
+  @Shared
+  def resizeServerGroupStage = new ResizeServerGroupStage()
+
   def "should inject enable, resize and disable stages corresponding to the server group being restored and rollbacked"() {
     given:
     def autowireCapableBeanFactory = Stub(AutowireCapableBeanFactory) {
       autowireBean(_) >> { RollbackServerGroupStage.ExplicitRollback rollback ->
         rollback.enableServerGroupStage = enableServerGroupStage
         rollback.disableServerGroupStage = disableServerGroupStage
+        rollback.resizeServerGroupStage = resizeServerGroupStage
       }
     }
 
@@ -57,12 +62,12 @@ class RollbackServerGroupStageSpec extends Specification {
     ])
 
     when:
-    def steps = rollbackServerGroupStage.buildSteps(stage)
-    def beforeStages = stage.beforeStages
-    def afterStages = stage.afterStages
+    def tasks = rollbackServerGroupStage.taskGraph()
+    def beforeStages = rollbackServerGroupStage.preStages(stage)
+    def afterStages = rollbackServerGroupStage.postStages(stage)
 
     then:
-    steps == []
+    tasks == []
     beforeStages.isEmpty()
     afterStages.size() == 3
     afterStages[0].context == stage.context + [

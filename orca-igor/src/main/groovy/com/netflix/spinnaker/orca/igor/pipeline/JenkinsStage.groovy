@@ -25,12 +25,11 @@ import com.netflix.spinnaker.orca.igor.tasks.StartJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
-import static java.util.Collections.singletonList
 
 @Slf4j
 @Component
@@ -41,9 +40,9 @@ class JenkinsStage implements StageDefinitionBuilder, RestartableStage, Cancella
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("1", "startJenkinsJob", StartJenkinsJobTask.class),
-      new StageDefinitionBuilder.TaskDefinition("2", "waitForJenkinsJobStart", MonitorQueuedJenkinsJobTask.class),
-      new StageDefinitionBuilder.TaskDefinition("3", "monitorJenkinsJob", MonitorJenkinsJobTask.class)
+      new StageDefinitionBuilder.TaskDefinition("startJenkinsJob", StartJenkinsJobTask.class),
+      new StageDefinitionBuilder.TaskDefinition("waitForJenkinsJobStart", MonitorQueuedJenkinsJobTask.class),
+      new StageDefinitionBuilder.TaskDefinition("monitorJenkinsJob", MonitorJenkinsJobTask.class)
     );
   }
 
@@ -59,7 +58,7 @@ class JenkinsStage implements StageDefinitionBuilder, RestartableStage, Cancella
     stage.context.remove("buildInfo")
     stage.context.remove("buildNumber")
 
-    stage.tasks.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
+    stage.tasks.each { Task task ->
       task.startTime = null
       task.endTime = null
       task.status = ExecutionStatus.NOT_STARTED

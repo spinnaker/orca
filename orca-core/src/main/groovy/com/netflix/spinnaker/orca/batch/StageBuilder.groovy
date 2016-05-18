@@ -305,25 +305,8 @@ abstract class StageBuilder implements ApplicationContextAware {
 
   static Stage newStage(Execution execution, String type, String name, Map<String, Object> context,
                         Stage parent, Stage.SyntheticStageOwner stageOwner) {
-    def stage
-    if (execution instanceof Orchestration) {
-      stage = new OrchestrationStage(execution, type, context)
-    } else {
-      stage = new PipelineStage(execution as Pipeline, type, name, context)
-    }
-    stage.parentStageId = parent?.id
-    stage.syntheticStageOwner = stageOwner
-
-    // Look upstream until you find the ultimate ancestor parent (parent w/ no parentStageId)
-    while (parent?.parentStageId != null) {
-      parent = execution.stages.find { it.id == parent.parentStageId }
-    }
-
-    if (parent) {
-      // If a parent exists, the new stage id should be deterministically generated
-      stage.id = parent.id + "-" + ((AbstractStage) parent).stageCounter.incrementAndGet() + "-" + stage.name?.replaceAll("[^A-Za-z0-9]", "")
-    }
-
-    stage
+    return StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
+      execution, type, name, context, parent, stageOwner
+    )
   }
 }

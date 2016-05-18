@@ -40,7 +40,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
   protected <T extends Execution> void planStage(Stage<T> stage) {
     StageDefinitionBuilder builder = findBuilderForStage(stage);
     builder
-      .preStages()
+      .preStages(stage)
       .forEach(preStage -> {
         List<Stage> stages = stage.getExecution().getStages();
         int index = stages.indexOf(stage);
@@ -49,7 +49,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       });
     reverse(
       builder
-        .postStages())
+        .postStages(stage))
       .forEach(postStage -> {
         List<Stage> stages = stage.getExecution().getStages();
         int index = stages.indexOf(stage);
@@ -60,7 +60,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       .taskGraph()
       .forEach(taskDef -> {
         DefaultTask task = new DefaultTask();
-        task.setId(taskDef.getId());
+        task.setId(String.valueOf((stage.getTasks().size() + 1)));
         task.setName(taskDef.getName());
         task.setStatus(NOT_STARTED);
         task.setImplementingClass(taskDef.getImplementingClass());

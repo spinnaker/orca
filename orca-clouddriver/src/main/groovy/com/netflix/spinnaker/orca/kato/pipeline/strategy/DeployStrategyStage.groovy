@@ -159,7 +159,7 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
       ]
     ]
 
-    injectAfter(stage, "modifyLaunchConfiguration", modifyAsgLaunchConfigurationStage, modifyCtx)
+    injectAfter(stage, "modifyLaunchConfiguration", getStageBuilderProvider().wrap(modifyAsgLaunchConfigurationStage), modifyCtx)
 
     def terminationConfig = stage.mapTo("/termination", TerminationConfig)
     if (terminationConfig.relaunchAllInstances || terminationConfig.totalRelaunches > 0) {
@@ -193,7 +193,7 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
       pipelineParameters : parameters
     ]
 
-    injectAfter(stage, "pipeline", pipelineStage, modifyCtx)
+    injectAfter(stage, "pipeline", getStageBuilderProvider().wrap(pipelineStage), modifyCtx)
   }
 
   @CompileDynamic

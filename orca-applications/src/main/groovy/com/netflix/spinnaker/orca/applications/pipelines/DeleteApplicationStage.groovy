@@ -28,8 +28,8 @@ class DeleteApplicationStage implements StageDefinitionBuilder {
   @Override
   List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
     return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("1", "verifyNoDependencies", VerifyApplicationHasNoDependenciesTask),
-      new StageDefinitionBuilder.TaskDefinition("2", "deleteApplication", DeleteApplicationTask)
+      new StageDefinitionBuilder.TaskDefinition("verifyNoDependencies", VerifyApplicationHasNoDependenciesTask),
+      new StageDefinitionBuilder.TaskDefinition("deleteApplication", DeleteApplicationTask)
     );
   }
 }
