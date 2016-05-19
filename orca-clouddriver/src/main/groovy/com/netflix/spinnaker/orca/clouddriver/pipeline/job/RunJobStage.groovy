@@ -21,12 +21,14 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.job.RunJobForceCacheRefreshT
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.RunJobTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.WaitOnJobCompletion
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
 class RunJobStage implements StageDefinitionBuilder {
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("runJob", RunJobTask),
       new StageDefinitionBuilder.TaskDefinition("monitorDeploy", MonitorKatoTask),

@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.support.DetermineTargetServerGroupTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -29,7 +31,7 @@ class DetermineTargetServerGroupStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = getType(DetermineTargetServerGroupStage)
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("determineTargetServerGroup", DetermineTargetServerGroupTask)
     ]

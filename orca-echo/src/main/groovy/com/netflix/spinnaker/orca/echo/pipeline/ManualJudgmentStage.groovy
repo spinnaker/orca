@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.batch.RestartableStage
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,13 +32,11 @@ import org.springframework.stereotype.Component
 
 import java.util.concurrent.TimeUnit
 
-import static java.util.Collections.singletonList
-
 @Component
 class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage {
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [new StageDefinitionBuilder.TaskDefinition("waitForJudgment", WaitForManualJudgmentTask.class)]
   }
 

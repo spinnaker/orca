@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterCanaryTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,7 +38,7 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
   MineService mineService
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return Arrays.asList(
       new StageDefinitionBuilder.TaskDefinition("registerCanary", RegisterCanaryTask),
       new StageDefinitionBuilder.TaskDefinition("monitorCanary", MonitorCanaryTask),

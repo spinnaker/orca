@@ -21,6 +21,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalan
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalancerResultObjectExtrapolationTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalancersTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -32,7 +34,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class UpsertLoadBalancersStage implements StageDefinitionBuilder {
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("upsertLoadBalancers", UpsertLoadBalancersTask),
       new StageDefinitionBuilder.TaskDefinition("monitorUpsert", MonitorKatoTask),

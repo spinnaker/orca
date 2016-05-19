@@ -19,6 +19,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.DeleteLoadBalancerForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.DeleteLoadBalancerTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -26,7 +28,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class DeleteLoadBalancerStage implements StageDefinitionBuilder {
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("deleteLoadBalancer", DeleteLoadBalancerTask),
       new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", DeleteLoadBalancerForceRefreshTask),
