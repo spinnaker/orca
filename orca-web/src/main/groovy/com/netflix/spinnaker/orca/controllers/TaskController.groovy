@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.controllers
 
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 
 import java.time.Clock
 import com.netflix.spinnaker.orca.batch.StageBuilder
@@ -168,6 +169,16 @@ class TaskController {
     } catch (Exception ignored) {
       return allPipelines
     }
+  }
+
+  @RequestMapping(value = "/pipelines/restore", method = RequestMethod.PUT)
+  void restore(@RequestBody Map execution) {
+    OrcaObjectMapper mapper = new OrcaObjectMapper()
+    List<PipelineStage> stages = execution.stages.findResults { stageId ->
+      mapper.convertValue(stageId, PipelineStage)
+    }
+    execution.stages = stages
+    executionRepository.store(mapper.convertValue(execution, Pipeline))
   }
 
   @RequestMapping(value = "/v2/applications/{application}/pipelines", method = RequestMethod.GET)
