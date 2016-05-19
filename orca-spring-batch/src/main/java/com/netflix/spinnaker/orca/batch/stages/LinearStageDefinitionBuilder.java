@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.batch.stages;
 
 import com.netflix.spinnaker.orca.pipeline.LinearStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.batch.core.Step;
 
@@ -35,7 +36,7 @@ public class LinearStageDefinitionBuilder extends LinearStage {
   @Override
   public List<Step> buildSteps(Stage stage) {
     return delegate
-      .taskGraph()
+      .taskGraph((Stage<Execution>) stage)
       .stream()
       .map(taskDefinition -> buildStep(stage, taskDefinition.getName(), taskDefinition.getImplementingClass()))
       .collect(Collectors.toList());

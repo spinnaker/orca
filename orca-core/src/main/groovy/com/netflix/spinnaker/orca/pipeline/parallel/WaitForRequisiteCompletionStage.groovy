@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.pipeline.parallel
 
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -28,7 +30,7 @@ class WaitForRequisiteCompletionStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = getType(WaitForRequisiteCompletionStage)
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("waitForRequisiteTasks", WaitForRequisiteCompletionTask)
     ]

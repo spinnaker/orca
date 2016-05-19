@@ -57,7 +57,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
         planStage(postStage);
       });
     builder
-      .taskGraph()
+      .taskGraph(stage)
       .forEach(taskDef -> {
         DefaultTask task = new DefaultTask();
         task.setId(String.valueOf((stage.getTasks().size() + 1)));

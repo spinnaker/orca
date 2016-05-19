@@ -21,12 +21,14 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupF
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.UpsertSecurityGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.WaitForUpsertedSecurityGroupTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
 class UpsertSecurityGroupStage implements StageDefinitionBuilder {
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("upsertSecurityGroup", UpsertSecurityGroupTask),
       new StageDefinitionBuilder.TaskDefinition("monitorUpsert", MonitorKatoTask),

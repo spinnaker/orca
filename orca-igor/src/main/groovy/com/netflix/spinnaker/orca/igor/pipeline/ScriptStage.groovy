@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StartScriptTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import groovy.transform.CompileStatic
@@ -32,7 +33,7 @@ import org.springframework.stereotype.Component
 class ScriptStage implements StageDefinitionBuilder, RestartableStage {
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
         new StageDefinitionBuilder.TaskDefinition("startScript", StartScriptTask),
         new StageDefinitionBuilder.TaskDefinition("waitForScriptStart", MonitorQueuedJenkinsJobTask),

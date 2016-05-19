@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.tide.pipeline
 
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.tide.tasks.DeepCopyServerGroupTask
 import com.netflix.spinnaker.orca.tide.tasks.WaitForTideTask
 import groovy.transform.CompileStatic
@@ -30,7 +32,7 @@ class DeepCopyServerGroupStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = getType(DeepCopyServerGroupStage)
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("deepCopyServerGroup", DeepCopyServerGroupTask),
       new StageDefinitionBuilder.TaskDefinition("waitForDeepCopyCompletion", WaitForTideTask),

@@ -22,6 +22,8 @@ import com.netflix.spinnaker.orca.kato.tasks.quip.MonitorQuipTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.TriggerQuipTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.VerifyQuipTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
@@ -31,7 +33,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class BulkQuickPatchStage implements StageDefinitionBuilder {
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return Arrays.asList(
       new StageDefinitionBuilder.TaskDefinition("verifyQuipIsRunning", VerifyQuipTask),
       new StageDefinitionBuilder.TaskDefinition("triggerQuip", TriggerQuipTask),
