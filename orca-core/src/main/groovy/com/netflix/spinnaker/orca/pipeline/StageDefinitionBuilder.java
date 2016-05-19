@@ -29,7 +29,7 @@ import static java.util.Collections.emptyList;
 
 public interface StageDefinitionBuilder {
 
-  default List<TaskDefinition> taskGraph() {
+  default <T extends Execution> List<TaskDefinition> taskGraph(Stage<T> parentStage) {
     return emptyList();
   }
 

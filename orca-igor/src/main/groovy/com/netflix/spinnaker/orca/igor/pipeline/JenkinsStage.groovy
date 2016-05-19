@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StartJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import groovy.transform.CompileStatic
@@ -38,7 +39,7 @@ class JenkinsStage implements StageDefinitionBuilder, RestartableStage, Cancella
   @Autowired StopJenkinsJobTask stopJenkinsJobTask
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return Arrays.asList(
       new StageDefinitionBuilder.TaskDefinition("startJenkinsJob", StartJenkinsJobTask.class),
       new StageDefinitionBuilder.TaskDefinition("waitForJenkinsJobStart", MonitorQueuedJenkinsJobTask.class),

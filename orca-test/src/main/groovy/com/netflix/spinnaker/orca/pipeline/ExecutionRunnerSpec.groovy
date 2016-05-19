@@ -46,7 +46,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     given:
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      taskGraph() >> [new TaskDefinition("1", Task)]
+      taskGraph(_) >> [new TaskDefinition("1", Task)]
     }
     @Subject def runner = create(stageDefBuilder)
 
@@ -139,17 +139,17 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def postStage = new PipelineStage(null, "${stageType}_post")
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      taskGraph() >> [new TaskDefinition("${stageType}_1", Task)]
+      taskGraph(_) >> [new TaskDefinition("${stageType}_1", Task)]
       preStages(_) >> [preStage]
       postStages(_) >> [postStage]
     }
     def preStageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> "${stageType}_pre"
-      taskGraph() >> [new TaskDefinition("${stageType}_pre_1", Task)]
+      taskGraph(_) >> [new TaskDefinition("${stageType}_pre_1", Task)]
     }
     def postStageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> "${stageType}_post"
-      taskGraph() >> [new TaskDefinition("${stageType}_post_1", Task)]
+      taskGraph(_) >> [new TaskDefinition("${stageType}_post_1", Task)]
     }
     @Subject def runner = create(stageDefBuilder, preStageDefBuilder, postStageDefBuilder)
 

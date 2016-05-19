@@ -23,6 +23,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForDownInstance
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.kato.tasks.DisableInstancesInDiscoveryTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -37,7 +39,7 @@ class DisableInstancesInDiscoveryStage implements StageDefinitionBuilder {
   ObjectMapper objectMapper
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return Arrays.asList(
       new StageDefinitionBuilder.TaskDefinition("disableInstances", DisableInstancesInDiscoveryTask),
       new StageDefinitionBuilder.TaskDefinition("monitorInstances", MonitorKatoTask),

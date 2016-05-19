@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
@@ -30,7 +32,7 @@ class FindImageFromClusterStage implements StageDefinitionBuilder {
   }
 
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
         new StageDefinitionBuilder.TaskDefinition("findImage", FindImageFromClusterTask)
     ]

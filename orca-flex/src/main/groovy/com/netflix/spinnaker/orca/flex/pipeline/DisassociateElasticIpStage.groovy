@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.flex.pipeline
 
 import com.netflix.spinnaker.orca.flex.tasks.DisassociateElasticIpTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -25,7 +27,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class DisassociateElasticIpStage implements StageDefinitionBuilder {
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("disassociateElasticIp", DisassociateElasticIpTask)
     ]

@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.rush.pipeline
 
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.rush.tasks.MonitorDockerTask
 import com.netflix.spinnaker.orca.rush.tasks.RunDockerTask
 import groovy.transform.CompileStatic
@@ -26,7 +28,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class DockerStage implements StageDefinitionBuilder {
   @Override
-  List<StageDefinitionBuilder.TaskDefinition> taskGraph() {
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
       new StageDefinitionBuilder.TaskDefinition("runDocker", RunDockerTask),
       new StageDefinitionBuilder.TaskDefinition("monitorDocker", MonitorDockerTask)
