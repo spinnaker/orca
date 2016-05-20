@@ -16,9 +16,11 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
+import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import org.springframework.context.support.GenericApplicationContext
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -46,13 +48,16 @@ class HighlanderStrategySpec extends Specification {
 
       def stage = new PipelineStage(new Pipeline(), "whatever", ctx)
       def strat = new HighlanderStrategy(shrinkClusterStage: shrinkClusterStage)
+      strat.metaClass.getStageBuilderProvider = {
+        return new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], [])
+      }
 
     when:
       strat.composeFlow(stage)
 
     then:
       stage.afterStages.size() == 1
-      stage.afterStages.last().stageBuilder == shrinkClusterStage
+      stage.afterStages.last().stageBuilder.delegate == shrinkClusterStage
       stage.afterStages.last().context == [
           credentials                   : "testAccount",
           (locationType)                : locationValue,
