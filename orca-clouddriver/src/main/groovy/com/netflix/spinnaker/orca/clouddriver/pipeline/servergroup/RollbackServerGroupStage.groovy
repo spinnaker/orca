@@ -35,7 +35,7 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
   AutowireCapableBeanFactory autowireCapableBeanFactory
 
   @Override
-  def <T extends Execution> List<Stage<T>> postStages(Stage<T> parentStage) {
+  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
     def stageData = parentStage.mapTo(StageData)
 
     if (!stageData.rollbackType) {

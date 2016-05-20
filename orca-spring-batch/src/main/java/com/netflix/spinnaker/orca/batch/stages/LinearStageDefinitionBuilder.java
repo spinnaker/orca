@@ -16,25 +16,50 @@
 
 package com.netflix.spinnaker.orca.batch.stages;
 
+import com.netflix.spinnaker.orca.batch.StageBuilder;
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.LinearStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.batch.core.Step;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class LinearStageDefinitionBuilder extends LinearStage {
   private final StageDefinitionBuilder delegate;
+  private final StageBuilderProvider stageBuilderProvider;
 
-  public LinearStageDefinitionBuilder(StageDefinitionBuilder delegate) {
+  public LinearStageDefinitionBuilder(StageDefinitionBuilder delegate,
+                                      StageBuilderProvider stageBuilderProvider) {
     super(delegate.getType());
     this.delegate = delegate;
+    this.stageBuilderProvider = stageBuilderProvider;
   }
 
   @Override
   public List<Step> buildSteps(Stage stage) {
+    Map<String, List<StageBuilder>> stageBuilders = stageBuilderProvider
+      .all()
+      .stream()
+      .collect(Collectors.groupingBy(StageBuilder::getType));
+
+    Collection<Stage> aroundStages = delegate.aroundStages(stage);
+    aroundStages.forEach(s -> {
+      switch(s.getSyntheticStageOwner()) {
+        case STAGE_BEFORE:
+          injectBefore(stage, s.getName(), stageBuilders.get(s.getType()).get(0), s.getContext());
+          break;
+
+        case STAGE_AFTER:
+          injectAfter(stage, s.getName(), stageBuilders.get(s.getType()).get(0), s.getContext());
+          break;
+      }
+    });
+
     return delegate
       .taskGraph((Stage<Execution>) stage)
       .stream()

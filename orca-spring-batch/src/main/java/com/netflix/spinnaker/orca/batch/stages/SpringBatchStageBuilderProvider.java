@@ -38,7 +38,7 @@ public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
     this.stageBuilders.addAll(
       stageDefinitionBuilders
       .stream()
-      .map(LinearStageDefinitionBuilder::new)
+      .map(s -> new LinearStageDefinitionBuilder(s, this))
       .collect(Collectors.toList())
     );
   }
@@ -62,7 +62,7 @@ public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
       return null;
     }
 
-    StageBuilder stageBuilder = new LinearStageDefinitionBuilder(stageDefinitionBuilder);
+    StageBuilder stageBuilder = new LinearStageDefinitionBuilder(stageDefinitionBuilder, this);
     applicationContext.getAutowireCapableBeanFactory().autowireBean(stageBuilder);
     stageBuilder.setApplicationContext(applicationContext);
 

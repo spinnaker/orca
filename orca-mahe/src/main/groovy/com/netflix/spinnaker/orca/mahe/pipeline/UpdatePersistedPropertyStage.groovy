@@ -32,7 +32,7 @@ class UpdatePersistedPropertyStage implements StageDefinitionBuilder, Cancellabl
   @Autowired RollbackPropertyTask rollbackPropertyTask
 
   @Override
-  def <T extends Execution> List<Stage<T>> preStages(Stage<T> parentStage) {
+  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
     return [
       StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
         parentStage.execution,

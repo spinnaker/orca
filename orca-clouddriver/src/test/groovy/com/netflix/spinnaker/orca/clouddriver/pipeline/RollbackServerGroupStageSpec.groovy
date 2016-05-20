@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServe
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
 import spock.lang.Shared
 import spock.lang.Specification
@@ -62,9 +63,10 @@ class RollbackServerGroupStageSpec extends Specification {
     ])
 
     when:
-    def tasks = rollbackServerGroupStage.taskGraph()
-    def beforeStages = rollbackServerGroupStage.preStages(stage)
-    def afterStages = rollbackServerGroupStage.postStages(stage)
+    def tasks = rollbackServerGroupStage.taskGraph(stage)
+    def allStages = rollbackServerGroupStage.aroundStages(stage)
+    def beforeStages = allStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE }
+    def afterStages = allStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER }
 
     then:
     tasks == []

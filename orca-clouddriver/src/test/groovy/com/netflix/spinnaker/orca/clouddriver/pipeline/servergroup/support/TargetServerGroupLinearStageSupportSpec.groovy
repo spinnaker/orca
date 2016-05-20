@@ -16,25 +16,17 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
-import com.netflix.spinnaker.orca.batch.StageBuilderProvider
-import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import spock.lang.Specification
 import spock.lang.Unroll
 
 class TargetServerGroupLinearStageSupportSpec extends Specification {
 
   def resolver = Spy(TargetServerGroupResolver)
-  def supportStage = new TestSupportStage() {
-    @Override
-    protected StageBuilderProvider getStageBuilderProvider() {
-      return new SpringBatchStageBuilderProvider(null, [], [])
-    }
-  }
+  def supportStage = new TestSupportStage(determineTargetServerGroupStage: new DetermineTargetServerGroupStage())
 
   void setup() {
     supportStage.resolver = resolver
@@ -47,12 +39,11 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     stage.parentStageId = parentStageId
 
     when:
-    supportStage.composeTargets(stage)
+    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
-    stage.beforeStages.size() == stageNamesBefore.size()
-    stage.afterStages.size() == 0
-    stage.beforeStages*.name == stageNamesBefore
+    syntheticStages.getOrDefault(Stage.SyntheticStageOwner.STAGE_BEFORE, [])*.name == stageNamesBefore
+    syntheticStages.getOrDefault(Stage.SyntheticStageOwner.STAGE_AFTER, []).isEmpty()
 
     where:
     parentStageId | stageNamesBefore               | description
@@ -70,15 +61,15 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     ])
 
     when:
-    supportStage.composeTargets(stage)
+    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
-    stage.beforeStages.size() == 1
-    stage.afterStages.size() == 3
-    stage.afterStages*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_BEFORE].size() == 1
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER].size() == 3
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
     stage.context[locationType] == "us-east-1"
     stage.context[oppositeLocationType] == null
-    stage.afterStages*.context[locationType].flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.context[locationType].flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
 
     where:
     locationType | oppositeLocationType | cloudProvider
@@ -91,7 +82,7 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     def stage = new PipelineStage(new Pipeline(), "test", ['region':'should be overridden'])
 
     when:
-    supportStage.composeTargets(stage)
+    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
     1 * resolver.resolveByParams(_) >> [
@@ -100,11 +91,10 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
       new TargetServerGroup(name: "asg-v002", region: "us-west-2"),
       new TargetServerGroup(name: "asg-v003", region: "eu-west-2"),
     ]
-    stage.beforeStages.size() == 0
-    stage.afterStages.size() == 3 // one for each region
-    stage.afterStages*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_BEFORE] == null
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
     stage.context.region == "us-east-1"
-    stage.afterStages*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
   }
 
   @Unroll
@@ -124,15 +114,15 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     )]
 
     when:
-    supportStage.composeTargets(stage)
+    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
     (shouldResolve ? 1 : 0) * resolver.resolveByParams(_) >> [
         new TargetServerGroup(name: "asg-v001", region: "us-east-1"),
         new TargetServerGroup(name: "asg-v002", region: "us-west-1"),
     ]
-    stage.beforeStages*.name == beforeNames
-    stage.afterStages*.name == ["testPostInjectable", "testPreInjectable", "testSupportStage", "testPostInjectable"]
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_BEFORE]*.name == beforeNames
+    syntheticStages[Stage.SyntheticStageOwner.STAGE_AFTER]*.name == ["testPostInjectable", "testPreInjectable", "testSupportStage", "testPostInjectable"]
 
     where:
     target                | beforeNames                                         | shouldResolve
@@ -146,12 +136,7 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     List<TargetServerGroupLinearStageSupport.Injectable> postInjectables
 
     TestSupportStage() {
-      super("testSupportStage")
-    }
-
-    @Override
-    public List<Step> buildSteps(Stage stage) {
-      []
+      name = "testSupportStage"
     }
 
     @Override
