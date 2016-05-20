@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
@@ -23,10 +24,12 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
 
 @Component
-class RedBlackStrategy implements Strategy {
+class RedBlackStrategy implements Strategy, ApplicationContextAware {
 
   final String name = "redblack"
 
@@ -38,6 +41,8 @@ class RedBlackStrategy implements Strategy {
 
   @Autowired
   DisableClusterStage disableClusterStage
+
+  ApplicationContext applicationContext
 
   @Override
   void composeFlow(Stage stage) {
@@ -58,7 +63,7 @@ class RedBlackStrategy implements Strategy {
           allowDeleteActive    : false,
           retainLargerOverNewer: false
       ]
-      LinearStage.injectAfter(stage, "shrinkCluster", shrinkClusterStage, shrinkContext)
+      LinearStage.injectAfter(stage, "shrinkCluster", getStageBuilderProvider().wrap(shrinkClusterStage), shrinkContext)
     }
 
     if (stageData.scaleDown) {
@@ -67,12 +72,16 @@ class RedBlackStrategy implements Strategy {
           remainingFullSizeServerGroups: 1,
           preferLargerOverNewer        : false
       ]
-      LinearStage.injectAfter(stage, "scaleDown", scaleDownClusterStage, scaleDown)
+      LinearStage.injectAfter(stage, "scaleDown", getStageBuilderProvider().wrap(scaleDownClusterStage), scaleDown)
     }
 
-    LinearStage.injectAfter(stage, "disableCluster", disableClusterStage, baseContext + [
+    LinearStage.injectAfter(stage, "disableCluster", getStageBuilderProvider().wrap(disableClusterStage), baseContext + [
         remainingEnabledServerGroups: 1,
         preferLargerOverNewer       : false
     ])
+  }
+
+  StageBuilderProvider getStageBuilderProvider() {
+    return applicationContext.getBean(StageBuilderProvider)
   }
 }

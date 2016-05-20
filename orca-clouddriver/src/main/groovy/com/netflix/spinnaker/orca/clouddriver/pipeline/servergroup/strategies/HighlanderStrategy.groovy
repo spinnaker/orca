@@ -16,21 +16,26 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
+import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
 
 @Component
 @Slf4j
-class HighlanderStrategy implements Strategy {
+class HighlanderStrategy implements Strategy, ApplicationContextAware {
 
   final String name = "highlander"
 
   @Autowired
   ShrinkClusterStage shrinkClusterStage
+
+  ApplicationContext applicationContext
 
   @Override
   void composeFlow(Stage stage) {
@@ -45,6 +50,10 @@ class HighlanderStrategy implements Strategy {
         retainLargerOverNewer                  : false,
         interestingHealthProviderNames         : stage.context.interestingHealthProviderNames
     ]
-    LinearStage.injectAfter(stage, "shrinkCluster", shrinkClusterStage, shrinkContext)
+    LinearStage.injectAfter(stage, "shrinkCluster", getStageBuilderProvider().wrap(shrinkClusterStage), shrinkContext)
+  }
+
+  StageBuilderProvider getStageBuilderProvider() {
+    return applicationContext.getBean(StageBuilderProvider)
   }
 }
