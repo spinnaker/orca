@@ -22,11 +22,13 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ResizeServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForCapacityMatchTask
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 
 /**
  * ResizeServerGroupStage intercepts requests to resize a server group and injects various pre- and
@@ -36,25 +38,18 @@ import org.springframework.stereotype.Component
 @Component
 @Slf4j
 class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
-
-  public static final String TYPE = "resizeServerGroup"
+  public static final String TYPE = getType(ResizeServerGroupStage)
 
   @Autowired
   ModifyAwsScalingProcessStage modifyAwsScalingProcessStage
 
-  ResizeServerGroupStage() {
-    super(TYPE)
-  }
-
   @Override
-  List<Step> buildSteps(Stage stage) {
-    composeTargets(stage)
-
+  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
     return [
-      buildStep(stage, "resizeServerGroup", ResizeServerGroupTask),
-      buildStep(stage, "monitorServerGroup", MonitorKatoTask),
-      buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-      buildStep(stage, "waitForCapacityMatch", WaitForCapacityMatchTask),
+      new StageDefinitionBuilder.TaskDefinition("resizeServerGroup", ResizeServerGroupTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForCapacityMatch", WaitForCapacityMatchTask)
     ]
   }
 

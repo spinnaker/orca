@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGroupTask
@@ -24,8 +23,9 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DisableServerGro
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForAllInstancesNotUpTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForDestroyedServerGroupTask
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -36,36 +36,27 @@ class DestroyServerGroupStage extends TargetServerGroupLinearStageSupport {
   @Autowired
   DisableServerGroupStage disableServerGroupStage
 
-  DestroyServerGroupStage() {
-    super(PIPELINE_CONFIG_TYPE)
-  }
-
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    try {
-      composeTargets(stage)
+  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    def definitions = []
 
-      List steps = []
-
-      //TODO(cfieber) - need to remove this once proper enable / disable has been implemented in Titus.
-      if (!stage.context.cloudProvider || stage.context.cloudProvider != 'titan') {
-        steps += [
-          buildStep(stage, "disableServerGroup", DisableServerGroupTask),
-          buildStep(stage, "monitorServerGroup", MonitorKatoTask),
-          buildStep(stage, "waitForNotUpInstances", WaitForAllInstancesNotUpTask),
-          buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-        ]
-      }
-
-      steps + [
-        buildStep(stage, "destroyServerGroup", DestroyServerGroupTask),
-        buildStep(stage, "monitorServerGroup", MonitorKatoTask),
-        buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-        buildStep(stage, "waitForDestroyedServerGroup", WaitForDestroyedServerGroupTask),
+    //TODO(cfieber) - need to remove this once proper enable / disable has been implemented in Titus.
+    if (!parentStage.context.cloudProvider || parentStage.context.cloudProvider != 'titan') {
+      definitions += [
+        new StageDefinitionBuilder.TaskDefinition("disableServerGroup", DisableServerGroupTask),
+        new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
+        new StageDefinitionBuilder.TaskDefinition("waitForNotUpInstances", WaitForAllInstancesNotUpTask),
+        new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
       ]
-
-    } catch (TargetServerGroup.NotFoundException ignored) {
-      [buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)]
     }
+
+    definitions  + [
+      new StageDefinitionBuilder.TaskDefinition("destroyServerGroup", DestroyServerGroupTask),
+      new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
+      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+      new StageDefinitionBuilder.TaskDefinition("waitForDestroyedServerGroup", WaitForDestroyedServerGroupTask),
+    ]
+
+    return definitions
   }
 }

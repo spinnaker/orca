@@ -16,14 +16,18 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner.*;
+
+import com.netflix.spinnaker.orca.pipeline.model.Stage.SyntheticStageOwner;
 
 public abstract class ExecutionRunnerSupport implements ExecutionRunner {
   private final Collection<StageDefinitionBuilder> stageDefinitionBuilders;
@@ -32,30 +36,39 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
     this.stageDefinitionBuilders = stageDefinitionBuilders;
   }
 
-  @Override public <T extends Execution> void start(T execution) throws Exception {
+  @Override
+  public <T extends Execution> void start(T execution) throws Exception {
     List<Stage<T>> stages = new ArrayList<>(execution.getStages()); // need to clone because we'll be modifying the list
     stages.stream().forEach(this::planStage);
   }
 
   protected <T extends Execution> void planStage(Stage<T> stage) {
     StageDefinitionBuilder builder = findBuilderForStage(stage);
-    builder
-      .preStages(stage)
-      .forEach(preStage -> {
-        List<Stage> stages = stage.getExecution().getStages();
-        int index = stages.indexOf(stage);
-        stages.add(index, preStage);
-        planStage(preStage);
-      });
+    Map<SyntheticStageOwner, List<Stage<T>>> allStages = builder
+      .aroundStages(stage)
+      .stream()
+      .collect(Collectors.groupingBy(Stage::getSyntheticStageOwner));
+
     reverse(
-      builder
-        .postStages(stage))
-      .forEach(postStage -> {
-        List<Stage> stages = stage.getExecution().getStages();
-        int index = stages.indexOf(stage);
-        stages.add(index + 1, postStage);
-        planStage(postStage);
-      });
+      allStages.getOrDefault(STAGE_BEFORE, Collections.emptyList())
+    ).forEach(preStage -> {
+      List<Stage> stages = stage.getExecution().getStages();
+      int index = stages.indexOf(stage);
+      stages.add(index, preStage);
+      preStage.setParentStageId(stage.getId());
+      planStage(preStage);
+    });
+
+    reverse(
+      allStages.getOrDefault(STAGE_AFTER, Collections.emptyList())
+    ).forEach(postStage -> {
+      List<Stage> stages = stage.getExecution().getStages();
+      int index = stages.indexOf(stage);
+      stages.add(index + 1, postStage);
+      postStage.setParentStageId(stage.getId());
+      planStage(postStage);
+    });
+
     builder
       .taskGraph(stage)
       .forEach(taskDef -> {

@@ -84,7 +84,7 @@ class EchoEventSpec extends Specification {
     applicationContext.beanFactory.with {
       [task1, task2].eachWithIndex { task, i ->
         def name = "stage${i + 1}"
-        def stage = new LinearStageDefinitionBuilder(new SimpleStage(name, task))
+        def stage = new LinearStageDefinitionBuilder(new SimpleStage(name, task), stageBuilderProvider)
         autowireBean stage
         stage.setApplicationContext(applicationContext)
         stageBuilders << stage

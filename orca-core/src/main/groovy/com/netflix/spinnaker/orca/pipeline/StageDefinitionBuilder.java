@@ -33,11 +33,7 @@ public interface StageDefinitionBuilder {
     return emptyList();
   }
 
-  default <T extends Execution> List<Stage<T>> preStages(Stage<T> parentStage) {
-    return emptyList();
-  }
-
-  default <T extends Execution> List<Stage<T>> postStages(Stage<T> parentStage) {
+  default <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
     return emptyList();
   }
 
