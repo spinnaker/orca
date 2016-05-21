@@ -28,7 +28,7 @@ class ExecutionTracker implements ExecutionListener {
     this.currentInstanceId = currentInstanceId
   }
 
-  void beforeExecution(Persister persister, Execution<?> execution) {
+  void beforeExecution(Persister persister, Execution execution) {
     execution.executingInstance = currentInstanceId
     // I really don't want to do this but the craziness of the repository API is too much to deal with today
     switch (execution) {

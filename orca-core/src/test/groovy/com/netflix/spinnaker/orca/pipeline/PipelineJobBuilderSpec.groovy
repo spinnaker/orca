@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.parallel.PipelineInitializationTask
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionTask
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
+import com.netflix.spinnaker.orca.test.TestConfiguration
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
 import org.springframework.batch.core.job.builder.FlowJobBuilder
@@ -51,7 +52,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD
 
-@ContextConfiguration(classes = [BatchTestConfiguration, SpringBatchConfiguration, OrcaConfiguration, EmbeddedRedisConfiguration])
+@ContextConfiguration(classes = [TestConfiguration, BatchTestConfiguration, SpringBatchConfiguration, OrcaConfiguration, EmbeddedRedisConfiguration])
 @DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
 class PipelineJobBuilderSpec extends Specification {
   @Shared @AutoCleanup("destroy") EmbeddedRedis embeddedRedis

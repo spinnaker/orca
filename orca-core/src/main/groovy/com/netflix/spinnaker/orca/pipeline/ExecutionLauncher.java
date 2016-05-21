@@ -27,17 +27,17 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class ExecutionLauncher<T extends Execution> {
 
   protected final ObjectMapper objectMapper;
-  protected final InstanceInfo currentInstance;
+  protected final String currentInstanceId;
   protected final ExecutionRepository executionRepository;
 
   private final ExecutionRunner runner;
 
   protected ExecutionLauncher(ObjectMapper objectMapper,
-                              InstanceInfo currentInstance,
+                              String currentInstanceId,
                               ExecutionRepository executionRepository,
                               ExecutionRunner runner) {
     this.objectMapper = objectMapper;
-    this.currentInstance = currentInstance;
+    this.currentInstanceId = currentInstanceId;
     this.executionRepository = executionRepository;
     this.runner = runner;
   }

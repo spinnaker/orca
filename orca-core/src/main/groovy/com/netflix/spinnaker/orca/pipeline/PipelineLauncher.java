@@ -37,21 +37,21 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
 
   @Autowired(required = false)
   public PipelineLauncher(ObjectMapper objectMapper,
-                          @Qualifier("instanceInfo") InstanceInfo currentInstance,
+                          String currentInstanceId,
                           ExecutionRepository executionRepository,
                           ExecutionRunner runner,
                           Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
-    this(objectMapper, currentInstance, executionRepository, runner, stageDefinitionBuilders, null);
+    this(objectMapper, currentInstanceId, executionRepository, runner, stageDefinitionBuilders, null);
   }
 
   @Autowired(required = false)
   public PipelineLauncher(ObjectMapper objectMapper,
-                          @Qualifier("instanceInfo") InstanceInfo currentInstance,
+                          String currentInstanceId,
                           ExecutionRepository executionRepository,
                           ExecutionRunner runner,
                           Collection<StageDefinitionBuilder> stageDefinitionBuilders,
                           PipelineStartTracker startTracker) {
-    super(objectMapper, currentInstance, executionRepository, runner);
+    super(objectMapper, currentInstanceId, executionRepository, runner);
     this.startTracker = startTracker;
   }
 
@@ -70,7 +70,7 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
       .withParallel(getBoolean(config, "parallel"))
       .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
       .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
-      .withExecutingInstance(currentInstance)
+      .withExecutingInstance(currentInstanceId)
       .withNotifications((List<Map<String, Object>>) config.get("notifications"))
       .withId()
       .build();

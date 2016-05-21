@@ -21,6 +21,7 @@ import com.netflix.appinfo.InstanceInfo
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.test.TestConfiguration
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification
@@ -31,7 +32,6 @@ abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLau
   abstract L create(StageDefinitionBuilder... stageDefBuilders)
 
   @Shared def objectMapper = new ObjectMapper()
-  @Shared def instanceInfo = InstanceInfo.Builder.newBuilder().setAppName("orca").setHostName("localhost").build()
   def runner = Mock(ExecutionRunner)
   def executionRepository = Mock(ExecutionRepository)
 
@@ -43,7 +43,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
 
   @Override
   PipelineLauncher create(StageDefinitionBuilder... stageDefBuilders) {
-    return new PipelineLauncher(objectMapper, instanceInfo, executionRepository, runner, stageDefBuilders.toList(), startTracker)
+    return new PipelineLauncher(objectMapper, "currentInstanceId", executionRepository, runner, stageDefBuilders.toList(), startTracker)
   }
 
   def "can autowire pipeline launcher with optional dependencies"() {
@@ -51,10 +51,10 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
     def context = new AnnotationConfigApplicationContext()
     context.with {
       beanFactory.with {
+        register(TestConfiguration)
         registerSingleton("objectMapper", objectMapper)
         registerSingleton("executionRepository", executionRepository)
         registerSingleton("executionRunner", runner)
-        registerSingleton("instanceInfo", instanceInfo)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
           @Override
           String getType() {
@@ -76,10 +76,10 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
     def context = new AnnotationConfigApplicationContext()
     context.with {
       beanFactory.with {
+        register(TestConfiguration)
         registerSingleton("objectMapper", objectMapper)
         registerSingleton("executionRepository", executionRepository)
         registerSingleton("executionRunner", runner)
-        registerSingleton("instanceInfo", instanceInfo)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
           @Override
           String getType() {
