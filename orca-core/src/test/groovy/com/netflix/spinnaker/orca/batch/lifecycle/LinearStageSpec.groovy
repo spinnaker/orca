@@ -17,9 +17,8 @@
 package com.netflix.spinnaker.orca.batch.lifecycle
 
 import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
+import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
 import com.netflix.spinnaker.orca.batch.listeners.SpringBatchStageListener
-import com.netflix.spinnaker.orca.listeners.ExecutionListener
-import com.netflix.spinnaker.orca.listeners.StageListener
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -166,27 +165,6 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     StandaloneStageBuilder(String stageName, Task task) {
       super(stageName)
-      setStepExecutionListenerProvider(new ExecutionListenerProvider() {
-        @Override
-        StepExecutionListener wrap(StageListener stageListener) {
-          return null
-        }
-
-        @Override
-        JobExecutionListener wrap(ExecutionListener executionListener) {
-          return null
-        }
-
-        @Override
-        Collection<StepExecutionListener> allStepExecutionListeners() {
-          return listeners
-        }
-
-        @Override
-        Collection<JobExecutionListener> allJobExecutionListeners() {
-          return []
-        }
-      })
       this.task = task
     }
 
@@ -198,6 +176,11 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
     @Override
     protected Step buildStep(Stage stage, String taskName, Class task, StepExecutionListener... listeners) {
       buildStep(stage, taskName, detailsTask, listeners)
+    }
+
+    @Override
+    ExecutionListenerProvider getExecutionListenerProvider() {
+      return new SpringBatchExecutionListenerProvider(null, [], [])
     }
   }
 
@@ -222,27 +205,7 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     InjectStageBuilder(StepBuilderFactory steps, TaskTaskletAdapter adapter) {
       super("stage2")
-      setStepExecutionListenerProvider(new ExecutionListenerProvider() {
-        @Override
-        StepExecutionListener wrap(StageListener stageListener) {
-          throw new UnsupportedOperationException()
-        }
 
-        @Override
-        JobExecutionListener wrap(ExecutionListener executionListener) {
-          return null
-        }
-
-        @Override
-        Collection<StepExecutionListener> allStepExecutionListeners() {
-          listeners
-        }
-
-        @Override
-        Collection<JobExecutionListener> allJobExecutionListeners() {
-          return []
-        }
-      })
       setSteps(steps)
       setTaskTaskletAdapters([adapter])
       stageBuilder1.steps = steps
@@ -260,6 +223,11 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     protected Step buildStep(Stage stage, String taskName, Class task) {
       buildStep(stage, taskName, detailsTask)
+    }
+
+    @Override
+    ExecutionListenerProvider getExecutionListenerProvider() {
+      return new SpringBatchExecutionListenerProvider(null, [], [])
     }
   }
 }

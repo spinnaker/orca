@@ -19,11 +19,14 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
+
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 @Component
 class CustomStrategy implements Strategy, ApplicationContextAware {
@@ -36,7 +39,7 @@ class CustomStrategy implements Strategy, ApplicationContextAware {
   ApplicationContext applicationContext
 
   @Override
-  void composeFlow(Stage stage) {
+  <T extends Execution> List<Stage<T>> composeFlow(Stage<T> stage) {
 
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stage)
 
@@ -51,7 +54,7 @@ class CustomStrategy implements Strategy, ApplicationContextAware {
       parentStageId                          : stage.id
     ]
 
-    if(stage.context.pipelineParameters){
+    if (stage.context.pipelineParameters) {
       parameters.putAll(stage.context.pipelineParameters as Map)
     }
 
@@ -62,7 +65,16 @@ class CustomStrategy implements Strategy, ApplicationContextAware {
       pipelineParameters : parameters
     ]
 
-    LinearStage.injectAfter(stage, "pipeline", getStageBuilderProvider().wrap(pipelineStage), modifyCtx)
+    return [
+      newStage(
+        stage.execution,
+        pipelineStage.type,
+        "pipeline",
+        modifyCtx,
+        stage,
+        Stage.SyntheticStageOwner.STAGE_AFTER
+      )
+    ]
   }
 
   @Override

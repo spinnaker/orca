@@ -22,11 +22,14 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
+
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 @Slf4j
 abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareStage {
@@ -51,50 +54,79 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
    * @return the steps for the stage excluding whatever cleanup steps will be
    * handled by the deployment strategy.
    */
-  protected abstract List<Step> basicSteps(Stage stage)
+  protected abstract List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage)
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    correctContext(stage)
-    Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
-      it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
-    })
-    strategy.composeFlow(stage)
+  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    def tasks = [
+      // TODO(ttomsu): This is currently an AWS-only stage. I need to add and support the "useSourceCapacity" option.
+      new StageDefinitionBuilder.TaskDefinition("determineSourceServerGroup", DetermineSourceServerGroupTask)
+    ]
 
-    // TODO(ttomsu): This is currently an AWS-only stage. I need to add and support the "useSourceCapacity" option.
-    List<Step> steps = [buildStep(stage, "determineSourceServerGroup", DetermineSourceServerGroupTask)]
-
-    def stageData = stage.mapTo(StageData)
-    deployStagePreProcessors.findAll { it.supports(stage) }.each {
-      def defaultContext = [
-        credentials  : stageData.account,
-        cloudProvider: stageData.cloudProvider
-      ]
-      it.beforeStageDefinitions().each {
-        injectBefore(stage, it.name, getStageBuilderProvider().wrap(it.stageDefinitionBuilder), defaultContext + it.context)
-      }
-      it.afterStageDefinitions().each {
-        injectAfter(stage, it.name, getStageBuilderProvider().wrap(it.stageDefinitionBuilder), defaultContext + it.context)
-      }
+    deployStagePreProcessors.findAll { it.supports(parentStage) }.each {
       it.additionalSteps().each {
-        steps << buildStep(stage, it.name, it.taskClass)
+        tasks << new StageDefinitionBuilder.TaskDefinition(it.name, it.taskClass)
       }
     }
 
+    correctContext(parentStage)
+    Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
+      it.name.equalsIgnoreCase(parentStage.context.strategy) ? it : null
+    })
     if (!strategy.replacesBasicSteps()) {
-      steps.addAll((basicSteps(stage) ?: []) as List<Step>)
+      tasks.addAll((basicTasks(parentStage) ?: []))
 
       if (diffTasks) {
         diffTasks.each { DiffTask diffTask ->
           try {
-            steps << buildStep(stage, getDiffTaskName(diffTask.class.simpleName), diffTask.class)
+            tasks << new StageDefinitionBuilder.TaskDefinition(getDiffTaskName(diffTask.class.simpleName), diffTask.class)
           } catch (Exception e) {
             log.error("Unable to build diff task (name: ${diffTask.class.simpleName}: executionId: ${stage.execution.id})", e)
           }
         }
       }
     }
-    return steps
+
+    return tasks
+  }
+
+  @Override
+  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
+    correctContext(parentStage)
+    Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
+      it.name.equalsIgnoreCase(parentStage.context.strategy) ? it : null
+    })
+    def stages = strategy.composeFlow(parentStage)
+
+    def stageData = parentStage.mapTo(StageData)
+    deployStagePreProcessors.findAll { it.supports(parentStage) }.each {
+      def defaultContext = [
+        credentials  : stageData.account,
+        cloudProvider: stageData.cloudProvider
+      ]
+      it.beforeStageDefinitions().each {
+        stages << newStage(
+          parentStage.execution,
+          it.stageDefinitionBuilder.type,
+          it.name,
+          defaultContext + it.context,
+          parentStage,
+          Stage.SyntheticStageOwner.STAGE_BEFORE
+        )
+      }
+      it.afterStageDefinitions().each {
+        stages << newStage(
+          parentStage.execution,
+          it.stageDefinitionBuilder.type,
+          it.name,
+          defaultContext + it.context,
+          parentStage,
+          Stage.SyntheticStageOwner.STAGE_AFTER
+        )
+      }
+    }
+
+    return stages
   }
 
   /**

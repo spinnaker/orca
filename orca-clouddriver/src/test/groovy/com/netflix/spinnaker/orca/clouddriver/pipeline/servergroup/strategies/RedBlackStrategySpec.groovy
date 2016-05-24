@@ -16,15 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import com.netflix.spinnaker.orca.batch.StageBuilderProvider
-import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
-import org.springframework.context.ApplicationContext
-import org.springframework.context.support.GenericApplicationContext
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 
 class RedBlackStrategySpec extends Specification {
@@ -49,17 +46,17 @@ class RedBlackStrategySpec extends Specification {
       def strat = new RedBlackStrategy(shrinkClusterStage: shrinkClusterStage,
                                        scaleDownClusterStage: scaleDownClusterStage,
                                        disableClusterStage: disableClusterStage)
-      strat.metaClass.getStageBuilderProvider = {
-        return new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], [])
-      }
 
     when:
-      strat.composeFlow(stage)
+      def syntheticStages = strat.composeFlow(stage)
+      def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
+      def afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
 
     then:
-      stage.afterStages.size() == 1
-      stage.afterStages.first().stageBuilder.delegate == disableClusterStage
-      stage.afterStages.first().context == [
+      beforeStages.isEmpty()
+      afterStages.size() == 1
+      afterStages.first().type == disableClusterStage.type
+      afterStages.first().context == [
           credentials                   : "testAccount",
           cloudProvider                 : "aws",
           cluster                       : "unit-tests",
@@ -72,25 +69,31 @@ class RedBlackStrategySpec extends Specification {
     when:
       ctx.maxRemainingAsgs = 10
       stage = new PipelineStage(new Pipeline(), "whatever", ctx)
-      strat.composeFlow(stage)
+      syntheticStages = strat.composeFlow(stage)
+      beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
+      afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
 
     then:
-      stage.afterStages.size() == 2
-      stage.afterStages.first().stageBuilder.delegate == shrinkClusterStage
-      stage.afterStages.first().context.shrinkToSize == 10
-      stage.afterStages.last().stageBuilder.delegate == disableClusterStage
+      beforeStages.isEmpty()
+      afterStages.size() == 2
+      afterStages.first().type == shrinkClusterStage.type
+      afterStages.first().context.shrinkToSize == 10
+      afterStages.last().type == disableClusterStage.type
 
     when:
       ctx.scaleDown = true
       stage = new PipelineStage(new Pipeline(), "whatever", ctx)
-      strat.composeFlow(stage)
+      syntheticStages = strat.composeFlow(stage)
+      beforeStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_BEFORE}
+      afterStages = syntheticStages.findAll { it.syntheticStageOwner == Stage.SyntheticStageOwner.STAGE_AFTER}
 
     then:
-      stage.afterStages.size() == 3
-      stage.afterStages[0].stageBuilder.delegate == shrinkClusterStage
-      stage.afterStages[1].stageBuilder.delegate == scaleDownClusterStage
-      stage.afterStages[1].context.allowScaleDownActive == true
-      stage.afterStages[2].stageBuilder.delegate == disableClusterStage
+      beforeStages.isEmpty()
+      afterStages.size() == 3
+      afterStages[0].type == shrinkClusterStage.type
+      afterStages[1].type == scaleDownClusterStage.type
+      afterStages[1].context.allowScaleDownActive == true
+      afterStages[2].type == disableClusterStage.type
 
   }
 }

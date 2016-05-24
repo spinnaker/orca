@@ -50,7 +50,7 @@ class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationStage {
           remainingEnabledServerGroups: parentStage.context.shrinkToSize,
           preferLargerOverNewer       : parentStage.context.retainLargerOverNewer,
           continueIfClusterNotFound   : parentStage.context.shrinkToSize == 0,
-          interestingHealthProviderNames: stage.context.interestingHealthProviderNames
+          interestingHealthProviderNames: parentStage.context.interestingHealthProviderNames
         ]
         return [
           StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
