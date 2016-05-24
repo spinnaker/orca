@@ -35,8 +35,8 @@ import org.springframework.stereotype.Component
 @Component
 @CompileStatic
 abstract class ParallelStage extends StageBuilder {
-  @Autowired
-  List<StepProvider> stepProviders
+  @Autowired(required = false)
+  List<StepProvider> stepProviders = []
 
   ParallelStage(String name) {
     super(name)

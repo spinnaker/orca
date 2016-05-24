@@ -56,9 +56,7 @@ class QuickPatchStageSpec extends Specification {
 
   Pool<Jedis> jedisPool = embeddedRedis.pool
 
-  @Subject quickPatchStage = Spy(QuickPatchStage) {
-    getStageBuilderProvider() >> { return new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], []) }
-  }
+  @Subject quickPatchStage = Spy(QuickPatchStage)
   def oort = Mock(OortService)
 
   def oortHelper = Mock(OortHelper)
@@ -71,13 +69,7 @@ class QuickPatchStageSpec extends Specification {
 
   void setup() {
     GroovyMock(OortHelper, global: true)
-
-    quickPatchStage.applicationContext = Stub(ApplicationContext) {
-      getBean(_) >> { Class type -> type.newInstance() }
-    }
     quickPatchStage.objectMapper = objectMapper
-    quickPatchStage.steps = new StepBuilderFactory(Stub(JobRepository), Stub(PlatformTransactionManager))
-    quickPatchStage.taskTaskletAdapters = [new TaskTaskletAdapterImpl(executionRepository, [])]
     quickPatchStage.oortService = oort
     quickPatchStage.bulkQuickPatchStage = bulkQuickPatchStage
     quickPatchStage.INSTANCE_VERSION_SLEEP = 1
@@ -100,7 +92,7 @@ class QuickPatchStageSpec extends Specification {
     stage.afterStages = new NeverClearedArrayList()
 
     when:
-    quickPatchStage.buildSteps(stage)
+    quickPatchStage.aroundStages(stage)
 
     then:
     1 * oortHelper.getInstancesForCluster(config, null, true, false) >> { throw new RuntimeException("too many asgs!") }
@@ -130,16 +122,14 @@ class QuickPatchStageSpec extends Specification {
     stage.afterStages = new NeverClearedArrayList()
 
     when:
-    quickPatchStage.buildSteps(stage)
+    def syntheticStages = quickPatchStage.aroundStages(stage)
 
     then:
-    1 == stage.afterStages.size()
+    syntheticStages.size() == 1
+    syntheticStages*.type == [bulkQuickPatchStage.type]
 
     and:
-    stage.afterStages*.stageBuilder.delegate.unique() == [bulkQuickPatchStage]
-
-    and:
-    with(stage.afterStages[0].context) {
+    with(syntheticStages[0].context) {
       application == "deck"
       account == "account"
       region == "us-east-1"
@@ -166,19 +156,19 @@ class QuickPatchStageSpec extends Specification {
     stage.afterStages = new NeverClearedArrayList()
 
     when:
-    quickPatchStage.buildSteps(stage)
+    def syntheticStages = quickPatchStage.aroundStages(stage)
 
     then:
     1 * oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
 
     and:
-    2 == stage.afterStages.size()
+    syntheticStages.size() == 2
 
     and:
-    stage.afterStages*.stageBuilder.delegate.unique() == [bulkQuickPatchStage]
+    syntheticStages*.type.unique() == [bulkQuickPatchStage.type]
 
     and:
-    with(stage.afterStages[0].context) {
+    with(syntheticStages[0].context) {
       application == "deck"
       account == "account"
       region == "us-east-1"
@@ -192,7 +182,7 @@ class QuickPatchStageSpec extends Specification {
     }
 
     and:
-    with(stage.afterStages[1].context) {
+    with(syntheticStages[1].context) {
       application == "deck"
       account == "account"
       region == "us-east-1"
@@ -228,7 +218,7 @@ class QuickPatchStageSpec extends Specification {
       patchVersion: "1.2",
       package     : "deck"
     ]
-    def stage = new PipelineStage(null, "quickPatch", config)
+    def stage = new PipelineStage(new Pipeline(), "quickPatch", config)
 
     and:
     stage.beforeStages = new NeverClearedArrayList()
@@ -249,15 +239,15 @@ class QuickPatchStageSpec extends Specification {
       )
     )
     when:
-    quickPatchStage.buildSteps(stage)
+    def syntheticStages = quickPatchStage.aroundStages(stage)
 
     then:
     1 * oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
 
     and:
     stage.context.skippedInstances.'i-2345'
-    stage.afterStages.size() == 1
-    with(stage.afterStages[0].context) {
+    syntheticStages.size() == 1
+    with(syntheticStages[0].context) {
       application == application
       account == account
       region == region
@@ -291,7 +281,7 @@ class QuickPatchStageSpec extends Specification {
       patchVersion: "1.2",
       package     : "deck"
     ]
-    def stage = new PipelineStage(null, "quickPatch", config)
+    def stage = new PipelineStage(new Pipeline(), "quickPatch", config)
     1 * quickPatchStage.createInstanceService(_) >> instanceService
     4 * instanceService.getCurrentVersion(_) >> { throw new RetrofitError(null, null, null, null, null, null, null) }
     1 * instanceService.getCurrentVersion(_) >>> new Response(
@@ -303,7 +293,7 @@ class QuickPatchStageSpec extends Specification {
     )
 
     when:
-    quickPatchStage.buildSteps(stage)
+    quickPatchStage.aroundStages(stage)
 
     then:
     1 * oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances

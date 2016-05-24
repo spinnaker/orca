@@ -56,8 +56,12 @@ abstract class LinearStage extends StageBuilder implements StepProvider {
     if (executionRestricted &&
       ((stage.syntheticStageOwner == null && stage.parentStageId == null) || parentStage?.initializationStage)
     ) {
-      injectBefore(stage, "restrictExecutionDuringTimeWindow",
-                   applicationContext.getBean(RestrictExecutionDuringTimeWindow), stage.context)
+      injectBefore(
+        stage,
+        "restrictExecutionDuringTimeWindow",
+        getStageBuilderProvider().wrap(applicationContext.getBean(RestrictExecutionDuringTimeWindow)),
+        stage.context
+      )
     }
 
     processBeforeStages(jobBuilder, stageIdx, stage)

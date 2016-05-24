@@ -54,7 +54,7 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
     log.info("Canceled canary in mine (canaryId: ${stage.context.canary.id}, stageId: ${stage.id}, executionId: ${stage.execution.id})")
 
     def canary = stage.ancestors { Stage s, StageBuilder stageBuilder -> stageBuilder instanceof CanaryStage }[0]
-    def cancelResult = ((CanaryStage) canary.stageBuilder).cancel(canary.stage)
+    def cancelResult = ((CancellableStage) canary.stageBuilder).cancel(canary.stage)
     cancelResult.details.put("canary", cancelCanaryResults)
 
     return cancelResult
