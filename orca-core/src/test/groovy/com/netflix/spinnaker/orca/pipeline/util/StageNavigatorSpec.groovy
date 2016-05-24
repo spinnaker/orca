@@ -18,27 +18,36 @@
 package com.netflix.spinnaker.orca.pipeline.util
 
 import com.netflix.spinnaker.orca.batch.StageBuilder
+import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.pipeline.LinearStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.batch.core.Step
+import org.springframework.context.support.GenericApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 
 
 class StageNavigatorSpec extends Specification {
+  def stageBuilderProvider = new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], [])
+
   @Shared
   def stageBuilders = [
-    new ExampleStageBuilder("One"), new ExampleStageBuilder("Two"), new ExampleStageBuilder("Three")
+    new ExampleStageBuilder("One"),
+    new ExampleStageBuilder("Two"),
+    new ExampleStageBuilder("Three")
   ]
 
   @Subject
   def stageNavigator = new StageNavigator(null) {
     @Override
     protected Collection<StageBuilder> stageBuilders() {
-      return stageBuilders
+      return stageBuilders.collect {
+        stageBuilderProvider.wrap(it)
+      }
     }
   }
 
@@ -111,14 +120,16 @@ class StageNavigatorSpec extends Specification {
     return pipelineStage
   }
 
-  static class ExampleStageBuilder extends LinearStage {
-    ExampleStageBuilder(String name) {
-      super(name)
+  static class ExampleStageBuilder implements StageDefinitionBuilder {
+    private final String type
+
+    ExampleStageBuilder(String type) {
+      this.type = type
     }
 
     @Override
-    List<Step> buildSteps(Stage stage) {
-      []
+    String getType() {
+      return type
     }
   }
 

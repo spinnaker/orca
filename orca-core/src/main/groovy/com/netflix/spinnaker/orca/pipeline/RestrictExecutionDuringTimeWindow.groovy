@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import org.springframework.batch.core.Step
@@ -40,16 +41,12 @@ import static java.util.Calendar.SECOND
  */
 @Component
 @CompileStatic
-class RestrictExecutionDuringTimeWindow extends LinearStage {
-  private static final String MAYO_CONFIG_NAME = "restrictExecutionDuringTimeWindow"
-
-  RestrictExecutionDuringTimeWindow() {
-    super(MAYO_CONFIG_NAME)
-  }
-
+class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder {
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    [buildStep(stage, "suspendExecutionDuringTimeWindow", SuspendExecutionDuringTimeWindowTask)]
+  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    return [
+      new StageDefinitionBuilder.TaskDefinition("suspendExecutionDuringTimeWindow", SuspendExecutionDuringTimeWindowTask)
+    ]
   }
 
   @Component

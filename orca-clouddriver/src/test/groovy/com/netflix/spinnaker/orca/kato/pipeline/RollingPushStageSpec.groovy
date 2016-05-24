@@ -19,15 +19,15 @@ import com.netflix.spinnaker.orca.kato.tasks.rollingpush.CheckForRemainingTermin
 import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationCandidatesTask
 import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationPhaseInstancesTask
 import com.netflix.spinnaker.orca.kato.tasks.rollingpush.WaitForNewInstanceLaunchTask
-import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.PipelineStarter
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.test.JobCompletionListener
 import com.netflix.spinnaker.orca.test.TestConfiguration
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
 import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.AutoCleanup
@@ -47,7 +47,7 @@ class RollingPushStageSpec extends Specification {
   @Shared def mapper = new OrcaObjectMapper()
   @Autowired PipelineStarter pipelineStarter
 
-  def endTask = Mock(Task)
+  def endTask = new TestTask(delegate: Mock(Task))
   def endStage = new AutowiredTestStage("end", endTask)
 
   def preCycleTask = Stub(DetermineTerminationCandidatesTask) {
@@ -77,6 +77,7 @@ class RollingPushStageSpec extends Specification {
       register(RollingPushStage)
       register(RollingPushStage.RedirectResetListener)
       beanFactory.registerSingleton("endStage", endStage)
+      beanFactory.registerSingleton("task1", endTask)
       ([preCycleTask, startOfCycleTask, endOfCycleTask] + cycleTasks).each { task ->
         beanFactory.registerSingleton(task.getClass().simpleName, task)
       }
@@ -84,7 +85,6 @@ class RollingPushStageSpec extends Specification {
       beanFactory.autowireBean(endStage)
       beanFactory.autowireBean(this)
     }
-    endStage.applicationContext = applicationContext
   }
 
   def "rolling push loops until completion"() {
@@ -98,7 +98,7 @@ class RollingPushStageSpec extends Specification {
     3 * startOfCycleTask.execute(_) >> SUCCESS
 
     then:
-    1 * endTask.execute(_) >> SUCCESS
+    1 * endTask.delegate.execute(_) >> SUCCESS
 
     where:
     config = [
@@ -112,21 +112,31 @@ class RollingPushStageSpec extends Specification {
   }
 
   @CompileStatic
-  static class AutowiredTestStage extends LinearStage {
-
+  static class AutowiredTestStage implements StageDefinitionBuilder {
+    private final String type
     private final List<Task> tasks = []
 
-    AutowiredTestStage(String name, Task... tasks) {
-      super(name)
+    AutowiredTestStage(String type, Task... tasks) {
+      this.type = type
       this.tasks.addAll tasks
     }
 
     @Override
-    public List<Step> buildSteps(Stage stage) {
+    def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
       def i = 1
       tasks.collect { Task task ->
-        buildStep(stage, "task${i++}", task)
+       new StageDefinitionBuilder.TaskDefinition("task${i++}", task.class)
       }
     }
+
+    @Override
+    String getType() {
+      return type
+    }
+  }
+
+  static class TestTask implements Task {
+    @Delegate
+    Task delegate
   }
 }
