@@ -51,14 +51,11 @@ class RollingPushStage extends StageBuilder {
   static final String PIPELINE_CONFIG_TYPE = "rollingPush"
 
   private final ExecutionRepository executionRepository
-  private final ExecutionListenerProvider executionListenerProvider
 
   @Autowired
-  RollingPushStage(ExecutionRepository executionRepository,
-                   ExecutionListenerProvider executionListenerProvider) {
+  RollingPushStage(ExecutionRepository executionRepository) {
     super(PIPELINE_CONFIG_TYPE)
     this.executionRepository = executionRepository
-    this.executionListenerProvider = executionListenerProvider
   }
 
   @Override
@@ -79,7 +76,7 @@ class RollingPushStage extends StageBuilder {
       stage,
       "checkForRemainingTerminations",
       CheckForRemainingTerminationsTask,
-      executionListenerProvider.wrap(new RedirectResetListener())
+      getExecutionListenerProvider().wrap(new RedirectResetListener())
     )
     jobBuilder.next(endOfCycle)
     jobBuilder.on(REDIRECT.name()).to(startOfCycle)

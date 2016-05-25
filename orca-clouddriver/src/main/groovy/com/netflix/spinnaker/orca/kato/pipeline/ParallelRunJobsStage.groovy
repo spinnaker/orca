@@ -41,9 +41,6 @@ class ParallelRunJobsStage extends ParallelStage {
 
   public static final String PIPELINE_CONFIG_TYPE = "runJobs"
 
-  @Autowired
-  List<LinearStage> stageBuilders
-
   ParallelRunJobsStage() {
     this(PIPELINE_CONFIG_TYPE)
   }
@@ -76,7 +73,7 @@ class ParallelRunJobsStage extends ParallelStage {
           }
         })
       )
-      def stageBuilder = stageBuilders.find { it.type == context.type }
+      def stageBuilder = getAllStageBuilders().find { it.type == context.type }
 
       stageBuilder.build(flowBuilder, nextStage)
       return flowBuilder.end()

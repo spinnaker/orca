@@ -60,7 +60,6 @@ abstract class StageBuilder implements ApplicationContextAware {
 
   private StepBuilderFactory steps
   private Collection<TaskTaskletAdapter> taskTaskletAdapters
-  private ExecutionListenerProvider executionListenerProvider
   private ApplicationContext applicationContext
 
   @Autowired
@@ -136,7 +135,7 @@ abstract class StageBuilder implements ApplicationContextAware {
   @VisibleForTesting
   @PackageScope
   FlowBuilder buildDependentStages(FlowBuilder jobBuilder, Stage stage) {
-    def stageBuilders = applicationContext.getBean(StageBuilderProvider).all()
+    def stageBuilders = getAllStageBuilders()
     def dependantStages = stage.execution.stages.findAll {
       it.requisiteStageRefIds?.contains(stage.refId)
     }
@@ -281,9 +280,12 @@ abstract class StageBuilder implements ApplicationContextAware {
     this.taskTaskletAdapters = taskTaskletAdapters
   }
 
-  @Autowired
-  void setStepExecutionListenerProvider(ExecutionListenerProvider stepExecutionListenerProvider) {
-    this.executionListenerProvider = stepExecutionListenerProvider
+  ExecutionListenerProvider getExecutionListenerProvider() {
+    return applicationContext.getBean(ExecutionListenerProvider)
+  }
+
+  Collection<StageBuilder> getAllStageBuilders() {
+    return applicationContext.getBean(StageBuilderProvider).all()
   }
 
   @Override
@@ -298,7 +300,7 @@ abstract class StageBuilder implements ApplicationContextAware {
   @VisibleForTesting
   @PackageScope
   List<StepExecutionListener> getTaskListeners() {
-    Optional.fromNullable(executionListenerProvider.allStepExecutionListeners() ?: [])
+    Optional.fromNullable(getExecutionListenerProvider().allStepExecutionListeners() ?: [])
       .transform(ImmutableList.&copyOf as Function)
       .or(EMPTY_LIST)
   }

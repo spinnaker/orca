@@ -16,7 +16,11 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline.strategy;
 
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+
+import java.util.Collections;
+import java.util.List;
 
 // Yes, Java, because Spring hates Groovy enums with implementations
 public enum Strategy implements StrategyFlowComposer{
@@ -31,8 +35,6 @@ public enum Strategy implements StrategyFlowComposer{
   Strategy(String key) {
     this.key = key;
   }
-
-
 
   static Strategy fromStrategy(String key) {
     if (key == null) {
@@ -53,23 +55,18 @@ public enum Strategy implements StrategyFlowComposer{
   }
 
   @Override
-  public void composeFlow(DeployStrategyStage builder, Stage stage) {
+  public <T extends Execution> List<Stage<T>> composeFlow(DeployStrategyStage builder, Stage<T> stage) {
     switch (this) {
       case RED_BLACK:
-        builder.composeRedBlackFlow(stage);
-        break;
-
+        return builder.composeRedBlackFlow(stage);
       case HIGHLANDER:
-        builder.composeHighlanderFlow(stage);
-        break;
-
+        return builder.composeHighlanderFlow(stage);
       case ROLLING_PUSH:
-        builder.composeRollingPushFlow(stage);
-        break;
-
+        return builder.composeRollingPushFlow(stage);
       case CUSTOM:
-        builder.composeCustomFlow(stage);
-        break;
+        return builder.composeCustomFlow(stage);
     }
+
+    return Collections.emptyList();
   }
 }

@@ -26,12 +26,14 @@ import com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 
 /**
  * DEPRECATED - Use AbstractDeployStrategyStage instead.
@@ -58,7 +60,7 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
    * @return the steps for the stage excluding whatever cleanup steps will be
    * handled by the deployment strategy.
    */
-  protected abstract List<Step> basicSteps(Stage stage)
+  protected abstract List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage)
 
   /**
    * @param stage the stage configuration.
@@ -79,16 +81,22 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
   }
 
   @Override
-  public List<Step> buildSteps(Stage stage) {
-    correctContext(stage)
-    def strategy = strategy(stage)
-    strategy.composeFlow(this, stage)
+  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+    correctContext(parentStage)
+    def strategy = strategy(parentStage)
 
-    List<Step> steps = [buildStep(stage, "determineSourceServerGroup", DetermineSourceServerGroupTask)]
-    if (!strategy.replacesBasicSteps()) {
-      steps.addAll((basicSteps(stage) ?: []) as List<Step>)
-    }
-    return steps
+    def tasks = [
+      new StageDefinitionBuilder.TaskDefinition("determineSourceServerGroup", DetermineSourceServerGroupTask)
+    ]
+
+    return (strategy.replacesBasicSteps() ? tasks : tasks + basicTasks(parentStage)) as List<StageDefinitionBuilder.TaskDefinition>
+  }
+
+  @Override
+  <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
+    correctContext(parentStage)
+    def strategy = strategy(parentStage)
+    return strategy.composeFlow(this, parentStage)
   }
 
   /**
@@ -106,7 +114,8 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
 
   @VisibleForTesting
   @CompileDynamic
-  protected void composeRedBlackFlow(Stage stage) {
+  protected <T extends Execution> List<Stage<T>> composeRedBlackFlow(Stage<T> stage) {
+    def stages = []
     def stageData = stage.mapTo(StageData)
     def cleanupConfig = determineClusterForCleanup(stage)
 
@@ -123,7 +132,14 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
         allowDeleteActive: false,
         retainLargerOverNewer: false
       ]
-      injectAfter(stage, "shrinkCluster", shrinkClusterStage, shrinkContext)
+      stages << newStage(
+        stage.execution,
+        shrinkClusterStage.type,
+        "shrinkCluster",
+        shrinkContext,
+        stage,
+        Stage.SyntheticStageOwner.STAGE_AFTER
+      )
     }
 
     if (stageData.scaleDown) {
@@ -132,16 +148,30 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
         remainingFullSizeServerGroups: 1,
         preferLargerOverNewer: false
       ]
-      injectAfter(stage, "scaleDown", scaleDownClusterStage, scaleDown)
+      stages << newStage(
+        stage.execution,
+        scaleDownClusterStage.type,
+        "scaleDown",
+        scaleDown,
+        stage,
+        Stage.SyntheticStageOwner.STAGE_AFTER
+      )
     }
 
-    injectAfter(stage, "disableCluster", disableClusterStage, baseContext + [
-      remainingEnabledServerGroups: 1,
-      preferLargerOverNewer: false
-    ])
+    stages << newStage(
+      stage.execution,
+      disableClusterStage.type,
+      "disableCluster",
+      baseContext + [remainingEnabledServerGroups: 1, preferLargerOverNewer: false],
+      stage,
+      Stage.SyntheticStageOwner.STAGE_AFTER
+    )
+
+    return stages
   }
 
-  protected void composeRollingPushFlow(Stage stage) {
+  protected <T extends Execution> List<Stage<T>> composeRollingPushFlow(Stage<T> stage) {
+    def stages = []
     def source = sourceResolver.getSource(stage)
 
     def modifyCtx = stage.context + [
@@ -159,16 +189,32 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
       ]
     ]
 
-    injectAfter(stage, "modifyLaunchConfiguration", getStageBuilderProvider().wrap(modifyAsgLaunchConfigurationStage), modifyCtx)
+    stages << newStage(
+      stage.execution,
+      modifyAsgLaunchConfigurationStage.type,
+      "modifyLaunchConfiguration",
+      modifyCtx,
+      stage,
+      Stage.SyntheticStageOwner.STAGE_AFTER
+    )
 
     def terminationConfig = stage.mapTo("/termination", TerminationConfig)
     if (terminationConfig.relaunchAllInstances || terminationConfig.totalRelaunches > 0) {
-      injectAfter(stage, "rollingPush", rollingPushStage, modifyCtx)
+      stages << newStage(
+        stage.execution,
+        rollingPushStage.type,
+        "rollingPush",
+        modifyCtx,
+        stage,
+        Stage.SyntheticStageOwner.STAGE_AFTER
+      )
     }
+
+    return stages
   }
 
-  protected void composeCustomFlow(Stage stage) {
-
+  protected <T extends Execution> List<Stage<T>> composeCustomFlow(Stage stage) {
+    def stages = []
     def cleanupConfig = determineClusterForCleanup(stage)
 
     Map parameters = [
@@ -193,11 +239,20 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
       pipelineParameters : parameters
     ]
 
-    injectAfter(stage, "pipeline", getStageBuilderProvider().wrap(pipelineStage), modifyCtx)
+    stages << newStage(
+      stage.execution,
+      pipelineStage.type,
+      "pipeline",
+      modifyCtx,
+      stage,
+      Stage.SyntheticStageOwner.STAGE_AFTER
+    )
+
+    return stages
   }
 
   @CompileDynamic
-  protected void composeHighlanderFlow(Stage stage) {
+  protected <T extends Execution> List<Stage<T>> composeHighlanderFlow(Stage stage) {
     def cleanupConfig = determineClusterForCleanup(stage)
     Map shrinkContext = [
       regions: [cleanupConfig.region],
@@ -208,7 +263,17 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
       allowDeleteActive: true,
       retainLargerOverNewer: false
     ]
-    injectAfter(stage, "shrinkCluster", shrinkClusterStage, shrinkContext)
+
+    return [
+      newStage(
+        stage.execution,
+        shrinkClusterStage.type,
+        "shrinkCluster",
+        shrinkContext,
+        stage,
+        Stage.SyntheticStageOwner.STAGE_AFTER
+      )
+    ]
   }
 
   @Immutable
