@@ -122,7 +122,7 @@ class GetCommitsTask implements DiffTask {
 
   List getCommitsList(String repoType, String projectKey, String repositorySlug, String sourceCommit, String targetCommit) {
     List commitsList = []
-    List commits = buildService.compareCommits(repoType, projectKey, repositorySlug, [to: sourceCommit, from: targetCommit, limit: 100])
+    List commits = buildService.compareCommits(repoType, projectKey, repositorySlug, [from: sourceCommit, to: targetCommit, limit: 100])
     commits.each {
       // add commits to the task output
       commitsList << [displayId: it.displayId, id: it.id, authorDisplayName: it.authorDisplayName,

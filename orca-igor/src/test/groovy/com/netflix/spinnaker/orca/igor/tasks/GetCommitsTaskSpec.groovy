@@ -204,7 +204,7 @@ class GetCommitsTaskSpec extends Specification {
     def stage = new PipelineStage(pipeline, "stash", contextMap)//.asImmutable()
 
     task.buildService = Stub(BuildService) {
-      compareCommits("stash", "projectKey", "repositorySlug", ['to':'186605b', 'from':'a86305d', 'limit':100]) >> [[message: "my commit", displayId: "abcdab", id: "abcdabcdabcdabcd", authorDisplayName: "Joe Coder", timestamp: 1432081865000, commitUrl: "http://stash.com/abcdabcdabcdabcd"],
+      compareCommits("stash", "projectKey", "repositorySlug", ['from':'186605b', 'to':'a86305d', 'limit':100]) >> [[message: "my commit", displayId: "abcdab", id: "abcdabcdabcdabcd", authorDisplayName: "Joe Coder", timestamp: 1432081865000, commitUrl: "http://stash.com/abcdabcdabcdabcd"],
                                                                                                                    [message: "bug fix", displayId: "efghefgh", id: "efghefghefghefghefgh", authorDisplayName: "Jane Coder", timestamp: 1432081256000, commitUrl: "http://stash.com/efghefghefghefghefgh"]]
     }
 
@@ -275,7 +275,7 @@ class GetCommitsTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    1 * buildService.compareCommits("stash", "projectKey", "repositorySlug", ['to':'186605b', 'from':'a86305d', 'limit':100]) >> {
+    1 * buildService.compareCommits("stash", "projectKey", "repositorySlug", ['from':'186605b', 'to':'a86305d', 'limit':100]) >> {
       throw new RetrofitError(null, null,
         new Response("http://stash.com", 500, "test reason", [], null), null, null, null, null)
     }
@@ -332,7 +332,7 @@ class GetCommitsTaskSpec extends Specification {
 
     and:
     task.buildService = Stub(BuildService) {
-      compareCommits("stash", "projectKey", "repositorySlug", ['to':'186605b', 'from':'a86305d', 'limit':100]) >> [[message: "my commit", displayId: "abcdab", id: "abcdabcdabcdabcd", authorDisplayName: "Joe Coder", timestamp: 1432081865000, commitUrl: "http://stash.com/abcdabcdabcdabcd"],
+      compareCommits("stash", "projectKey", "repositorySlug", ['from':'186605b', 'to':'a86305d', 'limit':100]) >> [[message: "my commit", displayId: "abcdab", id: "abcdabcdabcdabcd", authorDisplayName: "Joe Coder", timestamp: 1432081865000, commitUrl: "http://stash.com/abcdabcdabcdabcd"],
                                                                                                                    [message: "bug fix", displayId: "efghefgh", id: "efghefghefghefghefgh", authorDisplayName: "Jane Coder", timestamp: 1432081256000, commitUrl: "http://stash.com/efghefghefghefghefgh"]]
     }
 
@@ -382,7 +382,7 @@ class GetCommitsTaskSpec extends Specification {
 
     and:
     task.buildService = Stub(BuildService) {
-      compareCommits("stash", "projectKey", "repositorySlug", ['to':'186605b', 'from':'a86305d', 'limit':100]) >> [[message: "my commit", displayId: "abcdab", id: "abcdabcdabcdabcd", authorDisplayName: "Joe Coder", timestamp: 1432081865000, commitUrl: "http://stash.com/abcdabcdabcdabcd"],
+      compareCommits("stash", "projectKey", "repositorySlug", ['from':'186605b', 'to':'a86305d', 'limit':100]) >> [[message: "my commit", displayId: "abcdab", id: "abcdabcdabcdabcd", authorDisplayName: "Joe Coder", timestamp: 1432081865000, commitUrl: "http://stash.com/abcdabcdabcdabcd"],
                                                                                                                    [message: "bug fix", displayId: "efghefgh", id: "efghefghefghefghefgh", authorDisplayName: "Jane Coder", timestamp: 1432081256000, commitUrl: "http://stash.com/efghefghefghefghefgh"]]
     }
 
@@ -450,7 +450,7 @@ class GetCommitsTaskSpec extends Specification {
 
     and:
     task.buildService = Stub(BuildService) {
-      compareCommits("stash", "projectKey", "repositorySlug", ['to':'186605b', 'from':'a86305d', 'limit':100]) >> {
+      compareCommits("stash", "projectKey", "repositorySlug", ['from':'186605b', 'to':'a86305d', 'limit':100]) >> {
         throw new RetrofitError(null, null, new Response("http://stash.com", 404, "test reason", [], null), null, null, null, null)
       }
     }
