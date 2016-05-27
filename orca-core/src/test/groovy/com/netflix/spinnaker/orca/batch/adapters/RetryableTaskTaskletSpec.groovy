@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.batch.adapters
 
-import spock.lang.Specification
-
 import java.time.Clock
 import java.time.Instant
 import com.netflix.spectator.api.NoopRegistry
@@ -32,6 +30,7 @@ import org.springframework.batch.core.StepExecution
 import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.batch.core.scope.context.StepContext
 import spock.lang.Shared
+import spock.lang.Specification
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.model.Stage.STAGE_TIMEOUT_OVERRIDE_KEY
@@ -101,7 +100,7 @@ class RetryableTaskTaskletSpec extends Specification {
     def tasklet = new RetryableTaskTasklet(task, null, null, new NoopRegistry(), clock)
 
     when:
-    def taskResult = tasklet.doExecuteTask(stage.asImmutable(), chunkContext)
+    def taskResult = tasklet.doExecuteTask(stage, chunkContext)
 
     then:
     stage.self.status == PAUSED

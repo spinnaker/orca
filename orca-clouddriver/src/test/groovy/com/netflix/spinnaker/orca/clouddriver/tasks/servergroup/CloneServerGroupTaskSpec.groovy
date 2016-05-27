@@ -60,7 +60,7 @@ class CloneServerGroupTaskSpec extends Specification {
     }
 
     when:
-    task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
     operations.size() == 3
@@ -84,7 +84,7 @@ class CloneServerGroupTaskSpec extends Specification {
     }
 
     when:
-    task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
     operations.size() == 3
@@ -113,7 +113,7 @@ class CloneServerGroupTaskSpec extends Specification {
     }
 
     when:
-    task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
     operations.size() == 3
@@ -141,7 +141,7 @@ class CloneServerGroupTaskSpec extends Specification {
     }
 
     when:
-    task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
     operations.size() == 3
@@ -170,7 +170,7 @@ class CloneServerGroupTaskSpec extends Specification {
     }
 
     when:
-    task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
     operations.size() == 3

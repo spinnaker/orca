@@ -96,12 +96,6 @@ abstract class AbstractStage<T extends Execution<T>> implements Stage<T>, Serial
     this(execution, type, [:])
   }
 
-  Stage<T> asImmutable() {
-    if (execution?.appConfig) {
-      context.appConfig = execution.appConfig
-    }
-    ImmutableStageSupport.toImmutable(this)
-  }
 
   @Override
   public <O> O mapTo(String pointer, Class<O> type) {

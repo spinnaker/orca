@@ -142,7 +142,7 @@ class TaskTasklet implements Tasklet {
     def cancelResults = stage.ancestors({ Stage s, StageBuilder stageBuilder ->
       !s.status.complete && stageBuilder instanceof CancellableStage
     }).collect {
-      ((CancellableStage)it.stageBuilder).cancel(stage)
+      ((CancellableStage) it.stageBuilder).cancel(stage)
     }
     stage.context.cancelResults = cancelResults
     stage.status = ExecutionStatus.CANCELED
@@ -175,8 +175,8 @@ class TaskTasklet implements Tasklet {
         stage.execution?.authentication?.user, null, null, [], stage.execution?.authentication?.allowedAccounts
       )
       return AuthenticatedRequest.propagate({
-                                              doExecuteTask(stage.asImmutable(), chunkContext)
-                                            }, false, currentUser).call() as TaskResult
+        doExecuteTask(stage, chunkContext)
+      }, false, currentUser).call() as TaskResult
     } catch (Exception e) {
       def exceptionHandler = exceptionHandlers.find { it.handles(e) }
       if (!exceptionHandler) {
@@ -233,11 +233,11 @@ class TaskTasklet implements Tasklet {
 
   private void logResult(TaskResult result, Stage stage, ChunkContext chunkContext) {
     Id id = registry.createId(METRIC_NAME)
-                            .withTag("status", result.status.toString())
-                            .withTag("executionType", stage.execution.class.simpleName)
-                            .withTag("stageType", stage.type)
-                            .withTag("taskName", taskName(chunkContext))
-                            .withTag("isComplete", result.status.complete ? "true" : "false")
+      .withTag("status", result.status.toString())
+      .withTag("executionType", stage.execution.class.simpleName)
+      .withTag("stageType", stage.type)
+      .withTag("taskName", taskName(chunkContext))
+      .withTag("isComplete", result.status.complete ? "true" : "false")
 
     if (stage.execution.application) {
       id = id.withTag("sourceApplication", stage.execution.application)

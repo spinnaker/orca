@@ -114,11 +114,6 @@ public interface Stage<T extends Execution<T>> {
   AtomicInteger getTaskCounter();
 
   /**
-   * Returns the stage as an immutable object. Stage state can be discovered through {@link #isImmutable()}
-   */
-  @JsonIgnore Stage<T> asImmutable();
-
-  /**
    * @return a reference to the wrapped object in this event this object is the immutable wrapper
    */
   @JsonIgnore default Stage<T> getSelf() {

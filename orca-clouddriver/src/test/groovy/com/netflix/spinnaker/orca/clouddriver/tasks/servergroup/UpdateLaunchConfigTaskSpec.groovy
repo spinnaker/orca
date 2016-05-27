@@ -145,7 +145,7 @@ class UpdateLaunchConfigTaskSpec extends Specification {
       stage.requisiteStageRefIds = [intermediateStage.refId]
 
     when:
-      task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
       operations.find {
