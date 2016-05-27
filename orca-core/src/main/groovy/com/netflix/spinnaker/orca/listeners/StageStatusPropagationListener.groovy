@@ -16,11 +16,10 @@
 
 package com.netflix.spinnaker.orca.listeners
 
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
-import groovy.util.logging.Slf4j
 
 @Slf4j
 class StageStatusPropagationListener implements StageListener {
@@ -38,7 +37,7 @@ class StageStatusPropagationListener implements StageListener {
   @Override
   void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
     if (executionStatus) {
-      def nonBookendTasks = stage.tasks.findAll { !DefaultTask.isBookend(it) }
+      def nonBookendTasks = stage.tasks.findAll { !it.bookend }
       if (executionStatus == ExecutionStatus.SUCCEEDED && (nonBookendTasks && nonBookendTasks[-1].status != ExecutionStatus.SUCCEEDED)) {
         // mark stage as RUNNING as not all tasks have completed
         stage.status = ExecutionStatus.RUNNING
