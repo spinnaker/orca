@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.TaskDefinition
 
 abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specification {
@@ -62,6 +63,32 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     where:
     stageType = "foo"
     execution = Pipeline.builder().withStage(stageType).build()
+  }
+
+  @Unroll
+  def "marks start and end of each stage when there are #numTasks tasks"() {
+    given:
+    def stageDefBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> stageType
+      taskGraph(_) >> (1..numTasks).collect { i -> new TaskDefinition("$i", Task) }
+    }
+    @Subject def runner = create(stageDefBuilder)
+
+    when:
+    runner.start(execution)
+
+    then:
+    with(execution.stages.first()) {
+      tasks.head().stageStart
+      tasks.tail().every { !it.stageStart }
+      tasks.reverse().head().stageEnd
+      tasks.reverse().tail().every { !it.stageEnd }
+    }
+
+    where:
+    stageType = "foo"
+    execution = Pipeline.builder().withStage(stageType).build()
+    numTasks << [1, 2, 3]
   }
 
   def "builds each pre-stage"() {

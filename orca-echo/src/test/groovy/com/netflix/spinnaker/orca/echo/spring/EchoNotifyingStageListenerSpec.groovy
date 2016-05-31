@@ -2,15 +2,13 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
-import com.netflix.spinnaker.orca.pipeline.model.Orchestration
-import com.netflix.spinnaker.orca.pipeline.model.OrchestrationStage
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.*
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
+import static org.hamcrest.Matchers.containsInAnyOrder
+import static spock.util.matcher.HamcrestSupport.expect
 
 class EchoNotifyingStageListenerSpec extends Specification {
 
@@ -36,10 +34,42 @@ class EchoNotifyingStageListenerSpec extends Specification {
     1 * echoService.recordEvent(_)
   }
 
+  def "triggers an event when a stage starts"() {
+    given:
+    def task = new DefaultTask(stageStart: true)
+
+    and:
+    def events = []
+    echoService.recordEvent(_) >> { events << it[0]; null }
+
+    when:
+    echoListener.beforeTask(null, pipelineStage, task)
+
+    then:
+    events.size() == 2
+    expect events.details.type, containsInAnyOrder("orca:task:starting", "orca:stage:starting")
+  }
+
+  def "triggers an event when a task starts"() {
+    given:
+    def task = new DefaultTask(stageStart: false)
+
+    and:
+    def events = []
+    echoService.recordEvent(_) >> { events << it[0]; null }
+
+    when:
+    echoListener.beforeTask(null, pipelineStage, task)
+
+    then:
+    events.size() == 1
+    events.details.type == ["orca:task:starting"]
+  }
+
   @Unroll
   def "triggers an event when a task completes"() {
     given:
-    def task = new DefaultTask(name: taskName)
+    def task = new DefaultTask(name: taskName, stageEnd: isEnd)
 
     when:
     echoListener.afterTask(null, stage, task, executionStatus, wasSuccessful)
@@ -48,12 +78,14 @@ class EchoNotifyingStageListenerSpec extends Specification {
     invocations * echoService.recordEvent(_)
 
     where:
-    invocations | stage              | taskName   | executionStatus           | wasSuccessful
-    0           | orchestrationStage | "stageEnd" | ExecutionStatus.RUNNING   | true
-    1           | orchestrationStage | "stageEnd" | ExecutionStatus.STOPPED   | true
-    1           | pipelineStage      | "xxx"      | ExecutionStatus.SUCCEEDED | true
-    2           | pipelineStage      | "stageEnd" | ExecutionStatus.SUCCEEDED | true
-    2           | pipelineStage      | "stageEnd" | ExecutionStatus.SUCCEEDED | false
+    invocations | stage              | taskName   | executionStatus           | wasSuccessful | isEnd
+    0           | orchestrationStage | "stageEnd" | ExecutionStatus.RUNNING   | true          | false
+    1           | orchestrationStage | "stageEnd" | ExecutionStatus.STOPPED   | true          | false
+    1           | pipelineStage      | "xxx"      | ExecutionStatus.SUCCEEDED | true          | false
+    2           | pipelineStage      | "stageEnd" | ExecutionStatus.SUCCEEDED | true          | false
+    2           | pipelineStage      | "stageEnd" | ExecutionStatus.SUCCEEDED | false         | false
+    2           | pipelineStage      | "xxx"      | ExecutionStatus.SUCCEEDED | true          | true
+    1           | orchestrationStage | "xxx"      | ExecutionStatus.SUCCEEDED | true          | true
   }
 
   @Unroll

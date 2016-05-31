@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.TaskDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
@@ -81,16 +82,21 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       planStage(postStage);
     });
 
-    builder
-      .taskGraph(stage)
-      .forEach(taskDef -> {
-        DefaultTask task = new DefaultTask();
-        task.setId(String.valueOf((stage.getTasks().size() + 1)));
-        task.setName(taskDef.getName());
-        task.setStatus(NOT_STARTED);
-        task.setImplementingClass(taskDef.getImplementingClass());
-        stage.getTasks().add(task);
-      });
+    for (ListIterator<TaskDefinition> itr = builder.taskGraph(stage).listIterator(); itr.hasNext(); ) {
+      DefaultTask task = new DefaultTask();
+      task.setStageStart(!itr.hasPrevious());
+
+      // do this after calling itr.hasPrevious because ListIterator is stupid
+      TaskDefinition taskDef = itr.next();
+
+      task.setId(String.valueOf((stage.getTasks().size() + 1)));
+      task.setName(taskDef.getName());
+      task.setStatus(NOT_STARTED);
+      task.setImplementingClass(taskDef.getImplementingClass());
+      // TODO: may need to revisit this for parallel stages like bake & deploy
+      task.setStageEnd(!itr.hasNext());
+      stage.getTasks().add(task);
+    }
   }
 
   private <T extends Execution<T>> StageDefinitionBuilder findBuilderForStage(Stage<T> stage) {

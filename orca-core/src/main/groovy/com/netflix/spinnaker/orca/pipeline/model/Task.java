@@ -49,4 +49,8 @@ public interface Task {
   default boolean isBookend() {
     return Objects.equals(getName(), "stageEnd") || Objects.equals(getName(), "stageStart");
   }
+
+  boolean isStageStart();
+
+  boolean isStageEnd();
 }
