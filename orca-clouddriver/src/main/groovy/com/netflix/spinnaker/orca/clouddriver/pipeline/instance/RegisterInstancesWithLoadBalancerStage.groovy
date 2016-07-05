@@ -17,29 +17,29 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.instance
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.RegisterInstancesWithLoadBalancerTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstanceHealthTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class RegisterInstancesWithLoadBalancerStage implements StageDefinitionBuilder{
+class RegisterInstancesWithLoadBalancerStage implements StageDefinitionBuilder {
   @Autowired
   OortService oortService
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("registerInstances", RegisterInstancesWithLoadBalancerTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorInstances", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForLoadBalancerState", WaitForUpInstanceHealthTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("registerInstances", RegisterInstancesWithLoadBalancerTask)
+      .withTask("monitorInstances", MonitorKatoTask)
+      .withTask("waitForLoadBalancerState", WaitForUpInstanceHealthTask)
   }
 }

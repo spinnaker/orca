@@ -17,6 +17,8 @@
 
 package com.netflix.spinnaker.orca.applications.pipelines
 
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -24,10 +26,9 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -35,10 +36,9 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class UpsertProjectStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return Collections.singletonList(
-      new StageDefinitionBuilder.TaskDefinition("upsertProject", UpsertProjectTask)
-    );
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("upsertProject", UpsertProjectTask)
   }
 
   @Slf4j

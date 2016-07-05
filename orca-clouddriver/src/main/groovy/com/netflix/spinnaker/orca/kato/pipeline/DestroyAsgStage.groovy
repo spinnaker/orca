@@ -16,16 +16,16 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DestroyServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForDestroyedServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceLinearStageSupport
 import com.netflix.spinnaker.orca.kato.tasks.DestroyAwsServerGroupTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
 /**
@@ -39,12 +39,11 @@ class DestroyAsgStage extends TargetReferenceLinearStageSupport {
   static final String DESTROY_ASG_DESCRIPTIONS_KEY = "destroyAsgDescriptions"
 
   @Override
-  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("destroyServerGroup", DestroyAwsServerGroupTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForDestroyedServerGroup", WaitForDestroyedServerGroupTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("destroyServerGroup", DestroyAwsServerGroupTask)
+      .withTask("monitorServerGroup", MonitorKatoTask)
+      .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+      .withTask("waitForDestroyedServerGroup", WaitForDestroyedServerGroupTask)
   }
 }

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ModifyAwsScalingProcessStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
@@ -23,10 +24,9 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ResizeServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForCapacityMatchTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
@@ -45,14 +45,13 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
   ModifyAwsScalingProcessStage modifyAwsScalingProcessStage
 
   @Override
-  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("determineHealthProviders", DetermineHealthProvidersTask),
-      new StageDefinitionBuilder.TaskDefinition("resizeServerGroup", ResizeServerGroupTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForCapacityMatch", WaitForCapacityMatchTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("determineHealthProviders", DetermineHealthProvidersTask)
+      .withTask("resizeServerGroup", ResizeServerGroupTask)
+      .withTask("monitorServerGroup", MonitorKatoTask)
+      .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+      .withTask("waitForCapacityMatch", WaitForCapacityMatchTask)
   }
 
   @Override

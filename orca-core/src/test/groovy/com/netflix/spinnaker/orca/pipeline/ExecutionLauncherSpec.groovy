@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.appinfo.InstanceInfo
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -29,7 +28,7 @@ import spock.lang.Subject
 
 abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLauncher<T>> extends Specification {
 
-  abstract L create(StageDefinitionBuilder... stageDefBuilders)
+  abstract L create()
 
   @Shared def objectMapper = new ObjectMapper()
   def runner = Mock(ExecutionRunner)
@@ -42,8 +41,8 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
   def startTracker = Stub(PipelineStartTracker)
 
   @Override
-  PipelineLauncher create(StageDefinitionBuilder... stageDefBuilders) {
-    return new PipelineLauncher(objectMapper, "currentInstanceId", executionRepository, runner, stageDefBuilders.toList(), startTracker)
+  PipelineLauncher create() {
+    return new PipelineLauncher(objectMapper, "currentInstanceId", executionRepository, runner, startTracker)
   }
 
   def "can autowire pipeline launcher with optional dependencies"() {
