@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.config;
 
+import java.util.Collection;
+import java.util.Optional;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.batch.*;
 import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider;
@@ -33,8 +35,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.Collection;
 
 @Configuration
 @ComponentScan("com.netflix.spinnaker.orca.batch.legacy")
@@ -64,8 +64,8 @@ public class SpringBatchConfiguration {
 
   @Bean
   ExecutionListenerProvider springBatchStepExecutionListenerProvider(ExecutionRepository executionRepository,
-                                                                     Collection<StageListener> stageListeners,
-                                                                     Collection<ExecutionListener> executionListeners) {
+                                                                     Optional<Collection<StageListener>> stageListeners,
+                                                                     Optional<Collection<ExecutionListener>> executionListeners) {
     return new SpringBatchExecutionListenerProvider(executionRepository, stageListeners, executionListeners);
   }
 

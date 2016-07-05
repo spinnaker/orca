@@ -16,26 +16,26 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.netflix.spinnaker.orca.kato.tasks.securitygroup.CopySecurityGroupTask
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupForceCacheRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.WaitForUpsertedSecurityGroupTask
+import com.netflix.spinnaker.orca.kato.tasks.securitygroup.CopySecurityGroupTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
 class CopySecurityGroupStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("copySecurityGroup", CopySecurityGroupTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorUpsert", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", SecurityGroupForceCacheRefreshTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForUpsertedSecurityGroup", WaitForUpsertedSecurityGroupTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("copySecurityGroup", CopySecurityGroupTask)
+      .withTask("monitorUpsert", MonitorKatoTask)
+      .withTask("forceCacheRefresh", SecurityGroupForceCacheRefreshTask)
+      .withTask("waitForUpsertedSecurityGroup", WaitForUpsertedSecurityGroupTask)
   }
 }

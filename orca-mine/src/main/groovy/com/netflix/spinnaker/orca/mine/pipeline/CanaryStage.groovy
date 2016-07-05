@@ -33,24 +33,26 @@ import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDe
 @Slf4j
 @Component
 class CanaryStage implements StageDefinitionBuilder, CancellableStage {
+  public static final String PIPELINE_CONFIG_TYPE = "canary"
+
   @Autowired DeployCanaryStage deployCanaryStage
   @Autowired MonitorCanaryStage monitorCanaryStage
   @Autowired ShrinkClusterTask shrinkClusterTask
 
   @Override
-  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
+  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> stage) {
     Map canaryStageId = [
-      canaryStageId: parentStage.id,
-      failPipeline: parentStage.context.failPipeline,
-      continuePipeline: parentStage.context.continuePipeline
+      canaryStageId: stage.id,
+      failPipeline: stage.context.failPipeline,
+      continuePipeline: stage.context.continuePipeline
     ]
 
-    Map<String, Object> deployContext = canaryStageId + parentStage.context
-    Map<String, Object> monitorContext = canaryStageId + [scaleUp: parentStage.context.scaleUp ?: [:]]
+    Map<String, Object> deployContext = canaryStageId + stage.context
+    Map<String, Object> monitorContext = canaryStageId + [scaleUp: stage.context.scaleUp ?: [:]]
 
     return [
-      newStage(parentStage.execution, deployCanaryStage.type, "Deploy Canary", deployContext, parentStage, SyntheticStageOwner.STAGE_AFTER),
-      newStage(parentStage.execution, monitorCanaryStage.type, "Monitor Canary", monitorContext, parentStage, SyntheticStageOwner.STAGE_AFTER)
+      newStage(stage.execution, deployCanaryStage.type, "Deploy Canary", deployContext, stage, SyntheticStageOwner.STAGE_AFTER),
+      newStage(stage.execution, monitorCanaryStage.type, "Monitor Canary", monitorContext, stage, SyntheticStageOwner.STAGE_AFTER)
     ]
   }
 

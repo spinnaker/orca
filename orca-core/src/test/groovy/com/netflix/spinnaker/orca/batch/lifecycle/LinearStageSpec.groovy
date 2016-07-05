@@ -42,6 +42,7 @@ import org.springframework.context.ApplicationContext
 import spock.lang.Shared
 
 import static com.netflix.spinnaker.orca.batch.PipelineInitializerTasklet.initializationStep
+import static java.util.Optional.empty
 
 class LinearStageSpec extends AbstractBatchLifecycleSpec {
   @Shared
@@ -189,7 +190,7 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     @Override
     ExecutionListenerProvider getExecutionListenerProvider() {
-      return new SpringBatchExecutionListenerProvider(null, [], [])
+      return new SpringBatchExecutionListenerProvider(null, empty(), empty())
     }
   }
 
@@ -236,7 +237,7 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
 
     @Override
     ExecutionListenerProvider getExecutionListenerProvider() {
-      return new SpringBatchExecutionListenerProvider(null, [], [])
+      return new SpringBatchExecutionListenerProvider(null, empty(), empty())
     }
   }
 }

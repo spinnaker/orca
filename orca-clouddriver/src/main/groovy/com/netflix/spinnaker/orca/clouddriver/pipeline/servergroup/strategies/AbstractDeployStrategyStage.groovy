@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
@@ -55,74 +55,74 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
    * @return the steps for the stage excluding whatever cleanup steps will be
    * handled by the deployment strategy.
    */
-  protected abstract List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage)
+  protected
+  abstract List<TaskNode.TaskDefinition> basicTasks(Stage stage)
 
   @Override
-  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
     // TODO(ttomsu): This is currently an AWS-only stage. I need to add and support the "useSourceCapacity" option.
-    def tasks = [
-      new StageDefinitionBuilder.TaskDefinition("determineSourceServerGroup", DetermineSourceServerGroupTask),
-      new StageDefinitionBuilder.TaskDefinition("determineHealthProviders", DetermineHealthProvidersTask)
-    ]
+      .withTask("determineSourceServerGroup", DetermineSourceServerGroupTask)
+      .withTask("determineHealthProviders", DetermineHealthProvidersTask)
 
-    deployStagePreProcessors.findAll { it.supports(parentStage) }.each {
+    deployStagePreProcessors.findAll { it.supports(stage) }.each {
       it.additionalSteps().each {
-        tasks << new StageDefinitionBuilder.TaskDefinition(it.name, it.taskClass)
+        builder.withTask(it.name, it.taskClass)
       }
     }
 
-    correctContext(parentStage)
+    correctContext(stage)
     Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
-      it.name.equalsIgnoreCase(parentStage.context.strategy) ? it : null
+      it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
     })
     if (!strategy.replacesBasicSteps()) {
-      tasks.addAll((basicTasks(parentStage) ?: []))
+      (basicTasks(stage) ?: []).each {
+        builder.withTask(it.name, it.implementingClass)
+      }
 
       if (diffTasks) {
         diffTasks.each { DiffTask diffTask ->
           try {
-            tasks << new StageDefinitionBuilder.TaskDefinition(getDiffTaskName(diffTask.class.simpleName), diffTask.class)
+            builder.withTask(getDiffTaskName(diffTask.class.simpleName), diffTask.class)
           } catch (Exception e) {
             log.error("Unable to build diff task (name: ${diffTask.class.simpleName}: executionId: ${stage.execution.id})", e)
           }
         }
       }
     }
-
-    return tasks
   }
 
   @Override
-  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
-    correctContext(parentStage)
+  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> stage) {
+    correctContext(stage)
     Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
-      it.name.equalsIgnoreCase(parentStage.context.strategy) ? it : null
+      it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
     })
-    def stages = strategy.composeFlow(parentStage)
+    def stages = strategy.composeFlow(stage)
 
-    def stageData = parentStage.mapTo(StageData)
-    deployStagePreProcessors.findAll { it.supports(parentStage) }.each {
+    def stageData = stage.mapTo(StageData)
+    deployStagePreProcessors.findAll { it.supports(stage) }.each {
       def defaultContext = [
         credentials  : stageData.account,
         cloudProvider: stageData.cloudProvider
       ]
       it.beforeStageDefinitions().each {
         stages << newStage(
-          parentStage.execution,
+          stage.execution,
           it.stageDefinitionBuilder.type,
           it.name,
           defaultContext + it.context,
-          parentStage,
+          stage,
           SyntheticStageOwner.STAGE_BEFORE
         )
       }
       it.afterStageDefinitions().each {
         stages << newStage(
-          parentStage.execution,
+          stage.execution,
           it.stageDefinitionBuilder.type,
           it.name,
           defaultContext + it.context,
-          parentStage,
+          stage,
           SyntheticStageOwner.STAGE_AFTER
         )
       }
@@ -148,7 +148,8 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
     try {
       className = className[0].toLowerCase() + className.substring(1)
       className = className.replaceAll("Task", "")
-    } catch (e) {}
+    } catch (e) {
+    }
     return className
   }
 
@@ -163,10 +164,10 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
       def stageData = stage.mapTo(StageData)
       def loc = TargetServerGroup.Support.locationFromStageData(stageData)
       new CleanupConfig(
-          account: stageData.account,
-          cluster: stageData.cluster,
-          cloudProvider: stageData.cloudProvider,
-          location: loc
+        account: stageData.account,
+        cluster: stageData.cluster,
+        cloudProvider: stageData.cloudProvider,
+        location: loc
       )
     }
   }

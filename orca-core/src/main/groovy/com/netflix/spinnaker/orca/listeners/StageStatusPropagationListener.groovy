@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 
 @Slf4j
-class StageStatusPropagationListener extends AbstractStagePropagationListener {
+class StageStatusPropagationListener implements StageListener {
   private static final ObjectMapper objectMapper = new ObjectMapper()
 
   @Override
