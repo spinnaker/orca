@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceLinearStageSupport
-import com.netflix.spinnaker.orca.kato.tasks.*
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.kato.tasks.EnableAsgTask
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
 @Component
@@ -32,12 +32,11 @@ import org.springframework.stereotype.Component
 @Deprecated
 class EnableAsgStage extends TargetReferenceLinearStageSupport {
   @Override
-  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("enableAsg", EnableAsgTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorAsg", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("enableAsg", EnableAsgTask)
+      .withTask("monitorAsg", MonitorKatoTask)
+      .withTask("waitForUpInstances", WaitForUpInstancesTask)
+      .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
   }
 }

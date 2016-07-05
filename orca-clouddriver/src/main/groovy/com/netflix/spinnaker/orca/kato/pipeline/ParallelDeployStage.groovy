@@ -25,58 +25,34 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
-import com.netflix.spinnaker.orca.pipeline.ParallelStage
+import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.AbstractStage
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
-import org.springframework.batch.core.job.builder.FlowBuilder
-import org.springframework.batch.core.job.flow.Flow
 import org.springframework.stereotype.Component
 
-@Slf4j
 @Component
+@Slf4j
 @CompileStatic
-class ParallelDeployStage extends ParallelStage {
+class ParallelDeployStage implements BranchingStageDefinitionBuilder {
 
+  @Deprecated
   public static final String PIPELINE_CONFIG_TYPE = "deploy"
 
-  ParallelDeployStage() {
-    this(PIPELINE_CONFIG_TYPE)
-  }
-
-  protected ParallelDeployStage(String name) {
-    super(name)
+  @Override
+  String getType() {
+    return PIPELINE_CONFIG_TYPE;
   }
 
   @Override
-  protected List<Flow> buildFlows(Stage stage) {
-    return parallelContexts(stage).collect { Map context ->
-      def nextStage = newStage(
-        stage.execution, context.type as String, context.name as String, new HashMap(context), stage, SyntheticStageOwner.STAGE_AFTER
-      )
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+  }
 
-      def existingStage = stage.execution.stages.find { it.id == nextStage.id }
-      nextStage = existingStage ?: nextStage
-
-      if (!existingStage) {
-        // in the case of a restart, this stage will already have been added to the execution
-        ((AbstractStage) nextStage).type = isClone(stage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : PIPELINE_CONFIG_TYPE
-        stage.execution.stages.add(nextStage)
-      }
-
-      def flowBuilder = new FlowBuilder<Flow>(context.name as String).start(
-        buildStep(stage, "setupParallelDeploy", new Task() {
-          @Override
-          TaskResult execute(Stage ignored) {
-            return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
-          }
-        })
-      )
-      def stageBuilder = getAllStageBuilders().find { it.type == context.type }
-      stageBuilder.build(flowBuilder, nextStage)
-      return flowBuilder.end()
-    }
+  @Override
+  <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder.withTask("completeParallelDeploy", CompleteParallelDeployTask)
   }
 
   @CompileDynamic
@@ -100,8 +76,7 @@ class ParallelDeployStage extends ParallelStage {
 
   @Override
   @CompileDynamic
-  List<Map<String, Object>> parallelContexts(Stage stage) {
-
+  <T extends Execution<T>> Collection<Map<String, Object>> parallelContexts(Stage<T> stage) {
     if (stage.execution instanceof Pipeline) {
       Map trigger = ((Pipeline) stage.execution).trigger
       if (trigger.parameters?.strategy == true) {
@@ -168,13 +143,12 @@ class ParallelDeployStage extends ParallelStage {
   }
 
   @Override
-  @CompileDynamic
-  String parallelStageName(Stage stage, boolean hasParallelFlows) {
-    return isClone(stage) ? 'Clone' : stage.name
+  <T extends Execution<T>> String parallelStageName(Stage<T> stage, boolean hasParallelFlows) {
+    return isClone(stage) ? "Clone" : stage.name
   }
 
   @CompileDynamic
-  private boolean isClone(Stage stage) {
+  private <T extends Execution<T>> boolean isClone(Stage<T> stage) {
     if (stage.execution instanceof Pipeline) {
       Map trigger = ((Pipeline) stage.execution).trigger
 
@@ -186,13 +160,13 @@ class ParallelDeployStage extends ParallelStage {
     return false
   }
 
-  @Override
-  Task completeParallel() {
-    return new Task() {
-      TaskResult execute(Stage stage) {
-        log.info("Completed Parallel Deploy")
-        new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
-      }
+  @Component
+  @Slf4j
+  @CompileStatic
+  public static class CompleteParallelDeployTask implements Task {
+    TaskResult execute(Stage stage) {
+      log.info("Completed Parallel Deploy")
+      new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
     }
   }
 }

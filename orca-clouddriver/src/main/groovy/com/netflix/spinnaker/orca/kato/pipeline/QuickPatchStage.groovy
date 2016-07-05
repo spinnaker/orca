@@ -23,10 +23,10 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.tasks.quip.ResolveQuipVersionTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
-import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.client.Client
@@ -57,56 +57,56 @@ class QuickPatchStage implements StageDefinitionBuilder {
   private static INSTANCE_VERSION_SLEEP = 10000
 
   @Override
-  def <T extends Execution<T>> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    [new StageDefinitionBuilder.TaskDefinition("foo", ResolveQuipVersionTask)]
+  def <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder.withTask("foo", ResolveQuipVersionTask)
   }
 
   @Override
-  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> parentStage) {
+  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> stage) {
     def stages = []
 
-    def instances = getInstancesForCluster(parentStage)
+    def instances = getInstancesForCluster(stage)
     if (instances.size() == 0) {
       // skip since nothing to do
-    } else if (parentStage.context.rollingPatch) {
+    } else if (stage.context.rollingPatch) {
       // rolling means instances in the asg will be updated sequentially
       instances.each { key, value ->
         def instance = [:]
         instance.put(key, value)
         def nextStageContext = [:]
-        nextStageContext.putAll(parentStage.context)
+        nextStageContext.putAll(stage.context)
         nextStageContext << [instances: instance]
         nextStageContext.put("instanceIds", [key]) // for WaitForDown/UpInstancesTask
 
         stages << newStage(
-          parentStage.execution,
+          stage.execution,
           bulkQuickPatchStage.type,
           "bulkQuickPatchStage",
           nextStageContext,
-          parentStage,
+          stage,
           SyntheticStageOwner.STAGE_AFTER
         )
       }
     } else { // quickpatch all instances in the asg at once
       def nextStageContext = [:]
-      nextStageContext.putAll(parentStage.context)
+      nextStageContext.putAll(stage.context)
       nextStageContext << [instances: instances]
       nextStageContext.put("instanceIds", instances.collect { key, value -> key })
       // for WaitForDown/UpInstancesTask
 
       stages << newStage(
-        parentStage.execution,
+        stage.execution,
         bulkQuickPatchStage.type,
         "bulkQuickPatchStage",
         nextStageContext,
-        parentStage,
+        stage,
         SyntheticStageOwner.STAGE_AFTER
       )
     }
 
-    parentStage.initializationStage = true
+    stage.initializationStage = true
     // mark as SUCCEEDED otherwise a stage w/o child tasks will remain in NOT_STARTED
-    parentStage.status = ExecutionStatus.SUCCEEDED
+    stage.status = ExecutionStatus.SUCCEEDED
 
     return stages
   }

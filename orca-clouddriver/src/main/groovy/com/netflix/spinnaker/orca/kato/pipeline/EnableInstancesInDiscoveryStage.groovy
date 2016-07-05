@@ -17,33 +17,24 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstanceHealthTask
-import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.kato.tasks.EnableInstancesInDiscoveryTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
 class EnableInstancesInDiscoveryStage implements StageDefinitionBuilder {
-  @Autowired
-  OortService oortService
-
-  @Autowired
-  ObjectMapper objectMapper
-
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("enableInstances", EnableInstancesInDiscoveryTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorInstances", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForDiscoveryState", WaitForUpInstanceHealthTask),
-    );
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("enableInstances", EnableInstancesInDiscoveryTask)
+      .withTask("monitorInstances", MonitorKatoTask)
+      .withTask("waitForDiscoveryState", WaitForUpInstanceHealthTask)
   }
 }

@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.TerminateInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
@@ -27,11 +28,10 @@ import org.springframework.stereotype.Component
 @Component
 class TerminateInstancesStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("terminateInstances", TerminateInstancesTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorTermination", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForTerminatedInstances", WaitForTerminatedInstancesTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("terminateInstances", TerminateInstancesTask)
+      .withTask("monitorTermination", MonitorKatoTask)
+      .withTask("waitForTerminatedInstances", WaitForTerminatedInstancesTask)
   }
 }

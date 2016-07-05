@@ -16,21 +16,21 @@
 
 package com.netflix.spinnaker.orca.flex.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.flex.tasks.AssociateElasticIpTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
 class AssociateElasticIpStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("associateElasticIp", AssociateElasticIpTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("associateElasticIp", AssociateElasticIpTask)
   }
 }
 

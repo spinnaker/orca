@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
+package com.netflix.spinnaker.orca.pipeline.parallel;
 
-package com.netflix.spinnaker.orca.batch
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import org.springframework.stereotype.Component;
 
-interface RestartableStage {
+@Component
+class PipelineInitializationStage implements StageDefinitionBuilder {
+  @Override
+  public <T extends Execution<T>> void taskGraph(Stage<T> stage, Builder builder) {
+    builder.withTask("initialize", PipelineInitializationTask.class);
+  }
 }
