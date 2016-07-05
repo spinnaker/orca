@@ -16,26 +16,26 @@
 
 package com.netflix.spinnaker.orca.tide.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.tide.tasks.DeepCopyServerGroupTask
 import com.netflix.spinnaker.orca.tide.tasks.WaitForTideTask
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
-
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 
 @Component
 @CompileStatic
 class DeepCopyServerGroupStage implements StageDefinitionBuilder {
-  public static final String PIPELINE_CONFIG_TYPE = getType(DeepCopyServerGroupStage)
+  public static
+  final String PIPELINE_CONFIG_TYPE = getType(DeepCopyServerGroupStage)
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("deepCopyServerGroup", DeepCopyServerGroupTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForDeepCopyCompletion", WaitForTideTask),
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("deepCopyServerGroup", DeepCopyServerGroupTask)
+      .withTask("waitForDeepCopyCompletion", WaitForTideTask)
   }
 }

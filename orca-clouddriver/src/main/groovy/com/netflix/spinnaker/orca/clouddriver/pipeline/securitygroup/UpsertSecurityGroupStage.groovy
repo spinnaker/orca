@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupF
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.UpsertSecurityGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.WaitForUpsertedSecurityGroupTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
@@ -28,12 +29,11 @@ import org.springframework.stereotype.Component
 @Component
 class UpsertSecurityGroupStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("upsertSecurityGroup", UpsertSecurityGroupTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorUpsert", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", SecurityGroupForceCacheRefreshTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForUpsertedSecurityGroup", WaitForUpsertedSecurityGroupTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("upsertSecurityGroup", UpsertSecurityGroupTask)
+      .withTask("monitorUpsert", MonitorKatoTask)
+      .withTask("forceCacheRefresh", SecurityGroupForceCacheRefreshTask)
+      .withTask("waitForUpsertedSecurityGroup", WaitForUpsertedSecurityGroupTask)
   }
 }

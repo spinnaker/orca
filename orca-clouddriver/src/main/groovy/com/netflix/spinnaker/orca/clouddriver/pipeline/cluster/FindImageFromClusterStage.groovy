@@ -16,13 +16,16 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
+@CompileStatic
 class FindImageFromClusterStage implements StageDefinitionBuilder {
   static final String PIPELINE_CONFIG_TYPE = "findImage"
 
@@ -32,9 +35,8 @@ class FindImageFromClusterStage implements StageDefinitionBuilder {
   }
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-        new StageDefinitionBuilder.TaskDefinition("findImage", FindImageFromClusterTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+      builder
+        .withTask("findImage", FindImageFromClusterTask)
   }
 }

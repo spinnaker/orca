@@ -24,6 +24,9 @@ import groovy.transform.CompileStatic
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.ValueFunction
+import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
+import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.exceptions.DefaultExceptionHandler
@@ -32,11 +35,17 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.libdiffs.ComparableLooseVersion
 import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion
 import com.netflix.spinnaker.orca.listeners.ExecutionPropagationListener
+import com.netflix.spinnaker.orca.listeners.Persister
+import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
+import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener
+import com.netflix.spinnaker.orca.listeners.ExecutionPropagationListener
 import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener
 import com.netflix.spinnaker.orca.notifications.scheduling.SuspendedPipelinesNotificationHandler
 import com.netflix.spinnaker.orca.pipeline.OrchestrationStarter
 import com.netflix.spinnaker.orca.pipeline.PipelineStarterListener
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineStack
@@ -180,25 +189,25 @@ class OrcaConfiguration {
     compositeStepExecutionListener.setListeners([
       new StageTaskPropagationListener() {
         @Override
-        void afterTask(Stage stage, StepExecution stepExecution) {
+        void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
           // do nothing
         }
       },
       new StageStatusPropagationListener() {
         @Override
-        void afterTask(Stage stage, StepExecution stepExecution) {
+        void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
           // do nothing
         }
       },
       new StageStatusPropagationListener() {
         @Override
-        void beforeTask(Stage stage, StepExecution stepExecution) {
+        void beforeTask(Persister persister, Stage stage, Task task) {
           // do nothing
         }
       },
       new StageTaskPropagationListener() {
         @Override
-        void beforeTask(Stage stage, StepExecution stepExecution) {
+        void beforeTask(Persister persister, Stage stage, Task task) {
           // do nothing
         }
       }

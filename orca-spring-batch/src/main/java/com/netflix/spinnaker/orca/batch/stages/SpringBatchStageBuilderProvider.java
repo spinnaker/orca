@@ -16,15 +16,14 @@
 
 package com.netflix.spinnaker.orca.batch.stages;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import org.springframework.context.ApplicationContext;
-
-import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.stream.Collectors;
 
 public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
   private final ApplicationContext applicationContext;

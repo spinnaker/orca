@@ -34,6 +34,8 @@ public interface Stage<T extends Execution<T>> {
    */
   String getName();
 
+  void setName(String name);
+
   /**
    * Gets the execution object for this stage
    */

@@ -43,17 +43,17 @@ class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationStage {
   }
 
   @Override
-  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> parentStage) {
-    if (parentStage.context.allowDeleteActive == true) {
-      def context = parentStage.context + [
-        remainingEnabledServerGroups: parentStage.context.shrinkToSize,
-        preferLargerOverNewer       : parentStage.context.retainLargerOverNewer,
-        continueIfClusterNotFound   : parentStage.context.shrinkToSize == 0,
-        interestingHealthProviderNames: parentStage.context.interestingHealthProviderNames
+  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> stage) {
+    if (stage.context.allowDeleteActive == true) {
+      def context = stage.context + [
+        remainingEnabledServerGroups  : stage.context.shrinkToSize,
+        preferLargerOverNewer         : stage.context.retainLargerOverNewer,
+        continueIfClusterNotFound     : stage.context.shrinkToSize == 0,
+        interestingHealthProviderNames: stage.context.interestingHealthProviderNames
       ]
       return [
         StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
-          parentStage.execution, disableClusterStage.type, "disableCluster", context, parentStage, SyntheticStageOwner.STAGE_BEFORE
+          stage.execution, disableClusterStage.type, "disableCluster", context, stage, SyntheticStageOwner.STAGE_BEFORE
         )
       ]
     }

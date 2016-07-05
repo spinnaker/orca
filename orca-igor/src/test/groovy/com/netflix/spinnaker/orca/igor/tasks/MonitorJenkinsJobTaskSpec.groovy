@@ -188,7 +188,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
     environment.withProperty(BuildArtifactFilter.PREFERRED_ARTIFACTS_PROP, preferredArtifacts)
 
     and:
-    def stage = new PipelineStage(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: 4]).asImmutable()
+    def stage = new PipelineStage(pipeline, "jenkins", [master: "builds", job: "orca", buildNumber: 4])
 
     and:
     task.buildService = Stub(BuildService) {

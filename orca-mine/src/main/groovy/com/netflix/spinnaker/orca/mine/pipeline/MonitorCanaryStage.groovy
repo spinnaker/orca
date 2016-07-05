@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
@@ -25,9 +26,9 @@ import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterCanaryTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -38,14 +39,13 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
   MineService mineService
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return Arrays.asList(
-      new StageDefinitionBuilder.TaskDefinition("registerCanary", RegisterCanaryTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorCanary", MonitorCanaryTask),
-      new StageDefinitionBuilder.TaskDefinition("cleanupCanary", CleanupCanaryTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorCleanup", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("completeCanary", CompleteCanaryTask)
-    );
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("registerCanary", RegisterCanaryTask)
+      .withTask("monitorCanary", MonitorCanaryTask)
+      .withTask("cleanupCanary", CleanupCanaryTask)
+      .withTask("monitorCleanup", MonitorKatoTask)
+      .withTask("completeCanary", CompleteCanaryTask)
   }
 
   @Override

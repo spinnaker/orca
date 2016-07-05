@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,9 +36,8 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
   public PipelineLauncher(ObjectMapper objectMapper,
                           String currentInstanceId,
                           ExecutionRepository executionRepository,
-                          ExecutionRunner runner,
-                          Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
-    this(objectMapper, currentInstanceId, executionRepository, runner, stageDefinitionBuilders, null);
+                          ExecutionRunner runner) {
+    this(objectMapper, currentInstanceId, executionRepository, runner, null);
   }
 
   @Autowired(required = false)
@@ -47,7 +45,6 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
                           String currentInstanceId,
                           ExecutionRepository executionRepository,
                           ExecutionRunner runner,
-                          Collection<StageDefinitionBuilder> stageDefinitionBuilders,
                           PipelineStartTracker startTracker) {
     super(objectMapper, currentInstanceId, executionRepository, runner);
     this.startTracker = startTracker;

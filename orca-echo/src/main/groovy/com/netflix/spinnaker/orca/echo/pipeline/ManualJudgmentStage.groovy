@@ -16,31 +16,28 @@
 
 package com.netflix.spinnaker.orca.echo.pipeline
 
+import java.util.concurrent.TimeUnit
+import groovy.util.logging.Slf4j
 import com.google.common.annotations.VisibleForTesting
-import com.netflix.spinnaker.orca.AuthenticatedStage
-import com.netflix.spinnaker.orca.DefaultTaskResult
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.*
 import com.netflix.spinnaker.orca.batch.RestartableStage
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.security.User
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
 
 @Component
 class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, AuthenticatedStage {
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [new StageDefinitionBuilder.TaskDefinition("waitForJudgment", WaitForManualJudgmentTask.class)]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("waitForJudgment", WaitForManualJudgmentTask.class)
   }
 
   @Override

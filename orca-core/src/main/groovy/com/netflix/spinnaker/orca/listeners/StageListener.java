@@ -17,28 +17,33 @@
 package com.netflix.spinnaker.orca.listeners;
 
 import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.Task;
 import org.springframework.core.Ordered;
 
 public interface StageListener extends Ordered, Comparable<StageListener> {
-  default void beforeTask(Persister persister, Stage stage, Task task) {
+  default <T extends Execution<T>> void beforeTask(Persister persister,
+                                                   Stage<T> stage,
+                                                   Task task) {
     // do nothing
   }
 
-  default void beforeStage(Persister persister, Stage stage) {
+  default <T extends Execution<T>> void beforeStage(Persister persister,
+                                                    Stage<T> stage) {
     // do nothing
   }
 
-  default void afterTask(Persister persister,
-                         Stage stage,
-                         Task task,
-                         ExecutionStatus executionStatus,
-                         boolean wasSuccessful) {
+  default <T extends Execution<T>> void afterTask(Persister persister,
+                                                  Stage<T> stage,
+                                                  Task task,
+                                                  ExecutionStatus executionStatus,
+                                                  boolean wasSuccessful) {
     // do nothing
   }
 
-  default void afterStage(Persister persister, Stage stage) {
+  default <T extends Execution<T>> void afterStage(Persister persister,
+                                                   Stage<T> stage) {
     // do nothing
   }
 

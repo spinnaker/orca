@@ -185,7 +185,7 @@ class CloneServerGroupTaskSpec extends Specification {
     }
 
     when:
-    task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
     with(operations[0].cloneServerGroup) {

@@ -16,16 +16,16 @@
 
 package com.netflix.spinnaker.orca.mahe.pipeline
 
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.mahe.tasks.CreatePropertiesTask
 import com.netflix.spinnaker.orca.mahe.tasks.MonitorPropertiesTask
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 
 @Slf4j
@@ -36,11 +36,10 @@ class CreatePropertyStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired MonitorCreatePropertyStage monitorCreatePropertyStage
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("createProperties", CreatePropertiesTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorProperties", MonitorPropertiesTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("createProperties", CreatePropertiesTask)
+      .withTask("monitorProperties", MonitorPropertiesTask)
   }
 
   @Override
