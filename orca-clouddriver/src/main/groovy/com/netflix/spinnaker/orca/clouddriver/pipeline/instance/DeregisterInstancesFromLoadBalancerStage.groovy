@@ -17,14 +17,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.instance
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.DeregisterInstancesFromLoadBalancerTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForDownInstanceHealthTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -35,12 +36,11 @@ class DeregisterInstancesFromLoadBalancerStage implements StageDefinitionBuilder
   OortService oortService
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("deregisterInstances", DeregisterInstancesFromLoadBalancerTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorInstances", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForLoadBalancerState", WaitForDownInstanceHealthTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("deregisterInstances", DeregisterInstancesFromLoadBalancerTask)
+      .withTask("monitorInstances", MonitorKatoTask)
+      .withTask("waitForLoadBalancerState", WaitForDownInstanceHealthTask)
   }
 }
 

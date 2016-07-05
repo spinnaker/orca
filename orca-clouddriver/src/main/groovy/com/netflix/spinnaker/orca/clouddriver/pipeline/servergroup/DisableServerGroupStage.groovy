@@ -16,29 +16,30 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DisableServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForAllInstancesDownTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
+@CompileStatic
 class DisableServerGroupStage extends TargetServerGroupLinearStageSupport {
   static final String PIPELINE_CONFIG_TYPE = "disableServerGroup"
 
   @Override
-  def <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    [
-      new StageDefinitionBuilder.TaskDefinition("determineHealthProviders", DetermineHealthProvidersTask),
-      new StageDefinitionBuilder.TaskDefinition("disableServerGroup", DisableServerGroupTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorServerGroup", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForDownInstances", WaitForAllInstancesDownTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("determineHealthProviders", DetermineHealthProvidersTask)
+      .withTask("disableServerGroup", DisableServerGroupTask)
+      .withTask("monitorServerGroup", MonitorKatoTask)
+      .withTask("waitForDownInstances", WaitForAllInstancesDownTask)
+      .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
   }
 }

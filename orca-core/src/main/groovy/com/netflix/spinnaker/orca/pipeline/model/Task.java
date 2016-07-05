@@ -29,7 +29,7 @@ public interface Task {
 
   String getId();
 
-  Class getImplementingClass();
+  Class<? extends com.netflix.spinnaker.orca.Task> getImplementingClass();
 
   String getName();
 
@@ -53,4 +53,8 @@ public interface Task {
   boolean isStageStart();
 
   boolean isStageEnd();
+
+  boolean isLoopStart();
+
+  boolean isLoopEnd();
 }

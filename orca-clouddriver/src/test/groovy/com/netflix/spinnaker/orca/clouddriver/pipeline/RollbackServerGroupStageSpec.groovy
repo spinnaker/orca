@@ -63,13 +63,13 @@ class RollbackServerGroupStageSpec extends Specification {
     ])
 
     when:
-    def tasks = rollbackServerGroupStage.taskGraph(stage)
+    def tasks = rollbackServerGroupStage.buildTaskGraph(stage)
     def allStages = rollbackServerGroupStage.aroundStages(stage)
     def beforeStages = allStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
     def afterStages = allStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
 
     then:
-    tasks == []
+    tasks.iterator().size() == 0
     beforeStages.isEmpty()
     afterStages.size() == 3
     afterStages[0].context == stage.context + [

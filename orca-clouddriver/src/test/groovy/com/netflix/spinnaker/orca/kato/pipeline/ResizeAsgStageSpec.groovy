@@ -75,7 +75,7 @@ class ResizeAsgStageSpec extends Specification {
     def stage = new PipelineStage(new Pipeline(), "resizeAsg", config)
 
     when:
-    stageBuilder.taskGraph(stage)
+    stageBuilder.buildTaskGraph(stage)
 
     then:
     stage.status == ExecutionStatus.SUCCEEDED

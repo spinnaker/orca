@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CreateServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
@@ -34,13 +34,13 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
   }
 
   @Override
-  protected List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage) {
+  protected List<TaskNode.TaskDefinition> basicTasks(Stage stage) {
     return [
-        new StageDefinitionBuilder.TaskDefinition("createServerGroup", CreateServerGroupTask),
-        new StageDefinitionBuilder.TaskDefinition("monitorDeploy", MonitorKatoTask),
-        new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-        new StageDefinitionBuilder.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
-        new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+      new TaskNode.TaskDefinition("createServerGroup", CreateServerGroupTask),
+      new TaskNode.TaskDefinition("monitorDeploy", MonitorKatoTask),
+      new TaskNode.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+      new TaskNode.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
+      new TaskNode.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     ]
   }
 }

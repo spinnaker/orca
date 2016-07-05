@@ -16,14 +16,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.loadbalancer
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalancerForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalancerResultObjectExtrapolationTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalancersTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
 /*
@@ -34,12 +35,11 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class UpsertLoadBalancersStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("upsertLoadBalancers", UpsertLoadBalancersTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorUpsert", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("extrapolateUpsertResult", UpsertLoadBalancerResultObjectExtrapolationTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", UpsertLoadBalancerForceRefreshTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("upsertLoadBalancers", UpsertLoadBalancersTask)
+      .withTask("monitorUpsert", MonitorKatoTask)
+      .withTask("extrapolateUpsertResult", UpsertLoadBalancerResultObjectExtrapolationTask)
+      .withTask("forceCacheRefresh", UpsertLoadBalancerForceRefreshTask)
   }
 }

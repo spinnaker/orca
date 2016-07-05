@@ -16,23 +16,25 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask
 import com.netflix.spinnaker.orca.kato.tasks.TerminateInstanceAndDecrementAsgTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
+@CompileStatic
 @Deprecated
 class TerminateInstanceAndDecrementAsgStage implements StageDefinitionBuilder {
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    return [
-      new StageDefinitionBuilder.TaskDefinition("terminateInstance", TerminateInstanceAndDecrementAsgTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorTermination", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForTerminatedInstance", WaitForTerminatedInstancesTask)
-    ]
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    builder
+      .withTask("terminateInstance", TerminateInstanceAndDecrementAsgTask)
+      .withTask("monitorTermination", MonitorKatoTask)
+      .withTask("waitForTerminatedInstance", WaitForTerminatedInstancesTask)
   }
 }

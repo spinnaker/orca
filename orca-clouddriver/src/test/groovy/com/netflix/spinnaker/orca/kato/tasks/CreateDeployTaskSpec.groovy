@@ -385,7 +385,7 @@ class CreateDeployTaskSpec extends Specification {
     stage.requisiteStageRefIds = [bakeStage2.refId]
 
     when:
-    task.execute(stage.asImmutable())
+    task.execute(stage)
 
     then:
     operations.find {
