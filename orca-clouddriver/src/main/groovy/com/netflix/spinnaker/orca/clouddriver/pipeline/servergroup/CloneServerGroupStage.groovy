@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.AbstractDeployStrategyStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CloneServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
 @Slf4j
@@ -42,13 +42,13 @@ class CloneServerGroupStage extends AbstractDeployStrategyStage {
   }
 
   @Override
-  protected List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage) {
+  protected List<TaskNode.TaskDefinition> basicTasks(Stage stage) {
     return [
-        new StageDefinitionBuilder.TaskDefinition("cloneServerGroup", CloneServerGroupTask),
-        new StageDefinitionBuilder.TaskDefinition("monitorDeploy", MonitorKatoTask),
-        new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-        new StageDefinitionBuilder.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
-        new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+      new TaskNode.TaskDefinition("cloneServerGroup", CloneServerGroupTask),
+      new TaskNode.TaskDefinition("monitorDeploy", MonitorKatoTask),
+      new TaskNode.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+      new TaskNode.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
+      new TaskNode.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     ]
   }
 }

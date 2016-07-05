@@ -22,11 +22,13 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 @CompileStatic
 class DefaultTask implements Task, Serializable {
   String id
-  Class implementingClass
+  Class<? extends com.netflix.spinnaker.orca.Task> implementingClass
   String name
   Long startTime
   Long endTime
   ExecutionStatus status = ExecutionStatus.NOT_STARTED
   boolean stageStart = false
   boolean stageEnd = false
+  boolean loopStart = false
+  boolean loopEnd = false
 }

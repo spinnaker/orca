@@ -16,17 +16,12 @@
 
 package com.netflix.spinnaker.orca.batch.pipeline
 
+import groovy.transform.CompileStatic
+import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import groovy.transform.CompileStatic
-import org.springframework.batch.core.Step
-import org.springframework.batch.core.StepExecutionListener
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
-import org.springframework.context.support.GenericApplicationContext
-import com.netflix.spinnaker.orca.Task
 
 /**
  * A stub +Stage+ implementation for unit tests that doesn't need to be Spring-wired in order to work. It will
@@ -50,10 +45,10 @@ class TestStage implements StageDefinitionBuilder {
   }
 
   @Override
-  <T extends Execution> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    def i = 1
-    return tasks.collect {
-      new StageDefinitionBuilder.TaskDefinition("task${i++}", it.class)
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    tasks.eachWithIndex { task, i ->
+      builder
+        .withTask("task${i + 1}", task.getClass() as Class<? extends Task>)
     }
   }
 }

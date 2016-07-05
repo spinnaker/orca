@@ -15,16 +15,17 @@
  */
 
 package com.netflix.spinnaker.orca.kato.pipeline
+
+import groovy.transform.CompileStatic
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DeployStrategyStage
 import com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -43,18 +44,18 @@ class DeployStage extends DeployStrategyStage {
 
   @VisibleForTesting
   @Override
-  protected List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage) {
+  protected List<TaskNode.TaskDefinition> basicTasks(Stage stage) {
     def tasks = [
-      new StageDefinitionBuilder.TaskDefinition("createDeploy", CreateDeployTask),
-      new StageDefinitionBuilder.TaskDefinition("monitorDeploy", MonitorKatoTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
-      new StageDefinitionBuilder.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
-      new StageDefinitionBuilder.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
+      new TaskNode.TaskDefinition("createDeploy", CreateDeployTask),
+      new TaskNode.TaskDefinition("monitorDeploy", MonitorKatoTask),
+      new TaskNode.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask),
+      new TaskNode.TaskDefinition("waitForUpInstances", WaitForUpInstancesTask),
+      new TaskNode.TaskDefinition("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     ]
 
     if (diffTasks) {
       diffTasks.each { DiffTask diffTask ->
-        tasks << new StageDefinitionBuilder.TaskDefinition(getDiffTaskName(diffTask.class.simpleName), diffTask.class)
+        tasks << new TaskNode.TaskDefinition(getDiffTaskName(diffTask.class.simpleName), diffTask.class)
       }
     }
 

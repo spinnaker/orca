@@ -23,14 +23,18 @@ import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import org.springframework.beans.factory.annotation.Autowired
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
 import org.springframework.context.ApplicationContext
+import org.springframework.stereotype.Component
 
+@Component
 @CompileStatic
 class StageNavigator {
   private final ApplicationContext applicationContext
 
+  @Autowired
   StageNavigator(ApplicationContext applicationContext) {
     this.applicationContext = applicationContext
   }

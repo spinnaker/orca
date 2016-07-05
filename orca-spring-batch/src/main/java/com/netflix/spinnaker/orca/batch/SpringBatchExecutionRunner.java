@@ -18,18 +18,15 @@ package com.netflix.spinnaker.orca.batch;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunnerSupport;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.DuplicateJobException;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -42,18 +39,24 @@ import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.support.SimpleFlow;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.NoSuchJobException;
+import org.springframework.batch.core.listener.StepExecutionListenerSupport;
 import org.springframework.batch.core.step.builder.TaskletStepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.stereotype.Component;
+import static com.google.common.collect.Iterables.indexOf;
+import static com.google.common.collect.Iterables.toArray;
 import static com.google.common.collect.Maps.newHashMap;
+import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.ExecutionStatus.REDIRECT;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage;
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
+@Component
 @Slf4j
 public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
 
@@ -65,9 +68,10 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   private final JobBuilderFactory jobs;
   private final StepBuilderFactory steps;
   private final TaskTaskletAdapter taskTaskletAdapter;
-  private final Map<Class, com.netflix.spinnaker.orca.Task> tasks;
+  private final Collection<com.netflix.spinnaker.orca.Task> tasks;
   private final ExecutionListenerProvider executionListenerProvider;
 
+  @Autowired
   public SpringBatchExecutionRunner(
     Collection<StageDefinitionBuilder> stageDefinitionBuilders,
     ExecutionRepository executionRepository,
@@ -86,15 +90,12 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     this.jobs = jobs;
     this.steps = steps;
     this.taskTaskletAdapter = taskTaskletAdapter;
-    this.tasks = tasks.stream().collect(Collectors.toMap(
-      com.netflix.spinnaker.orca.Task::getClass, Function.identity())
-    );
+    this.tasks = tasks;
     this.executionListenerProvider = executionListenerProvider;
   }
 
   @Override
   public <T extends Execution<T>> void start(T execution) throws Exception {
-    super.start(execution);
     Job job = createJob(execution);
 
     // TODO-AJ This is hokiepokie
@@ -132,15 +133,6 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   private <E extends Execution<E>> FlowBuilder<FlowJobBuilder> buildStepsForExecution(JobBuilder builder, E execution) {
     List<Stage<E>> stages = execution.getStages();
     FlowBuilder<FlowJobBuilder> flow = builder.flow(initStep());
-    if (execution.isParallel()) {
-      flow = buildStepsForParallelExecution(flow, stages);
-    } else {
-      flow = buildStepsForLinearExecution(flow, stages);
-    }
-    return flow;
-  }
-
-  private <E extends Execution<E>> FlowBuilder<FlowJobBuilder> buildStepsForParallelExecution(FlowBuilder<FlowJobBuilder> flow, List<Stage<E>> stages) {
     List<Stage<E>> initialStages = stages
       .stream()
       .filter(Stage::isInitialStage)
@@ -148,13 +140,6 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     Set<Serializable> alreadyBuilt = new HashSet<>();
     for (Stage<E> stage : initialStages) {
       flow = buildStepsForStageAndDownstream(flow, stage, alreadyBuilt);
-    }
-    return flow;
-  }
-
-  private <E extends Execution<E>> FlowBuilder<FlowJobBuilder> buildStepsForLinearExecution(FlowBuilder<FlowJobBuilder> flow, List<Stage<E>> stages) {
-    for (Stage<E> stage : stages) {
-      flow = flow.next(buildStepsForStage(stage));
     }
     return flow;
   }
@@ -216,58 +201,108 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   }
 
   private <E extends Execution<E>> Flow buildUpstreamJoin(Stage<E> stage) {
-    if (stage.getRequisiteStageRefIds().size() > 1) {
-      // multi parent child, insert an artificial join stage that will wait for all parents to complete
-      Stage<E> waitForStage = newStage(
-        stage.getExecution(),
-        WaitForRequisiteCompletionStage.PIPELINE_CONFIG_TYPE,
-        "Wait For Parent Tasks",
-        newHashMap(singletonMap("requisiteIds", stage.getRequisiteStageRefIds())),
-        null,
-        null
-      );
-      ((AbstractStage) waitForStage).setId(format("%s-waitForRequisite", stage.getId()));
-      waitForStage.setRequisiteStageRefIds(emptyList());
-      planStage(waitForStage);
+    // insert an artificial join stage that will wait for all parents to complete
+    Stage<E> waitForStage = newStage(
+      stage.getExecution(),
+      WaitForRequisiteCompletionStage.PIPELINE_CONFIG_TYPE,
+      "Wait For Parent Tasks",
+      newHashMap(singletonMap("requisiteIds", stage.getRequisiteStageRefIds())),
+      null,
+      null
+    );
+    ((AbstractStage) waitForStage).setId(format("%s-waitForRequisite", stage.getId()));
+    waitForStage.setRequisiteStageRefIds(emptyList());
 
-      int stageIdx = stage.getExecution().getStages().indexOf(stage);
-      stage.getExecution().getStages().add(stageIdx, waitForStage);
+    // 'this' stage should be added after the join stage
+    FlowBuilder<Flow> waitForFlow = flowBuilder(format("WaitForRequisite.%s.%s", stage.getRefId(), stage.getId()));
 
-      FlowBuilder<Flow> waitForFlow = flowBuilder(format("WaitForRequisite.%s.%s", stage.getRefId(), stage.getId()));
+    planStage(waitForStage, (them, taskGraph) -> {
+      // inject join stage into execution
+      List<Stage<E>> stages = stage.getExecution().getStages();
+      int stageIdx = stages.indexOf(stage);
+      stages.add(stageIdx, waitForStage);
+      addStepsToFlow(waitForFlow, waitForStage, taskGraph);
+      // TODO: single callback would make more sense
+    });
 
-      // child stage should be added after the artificial join stage
-      return addStepsToFlow(waitForFlow, waitForStage)
-        .next(buildStepsForStage(stage)).build();
-    } else {
-      return buildStepsForStage(stage);
-    }
+    return waitForFlow.next(buildStepsForStage(stage)).build();
   }
 
   private <E extends Execution<E>> Flow buildStepsForStage(Stage<E> stage) {
-    List<Stage<E>> aroundStages = stage
-      .getExecution()
-      .getStages()
-      .stream()
-      .filter(it -> stage.getId().equals(it.getParentStageId()))
-      .collect(toList());
     final FlowBuilder<Flow> subFlow = flowBuilder(format("ChildExecution.%s.%s", stage.getRefId(), stage.getId()));
-    aroundStages
-      .stream()
-      .filter(it -> it.getSyntheticStageOwner() == STAGE_BEFORE)
-      .forEach(it -> addStepsToFlow(subFlow, it));
-    addStepsToFlow(subFlow, stage);
-    aroundStages
-      .stream()
-      .filter(it -> it.getSyntheticStageOwner() == STAGE_AFTER)
-      .forEach(it -> addStepsToFlow(subFlow, it));
+    buildStepsForFlow(stage, subFlow);
     return subFlow.build();
   }
 
-  private <E extends Execution<E>, Q> FlowBuilder<Q> addStepsToFlow(FlowBuilder<Q> flow, Stage<E> stage) {
-    for (Task task : stage.getTasks()) {
-      flow = flow.next(buildStepForTask(stage, task));
-    }
+  private <E extends Execution<E>> void buildStepsForFlow(Stage<E> stage, FlowBuilder<Flow> flow) {
+    planStage(
+      stage,
+      (stages, taskGraph) -> {
+        boolean needsPlanning = !stages.iterator().next().getType().equals(stage.getType());
+        if (stages.size() > 1) {
+          // TODO: this is just ignoring the taskGraph
+          addParallelStepsToFlow(flow, stages, taskGraph, needsPlanning);
+        } else if (stages.size() == 1) {
+          // TODO: if this is a parallel stage with a strategy stage the taskGraph is incomplete
+          if (!needsPlanning) {
+            addStepsToFlow(flow, stages.iterator().next(), taskGraph);
+          } else {
+            buildStepsForFlow(stages.iterator().next(), flow);
+          }
+        }
+      }
+    );
+  }
+
+  private <E extends Execution<E>, Q> FlowBuilder<Q> addStepsToFlow(FlowBuilder<Q> flow, Stage<E> stage, TaskNode.TaskGraph taskGraph) {
+    // TODO: I'm sure there's a better way to handle this
+    AtomicReference<Step> loopStart = new AtomicReference<>();
+    AtomicReference<Step> loopEnd = new AtomicReference<>();
+
+    planTasks(stage, taskGraph, false, task -> {
+      Step step = buildStepForTask(stage, task);
+      if (task.isLoopStart()) {
+        loopStart.set(step);
+      }
+      if (task.isLoopEnd()) {
+        loopEnd.set(step);
+      }
+      flow.next(step);
+      if (task.isLoopEnd()) {
+        flow
+          .on(REDIRECT.name())
+          .to(loopStart.get())
+          .from(loopEnd.get());
+      }
+    });
+
     return flow;
+  }
+
+  private <E extends Execution<E>, Q> FlowBuilder<Q> addParallelStepsToFlow(FlowBuilder<Q> flow, Collection<Stage<E>> stages, TaskNode.TaskGraph taskGraph, boolean needsPlanning) {
+    List<Flow> flows = stages
+      .stream()
+      .map(stage -> {
+        FlowBuilder<Flow> branchFlow = new FlowBuilderWrapper<>(stage.getName());
+        if (!needsPlanning) {
+          addStepsToFlow(branchFlow, stage, taskGraph);
+        } else {
+          buildStepsForFlow(stage, branchFlow);
+        }
+        return branchFlow.build();
+      })
+      .collect(toList());
+
+    FlowBuilder<Flow> parallelFlowBuilder = new FlowBuilderWrapper<>(format("ParallelStage.%s", UUID.randomUUID()));
+    // bug in Spring Batch means we have to start with a no-op step here
+    // otherwise the first parallel won't actually run.
+    // See https://jira.spring.io/browse/BATCH-2346 is available
+    parallelFlowBuilder
+      .start(new SimpleFlow("NoOp"))
+      .split(new SimpleAsyncTaskExecutor())
+      .add(toArray(flows, Flow.class));
+
+    return flow.next(parallelFlowBuilder.build());
   }
 
   private <E extends Execution<E>> Step buildStepForTask(Stage<E> stage, Task task) {
@@ -279,6 +314,10 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
       .allStepExecutionListeners()
       .forEach(stepBuilder::listener);
 
+    if (task.isLoopEnd()) {
+      stepBuilder.listener(new LoopResetListener<>(executionRepository, stage));
+    }
+
     return stepBuilder.build();
   }
 
@@ -287,7 +326,13 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   }
 
   private Tasklet buildTaskletForTask(Task task) {
-    return taskTaskletAdapter.decorate(tasks.get(task.getImplementingClass()));
+    Class<? extends com.netflix.spinnaker.orca.Task> type = task.getImplementingClass();
+    return tasks
+      .stream()
+      .filter(it -> type.isAssignableFrom(it.getClass()))
+      .findFirst()
+      .map(taskTaskletAdapter::decorate)
+      .orElseThrow(() -> new IllegalStateException(format("No Task implementing %s found", type.getName())));
   }
 
   private <E extends Execution> String jobNameFor(E execution) {
@@ -329,6 +374,28 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
         super.next(step);
       }
       return this;
+    }
+  }
+
+  private static class LoopResetListener<E extends Execution<E>> extends StepExecutionListenerSupport {
+    private final ExecutionRepository executionRepository;
+    private final Stage<E> stage;
+
+    private LoopResetListener(ExecutionRepository executionRepository, Stage<E> stage) {
+      this.executionRepository = executionRepository;
+      this.stage = stage;
+    }
+
+    @Override public ExitStatus afterStep(StepExecution stepExecution) {
+      int startIndex = indexOf(stage.getTasks(), Task::isLoopStart);
+      int endIndex = indexOf(stage.getTasks(), Task::isLoopEnd);
+      for (Task task : stage.getTasks().subList(startIndex, endIndex + 1)) {
+        log.info(format("Resetting task %s for repeat of loop", task.getName()));
+        task.setStatus(NOT_STARTED);
+        task.setEndTime(null);
+      }
+      executionRepository.storeStage(stage);
+      return super.afterStep(stepExecution);
     }
   }
 }

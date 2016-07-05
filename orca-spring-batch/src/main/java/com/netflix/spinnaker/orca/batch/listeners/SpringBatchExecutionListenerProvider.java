@@ -16,29 +16,34 @@
 
 package com.netflix.spinnaker.orca.batch.listeners;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider;
 import com.netflix.spinnaker.orca.listeners.ExecutionListener;
 import com.netflix.spinnaker.orca.listeners.StageListener;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.StepExecutionListener;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
+@Component
 public class SpringBatchExecutionListenerProvider implements ExecutionListenerProvider {
   private final ExecutionRepository executionRepository;
   private final List<StageListener> stageListeners = new ArrayList<>();
   private final List<ExecutionListener> executionListeners = new ArrayList<>();
 
+  @Autowired
   public SpringBatchExecutionListenerProvider(ExecutionRepository executionRepository,
-                                              Collection<StageListener> stageListeners,
-                                              Collection<ExecutionListener> executionListeners) {
+                                              // TODO: this is just because Spring refuses to autowire empty collections
+                                              Optional<Collection<StageListener>> stageListeners,
+                                              Optional<Collection<ExecutionListener>> executionListeners) {
     this.executionRepository = executionRepository;
-    this.stageListeners.addAll(stageListeners);
-    this.executionListeners.addAll(executionListeners);
+    stageListeners.ifPresent(this.stageListeners::addAll);
+    executionListeners.ifPresent(this.executionListeners::addAll);
   }
 
   @Override

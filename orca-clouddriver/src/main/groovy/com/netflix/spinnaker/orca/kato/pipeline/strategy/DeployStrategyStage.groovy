@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.ModifyAsgLaunchConfigurationStag
 import com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
@@ -62,7 +62,8 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
    * @return the steps for the stage excluding whatever cleanup steps will be
    * handled by the deployment strategy.
    */
-  protected abstract List<StageDefinitionBuilder.TaskDefinition> basicTasks(Stage stage)
+  protected
+  abstract List<TaskNode.TaskDefinition> basicTasks(Stage stage)
 
   /**
    * @param stage the stage configuration.
@@ -83,22 +84,24 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
   }
 
   @Override
-  <T extends Execution<T>> List<StageDefinitionBuilder.TaskDefinition> taskGraph(Stage<T> parentStage) {
-    correctContext(parentStage)
-    def strategy = strategy(parentStage)
+  <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    correctContext(stage)
+    def strategy = strategy(stage)
 
-    def tasks = [
-      new StageDefinitionBuilder.TaskDefinition("determineSourceServerGroup", DetermineSourceServerGroupTask)
-    ]
-
-    return (strategy.replacesBasicSteps() ? tasks : tasks + basicTasks(parentStage)) as List<StageDefinitionBuilder.TaskDefinition>
+    builder
+      .withTask("determineSourceServerGroup", DetermineSourceServerGroupTask)
+    if (!strategy.replacesBasicSteps()) {
+      basicTasks(stage).each {
+        builder.withTask(it.name, it.implementingClass)
+      }
+    }
   }
 
   @Override
-  <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> parentStage) {
-    correctContext(parentStage)
-    def strategy = strategy(parentStage)
-    return strategy.composeFlow(this, parentStage)
+  <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> stage) {
+    correctContext(stage)
+    def strategy = strategy(stage)
+    return strategy.composeFlow(this, stage)
   }
 
   /**
@@ -122,16 +125,16 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
     def cleanupConfig = determineClusterForCleanup(stage)
 
     Map baseContext = [
-      regions: [cleanupConfig.region],
-      cluster: cleanupConfig.cluster,
-      credentials: cleanupConfig.account,
+      regions      : [cleanupConfig.region],
+      cluster      : cleanupConfig.cluster,
+      credentials  : cleanupConfig.account,
       cloudProvider: cleanupConfig.cloudProvider
     ]
 
     if (stageData?.maxRemainingAsgs && (stageData?.maxRemainingAsgs > 0)) {
       Map shrinkContext = baseContext + [
-        shrinkToSize: stageData.maxRemainingAsgs,
-        allowDeleteActive: false,
+        shrinkToSize         : stageData.maxRemainingAsgs,
+        allowDeleteActive    : false,
         retainLargerOverNewer: false
       ]
       stages << newStage(
@@ -146,14 +149,14 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
 
     injectAfter(stage, "disableCluster", disableClusterStage, baseContext + [
       remainingEnabledServerGroups: 1,
-      preferLargerOverNewer: false
+      preferLargerOverNewer       : false
     ])
 
     if (stageData.scaleDown) {
       def scaleDown = baseContext + [
-        allowScaleDownActive: false,
+        allowScaleDownActive         : false,
         remainingFullSizeServerGroups: 1,
-        preferLargerOverNewer: false
+        preferLargerOverNewer        : false
       ]
       stages << newStage(
         stage.execution,
@@ -173,16 +176,16 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
     def source = sourceResolver.getSource(stage)
 
     def modifyCtx = stage.context + [
-      region: source.region,
-      regions: [source.region],
-      asgName: source.asgName,
+      region                : source.region,
+      regions               : [source.region],
+      asgName               : source.asgName,
       'deploy.server.groups': [(source.region): [source.asgName]],
-      useSourceCapacity: true,
-      credentials: source.account,
-      source: [
-        asgName: source.asgName,
-        account: source.account,
-        region: source.region,
+      useSourceCapacity     : true,
+      credentials           : source.account,
+      source                : [
+        asgName          : source.asgName,
+        account          : source.account,
+        region           : source.region,
         useSourceCapacity: true
       ]
     ]
@@ -216,17 +219,17 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
     def cleanupConfig = determineClusterForCleanup(stage)
 
     Map parameters = [
-      application                            : stage.context.application,
-      credentials                            : cleanupConfig.account,
-      cluster                                : cleanupConfig.cluster,
-      region : cleanupConfig.region,
-      cloudProvider                          : cleanupConfig.cloudProvider,
-      strategy                               : true,
-      parentPipelineId                       : stage.execution.id,
-      parentStageId                          : stage.id
+      application     : stage.context.application,
+      credentials     : cleanupConfig.account,
+      cluster         : cleanupConfig.cluster,
+      region          : cleanupConfig.region,
+      cloudProvider   : cleanupConfig.cloudProvider,
+      strategy        : true,
+      parentPipelineId: stage.execution.id,
+      parentStageId   : stage.id
     ]
 
-    if(stage.context.pipelineParameters){
+    if (stage.context.pipelineParameters) {
       parameters.putAll(stage.context.pipelineParameters as Map)
     }
 
@@ -253,12 +256,12 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
   protected <T extends Execution<T>> List<Stage<T>> composeHighlanderFlow(Stage stage) {
     def cleanupConfig = determineClusterForCleanup(stage)
     Map shrinkContext = [
-      regions: [cleanupConfig.region],
-      cluster: cleanupConfig.cluster,
-      credentials: cleanupConfig.account,
-      cloudProvider: cleanupConfig.cloudProvider,
-      shrinkToSize: 1,
-      allowDeleteActive: true,
+      regions              : [cleanupConfig.region],
+      cluster              : cleanupConfig.cluster,
+      credentials          : cleanupConfig.account,
+      cloudProvider        : cleanupConfig.cloudProvider,
+      shrinkToSize         : 1,
+      allowDeleteActive    : true,
       retainLargerOverNewer: false
     ]
 

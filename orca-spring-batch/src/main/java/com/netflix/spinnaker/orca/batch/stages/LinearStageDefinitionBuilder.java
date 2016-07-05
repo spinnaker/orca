@@ -24,9 +24,13 @@ import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.LinearStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.pipeline.TaskNode;
+import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.batch.core.Step;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.StreamSupport.stream;
 
 public class LinearStageDefinitionBuilder extends LinearStage {
   private final StageDefinitionBuilder delegate;
@@ -48,7 +52,7 @@ public class LinearStageDefinitionBuilder extends LinearStage {
 
     Collection<Stage<T>> aroundStages = delegate.aroundStages(stage);
     aroundStages.forEach(s -> {
-      switch(s.getSyntheticStageOwner()) {
+      switch (s.getSyntheticStageOwner()) {
         case STAGE_BEFORE:
           injectBefore(stage, s.getName(), stageBuilders.get(s.getType()).get(0), s.getContext());
           break;
@@ -59,11 +63,24 @@ public class LinearStageDefinitionBuilder extends LinearStage {
       }
     });
 
-    return delegate
-      .taskGraph(stage)
-      .stream()
-      .map(taskDefinition -> buildStep(stage, taskDefinition.getName(), taskDefinition.getImplementingClass()))
-      .collect(Collectors.toList());
+    Iterable<TaskNode> iterator = () -> delegate
+      .buildTaskGraph(stage)
+      .iterator();
+    return stream(iterator.spliterator(), false)
+      .map(taskDefinition -> {
+          if (taskDefinition instanceof TaskDefinition) {
+            return buildStep(
+              stage,
+              ((TaskDefinition) taskDefinition).getName(),
+              ((TaskDefinition) taskDefinition).getImplementingClass()
+            );
+          } else {
+            // TODO: can we make this work or is it a waste of time?
+            throw new IllegalStateException("TaskNode types other than TaskDefinition are not supported");
+          }
+        }
+      )
+      .collect(toList());
   }
 
   @Override
