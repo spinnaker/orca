@@ -184,7 +184,7 @@ class AmazonServerGroupCreatorSpec extends Specification {
 
     and:
     def findImageStage =
-      new PipelineStage(stage.execution, "findImage", [regions: [deployRegion], amiDetails: [[ami: amiName]], cloudProvider: "aws"])
+      new PipelineStage(stage.execution, "findImage", [regions: [deployRegion], amiDetails: [[ami: amiName]]])
     findImageStage.id = UUID.randomUUID()
     findImageStage.refId = "1a"
     stage.execution.stages << findImageStage
