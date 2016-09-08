@@ -41,7 +41,9 @@ class StageStatusPropagationListener implements StageListener {
   @Override
   void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
     if (executionStatus) {
-      def nonBookendTasks = stage.tasks.findAll { !it.bookend }
+      def nonBookendTasks = stage.tasks.findAll {
+        !it.bookend && !it.stageStart && !it.stageEnd
+      }
       if (executionStatus == ExecutionStatus.SUCCEEDED && (nonBookendTasks && nonBookendTasks[-1].status != ExecutionStatus.SUCCEEDED)) {
         // mark stage as RUNNING as not all tasks have completed
         stage.status = ExecutionStatus.RUNNING
