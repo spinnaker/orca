@@ -21,6 +21,7 @@ import java.util.function.Consumer
 import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionTask
@@ -29,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import org.spockframework.spring.xml.SpockMockFactoryBean
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.support.GenericApplicationContext
 import org.springframework.test.annotation.DirtiesContext
@@ -65,6 +67,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   @Autowired StartLoopTask startLoopTask
   @Autowired EndLoopTask endLoopTask
   @Autowired PostLoopTask postLoopTask
+  @Autowired @Qualifier("stageListener") StageListener stageListener
 
   def "throws an exception if there's no builder for a stage type"() {
     given:
@@ -442,8 +445,6 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     contexts = [[region: "a"], [region: "b"]]
   }
 
-  private static final <T> Closure<T> noOp() { return {} as Closure<T> }
-
   @Unroll
   def "parallel stages can optionally rename the base stage"() {
     given:
@@ -479,6 +480,41 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     [[region: "a"], [region: "b"]] | "branching - parallel" | "branching"
 
     execution = Pipeline.builder().withId("1").withParallel(true).build()
+  }
+
+  def "listeners are triggered around each task and stage"() {
+    given:
+    execution.stages[0].requisiteStageRefIds = []
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def stageDefinitionBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> stageType
+      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("test", TestTask)])
+    }
+    @Subject runner = create(stageDefinitionBuilder)
+
+    and:
+    testTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+
+    when:
+    runner.start(execution)
+
+    then:
+    1 * stageListener.beforeStage(*_)
+
+    then:
+    1 * stageListener.beforeTask(*_)
+
+    then:
+    1 * stageListener.afterTask(*_)
+
+    then:
+    1 * stageListener.afterStage(*_)
+
+    where:
+    stageType = "foo"
+    execution = Pipeline.builder().withId("1").withStage(stageType).withParallel(true).build()
   }
 
   static PipelineStage before(PipelineStage stage) {
@@ -590,5 +626,13 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     FactoryBean<PostLoopTask> postLoopTask() {
       new SpockMockFactoryBean(PostLoopTask)
     }
+
+    @Bean
+    @Qualifier("stageListener")
+    FactoryBean<StageListener> stageListener() {
+      new SpockMockFactoryBean(StageListener)
+    }
   }
+
+  private static final <T> Closure<T> noOp() { return {} as Closure<T> }
 }

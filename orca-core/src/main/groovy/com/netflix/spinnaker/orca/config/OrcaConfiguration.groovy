@@ -24,7 +24,6 @@ import groovy.transform.CompileStatic
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.ValueFunction
-import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapter
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.exceptions.DefaultExceptionHandler
@@ -32,28 +31,23 @@ import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.libdiffs.ComparableLooseVersion
 import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion
+import com.netflix.spinnaker.orca.listeners.CompositeStageListener
 import com.netflix.spinnaker.orca.listeners.ExecutionPropagationListener
-import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageStatusPropagationListener
 import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener
 import com.netflix.spinnaker.orca.notifications.scheduling.SuspendedPipelinesNotificationHandler
 import com.netflix.spinnaker.orca.pipeline.OrchestrationStarter
 import com.netflix.spinnaker.orca.pipeline.PipelineStarterListener
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineStack
 import com.netflix.spinnaker.orca.pipeline.persistence.memory.InMemoryPipelineStack
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import org.springframework.batch.core.StepExecution
-import org.springframework.batch.core.StepExecutionListener
 import org.springframework.batch.core.configuration.ListableJobLocator
 import org.springframework.batch.core.configuration.annotation.BatchConfigurer
 import org.springframework.batch.core.explore.JobExplorer
 import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.batch.core.launch.JobOperator
 import org.springframework.batch.core.launch.support.SimpleJobOperator
-import org.springframework.batch.core.listener.CompositeStepExecutionListener
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -162,51 +156,9 @@ class OrcaConfiguration {
   }
 
   @Bean
-  CompositeStepExecutionListener compositeStepExecutionListener(ExecutionRepository executionRepository) {
-    /*
-     The CompositeStepExecutionListener runs in this order:
-     (1).beforeTask
-     (2).beforeTask
-     (2).afterTask
-     (1).afterTask
-
-     We really expect:
-     (1).beforeTask
-     (2).beforeTask
-     (1).afterTask
-     (2).afterTask
-
-     To achieve this we can overload listeners while providing no-op implementations to
-     ensure a consistent execution ordering.
-     */
-    def compositeStepExecutionListener = new CompositeStepExecutionListener()
-    compositeStepExecutionListener.setListeners([
-      new StageTaskPropagationListener() {
-        @Override
-        void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
-          // do nothing
-        }
-      },
-      new StageStatusPropagationListener() {
-        @Override
-        void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
-          // do nothing
-        }
-      },
-      new StageStatusPropagationListener() {
-        @Override
-        void beforeTask(Persister persister, Stage stage, Task task) {
-          // do nothing
-        }
-      },
-      new StageTaskPropagationListener() {
-        @Override
-        void beforeTask(Persister persister, Stage stage, Task task) {
-          // do nothing
-        }
-      }
-    ] as StepExecutionListener[])
-    return compositeStepExecutionListener
+  CompositeStageListener stageAndTaskStatusListeners() {
+    // TODO: could autowire the other listeners here and order according to Spring annotations
+    new CompositeStageListener(new StageTaskPropagationListener(), new StageStatusPropagationListener())
   }
 
   @Bean
