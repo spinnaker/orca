@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.batch.listeners;
 
+import java.util.List;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.listeners.Persister;
 import com.netflix.spinnaker.orca.listeners.StageListener;
@@ -24,9 +25,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.listener.StepExecutionListenerSupport;
-
-import java.util.List;
-
 import static java.lang.String.format;
 
 public class SpringBatchStageListener extends StepExecutionListenerSupport implements StageListener {
@@ -80,6 +78,9 @@ public class SpringBatchStageListener extends StepExecutionListenerSupport imple
         format("Task '%s' not found in stage '%s' of execution '%s'", taskId, stage.getId(), stage.getExecution().getId())
       ));
 
+    if (task.isStageStart()) {
+      beforeStage(defaultPersister, stage);
+    }
     beforeTask(defaultPersister, stage, task);
   }
 
@@ -101,6 +102,9 @@ public class SpringBatchStageListener extends StepExecutionListenerSupport imple
     ExecutionStatus executionStatus = (ExecutionStatus) stepExecution.getExecutionContext().get("orcaTaskStatus");
 
     afterTask(defaultPersister, stage, task, executionStatus, wasSuccessful(stepExecution));
+    if (task.isStageEnd()) {
+      afterStage(defaultPersister, stage);
+    }
 
     return super.afterStep(stepExecution);
   }

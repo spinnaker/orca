@@ -45,6 +45,7 @@ public interface Task {
 
   void setStatus(ExecutionStatus status);
 
+  @Deprecated
   @JsonIgnore
   default boolean isBookend() {
     return Objects.equals(getName(), "stageEnd") || Objects.equals(getName(), "stageStart");
