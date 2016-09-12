@@ -62,15 +62,6 @@ class RollingPushStrategy implements Strategy {
         ]
     ]
 
-    stages << newStage(
-      stage.execution,
-      modifyAsgLaunchConfigurationStage.type,
-      "modifyLaunchConfiguration",
-      modifyCtx,
-      stage,
-      SyntheticStageOwner.STAGE_AFTER
-    )
-
     def terminationConfig = stage.mapTo("/termination", TerminationConfig)
     if (terminationConfig.relaunchAllInstances || terminationConfig.totalRelaunches > 0) {
       stages << newStage(
@@ -82,6 +73,15 @@ class RollingPushStrategy implements Strategy {
         SyntheticStageOwner.STAGE_AFTER
       )
     }
+
+    stages << newStage(
+      stage.execution,
+      modifyAsgLaunchConfigurationStage.type,
+      "modifyLaunchConfiguration",
+      modifyCtx,
+      stage,
+      SyntheticStageOwner.STAGE_AFTER
+    )
 
     return stages
   }
