@@ -25,11 +25,14 @@ import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask;
 import lombok.extern.slf4j.Slf4j;
 
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage;
+import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.HEAD;
+import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.TAIL;
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
 import static java.lang.String.format;
@@ -64,10 +67,14 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       BranchingStageDefinitionBuilder branchBuilder = (BranchingStageDefinitionBuilder) builder;
 
       // build tasks that should run before the branch
-      TaskNode.TaskGraph beforeGraph = TaskNode.build(preBranch ->
+      TaskNode.TaskGraph beforeGraph = TaskNode.build(HEAD, preBranch ->
         branchBuilder.preBranchGraph(stage, preBranch)
       );
-      callback.accept(singleton(stage), beforeGraph);
+      if (beforeGraph.isEmpty()) {
+        callback.accept(singleton(stage), TaskNode.singleton(HEAD, "beginParallel", NoOpTask.class));
+      } else {
+        callback.accept(singleton(stage), beforeGraph);
+      }
 
       // represent the parallel branches with a synthetic stage for each branch
       Collection<Stage<T>> parallelStages = branchBuilder
@@ -101,7 +108,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       callback.accept(parallelStages, taskGraph);
 
       // build tasks that run after the branch
-      TaskNode.TaskGraph afterGraph = TaskNode.build(postBranch -> {
+      TaskNode.TaskGraph afterGraph = TaskNode.build(TAIL, postBranch -> {
         branchBuilder.postBranchGraph(stage, postBranch);
       });
       callback.accept(singleton(stage), afterGraph);
@@ -153,7 +160,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
   }
 
   // TODO: change callback type to Consumer<TaskDefinition>
-  protected <T extends Execution<T>> void planTasks(Stage<T> stage, TaskNode.TaskGraph taskGraph, boolean isSubGraph, Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
+  protected <T extends Execution<T>> void planTasks(Stage<T> stage, TaskNode.TaskGraph taskGraph, Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
     for (ListIterator<TaskNode> itr = taskGraph.listIterator(); itr.hasNext(); ) {
       boolean isStart = !itr.hasPrevious();
       // do this after calling itr.hasPrevious because ListIterator is stupid
@@ -161,22 +168,26 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       boolean isEnd = !itr.hasNext();
 
       if (taskDef instanceof TaskDefinition) {
-        planTask(stage, (TaskDefinition) taskDef, isSubGraph, isStart, isEnd, callback);
+        planTask(stage, (TaskDefinition) taskDef, taskGraph.getType(), isStart, isEnd, callback);
       } else if (taskDef instanceof TaskNode.TaskGraph) {
-        planTasks(stage, (TaskNode.TaskGraph) taskDef, true, callback);
+        planTasks(stage, (TaskNode.TaskGraph) taskDef, callback);
       } else {
         throw new UnsupportedOperationException(format("Unknown TaskNode type %s", taskDef.getClass().getName()));
       }
     }
   }
 
-  private <T extends Execution<T>> void planTask(Stage<T> stage, TaskDefinition taskDef, boolean isSubGraph, boolean isStart, boolean isEnd, Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
+  private <T extends Execution<T>> void planTask(Stage<T> stage, TaskDefinition taskDef, TaskNode.GraphType type, boolean isStart, boolean isEnd, Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
     DefaultTask task = new DefaultTask();
     if (isStart) {
-      if (isSubGraph) {
-        task.setLoopStart(true);
-      } else {
-        task.setStageStart(true);
+      switch (type) {
+        case FULL:
+        case HEAD:
+          task.setStageStart(true);
+          break;
+        case LOOP:
+          task.setLoopStart(true);
+          break;
       }
     }
     task.setId(String.valueOf((stage.getTasks().size() + 1)));
@@ -184,10 +195,14 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
     task.setStatus(NOT_STARTED);
     task.setImplementingClass(taskDef.getImplementingClass());
     if (isEnd) {
-      if (isSubGraph) {
-        task.setLoopEnd(true);
-      } else {
-        task.setStageEnd(true);
+      switch (type) {
+        case FULL:
+        case TAIL:
+          task.setStageEnd(true);
+          break;
+        case LOOP:
+          task.setLoopEnd(true);
+          break;
       }
     }
     stage.getTasks().add(task);
@@ -202,4 +217,5 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       .findFirst()
       .orElseThrow(() -> new NoSuchStageDefinitionBuilder(stage.getType()));
   }
+
 }

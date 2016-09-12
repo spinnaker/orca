@@ -17,14 +17,9 @@
 package com.netflix.spinnaker.orca.listeners
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.*
 import spock.lang.Specification
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 
 class StageStatusPropagationListenerSpec extends Specification {
@@ -62,12 +57,18 @@ class StageStatusPropagationListenerSpec extends Specification {
   @Unroll
   void "afterTask should update stage status"() {
     given:
+    if (!tasks.empty) {
+      tasks.first().stageStart = true
+      tasks.last().stageEnd = true
+    }
+
+    and:
     def listener = new StageStatusPropagationListener()
     def stage = new PipelineStage(new Pipeline(), "test")
     stage.tasks = tasks
 
     when:
-    listener.afterTask(persister, stage, null, sourceExecutionStatus, true)
+    listener.afterTask(persister, stage, task, sourceExecutionStatus, true)
 
     then:
     1 * persister.save({ s ->
@@ -81,6 +82,8 @@ class StageStatusPropagationListenerSpec extends Specification {
     [t("1", SUCCEEDED)]                            | SUCCEEDED             || SUCCEEDED
     [t("1", SUCCEEDED), t("2", NOT_STARTED)]       | SUCCEEDED             || RUNNING
     [t("1", FAILED_CONTINUE), t("2", NOT_STARTED)] | SUCCEEDED             || FAILED_CONTINUE
+
+    task = tasks.empty ? null : tasks.first()
   }
 
   private Task t(String name, ExecutionStatus status) {
