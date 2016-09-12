@@ -21,12 +21,13 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
+import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL;
 import static java.util.Collections.emptyList;
 
 public interface StageDefinitionBuilder {
 
   default <T extends Execution<T>> TaskNode.TaskGraph buildTaskGraph(Stage<T> stage) {
-    Builder graphBuilder = Builder();
+    Builder graphBuilder = Builder(FULL);
     taskGraph(stage, graphBuilder);
     return graphBuilder.build();
   }

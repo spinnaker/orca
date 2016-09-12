@@ -259,7 +259,7 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     AtomicReference<Step> loopStart = new AtomicReference<>();
     AtomicReference<Step> loopEnd = new AtomicReference<>();
 
-    planTasks(stage, taskGraph, false, task -> {
+    planTasks(stage, taskGraph, task -> {
       Step step = buildStepForTask(stage, task);
       if (task.isLoopStart()) {
         loopStart.set(step);
