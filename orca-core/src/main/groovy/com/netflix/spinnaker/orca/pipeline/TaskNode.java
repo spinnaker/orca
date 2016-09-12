@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import lombok.Value;
+import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.LOOP;
 
 /**
  * A node in a {@link TaskGraph} which can be either an individual task or a
@@ -31,18 +32,46 @@ import lombok.Value;
  */
 public interface TaskNode {
 
-  static TaskGraph build(Consumer<Builder> closure) {
-    Builder builder = new Builder();
+  enum GraphType {
+    /**
+     * A graph representing an entire stage.
+     */
+    FULL,
+    /**
+     * A graph representing a rolling-push style loop in a stage.
+     */
+    LOOP,
+    /**
+     * A graph representing the pre-parallel tasks of a bake/deploy style stage
+     */
+    HEAD,
+    /**
+     * A graph representing the post-parallel tasks of a bake/deploy style stage
+     */
+    TAIL
+  }
+
+  static TaskGraph build(GraphType type, Consumer<Builder> closure) {
+    Builder builder = new Builder(type);
     closure.accept(builder);
     return builder.build();
   }
 
-  static Builder Builder() {
-    return new Builder();
+  static TaskGraph singleton(GraphType type, String name, Class<? extends com.netflix.spinnaker.orca.Task> implementingClass) {
+    return build(type, builder -> builder.withTask(name, implementingClass));
+  }
+
+  static Builder Builder(GraphType type) {
+    return new Builder(type);
   }
 
   class Builder {
+    private final GraphType type;
     private final List<TaskNode> graph = new ArrayList<>();
+
+    public Builder(GraphType type) {
+      this.type = type;
+    }
 
     /**
      * Adds a task to the current graph.
@@ -69,14 +98,14 @@ public interface TaskNode {
      * @return this builder with the sub-graph appended.
      */
     public Builder withLoop(Consumer<Builder> subGraph) {
-      Builder subGraphBuilder = new Builder();
+      Builder subGraphBuilder = new Builder(LOOP);
       subGraph.accept(subGraphBuilder);
       graph.add(subGraphBuilder.build());
       return this;
     }
 
     TaskGraph build() {
-      return new TaskGraph(graph);
+      return new TaskGraph(type, graph);
     }
   }
 
@@ -85,10 +114,12 @@ public interface TaskNode {
    */
   class TaskGraph implements TaskNode, Iterable<TaskNode> {
 
+    private final GraphType type;
     private final List<TaskNode> graph;
 
     @VisibleForTesting
-    public TaskGraph(List<TaskNode> graph) {
+    public TaskGraph(GraphType type, List<TaskNode> graph) {
+      this.type = type;
       this.graph = graph;
     }
 
@@ -99,6 +130,14 @@ public interface TaskNode {
 
     public ListIterator<TaskNode> listIterator() {
       return graph.listIterator();
+    }
+
+    public boolean isEmpty() {
+      return graph.isEmpty();
+    }
+
+    public GraphType getType() {
+      return type;
     }
   }
 

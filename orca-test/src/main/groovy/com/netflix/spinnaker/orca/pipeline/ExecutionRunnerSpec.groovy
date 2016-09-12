@@ -42,6 +42,7 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.REDIRECT
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
@@ -91,7 +92,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     given:
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("1", Task)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("1", Task)])
     }
     @Subject def runner = create(stageDefBuilder)
 
@@ -113,7 +114,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     given:
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      buildTaskGraph(_) >> new TaskNode.TaskGraph((1..numTasks).collect { i -> new TaskDefinition("$i", Task) })
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, (1..numTasks).collect { i -> new TaskDefinition("$i", Task) })
     }
     @Subject def runner = create(stageDefBuilder)
 
@@ -142,7 +143,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
-          buildTaskGraph() >> new TaskNode.TaskGraph([new TaskDefinition("${stageType}_1", Task)])
+          buildTaskGraph() >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
           aroundStages(_) >> [preStage1, preStage2]
         },
         Stub(StageDefinitionBuilder) {
@@ -177,7 +178,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
-          buildTaskGraph() >> new TaskNode.TaskGraph([new TaskDefinition("${stageType}_1", Task)])
+          buildTaskGraph() >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
           aroundStages(_) >> [postStage1, postStage2]
         },
         Stub(StageDefinitionBuilder) {
@@ -210,16 +211,16 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def postStage = after(new PipelineStage(execution, "${stageType}_post"))
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("${stageType}_1", Task)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
       aroundStages(_) >> [preStage, postStage]
     }
     def preStageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> "${stageType}_pre"
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("${stageType}_pre_1", Task)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_pre_1", Task)])
     }
     def postStageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> "${stageType}_post"
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("${stageType}_post_1", Task)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_post_1", Task)])
     }
     @Subject def runner = create(stageDefBuilder, preStageDefBuilder, postStageDefBuilder)
 
@@ -245,7 +246,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     and:
     def stageDefinitionBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("test", TestTask)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
     }
     @Subject runner = create(stageDefinitionBuilder)
 
@@ -273,7 +274,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def stageDefinitionBuilders = [
       Stub(StageDefinitionBuilder) {
         getType() >> stageType
-        buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("test", TestTask)])
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
         aroundStages(_) >> { Stage<Pipeline> parentStage ->
           [
             newStage(execution, "before_${stageType}_2", "before", [:], parentStage, STAGE_BEFORE),
@@ -284,15 +285,15 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       },
       Stub(StageDefinitionBuilder) {
         getType() >> "before_${stageType}_1"
-        buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("before_test_1", TestTask)])
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("before_test_1", TestTask)])
       },
       Stub(StageDefinitionBuilder) {
         getType() >> "before_${stageType}_2"
-        buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("before_test_2", TestTask)])
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("before_test_2", TestTask)])
       },
       Stub(StageDefinitionBuilder) {
         getType() >> "after_$stageType"
-        buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("after_test", TestTask)])
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_test", TestTask)])
       }
     ]
     @Subject runner = create(*stageDefinitionBuilders)
@@ -346,15 +347,15 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def startStageDefinitionBuilder = stageDefinition(startStage.type) { builder -> builder.withTask("test", TestTask) }
     def branchAStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
       getType() >> branchAStage.type
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("test", TestTask)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
     }
     def branchBStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
       getType() >> branchBStage.type
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("test", TestTask)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
     }
     def endStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
       getType() >> endStage.type
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("test", TestTask)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
     }
     @Subject runner = create(startStageDefinitionBuilder, branchAStageDefinitionBuilder, branchBStageDefinitionBuilder, endStageDefinitionBuilder)
 
@@ -445,6 +446,41 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     contexts = [[region: "a"], [region: "b"]]
   }
 
+  def "does not consider before tasks of an internal parallel stage to complete the stage"() {
+    given:
+    def stage = new PipelineStage(execution, "branching")
+    execution.stages << stage
+
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def stageDefinitionBuilder = stageDefinition("branching", contexts, { builder ->
+      builder.withTask("start", StartLoopTask)
+    }, { builder ->
+      builder.withTask("branch", TestTask)
+    }, { builder ->
+      builder.withTask("end", EndLoopTask)
+    })
+
+    @Subject runner = create(stageDefinitionBuilder)
+
+    when:
+    runner.start(execution)
+
+    then:
+    with(stage.tasks) {
+      size() == 2
+      first().stageStart
+      !first().stageEnd
+      !last().stageStart
+      last().stageEnd
+    }
+
+    where:
+    execution = Pipeline.builder().withId("1").withParallel(true).build()
+    contexts = [[region: "a"], [region: "b"]]
+  }
+
   @Unroll
   def "parallel stages can optionally rename the base stage"() {
     given:
@@ -490,7 +526,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     and:
     def stageDefinitionBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
-      buildTaskGraph(_) >> new TaskNode.TaskGraph([new TaskDefinition("test", TestTask)])
+      buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
     }
     @Subject runner = create(stageDefinitionBuilder)
 

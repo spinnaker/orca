@@ -41,13 +41,13 @@ class StageStatusPropagationListener implements StageListener {
   @Override
   void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
     if (executionStatus) {
-      def nonBookendTasks = stage.tasks.findAll {
-        !it.bookend && !it.stageStart && !it.stageEnd
-      }
-      if (executionStatus == ExecutionStatus.SUCCEEDED && (nonBookendTasks && nonBookendTasks[-1].status != ExecutionStatus.SUCCEEDED)) {
+      def nonBookendTasks = stage.tasks.findAll { !it.bookend }
+      def lastTask = task.stageEnd || task.name == "stageEnd"
+      // TODO: 2nd part is v1 engine — to be removed
+      if (executionStatus == ExecutionStatus.SUCCEEDED && !lastTask) {
         // mark stage as RUNNING as not all tasks have completed
         stage.status = ExecutionStatus.RUNNING
-        log.info("Task SUCCEEDED but not all other tasks are complete (stageId: ${stage.id}, nonBookEndTaskStatus: ${nonBookendTasks[-1].status}) ... tasks: ${nonBookendTasks.collect { objectMapper.writeValueAsString(it) }}")
+        log.info("Task SUCCEEDED but not all other tasks are complete (stageId: ${stage.id})")
         for (Task t : nonBookendTasks) {
           if (t.status == ExecutionStatus.FAILED_CONTINUE) {
             // task fails and continue pipeline on failure is checked, set stage to the same status.

@@ -41,6 +41,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionTask
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import org.spockframework.spring.xml.SpockMockFactoryBean
@@ -68,7 +69,7 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 @ContextConfiguration(classes = [
   StageNavigator, WaitForRequisiteCompletionTask, Config,
   WaitForRequisiteCompletionStage, ParallelDeployStage, CreateServerGroupStage,
-  TestStrategy, NoStrategy, TestStage
+  TestStrategy, NoStrategy, TestStage, NoOpTask
 ])
 @DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)
 abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> extends Specification {

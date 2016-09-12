@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunnerSpec
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import org.spockframework.spring.xml.SpockMockFactoryBean
 import org.springframework.beans.factory.FactoryBean
@@ -37,7 +38,7 @@ import org.springframework.test.context.ContextConfiguration
 @ContextConfiguration(
   classes = [
     BatchTestConfiguration, TaskTaskletAdapterImpl,
-    SpringBatchExecutionListenerProvider, Config
+    SpringBatchExecutionListenerProvider, Config, NoOpTask
   ]
 )
 class SpringBatchExecutionRunnerSpec extends ExecutionRunnerSpec {
