@@ -16,18 +16,17 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import lombok.extern.slf4j.Slf4j;
+
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage;
@@ -61,14 +60,6 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
     BiConsumer<Collection<Stage<T>>, TaskNode.TaskGraph> callback
   ) {
     StageDefinitionBuilder builder = findBuilderForStage(stage);
-    Map<SyntheticStageOwner, List<Stage<T>>> aroundStages = builder
-      .aroundStages(stage)
-      .stream()
-      .collect(groupingBy(Stage::getSyntheticStageOwner));
-
-    reverse(aroundStages.getOrDefault(STAGE_BEFORE, emptyList()))
-      .forEach(preStage -> planBeforeOrAfterStage(stage, preStage, STAGE_BEFORE, callback));
-
     if (builder instanceof BranchingStageDefinitionBuilder) {
       BranchingStageDefinitionBuilder branchBuilder = (BranchingStageDefinitionBuilder) builder;
 
@@ -95,6 +86,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
 
       // main stage name can be overridden
       stage.setName(branchBuilder.parallelStageName(stage, parallelStages.size() > 1));
+      stage.setInitializationStage(true);
 
       // inject the new parallel branches into the execution model
       parallelStages.forEach(it -> injectStage(stage, it, STAGE_AFTER));
@@ -113,13 +105,29 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
         branchBuilder.postBranchGraph(stage, postBranch);
       });
       callback.accept(singleton(stage), afterGraph);
+
+      // ensure parallel stages have the correct stage type (ie. createServerGroup -> deploy to satisfy deck)
+      parallelStages.forEach(it -> it.setType(branchBuilder.getType()));
     } else {
+      Map<SyntheticStageOwner, List<Stage<T>>> aroundStages = builder
+        .aroundStages(stage)
+        .stream()
+        .collect(groupingBy(Stage::getSyntheticStageOwner));
+
+      if (stage.getExecution().getBuiltPipelineObjects().contains(stage)) {
+        aroundStages = new HashMap<>();
+      }
+      stage.getExecution().getBuiltPipelineObjects().add(stage);
+
+      reverse(aroundStages.getOrDefault(STAGE_BEFORE, emptyList()))
+        .forEach(preStage -> planBeforeOrAfterStage(stage, preStage, STAGE_BEFORE, callback));
+
       TaskNode.TaskGraph taskGraph = builder.buildTaskGraph(stage);
       callback.accept(singleton(stage), taskGraph);
-    }
 
-    reverse(aroundStages.getOrDefault(STAGE_AFTER, emptyList()))
-      .forEach(postStage -> planBeforeOrAfterStage(stage, postStage, STAGE_AFTER, callback));
+      reverse(aroundStages.getOrDefault(STAGE_AFTER, emptyList()))
+        .forEach(postStage -> planBeforeOrAfterStage(stage, postStage, STAGE_AFTER, callback));
+    }
   }
 
   private <T extends Execution<T>> void planBeforeOrAfterStage(

@@ -29,6 +29,8 @@ public interface Stage<T extends Execution<T>> {
    */
   String getType();
 
+  void setType(String type);
+
   /**
    * The name of the stage. Can be different from type, but often will be the same.
    */
