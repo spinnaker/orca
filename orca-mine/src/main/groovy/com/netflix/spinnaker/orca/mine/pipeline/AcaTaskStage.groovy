@@ -47,7 +47,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage, Restarta
 
   @Override
   Stage prepareStageForRestart(Stage stage) {
-    stage = super.prepareStageForRestart(stage)
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
     stage.startTime = null
     stage.endTime = null
 
