@@ -411,6 +411,90 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     execution = Pipeline.builder().withId("1").withParallel(true).build()
   }
 
+  def "looping stages can update context"() {
+    given:
+    def stage = new PipelineStage(execution, "looping")
+    execution.stages << stage
+
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def stageDefinitionBuilder = stageDefinition("looping") { builder ->
+      builder
+        .withTask("preLoop", PreLoopTask)
+        .withLoop({ subGraph ->
+        subGraph
+          .withTask("startLoop", StartLoopTask)
+          .withTask("endLoop", EndLoopTask)
+      })
+        .withTask("postLoop", PostLoopTask)
+    }
+    @Subject runner = create(stageDefinitionBuilder)
+
+    and:
+    def next = 1
+    preLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    startLoopTask.execute(_) >> { Stage<?> s ->
+      def values = s.context.values
+      if (values == null) values = []
+      values += next
+      next++
+      new DefaultTaskResult(SUCCEEDED, [values: values])
+    }
+    endLoopTask.execute(_) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(SUCCEEDED)
+    postLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+
+    when:
+    runner.start(execution)
+
+    then:
+    execution.stages.find { it.type == "looping" }.context.values == [1, 2, 3]
+
+    where:
+    execution = Pipeline.builder().withId("1").withParallel(true).build()
+  }
+
+  def "loop tasks are left in SUCCEEDED state on completion of the loop"() {
+    given:
+    def stage = new PipelineStage(execution, "looping")
+    execution.stages << stage
+
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def stageDefinitionBuilder = stageDefinition("looping") { builder ->
+      builder
+        .withTask("preLoop", PreLoopTask)
+        .withLoop({ subGraph ->
+        subGraph
+          .withTask("startLoop", StartLoopTask)
+          .withTask("endLoop", EndLoopTask)
+      })
+        .withTask("postLoop", PostLoopTask)
+    }
+    @Subject runner = create(stageDefinitionBuilder)
+
+    and:
+    preLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    startLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    endLoopTask.execute(_) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(SUCCEEDED)
+    postLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+
+    when:
+    runner.start(execution)
+
+    then:
+    execution
+      .stages
+      .find { it.type == "looping" }
+      .tasks
+      .status
+      .every { it == SUCCEEDED }
+
+    where:
+    execution = Pipeline.builder().withId("1").withParallel(true).build()
+  }
+
   def "executes stages with internal parallel branches"() {
     given:
     def stage = new PipelineStage(execution, "branching")
