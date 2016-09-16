@@ -210,7 +210,7 @@ class RestrictExecutionDuringTimeWindowSpec extends AbstractBatchLifecycleSpec {
   protected Job configureJob(JobBuilder jobBuilder) {
     def stage = pipeline.namedStage("stage2")
     def builder = jobBuilder.flow(initializationStep(steps, pipeline))
-    def stageBuilder = new SpringBatchStageBuilderProvider(applicationContext, [], []).wrap(
+    def stageBuilder = new SpringBatchStageBuilderProvider(applicationContext, [], [], null).wrap(
       new InjectStageBuilder()
     )
     stageBuilder.build(builder, stage).build().build()

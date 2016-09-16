@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
+import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider;
 import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder;
@@ -30,11 +31,14 @@ import org.springframework.context.ApplicationContext;
 public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
   private final ApplicationContext applicationContext;
   private final Collection<StageBuilder> stageBuilders = new ArrayList<>();
+  private final ExecutionListenerProvider executionListenerProvider;
 
   public SpringBatchStageBuilderProvider(ApplicationContext applicationContext,
                                          Collection<StageBuilder> stageBuilders,
-                                         Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
+                                         Collection<StageDefinitionBuilder> stageDefinitionBuilders,
+                                         ExecutionListenerProvider executionListenerProvider) {
     this.applicationContext = applicationContext;
+    this.executionListenerProvider = executionListenerProvider;
     this.stageBuilders.addAll(stageBuilders);
     this.stageBuilders.addAll(
       stageDefinitionBuilders
@@ -46,6 +50,8 @@ public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
             return new ParallelDeployStageDefinitionBuilder(branchingStageDefinitionBuilder, this);
           }
           return new ParallelStageDefinitionBuilder(branchingStageDefinitionBuilder, this);
+        } else if (s.getType().equals("rollingPush")) {
+          return new RollingPushStageDefinitionBuilder(s, executionListenerProvider);
         }
         return new LinearStageDefinitionBuilder(s, this);
       })
