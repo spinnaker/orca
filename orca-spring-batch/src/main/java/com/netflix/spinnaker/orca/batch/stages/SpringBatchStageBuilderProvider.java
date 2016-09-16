@@ -22,9 +22,11 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
+import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import org.springframework.context.ApplicationContext;
 
+@Deprecated
 public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
   private final ApplicationContext applicationContext;
   private final Collection<StageBuilder> stageBuilders = new ArrayList<>();
@@ -37,7 +39,16 @@ public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
     this.stageBuilders.addAll(
       stageDefinitionBuilders
       .stream()
-      .map(s -> new LinearStageDefinitionBuilder(s, this))
+      .map(s -> {
+        if (s instanceof BranchingStageDefinitionBuilder) {
+          BranchingStageDefinitionBuilder branchingStageDefinitionBuilder = (BranchingStageDefinitionBuilder) s;
+          if (s.getType().equals("deploy")) {
+            return new ParallelDeployStageDefinitionBuilder(branchingStageDefinitionBuilder, this);
+          }
+          return new ParallelStageDefinitionBuilder(branchingStageDefinitionBuilder, this);
+        }
+        return new LinearStageDefinitionBuilder(s, this);
+      })
       .collect(Collectors.toList())
     );
   }

@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import java.util.Collection;
 import java.util.Map;
+
+import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 
@@ -31,6 +33,14 @@ public interface BranchingStageDefinitionBuilder extends StageDefinitionBuilder 
    * Produce the different contexts for each parallel branch.
    */
   <T extends Execution<T>> Collection<Map<String, Object>> parallelContexts(Stage<T> stage);
+
+  /**
+   * The task that should be executed _after_ the parallel split.
+   *
+   * TODO-AJ Only necessary for v1 execution support
+   */
+  @Deprecated
+  Class<Task> completeParallelTask();
 
   /**
    * Define any tasks that should run _before_ the parallel split.
@@ -50,6 +60,13 @@ public interface BranchingStageDefinitionBuilder extends StageDefinitionBuilder 
    */
   default <T extends Execution<T>> String parallelStageName(Stage<T> stage, boolean hasParallelFlows) {
     return stage.getName();
+  }
+
+  /**
+   * Determines the type of child stage.
+   */
+  default String getChildStageType(Stage childStage) {
+    return childStage.getType();
   }
 }
 

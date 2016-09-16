@@ -55,8 +55,18 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
     builder.withTask("completeParallelDeploy", CompleteParallelDeployTask)
   }
 
+  @Override
+  Class<Task> completeParallelTask() {
+    return CompleteParallelDeployTask.class;
+  }
+
+  @Override
+  String getChildStageType(Stage childStage) {
+    return isClone(childStage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : PIPELINE_CONFIG_TYPE
+  }
+
   @CompileDynamic
-  protected Map<String, Object> clusterContext(Stage stage, Map defaultStageContext, Map cluster) {
+  private Map<String, Object> clusterContext(Stage stage, Map defaultStageContext, Map cluster) {
     def type = isClone(stage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
 
     if (cluster.providerType && !(cluster.providerType in ['aws', 'titus'])) {

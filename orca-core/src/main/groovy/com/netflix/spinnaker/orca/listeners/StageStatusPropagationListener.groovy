@@ -43,7 +43,12 @@ class StageStatusPropagationListener implements StageListener {
     if (executionStatus) {
       def nonBookendTasks = stage.tasks.findAll { !it.bookend }
       def lastTask = task.stageEnd || task.name == "stageEnd"
-      // TODO: 2nd part is v1 engine — to be removed
+      if (stage.syntheticStageOwner && task == nonBookendTasks[-1]) {
+        // synthetic stages do not have stageStart/stageEnd
+        // TODO-AJ only needed for v1 support
+        lastTask = true
+      }
+
       if (executionStatus == ExecutionStatus.SUCCEEDED && !lastTask) {
         // mark stage as RUNNING as not all tasks have completed
         stage.status = ExecutionStatus.RUNNING

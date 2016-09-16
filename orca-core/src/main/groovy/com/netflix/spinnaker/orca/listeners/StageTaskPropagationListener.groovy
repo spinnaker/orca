@@ -38,7 +38,7 @@ class StageTaskPropagationListener implements StageListener {
   void afterTask(Persister persister, Stage stage, Task task, ExecutionStatus executionStatus, boolean wasSuccessful) {
     task.status = executionStatus
     task.endTime = task.endTime ?: System.currentTimeMillis()
-    log.info("Setting task status to ${task.status} (stageId: ${stage.id}, taskId: ${task.id}) [afterTask]")
+    log.info("Setting task status to ${task.status} (stageId: ${stage.id}, taskId: ${task.id}, taskName: ${task.getName()}) [afterTask]")
     persister.save(stage)
   }
 
