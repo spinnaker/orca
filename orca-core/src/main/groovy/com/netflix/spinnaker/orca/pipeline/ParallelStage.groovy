@@ -34,6 +34,7 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor
 import org.springframework.stereotype.Component
 
 @Component
+@Deprecated
 @CompileStatic
 abstract class ParallelStage extends StageBuilder {
   @Autowired(required = false)

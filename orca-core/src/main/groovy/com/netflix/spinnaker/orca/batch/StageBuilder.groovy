@@ -53,6 +53,7 @@ import static java.util.Collections.EMPTY_LIST
  */
 @CompileStatic
 @Slf4j
+@Deprecated
 abstract class StageBuilder implements ApplicationContextAware {
   private static final int MAX_PARALLEL_CONCURRENCY = 25
 
@@ -223,7 +224,7 @@ abstract class StageBuilder implements ApplicationContextAware {
    * @param taskType The +Task+ implementation class.
    * @return a +Step+ that will execute an instance of the required +Task+.
    */
-  protected Step buildStep(Stage stage, String taskName, Class<? extends Task> taskType, StepExecutionListener... listeners) {
+  Step buildStep(Stage stage, String taskName, Class<? extends Task> taskType, StepExecutionListener... listeners) {
     buildStep stage, taskName, applicationContext.getBean(taskType), listeners
   }
 
