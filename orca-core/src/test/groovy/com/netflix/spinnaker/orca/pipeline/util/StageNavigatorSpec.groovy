@@ -29,7 +29,7 @@ import spock.lang.Specification
 import spock.lang.Subject
 
 class StageNavigatorSpec extends Specification {
-  def stageBuilderProvider = new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], [])
+  def stageBuilderProvider = new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], [], null)
 
   @Shared
   def stageBuilders = [

@@ -72,8 +72,9 @@ public class SpringBatchConfiguration {
   @Bean
   StageBuilderProvider springBatchStageBuilderProvider(ApplicationContext applicationContext,
                                                        Collection<StageBuilder> stageBuilders,
-                                                       Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
-    return new SpringBatchStageBuilderProvider(applicationContext, stageBuilders, stageDefinitionBuilders);
+                                                       Collection<StageDefinitionBuilder> stageDefinitionBuilders,
+                                                       ExecutionListenerProvider executionListenerProvider) {
+    return new SpringBatchStageBuilderProvider(applicationContext, stageBuilders, stageDefinitionBuilders, executionListenerProvider);
   }
 
 }
