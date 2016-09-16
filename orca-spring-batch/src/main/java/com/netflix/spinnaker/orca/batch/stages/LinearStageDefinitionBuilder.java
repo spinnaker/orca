@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.LinearStage;
@@ -29,9 +30,11 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.batch.core.Step;
+
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
+@Deprecated
 public class LinearStageDefinitionBuilder extends LinearStage {
   private final StageDefinitionBuilder delegate;
   private final StageBuilderProvider stageBuilderProvider;
@@ -63,13 +66,19 @@ public class LinearStageDefinitionBuilder extends LinearStage {
       }
     });
 
+    return buildSteps(delegate, this, stage);
+  }
+
+  static <T extends Execution<T>> List<Step> buildSteps(StageDefinitionBuilder delegate,
+                                                        StageBuilder stageBuilder,
+                                                        Stage<T> stage) {
     Iterable<TaskNode> iterator = () -> delegate
       .buildTaskGraph(stage)
       .iterator();
     return stream(iterator.spliterator(), false)
       .map(taskDefinition -> {
           if (taskDefinition instanceof TaskDefinition) {
-            return buildStep(
+            return stageBuilder.buildStep(
               stage,
               ((TaskDefinition) taskDefinition).getName(),
               ((TaskDefinition) taskDefinition).getImplementingClass()

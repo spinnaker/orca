@@ -60,6 +60,11 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @Override
+  Class<com.netflix.spinnaker.orca.Task> completeParallelTask() {
+    return CompleteDeployCanaryTask.class;
+  }
+
+  @Override
   @CompileDynamic
   <T extends Execution<T>> Collection<Map<String, Object>> parallelContexts(Stage<T> stage) {
     List<Map> baselineAmis = findBaselineAmis(stage)
