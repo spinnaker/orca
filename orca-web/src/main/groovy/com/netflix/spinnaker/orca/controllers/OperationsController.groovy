@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.OrchestrationStarter
 import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
 import com.netflix.spinnaker.orca.pipeline.PipelineStarter
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -171,7 +172,7 @@ class OperationsController {
     log.info('requested pipeline: {}', json)
 
     def pipeline
-    if (config.executionEngine == "v2") {
+    if (config.executionEngine == Execution.V2_EXECUTION_ENGINE) {
       pipeline = pipelineLauncher.start(json)
     } else {
       pipeline = pipelineStarter.start(json)
