@@ -32,6 +32,7 @@ import static SyntheticStageOwner.STAGE_BEFORE
 /**
  * A base class for +Stage+ implementations that just need to wire a linear sequence of steps.
  */
+@Deprecated
 @CompileStatic
 abstract class LinearStage extends StageBuilder implements StepProvider {
 

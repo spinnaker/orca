@@ -184,7 +184,7 @@ class LinearStageSpec extends AbstractBatchLifecycleSpec {
     }
 
     @Override
-    protected Step buildStep(Stage stage, String taskName, Class task, StepExecutionListener... listeners) {
+    Step buildStep(Stage stage, String taskName, Class task, StepExecutionListener... listeners) {
       buildStep(stage, taskName, detailsTask, listeners)
     }
 
