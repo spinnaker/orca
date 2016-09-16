@@ -465,6 +465,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       startTime           : execution.startTime?.toString(),
       endTime             : execution.endTime?.toString(),
       executingInstance   : execution.executingInstance,
+      executionEngine     : execution.executionEngine,
       status              : execution.status?.name(),
       authentication      : mapper.writeValueAsString(execution.authentication),
       paused              : mapper.writeValueAsString(execution.paused),
@@ -533,6 +534,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       execution.startTime = map.startTime?.toLong()
       execution.endTime = map.endTime?.toLong()
       execution.executingInstance = map.executingInstance
+      execution.executionEngine = map.executionEngine
       execution.status = map.status ? ExecutionStatus.valueOf(map.status) : null
       execution.authentication = mapper.readValue(map.authentication, Execution.AuthenticationDetails)
       execution.paused = map.paused ? mapper.readValue(map.paused, Execution.PausedDetails) : null
