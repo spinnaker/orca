@@ -47,7 +47,7 @@ class TaskTaskletSpec extends Specification {
   @Shared @AutoCleanup("destroy") EmbeddedRedis embeddedRedis
 
   @Shared
-  def stageNavigator = new StageNavigator(Mock(ApplicationContext))
+  def stageNavigator = new StageNavigator(Stub(ApplicationContext))
 
   def setupSpec() {
     embeddedRedis = EmbeddedRedis.embed()

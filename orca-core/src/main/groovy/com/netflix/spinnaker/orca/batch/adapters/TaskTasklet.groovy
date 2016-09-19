@@ -23,8 +23,8 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.*
 import com.netflix.spinnaker.orca.batch.BatchStepStatus
 import com.netflix.spinnaker.orca.batch.ExecutionContextManager
-import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -144,7 +144,7 @@ class TaskTasklet implements Tasklet {
   }
 
   private RepeatStatus cancel(Stage stage) {
-    def cancelResults = stage.ancestors({ Stage s, StageBuilder stageBuilder ->
+    def cancelResults = stage.ancestors({ Stage s, StageDefinitionBuilder stageBuilder ->
       !s.status.complete && stageBuilder instanceof CancellableStage
     }).collect {
       ((CancellableStage) it.stageBuilder).cancel(stage)
@@ -181,7 +181,7 @@ class TaskTasklet implements Tasklet {
 
     try {
       // An AuthenticatedStage can override the default pipeline authentication credentials
-      def authenticatedUser = stageNavigator.findAll(stage, { Stage ancestorStage, StageBuilder stageBuilder ->
+      def authenticatedUser = stageNavigator.findAll(stage, { Stage ancestorStage, StageDefinitionBuilder stageBuilder ->
         return stageBuilder instanceof AuthenticatedStage
       }).findResult {
         return ((AuthenticatedStage) it.stageBuilder).authenticatedUser(it.stage).orElse(null)

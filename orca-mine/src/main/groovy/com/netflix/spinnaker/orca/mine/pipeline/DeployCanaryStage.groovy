@@ -25,12 +25,12 @@ import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.mine.MineService
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.*
 import org.slf4j.Logger
@@ -183,7 +183,9 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   @Override
   @CompileDynamic
   CancellableStage.Result cancel(Stage stage) {
-    def canary = stage.ancestors { Stage s, StageBuilder stageBuilder -> stageBuilder instanceof CanaryStage }[0]
+    def canary = stage.ancestors { Stage s, StageDefinitionBuilder stageBuilder ->
+      stageBuilder instanceof CanaryStage
+    } first()
     return ((CanaryStage) canary.stageBuilder).cancel(canary.stage)
   }
 }

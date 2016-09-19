@@ -18,14 +18,12 @@
 package com.netflix.spinnaker.orca.pipeline.util
 
 import java.util.function.BiFunction
+import groovy.transform.Canonical
 import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.batch.StageBuilder
-import com.netflix.spinnaker.orca.batch.StageBuilderProvider
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
-import groovy.transform.Canonical
-import groovy.transform.CompileStatic
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 
@@ -39,7 +37,7 @@ class StageNavigator {
     this.applicationContext = applicationContext
   }
 
-  public <T extends Execution<T>> List<Result> findAll(Stage startingStage, BiFunction<Stage<T>, StageBuilder, Boolean> matcher) {
+  public <T extends Execution<T>> List<Result> findAll(Stage startingStage, BiFunction<Stage<T>, StageDefinitionBuilder, Boolean> matcher) {
     def stageBuilders = stageBuilders()
 
     def ancestors = [startingStage] + ancestors(startingStage)
@@ -53,8 +51,8 @@ class StageNavigator {
     return results
   }
 
-  protected Collection<StageBuilder> stageBuilders() {
-    return applicationContext.getBean(StageBuilderProvider)?.all() ?: []
+  protected Collection<StageDefinitionBuilder> stageBuilders() {
+    return applicationContext.getBeansOfType(StageDefinitionBuilder).values()
   }
 
   private List<Stage> ancestors(Stage startingStage) {
@@ -78,6 +76,6 @@ class StageNavigator {
   @Canonical
   static class Result {
     final Stage stage
-    final StageBuilder stageBuilder
+    final StageDefinitionBuilder stageBuilder
   }
 }
