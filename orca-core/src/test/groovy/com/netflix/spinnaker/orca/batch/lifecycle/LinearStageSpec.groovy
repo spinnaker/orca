@@ -30,9 +30,8 @@ import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import groovy.transform.CompileStatic
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import org.springframework.batch.core.*
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
 import org.springframework.batch.core.job.builder.FlowBuilder
@@ -40,13 +39,12 @@ import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.step.AbstractStep
 import org.springframework.context.ApplicationContext
 import spock.lang.Shared
-
 import static com.netflix.spinnaker.orca.batch.PipelineInitializerTasklet.initializationStep
 import static java.util.Optional.empty
 
 class LinearStageSpec extends AbstractBatchLifecycleSpec {
   @Shared
-  def stageNavigator = new StageNavigator(Mock(ApplicationContext))
+  def stageNavigator = new StageNavigator(Stub(ApplicationContext))
 
   List<StepExecutionListener> listeners = [
     new SpringBatchStageListener(executionRepository, new StageStatusPropagationListener())

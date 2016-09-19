@@ -20,8 +20,8 @@ import java.nio.charset.Charset
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -62,7 +62,7 @@ class TriggerQuipTaskSpec extends Specification {
 
   @Shared
   StageNavigator navigator = Stub(StageNavigator) {
-    findAll(*_) >> [new StageNavigator.Result(versionStage, Stub(StageBuilder))]
+    findAll(*_) >> [new StageNavigator.Result(versionStage, Stub(StageDefinitionBuilder))]
   }
 
   @Shared

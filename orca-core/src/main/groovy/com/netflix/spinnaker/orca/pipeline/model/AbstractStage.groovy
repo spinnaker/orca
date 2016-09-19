@@ -27,8 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TreeTraversingParser
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import static ExecutionStatus.NOT_STARTED
 
@@ -116,7 +116,7 @@ abstract class AbstractStage<T extends Execution<T>> implements Stage<T>, Serial
   }
 
   @Override
-  List<StageNavigator.Result> ancestors(BiFunction<Stage<T>, StageBuilder, Boolean> matcher) {
+  List<StageNavigator.Result> ancestors(BiFunction<Stage<T>, StageDefinitionBuilder, Boolean> matcher) {
     return stageNavigator ? stageNavigator.findAll(this, matcher) :[]
   }
 
