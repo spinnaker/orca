@@ -17,19 +17,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
-import com.netflix.spinnaker.orca.batch.StageBuilder
-import com.netflix.spinnaker.orca.batch.stages.SpringBatchStageBuilderProvider
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.context.support.GenericApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 
 class StageNavigatorSpec extends Specification {
-  def stageBuilderProvider = new SpringBatchStageBuilderProvider(new GenericApplicationContext(), [], [], null)
 
   @Shared
   def stageBuilders = [
@@ -41,10 +37,8 @@ class StageNavigatorSpec extends Specification {
   @Subject
   def stageNavigator = new StageNavigator(null) {
     @Override
-    protected Collection<StageBuilder> stageBuilders() {
-      return stageBuilders.collect {
-        stageBuilderProvider.wrap(it)
-      }
+    protected Collection<StageDefinitionBuilder> stageBuilders() {
+      stageBuilders
     }
   }
 

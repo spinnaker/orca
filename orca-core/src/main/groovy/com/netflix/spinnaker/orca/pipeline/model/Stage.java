@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener;
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator;
 import org.codehaus.groovy.runtime.ReverseListIterator;
 import static java.util.stream.Collectors.toList;
@@ -87,7 +87,7 @@ public interface Stage<T extends Execution<T>> {
   /**
    * Gets all ancestor stages that satisfy {@code matcher}, including the current stage.
    */
-  List<StageNavigator.Result> ancestors(BiFunction<Stage<T>, StageBuilder, Boolean> matcher);
+  List<StageNavigator.Result> ancestors(BiFunction<Stage<T>, StageDefinitionBuilder, Boolean> matcher);
 
   /**
    * Gets all ancestor stages, including the current stage.

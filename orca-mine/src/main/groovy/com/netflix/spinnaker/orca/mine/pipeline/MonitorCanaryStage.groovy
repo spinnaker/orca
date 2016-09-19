@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.mine.pipeline
 
 import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.CancellableStage
-import com.netflix.spinnaker.orca.batch.StageBuilder
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.CleanupCanaryTask
@@ -53,7 +52,9 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
     def cancelCanaryResults = mineService.cancelCanary(stage.context.canary.id as String, "Pipeline execution (${stage.execution?.id}) canceled")
     log.info("Canceled canary in mine (canaryId: ${stage.context.canary.id}, stageId: ${stage.id}, executionId: ${stage.execution.id})")
 
-    def canary = stage.ancestors { Stage s, StageBuilder stageBuilder -> stageBuilder instanceof CanaryStage }[0]
+    def canary = stage.ancestors { Stage s, StageDefinitionBuilder stageBuilder ->
+      stageBuilder instanceof CanaryStage
+    } first()
     def cancelResult = ((CancellableStage) canary.stageBuilder).cancel(canary.stage)
     cancelResult.details.put("canary", cancelCanaryResults)
 
