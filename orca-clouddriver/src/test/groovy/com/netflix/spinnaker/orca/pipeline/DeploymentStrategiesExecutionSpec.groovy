@@ -111,7 +111,7 @@ abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> exte
     branches * determineSourceServerGroupTask.execute(_) >> SUCCESS
     branches * determineHealthProvidersTask.execute(_) >> SUCCESS
 
-    then:
+    and:
     branches * createServerGroupTask.execute(_) >> SUCCESS
     branches * monitorKatoTask.execute(_) >> SUCCESS
     (2 * branches) * serverGroupCacheForceRefreshTask.execute(_) >> SUCCESS
@@ -145,13 +145,13 @@ abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> exte
     branches * determineSourceServerGroupTask.execute(_) >> SUCCESS
     branches * determineHealthProvidersTask.execute(_) >> SUCCESS
 
-    then:
+    and:
     branches * createServerGroupTask.execute(_) >> SUCCESS
     branches * monitorKatoTask.execute(_) >> SUCCESS
     (2 * branches) * serverGroupCacheForceRefreshTask.execute(_) >> SUCCESS
     branches * waitForUpInstancesTask.execute(_) >> SUCCESS
 
-    then:
+    and:
     branches * testTask.execute(_) >> SUCCESS
 
     then:
