@@ -31,6 +31,8 @@ import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -44,6 +46,8 @@ public class SpringBatchConfiguration {
                                              ExecutionRepository executionRepository,
                                              JobLauncher jobLauncher,
                                              JobRegistry jobRegistry,
+                                             JobOperator jobOperator,
+                                             JobRepository jobRepository,
                                              JobBuilderFactory jobBuilderFactory,
                                              StepBuilderFactory stepBuilderFactory,
                                              TaskTaskletAdapter taskTaskletAdapter,
@@ -54,6 +58,8 @@ public class SpringBatchConfiguration {
       executionRepository,
       jobLauncher,
       jobRegistry,
+      jobOperator,
+      jobRepository,
       jobBuilderFactory,
       stepBuilderFactory,
       taskTaskletAdapter,
