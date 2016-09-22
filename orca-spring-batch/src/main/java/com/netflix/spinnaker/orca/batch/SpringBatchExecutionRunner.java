@@ -29,10 +29,7 @@ import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.DuplicateJobException;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -44,7 +41,9 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.support.SimpleFlow;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.launch.NoSuchJobException;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.TaskletStepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,11 +69,14 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   private final ExecutionRepository executionRepository;
   private final JobLauncher jobLauncher;
   private final JobRegistry jobRegistry;
+  private final JobOperator jobOperator;
+  private final JobRepository jobRepository;
   private final JobBuilderFactory jobs;
   private final StepBuilderFactory steps;
   private final TaskTaskletAdapter taskTaskletAdapter;
   private final Collection<com.netflix.spinnaker.orca.Task> tasks;
   private final ExecutionListenerProvider executionListenerProvider;
+
 
   @Autowired
   public SpringBatchExecutionRunner(
@@ -82,6 +84,8 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     ExecutionRepository executionRepository,
     JobLauncher jobLauncher,
     JobRegistry jobRegistry,
+    JobOperator jobOperator,
+    JobRepository jobRepository,
     JobBuilderFactory jobs,
     StepBuilderFactory steps,
     TaskTaskletAdapter taskTaskletAdapter,
@@ -92,6 +96,8 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     this.executionRepository = executionRepository;
     this.jobLauncher = jobLauncher;
     this.jobRegistry = jobRegistry;
+    this.jobOperator = jobOperator;
+    this.jobRepository = jobRepository;
     this.jobs = jobs;
     this.steps = steps;
     this.taskTaskletAdapter = taskTaskletAdapter;
@@ -100,7 +106,7 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   }
 
   @Override
-  public <T extends Execution<T>> void start(T execution) throws Exception {
+  public <T extends Execution<T>> void start(T execution) throws JobExecutionException {
     Job job = createJob(execution);
 
     // TODO-AJ This is hokiepokie
@@ -111,6 +117,18 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     }
 
     jobLauncher.run(job, createJobParameters(execution));
+  }
+
+  @Override
+  public <T extends Execution<T>> void resume(T execution) throws JobExecutionException {
+    String name = jobNameFor(execution);
+    JobParameters params = createJobParameters(execution);
+    JobExecution batchExecution = jobRepository.getLastJobExecution(name, params);
+    if (batchExecution == null) {
+      start(execution);
+    } else {
+      jobOperator.restart(batchExecution.getId());
+    }
   }
 
   private <E extends Execution<E>> JobParameters createJobParameters(E subject) {
