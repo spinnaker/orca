@@ -88,7 +88,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
     if (!strategy.replacesBasicSteps()) {
       steps.addAll((basicSteps(stage) ?: []) as List<Step>)
 
-      if (diffTasks) {
+      if (diffTasks && !stage.context.skipDiffs) {
         diffTasks.each { DiffTask diffTask ->
           try {
             steps << buildStep(stage, getDiffTaskName(diffTask.class.simpleName), diffTask.class)

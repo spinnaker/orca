@@ -52,7 +52,7 @@ class DeployStage extends DeployStrategyStage {
     steps << buildStep(stage, "waitForUpInstances", WaitForUpInstancesTask)
     steps << buildStep(stage, "forceCacheRefresh", ServerGroupCacheForceRefreshTask)
 
-    if (diffTasks) {
+    if (diffTasks && !stage.context.skipDiffs) {
       diffTasks.each { DiffTask diffTask ->
         steps << buildStep(stage, getDiffTaskName(diffTask.class.simpleName), diffTask.class)
       }
