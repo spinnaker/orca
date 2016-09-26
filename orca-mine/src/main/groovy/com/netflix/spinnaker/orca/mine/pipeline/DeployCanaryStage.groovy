@@ -141,7 +141,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
               buildId: cluster.buildUrl
             ]
           }
-          if (diffTasks) {
+          if (diffTasks && !stage.context.skipDiffs) {
             diffTasks.each {
               it.execute(stage)
             }
