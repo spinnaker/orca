@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import java.util.Collection;
 import java.util.Map;
-
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask;
 
 /**
  * Implement for stages that will create parallel branches to perform the same
@@ -40,7 +40,9 @@ public interface BranchingStageDefinitionBuilder extends StageDefinitionBuilder 
    * TODO-AJ Only necessary for v1 execution support
    */
   @Deprecated
-  Class<Task> completeParallelTask();
+  default Class<? extends Task> completeParallelTask() {
+    return NoOpTask.class;
+  }
 
   /**
    * Define any tasks that should run _before_ the parallel split.
