@@ -37,6 +37,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import static java.util.Collections.emptySet;
 
 @Configuration
 @ComponentScan("com.netflix.spinnaker.orca.batch.legacy")
@@ -77,10 +78,10 @@ public class SpringBatchConfiguration {
 
   @Bean
   StageBuilderProvider springBatchStageBuilderProvider(ApplicationContext applicationContext,
-                                                       Collection<StageBuilder> stageBuilders,
+                                                       Optional<Collection<StageBuilder>> stageBuilders,
                                                        Collection<StageDefinitionBuilder> stageDefinitionBuilders,
                                                        ExecutionListenerProvider executionListenerProvider) {
-    return new SpringBatchStageBuilderProvider(applicationContext, stageBuilders, stageDefinitionBuilders, executionListenerProvider);
+    return new SpringBatchStageBuilderProvider(applicationContext, stageBuilders.orElse(emptySet()), stageDefinitionBuilders, executionListenerProvider);
   }
 
 }
