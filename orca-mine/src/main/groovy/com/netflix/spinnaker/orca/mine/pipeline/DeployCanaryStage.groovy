@@ -55,6 +55,11 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   MineService mineService
 
   @Override
+  String getType() {
+    PIPELINE_CONFIG_TYPE
+  }
+
+  @Override
   <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
     builder.withTask("completeDeployCanary", CompleteDeployCanaryTask)
   }
@@ -70,7 +75,6 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
     List<Map> baselineAmis = findBaselineAmis(stage)
     Map defaultStageContext = stage.context
     List<Map> canaryDeployments = defaultStageContext.clusterPairs
-    def toContext = this.&clusterContext.curry(stage, defaultStageContext)
 
     return canaryDeployments.collect { Map canaryDeployment ->
       def canary = canaryDeployment.canary
@@ -88,7 +92,9 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
       baseline.buildUrl = createBuildUrl(baselineAmi)
 
       [baseline, canary]
-    }.flatten().collect(toContext)
+    }.flatten().collect { Map it ->
+      clusterContext(stage, defaultStageContext, it)
+    }
   }
 
   @CompileDynamic
