@@ -66,7 +66,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @CompileDynamic
-  private Map<String, Object> clusterContext(Stage stage, Map defaultStageContext, Map cluster) {
+  protected Map<String, Object> clusterContext(Stage stage, Map defaultStageContext, Map cluster) {
     def type = isClone(stage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
 
     if (cluster.providerType && !(cluster.providerType in ['aws', 'titus'])) {
