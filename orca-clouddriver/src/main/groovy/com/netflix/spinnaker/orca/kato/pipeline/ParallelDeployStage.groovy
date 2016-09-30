@@ -147,9 +147,9 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
       defaultStageContext.clear()
     }
 
-    def toContext = this.&clusterContext.curry(stage, defaultStageContext)
-
-    return clusters.collect(toContext)
+    return clusters.collect {
+      clusterContext(stage, defaultStageContext, it)
+    }
   }
 
   @Override
