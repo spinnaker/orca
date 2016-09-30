@@ -16,10 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
@@ -27,7 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask;
 import lombok.extern.slf4j.Slf4j;
-
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage;
@@ -98,9 +99,6 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       // inject the new parallel branches into the execution model
       parallelStages.forEach(it -> injectStage(stage, it, STAGE_AFTER));
 
-      // TODO: ideally we'd evaluate the parallel branches' own synthetic stages here but no way to pass them to the callback so they'll get added in series
-      // need some kind of context so we know what flow we're adding stuff to
-
       // the parallel branch type may be different (as in deploy stages) so re-evaluate the builder
       StageDefinitionBuilder parallelBranchBuilder = findBuilderForStage(parallelStages.iterator().next());
       // just build task graph once because it's the same for all branches
@@ -116,35 +114,27 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       // ensure parallel stages have the correct stage type (ie. createServerGroup -> deploy to satisfy deck)
       parallelStages.forEach(it -> it.setType(branchBuilder.getType()));
     } else {
-      Map<SyntheticStageOwner, List<Stage<T>>> aroundStages = builder
-        .aroundStages(stage)
-        .stream()
-        .collect(groupingBy(Stage::getSyntheticStageOwner));
-
-      if (stage.getExecution().getBuiltPipelineObjects().contains(stage)) {
-        aroundStages = new HashMap<>();
-      }
-      stage.getExecution().getBuiltPipelineObjects().add(stage);
-
-      reverse(aroundStages.getOrDefault(STAGE_BEFORE, emptyList()))
-        .forEach(preStage -> planBeforeOrAfterStage(stage, preStage, STAGE_BEFORE, callback));
-
       TaskNode.TaskGraph taskGraph = builder.buildTaskGraph(stage);
       callback.accept(singleton(stage), taskGraph);
-
-      reverse(aroundStages.getOrDefault(STAGE_AFTER, emptyList()))
-        .forEach(postStage -> planBeforeOrAfterStage(stage, postStage, STAGE_AFTER, callback));
     }
   }
 
-  private <T extends Execution<T>> void planBeforeOrAfterStage(
-    Stage<T> parent,
+  protected <T extends Execution<T>> void planBeforeOrAfterStages(
     Stage<T> stage,
     SyntheticStageOwner type,
-    BiConsumer<Collection<Stage<T>>, TaskNode.TaskGraph> callback
+    Consumer<Stage<T>> callback
   ) {
-    injectStage(parent, stage, type);
-    planStage(stage, callback);
+    StageDefinitionBuilder builder = findBuilderForStage(stage);
+    Map<SyntheticStageOwner, List<Stage<T>>> aroundStages = builder
+      .aroundStages(stage)
+      .stream()
+      .collect(groupingBy(Stage::getSyntheticStageOwner));
+
+    reverse(aroundStages.getOrDefault(type, emptyList()))
+      .forEach(syntheticStage -> {
+        injectStage(stage, syntheticStage, type);
+        callback.accept(syntheticStage);
+      });
   }
 
   private <T extends Execution<T>> void injectStage(
