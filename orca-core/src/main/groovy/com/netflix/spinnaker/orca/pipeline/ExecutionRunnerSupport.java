@@ -112,7 +112,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       callback.accept(singleton(stage), afterGraph);
 
       // ensure parallel stages have the correct stage type (ie. createServerGroup -> deploy to satisfy deck)
-      parallelStages.forEach(it -> it.setType(branchBuilder.getType()));
+      parallelStages.forEach(it -> it.setType(branchBuilder.getChildStageType(it)));
     } else {
       TaskNode.TaskGraph taskGraph = builder.buildTaskGraph(stage);
       callback.accept(singleton(stage), taskGraph);
@@ -130,11 +130,19 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       .stream()
       .collect(groupingBy(Stage::getSyntheticStageOwner));
 
-    reverse(aroundStages.getOrDefault(type, emptyList()))
-      .forEach(syntheticStage -> {
-        injectStage(stage, syntheticStage, type);
-        callback.accept(syntheticStage);
-      });
+    if (type == STAGE_BEFORE) {
+      reverse(aroundStages.getOrDefault(type, emptyList()))
+        .forEach(syntheticStage -> {
+          injectStage(stage, syntheticStage, type);
+          callback.accept(syntheticStage);
+        });
+    } else {
+      aroundStages.getOrDefault(type, emptyList())
+        .forEach(syntheticStage -> {
+          injectStage(stage, syntheticStage, type);
+          callback.accept(syntheticStage);
+        });
+    }
   }
 
   private <T extends Execution<T>> void injectStage(

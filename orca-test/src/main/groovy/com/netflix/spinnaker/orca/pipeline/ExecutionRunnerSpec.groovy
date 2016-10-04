@@ -179,7 +179,10 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
           buildTaskGraph() >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
-          aroundStages(_) >> [postStage1, postStage2]
+          // TODO: stages are inserted directly after parent but need to be done
+          // in forward order as batch job is built at the same time, being in
+          // wrong order in json is better than running in wrong order
+          aroundStages(_) >> [postStage2, postStage1]
         },
         Stub(StageDefinitionBuilder) {
           getType() >> "${stageType}_post1"
