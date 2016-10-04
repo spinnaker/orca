@@ -40,8 +40,8 @@ public interface BranchingStageDefinitionBuilder extends StageDefinitionBuilder 
    * TODO-AJ Only necessary for v1 execution support
    */
   @Deprecated
-  default Class<? extends Task> completeParallelTask() {
-    return NoOpTask.class;
+  default Task completeParallelTask() {
+    return new NoOpTask();
   }
 
   /**

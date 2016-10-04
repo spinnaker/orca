@@ -51,12 +51,12 @@ class BakeStage implements BranchingStageDefinitionBuilder, RestartableStage {
   @Override
   <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
     builder
-      .withTask("completeParallel", completeParallelTask())
+      .withTask("completeParallel", CompleteParallelBakeTask)
   }
 
   @Override
-  Class<Task> completeParallelTask() {
-    return CompleteParallelBakeTask.class;
+  Task completeParallelTask() {
+    return new CompleteParallelBakeTask()
   }
 
   @Override

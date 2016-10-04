@@ -16,16 +16,15 @@
 
 package com.netflix.spinnaker.orca.batch.stages;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.ParallelStage;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.batch.core.Step;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Deprecated
 public class ParallelStageDefinitionBuilder extends ParallelStage {
@@ -47,7 +46,7 @@ public class ParallelStageDefinitionBuilder extends ParallelStage {
   @Override
   public Task completeParallel() {
     try {
-      return delegate.completeParallelTask().newInstance();
+      return delegate.completeParallelTask();
     } catch (Exception e) {
       throw new RuntimeException("Unable to instantiate task", e);
     }

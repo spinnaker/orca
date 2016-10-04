@@ -37,6 +37,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import static java.util.Collections.emptyList
 
 @Component
 @Slf4j
@@ -65,8 +66,8 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @Override
-  Class<com.netflix.spinnaker.orca.Task> completeParallelTask() {
-    return CompleteDeployCanaryTask.class;
+  com.netflix.spinnaker.orca.Task completeParallelTask() {
+    return new CompleteDeployCanaryTask(Optional.of(diffTasks))
   }
 
   @Override
@@ -98,7 +99,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @CompileDynamic
-  private List<Map> findBaselineAmis(Stage stage) {
+  List<Map> findBaselineAmis(Stage stage) {
     Set<String> regions = stage.context.clusterPairs.collect {
       it.canary.availabilityZones.keySet() + it.baseline.availabilityZones.keySet()
     }.flatten()
@@ -109,7 +110,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @CompileDynamic
-  private String createBuildUrl(Map deploymentDetail) {
+  static String createBuildUrl(Map deploymentDetail) {
     def appVersion = AppVersion.parseName(deploymentDetail?.tags?.find {
       it.key == 'appversion'
     }?.value)
@@ -124,9 +125,15 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
 
   @Component
   @Slf4j
-  @CompileStatic
-  public
   static class CompleteDeployCanaryTask implements com.netflix.spinnaker.orca.Task {
+
+    private final List<DiffTask> diffTasks
+
+    @Autowired
+    CompleteDeployCanaryTask(Optional<List<DiffTask>> diffTasks) {
+      this.diffTasks = diffTasks.orElse((List<DiffTask>) emptyList())
+    }
+
     @CompileDynamic
     TaskResult execute(Stage stage) {
       def context = stage.context
@@ -148,7 +155,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
           def region = cluster.availabilityZones.keySet()[0]
           def nameBuilder = new NameBuilder() {
             @Override
-            public String combineAppStackDetail(String appName, String stack, String detail) {
+            String combineAppStackDetail(String appName, String stack, String detail) {
               return super.combineAppStackDetail(appName, stack, detail)
             }
           }
