@@ -56,8 +56,8 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @Override
-  Class<Task> completeParallelTask() {
-    return CompleteParallelDeployTask.class;
+  Task completeParallelTask() {
+    return new CompleteParallelDeployTask()
   }
 
   @Override

@@ -46,7 +46,7 @@ public class SpringBatchStageBuilderProvider implements StageBuilderProvider {
       .map(s -> {
         if (s instanceof BranchingStageDefinitionBuilder) {
           BranchingStageDefinitionBuilder branchingStageDefinitionBuilder = (BranchingStageDefinitionBuilder) s;
-          if (s.getType().equals("deploy")) {
+          if (s.getType().equals("deploy") || s.getType().equals("deployCanary")) {
             return new ParallelDeployStageDefinitionBuilder(branchingStageDefinitionBuilder, this);
           }
           return new ParallelStageDefinitionBuilder(branchingStageDefinitionBuilder, this);

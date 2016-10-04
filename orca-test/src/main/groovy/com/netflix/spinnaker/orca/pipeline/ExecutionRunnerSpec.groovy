@@ -757,7 +757,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       }
 
       @Override
-      Class<Task> completeParallelTask() {
+      Task completeParallelTask() {
         // unnecessary as `postBranchGraph` is explicitly overridden to not call `completeParallelTask`
         return null
       }
