@@ -43,7 +43,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
 
   @Override
   String getType() {
-    return PIPELINE_CONFIG_TYPE;
+    return PIPELINE_CONFIG_TYPE
   }
 
   @Override
