@@ -43,7 +43,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
 
   @Override
   String getType() {
-    return PIPELINE_CONFIG_TYPE;
+    return PIPELINE_CONFIG_TYPE
   }
 
   @Override
@@ -56,8 +56,8 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @Override
-  Class<Task> completeParallelTask() {
-    return CompleteParallelDeployTask.class;
+  Task completeParallelTask() {
+    return new CompleteParallelDeployTask()
   }
 
   @Override
@@ -66,7 +66,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @CompileDynamic
-  private Map<String, Object> clusterContext(Stage stage, Map defaultStageContext, Map cluster) {
+  protected Map<String, Object> clusterContext(Stage stage, Map defaultStageContext, Map cluster) {
     def type = isClone(stage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
 
     if (cluster.providerType && !(cluster.providerType in ['aws', 'titus'])) {
@@ -147,9 +147,9 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
       defaultStageContext.clear()
     }
 
-    def toContext = this.&clusterContext.curry(stage, defaultStageContext)
-
-    return clusters.collect(toContext)
+    return clusters.collect {
+      clusterContext(stage, defaultStageContext, it)
+    }
   }
 
   @Override

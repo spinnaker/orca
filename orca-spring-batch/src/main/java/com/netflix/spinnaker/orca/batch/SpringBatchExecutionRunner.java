@@ -55,6 +55,8 @@ import static com.google.common.collect.Maps.newHashMap;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.ExecutionStatus.REDIRECT;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage;
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
@@ -258,23 +260,30 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
   }
 
   private <E extends Execution<E>> void buildStepsForFlow(Stage<E> stage, FlowBuilder<Flow> flow) {
+    planBeforeOrAfterStages(stage, STAGE_BEFORE, (preStage) -> {
+      buildStepsForFlow(preStage, flow);
+    });
     planStage(
       stage,
       (stages, taskGraph) -> {
-        boolean needsPlanning = !stages.iterator().next().getType().equals(stage.getType());
+        Stage<E> firstStage = stages.iterator().next();
+        boolean needsPlanning = !firstStage.getType().equals(stage.getType());
         if (stages.size() > 1) {
           // TODO: this is just ignoring the taskGraph
           addParallelStepsToFlow(flow, stages, taskGraph, needsPlanning);
         } else if (stages.size() == 1) {
           // TODO: if this is a parallel stage with a strategy stage the taskGraph is incomplete
-          if (!needsPlanning) {
-            addStepsToFlow(flow, stages.iterator().next(), taskGraph);
+          if (needsPlanning) {
+            buildStepsForFlow(firstStage, flow);
           } else {
-            buildStepsForFlow(stages.iterator().next(), flow);
+            addStepsToFlow(flow, firstStage, taskGraph);
           }
         }
       }
     );
+    planBeforeOrAfterStages(stage, STAGE_AFTER, (postStage) -> {
+      buildStepsForFlow(postStage, flow);
+    });
   }
 
   private <E extends Execution<E>, Q> FlowBuilder<Q> addStepsToFlow(FlowBuilder<Q> flow, Stage<E> stage, TaskNode.TaskGraph taskGraph) {

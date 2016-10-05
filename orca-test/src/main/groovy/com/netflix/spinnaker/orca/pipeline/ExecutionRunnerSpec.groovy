@@ -179,7 +179,10 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
           buildTaskGraph() >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
-          aroundStages(_) >> [postStage1, postStage2]
+          // TODO: stages are inserted directly after parent but need to be done
+          // in forward order as batch job is built at the same time, being in
+          // wrong order in json is better than running in wrong order
+          aroundStages(_) >> [postStage2, postStage1]
         },
         Stub(StageDefinitionBuilder) {
           getType() >> "${stageType}_post1"
@@ -264,8 +267,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     execution = Pipeline.builder().withId("1").withStage(stageType).withParallel(parallel).build()
   }
 
-  @Unroll
-  def "runs synthetic stages in #description mode"() {
+  def "runs synthetic stages"() {
     given:
     execution.stages[0].requisiteStageRefIds = []
     executionRepository.retrievePipeline(execution.id) >> execution
@@ -312,11 +314,63 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     executedStageTypes == ["before_${stageType}_1", "before_${stageType}_2", stageType, "after_$stageType"]
 
     where:
-    parallel | description
-    true     | "parallel"
-
     stageType = "foo"
-    execution = Pipeline.builder().withId("1").withStage(stageType).withParallel(parallel).build()
+    execution = Pipeline.builder().withId("1").withStage(stageType).withParallel(true).build()
+  }
+
+  def "runs synthetic stages that have their own synthetic stages"() {
+    given:
+    execution.stages[0].requisiteStageRefIds = []
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def stageDefinitionBuilders = [
+      Stub(StageDefinitionBuilder) {
+        getType() >> stageType
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("task", TestTask)])
+        aroundStages(_) >> { Stage<Pipeline> parentStage ->
+          [
+            newStage(execution, "after_$stageType", "after", [:], parentStage, STAGE_AFTER)
+          ]
+        }
+      },
+      Stub(StageDefinitionBuilder) {
+        getType() >> "before_after_${stageType}"
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("before_after_task", TestTask)])
+      },
+      Stub(StageDefinitionBuilder) {
+        getType() >> "after_after_${stageType}"
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_after_task", TestTask)])
+      },
+      Stub(StageDefinitionBuilder) {
+        getType() >> "after_$stageType"
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_task", TestTask)])
+        aroundStages(_) >> { Stage<Pipeline> parentStage ->
+          [
+            newStage(execution, "before_after_${stageType}", "before_after", [:], parentStage, STAGE_BEFORE),
+            newStage(execution, "after_after_$stageType", "after_after", [:], parentStage, STAGE_AFTER)
+          ]
+        }
+      }
+    ]
+    @Subject runner = create(*stageDefinitionBuilders)
+
+    and:
+    def executedStageTypes = []
+    testTask.execute(_) >> { Stage stage ->
+      executedStageTypes << stage.type
+      new DefaultTaskResult(SUCCEEDED)
+    }
+
+    when:
+    runner.start(execution)
+
+    then:
+    executedStageTypes == [stageType, "before_after_${stageType}", "after_$stageType", "after_after_$stageType"]
+
+    where:
+    stageType = "foo"
+    execution = Pipeline.builder().withId("1").withStage(stageType).withParallel(true).build()
   }
 
   def "executes stage graph in the correct order"() {
@@ -706,7 +760,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       }
 
       @Override
-      Class<Task> completeParallelTask() {
+      Task completeParallelTask() {
         // unnecessary as `postBranchGraph` is explicitly overridden to not call `completeParallelTask`
         return null
       }
