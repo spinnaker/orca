@@ -29,8 +29,8 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -49,8 +49,9 @@ class JenkinsStage implements StageDefinitionBuilder, RestartableStage, Cancella
   }
 
   @Override
-  Stage prepareStageForRestart(Stage stage) {
-    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
+  Stage prepareStageForRestart(ExecutionRepository executionRepository, Stage stage, Collection<StageDefinitionBuilder> allStageBuilders) {
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport
+      .prepareStageForRestart(executionRepository, stage, this, allStageBuilders)
     stage.startTime = null
     stage.endTime = null
 

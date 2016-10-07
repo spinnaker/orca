@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import com.netflix.spinnaker.orca.batch.StageBuilder;
 import com.netflix.spinnaker.orca.batch.StageBuilderProvider;
 import com.netflix.spinnaker.orca.pipeline.LinearStage;
@@ -30,7 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.batch.core.Step;
-
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
@@ -90,10 +88,5 @@ public class LinearStageDefinitionBuilder extends LinearStage {
         }
       )
       .collect(toList());
-  }
-
-  @Override
-  public Stage prepareStageForRestart(Stage stage) {
-    return delegate.prepareStageForRestart(stage);
   }
 }

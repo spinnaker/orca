@@ -7,7 +7,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import org.springframework.context.ApplicationContext
 import spock.lang.Specification
 
 /*
@@ -68,12 +67,12 @@ class AcaTaskStageSpec extends Specification {
           status: "CANCELED"
         ),
     ]
-    AcaTaskStage acaTaskStage = new AcaTaskStage(applicationContext: Stub(ApplicationContext))
+    AcaTaskStage acaTaskStage = new AcaTaskStage()
     MineService mineService = Mock()
     acaTaskStage.mineService = mineService
 
     when:
-    Stage result = acaTaskStage.prepareStageForRestart(executionRepository, stage)
+    Stage result = acaTaskStage.prepareStageForRestart(executionRepository, stage, [])
 
     then: "canary should be copied to the restart details"
     result.context.restartDetails.previousCanary == canary

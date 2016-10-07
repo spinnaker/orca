@@ -28,7 +28,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
 @Component
@@ -44,8 +43,9 @@ class ScriptStage implements StageDefinitionBuilder, RestartableStage {
   }
 
   @Override
-  Stage prepareStageForRestart(Stage stage) {
-    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
+  Stage prepareStageForRestart(ExecutionRepository executionRepository, Stage stage, Collection<StageDefinitionBuilder> allStageBuilders) {
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport
+      .prepareStageForRestart(executionRepository, stage, this, allStageBuilders)
     stage.startTime = null
     stage.endTime = null
 

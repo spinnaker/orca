@@ -1,6 +1,6 @@
 package com.netflix.spinnaker.orca.front50.pipeline;
 
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import com.netflix.spinnaker.orca.CancellableStage;
 import com.netflix.spinnaker.orca.batch.RestartableStage;
@@ -35,8 +35,10 @@ public class PipelineStage implements StageDefinitionBuilder, RestartableStage, 
       .withTask("monitorPipeline", MonitorPipelineTask.class);
   }
 
-  @Override public Stage prepareStageForRestart(Stage stage) {
-    stage = StageDefinitionBuilderSupport.prepareStageForRestart(stage);
+  @Override
+  public Stage prepareStageForRestart(ExecutionRepository executionRepository, Stage stage, Collection<StageDefinitionBuilder> allStageBuilders) {
+    stage = StageDefinitionBuilderSupport
+      .prepareStageForRestart(executionRepository, stage, this, allStageBuilders);
     stage.setStartTime(null);
     stage.setEndTime(null);
 

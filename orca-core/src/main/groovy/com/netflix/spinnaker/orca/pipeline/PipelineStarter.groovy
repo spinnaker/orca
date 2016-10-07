@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.batch.ExecutionListenerProvider
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import org.springframework.batch.core.JobExecution
 import org.springframework.batch.core.JobParameter
 import org.springframework.batch.core.JobParameters
@@ -76,9 +76,9 @@ class PipelineStarter extends ExecutionStarter<Pipeline> {
   @Override
   protected boolean queueExecution(Pipeline pipeline) {
     return pipeline.pipelineConfigId &&
-        pipeline.limitConcurrent &&
-        startTracker &&
-        startTracker.queueIfNotStarted(pipeline.pipelineConfigId, pipeline.id)
+      pipeline.limitConcurrent &&
+      startTracker &&
+      startTracker.queueIfNotStarted(pipeline.pipelineConfigId, pipeline.id)
   }
 
   @Override

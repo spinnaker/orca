@@ -41,8 +41,9 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
   }
 
   @Override
-  Stage prepareStageForRestart(Stage stage) {
-    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport.prepareStageForRestart(stage)
+  Stage prepareStageForRestart(ExecutionRepository executionRepository, Stage stage, Collection<StageDefinitionBuilder> allStageBuilders) {
+    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport
+      .prepareStageForRestart(executionRepository, stage, this, allStageBuilders)
 
     stage.context.remove("judgmentStatus")
     stage.context.remove("lastModifiedBy")

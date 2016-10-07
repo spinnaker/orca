@@ -30,12 +30,6 @@ import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.security.AuthenticatedRequest
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.transform.PackageScope
-import groovy.util.logging.Slf4j
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.StepExecutionListener
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory
@@ -112,73 +106,6 @@ abstract class StageBuilder implements ApplicationContextAware {
 
       return jobBuilder
     }
-  }
-
-  /**
-   * Prepares a stage for restarting by:
-   * - marking the halted task as NOT_STARTED and resetting its start and end times
-   * - marking the stage as RUNNING
-   */
-  Stage prepareStageForRestart(Stage stage) {
-    stage.execution.canceled = false
-    stage.execution.stages
-         .findAll { it.status == ExecutionStatus.CANCELED }
-         .each { Stage it ->
-           it.status = ExecutionStatus.NOT_STARTED
-           it.tasks
-             .findAll { it.status == ExecutionStatus.CANCELED }
-             .each { task ->
-               task.startTime = null
-               task.endTime = null
-               task.status = ExecutionStatus.NOT_STARTED
-             }
-         }
-
-    def childStages = stage.execution.stages.findAll {
-      def requisiteStageRefIds = it.requisiteStageRefIds ?: []
-      if (it.context.requisiteIds) {
-        requisiteStageRefIds.addAll(it.context.requisiteIds as Collection<String>)
-      }
-
-      // only want to consider completed child stages
-      return it.status.complete && requisiteStageRefIds.contains(stage.refId)
-    }
-
-    def stageBuilders = getStageBuilders()
-    childStages.each { Stage childStage ->
-      def stageBuilder = stageBuilders.find { it.type == childStage.type } ?: this
-      stageBuilder.prepareStageForRestart(executionRepository, childStage)
-
-      // the default `prepareStageForRestart` behavior sets a stage back to RUNNING, that's not appropriate for child stages
-      childStage.status = ExecutionStatus.NOT_STARTED
-      childStage.tasks.each {
-        it.startTime = null
-        it.endTime = null
-        it.status = ExecutionStatus.NOT_STARTED
-      }
-      executionRepository.storeStage((PipelineStage) childStage)
-    }
-
-    stage.tasks.find { it.status.halt }.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
-      task.startTime = null
-      task.endTime = null
-      task.status = ExecutionStatus.NOT_STARTED
-    }
-    stage.context["restartDetails"] = [
-      "restartedBy": AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
-      "restartTime": System.currentTimeMillis()
-    ] as Map<String, Object>
-
-    if (stage.context.exception) {
-      stage.context.restartDetails["previousException"] = stage.context.exception
-      stage.context.remove("exception")
-    }
-    stage.status = ExecutionStatus.RUNNING
-    stage.startTime = null
-    stage.endTime = null
-    executionRepository.storeStage((PipelineStage) stage)
-
-    return stage
   }
 
   @Deprecated

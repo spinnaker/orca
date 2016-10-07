@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -48,9 +47,9 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage, Restarta
   }
 
   @Override
-  Stage prepareStageForRestart(Stage stage) {
+  Stage prepareStageForRestart(ExecutionRepository executionRepository, Stage stage, Collection<StageDefinitionBuilder> allStageBuilders) {
     stage = StageDefinitionBuilder.StageDefinitionBuilderSupport
-      .prepareStageForRestart(stage)
+      .prepareStageForRestart(executionRepository, stage, this, allStageBuilders)
     stage.startTime = null
     stage.endTime = null
 
