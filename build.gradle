@@ -30,8 +30,18 @@ allprojects {
   apply plugin: 'groovy'
   group = "com.netflix.spinnaker.orca"
 
+  ext {
+    spinnakerDependenciesVersion = "0.54.0"
+  }
+
+  if (spinnakerDependenciesVersion.indexOf('-dev') != -1) {
+    repositories {
+      mavenLocal()
+    }
+  }
+
   spinnaker {
-    dependenciesVersion = "0.49.0"
+    dependenciesVersion = spinnakerDependenciesVersion
   }
   test {
     testLogging {
