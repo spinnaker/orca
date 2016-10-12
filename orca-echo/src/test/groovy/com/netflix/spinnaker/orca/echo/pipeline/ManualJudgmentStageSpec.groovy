@@ -133,4 +133,23 @@ class ManualJudgmentStageSpec extends Specification {
     ""             | true                           || false
     null           | true                           || false
   }
+
+  void "should send notifications with parsed expressions"() {
+    given:
+    def echoService = Mock(EchoService)
+    def task = new WaitForManualJudgmentTask(echoService: echoService)
+
+    when:
+    def result = task.execute(new PipelineStage(new Pipeline(), "", [
+      notifications: [new Notification(type: "email", address: "test@netflix.com")],
+      instructions: '${replaceMe}',
+      replaceMe: 'newValue'
+    ]))
+
+    then:
+    1 * echoService.create({ EchoService.Notification n ->
+      assert n.additionalContext.instructions == 'newValue'
+    } as EchoService.Notification)
+    0 * _
+  }
 }

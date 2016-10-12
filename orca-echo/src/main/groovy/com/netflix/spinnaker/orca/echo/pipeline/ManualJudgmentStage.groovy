@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.LinearStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
 import org.springframework.batch.core.Step
@@ -162,7 +163,9 @@ class ManualJudgmentStage extends LinearStage implements RestartableStage, Authe
           application: stage.execution.application
         ),
         additionalContext: [
-          instructions: stage.context.instructions ?: ""
+          instructions: ContextParameterProcessor.process([
+            "expression": stage.context.instructions ?: ""
+          ], ContextParameterProcessor.buildExecutionContext(stage, true), true).expression
         ]
       ))
       lastNotified = new Date()
