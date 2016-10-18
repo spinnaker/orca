@@ -88,7 +88,7 @@ class Main extends SpringBootServletInitializer {
     'netflix.environment'    : 'test',
     'netflix.account'        : '${netflix.environment}',
     'netflix.stack'          : 'test',
-    'spring.config.location' : '${user.home}/.spinnaker/',
+    'spring.config.location' : '/opt/spinnaker/config/,${user.home}/.spinnaker/',
     'spring.application.name': 'orca',
     'spring.config.name'     : 'spinnaker,${spring.application.name}',
     'spring.profiles.active' : '${netflix.environment},local'
