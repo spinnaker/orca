@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component
 class OpenstackServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAware {
 
   boolean katoResultExpected = false
+  String katoResultKeyExpected = null
   String cloudProvider = 'openstack'
 
   @Override

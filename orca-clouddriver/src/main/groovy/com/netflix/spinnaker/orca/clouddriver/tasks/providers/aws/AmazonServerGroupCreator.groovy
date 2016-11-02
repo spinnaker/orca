@@ -46,6 +46,7 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
   List<String> defaultSecurityGroups = DEFAULT_SECURITY_GROUPS
 
   boolean katoResultExpected = true
+  String katoResultKeyExpected = "serverGroupNames"
   String cloudProvider = "aws"
 
   @Override

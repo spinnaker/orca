@@ -75,6 +75,7 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
     Map<String, List<String>> serverGroups = getServerGroups(stage)
 
     if (!serverGroups || !serverGroups?.values()?.flatten()) {
+      log.info("No server groups found for stage ${stage.id}; terminating task")
       return new DefaultTaskResult(ExecutionStatus.TERMINAL)
     }
     Names names = Names.parseName(serverGroups.values().flatten()[0])

@@ -54,11 +54,14 @@ class CreateServerGroupTask extends AbstractCloudProviderAwareTask implements Re
     def taskId = kato.requestOperations(cloudProvider, ops).toBlocking().first()
 
     Map outputs = [
-        "notification.type"   : "createdeploy",
-        "kato.result.expected": creator.katoResultExpected,
-        "kato.last.task.id"   : taskId,
-        "deploy.account.name" : credentials
+        "notification.type"        : "createdeploy",
+        "kato.result.expected"     : creator.katoResultExpected,
+        "kato.last.task.id"        : taskId,
+        "deploy.account.name"      : credentials
     ]
+    if (creator.katoResultKeyExpected) {
+      outputs.put("kato.result.key.expected", creator.katoResultKeyExpected)
+    }
 
     if (stage.context.suspendedProcesses?.contains("AddToLoadBalancer")) {
       outputs.interestingHealthProviderNames = HealthHelper.getInterestingHealthProviderNames(stage, ["Amazon"])

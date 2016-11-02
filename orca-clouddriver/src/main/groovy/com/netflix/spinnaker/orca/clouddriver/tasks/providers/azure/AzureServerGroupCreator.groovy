@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component
 class AzureServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAware {
 
   boolean katoResultExpected = false
+  String katoResultKeyExpected = null
   String cloudProvider = "azure"
 
   @Override
