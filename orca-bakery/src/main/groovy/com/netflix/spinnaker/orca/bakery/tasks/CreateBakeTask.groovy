@@ -108,14 +108,18 @@ class CreateBakeTask implements RetryableTask {
   }
 
   private static boolean shouldRebake(Stage stage) {
-    if (stage.context.rebake == true) {
-      return true
-    }
     if (stage.execution instanceof Pipeline) {
       Map trigger = ((Pipeline) stage.execution).trigger
-      return trigger?.rebake == true
+      if (trigger) {
+        if (trigger.rebake == false) {
+          return false
+        }
+        if (trigger.rebake == true) {
+          return true
+        }
+      }
     }
-    return false
+    return stage.context.rebake == true
   }
 
   @CompileDynamic
