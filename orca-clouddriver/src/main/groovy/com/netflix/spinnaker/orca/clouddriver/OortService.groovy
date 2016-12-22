@@ -123,7 +123,7 @@ public interface OortService {
   static class EntityTags {
     String id
 
-    Map<String, Object> tags = [:]
+    List tags = []
     EntityRef entityRef
 
     @JsonIgnoreProperties(ignoreUnknown = true)
