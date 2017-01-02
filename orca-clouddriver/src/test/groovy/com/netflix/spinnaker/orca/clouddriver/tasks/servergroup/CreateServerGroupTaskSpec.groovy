@@ -202,7 +202,7 @@ class CreateServerGroupTaskSpec extends Specification {
     ]
     // Building these as maps instead of using the pipeline model objects since this configuration was observed in testing.
     def parentTrigger = [
-      isPipeline: true,
+      parentPipelineId: "abc",
       parentExecution: [
         name: "grandparent",
         context: grandparentGlobalContext,
@@ -214,7 +214,7 @@ class CreateServerGroupTaskSpec extends Specification {
     ]
 
     def childTrigger = [
-      isPipeline: true,
+      parentPipelineId: "abc",
       parentExecution: [
         name: "parent",
         trigger: parentTrigger
