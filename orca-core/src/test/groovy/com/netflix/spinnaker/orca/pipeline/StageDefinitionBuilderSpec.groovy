@@ -23,14 +23,16 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
+
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 
 class StageDefinitionBuilderSpec extends Specification {
 
   def executionRepository = Mock(ExecutionRepository)
 
-  def "should prepare completed downstream stages for restart"() {
+  def "should prepare completed or running downstream stages for restart"() {
     given:
     def stageBuilder = new TestStage()
 
@@ -39,7 +41,8 @@ class StageDefinitionBuilderSpec extends Specification {
       new PipelineStage(pipeline, "1"),
       new PipelineStage(pipeline, "2"),
       new PipelineStage(pipeline, "3"),
-      new PipelineStage(pipeline, "4")
+      new PipelineStage(pipeline, "4"),
+      new PipelineStage(pipeline, "5")
     ]
     pipeline.stages.eachWithIndex { PipelineStage stage, int index ->
       stage.refId = index.toString()
@@ -57,7 +60,14 @@ class StageDefinitionBuilderSpec extends Specification {
     and:
     pipeline.stages[0].status = SUCCEEDED
     pipeline.stages[1].status = SUCCEEDED
-    pipeline.stages[2].status = NOT_STARTED
+    pipeline.stages[2].status = RUNNING
+    pipeline.stages[3].status = NOT_STARTED
+
+    and:
+    pipeline.stages[4].status = NOT_STARTED
+    pipeline.stages[4].tasks[0].startTime = null
+    pipeline.stages[4].tasks[0].endTime = null
+    pipeline.stages[4].tasks[0].status = NOT_STARTED
 
     when:
     stageBuilder.prepareStageForRestart(executionRepository, pipeline.stages[0], [stageBuilder])
@@ -65,22 +75,28 @@ class StageDefinitionBuilderSpec extends Specification {
     then:
     pipeline.stages[0].context.containsKey("restartDetails")
     pipeline.stages[1].context.containsKey("restartDetails")
-    !pipeline.stages[2].context.containsKey("restartDetails")
+    pipeline.stages[2].context.containsKey("restartDetails")
+    !pipeline.stages[3].context.containsKey("restartDetails")
 
     and: "second stage was restarted and should have its tasks reset"
     pipeline.stages[1].tasks[0].startTime == null
     pipeline.stages[1].tasks[0].endTime == null
     pipeline.stages[1].tasks[0].status == NOT_STARTED
 
-    and: "third stage was not restarted (incomplete status)"
-    pipeline.stages[2].tasks[0].startTime == 1L
-    pipeline.stages[2].tasks[0].endTime == 2L
-    pipeline.stages[2].tasks[0].status == SUCCEEDED
+    and: 'third stage was restarted (running status)'
+    pipeline.stages[2].tasks[0].startTime == null
+    pipeline.stages[2].tasks[0].endTime == null
+    pipeline.stages[2].tasks[0].status == NOT_STARTED
 
-    and: "fourth stage was restarted"
-    pipeline.stages[1].tasks[0].startTime == null
-    pipeline.stages[1].tasks[0].endTime == null
-    pipeline.stages[1].tasks[0].status == NOT_STARTED
+    and: "fourth stage was not restarted (incomplete status)"
+    pipeline.stages[3].tasks[0].startTime == 1L
+    pipeline.stages[3].tasks[0].endTime == 2L
+    pipeline.stages[3].tasks[0].status == SUCCEEDED
+
+    and: "fifth stage was not touched"
+    pipeline.stages[4].tasks[0].startTime == null
+    pipeline.stages[4].tasks[0].endTime == null
+    pipeline.stages[4].tasks[0].status == NOT_STARTED
   }
 
   def "should resume a paused pipeline when restarting"() {
