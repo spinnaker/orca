@@ -1,0 +1,151 @@
+[{
+  "pipelineTemplateImports": ["spinnakerPipelines.json"],
+  "deploymentTargetImports": ["clouddriver.json"],
+  "#COMMENT": "//as a DRY construct to reference the same multiple set of related clusters:",
+  "deploymentTargetGroupings": [{
+    "name": "prestaging",
+    "targets": [
+      {"name": "clouddriver-prestaging-api", "parameters": {"redis": "a"}},
+      {"name": "clouddriver-prestaging-api-readonly", "parameters": {"redis": "a"}},
+      {"name": "clouddriver-prestaging-cache", "parameters": {"redis": "a"}}
+    ]
+  },
+  {
+    "name": "main",
+    "parameters": ["redis"],
+    "targets": [
+      {"name": "clouddriver-main-api", "parameters": {"redis": "{{redis}}"}},
+      {"name": "clouddriver-main-api-readonly", "parameters": {"redis": "{{redis}}"}},
+      {"name": "clouddriver-main-cache", "parameters": {"redis": "{{redis}}"}}
+    ]
+  }],
+  "pipelineBindings": [{
+   "pipelineName": "Bake and Tag",
+   "deploymentTargets": [{
+     "name": "prestaging",
+     "targets": [ 
+       {"group": "prestaging"}
+     ]
+   }]
+  },
+  {
+    "pipelineName": "Deploy to prestaging",
+    "deploymentTargets": [{
+     "name": "prestaging",
+     "targets": [ 
+       {"group": "prestaging"}
+     ]
+    }]
+  },
+  {
+    "pipelineName": "Deploy to Main",
+    "deploymentTargets": [{
+     "name": "prestaging",
+     "targets": [ 
+       {"group": "prestaging"}
+     ]
+    },{
+     "name": "main",
+     "targets": [ 
+       {"name": "clouddriver-main-cache", "parameters": {"redis": "${redisGroup.toString()}"}}
+     ]
+    },{
+      "name": "main-api",
+      "targets": [
+      	{"name": "clouddriver-main-api", "parameters": {"redis": "${redisGroup.toString()"}},
+      	{"name": "clouddriver-main-api-readonly", "parameters": {"redis": "${redisGroup.toString()"}}
+      ]
+    },{
+     "name": "previous",
+     "targets": [ 
+       {"group": "main", "parameters": {"redis": "${altRedisGroup.toString()}"}}
+     ]    	
+    }],
+    "pipelineExtensions": {
+      "parameters": [{
+        "description": "Is this deployment into a new redis instance?",
+        "name": "isRedisReplacement",
+        "default": "false",
+        "hasOptions": true,
+        "options": [{
+          "value": "false"
+        },
+        {
+          "value": "true"
+        }]
+      }],
+      "stages": [{
+        "name": "Look up pipeline execution properties",
+        "parameters": {
+          "isRedisReplacement": "${parameters.isRedisReplacement}",
+          "account": "#account('main')",
+          "stack": "#stack('main')",
+          "application": "#application('main')",
+          "region": "#regions('main')"
+        },
+        "master": "spinnaker",
+        "propertyFile": "activeRedis.properties",
+        "type": "jenkins",
+        "failPipeline": true,
+        "job": "FindActiveRedis",
+        "refId": "14",
+        "requisiteStageRefIds": [],
+        "continuePipeline": false,
+        "#COMMENT": "//This bit??:",
+        "makeDependencyOf": ["#refId('Deploy to Main')"]
+      },{
+        "type": "wait",
+        "name": "Wait for Cache Population",
+        "waitTime": "${cacheAgentDelay}",
+        "refId": "8",
+        "requisiteStageRefIds": [
+          "#refId('Deploy to Main')"
+        ]
+      },{
+        "type": "deploy",
+        "name": "Deploy APIs",
+        "clusters": ["#clusters('main-api')"],
+        "refId": "9",
+        "requisiteStageRefIds": [
+          "8"
+        ]
+      },{
+        "type": "checkPreconditions",
+        "name": "Test for alt cluster teardown",
+        "preconditions": [
+          {
+            "type": "expression",
+            "failPipeline": false,
+            "context": {
+              "expression": "${parameters.isRedisReplacement == 'true'}"
+            }
+          }
+        ],
+        "refId": "10",
+        "requisiteStageRefIds": [
+          "9"
+        ]
+      },
+      {
+        "function": "#foreach('previous', 'cluster')",
+        "allowDeleteActive": true,
+        "shrinkToSize": 0,
+        "credentials": "#account('cluster')",
+        "type": "shrinkCluster",
+        "retainLargerOverNewer": "false",
+        "#COMMENT": "//this would become dynamically generated..",
+        "refId": "11",
+        "requisiteStageRefIds": [
+          "10"
+        ],
+        "cluster": "#clusterName('cluster')",
+        "name": "Shrink Cluster - #clusterName('cluster')",
+        "regions": [
+          "#regions('cluster')"
+        ],
+        "cloudProviderType": "#cloudProviderType('cluster')",
+        "cloudProvider": "#cloudProviderType('cluster')"
+      }]
+    }
+  }]
+}]

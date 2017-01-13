@@ -1,0 +1,58 @@
+{
+  "pipelineTemplateIncludes": [
+    "spinnakerPipelines.json"
+  ],
+  "deploymentTargetIncludes": [
+    "gate.json", "deploydefaults.json", "accounts.json"
+  ],
+  "pipelineBindings": [
+    {
+      "pipelineTemplateName": "Bake and Tag",
+      "deploymentTargets": [
+        {
+          "name": "prestaging",
+          "targets": [
+            {
+              "name": "gate-prestaging"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pipelineTemplateName": "Deploy to prestaging",
+      "deploymentTargets": [
+        {
+          "name": "prestaging",
+          "targets": [
+            {
+              "name": "gate-prestaging"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pipelineTemplateName": "Deploy to Main",
+      "deploymentTargets": [
+        {
+          "name": "prestaging",
+          "targets": [
+            {
+              "name": "gate-prestaging"
+            }
+          ]
+        },
+        {
+          "name": "main",
+          "targets": [
+            {
+              "name": "gate-main"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

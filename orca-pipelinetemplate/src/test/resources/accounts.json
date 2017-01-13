@@ -1,0 +1,72 @@
+[
+  {
+    "name": "awsstandard",
+    "parameters": [
+      "accountId",
+      "accountName",
+      "region"
+    ],
+    "content": {
+      "account": "{{accountName}}",
+      "provider": "aws",
+      "cloudProvider": "aws",
+      "keyPair": "nf-keypair-{{accountId}}-{{region}}",
+      "availabilityZones": {
+        "function": "#filter('context', 'region')",
+        "context": {
+          "us-west-2": [
+            "us-west-2a",
+            "us-west-2b",
+            "us-west-2c"
+          ],
+          "us-east-1": [
+            "us-east-1c",
+            "us-east-1d",
+            "us-east-1e"
+          ],
+          "eu-west-1": [
+            "eu-west-1a",
+            "eu-west-1b",
+            "eu-west-1c"
+          ],
+          "us-west-1": [
+            "us-west-1a",
+            "us-west-1c"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "awsprod",
+    "parameters": [
+      "region"
+    ],
+    "extend": [
+      {
+        "name": "awsstandard",
+        "parameters": {
+          "accountId": "1234567890",
+          "accountName": "prod",
+          "region": "{{region}}"
+        }
+      }
+    ]
+  },
+  {
+    "name": "awsmgmt",
+    "parameters": [
+      "region"
+    ],
+    "extend": [
+      {
+        "name": "awsstandard",
+        "parameters": {
+          "accountId": "23456789012",
+          "accountName": "mgmt",
+          "region": "{{region}}"
+        }
+      }
+    ]
+  }
+]

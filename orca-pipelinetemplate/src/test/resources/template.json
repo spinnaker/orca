@@ -1,0 +1,25 @@
+[
+  {
+    "name": "dcdtest",
+    "deploymentTargets": [
+    ],
+    "pipeline": {
+      "keepWaitingPipelines": false,
+      "limitConcurrent": true,
+      "parallel": true,
+      "lastModifiedBy": "user@host.net",
+      "stages": [
+        {
+          "refId": "1",
+          "requisiteStageRefIds": [],
+          "type": "wait",
+          "name": "Wait",
+          "waitTime": 30
+        }
+      ],
+      "triggers": [],
+      "executionEngine": "v2",
+      "updateTs": "1484243038000"
+    }
+  }
+]

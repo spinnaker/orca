@@ -1,0 +1,96 @@
+[{
+  "name": "clouddriver",
+  "parameters": ["stack", "detail", "redis"],
+  "include": [
+    "deploydefaults.json"
+  ],
+  "extend": [{
+    "name": "awsdefaults",
+    "parameters": {
+      "application": "clouddriver"
+    }
+  }],
+  "content": {
+    "stack": "{{stack}}",
+    "freeFormDetails": "{{redis}}-{{detail}}"
+  }
+},
+{
+  "name": "clouddriver-prestaging",
+  "parameters": ["detail", "redis"],
+  "include": [
+    "accounts.json"
+  ],
+  "extend": [{
+    "name": "clouddriver", 
+    "parameters": {
+      "stack": "prestaging", 
+      "redis": "{{redis}}", 
+      "detail": "{{detail}}"
+    }
+  },
+  {
+    "name": "awsmgmt",
+    "parameters": {
+      "region": "us-west-2"
+    }
+  }],
+  "content": {
+    "capacity": {
+      "min": 2,
+      "max": 2,
+      "desired": 2
+    }    
+  }
+},
+{
+  "name": "clouddriver-prestaging-api",
+  "parameters": ["redis"],
+  "extend": [{
+    "name": "clouddriver-prestaging",
+    "parameters": {
+      "detail": "api",
+      "redis": "{{redis}}"
+    }
+  }],
+  "content": {
+    "loadBalancers": [
+      "clouddriver-prestaging"
+    ]
+  }
+},
+{
+  "name": "clouddriver-prestaging-api-readonly",
+  "parameters": ["redis"],
+  "extend": [{
+    "name": "clouddriver-prestaging", 
+    "parameters": {
+      "detail": "api",
+      "redis": "{{redis}}"
+    }
+  }],
+  "content": {
+    "loadBalancers": [
+      "clouddriver-prestaging-readonly"
+    ]
+  }
+},
+{
+  "name": "clouddriver-prestaging-cache",
+  "parameters": ["redis"],
+  "extend": [{
+    "name": "clouddriver-prestaging", 
+    "parameters": {
+      "detail": "cache", 
+      "redis": "{{redis}}"
+    }
+  }],
+  "content": {
+    "instanceType": "c3.2xlarge",
+    "capacity": {
+      "min": 4,
+      "max": 4,
+      "desired": 4
+    }
+  }
+}]

@@ -1,0 +1,14 @@
+{
+  "id": "33b4c98c-71f9-49c9-850e-4c56503740c0",
+  "name": "dcdtest",
+  "application": "spintest",
+  "type": "bindings",
+  "pipelineTemplateIncludes": [ "template.json" ],
+  "deploymentTargetIncludes": [],
+  "pipelineBindings": [
+    {
+      "pipelineTemplateName": "dcdtest",
+      "deploymentTargets": []
+    }
+  ]
+}
