@@ -1,0 +1,146 @@
+[
+  {
+    "name": "Bake and Tag",
+    "deploymentTargets": [
+      "prestaging"
+    ],
+    "pipeline": {
+      "appConfig": {},
+      "limitConcurrent": true,
+      "parallel": true,
+      "parameterConfig": [
+      ],
+      "stages": [
+        {
+          "showAdvancedOptions": false,
+          "baseLabel": "release",
+          "user": "delivery-engineering@netflix.com",
+          "type": "bake",
+          "storeType": "ebs",
+          "refId": "1",
+          "requisiteStageRefIds": [],
+          "name": "Bake",
+          "enhancedNetworking": false,
+          "regions": [
+            "#regions('prestaging')"
+          ],
+          "extendedAttributes": {},
+          "cloudProviderType": "aws",
+          "vmType": "hvm",
+          "package": "#application('prestaging')",
+          "baseOs": "trusty"
+        },
+        {
+          "refId": "2",
+          "requisiteStageRefIds": [
+            "1"
+          ],
+          "type": "upsertImageTags",
+          "name": "Tag Image",
+          "tags": {
+            "stack": "test"
+          }
+        }
+      ],
+      "triggers": [
+        {
+          "type": "jenkins",
+          "enabled": true,
+          "master": "spinnaker",
+          "job": "SPINNAKER-package-#application('prestaging')",
+          "propertyFile": ""
+        }
+      ],
+      "updateTs": "1470940720000",
+      "stageCounter": 3
+    }
+  },
+  {
+    "name": "Deploy to prestaging",
+    "deploymentTargets": [
+      "prestaging"
+    ],
+    "pipeline": {
+      "appConfig": null,
+      "parallel": true,
+      "stages": [
+        {
+          "refId": "1",
+          "requisiteStageRefIds": [],
+          "type": "findImageFromTags",
+          "name": "Find Image from Tags",
+          "tags": {
+            "stack": "test"
+          },
+          "regions": [
+            "#regions('prestaging')"
+          ],
+          "cloudProvider": "aws",
+          "packageName": "#application('prestaging')"
+        },
+        {
+          "type": "deploy",
+          "name": "Deploy to Prestaging",
+          "clusters": [
+            "#clusters('prestaging')"
+          ],
+          "refId": "2",
+          "requisiteStageRefIds": [
+            "1"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "type": "jenkins",
+          "enabled": false,
+          "master": "spinnaker",
+          "job": "SPINNAKER-package-#application('prestaging')"
+        }
+      ],
+      "updateTs": "1470867919000",
+      "stageCounter": 3
+    }
+  },
+  {
+    "name": "Deploy to Main",
+    "deploymentTargets": [
+      "prestaging",
+      "main"
+    ],
+    "pipeline": {
+      "parallel": true,
+      "stages": [
+        {
+          "cluster": "#clusterName('prestaging')",
+          "name": "Find AMI",
+          "onlyEnabled": true,
+          "regions": [
+            "#regions('prestaging')"
+          ],
+          "credentials": "#accountName('prestaging')",
+          "type": "findImage",
+          "selectionStrategy": "NEWEST",
+          "cloudProviderType": "aws",
+          "cloudProvider": "aws",
+          "refId": "1",
+          "requisiteStageRefIds": []
+        },
+        {
+          "type": "deploy",
+          "name": "Deploy to Main",
+          "clusters": [
+            "#clusters('main')"
+          ],
+          "refId": "2",
+          "requisiteStageRefIds": [
+            "1"
+          ]
+        }
+      ],
+      "triggers": [],
+      "updateTs": "1467995096000",
+      "stageCounter": 3
+    }
+  }
+]

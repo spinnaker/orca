@@ -94,6 +94,7 @@ allprojects {
     }
   }
 }
+
 subprojects {
   dependencies {
     spinnaker.group('spockBase')

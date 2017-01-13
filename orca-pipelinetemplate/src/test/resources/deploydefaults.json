@@ -1,0 +1,46 @@
+[
+  {
+    "name": "awsdefaults",
+    "parameters": [
+      "application"
+    ],
+    "extend": [],
+    "content": {
+      "cooldown": 300,
+      "virtualizationType": null,
+      "healthCheckType": "EC2",
+      "healthCheckGracePeriod": 600,
+      "instanceType": "m3.xlarge",
+      "capacity": {
+        "desired": 0,
+        "min": 0,
+        "max": 0
+      },
+      "targetHealthyDeployPercentage": 100,
+      "securityGroups": [
+        "nf-datacenter",
+        "nf-infrastructure",
+        "{{application}}"
+      ],
+      "loadBalancers": [
+      ],
+      "freeFormDetails": "",
+      "useSourceCapacity": false,
+      "stack": "",
+      "application": "{{application}}",
+      "terminationPolicies": [
+        "Default"
+      ],
+      "strategy": "redblack",
+      "maxRemainingAsgs": 2,
+      "subnetType": "internal (vpc0)",
+      "tags": {},
+      "suspendedProcesses": [
+      ],
+      "base64UserData": null,
+      "ebsOptimized": false,
+      "instanceMonitoring": false,
+      "iamRole": "{{application}}InstanceProfile"
+    }
+  }
+]
