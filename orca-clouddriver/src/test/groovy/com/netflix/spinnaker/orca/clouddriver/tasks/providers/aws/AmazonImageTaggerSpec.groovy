@@ -35,11 +35,12 @@ class AmazonImageTaggerSpec extends Specification {
   def oortService = Mock(OortService)
 
   @Subject
-  def imageTagger = new AmazonImageTagger(
-    objectMapper: new ObjectMapper(),
-    oortService: oortService,
-    defaultBakeAccount: "test"
-  )
+  def imageTagger
+
+  void setup() {
+    imageTagger = new AmazonImageTagger(oortService, new ObjectMapper())
+    imageTagger.defaultBakeAccount = "test"
+  }
 
   @Unroll
   def "should throw exception if image does not exist"() {

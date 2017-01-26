@@ -38,6 +38,8 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
       operation.putAll(stage.context)
     }
 
+    operation.branch = AppEngineBranchFinder.findInStage(operation, stage) ?: operation.branch
+
     return [[(OPERATION): operation]]
   }
 

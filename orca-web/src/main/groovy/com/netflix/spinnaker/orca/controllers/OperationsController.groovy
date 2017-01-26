@@ -17,9 +17,10 @@
 package com.netflix.spinnaker.orca.controllers
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor
 import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.OrchestrationStarter
+import com.netflix.spinnaker.orca.pipeline.OrchestrationLauncher
 import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
 import com.netflix.spinnaker.orca.pipeline.PipelineStarter
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -30,13 +31,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @Slf4j
@@ -48,7 +43,7 @@ class OperationsController {
   PipelineStarter pipelineStarter
 
   @Autowired
-  OrchestrationStarter orchestrationStarter
+  OrchestrationLauncher orchestrationLauncher
 
   @Autowired(required = false)
   BuildService buildService
@@ -62,8 +57,15 @@ class OperationsController {
   @Autowired
   BuildArtifactFilter buildArtifactFilter
 
+  @Autowired(required = false)
+  List<PipelinePreprocessor> pipelinePreprocessors
+
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, String> orchestrate(@RequestBody Map pipeline) {
+
+    for (PipelinePreprocessor preprocessor : (pipelinePreprocessors ?: [])) {
+      pipeline = preprocessor.process(pipeline)
+    }
 
     def json = objectMapper.writeValueAsString(pipeline)
     log.info('received pipeline {}:{}', pipeline.id, json)
@@ -94,8 +96,9 @@ class OperationsController {
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
       Pipeline parentExecution = executionRepository.retrievePipeline(pipeline.trigger.parentPipelineId)
       if (parentExecution) {
-        pipeline.trigger.parentStatus = parentExecution.status
-        pipeline.trigger.parentExecution = parentExecution
+        pipeline.trigger.isPipeline         = true
+        pipeline.trigger.parentStatus       = parentExecution.status
+        pipeline.trigger.parentExecution    = parentExecution
         pipeline.trigger.parentPipelineName = parentExecution.name
       }
     }
@@ -148,11 +151,6 @@ class OperationsController {
     startTask([application: input.application, name: input.description, appConfig: input.appConfig, stages: input.job])
   }
 
-  @RequestMapping(value = "/health", method = RequestMethod.GET)
-  Boolean health() {
-    true
-  }
-
   private void convertLinearToParallel(Map<String, Serializable> pipelineConfig) {
     def stages = (List<Map<String, Object>>) pipelineConfig.stages
     stages.eachWithIndex { Map<String, Object> stage, int index ->
@@ -182,9 +180,10 @@ class OperationsController {
   }
 
   private Map<String, String> startTask(Map config) {
+    convertLinearToParallel(config)
     def json = objectMapper.writeValueAsString(config)
     log.info('requested task:{}', json)
-    def pipeline = orchestrationStarter.start(json)
+    def pipeline = orchestrationLauncher.start(json)
     [ref: "/tasks/${pipeline.id}".toString()]
   }
 

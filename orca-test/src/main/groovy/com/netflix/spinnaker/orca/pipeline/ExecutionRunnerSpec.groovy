@@ -20,6 +20,7 @@ import java.util.function.BiFunction
 import java.util.function.Consumer
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
@@ -69,6 +70,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   @Autowired EndLoopTask endLoopTask
   @Autowired PostLoopTask postLoopTask
   @Autowired @Qualifier("stageListener") StageListener stageListener
+  @Autowired @Qualifier("executionListener") ExecutionListener executionListener
 
   def "throws an exception if there's no builder for a stage type"() {
     given:
@@ -162,7 +164,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
     then:
     execution.stages.type == stageTypes.collect { stageType ->
-      ["${stageType}_pre2", "${stageType}_pre1", stageType]
+      ["${stageType}_pre1", "${stageType}_pre2", stageType]
     }.flatten()
 
     where:
@@ -179,10 +181,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
           buildTaskGraph() >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
-          // TODO: stages are inserted directly after parent but need to be done
-          // in forward order as batch job is built at the same time, being in
-          // wrong order in json is better than running in wrong order
-          aroundStages(_) >> [postStage2, postStage1]
+          aroundStages(_) >> [postStage1, postStage2]
         },
         Stub(StageDefinitionBuilder) {
           getType() >> "${stageType}_post1"
@@ -279,9 +278,10 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
         buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
         aroundStages(_) >> { Stage<Pipeline> parentStage ->
           [
-            newStage(execution, "before_${stageType}_2", "before", [:], parentStage, STAGE_BEFORE),
             newStage(execution, "before_${stageType}_1", "before", [:], parentStage, STAGE_BEFORE),
-            newStage(execution, "after_$stageType", "after", [:], parentStage, STAGE_AFTER)
+            newStage(execution, "before_${stageType}_2", "before", [:], parentStage, STAGE_BEFORE),
+            newStage(execution, "after_${stageType}_1", "after", [:], parentStage, STAGE_AFTER),
+            newStage(execution, "after_${stageType}_2", "after", [:], parentStage, STAGE_AFTER)
           ]
         }
       },
@@ -294,8 +294,12 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
         buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("before_test_2", TestTask)])
       },
       Stub(StageDefinitionBuilder) {
-        getType() >> "after_$stageType"
-        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_test", TestTask)])
+        getType() >> "after_${stageType}_1"
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_test_1", TestTask)])
+      },
+      Stub(StageDefinitionBuilder) {
+        getType() >> "after_${stageType}_2"
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_test_2", TestTask)])
       }
     ]
     @Subject runner = create(*stageDefinitionBuilders)
@@ -311,7 +315,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     runner.start(execution)
 
     then:
-    executedStageTypes == ["before_${stageType}_1", "before_${stageType}_2", stageType, "after_$stageType"]
+    executedStageTypes == ["before_${stageType}_1", "before_${stageType}_2", stageType, "after_${stageType}_1", "after_${stageType}_2"]
 
     where:
     stageType = "foo"
@@ -931,6 +935,57 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       .build()
   }
 
+  @Issue("SPIN-2129")
+  // Stages such as Canary with no tasks of their own (only synthetic stages)
+  // failed to join correctly as they remain NOT_STARTED
+  def "should support pipelines where a parent and child stage share requisiteRefIds"() {
+    given:
+    execution.with {
+      stages[0].refId = "1"
+      stages[0].requisiteStageRefIds = []
+
+      stages[1].refId = "2"
+      stages[1].requisiteStageRefIds = ["1"]
+
+      stages[2].refId = "3"
+      stages[2].requisiteStageRefIds = ["1"]
+
+      stages[3].refId = "4"
+      stages[3].requisiteStageRefIds = ["1", "2"]
+    }
+
+    and:
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def noOpStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> stageType
+      buildTaskGraph(_) >> TaskNode.emptyGraph(FULL)
+    }
+    def joinStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> "join"
+      buildTaskGraph(_) >> TaskNode.singleton(FULL, "test", TestTask)
+    }
+
+    def runner = create(noOpStageDefinitionBuilder, joinStageDefinitionBuilder)
+
+    when:
+    runner.start(execution)
+
+    then:
+    1 * testTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    1 * executionListener.afterExecution(_, execution, SUCCEEDED, true)
+
+    where:
+    stageType = "noop"
+    execution = Pipeline
+      .builder()
+      .withId("1")
+      .withStages(stageType, stageType, stageType, "join")
+      .withParallel(true)
+      .build()
+  }
+
   static PipelineStage before(PipelineStage stage) {
     stage.syntheticStageOwner = SyntheticStageOwner.STAGE_BEFORE
     return stage
@@ -1051,6 +1106,12 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     @Qualifier("stageListener")
     FactoryBean<StageListener> stageListener() {
       new SpockMockFactoryBean(StageListener)
+    }
+
+    @Bean
+    @Qualifier("executionListener")
+    FactoryBean<ExecutionListener> executionListener() {
+      new SpockMockFactoryBean(ExecutionListener)
     }
   }
 

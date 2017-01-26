@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-include "orca-core",
+include "orca-extensionpoint",
+  "orca-core",
   "orca-retrofit",
   "orca-front50",
   "orca-bakery",
@@ -29,7 +30,9 @@ include "orca-core",
   "orca-web",
   "orca-smoke-test",
   "orca-applications",
-  "orca-spring-batch"
+  "orca-spring-batch",
+  "orca-pipelinetemplate",
+  "orca-validation"
 
 rootProject.name = "orca"
 

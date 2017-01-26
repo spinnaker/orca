@@ -35,27 +35,26 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 
 @Component
-public class AmazonImageTagger implements ImageTagger, CloudProviderAware {
+public class AmazonImageTagger extends ImageTagger implements CloudProviderAware {
   private static final Logger log = LoggerFactory.getLogger(AmazonImageTagger.class);
   private static final String ALLOW_LAUNCH_OPERATION = "allowLaunchDescription";
   private static final Set<String> BUILT_IN_TAGS = new HashSet<>(
     Arrays.asList("appversion", "base_ami_version", "build_host", "creation_time", "creator")
   );
 
-  @Autowired
-  OortService oortService;
-
-  @Autowired
-  ObjectMapper objectMapper;
-
   @Value("${default.bake.account:default}")
   String defaultBakeAccount;
+
+  @Autowired
+  public AmazonImageTagger(OortService oortService, ObjectMapper objectMapper) {
+    super(oortService, objectMapper, log);
+  }
 
   @Override
   public ImageTagger.OperationContext getOperationContext(Stage stage) {
     StageData stageData = (StageData) stage.mapTo(StageData.class);
 
-    Collection<MatchedImage> matchedImages = findImages(stageData.imageNames, stage);
+    Collection<MatchedImage> matchedImages = findImages(stageData.imageNames, stage, MatchedImage.class);
     if (stageData.regions == null || stageData.regions.isEmpty()) {
       stageData.regions = matchedImages.stream()
         .flatMap(matchedImage -> matchedImage.amis.keySet().stream())
@@ -133,7 +132,8 @@ public class AmazonImageTagger implements ImageTagger, CloudProviderAware {
   public boolean areImagesTagged(Collection<Image> targetImages, Stage stage) {
     Collection<MatchedImage> matchedImages = findImages(
       targetImages.stream().map(targetImage -> targetImage.imageName).collect(Collectors.toSet()),
-      stage
+      stage,
+      MatchedImage.class
     );
 
     AtomicBoolean isUpserted = new AtomicBoolean(true);
@@ -154,7 +154,7 @@ public class AmazonImageTagger implements ImageTagger, CloudProviderAware {
             Map<String, String> allImageTags = matchedImage.tagsByImageId.getOrDefault(image, new HashMap<>());
             targetImage.tags.entrySet().forEach(entry -> {
               // assert tag equality
-              isUpserted.set(isUpserted.get() && entry.getValue().equals(allImageTags.get(entry.getKey())));
+              isUpserted.set(isUpserted.get() && entry.getValue().equals(allImageTags.get(entry.getKey().toLowerCase())));
             });
           });
         }
@@ -167,42 +167,6 @@ public class AmazonImageTagger implements ImageTagger, CloudProviderAware {
   @Override
   public String getCloudProvider() {
     return "aws";
-  }
-
-  private Collection<MatchedImage> findImages(Collection<String> imageNames, Stage stage) {
-    if (imageNames == null || imageNames.isEmpty()) {
-      imageNames = new HashSet<>();
-
-      // attempt to find upstream images in the event that one was not explicitly provided
-      Collection<String> upstreamImageIds = AmazonImageTaggerSupport.upstreamImageIds(stage);
-      if (upstreamImageIds.isEmpty()) {
-        throw new IllegalStateException("Unable to determine source image(s)");
-      }
-
-      for (String upstreamImageId : upstreamImageIds) {
-        // attempt to lookup the equivalent image name (given the upstream amiId/imageId)
-        List<Map> allMatchedImages = oortService.findImage(getCloudProvider(), upstreamImageId, null, null, null);
-        if (allMatchedImages.isEmpty()) {
-          throw new ImageNotFound(format("No image found (imageId: %s)", upstreamImageId), true);
-        }
-
-        String upstreamImageName = (String) allMatchedImages.get(0).get("imageName");
-        imageNames.add(upstreamImageName);
-
-        log.info(format("Found upstream image '%s' (executionId: %s)", upstreamImageName, stage.getExecution().getId()));
-      }
-    }
-
-    return imageNames.stream()
-      .map(targetImageName -> {
-        List<Map> allMatchedImages = oortService.findImage(getCloudProvider(), targetImageName, null, null, null);
-        Map matchedImage = allMatchedImages.stream()
-          .filter(image -> image.get("imageName").equals(targetImageName))
-          .findFirst()
-          .orElseThrow(() -> new ImageNotFound(format("No image found (imageName: %s)", targetImageName), false));
-        return objectMapper.convertValue(matchedImage, MatchedImage.class);
-      })
-      .collect(Collectors.toList());
   }
 
   static class StageData {
