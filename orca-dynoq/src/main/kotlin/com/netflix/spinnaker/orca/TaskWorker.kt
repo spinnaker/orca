@@ -40,42 +40,54 @@ import org.springframework.stereotype.Component
     }
   }
 
-  private fun execute(command: Command) {
-    val task = tasks.find { command.taskType.isAssignableFrom(it.javaClass) }
-    if (task != null) {
-      try {
-        val stage = repository.stageFor(command)
-        val result = task.execute(stage)
-        when (result.status) {
-          SUCCEEDED -> eventQ.push(Event.TaskSucceeded())
-          RUNNING -> commandQ.push(command) // TODO: with delay based on task backoff
-          else -> TODO()
+  private fun execute(command: Command) =
+    taskFor(command) { task ->
+      stageFor(command) { stage ->
+        task.execute(stage).let { result ->
+          when (result.status) {
+            SUCCEEDED -> eventQ.push(Event.TaskSucceeded())
+            RUNNING -> commandQ.push(command) // TODO: with delay based on task backoff
+            else -> TODO()
+          }
         }
-      } catch(e: ExecutionNotFoundException) {
-        eventQ.push(Event.InvalidExecutionId())
-      } catch(e: StageNotFoundException) {
-        eventQ.push(Event.InvalidStageId())
       }
-    } else {
-      eventQ.push(Event.InvalidTaskType())
     }
-  }
 
-  private fun ExecutionRepository.stageFor(command: Command): Stage<out Execution<*>> {
-    val execution = executionFor(command)
-    val stage = execution.getStages().find { it.getId() == command.stageId }
-    if (stage == null) {
-      throw StageNotFoundException(command.executionId, command.stageId)
-    } else {
-      return stage
+  private fun taskFor(command: Command, block: (Task) -> Unit) =
+    tasks
+      .find { command.taskType.isAssignableFrom(it.javaClass) }
+      .let { task ->
+        if (task == null) {
+          eventQ.push(Event.InvalidTaskType())
+        } else {
+          block.invoke(task)
+        }
+      }
+
+  private fun stageFor(command: Command, block: (Stage<out Execution<*>>) -> Unit) =
+    executionFor(command) { execution ->
+      execution
+        .getStages()
+        .find { it.getId() == command.stageId }
+        .let { stage ->
+          if (stage == null) {
+            eventQ.push(Event.InvalidStageId())
+          } else {
+            block.invoke(stage)
+          }
+        }
     }
-  }
 
-  private fun ExecutionRepository.executionFor(command: Command) = when (command.executionType) {
-    Pipeline::class.java -> retrievePipeline(command.executionId)
-    Orchestration::class.java -> retrieveOrchestration(command.executionId)
-    else -> throw IllegalArgumentException("Unknown execution type ${command.executionType}")
-  }
+  private fun executionFor(command: Command, block: (Execution<*>) -> Unit) =
+    try {
+      when (command.executionType) {
+        Pipeline::class.java -> block.invoke(repository.retrievePipeline(command.executionId))
+        Orchestration::class.java -> block.invoke(repository.retrieveOrchestration(command.executionId))
+        else -> throw IllegalArgumentException("Unknown execution type ${command.executionType}")
+      }
+    } catch(e: ExecutionNotFoundException) {
+      eventQ.push(Event.InvalidExecutionId())
+    }
 
 }
 
