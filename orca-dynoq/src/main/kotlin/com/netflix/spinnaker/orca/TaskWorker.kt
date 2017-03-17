@@ -36,28 +36,32 @@ import org.springframework.stereotype.Component
   fun start(): Unit {
     val command = commandQ.poll()
     if (command != null) {
-      val task = tasks.find { command.taskType.isAssignableFrom(it.javaClass) }
-      if (task != null) {
-        try {
-          val stage = stageFor(command)
-          val result = task.execute(stage)
-          when (result.status) {
-            SUCCEEDED -> eventQ.push(Event.TaskSucceeded())
-            RUNNING -> commandQ.push(command) // TODO: with delay based on task backoff
-            else -> TODO()
-          }
-        } catch(e: ExecutionNotFoundException) {
-          eventQ.push(Event.InvalidExecutionId())
-        } catch(e: StageNotFoundException) {
-          eventQ.push(Event.InvalidStageId())
-        }
-      } else {
-        eventQ.push(Event.InvalidTaskType())
-      }
+      execute(command)
     }
   }
 
-  private fun stageFor(command: Command): Stage<out Execution<*>> {
+  private fun execute(command: Command) {
+    val task = tasks.find { command.taskType.isAssignableFrom(it.javaClass) }
+    if (task != null) {
+      try {
+        val stage = repository.stageFor(command)
+        val result = task.execute(stage)
+        when (result.status) {
+          SUCCEEDED -> eventQ.push(Event.TaskSucceeded())
+          RUNNING -> commandQ.push(command) // TODO: with delay based on task backoff
+          else -> TODO()
+        }
+      } catch(e: ExecutionNotFoundException) {
+        eventQ.push(Event.InvalidExecutionId())
+      } catch(e: StageNotFoundException) {
+        eventQ.push(Event.InvalidStageId())
+      }
+    } else {
+      eventQ.push(Event.InvalidTaskType())
+    }
+  }
+
+  private fun ExecutionRepository.stageFor(command: Command): Stage<out Execution<*>> {
     val execution = executionFor(command)
     val stage = execution.getStages().find { it.getId() == command.stageId }
     if (stage == null) {
@@ -67,9 +71,9 @@ import org.springframework.stereotype.Component
     }
   }
 
-  private fun executionFor(command: Command) = when (command.executionType) {
-    Pipeline::class.java -> repository.retrievePipeline(command.executionId)
-    Orchestration::class.java -> repository.retrieveOrchestration(command.executionId)
+  private fun ExecutionRepository.executionFor(command: Command) = when (command.executionType) {
+    Pipeline::class.java -> retrievePipeline(command.executionId)
+    Orchestration::class.java -> retrieveOrchestration(command.executionId)
     else -> throw IllegalArgumentException("Unknown execution type ${command.executionType}")
   }
 
