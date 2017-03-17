@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -48,72 +49,166 @@ internal class TaskWorkerSpec : Spek({
         taskWorker.start()
       }
 
+      afterGroup {
+        reset(commandQ, eventQ, task, repository)
+      }
+
       it("does nothing") {
-        verify(eventQ, never()).push(any())
+        verify(eventQ, never()).push(anyOrNull())
       }
     }
 
-    describe("running a task that completes successfully") {
+    describe("running a task") {
 
       val command = Command(Pipeline::class.java, "1", "1", DummyTask::class.java)
-      val taskResult = DefaultTaskResult(SUCCEEDED)
       val pipeline = Pipeline.builder().withId(command.executionId).build()
       val stage = PipelineStage(pipeline, "whatever")
 
       beforeGroup {
         stage.id = command.stageId
         pipeline.stages.add(stage)
-
-        whenever(commandQ.poll())
-          .thenReturn(command)
-          .thenReturn(null)
-        whenever(task.execute(stage))
-          .thenReturn(taskResult)
-        whenever(repository.retrievePipeline(command.executionId))
-          .thenReturn(pipeline)
-
-        taskWorker.start()
       }
 
-      it("executes the task") {
-        verify(task).execute(stage)
+      describe("that completes successfully") {
+
+        val taskResult = DefaultTaskResult(SUCCEEDED)
+
+        beforeGroup {
+          whenever(commandQ.poll())
+            .thenReturn(command)
+          whenever(task.execute(stage))
+            .thenReturn(taskResult)
+          whenever(repository.retrievePipeline(command.executionId))
+            .thenReturn(pipeline)
+
+          taskWorker.start()
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, task, repository)
+        }
+
+        it("executes the task") {
+          verify(task).execute(stage)
+        }
+
+        it("emits a success event") {
+          verify(eventQ).push(isA<Event.TaskSucceeded>())
+        }
       }
 
-      it("emits a success event") {
-        verify(eventQ).push(isA<Event.TaskSucceeded>())
+      describe("that is not complete") {
+
+        val taskResult = DefaultTaskResult(RUNNING)
+
+        beforeGroup {
+          whenever(commandQ.poll())
+            .thenReturn(command)
+          whenever(task.execute(stage))
+            .thenReturn(taskResult)
+          whenever(repository.retrievePipeline(command.executionId))
+            .thenReturn(pipeline)
+
+          taskWorker.start()
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, task, repository)
+        }
+
+        it("re-queues the command") {
+          verify(commandQ).push(command)
+        }
       }
     }
 
-    describe("running a task that is not complete") {
-      val command = Command(Pipeline::class.java, "1", "1", DummyTask::class.java)
-      val taskResult = DefaultTaskResult(RUNNING)
-      val pipeline = Pipeline.builder().withId(command.executionId).build()
-      val stage = PipelineStage(pipeline, "whatever")
+    describe("invalid commands") {
 
-      beforeGroup {
-        stage.id = command.stageId
-        pipeline.stages.add(stage)
+      describe("no such execution") {
+        val command = Command(Pipeline::class.java, "1", "1", DummyTask::class.java)
 
-        whenever(commandQ.poll())
-          .thenReturn(command)
-          .thenReturn(null)
-        whenever(task.execute(stage))
-          .thenReturn(taskResult)
-        whenever(repository.retrievePipeline(command.executionId))
-          .thenReturn(pipeline)
+        beforeGroup {
+          whenever(commandQ.poll())
+            .thenReturn(command)
+          whenever(repository.retrievePipeline(command.executionId))
+            .thenThrow(ExecutionNotFoundException("No Pipeline found for ${command.executionId}"))
 
-        taskWorker.start()
+          taskWorker.start()
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, task, repository)
+        }
+
+        it("does not run any tasks") {
+          verify(task, never()).execute(anyOrNull())
+        }
+
+        it("emits an error event") {
+          verify(eventQ).push(isA<Event.InvalidExecutionId>())
+        }
       }
 
-      it("re-queues the command") {
-        verify(commandQ).push(command)
+      describe("no such stage") {
+        val command = Command(Pipeline::class.java, "1", "1", DummyTask::class.java)
+        val pipeline = Pipeline.builder().withId(command.executionId).build()
+
+        beforeGroup {
+          whenever(commandQ.poll())
+            .thenReturn(command)
+          whenever(repository.retrievePipeline(command.executionId))
+            .thenReturn(pipeline)
+
+          taskWorker.start()
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, task, repository)
+        }
+
+        it("does not run any tasks") {
+          verify(task, never()).execute(anyOrNull())
+        }
+
+        it("emits an error event") {
+          verify(eventQ).push(isA<Event.InvalidStageId>())
+        }
       }
+
+      describe("no such task") {
+        val command = Command(Pipeline::class.java, "1", "1", InvalidTask::class.java)
+        val pipeline = Pipeline.builder().withId(command.executionId).build()
+        val stage = PipelineStage(pipeline, "whatever")
+
+        beforeGroup {
+          stage.id = command.stageId
+          pipeline.stages.add(stage)
+
+          whenever(commandQ.poll())
+            .thenReturn(command)
+          whenever(repository.retrievePipeline(command.executionId))
+            .thenReturn(pipeline)
+
+          taskWorker.start()
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, task, repository)
+        }
+
+        it("does not run any tasks") {
+          verify(task, never()).execute(anyOrNull())
+        }
+
+        it("emits an error event") {
+          verify(eventQ).push(isA<Event.InvalidTaskType>())
+        }
+      }
+
     }
-
   }
 
 })
 
-
 interface DummyTask : Task
-
+interface InvalidTask :Task

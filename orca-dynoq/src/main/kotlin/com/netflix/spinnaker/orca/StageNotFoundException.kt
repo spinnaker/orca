@@ -16,9 +16,5 @@
 
 package com.netflix.spinnaker.orca
 
-sealed class Event { // TODO: context
-  class TaskSucceeded : Event()
-  class InvalidExecutionId : Event()
-  class InvalidStageId : Event()
-  class InvalidTaskType : Event()
-}
+internal class StageNotFoundException(executionId: String, stageId: String)
+  : Exception("No stage found with id $stageId in execution $executionId")

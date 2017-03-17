@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.stereotype.Component
 
@@ -37,27 +38,39 @@ import org.springframework.stereotype.Component
     if (command != null) {
       val task = tasks.find { command.taskType.isAssignableFrom(it.javaClass) }
       if (task != null) {
-        val (execution, stage) = stageFor(command)
-        val result = task.execute(stage)
-        when (result.status) {
-          SUCCEEDED -> eventQ.push(Event.TaskSucceeded()) // TODO: context
-          RUNNING -> commandQ.push(command) // TODO: with delay based on task backoff
-          else -> TODO()
+        try {
+          val stage = stageFor(command)
+          val result = task.execute(stage)
+          when (result.status) {
+            SUCCEEDED -> eventQ.push(Event.TaskSucceeded())
+            RUNNING -> commandQ.push(command) // TODO: with delay based on task backoff
+            else -> TODO()
+          }
+        } catch(e: ExecutionNotFoundException) {
+          eventQ.push(Event.InvalidExecutionId())
+        } catch(e: StageNotFoundException) {
+          eventQ.push(Event.InvalidStageId())
         }
+      } else {
+        eventQ.push(Event.InvalidTaskType())
       }
     }
   }
 
-  private fun stageFor(command: Command): Pair<Execution<*>, Stage<out Execution<*>>> {
+  private fun stageFor(command: Command): Stage<out Execution<*>> {
     val execution = executionFor(command)
     val stage = execution.getStages().find { it.getId() == command.stageId }
-    return Pair(execution, stage!!) // TODO: deal with missing executionFor / stageFor
+    if (stage == null) {
+      throw StageNotFoundException(command.executionId, command.stageId)
+    } else {
+      return stage
+    }
   }
 
   private fun executionFor(command: Command) = when (command.executionType) {
     Pipeline::class.java -> repository.retrievePipeline(command.executionId)
     Orchestration::class.java -> repository.retrieveOrchestration(command.executionId)
-    else -> throw IllegalArgumentException("Unknown executionFor type ${command.executionType}")
+    else -> throw IllegalArgumentException("Unknown execution type ${command.executionType}")
   }
 
 }
