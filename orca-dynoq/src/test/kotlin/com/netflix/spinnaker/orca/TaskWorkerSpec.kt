@@ -84,7 +84,7 @@ internal class TaskWorkerSpec : Spek({
 
       describe("running a task") {
 
-        val command = Command(Pipeline::class.java, "1", "1", DummyTask::class.java)
+        val command = Command(Pipeline::class.java, "1", "1", "1", DummyTask::class.java)
         val pipeline = Pipeline.builder().withId(command.executionId).build()
         val stage = PipelineStage(pipeline, "whatever")
 
@@ -176,7 +176,7 @@ internal class TaskWorkerSpec : Spek({
       describe("invalid commands") {
 
         describe("no such execution") {
-          val command = Command(Pipeline::class.java, "1", "1", DummyTask::class.java)
+          val command = Command(Pipeline::class.java, "1", "1", "1", DummyTask::class.java)
 
           beforeGroup {
             whenever(commandQ.poll())
@@ -201,7 +201,7 @@ internal class TaskWorkerSpec : Spek({
         }
 
         describe("no such stage") {
-          val command = Command(Pipeline::class.java, "1", "1", DummyTask::class.java)
+          val command = Command(Pipeline::class.java, "1", "1", "1", DummyTask::class.java)
           val pipeline = Pipeline.builder().withId(command.executionId).build()
 
           beforeGroup {
@@ -227,7 +227,7 @@ internal class TaskWorkerSpec : Spek({
         }
 
         describe("no such task") {
-          val command = Command(Pipeline::class.java, "1", "1", InvalidTask::class.java)
+          val command = Command(Pipeline::class.java, "1", "1", "1", InvalidTask::class.java)
           val pipeline = Pipeline.builder().withId(command.executionId).build()
           val stage = PipelineStage(pipeline, "whatever")
 

@@ -17,9 +17,28 @@
 package com.netflix.spinnaker.orca
 
 sealed class Event { // TODO: context
-  class TaskSucceeded : Event()
-  class InvalidExecutionId : Event()
-  class InvalidStageId : Event()
-  class InvalidTaskType : Event()
-  class TaskFailed : Event()
+  /**
+   * Task ran successfully.
+   */
+  data class TaskSucceeded(val executionId: String, val stageId: String, val taskId: String) : Event()
+
+  /**
+   * Task ran and failed.
+   */
+  data class TaskFailed(val executionId: String, val stageId: String, val taskId: String) : Event()
+
+  /**
+   * Execution id was not found in {@link ExecutionRepository}.
+   */
+  data class InvalidExecutionId(val executionId: String) : Event()
+
+  /**
+   * Stage id was not found in the execution.
+   */
+  data class InvalidStageId(val executionId: String, val stageId: String) : Event()
+
+  /**
+   * No such task class.
+   */
+  data class InvalidTaskType(val executionId: String, val stageId: String, val className: String) : Event()
 }

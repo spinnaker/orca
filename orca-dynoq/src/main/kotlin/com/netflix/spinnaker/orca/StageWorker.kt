@@ -16,12 +16,14 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
+import org.springframework.stereotype.Component
 
-data class Command(
-  val executionType: Class<out Execution<*>>,
-  val executionId: String,
-  val stageId: String,
-  val taskId: String,
-  val taskType: Class<out Task>
-)
+@Component open class StageWorker(
+  val commandQ: CommandQueue,
+  val eventQ: EventQueue
+) : DiscoveryActivated() {
+
+
+
+}

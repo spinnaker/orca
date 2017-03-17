@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -51,11 +52,12 @@ import java.util.concurrent.TimeUnit.SECONDS
   private fun execute(command: Command) =
     taskFor(command) { task ->
       stageFor(command) { stage ->
+        // TODO: handle exception
         task.execute(stage).let { result ->
           when (result.status) {
-            SUCCEEDED -> eventQ.push(Event.TaskSucceeded())
+            SUCCEEDED -> eventQ.push(TaskSucceeded(command.executionId, command.stageId, command.taskId))
             RUNNING -> commandQ.push(command, task.backoffPeriod())
-            TERMINAL -> eventQ.push(Event.TaskFailed())
+            TERMINAL -> eventQ.push(TaskFailed(command.executionId, command.stageId, command.taskId))
             else -> TODO()
           }
         }
@@ -67,7 +69,7 @@ import java.util.concurrent.TimeUnit.SECONDS
       .find { command.taskType.isAssignableFrom(it.javaClass) }
       .let { task ->
         if (task == null) {
-          eventQ.push(Event.InvalidTaskType())
+          eventQ.push(InvalidTaskType(command.executionId, command.stageId, command.taskType.name))
         } else {
           block.invoke(task)
         }
@@ -80,7 +82,7 @@ import java.util.concurrent.TimeUnit.SECONDS
         .find { it.getId() == command.stageId }
         .let { stage ->
           if (stage == null) {
-            eventQ.push(Event.InvalidStageId())
+            eventQ.push(InvalidStageId(command.executionId, command.stageId))
           } else {
             block.invoke(stage)
           }
@@ -95,7 +97,7 @@ import java.util.concurrent.TimeUnit.SECONDS
         else -> throw IllegalArgumentException("Unknown execution type ${command.executionType}")
       }
     } catch(e: ExecutionNotFoundException) {
-      eventQ.push(Event.InvalidExecutionId())
+      eventQ.push(InvalidExecutionId(command.executionId))
     }
 
   private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =
