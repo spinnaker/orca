@@ -31,6 +31,7 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import java.lang.RuntimeException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 @RunWith(JUnitPlatform::class)
@@ -157,6 +158,27 @@ internal class TaskWorkerSpec : Spek({
               .thenReturn(command)
             whenever(task.execute(stage))
               .thenReturn(taskResult)
+            whenever(repository.retrievePipeline(command.executionId))
+              .thenReturn(pipeline)
+
+            taskWorker.pollOnce()
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, task, repository)
+          }
+
+          it("emits a failure event") {
+            verify(eventQ).push(isA<Event.TaskFailed>())
+          }
+        }
+
+        describe("that throws an exception") {
+          beforeGroup {
+            whenever(commandQ.poll())
+              .thenReturn(command)
+            whenever(task.execute(stage))
+              .thenThrow(RuntimeException("o noes"))
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
 

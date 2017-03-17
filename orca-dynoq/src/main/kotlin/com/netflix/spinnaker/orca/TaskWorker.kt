@@ -52,14 +52,18 @@ import java.util.concurrent.TimeUnit.SECONDS
   private fun execute(command: Command) =
     taskFor(command) { task ->
       stageFor(command) { stage ->
-        // TODO: handle exception
-        task.execute(stage).let { result ->
-          when (result.status) {
-            SUCCEEDED -> eventQ.push(TaskSucceeded(command.executionId, command.stageId, command.taskId))
-            RUNNING -> commandQ.push(command, task.backoffPeriod())
-            TERMINAL -> eventQ.push(TaskFailed(command.executionId, command.stageId, command.taskId))
-            else -> TODO()
+        try {
+          task.execute(stage).let { result ->
+            when (result.status) {
+              SUCCEEDED -> eventQ.push(TaskSucceeded(command.executionId, command.stageId, command.taskId))
+              RUNNING -> commandQ.push(command, task.backoffPeriod())
+              TERMINAL -> eventQ.push(TaskFailed(command.executionId, command.stageId, command.taskId))
+              else -> TODO()
+            }
           }
+        } catch(e: Exception) {
+          // TODO: add context
+          eventQ.push(TaskFailed(command.executionId, command.stageId, command.taskId))
         }
       }
     }
