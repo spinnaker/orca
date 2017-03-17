@@ -17,13 +17,22 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
-@Component open class StageWorker(
+@Component open class ExecutionWorker(
   val commandQ: CommandQueue,
   val eventQ: EventQueue
 ) : DiscoveryActivated() {
 
+  @Scheduled(fixedDelay = 10)
+  fun pollOnce() {
+    ifEnabled {
+      val event = eventQ.poll()
+      if (event != null) {
+      }
+    }
+  }
 
 
 }

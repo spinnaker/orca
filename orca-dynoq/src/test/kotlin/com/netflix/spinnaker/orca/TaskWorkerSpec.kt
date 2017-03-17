@@ -20,6 +20,9 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
+import com.netflix.spinnaker.orca.Event.ConfigurationError.*
+import com.netflix.spinnaker.orca.Event.TaskResult.TaskFailed
+import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
@@ -79,7 +82,7 @@ internal class TaskWorkerSpec : Spek({
         }
 
         it("does nothing") {
-          verify(eventQ, never()).push(anyOrNull())
+          verifyZeroInteractions(eventQ)
         }
       }
 
@@ -118,7 +121,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("emits a success event") {
-            verify(eventQ).push(isA<Event.TaskSucceeded>())
+            verify(eventQ).push(isA<TaskSucceeded>())
           }
         }
 
@@ -169,7 +172,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("emits a failure event") {
-            verify(eventQ).push(isA<Event.TaskFailed>())
+            verify(eventQ).push(isA<TaskFailed>())
           }
         }
 
@@ -190,7 +193,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("emits a failure event") {
-            verify(eventQ).push(isA<Event.TaskFailed>())
+            verify(eventQ).push(isA<TaskFailed>())
           }
         }
       }
@@ -218,7 +221,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("emits an error event") {
-            verify(eventQ).push(isA<Event.InvalidExecutionId>())
+            verify(eventQ).push(isA<InvalidExecutionId>())
           }
         }
 
@@ -244,7 +247,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("emits an error event") {
-            verify(eventQ).push(isA<Event.InvalidStageId>())
+            verify(eventQ).push(isA<InvalidStageId>())
           }
         }
 
@@ -274,7 +277,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("emits an error event") {
-            verify(eventQ).push(isA<Event.InvalidTaskType>())
+            verify(eventQ).push(isA<InvalidTaskType>())
           }
         }
 

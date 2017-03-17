@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.Event.*
+import com.netflix.spinnaker.orca.Event.ConfigurationError.*
+import com.netflix.spinnaker.orca.Event.TaskResult.TaskFailed
+import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Execution
