@@ -17,12 +17,14 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
@@ -33,15 +35,19 @@ import java.util.concurrent.TimeUnit.SECONDS
   val eventQ: EventQueue,
   val repository: ExecutionRepository,
   val tasks: Collection<Task>
-) {
+) : DiscoveryActivated() {
 
-  fun start(): Unit {
-    val command = commandQ.poll()
-    if (command != null) {
-      execute(command)
+  @Scheduled(fixedDelay = 10)
+  fun pollOnce() {
+    ifEnabled {
+      val command = commandQ.poll()
+      if (command != null) {
+        execute(command)
+      }
     }
   }
 
+  // TODO: handle other states such as cancellation, suspension, etc.
   private fun execute(command: Command) =
     taskFor(command) { task ->
       stageFor(command) { stage ->
