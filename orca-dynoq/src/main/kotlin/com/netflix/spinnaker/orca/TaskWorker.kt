@@ -16,7 +16,10 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.Command.RunStage
+import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.ConfigurationError.*
+import com.netflix.spinnaker.orca.Event.StageStarting
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskFailed
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.*
@@ -44,66 +47,73 @@ import java.util.concurrent.TimeUnit.SECONDS
   fun pollOnce() {
     ifEnabled {
       val command = commandQ.poll()
-      if (command != null) {
-        execute(command)
+      when(command) {
+        null -> log.debug("No commands")
+        is RunTask -> command.execute()
+        is RunStage -> command.execute()
       }
     }
   }
 
   // TODO: handle other states such as cancellation, suspension, etc.
-  private fun execute(command: Command) =
-    taskFor(command) { task ->
-      stageFor(command) { stage ->
+  private fun RunTask.execute() =
+    withTask { task ->
+      withStage { stage ->
         try {
           task.execute(stage).let { result ->
             when (result.status) {
-              SUCCEEDED -> eventQ.push(TaskSucceeded(command.executionId, command.stageId, command.taskId))
-              RUNNING -> commandQ.push(command, task.backoffPeriod())
-              TERMINAL -> eventQ.push(TaskFailed(command.executionId, command.stageId, command.taskId))
+              SUCCEEDED -> eventQ.push(TaskSucceeded(executionId, stageId, taskId))
+              RUNNING -> commandQ.push(this, task.backoffPeriod())
+              TERMINAL -> eventQ.push(TaskFailed(executionId, stageId, taskId))
               else -> TODO()
             }
           }
         } catch(e: Exception) {
           // TODO: add context
-          eventQ.push(TaskFailed(command.executionId, command.stageId, command.taskId))
+          eventQ.push(TaskFailed(executionId, stageId, taskId))
         }
       }
     }
 
-  private fun taskFor(command: Command, block: (Task) -> Unit) =
+  // TODO: this seems dumb but it handles the parallel stages scenario
+  private fun RunStage.execute() {
+    eventQ.push(StageStarting(executionId, stageId))
+  }
+
+  private fun RunTask.withTask(block: (Task) -> Unit) =
     tasks
-      .find { command.taskType.isAssignableFrom(it.javaClass) }
+      .find { taskType.isAssignableFrom(it.javaClass) }
       .let { task ->
         if (task == null) {
-          eventQ.push(InvalidTaskType(command.executionId, command.stageId, command.taskType.name))
+          eventQ.push(InvalidTaskType(executionId, stageId, taskType.name))
         } else {
           block.invoke(task)
         }
       }
 
-  private fun stageFor(command: Command, block: (Stage<out Execution<*>>) -> Unit) =
-    executionFor(command) { execution ->
+  private fun Command.withStage(block: (Stage<out Execution<*>>) -> Unit) =
+    withExecution { execution ->
       execution
         .getStages()
-        .find { it.getId() == command.stageId }
+        .find { it.getId() == stageId }
         .let { stage ->
           if (stage == null) {
-            eventQ.push(InvalidStageId(command.executionId, command.stageId))
+            eventQ.push(InvalidStageId(executionId, stageId))
           } else {
             block.invoke(stage)
           }
         }
     }
 
-  private fun executionFor(command: Command, block: (Execution<*>) -> Unit) =
+  private fun Command.withExecution(block: (Execution<*>) -> Unit) =
     try {
-      when (command.executionType) {
-        Pipeline::class.java -> block.invoke(repository.retrievePipeline(command.executionId))
-        Orchestration::class.java -> block.invoke(repository.retrieveOrchestration(command.executionId))
-        else -> throw IllegalArgumentException("Unknown execution type ${command.executionType}")
+      when (executionType) {
+        Pipeline::class.java -> block.invoke(repository.retrievePipeline(executionId))
+        Orchestration::class.java -> block.invoke(repository.retrieveOrchestration(executionId))
+        else -> throw IllegalArgumentException("Unknown execution type $executionType")
       }
     } catch(e: ExecutionNotFoundException) {
-      eventQ.push(InvalidExecutionId(command.executionId))
+      eventQ.push(InvalidExecutionId(executionId))
     }
 
   private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =

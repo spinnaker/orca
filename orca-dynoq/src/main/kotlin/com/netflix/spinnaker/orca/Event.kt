@@ -50,4 +50,6 @@ sealed class Event {
     data class InvalidTaskType(val executionId: String, val stageId: String, val className: String)
       : ConfigurationError()
   }
+
+  data class StageStarting(val executionId: String, val stageId: String) : Event()
 }
