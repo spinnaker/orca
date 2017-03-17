@@ -16,8 +16,7 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -25,6 +24,9 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.SECONDS
 
 @Component open class TaskWorker(
   val commandQ: CommandQueue,
@@ -46,7 +48,8 @@ import org.springframework.stereotype.Component
         task.execute(stage).let { result ->
           when (result.status) {
             SUCCEEDED -> eventQ.push(Event.TaskSucceeded())
-            RUNNING -> commandQ.push(command) // TODO: with delay based on task backoff
+            RUNNING -> commandQ.push(command, task.backoffPeriod())
+            TERMINAL -> eventQ.push(Event.TaskFailed())
             else -> TODO()
           }
         }
@@ -89,5 +92,13 @@ import org.springframework.stereotype.Component
       eventQ.push(Event.InvalidExecutionId())
     }
 
+  private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =
+    when (this) {
+      is RetryableTask -> Pair(backoffPeriod, MILLISECONDS)
+      else -> Pair(1, SECONDS)
+    }
+
+  private fun Queue<Command>.push(command: Command, backoffPeriod: Pair<Long, TimeUnit>) =
+    push(command, backoffPeriod.first, backoffPeriod.second)
 }
 

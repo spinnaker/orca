@@ -21,4 +21,5 @@ sealed class Event { // TODO: context
   class InvalidExecutionId : Event()
   class InvalidStageId : Event()
   class InvalidTaskType : Event()
+  class TaskFailed : Event()
 }

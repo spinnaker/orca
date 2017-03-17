@@ -16,8 +16,7 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -28,6 +27,7 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 @RunWith(JUnitPlatform::class)
 internal class TaskWorkerSpec : Spek({
@@ -100,6 +100,33 @@ internal class TaskWorkerSpec : Spek({
       describe("that is not complete") {
 
         val taskResult = DefaultTaskResult(RUNNING)
+        val taskBackoffMs = 30_000L
+
+        beforeGroup {
+          whenever(commandQ.poll())
+            .thenReturn(command)
+          whenever(task.execute(stage))
+            .thenReturn(taskResult)
+          whenever(task.backoffPeriod)
+            .thenReturn(taskBackoffMs)
+          whenever(repository.retrievePipeline(command.executionId))
+            .thenReturn(pipeline)
+
+          taskWorker.start()
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, task, repository)
+        }
+
+        it("re-queues the command") {
+          verify(commandQ).push(command, taskBackoffMs, MILLISECONDS)
+        }
+      }
+
+      describe("that fails") {
+
+        val taskResult = DefaultTaskResult(TERMINAL)
 
         beforeGroup {
           whenever(commandQ.poll())
@@ -116,8 +143,8 @@ internal class TaskWorkerSpec : Spek({
           reset(commandQ, eventQ, task, repository)
         }
 
-        it("re-queues the command") {
-          verify(commandQ).push(command)
+        it ("emits a failure event") {
+          verify(eventQ).push(isA<Event.TaskFailed>())
         }
       }
     }
@@ -207,8 +234,7 @@ internal class TaskWorkerSpec : Spek({
 
     }
   }
-
 })
 
-interface DummyTask : Task
+interface DummyTask : RetryableTask
 interface InvalidTask :Task

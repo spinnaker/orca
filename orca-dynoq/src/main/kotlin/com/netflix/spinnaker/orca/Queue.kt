@@ -16,9 +16,12 @@
 
 package com.netflix.spinnaker.orca
 
+import java.util.concurrent.TimeUnit
+
 interface Queue<T> {
   fun poll(): T?
   fun push(message: T): Unit
+  fun push(message: T, delay: Long, unit: TimeUnit)
 }
 
 typealias CommandQueue = Queue<Command>
