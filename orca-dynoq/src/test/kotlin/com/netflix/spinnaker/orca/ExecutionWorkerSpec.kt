@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
+import com.natpryce.hamkrest.hasSize
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
@@ -50,6 +51,8 @@ class ExecutionWorkerSpec : Spek({
     val eventQ: EventQueue = mock()
     val repository: ExecutionRepository = mock()
     val builder = object : StageDefinitionBuilder {
+      override fun getType() = "whatever"
+
       override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: TaskNode.Builder) {
         builder.withTask("dummy", DummyTask::class.java)
       }
@@ -129,6 +132,20 @@ class ExecutionWorkerSpec : Spek({
             argumentCaptor.firstValue.apply {
               assertThat(status, equalTo(RUNNING))
               assertThat(startTime, equalTo(clock.millis()))
+            }
+          }
+
+          it ("attaches tasks to the stage") {
+            verify(repository).storeStage(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(tasks, hasSize(equalTo(1)))
+              tasks.first().apply {
+                assertThat(id, equalTo("1"))
+                assertThat(name, equalTo("dummy"))
+                assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
+                assertThat(isStageStart(), equalTo(true))
+                assertThat(isStageEnd(), equalTo(true))
+              }
             }
           }
         }

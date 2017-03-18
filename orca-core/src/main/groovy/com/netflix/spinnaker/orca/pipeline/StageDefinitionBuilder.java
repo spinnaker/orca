@@ -32,7 +32,7 @@ import static java.util.stream.Collectors.toList;
 
 public interface StageDefinitionBuilder {
 
-  default <T extends Execution<T>> TaskNode.TaskGraph buildTaskGraph(Stage<T> stage) {
+  default TaskNode.TaskGraph buildTaskGraph(Stage<?> stage) {
     Builder graphBuilder = Builder(FULL);
     taskGraph(stage, graphBuilder);
     return graphBuilder.build();

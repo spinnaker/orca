@@ -23,10 +23,8 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Orchestration
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.scheduling.annotation.Scheduled
@@ -36,7 +34,7 @@ import java.time.Clock
 @Component open class ExecutionWorker(
   val commandQ: CommandQueue,
   val eventQ: EventQueue,
-  val repository : ExecutionRepository,
+  val repository: ExecutionRepository,
   val clock: Clock,
   val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
 ) : DiscoveryActivated() {
@@ -54,13 +52,27 @@ import java.time.Clock
 
   private fun StageStarting.handle() {
     withStage { stage ->
-      stage.setStatus(RUNNING)
-      stage.setStartTime(clock.millis())
-      repository.storeStage(stage)
+      val graph = stage.builder().buildTaskGraph(stage)
+      val first: TaskNode = graph.first()
+      when (first) {
+        is TaskNode.TaskDefinition -> {
+          stage.setStatus(RUNNING)
+          stage.setStartTime(clock.millis())
+          val task = DefaultTask()
+          task.id = "1"
+          task.name = first.name
+          task.implementingClass = first.implementingClass
+          task.stageStart = true
+          task.stageEnd = true
+          stage.getTasks().add(task)
+          repository.storeStage(stage)
+          commandQ.push(Command.RunTask(executionType, executionId, stageId, "1", first.implementingClass))
+        }
+      }
     }
   }
 
-  private fun StageStarting.withStage(block: (Stage<out Execution<*>>) -> Unit) =
+  private fun StageStarting.withStage(block: (Stage<*>) -> Unit) =
     withExecution { execution ->
       execution
         .getStages()
