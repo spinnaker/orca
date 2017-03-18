@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+
 sealed class Event {
   sealed class TaskResult : Event() {
     /**
@@ -51,5 +53,5 @@ sealed class Event {
       : ConfigurationError()
   }
 
-  data class StageStarting(val executionId: String, val stageId: String) : Event()
+  data class StageStarting(val executionType: Class<out Execution<*>>, val executionId: String, val stageId: String) : Event()
 }

@@ -77,7 +77,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 
   // TODO: this seems dumb but it handles the parallel stages scenario
   private fun RunStage.execute() {
-    eventQ.push(StageStarting(executionId, stageId))
+    eventQ.push(StageStarting(executionType, executionId, stageId))
   }
 
   private fun RunTask.withTask(block: (Task) -> Unit) =

@@ -25,7 +25,7 @@ public interface ExecutionRunner {
   <T extends Execution<T>> void resume(T execution) throws Exception;
 
   class NoSuchStageDefinitionBuilder extends RuntimeException {
-    NoSuchStageDefinitionBuilder(String type) {
+    public NoSuchStageDefinitionBuilder(String type) {
       super(format("No StageDefinitionBuilder implementation for %s found", type));
     }
   }

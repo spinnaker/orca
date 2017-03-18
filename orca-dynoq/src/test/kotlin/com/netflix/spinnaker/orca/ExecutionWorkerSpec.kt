@@ -16,10 +16,20 @@
 
 package com.netflix.spinnaker.orca
 
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
+import com.netflix.spinnaker.orca.Event.StageStarting
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -27,6 +37,9 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
 @RunWith(JUnitPlatform::class)
 class ExecutionWorkerSpec : Spek({
@@ -35,8 +48,14 @@ class ExecutionWorkerSpec : Spek({
     val commandQ: CommandQueue = mock()
     val eventQ: EventQueue = mock()
     val repository: ExecutionRepository = mock()
+    val builder = object : StageDefinitionBuilder {
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: TaskNode.Builder) {
+        builder.withTask("dummy", DummyTask::class.java)
+      }
+    }
+    val clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
 
-    val executionWorker = ExecutionWorker(commandQ, eventQ)
+    val executionWorker = ExecutionWorker(commandQ, eventQ, repository, clock, listOf(builder))
 
     describe("when disabled in discovery") {
       beforeGroup {
@@ -77,9 +96,40 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
-      describe("starting an execution") {
-        beforeGroup {
+      describe("starting a stage") {
 
+        val event = StageStarting(Pipeline::class.java, "1", "1")
+        val pipeline = Pipeline.builder().withId(event.executionId).build()
+        val stage = PipelineStage(pipeline, "whatever")
+
+        beforeGroup {
+          stage.id = event.stageId
+          pipeline.stages.add(stage)
+        }
+
+        describe("with a single initial task") {
+          val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
+
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+
+            executionWorker.pollOnce()
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          it ("updates the stage status") {
+            verify(repository).storeStage(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(status, equalTo(RUNNING))
+              assertThat(startTime, equalTo(clock.millis()))
+            }
+          }
         }
       }
     }
