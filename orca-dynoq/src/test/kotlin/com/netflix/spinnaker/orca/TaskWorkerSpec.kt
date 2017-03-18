@@ -245,7 +245,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("does not run any tasks") {
-            verify(task, never()).execute(anyOrNull())
+            verifyZeroInteractions(task)
           }
 
           it("emits an error event") {
@@ -271,7 +271,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("does not run any tasks") {
-            verify(task, never()).execute(anyOrNull())
+            verifyZeroInteractions(task)
           }
 
           it("emits an error event") {
@@ -301,7 +301,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("does not run any tasks") {
-            verify(task, never()).execute(anyOrNull())
+            verifyZeroInteractions(task)
           }
 
           it("emits an error event") {

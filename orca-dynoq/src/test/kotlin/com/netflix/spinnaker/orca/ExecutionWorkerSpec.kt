@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -132,6 +133,59 @@ class ExecutionWorkerSpec : Spek({
           }
         }
       }
-    }
+
+      describe("invalid commands") {
+
+        val event = StageStarting(Pipeline::class.java, "1", "1")
+
+        describe("no such execution") {
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenThrow(ExecutionNotFoundException("No Pipeline found for ${event.executionId}"))
+
+            executionWorker.pollOnce()
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          it("does not run any tasks") {
+            verifyZeroInteractions(commandQ)
+          }
+
+          it("emits an error event") {
+            verify(eventQ).push(isA<Event.ConfigurationError.InvalidExecutionId>())
+          }
+        }
+
+        describe("no such stage") {
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+
+            executionWorker.pollOnce()
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          it("does not run any tasks") {
+            verifyZeroInteractions(commandQ)
+          }
+
+          it("emits an error event") {
+            verify(eventQ).push(isA<Event.ConfigurationError.InvalidStageId>())
+          }
+        }
+      }
+      }
   }
 })
