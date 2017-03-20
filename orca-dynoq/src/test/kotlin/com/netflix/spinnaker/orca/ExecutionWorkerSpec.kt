@@ -46,20 +46,35 @@ import java.time.ZoneId
 @RunWith(JUnitPlatform::class)
 class ExecutionWorkerSpec : Spek({
   describe("execution workers") {
-
     val commandQ: CommandQueue = mock()
     val eventQ: EventQueue = mock()
     val repository: ExecutionRepository = mock()
-    val builder = object : StageDefinitionBuilder {
-      override fun getType() = "whatever"
+    val clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
 
+    val singleTaskStage = object : StageDefinitionBuilder {
+      override fun getType() = "singleTaskStage"
       override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: TaskNode.Builder) {
         builder.withTask("dummy", DummyTask::class.java)
       }
     }
-    val clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
 
-    val executionWorker = ExecutionWorker(commandQ, eventQ, repository, clock, listOf(builder))
+    val multiTaskStage = object : StageDefinitionBuilder {
+      override fun getType() = "multiTaskStage"
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: TaskNode.Builder) {
+        builder
+          .withTask("dummy1", DummyTask::class.java)
+          .withTask("dummy2", DummyTask::class.java)
+          .withTask("dummy3", DummyTask::class.java)
+      }
+    }
+
+    val executionWorker = ExecutionWorker(
+      commandQ,
+      eventQ,
+      repository,
+      clock,
+      listOf(singleTaskStage, multiTaskStage)
+    )
 
     describe("when disabled in discovery") {
       beforeGroup {
@@ -101,17 +116,15 @@ class ExecutionWorkerSpec : Spek({
       }
 
       describe("starting a stage") {
-
-        val event = StageStarting(Pipeline::class.java, "1", "1")
-        val pipeline = Pipeline.builder().withId(event.executionId).build()
-        val stage = PipelineStage(pipeline, "whatever")
-
-        beforeGroup {
-          stage.id = event.stageId
-          pipeline.stages.add(stage)
-        }
-
         describe("with a single initial task") {
+          val event = StageStarting(Pipeline::class.java, "1", "1")
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage = PipelineStage(pipeline, singleTaskStage.type)
+
+          beforeGroup {
+            stage.id = event.stageId
+            pipeline.stages.add(stage)
+          }
           val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
 
           beforeGroup {
@@ -143,8 +156,61 @@ class ExecutionWorkerSpec : Spek({
                 assertThat(id, equalTo("1"))
                 assertThat(name, equalTo("dummy"))
                 assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
-                assertThat(isStageStart(), equalTo(true))
-                assertThat(isStageEnd(), equalTo(true))
+                assertThat(isStageStart, equalTo(true))
+                assertThat(isStageEnd, equalTo(true))
+              }
+            }
+          }
+        }
+
+        describe("with several linear tasks") {
+          val event = StageStarting(Pipeline::class.java, "1", "1")
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage = PipelineStage(pipeline, multiTaskStage.type)
+
+          beforeGroup {
+            stage.id = event.stageId
+            pipeline.stages.add(stage)
+          }
+          val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
+
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+
+            executionWorker.pollOnce()
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          it ("attaches tasks to the stage") {
+            verify(repository).storeStage(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(tasks, hasSize(equalTo(3)))
+              tasks[0].apply {
+                assertThat(id, equalTo("1"))
+                assertThat(name, equalTo("dummy1"))
+                assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
+                assertThat(isStageStart, equalTo(true))
+                assertThat(isStageEnd, equalTo(false))
+              }
+              tasks[1].apply {
+                assertThat(id, equalTo("2"))
+                assertThat(name, equalTo("dummy2"))
+                assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
+                assertThat(isStageStart, equalTo(false))
+                assertThat(isStageEnd, equalTo(false))
+              }
+              tasks[2].apply {
+                assertThat(id, equalTo("3"))
+                assertThat(name, equalTo("dummy3"))
+                assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
+                assertThat(isStageStart, equalTo(false))
+                assertThat(isStageEnd, equalTo(true))
               }
             }
           }
