@@ -62,15 +62,15 @@ import java.util.concurrent.TimeUnit.SECONDS
         try {
           task.execute(stage).let { result ->
             when (result.status) {
-              SUCCEEDED -> eventQ.push(TaskSucceeded(executionId, stageId, taskId))
+              SUCCEEDED -> eventQ.push(TaskSucceeded(executionType, executionId, stageId, taskId))
               RUNNING -> commandQ.push(this, task.backoffPeriod())
-              TERMINAL -> eventQ.push(TaskFailed(executionId, stageId, taskId))
+              TERMINAL -> eventQ.push(TaskFailed(executionType, executionId, stageId, taskId))
               else -> TODO()
             }
           }
         } catch(e: Exception) {
           // TODO: add context
-          eventQ.push(TaskFailed(executionId, stageId, taskId))
+          eventQ.push(TaskFailed(executionType, executionId, stageId, taskId))
         }
       }
     }
@@ -85,7 +85,7 @@ import java.util.concurrent.TimeUnit.SECONDS
       .find { taskType.isAssignableFrom(it.javaClass) }
       .let { task ->
         if (task == null) {
-          eventQ.push(InvalidTaskType(executionId, stageId, taskType.name))
+          eventQ.push(InvalidTaskType(executionType, executionId, stageId, taskType.name))
         } else {
           block.invoke(task)
         }
@@ -98,7 +98,7 @@ import java.util.concurrent.TimeUnit.SECONDS
         .find { it.getId() == stageId }
         .let { stage ->
           if (stage == null) {
-            eventQ.push(InvalidStageId(executionId, stageId))
+            eventQ.push(InvalidStageId(executionType, executionId, stageId))
           } else {
             block.invoke(stage)
           }
@@ -113,7 +113,7 @@ import java.util.concurrent.TimeUnit.SECONDS
         else -> throw IllegalArgumentException("Unknown execution type $executionType")
       }
     } catch(e: ExecutionNotFoundException) {
-      eventQ.push(InvalidExecutionId(executionId))
+      eventQ.push(InvalidExecutionId(executionType, executionId))
     }
 
   private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =

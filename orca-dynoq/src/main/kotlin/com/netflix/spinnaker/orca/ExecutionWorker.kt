@@ -16,10 +16,14 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidExecutionId
 import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidStageId
+import com.netflix.spinnaker.orca.Event.StageComplete
 import com.netflix.spinnaker.orca.Event.StageStarting
+import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -40,20 +44,20 @@ import java.time.Clock
 ) : DiscoveryActivated() {
 
   @Scheduled(fixedDelay = 10)
-  fun pollOnce() {
+  fun pollOnce() =
     ifEnabled {
       val event = eventQ.poll()
       when (event) {
         null -> log.debug("No events")
         is StageStarting -> event.handle()
+        is TaskSucceeded -> event.handle()
         else -> TODO("remaining message types")
       }
     }
-  }
 
-  private fun StageStarting.handle() {
+  private fun StageStarting.handle() =
     withStage { stage ->
-      stage.buildTasks()
+      stage.buildTasks(stage.builder())
       stage.setStatus(RUNNING)
       stage.setStartTime(clock.millis())
 
@@ -61,7 +65,7 @@ import java.time.Clock
 
       stage.getTasks().firstOrNull().let { task ->
         if (task != null) {
-          commandQ.push(Command.RunTask(
+          commandQ.push(RunTask(
             executionType,
             executionId,
             stageId,
@@ -73,70 +77,100 @@ import java.time.Clock
         }
       }
     }
-  }
 
-  private fun Stage<*>.buildTasks() {
-    builder()
-      .buildTaskGraph(this)
-      .listIterator()
-      .forEachMeta { taskNode, (index, isFirst, isLast) ->
-        when (taskNode) {
-          is TaskDefinition -> {
-            val task = DefaultTask()
-            task.id = (index + 1).toString()
-            task.name = taskNode.name
-            task.implementingClass = taskNode.implementingClass
-            task.stageStart = isFirst
-            task.stageEnd = isLast
-            getTasks().add(task)
-          }
-          else -> TODO("loops, etc.")
-        }
+  private fun TaskSucceeded.handle() =
+    withStage { stage ->
+      val task = stage.getTasks().find { it.id == taskId }!!
+      task.apply {
+        status = SUCCEEDED
+        endTime = clock.millis()
       }
-  }
+      repository.storeStage(stage)
 
-  private fun <T> ListIterator<T>.forEachMeta(block: (T, ListIteratorMetadata) -> Unit) {
-    while (hasNext()) {
-      val first = !hasPrevious()
-      val index = nextIndex()
-      val value = next()
-      val last = !hasNext()
-      block.invoke(value, ListIteratorMetadata(index, first, last))
+      if (task.isStageEnd) {
+        eventQ.push(StageComplete(
+          executionType,
+          executionId,
+          stageId
+        ))
+      } else {
+        val index = stage.getTasks().indexOf(task)
+        val nextTask = stage.getTasks()[index + 1]
+        commandQ.push(RunTask(
+          executionType,
+          executionId,
+          stageId,
+          nextTask.id,
+          nextTask.implementingClass
+        ))
+      }
     }
-  }
 
-  private data class ListIteratorMetadata(
-    val index: Int,
-    val isFirst: Boolean,
-    val isLast: Boolean
-  )
-
-  private fun StageStarting.withStage(block: (Stage<*>) -> Unit) =
+  private fun Event.StageLevel.withStage(block: (Stage<*>) -> Unit) =
     withExecution { execution ->
       execution
         .getStages()
         .find { it.getId() == stageId }
         .let { stage ->
           if (stage == null) {
-            eventQ.push(InvalidStageId(executionId, stageId))
+            eventQ.push(InvalidStageId(executionType, executionId, stageId))
           } else {
             block.invoke(stage)
           }
         }
     }
 
-  private fun StageStarting.withExecution(block: (Execution<*>) -> Unit) =
+  private fun Event.ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
     try {
       when (executionType) {
-        Pipeline::class.java -> block.invoke(repository.retrievePipeline(executionId))
-        Orchestration::class.java -> block.invoke(repository.retrieveOrchestration(executionId))
-        else -> throw IllegalArgumentException("Unknown execution type $executionType")
+        Pipeline::class.java ->
+          block.invoke(repository.retrievePipeline(executionId))
+        Orchestration::class.java ->
+          block.invoke(repository.retrieveOrchestration(executionId))
+        else ->
+          throw IllegalArgumentException("Unknown execution type $executionType")
       }
     } catch(e: ExecutionNotFoundException) {
-      eventQ.push(InvalidExecutionId(executionId))
+      eventQ.push(InvalidExecutionId(executionType, executionId))
     }
 
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }
       ?: throw NoSuchStageDefinitionBuilder(getType())
 }
+
+
+internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =
+  builder
+    .buildTaskGraph(this)
+    .listIterator()
+    .forEachMeta { taskNode, (index, isFirst, isLast) ->
+      when (taskNode) {
+        is TaskDefinition -> {
+          val task = DefaultTask()
+          task.id = (index + 1).toString()
+          task.name = taskNode.name
+          task.implementingClass = taskNode.implementingClass
+          task.stageStart = isFirst
+          task.stageEnd = isLast
+          getTasks().add(task)
+        }
+        else -> TODO("loops, etc.")
+      }
+    }
+
+fun <T> ListIterator<T>.forEachMeta(block: (T, ListIteratorMetadata) -> Unit) {
+  while (hasNext()) {
+    val first = !hasPrevious()
+    val index = nextIndex()
+    val value = next()
+    val last = !hasNext()
+    block.invoke(value, ListIteratorMetadata(index, first, last))
+  }
+}
+
+data class ListIteratorMetadata(
+  val index: Int,
+  val isFirst: Boolean,
+  val isLast: Boolean
+)

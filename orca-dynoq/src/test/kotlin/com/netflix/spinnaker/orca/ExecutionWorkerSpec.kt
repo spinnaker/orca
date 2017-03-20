@@ -23,8 +23,11 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
+import com.netflix.spinnaker.orca.Event.StageComplete
 import com.netflix.spinnaker.orca.Event.StageStarting
+import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -140,7 +143,7 @@ class ExecutionWorkerSpec : Spek({
             reset(commandQ, eventQ, repository)
           }
 
-          it ("updates the stage status") {
+          it("updates the stage status") {
             verify(repository).storeStage(argumentCaptor.capture())
             argumentCaptor.firstValue.apply {
               assertThat(status, equalTo(RUNNING))
@@ -148,7 +151,7 @@ class ExecutionWorkerSpec : Spek({
             }
           }
 
-          it ("attaches tasks to the stage") {
+          it("attaches tasks to the stage") {
             verify(repository).storeStage(argumentCaptor.capture())
             argumentCaptor.firstValue.apply {
               assertThat(tasks, hasSize(equalTo(1)))
@@ -168,13 +171,12 @@ class ExecutionWorkerSpec : Spek({
           val pipeline = Pipeline.builder().withId(event.executionId).build()
           val stage = PipelineStage(pipeline, multiTaskStage.type)
 
-          beforeGroup {
-            stage.id = event.stageId
-            pipeline.stages.add(stage)
-          }
           val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
 
           beforeGroup {
+            stage.id = event.stageId
+            pipeline.stages.add(stage)
+
             whenever(eventQ.poll())
               .thenReturn(event)
             whenever(repository.retrievePipeline(event.executionId))
@@ -187,7 +189,7 @@ class ExecutionWorkerSpec : Spek({
             reset(commandQ, eventQ, repository)
           }
 
-          it ("attaches tasks to the stage") {
+          it("attaches tasks to the stage") {
             verify(repository).storeStage(argumentCaptor.capture())
             argumentCaptor.firstValue.apply {
               assertThat(tasks, hasSize(equalTo(3)))
@@ -213,6 +215,98 @@ class ExecutionWorkerSpec : Spek({
                 assertThat(isStageEnd, equalTo(true))
               }
             }
+          }
+        }
+      }
+
+      describe("when a task completes") {
+        describe("the stage contains further tasks") {
+          val event = TaskSucceeded(Pipeline::class.java, "1", "1", "1")
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage = PipelineStage(pipeline, multiTaskStage.type)
+
+          val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
+
+          beforeGroup {
+            stage.id = event.stageId
+            stage.buildTasks(multiTaskStage)
+            pipeline.stages.add(stage)
+
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+
+            executionWorker.pollOnce()
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          it ("updates the task state in the stage") {
+            verify(repository).storeStage(argumentCaptor.capture())
+            argumentCaptor.firstValue.tasks.first().apply {
+              assertThat(status, equalTo(SUCCEEDED))
+              assertThat(endTime, equalTo(clock.millis()))
+            }
+          }
+
+          it ("runs the next task") {
+            verify(commandQ)
+              .push(Command.RunTask(
+                Pipeline::class.java,
+                event.executionId,
+                event.stageId,
+                "2",
+                DummyTask::class.java
+              ))
+          }
+        }
+
+        describe("the stage is complete") {
+          val event = TaskSucceeded(Pipeline::class.java, "1", "1", "1")
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage1 = PipelineStage(pipeline, singleTaskStage.type)
+          val stage2 = PipelineStage(pipeline, singleTaskStage.type)
+
+          val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
+
+          beforeGroup {
+            stage1.id = event.stageId
+            stage1.buildTasks(singleTaskStage)
+            pipeline.stages.add(stage1)
+
+            stage2.id = "2"
+            pipeline.stages.add(stage2)
+
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+
+            executionWorker.pollOnce()
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          it ("updates the task state in the stage") {
+            verify(repository).storeStage(argumentCaptor.capture())
+            argumentCaptor.firstValue.tasks.last().apply {
+              assertThat(status, equalTo(SUCCEEDED))
+              assertThat(endTime, equalTo(clock.millis()))
+            }
+          }
+
+          it ("emits an event to signal the stage is complete") {
+            verify(eventQ)
+              .push(StageComplete(
+                event.executionType,
+                event.executionId,
+                event.stageId
+              ))
           }
         }
       }
@@ -269,6 +363,6 @@ class ExecutionWorkerSpec : Spek({
           }
         }
       }
-      }
+    }
   }
 })

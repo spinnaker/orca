@@ -19,39 +19,80 @@ package com.netflix.spinnaker.orca
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 
 sealed class Event {
+
+  interface ExecutionLevel {
+    val executionType: Class<out Execution<*>>
+    val executionId: String
+  }
+
+  interface StageLevel : ExecutionLevel {
+    val stageId: String
+  }
+
+  interface TaskLevel : StageLevel {
+    val taskId: String
+  }
+
   sealed class TaskResult : Event() {
     /**
      * Task ran successfully.
      */
-    data class TaskSucceeded(val executionId: String, val stageId: String, val taskId: String)
-      : TaskResult()
+    data class TaskSucceeded(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String,
+      override val stageId: String,
+      override val taskId: String
+    ) : TaskResult(), TaskLevel
 
     /**
      * Task ran and failed.
      */
-    data class TaskFailed(val executionId: String, val stageId: String, val taskId: String)
-      : TaskResult()
+    data class TaskFailed(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String,
+      override val stageId: String,
+      override val taskId: String
+    ) : TaskResult(), TaskLevel
   }
 
   sealed class ConfigurationError : Event() {
     /**
      * Execution id was not found in {@link ExecutionRepository}.
      */
-    data class InvalidExecutionId(val executionId: String)
-      : ConfigurationError()
+    data class InvalidExecutionId(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String
+    ) : ConfigurationError(), ExecutionLevel
 
     /**
      * Stage id was not found in the execution.
      */
-    data class InvalidStageId(val executionId: String, val stageId: String)
-      : ConfigurationError()
+    data class InvalidStageId(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String,
+      override val stageId: String
+    ) : ConfigurationError(), StageLevel
 
     /**
      * No such task class.
      */
-    data class InvalidTaskType(val executionId: String, val stageId: String, val className: String)
-      : ConfigurationError()
+    data class InvalidTaskType(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String,
+      override val stageId: String,
+      val className: String
+    ) : ConfigurationError(), StageLevel
   }
 
-  data class StageStarting(val executionType: Class<out Execution<*>>, val executionId: String, val stageId: String) : Event()
+  data class StageStarting(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String
+  ) : Event(), StageLevel
+
+  data class StageComplete(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String
+  ) : Event(), StageLevel
 }
