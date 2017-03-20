@@ -42,12 +42,12 @@ class DiscoveryActivatedSpec : Spek({
     }
 
     describe("when disabled") {
-      beforeGroup {
-        subject.invoke()
-      }
-
       afterGroup {
         reset(target)
+      }
+
+      action("an action is taken if the instance is up") {
+        subject.invoke()
       }
 
       it("does nothing") {
@@ -61,12 +61,12 @@ class DiscoveryActivatedSpec : Spek({
       }
 
       describe("when invoked") {
-        beforeGroup {
-          subject.invoke()
-        }
-
         afterGroup {
           reset(target)
+        }
+
+        action("an action is taken if the instance is up") {
+          subject.invoke()
         }
 
         it("does something") {
@@ -75,14 +75,14 @@ class DiscoveryActivatedSpec : Spek({
       }
 
       describe("when instance goes out of service") {
-        beforeGroup {
+        afterGroup {
+          reset(target)
+        }
+
+        action("an action is taken before and after the instance goes down") {
           subject.invoke()
           subject.triggerEvent(UP, OUT_OF_SERVICE)
           subject.invoke()
-        }
-
-        afterGroup {
-          reset(target)
         }
 
         it("stops doing anything") {

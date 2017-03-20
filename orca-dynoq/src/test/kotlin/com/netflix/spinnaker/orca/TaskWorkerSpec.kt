@@ -55,11 +55,14 @@ internal class TaskWorkerSpec : Spek({
     describe("when disabled in discovery") {
       beforeGroup {
         taskWorker.onApplicationEvent(RemoteStatusChangedEvent(StatusChangeEvent(UP, OUT_OF_SERVICE)))
-        taskWorker.pollOnce()
       }
 
       afterGroup {
         reset(commandQ, eventQ, task, repository)
+      }
+
+      action("the worker polls the queue") {
+        taskWorker.pollOnce()
       }
 
       it("does not poll the queue") {
@@ -76,12 +79,14 @@ internal class TaskWorkerSpec : Spek({
         beforeGroup {
           whenever(commandQ.poll())
             .thenReturn(null)
-
-          taskWorker.pollOnce()
         }
 
         afterGroup {
           reset(commandQ, eventQ, task, repository)
+        }
+
+        action("the worker polls the queue") {
+          taskWorker.pollOnce()
         }
 
         it("does nothing") {
@@ -111,12 +116,14 @@ internal class TaskWorkerSpec : Spek({
               .thenReturn(taskResult)
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
-
-            taskWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
           }
 
           it("executes the task") {
@@ -142,12 +149,14 @@ internal class TaskWorkerSpec : Spek({
               .thenReturn(taskBackoffMs)
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
-
-            taskWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
           }
 
           it("re-queues the command") {
@@ -166,12 +175,14 @@ internal class TaskWorkerSpec : Spek({
               .thenReturn(taskResult)
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
-
-            taskWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
           }
 
           it("emits a failure event") {
@@ -187,12 +198,14 @@ internal class TaskWorkerSpec : Spek({
               .thenThrow(RuntimeException("o noes"))
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
-
-            taskWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
           }
 
           it("emits a failure event") {
@@ -213,12 +226,14 @@ internal class TaskWorkerSpec : Spek({
 
           whenever(commandQ.poll())
             .thenReturn(command)
-
-          taskWorker.pollOnce()
         }
 
         afterGroup {
           reset(commandQ, eventQ, task, repository)
+        }
+
+        action("the worker polls the queue") {
+          taskWorker.pollOnce()
         }
 
         it("emits an event") {
@@ -236,12 +251,14 @@ internal class TaskWorkerSpec : Spek({
               .thenReturn(command)
             whenever(repository.retrievePipeline(command.executionId))
               .thenThrow(ExecutionNotFoundException("No Pipeline found for ${command.executionId}"))
-
-            taskWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
           }
 
           it("does not run any tasks") {
@@ -262,12 +279,14 @@ internal class TaskWorkerSpec : Spek({
               .thenReturn(command)
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
-
-            taskWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
           }
 
           it("does not run any tasks") {
@@ -292,12 +311,14 @@ internal class TaskWorkerSpec : Spek({
               .thenReturn(command)
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
-
-            taskWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
           }
 
           it("does not run any tasks") {

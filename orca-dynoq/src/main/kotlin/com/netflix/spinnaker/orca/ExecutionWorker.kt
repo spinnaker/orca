@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.Command.RunStage
 import com.netflix.spinnaker.orca.Command.RunTask
+import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidExecutionId
 import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidStageId
-import com.netflix.spinnaker.orca.Event.StageComplete
-import com.netflix.spinnaker.orca.Event.StageStarting
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
@@ -51,6 +51,7 @@ import java.time.Clock
         null -> log.debug("No events")
         is StageStarting -> event.handle()
         is TaskSucceeded -> event.handle()
+        is StageComplete -> event.handle()
         else -> TODO("remaining message types")
       }
     }
@@ -77,6 +78,31 @@ import java.time.Clock
         }
       }
     }
+
+  private fun StageComplete.handle() =
+    withStage { stage ->
+      stage.setStatus(SUCCEEDED)
+      stage.setEndTime(clock.millis())
+      repository.storeStage(stage)
+
+      stage.downstreamStages().forEach {
+        commandQ.push(RunStage(
+          executionType,
+          executionId,
+          it.getId()
+        ))
+      }
+
+      if (stage.getExecution().allStagesComplete()) {
+        eventQ.push(ExecutionComplete(
+          executionType,
+          executionId
+        ))
+      }
+    }
+
+  private fun Execution<*>.allStagesComplete() =
+    getStages().map { it.getStatus() }.all { it.complete }
 
   private fun TaskSucceeded.handle() =
     withStage { stage ->

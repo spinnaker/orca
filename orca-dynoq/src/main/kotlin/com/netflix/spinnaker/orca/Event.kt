@@ -95,4 +95,9 @@ sealed class Event {
     override val executionId: String,
     override val stageId: String
   ) : Event(), StageLevel
+
+  data class ExecutionComplete(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String
+  ) : Event(), ExecutionLevel
 }

@@ -23,8 +23,9 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
-import com.netflix.spinnaker.orca.Event.StageComplete
-import com.netflix.spinnaker.orca.Event.StageStarting
+import com.netflix.spinnaker.orca.Command.RunStage
+import com.netflix.spinnaker.orca.Command.RunTask
+import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
@@ -38,6 +39,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundExceptio
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
+import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
@@ -82,11 +84,14 @@ class ExecutionWorkerSpec : Spek({
     describe("when disabled in discovery") {
       beforeGroup {
         executionWorker.onApplicationEvent(RemoteStatusChangedEvent(StatusChangeEvent(UP, OUT_OF_SERVICE)))
-        executionWorker.pollOnce()
       }
 
       afterGroup {
         reset(commandQ, eventQ, repository)
+      }
+
+      action("the worker polls the queue") {
+        executionWorker.pollOnce()
       }
 
       it("does not poll the queue") {
@@ -105,12 +110,14 @@ class ExecutionWorkerSpec : Spek({
         beforeGroup {
           whenever(eventQ.poll())
             .thenReturn(null)
-
-          executionWorker.pollOnce()
         }
 
         afterGroup {
           reset(commandQ, eventQ, repository)
+        }
+
+        action("the worker polls the queue") {
+          executionWorker.pollOnce()
         }
 
         it("does nothing") {
@@ -236,15 +243,17 @@ class ExecutionWorkerSpec : Spek({
               .thenReturn(event)
             whenever(repository.retrievePipeline(event.executionId))
               .thenReturn(pipeline)
-
-            executionWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, repository)
           }
 
-          it ("updates the task state in the stage") {
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("updates the task state in the stage") {
             verify(repository).storeStage(argumentCaptor.capture())
             argumentCaptor.firstValue.tasks.first().apply {
               assertThat(status, equalTo(SUCCEEDED))
@@ -252,9 +261,9 @@ class ExecutionWorkerSpec : Spek({
             }
           }
 
-          it ("runs the next task") {
+          it("runs the next task") {
             verify(commandQ)
-              .push(Command.RunTask(
+              .push(RunTask(
                 Pipeline::class.java,
                 event.executionId,
                 event.stageId,
@@ -284,15 +293,17 @@ class ExecutionWorkerSpec : Spek({
               .thenReturn(event)
             whenever(repository.retrievePipeline(event.executionId))
               .thenReturn(pipeline)
-
-            executionWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, repository)
           }
 
-          it ("updates the task state in the stage") {
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("updates the task state in the stage") {
             verify(repository).storeStage(argumentCaptor.capture())
             argumentCaptor.firstValue.tasks.last().apply {
               assertThat(status, equalTo(SUCCEEDED))
@@ -300,13 +311,150 @@ class ExecutionWorkerSpec : Spek({
             }
           }
 
-          it ("emits an event to signal the stage is complete") {
+          it("emits an event to signal the stage is complete") {
             verify(eventQ)
               .push(StageComplete(
                 event.executionType,
                 event.executionId,
                 event.stageId
               ))
+          }
+        }
+      }
+
+      describe("when a stage completes") {
+        val event = StageComplete(Pipeline::class.java, "1", "1")
+
+        context("it is the last stage") {
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage = PipelineStage(pipeline, singleTaskStage.type)
+
+          val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
+
+          beforeGroup {
+            stage.id = event.stageId
+            pipeline.stages.add(stage)
+
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("updates the stage state") {
+            verify(repository).storeStage(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(status, equalTo(SUCCEEDED))
+              assertThat(endTime, equalTo(clock.millis()))
+            }
+          }
+
+          it("emits an event indicating the pipeline is complete") {
+            verify(eventQ).push(ExecutionComplete(
+              event.executionType,
+              event.executionId
+            ))
+          }
+
+          it("does not emit any commands") {
+            verifyZeroInteractions(commandQ)
+          }
+        }
+
+        context("there is a single downstream stage") {
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage1 = PipelineStage(pipeline, singleTaskStage.type)
+          val stage2 = PipelineStage(pipeline, singleTaskStage.type)
+
+          val argumentCaptor = argumentCaptor<Stage<Pipeline>>()
+
+          beforeGroup {
+            stage1.id = event.stageId
+            stage1.refId = event.stageId
+            pipeline.stages.add(stage1)
+            stage2.id = "2"
+            stage2.requisiteStageRefIds = setOf(stage1.refId)
+            pipeline.stages.add(stage2)
+
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("updates the stage state") {
+            verify(repository).storeStage(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(status, equalTo(SUCCEEDED))
+              assertThat(endTime, equalTo(clock.millis()))
+            }
+          }
+
+          it("runs the next stage") {
+            verify(commandQ).push(RunStage(
+              event.executionType,
+              event.executionId,
+              stage2.id
+            ))
+          }
+
+          it("does not emit any events") {
+            verify(eventQ, never()).push(anyOrNull())
+          }
+        }
+
+        context("there are multiple downstream stages") {
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage1 = PipelineStage(pipeline, singleTaskStage.type)
+          val stage2 = PipelineStage(pipeline, singleTaskStage.type)
+          val stage3 = PipelineStage(pipeline, singleTaskStage.type)
+
+          val argumentCaptor = argumentCaptor<RunStage>()
+
+          beforeGroup {
+            stage1.id = event.stageId
+            stage1.refId = event.stageId
+            pipeline.stages.add(stage1)
+            stage2.id = "2"
+            stage2.requisiteStageRefIds = setOf(stage1.refId)
+            pipeline.stages.add(stage2)
+            stage3.id = "3"
+            stage3.requisiteStageRefIds = setOf(stage1.refId)
+            pipeline.stages.add(stage3)
+
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("runs the next stages") {
+            verify(commandQ, times(2)).push(argumentCaptor.capture())
+            assertThat(argumentCaptor.allValues.map { it.stageId }.toSet(), equalTo(setOf(stage2.id, stage3.id)))
           }
         }
       }
@@ -321,12 +469,14 @@ class ExecutionWorkerSpec : Spek({
               .thenReturn(event)
             whenever(repository.retrievePipeline(event.executionId))
               .thenThrow(ExecutionNotFoundException("No Pipeline found for ${event.executionId}"))
-
-            executionWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
           }
 
           it("does not run any tasks") {
@@ -346,12 +496,14 @@ class ExecutionWorkerSpec : Spek({
               .thenReturn(event)
             whenever(repository.retrievePipeline(event.executionId))
               .thenReturn(pipeline)
-
-            executionWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
           }
 
           it("does not run any tasks") {
