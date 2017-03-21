@@ -320,51 +320,53 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
-      describe("when a task fails") {
-        val event = TaskComplete(Pipeline::class.java, "1", "1", "1", TERMINAL)
-        val pipeline = Pipeline.builder().withId(event.executionId).build()
-        val stage = PipelineStage(pipeline, multiTaskStage.type)
+      setOf(TERMINAL, CANCELED).forEach { status ->
+        describe("when a task completes with $status status") {
+          val event = TaskComplete(Pipeline::class.java, "1", "1", "1", status)
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage = PipelineStage(pipeline, multiTaskStage.type)
 
-        beforeGroup {
-          stage.id = event.stageId
-          stage.buildTasks(multiTaskStage)
-          pipeline.stages.add(stage)
+          beforeGroup {
+            stage.id = event.stageId
+            stage.buildTasks(multiTaskStage)
+            pipeline.stages.add(stage)
 
-          whenever(eventQ.poll())
-            .thenReturn(event)
-          whenever(repository.retrievePipeline(event.executionId))
-            .thenReturn(pipeline)
-        }
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
 
-        afterGroup {
-          reset(commandQ, eventQ, repository)
-        }
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
 
-        action("the worker polls the queue") {
-          executionWorker.pollOnce()
-        }
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
 
-        it("updates the task state in the stage") {
-          argumentCaptor<Stage<Pipeline>>().apply {
-            verify(repository).storeStage(capture())
-            firstValue.tasks.first().apply {
-              assertThat(status, equalTo(TERMINAL))
-              assertThat(endTime, equalTo(clock.millis()))
+          it("updates the task state in the stage") {
+            argumentCaptor<Stage<Pipeline>>().apply {
+              verify(repository).storeStage(capture())
+              firstValue.tasks.first().apply {
+                assertThat(status, equalTo(status))
+                assertThat(endTime, equalTo(clock.millis()))
+              }
             }
           }
-        }
 
-        it("fails the stage") {
-          verify(eventQ).push(StageComplete(
-            event.executionType,
-            event.executionId,
-            event.stageId,
-            TERMINAL
-          ))
-        }
+          it("fails the stage") {
+            verify(eventQ).push(StageComplete(
+              event.executionType,
+              event.executionId,
+              event.stageId,
+              status
+            ))
+          }
 
-        it("does not run the next task") {
-          verifyZeroInteractions(commandQ)
+          it("does not run the next task") {
+            verifyZeroInteractions(commandQ)
+          }
         }
       }
 
@@ -502,49 +504,9 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
-      describe("when a stage fails") {
-        val event = StageComplete(Pipeline::class.java, "1", "1", TERMINAL)
-
-        context("it is the last stage") {
-          val pipeline = Pipeline.builder().withId(event.executionId).build()
-          val stage = PipelineStage(pipeline, singleTaskStage.type)
-
-          beforeGroup {
-            stage.id = event.stageId
-            pipeline.stages.add(stage)
-
-            whenever(eventQ.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
-              .thenReturn(pipeline)
-          }
-
-          afterGroup {
-            reset(commandQ, eventQ, repository)
-          }
-
-          action("the worker polls the queue") {
-            executionWorker.pollOnce()
-          }
-
-          it("updates the stage state") {
-            argumentCaptor<Stage<Pipeline>>().apply {
-              verify(repository).storeStage(capture())
-              assertThat(firstValue.status, equalTo(TERMINAL))
-              assertThat(firstValue.endTime, equalTo(clock.millis()))
-            }
-          }
-
-          it("emits an event indicating the pipeline failed") {
-            verify(eventQ).push(ExecutionComplete(
-              event.executionType,
-              event.executionId,
-              TERMINAL
-            ))
-          }
-        }
-
-        context("there are downstream stages") {
+      setOf(TERMINAL, CANCELED).forEach { status ->
+        describe("when a stage fails with $status status") {
+          val event = StageComplete(Pipeline::class.java, "1", "1", status)
           val pipeline = Pipeline.builder().withId(event.executionId).build()
           val stage1 = PipelineStage(pipeline, singleTaskStage.type)
           val stage2 = PipelineStage(pipeline, singleTaskStage.type)
@@ -571,7 +533,15 @@ class ExecutionWorkerSpec : Spek({
             executionWorker.pollOnce()
           }
 
-          it("does not run the downstream stages") {
+          it("updates the stage state") {
+            argumentCaptor<Stage<Pipeline>>().apply {
+              verify(repository).storeStage(capture())
+              assertThat(firstValue.status, equalTo(status))
+              assertThat(firstValue.endTime, equalTo(clock.millis()))
+            }
+          }
+
+          it("does not run any downstream stages") {
             verify(eventQ, never()).push(isA<StageStarting>())
           }
 
@@ -579,7 +549,7 @@ class ExecutionWorkerSpec : Spek({
             verify(eventQ).push(ExecutionComplete(
               event.executionType,
               event.executionId,
-              TERMINAL
+              status
             ))
           }
         }

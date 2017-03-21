@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -38,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
   val tasks: Collection<Task>
 ) : DiscoveryActivated, QueueProcessor {
 
-  override val log = getLogger(TaskWorker::class.java)
+  override val log: Logger = getLogger(javaClass)
   override val enabled = AtomicBoolean(false)
 
   @Scheduled(fixedDelay = 10)

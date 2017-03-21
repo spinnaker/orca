@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -39,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean
   val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
 ) : DiscoveryActivated, QueueProcessor {
 
-  override val log = getLogger(ExecutionWorker::class.java)
+  override val log: Logger = getLogger(javaClass)
   override val enabled = AtomicBoolean(false)
 
   @Scheduled(fixedDelay = 10)
@@ -57,7 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean
       }
     }
 
-  private fun ExecutionComplete.handle() {
+  private fun ExecutionComplete.handle() =
     withExecution { execution ->
       execution.setStatus(SUCCEEDED)
       execution.setEndTime(clock.millis())
@@ -66,7 +67,6 @@ import java.util.concurrent.atomic.AtomicBoolean
         is Orchestration -> repository.store(execution)
       }
     }
-  }
 
   private fun StageStarting.handle() =
     withStage { stage ->
@@ -107,7 +107,7 @@ import java.util.concurrent.atomic.AtomicBoolean
         }
       }
 
-      if (status == TERMINAL || stage.getExecution().isComplete()) {
+      if (status != SUCCEEDED || stage.getExecution().isComplete()) {
         eventQ.push(ExecutionComplete(
           executionType,
           executionId,
@@ -143,13 +143,12 @@ import java.util.concurrent.atomic.AtomicBoolean
       }
     }
 
-  private fun ConfigurationError.handle() {
+  private fun ConfigurationError.handle() =
     eventQ.push(ExecutionComplete(
       executionType,
       executionId,
       TERMINAL
     ))
-  }
 
   // TODO: doesn't handle failure / early termination
   private fun Execution<*>.isComplete() =
