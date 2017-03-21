@@ -113,18 +113,16 @@ import java.time.Clock
   private fun TaskComplete.handle() =
     withStage { stage ->
       val task = stage.getTasks().find { it.id == taskId }!!
-      task.apply {
-        status = SUCCEEDED
-        endTime = clock.millis()
-      }
+      task.status = status
+      task.endTime = clock.millis()
       repository.storeStage(stage)
 
-      if (task.isStageEnd) {
+      if (status != SUCCEEDED || task.isStageEnd) {
         eventQ.push(StageComplete(
           executionType,
           executionId,
           stageId,
-          SUCCEEDED
+          status
         ))
       } else {
         val index = stage.getTasks().indexOf(task)

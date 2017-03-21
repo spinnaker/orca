@@ -36,7 +36,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundExceptio
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.Pending
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
@@ -321,7 +320,51 @@ class ExecutionWorkerSpec : Spek({
       }
 
       describe("when a task fails") {
-        Pending.Yes()
+        val event = TaskComplete(Pipeline::class.java, "1", "1", "1", TERMINAL)
+        val pipeline = Pipeline.builder().withId(event.executionId).build()
+        val stage = PipelineStage(pipeline, multiTaskStage.type)
+
+        beforeGroup {
+          stage.id = event.stageId
+          stage.buildTasks(multiTaskStage)
+          pipeline.stages.add(stage)
+
+          whenever(eventQ.poll())
+            .thenReturn(event)
+          whenever(repository.retrievePipeline(event.executionId))
+            .thenReturn(pipeline)
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, repository)
+        }
+
+        action("the worker polls the queue") {
+          executionWorker.pollOnce()
+        }
+
+        it("updates the task state in the stage") {
+          argumentCaptor<Stage<Pipeline>>().apply {
+            verify(repository).storeStage(capture())
+            firstValue.tasks.first().apply {
+              assertThat(status, equalTo(TERMINAL))
+              assertThat(endTime, equalTo(clock.millis()))
+            }
+          }
+        }
+
+        it("fails the stage") {
+          verify(eventQ).push(StageComplete(
+            event.executionType,
+            event.executionId,
+            event.stageId,
+            TERMINAL
+          ))
+        }
+
+        it("does not run the next task") {
+          verifyZeroInteractions(commandQ)
+        }
       }
 
       describe("when a stage completes successfully") {
