@@ -128,17 +128,15 @@ internal class TaskWorkerSpec : Spek({
             verify(task).execute(stage)
           }
 
-          val argumentCaptor = argumentCaptor<TaskComplete>()
-
           it("emits a failure event") {
-            verify(eventQ).push(argumentCaptor.capture())
-            argumentCaptor.firstValue.apply {
-              assertThat(status, equalTo(SUCCEEDED))
+            argumentCaptor<TaskComplete>().apply {
+              verify(eventQ).push(capture())
+              assertThat(firstValue.status, equalTo(SUCCEEDED))
             }
           }
         }
 
-        describe("that does not complete") {
+        describe("that is not yet complete") {
 
           val taskResult = DefaultTaskResult(RUNNING)
           val taskBackoffMs = 30_000L
@@ -188,12 +186,10 @@ internal class TaskWorkerSpec : Spek({
             taskWorker.pollOnce()
           }
 
-          val argumentCaptor = argumentCaptor<TaskComplete>()
-
           it("emits a failure event") {
-            verify(eventQ).push(argumentCaptor.capture())
-            argumentCaptor.firstValue.apply {
-              assertThat(status, equalTo(TERMINAL))
+            argumentCaptor<TaskComplete>().apply {
+              verify(eventQ).push(capture())
+              assertThat(firstValue.status, equalTo(TERMINAL))
             }
           }
         }
@@ -216,12 +212,10 @@ internal class TaskWorkerSpec : Spek({
             taskWorker.pollOnce()
           }
 
-          val argumentCaptor = argumentCaptor<TaskComplete>()
-
           it("emits a failure event") {
-            verify(eventQ).push(argumentCaptor.capture())
-            argumentCaptor.firstValue.apply {
-              assertThat(status, equalTo(TERMINAL))
+            argumentCaptor<TaskComplete>().apply {
+              verify(eventQ).push(capture())
+              assertThat(firstValue.status, equalTo(TERMINAL))
             }
           }
         }
@@ -315,11 +309,7 @@ internal class TaskWorkerSpec : Spek({
             verify(eventQ).push(isA<InvalidTaskType>())
           }
         }
-
       }
     }
   }
 })
-
-interface DummyTask : RetryableTask
-interface InvalidTask : Task

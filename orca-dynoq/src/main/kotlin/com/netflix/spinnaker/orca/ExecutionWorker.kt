@@ -18,8 +18,7 @@ package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.*
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -88,22 +87,32 @@ import java.time.Clock
 
   private fun StageComplete.handle() =
     withStage { stage ->
-      stage.setStatus(SUCCEEDED)
+      stage.setStatus(status)
       stage.setEndTime(clock.millis())
       repository.storeStage(stage)
 
-      stage.downstreamStages().forEach {
-        eventQ.push(StageStarting(
-          executionType,
-          executionId,
-          it.getId()
-        ))
+      if (status == SUCCEEDED) {
+        stage.downstreamStages().forEach {
+          eventQ.push(StageStarting(
+            executionType,
+            executionId,
+            it.getId()
+          ))
+        }
+      }
+
+      if (status == TERMINAL) {
+        stage.parallelStages().forEach {
+          it.setStatus(CANCELED)
+          repository.storeStage(it)
+        }
       }
 
       if (stage.getExecution().isComplete()) {
         eventQ.push(ExecutionComplete(
           executionType,
-          executionId
+          executionId,
+          status
         ))
       }
     }
@@ -121,7 +130,8 @@ import java.time.Clock
         eventQ.push(StageComplete(
           executionType,
           executionId,
-          stageId
+          stageId,
+          SUCCEEDED
         ))
       } else {
         val index = stage.getTasks().indexOf(task)
@@ -143,6 +153,12 @@ import java.time.Clock
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }
       ?: throw NoSuchStageDefinitionBuilder(getType())
+
+  private fun Stage<*>.parallelStages(): Collection<Stage<*>> =
+    getExecution()
+      .getStages()
+      .filter { it.getId() != getId() }
+      .filter { it.getRequisiteStageRefIds() == getRequisiteStageRefIds() }
 }
 
 internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =

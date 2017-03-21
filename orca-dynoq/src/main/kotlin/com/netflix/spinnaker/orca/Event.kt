@@ -51,12 +51,14 @@ sealed class Event {
   data class StageComplete(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
-    override val stageId: String
+    override val stageId: String,
+    val status: ExecutionStatus
   ) : Event(), StageLevel
 
   data class ExecutionComplete(
     override val executionType: Class<out Execution<*>>,
-    override val executionId: String
+    override val executionId: String,
+    val status: ExecutionStatus
   ) : Event(), ExecutionLevel
 
   /**
