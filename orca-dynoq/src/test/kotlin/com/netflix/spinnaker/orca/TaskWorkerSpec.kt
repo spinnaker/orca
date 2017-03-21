@@ -23,7 +23,8 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.Command.RunTask
-import com.netflix.spinnaker.orca.Event.*
+import com.netflix.spinnaker.orca.Event.ConfigurationError.*
+import com.netflix.spinnaker.orca.Event.TaskComplete
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage

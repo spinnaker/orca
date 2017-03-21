@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.Command.RunTask
-import com.netflix.spinnaker.orca.Event.InvalidTaskType
+import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidTaskType
 import com.netflix.spinnaker.orca.Event.TaskComplete
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated

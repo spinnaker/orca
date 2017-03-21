@@ -62,29 +62,35 @@ sealed class Event {
   ) : Event(), ExecutionLevel
 
   /**
-   * Execution id was not found in the [ExecutionRepository].
+   * Fatal errors in processing the execution configuration.
    */
-  data class InvalidExecutionId(
-    override val executionType: Class<out Execution<*>>,
-    override val executionId: String
-  ) : Event(), ExecutionLevel
+  sealed class ConfigurationError : Event(), ExecutionLevel {
+    /**
+     * Execution id was not found in the [ExecutionRepository].
+     */
+    data class InvalidExecutionId(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String
+    ) : ConfigurationError()
 
-  /**
-   * Stage id was not found in the execution.
-   */
-  data class InvalidStageId(
-    override val executionType: Class<out Execution<*>>,
-    override val executionId: String,
-    override val stageId: String
-  ) : Event(), StageLevel
+    /**
+     * Stage id was not found in the execution.
+     */
+    data class InvalidStageId(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String,
+      override val stageId: String
+    ) : ConfigurationError(), StageLevel
 
-  /**
-   * No such [Task] class.
-   */
-  data class InvalidTaskType(
-    override val executionType: Class<out Execution<*>>,
-    override val executionId: String,
-    override val stageId: String,
-    val className: String
-  ) : Event(), StageLevel
+    /**
+     * No such [Task] class.
+     */
+    data class InvalidTaskType(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String,
+      override val stageId: String,
+      val className: String
+    ) : ConfigurationError(), StageLevel
+  }
+
 }

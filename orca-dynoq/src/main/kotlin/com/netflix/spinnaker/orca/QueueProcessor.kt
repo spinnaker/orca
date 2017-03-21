@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidExecutionId
+import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidStageId
 import com.netflix.spinnaker.orca.Event.ExecutionLevel
 import com.netflix.spinnaker.orca.Event.StageLevel
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -41,7 +43,7 @@ internal interface QueueProcessor {
         .find { it.getId() == stageId }
         .let { stage ->
           if (stage == null) {
-            eventQ.push(Event.InvalidStageId(executionType, executionId, stageId))
+            eventQ.push(InvalidStageId(executionType, executionId, stageId))
           } else {
             block.invoke(stage)
           }
@@ -59,6 +61,6 @@ internal interface QueueProcessor {
           throw IllegalArgumentException("Unknown execution type $executionType")
       }
     } catch(e: ExecutionNotFoundException) {
-      eventQ.push(Event.InvalidExecutionId(executionType, executionId))
+      eventQ.push(InvalidExecutionId(executionType, executionId))
     }
 }

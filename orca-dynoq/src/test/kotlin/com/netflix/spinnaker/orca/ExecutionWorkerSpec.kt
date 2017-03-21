@@ -25,6 +25,7 @@ import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.*
+import com.netflix.spinnaker.orca.Event.ConfigurationError.*
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
@@ -665,6 +666,39 @@ class ExecutionWorkerSpec : Spek({
 
           it("emits an error event") {
             verify(eventQ).push(isA<InvalidStageId>())
+          }
+        }
+      }
+
+      setOf(
+        InvalidExecutionId(Pipeline::class.java, "1"),
+        InvalidStageId(Pipeline::class.java, "1", "1"),
+        InvalidTaskType(Pipeline::class.java, "1", "1", InvalidTask::class.java.name)
+      ).forEach { event ->
+        describe("handing a ${event.javaClass.simpleName} event") {
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("marks the execution as terminal") {
+            verify(eventQ).push(ExecutionComplete(
+              Pipeline::class.java,
+              event.executionId,
+              TERMINAL
+            ))
           }
         }
       }

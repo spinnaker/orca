@@ -47,6 +47,7 @@ import java.time.Clock
         is StageStarting -> event.handle()
         is StageComplete -> event.handle()
         is ExecutionComplete -> event.handle()
+        is ConfigurationError -> event.handle()
         else -> TODO("remaining message types")
       }
     }
@@ -136,6 +137,14 @@ import java.time.Clock
         ))
       }
     }
+
+  private fun ConfigurationError.handle() {
+    eventQ.push(ExecutionComplete(
+      executionType,
+      executionId,
+      TERMINAL
+    ))
+  }
 
   // TODO: doesn't handle failure / early termination
   private fun Execution<*>.isComplete() =
