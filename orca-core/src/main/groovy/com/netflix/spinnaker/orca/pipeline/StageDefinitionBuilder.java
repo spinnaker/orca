@@ -16,11 +16,26 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.util.*;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.*;
+import com.netflix.spinnaker.orca.pipeline.model.AbstractStage;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration;
+import com.netflix.spinnaker.orca.pipeline.model.OrchestrationStage;
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineStage;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.pipeline.model.Task;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL;
 import static java.util.Collections.emptyList;
@@ -103,8 +118,9 @@ public interface StageDefinitionBuilder {
             requisiteStageRefIds.addAll((Collection<String>) it.getContext().get("requisiteIds"));
           }
 
-          // only want to consider completed child stages
-          return it.getStatus().isComplete() && requisiteStageRefIds.contains(stage.getRefId());
+          // only want to consider completed or running child stages
+          return (it.getStatus().isComplete() || it.getStatus() == ExecutionStatus.RUNNING)
+            && requisiteStageRefIds.contains(stage.getRefId());
         })
         .collect(toList());
 
