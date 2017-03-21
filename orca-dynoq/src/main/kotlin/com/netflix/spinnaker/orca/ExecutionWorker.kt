@@ -101,9 +101,6 @@ import java.time.Clock
       }
     }
 
-  private fun Execution<*>.allStagesComplete() =
-    getStages().map { it.getStatus() }.all { it.complete }
-
   private fun TaskSucceeded.handle() =
     withStage { stage ->
       val task = stage.getTasks().find { it.id == taskId }!!
@@ -132,7 +129,10 @@ import java.time.Clock
       }
     }
 
-  private fun Event.StageLevel.withStage(block: (Stage<*>) -> Unit) =
+  private fun Execution<*>.allStagesComplete() =
+    getStages().map { it.getStatus() }.all { it.complete }
+
+  private fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
     withExecution { execution ->
       execution
         .getStages()
@@ -146,7 +146,7 @@ import java.time.Clock
         }
     }
 
-  private fun Event.ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
+  private fun ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
     try {
       when (executionType) {
         Pipeline::class.java ->
@@ -165,12 +165,11 @@ import java.time.Clock
       ?: throw NoSuchStageDefinitionBuilder(getType())
 }
 
-
 internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =
   builder
     .buildTaskGraph(this)
     .listIterator()
-    .forEachMeta { taskNode, (index, isFirst, isLast) ->
+    .forEachWithMetadata { (taskNode, index, isFirst, isLast) ->
       when (taskNode) {
         is TaskDefinition -> {
           val task = DefaultTask()
@@ -184,19 +183,3 @@ internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =
         else -> TODO("loops, etc.")
       }
     }
-
-fun <T> ListIterator<T>.forEachMeta(block: (T, ListIteratorMetadata) -> Unit) {
-  while (hasNext()) {
-    val first = !hasPrevious()
-    val index = nextIndex()
-    val value = next()
-    val last = !hasNext()
-    block.invoke(value, ListIteratorMetadata(index, first, last))
-  }
-}
-
-data class ListIteratorMetadata(
-  val index: Int,
-  val isFirst: Boolean,
-  val isLast: Boolean
-)
