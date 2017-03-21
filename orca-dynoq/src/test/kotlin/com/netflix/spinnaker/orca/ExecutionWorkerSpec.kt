@@ -25,7 +25,6 @@ import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.*
-import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -225,9 +224,10 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
-      describe("when a task completes") {
+      describe("when a task completes successfully") {
+        val event = TaskComplete(Pipeline::class.java, "1", "1", "1", SUCCEEDED)
+
         describe("the stage contains further tasks") {
-          val event = TaskSucceeded(Pipeline::class.java, "1", "1", "1")
           val pipeline = Pipeline.builder().withId(event.executionId).build()
           val stage = PipelineStage(pipeline, multiTaskStage.type)
 
@@ -273,7 +273,6 @@ class ExecutionWorkerSpec : Spek({
         }
 
         describe("the stage is complete") {
-          val event = TaskSucceeded(Pipeline::class.java, "1", "1", "1")
           val pipeline = Pipeline.builder().withId(event.executionId).build()
           val stage1 = PipelineStage(pipeline, singleTaskStage.type)
           val stage2 = PipelineStage(pipeline, singleTaskStage.type)

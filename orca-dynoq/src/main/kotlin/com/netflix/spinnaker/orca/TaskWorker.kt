@@ -18,8 +18,7 @@ package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.ConfigurationError.*
-import com.netflix.spinnaker.orca.Event.TaskResult.TaskFailed
-import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
+import com.netflix.spinnaker.orca.Event.TaskComplete
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -59,15 +58,16 @@ import java.util.concurrent.TimeUnit.SECONDS
         try {
           task.execute(stage).let { result ->
             when (result.status) {
-              SUCCEEDED -> eventQ.push(TaskSucceeded(executionType, executionId, stageId, taskId))
-              RUNNING -> commandQ.push(this, task.backoffPeriod())
-              TERMINAL -> eventQ.push(TaskFailed(executionType, executionId, stageId, taskId))
+              RUNNING ->
+                commandQ.push(this, task.backoffPeriod())
+              SUCCEEDED, TERMINAL ->
+                eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, result.status))
               else -> TODO()
             }
           }
         } catch(e: Exception) {
           // TODO: add context
-          eventQ.push(TaskFailed(executionType, executionId, stageId, taskId))
+          eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, TERMINAL))
         }
       }
     }

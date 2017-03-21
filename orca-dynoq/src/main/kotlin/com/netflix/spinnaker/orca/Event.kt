@@ -33,27 +33,33 @@ sealed class Event {
     val taskId: String
   }
 
-  sealed class TaskResult : Event() {
-    /**
-     * Task ran successfully.
-     */
-    data class TaskSucceeded(
-      override val executionType: Class<out Execution<*>>,
-      override val executionId: String,
-      override val stageId: String,
-      override val taskId: String
-    ) : TaskResult(), TaskLevel
+  /**
+   * Task completed.
+   */
+  data class TaskComplete(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String,
+    override val taskId: String,
+    val status: ExecutionStatus
+  ) : Event(), TaskLevel
 
-    /**
-     * Task ran and failed.
-     */
-    data class TaskFailed(
-      override val executionType: Class<out Execution<*>>,
-      override val executionId: String,
-      override val stageId: String,
-      override val taskId: String
-    ) : TaskResult(), TaskLevel
-  }
+  data class StageStarting(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String
+  ) : Event(), StageLevel
+
+  data class StageComplete(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String
+  ) : Event(), StageLevel
+
+  data class ExecutionComplete(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String
+  ) : Event(), ExecutionLevel
 
   sealed class ConfigurationError : Event() {
     /**
@@ -83,21 +89,4 @@ sealed class Event {
       val className: String
     ) : ConfigurationError(), StageLevel
   }
-
-  data class StageStarting(
-    override val executionType: Class<out Execution<*>>,
-    override val executionId: String,
-    override val stageId: String
-  ) : Event(), StageLevel
-
-  data class StageComplete(
-    override val executionType: Class<out Execution<*>>,
-    override val executionId: String,
-    override val stageId: String
-  ) : Event(), StageLevel
-
-  data class ExecutionComplete(
-    override val executionType: Class<out Execution<*>>,
-    override val executionId: String
-  ) : Event(), ExecutionLevel
 }

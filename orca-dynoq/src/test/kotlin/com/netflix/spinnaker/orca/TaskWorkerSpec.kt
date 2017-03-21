@@ -16,14 +16,15 @@
 
 package com.netflix.spinnaker.orca
 
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.ConfigurationError.*
-import com.netflix.spinnaker.orca.Event.TaskResult.TaskFailed
-import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
+import com.netflix.spinnaker.orca.Event.TaskComplete
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
@@ -128,8 +129,13 @@ internal class TaskWorkerSpec : Spek({
             verify(task).execute(stage)
           }
 
-          it("emits a success event") {
-            verify(eventQ).push(isA<TaskSucceeded>())
+          val argumentCaptor = argumentCaptor<TaskComplete>()
+
+          it("emits a failure event") {
+            verify(eventQ).push(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(status, equalTo(SUCCEEDED))
+            }
           }
         }
 
@@ -183,8 +189,13 @@ internal class TaskWorkerSpec : Spek({
             taskWorker.pollOnce()
           }
 
+          val argumentCaptor = argumentCaptor<TaskComplete>()
+
           it("emits a failure event") {
-            verify(eventQ).push(isA<TaskFailed>())
+            verify(eventQ).push(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(status, equalTo(TERMINAL))
+            }
           }
         }
 
@@ -206,8 +217,13 @@ internal class TaskWorkerSpec : Spek({
             taskWorker.pollOnce()
           }
 
+          val argumentCaptor = argumentCaptor<TaskComplete>()
+
           it("emits a failure event") {
-            verify(eventQ).push(isA<TaskFailed>())
+            verify(eventQ).push(argumentCaptor.capture())
+            argumentCaptor.firstValue.apply {
+              assertThat(status, equalTo(TERMINAL))
+            }
           }
         }
       }

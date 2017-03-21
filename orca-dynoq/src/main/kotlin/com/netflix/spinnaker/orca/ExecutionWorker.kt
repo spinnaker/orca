@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidExecutionId
 import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidStageId
-import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
@@ -49,7 +48,7 @@ import java.time.Clock
       when (event) {
         null -> log.debug("No events")
         is StageStarting -> event.handle()
-        is TaskSucceeded -> event.handle()
+        is TaskComplete -> event.handle()
         is StageComplete -> event.handle()
         is ExecutionComplete -> event.handle()
         else -> TODO("remaining message types")
@@ -112,7 +111,7 @@ import java.time.Clock
       }
     }
 
-  private fun TaskSucceeded.handle() =
+  private fun TaskComplete.handle() =
     withStage { stage ->
       val task = stage.getTasks().find { it.id == taskId }!!
       task.apply {
