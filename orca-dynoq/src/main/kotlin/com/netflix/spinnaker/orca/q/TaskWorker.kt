@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca
+package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.Command.RunTask
-import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidTaskType
-import com.netflix.spinnaker.orca.Event.TaskComplete
 import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.Command.RunTask
+import com.netflix.spinnaker.orca.q.Event.ConfigurationError.InvalidTaskType
+import com.netflix.spinnaker.orca.q.Event.TaskComplete
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
@@ -32,7 +35,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Component open class TaskWorker(
+@Component open class TaskWorker @Autowired constructor(
   override val commandQ: CommandQueue,
   override val eventQ: EventQueue,
   override val repository: ExecutionRepository,
@@ -46,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean
   fun pollOnce() {
     ifEnabled {
       val command = commandQ.poll()
+      if (command != null) log.info("Received command $command")
       when (command) {
         null -> log.debug("No commands")
         is RunTask -> command.execute()

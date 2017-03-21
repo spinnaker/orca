@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca
+package com.netflix.spinnaker.orca.q
 
 import java.util.concurrent.TimeUnit
 

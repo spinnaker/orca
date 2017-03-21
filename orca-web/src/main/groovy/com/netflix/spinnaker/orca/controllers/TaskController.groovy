@@ -59,10 +59,10 @@ class TaskController {
   @Autowired
   Collection<StageDefinitionBuilder> stageBuilders
 
-  @Autowired
+  @Autowired(required = false)
   Optional<ZombiePipelineCleanupAgent> zombiePipelineCleanupAgent
 
-  @Autowired
+  @Autowired(required = false)
   ActiveExecutionTracker activeExecutionTracker
 
   @Value('${tasks.daysOfExecutionHistory:14}')

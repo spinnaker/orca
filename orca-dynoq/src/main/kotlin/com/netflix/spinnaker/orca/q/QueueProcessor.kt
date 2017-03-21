@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca
+package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidExecutionId
-import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidStageId
-import com.netflix.spinnaker.orca.Event.ExecutionLevel
-import com.netflix.spinnaker.orca.Event.StageLevel
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.Event.ConfigurationError.InvalidExecutionId
+import com.netflix.spinnaker.orca.q.Event.ConfigurationError.InvalidStageId
+import com.netflix.spinnaker.orca.q.Event.ExecutionLevel
+import com.netflix.spinnaker.orca.q.Event.StageLevel
 
 /**
  * Some common functionality shared by [ExecutionWorker] and [TaskWorker].

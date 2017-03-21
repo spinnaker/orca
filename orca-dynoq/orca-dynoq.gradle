@@ -39,6 +39,7 @@ repositories {
 dependencies {
   compile project(":orca-core")
   compile "com.netflix.dyno-queues:dyno-queues-redis:1.0.6"
+  compile "org.threeten:threeten-extra:1.0"
 
   testCompile project(":orca-test")
   testCompile "org.junit.platform:junit-platform-runner:1.0.0-M3"

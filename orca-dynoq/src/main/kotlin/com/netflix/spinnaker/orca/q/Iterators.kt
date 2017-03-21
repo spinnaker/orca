@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca
+package com.netflix.spinnaker.orca.q
 
 /**
  * Iterate with information about whether the current element is first or last

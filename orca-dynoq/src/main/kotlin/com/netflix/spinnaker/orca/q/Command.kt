@@ -14,7 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca
+package com.netflix.spinnaker.orca.q
 
-interface DummyTask : RetryableTask
-interface InvalidTask : Task
+import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.q.Event.TaskLevel
+
+sealed class Command {
+  data class RunTask(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String,
+    override val taskId: String,
+    val taskType: Class<out Task>
+  ) : Command(), TaskLevel
+}

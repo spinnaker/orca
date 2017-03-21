@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca
+package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.Command.RunTask
-import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
@@ -27,14 +25,17 @@ import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.Command.RunTask
+import com.netflix.spinnaker.orca.q.Event.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Component open class ExecutionWorker(
+@Component open class ExecutionWorker @Autowired constructor(
   override val commandQ: CommandQueue,
   override val eventQ: EventQueue,
   override val repository: ExecutionRepository,
@@ -49,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean
   fun pollOnce() =
     ifEnabled {
       val event = eventQ.poll()
+      if (event != null) log.info("Received event $event")
       when (event) {
         null -> log.debug("No events")
         is TaskComplete -> event.handle()
