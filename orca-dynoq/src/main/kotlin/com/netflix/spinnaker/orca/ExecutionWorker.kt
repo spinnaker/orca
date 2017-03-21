@@ -18,8 +18,6 @@ package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.*
-import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidExecutionId
-import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidStageId
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
@@ -47,8 +45,8 @@ import java.time.Clock
       val event = eventQ.poll()
       when (event) {
         null -> log.debug("No events")
-        is StageStarting -> event.handle()
         is TaskComplete -> event.handle()
+        is StageStarting -> event.handle()
         is StageComplete -> event.handle()
         is ExecutionComplete -> event.handle()
         else -> TODO("remaining message types")

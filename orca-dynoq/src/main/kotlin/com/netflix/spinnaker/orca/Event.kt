@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 
 sealed class Event {
 
@@ -33,9 +34,6 @@ sealed class Event {
     val taskId: String
   }
 
-  /**
-   * Task completed.
-   */
   data class TaskComplete(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
@@ -61,32 +59,30 @@ sealed class Event {
     override val executionId: String
   ) : Event(), ExecutionLevel
 
-  sealed class ConfigurationError : Event() {
-    /**
-     * Execution id was not found in {@link ExecutionRepository}.
-     */
-    data class InvalidExecutionId(
-      override val executionType: Class<out Execution<*>>,
-      override val executionId: String
-    ) : ConfigurationError(), ExecutionLevel
+  /**
+   * Execution id was not found in the [ExecutionRepository].
+   */
+  data class InvalidExecutionId(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String
+  ) : Event(), ExecutionLevel
 
-    /**
-     * Stage id was not found in the execution.
-     */
-    data class InvalidStageId(
-      override val executionType: Class<out Execution<*>>,
-      override val executionId: String,
-      override val stageId: String
-    ) : ConfigurationError(), StageLevel
+  /**
+   * Stage id was not found in the execution.
+   */
+  data class InvalidStageId(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String
+  ) : Event(), StageLevel
 
-    /**
-     * No such task class.
-     */
-    data class InvalidTaskType(
-      override val executionType: Class<out Execution<*>>,
-      override val executionId: String,
-      override val stageId: String,
-      val className: String
-    ) : ConfigurationError(), StageLevel
-  }
+  /**
+   * No such [Task] class.
+   */
+  data class InvalidTaskType(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String,
+    val className: String
+  ) : Event(), StageLevel
 }

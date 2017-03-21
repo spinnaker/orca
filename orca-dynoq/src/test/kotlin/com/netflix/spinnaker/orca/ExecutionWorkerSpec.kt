@@ -512,7 +512,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("emits an error event") {
-            verify(eventQ).push(isA<Event.ConfigurationError.InvalidExecutionId>())
+            verify(eventQ).push(isA<InvalidExecutionId>())
           }
         }
 
@@ -539,7 +539,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("emits an error event") {
-            verify(eventQ).push(isA<Event.ConfigurationError.InvalidStageId>())
+            verify(eventQ).push(isA<InvalidStageId>())
           }
         }
       }

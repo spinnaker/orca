@@ -16,19 +16,15 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.Event.TaskLevel
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 
 sealed class Command {
-
-  abstract val executionType: Class<out Execution<*>>
-  abstract val executionId: String
-  abstract val stageId: String
-
   data class RunTask(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val stageId: String,
-    val taskId: String,
+    override val taskId: String,
     val taskType: Class<out Task>
-  ) : Command()
+  ) : Command(), TaskLevel
 }

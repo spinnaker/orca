@@ -17,8 +17,7 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.Command.RunTask
-import com.netflix.spinnaker.orca.Event.ConfigurationError.*
-import com.netflix.spinnaker.orca.Event.TaskComplete
+import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -83,7 +82,7 @@ import java.util.concurrent.TimeUnit.SECONDS
         }
       }
 
-  private fun Command.withStage(block: (Stage<out Execution<*>>) -> Unit) =
+  private fun StageLevel.withStage(block: (Stage<out Execution<*>>) -> Unit) =
     withExecution { execution ->
       execution
         .getStages()
@@ -97,7 +96,7 @@ import java.util.concurrent.TimeUnit.SECONDS
         }
     }
 
-  private fun Command.withExecution(block: (Execution<*>) -> Unit) =
+  private fun ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
     try {
       when (executionType) {
         Pipeline::class.java -> block.invoke(repository.retrievePipeline(executionId))
