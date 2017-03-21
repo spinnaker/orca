@@ -458,6 +458,36 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
+      describe("when an execution completes") {
+        val event = ExecutionComplete(Pipeline::class.java, "1")
+        val pipeline = Pipeline.builder().withId(event.executionId).build()
+
+        val argumentCaptor = argumentCaptor<Pipeline>()
+
+        beforeGroup {
+          whenever(eventQ.poll())
+            .thenReturn(event)
+          whenever(repository.retrievePipeline(event.executionId))
+            .thenReturn(pipeline)
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, repository)
+        }
+
+        action("the worker polls the queue") {
+          executionWorker.pollOnce()
+        }
+
+        it("updates the execution") {
+          verify(repository).store(argumentCaptor.capture())
+          argumentCaptor.firstValue.apply {
+            assertThat(status, equalTo(SUCCEEDED))
+            assertThat(endTime, equalTo(clock.millis()))
+          }
+        }
+      }
+
       describe("invalid commands") {
 
         val event = StageStarting(Pipeline::class.java, "1", "1")

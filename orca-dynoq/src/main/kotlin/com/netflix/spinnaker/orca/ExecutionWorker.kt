@@ -51,9 +51,21 @@ import java.time.Clock
         is StageStarting -> event.handle()
         is TaskSucceeded -> event.handle()
         is StageComplete -> event.handle()
+        is ExecutionComplete -> event.handle()
         else -> TODO("remaining message types")
       }
     }
+
+  private fun ExecutionComplete.handle() {
+    withExecution { execution ->
+      execution.setStatus(SUCCEEDED)
+      execution.setEndTime(clock.millis())
+      when (execution) {
+        is Pipeline -> repository.store(execution)
+        is Orchestration -> repository.store(execution)
+      }
+    }
+  }
 
   private fun StageStarting.handle() =
     withStage { stage ->
