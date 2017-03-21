@@ -17,14 +17,10 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.Command.RunTask
-import com.netflix.spinnaker.orca.Event.*
+import com.netflix.spinnaker.orca.Event.InvalidTaskType
+import com.netflix.spinnaker.orca.Event.TaskComplete
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Orchestration
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -33,11 +29,11 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 
 @Component open class TaskWorker(
-  val commandQ: CommandQueue,
-  val eventQ: EventQueue,
-  val repository: ExecutionRepository,
+  override val commandQ: CommandQueue,
+  override val eventQ: EventQueue,
+  override val repository: ExecutionRepository,
   val tasks: Collection<Task>
-) : DiscoveryActivated() {
+) : DiscoveryActivated(), QueueProcessor {
 
   @Scheduled(fixedDelay = 10)
   fun pollOnce() {
@@ -81,31 +77,6 @@ import java.util.concurrent.TimeUnit.SECONDS
           block.invoke(task)
         }
       }
-
-  private fun StageLevel.withStage(block: (Stage<out Execution<*>>) -> Unit) =
-    withExecution { execution ->
-      execution
-        .getStages()
-        .find { it.getId() == stageId }
-        .let { stage ->
-          if (stage == null) {
-            eventQ.push(InvalidStageId(executionType, executionId, stageId))
-          } else {
-            block.invoke(stage)
-          }
-        }
-    }
-
-  private fun ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
-    try {
-      when (executionType) {
-        Pipeline::class.java -> block.invoke(repository.retrievePipeline(executionId))
-        Orchestration::class.java -> block.invoke(repository.retrieveOrchestration(executionId))
-        else -> throw IllegalArgumentException("Unknown execution type $executionType")
-      }
-    } catch(e: ExecutionNotFoundException) {
-      eventQ.push(InvalidExecutionId(executionType, executionId))
-    }
 
   private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =
     when (this) {

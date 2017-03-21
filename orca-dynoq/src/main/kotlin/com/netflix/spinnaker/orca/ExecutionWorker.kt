@@ -25,19 +25,18 @@ import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinition
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.model.*
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Clock
 
 @Component open class ExecutionWorker(
-  val commandQ: CommandQueue,
-  val eventQ: EventQueue,
-  val repository: ExecutionRepository,
+  override val commandQ: CommandQueue,
+  override val eventQ: EventQueue,
+  override val repository: ExecutionRepository,
   val clock: Clock,
   val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
-) : DiscoveryActivated() {
+) : DiscoveryActivated(), QueueProcessor {
 
   @Scheduled(fixedDelay = 10)
   fun pollOnce() =
@@ -140,34 +139,6 @@ import java.time.Clock
   // TODO: doesn't handle failure / early termination
   private fun Execution<*>.isComplete() =
     getStages().map { it.getStatus() }.all { it.complete }
-
-  private fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
-    withExecution { execution ->
-      execution
-        .getStages()
-        .find { it.getId() == stageId }
-        .let { stage ->
-          if (stage == null) {
-            eventQ.push(InvalidStageId(executionType, executionId, stageId))
-          } else {
-            block.invoke(stage)
-          }
-        }
-    }
-
-  private fun ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
-    try {
-      when (executionType) {
-        Pipeline::class.java ->
-          block.invoke(repository.retrievePipeline(executionId))
-        Orchestration::class.java ->
-          block.invoke(repository.retrieveOrchestration(executionId))
-        else ->
-          throw IllegalArgumentException("Unknown execution type $executionType")
-      }
-    } catch(e: ExecutionNotFoundException) {
-      eventQ.push(InvalidExecutionId(executionType, executionId))
-    }
 
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }
