@@ -92,7 +92,7 @@ import java.time.Clock
         ))
       }
 
-      if (stage.getExecution().allStagesComplete()) {
+      if (stage.getExecution().isComplete()) {
         eventQ.push(ExecutionComplete(
           executionType,
           executionId
@@ -128,7 +128,8 @@ import java.time.Clock
       }
     }
 
-  private fun Execution<*>.allStagesComplete() =
+  // TODO: doesn't handle failure / early termination
+  private fun Execution<*>.isComplete() =
     getStages().map { it.getStatus() }.all { it.complete }
 
   private fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
