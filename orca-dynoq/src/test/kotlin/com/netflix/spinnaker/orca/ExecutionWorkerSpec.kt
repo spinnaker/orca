@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca
 
-import com.natpryce.hamkrest.absent
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.hasSize
@@ -531,44 +530,13 @@ class ExecutionWorkerSpec : Spek({
           it("does not run the downstream stages") {
             verify(eventQ, never()).push(isA<StageStarting>())
           }
-        }
 
-        context("there are parallel stages") {
-          val pipeline = Pipeline.builder().withId(event.executionId).build()
-          val stage1 = PipelineStage(pipeline, singleTaskStage.type)
-          val stage2 = PipelineStage(pipeline, singleTaskStage.type)
-
-          beforeGroup {
-            stage1.id = event.stageId
-            pipeline.stages.add(stage1)
-            stage2.id = "2"
-            stage2.status = RUNNING
-            pipeline.stages.add(stage2)
-
-            whenever(eventQ.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
-              .thenReturn(pipeline)
-          }
-
-          afterGroup {
-            reset(commandQ, eventQ, repository)
-          }
-
-          action("the worker polls the queue") {
-            executionWorker.pollOnce()
-          }
-
-          it("cancels the parallel stages") {
-            argumentCaptor<Stage<Pipeline>>().apply {
-              verify(repository, atLeast(2)).storeStage(capture())
-              allValues
-                .find { it.id == stage2.id }
-                .let {
-                  assertThat(it, !absent<Stage<Pipeline>>())
-                  assertThat(it?.status, equalTo(CANCELED))
-                }
-            }
+          it("emits an event indicating the pipeline failed") {
+            verify(eventQ).push(ExecutionComplete(
+              event.executionType,
+              event.executionId,
+              TERMINAL
+            ))
           }
         }
       }

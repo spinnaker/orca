@@ -101,14 +101,7 @@ import java.time.Clock
         }
       }
 
-      if (status == TERMINAL) {
-        stage.parallelStages().forEach {
-          it.setStatus(CANCELED)
-          repository.storeStage(it)
-        }
-      }
-
-      if (stage.getExecution().isComplete()) {
+      if (status == TERMINAL || stage.getExecution().isComplete()) {
         eventQ.push(ExecutionComplete(
           executionType,
           executionId,
@@ -153,12 +146,6 @@ import java.time.Clock
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }
       ?: throw NoSuchStageDefinitionBuilder(getType())
-
-  private fun Stage<*>.parallelStages(): Collection<Stage<*>> =
-    getExecution()
-      .getStages()
-      .filter { it.getId() != getId() }
-      .filter { it.getRequisiteStageRefIds() == getRequisiteStageRefIds() }
 }
 
 internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =

@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.Event.InvalidTaskType
 import com.netflix.spinnaker.orca.Event.TaskComplete
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -39,7 +40,7 @@ import java.util.concurrent.TimeUnit.SECONDS
   fun pollOnce() {
     ifEnabled {
       val command = commandQ.poll()
-      when(command) {
+      when (command) {
         null -> log.debug("No commands")
         is RunTask -> command.execute()
       }
@@ -48,35 +49,35 @@ import java.util.concurrent.TimeUnit.SECONDS
 
   // TODO: handle other states such as cancellation, suspension, etc.
   private fun RunTask.execute() =
-    withTask { task ->
-      withStage { stage ->
-        try {
-          task.execute(stage).let { result ->
-            when (result.status) {
-              RUNNING ->
-                commandQ.push(this, task.backoffPeriod())
-              SUCCEEDED, TERMINAL ->
-                eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, result.status))
-              else -> TODO()
-            }
+    withTask { stage, task ->
+      try {
+        task.execute(stage).let { result ->
+          when (result.status) {
+            RUNNING ->
+              commandQ.push(this, task.backoffPeriod())
+            SUCCEEDED, TERMINAL ->
+              eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, result.status))
+            else -> TODO()
           }
-        } catch(e: Exception) {
-          // TODO: add context
-          eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, TERMINAL))
         }
+      } catch(e: Exception) {
+        // TODO: add context
+        eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, TERMINAL))
       }
     }
 
-  private fun RunTask.withTask(block: (Task) -> Unit) =
-    tasks
-      .find { taskType.isAssignableFrom(it.javaClass) }
-      .let { task ->
-        if (task == null) {
-          eventQ.push(InvalidTaskType(executionType, executionId, stageId, taskType.name))
-        } else {
-          block.invoke(task)
+  private fun RunTask.withTask(block: (Stage<*>, Task) -> Unit) =
+    withStage { stage ->
+      tasks
+        .find { taskType.isAssignableFrom(it.javaClass) }
+        .let { task ->
+          if (task == null) {
+            eventQ.push(InvalidTaskType(executionType, executionId, stageId, taskType.name))
+          } else {
+            block.invoke(stage, task)
+          }
         }
-      }
+    }
 
   private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =
     when (this) {
