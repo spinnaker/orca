@@ -55,6 +55,11 @@ sealed class Event {
     val status: ExecutionStatus
   ) : Event(), StageLevel
 
+  data class ExecutionStarting(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String
+  ) : Event(), ExecutionLevel
+
   data class ExecutionComplete(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,

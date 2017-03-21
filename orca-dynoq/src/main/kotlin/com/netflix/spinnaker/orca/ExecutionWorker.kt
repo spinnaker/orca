@@ -23,7 +23,9 @@ import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
-import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
@@ -52,21 +54,30 @@ import java.util.concurrent.atomic.AtomicBoolean
         is TaskComplete -> event.handle()
         is StageStarting -> event.handle()
         is StageComplete -> event.handle()
+        is ExecutionStarting -> event.handle()
         is ExecutionComplete -> event.handle()
         is ConfigurationError -> event.handle()
         else -> TODO("remaining message types")
       }
     }
 
-  private fun ExecutionComplete.handle() =
+  private fun ExecutionStarting.handle() =
     withExecution { execution ->
-      execution.setStatus(SUCCEEDED)
-      execution.setEndTime(clock.millis())
-      when (execution) {
-        is Pipeline -> repository.store(execution)
-        is Orchestration -> repository.store(execution)
-      }
+      repository.updateStatus(executionId, RUNNING)
+
+      execution
+        .initialStages()
+        .forEach {
+          eventQ.push(StageStarting(
+            executionType,
+            executionId,
+            it.getId()
+          ))
+        }
     }
+
+  private fun ExecutionComplete.handle() =
+    repository.updateStatus(executionId, status)
 
   private fun StageStarting.handle() =
     withStage { stage ->
@@ -149,6 +160,10 @@ import java.util.concurrent.atomic.AtomicBoolean
       executionId,
       TERMINAL
     ))
+
+  private fun Execution<*>.initialStages() =
+    getStages()
+      .filter { it.getRequisiteStageRefIds() == null || it.getRequisiteStageRefIds().isEmpty() }
 
   // TODO: doesn't handle failure / early termination
   private fun Execution<*>.isComplete() =

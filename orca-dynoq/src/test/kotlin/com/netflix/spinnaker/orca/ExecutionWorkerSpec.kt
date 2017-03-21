@@ -123,6 +123,78 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
+      describe("starting an execution") {
+        context("with a single initial stage") {
+          val event = ExecutionStarting(Pipeline::class.java, "1")
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage = PipelineStage(pipeline, singleTaskStage.type)
+
+          beforeGroup {
+            stage.id = "1"
+            pipeline.stages.add(stage)
+
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("marks the execution as running") {
+            verify(repository).updateStatus(event.executionId, RUNNING)
+          }
+
+          it("starts the first stage") {
+            verify(eventQ).push(StageStarting(
+              event.executionType,
+              event.executionId,
+              stage.id
+            ))
+          }
+        }
+
+        context("with multiple initial stages") {
+          val event = ExecutionStarting(Pipeline::class.java, "1")
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+          val stage1 = PipelineStage(pipeline, singleTaskStage.type)
+          val stage2 = PipelineStage(pipeline, singleTaskStage.type)
+
+          beforeGroup {
+            stage1.id = "1"
+            pipeline.stages.add(stage1)
+            stage2.id = "2"
+            pipeline.stages.add(stage2)
+
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("starts all the initial stages") {
+            argumentCaptor<StageStarting>().apply {
+              verify(eventQ, times(2)).push(capture())
+              assertThat(allValues.map { it.stageId }.toSet(), equalTo(setOf(stage1.id, stage2.id)))
+            }
+          }
+        }
+      }
+
       describe("starting a stage") {
         describe("with a single initial task") {
           val event = StageStarting(Pipeline::class.java, "1", "1")
@@ -132,19 +204,19 @@ class ExecutionWorkerSpec : Spek({
           beforeGroup {
             stage.id = event.stageId
             pipeline.stages.add(stage)
-          }
 
-          beforeGroup {
             whenever(eventQ.poll())
               .thenReturn(event)
             whenever(repository.retrievePipeline(event.executionId))
               .thenReturn(pipeline)
-
-            executionWorker.pollOnce()
           }
 
           afterGroup {
             reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
           }
 
           it("updates the stage status") {
@@ -575,10 +647,32 @@ class ExecutionWorkerSpec : Spek({
         }
 
         it("updates the execution") {
-          argumentCaptor<Pipeline>().apply {
-            verify(repository).store(capture())
-            assertThat(firstValue.status, equalTo(SUCCEEDED))
-            assertThat(firstValue.endTime, equalTo(clock.millis()))
+          verify(repository).updateStatus(event.executionId, SUCCEEDED)
+        }
+      }
+
+      setOf(TERMINAL, CANCELED).forEach { status ->
+        describe("when an execution fails with $status status") {
+          val event = ExecutionComplete(Pipeline::class.java, "1", status)
+          val pipeline = Pipeline.builder().withId(event.executionId).build()
+
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("updates the execution") {
+            verify(repository).updateStatus(event.executionId, status)
           }
         }
       }
