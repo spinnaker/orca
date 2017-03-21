@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.discovery
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -27,30 +26,29 @@ import java.util.concurrent.atomic.AtomicBoolean
  * A component that starts doing something when the instance is up in discovery
  * and stops doing that thing when it goes down.
  */
-abstract class DiscoveryActivated
-  : ApplicationListener<RemoteStatusChangedEvent> {
+interface DiscoveryActivated : ApplicationListener<RemoteStatusChangedEvent> {
 
-  override fun onApplicationEvent(event: RemoteStatusChangedEvent) {
-    if (event.source.status == UP) {
-      log.info("Bean [${javaClass.simpleName}] starting...")
-      enable()
-    } else if (event.source.previousStatus == UP) {
-      log.info("Bean [${javaClass.simpleName}] stopping...")
-      disable()
+  override fun onApplicationEvent(event: RemoteStatusChangedEvent) =
+    event.source.run {
+      if (status == UP) {
+        log.info("Bean [${javaClass.simpleName}] starting...")
+        enable()
+      } else if (previousStatus == UP) {
+        log.info("Bean [${javaClass.simpleName}] stopping...")
+        disable()
+      }
     }
-  }
 
   private fun enable() = enabled.set(true)
 
   private fun disable() = enabled.set(false)
 
-  protected fun ifEnabled(block: () -> Unit) {
+  fun ifEnabled(block: () -> Unit) {
     if (enabled.get()) {
       block.invoke()
     }
   }
 
-  protected val log: Logger = LoggerFactory.getLogger(javaClass)
-
-  private val enabled = AtomicBoolean(false)
+  val log: Logger
+  val enabled: AtomicBoolean
 }

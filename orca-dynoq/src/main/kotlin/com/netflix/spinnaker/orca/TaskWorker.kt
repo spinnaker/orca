@@ -23,18 +23,23 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Component open class TaskWorker(
   override val commandQ: CommandQueue,
   override val eventQ: EventQueue,
   override val repository: ExecutionRepository,
   val tasks: Collection<Task>
-) : DiscoveryActivated(), QueueProcessor {
+) : DiscoveryActivated, QueueProcessor {
+
+  override val log = getLogger(TaskWorker::class.java)
+  override val enabled = AtomicBoolean(false)
 
   @Scheduled(fixedDelay = 10)
   fun pollOnce() {

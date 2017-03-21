@@ -25,9 +25,11 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Clock
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Component open class ExecutionWorker(
   override val commandQ: CommandQueue,
@@ -35,7 +37,10 @@ import java.time.Clock
   override val repository: ExecutionRepository,
   val clock: Clock,
   val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
-) : DiscoveryActivated(), QueueProcessor {
+) : DiscoveryActivated, QueueProcessor {
+
+  override val log = getLogger(ExecutionWorker::class.java)
+  override val enabled = AtomicBoolean(false)
 
   @Scheduled(fixedDelay = 10)
   fun pollOnce() =

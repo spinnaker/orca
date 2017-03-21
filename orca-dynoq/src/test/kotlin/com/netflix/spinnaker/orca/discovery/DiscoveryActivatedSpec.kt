@@ -30,6 +30,8 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(JUnitPlatform::class)
 class DiscoveryActivatedSpec : Spek({
@@ -37,7 +39,10 @@ class DiscoveryActivatedSpec : Spek({
   describe("a discovery-activated poller") {
 
     val target: Function0<Unit> = mock()
-    val subject = object : DiscoveryActivated() {
+    val subject = object : DiscoveryActivated {
+      override val log = LoggerFactory.getLogger(this::class.java)
+      override val enabled = AtomicBoolean(false)
+
       fun invoke() = ifEnabled(target::invoke)
     }
 
