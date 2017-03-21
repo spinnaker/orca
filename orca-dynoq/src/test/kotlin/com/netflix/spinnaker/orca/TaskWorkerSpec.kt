@@ -20,10 +20,8 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
-import com.netflix.spinnaker.orca.Command.RunStage
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.ConfigurationError.*
-import com.netflix.spinnaker.orca.Event.StageStarting
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskFailed
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.*
@@ -211,33 +209,6 @@ internal class TaskWorkerSpec : Spek({
           it("emits a failure event") {
             verify(eventQ).push(isA<TaskFailed>())
           }
-        }
-      }
-
-      describe("running a stage") {
-
-        val command = RunStage(Pipeline::class.java, "1", "1")
-        val pipeline = Pipeline.builder().withId(command.executionId).build()
-        val stage = PipelineStage(pipeline, "whatever")
-
-        beforeGroup {
-          stage.id = command.stageId
-          pipeline.stages.add(stage)
-
-          whenever(commandQ.poll())
-            .thenReturn(command)
-        }
-
-        afterGroup {
-          reset(commandQ, eventQ, task, repository)
-        }
-
-        action("the worker polls the queue") {
-          taskWorker.pollOnce()
-        }
-
-        it("emits an event") {
-          verify(eventQ).push(isA<StageStarting>())
         }
       }
 

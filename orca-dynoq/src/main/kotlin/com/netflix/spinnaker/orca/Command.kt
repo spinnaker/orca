@@ -31,10 +31,4 @@ sealed class Command {
     val taskId: String,
     val taskType: Class<out Task>
   ) : Command()
-
-  data class RunStage(
-    override val executionType: Class<out Execution<*>>,
-    override val executionId: String,
-    override val stageId: String
-  ) : Command()
 }

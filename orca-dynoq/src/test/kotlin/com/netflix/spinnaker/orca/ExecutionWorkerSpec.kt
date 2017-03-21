@@ -23,7 +23,6 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
-import com.netflix.spinnaker.orca.Command.RunStage
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
@@ -407,15 +406,15 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("runs the next stage") {
-            verify(commandQ).push(RunStage(
+            verify(eventQ).push(StageStarting(
               event.executionType,
               event.executionId,
               stage2.id
             ))
           }
 
-          it("does not emit any events") {
-            verify(eventQ, never()).push(anyOrNull())
+          it("does not run any tasks") {
+            verifyZeroInteractions(commandQ)
           }
         }
 
@@ -425,7 +424,7 @@ class ExecutionWorkerSpec : Spek({
           val stage2 = PipelineStage(pipeline, singleTaskStage.type)
           val stage3 = PipelineStage(pipeline, singleTaskStage.type)
 
-          val argumentCaptor = argumentCaptor<RunStage>()
+          val argumentCaptor = argumentCaptor<StageStarting>()
 
           beforeGroup {
             stage1.id = event.stageId
@@ -453,7 +452,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("runs the next stages") {
-            verify(commandQ, times(2)).push(argumentCaptor.capture())
+            verify(eventQ, times(2)).push(argumentCaptor.capture())
             assertThat(argumentCaptor.allValues.map { it.stageId }.toSet(), equalTo(setOf(stage2.id, stage3.id)))
           }
         }

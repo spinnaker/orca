@@ -16,10 +16,8 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.Command.RunStage
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.ConfigurationError.*
-import com.netflix.spinnaker.orca.Event.StageStarting
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskFailed
 import com.netflix.spinnaker.orca.Event.TaskResult.TaskSucceeded
 import com.netflix.spinnaker.orca.ExecutionStatus.*
@@ -50,7 +48,6 @@ import java.util.concurrent.TimeUnit.SECONDS
       when(command) {
         null -> log.debug("No commands")
         is RunTask -> command.execute()
-        is RunStage -> command.execute()
       }
     }
   }
@@ -74,11 +71,6 @@ import java.util.concurrent.TimeUnit.SECONDS
         }
       }
     }
-
-  // TODO: this seems dumb but it handles the parallel stages scenario
-  private fun RunStage.execute() {
-    eventQ.push(StageStarting(executionType, executionId, stageId))
-  }
 
   private fun RunTask.withTask(block: (Task) -> Unit) =
     tasks

@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.Command.RunStage
 import com.netflix.spinnaker.orca.Command.RunTask
 import com.netflix.spinnaker.orca.Event.*
 import com.netflix.spinnaker.orca.Event.ConfigurationError.InvalidExecutionId
@@ -86,7 +85,7 @@ import java.time.Clock
       repository.storeStage(stage)
 
       stage.downstreamStages().forEach {
-        commandQ.push(RunStage(
+        eventQ.push(StageStarting(
           executionType,
           executionId,
           it.getId()
