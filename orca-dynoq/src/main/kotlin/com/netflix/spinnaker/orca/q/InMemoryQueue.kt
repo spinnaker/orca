@@ -39,7 +39,7 @@ class InMemoryQueue<T>(
     queue.put(DelayedWrapper(message, clock.instant().plus(delay, unit.toChronoUnit()), clock))
 }
 
-internal data class DelayedWrapper<T>(
+internal data class DelayedWrapper<out T>(
   val payload: T,
   val scheduledTime: Instant,
   val clock: Clock

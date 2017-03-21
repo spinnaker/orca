@@ -20,6 +20,8 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Command.RunTask
@@ -65,6 +67,20 @@ import java.util.concurrent.atomic.AtomicBoolean
       } else {
         try {
           task.execute(stage).let { result ->
+            // TODO: rather do this back in ExecutionWorker
+            if (result.stageOutputs.isNotEmpty()) {
+              stage.getContext().putAll(result.stageOutputs)
+              repository.storeStage(stage)
+            }
+            if (result.globalOutputs.isNotEmpty()) {
+              stage.getExecution().let { execution ->
+                execution.getContext().putAll(result.globalOutputs)
+                when (execution) {
+                  is Pipeline -> repository.store(execution)
+                  is Orchestration -> repository.store(execution)
+                }
+              }
+            }
             when (result.status) {
               RUNNING ->
                 commandQ.push(this, task.backoffPeriod())
