@@ -219,6 +219,39 @@ internal class TaskWorkerSpec : Spek({
             }
           }
         }
+
+        describe("when the execution has stopped") {
+          beforeGroup {
+            pipeline.status = TERMINAL
+
+            whenever(commandQ.poll())
+              .thenReturn(command)
+            whenever(repository.retrievePipeline(command.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, task, repository)
+          }
+
+          action("the worker polls the queue") {
+            taskWorker.pollOnce()
+          }
+
+          it("emits an event indicating that the task was canceled") {
+            verify(eventQ).push(TaskComplete(
+              command.executionType,
+              command.executionId,
+              command.stageId,
+              command.taskId,
+              CANCELED
+            ))
+          }
+
+          it("does not execute the task") {
+            verifyZeroInteractions(task)
+          }
+        }
       }
 
       describe("invalid commands") {

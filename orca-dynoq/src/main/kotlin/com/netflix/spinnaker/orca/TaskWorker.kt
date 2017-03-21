@@ -50,19 +50,23 @@ import java.util.concurrent.TimeUnit.SECONDS
   // TODO: handle other states such as cancellation, suspension, etc.
   private fun RunTask.execute() =
     withTask { stage, task ->
-      try {
-        task.execute(stage).let { result ->
-          when (result.status) {
-            RUNNING ->
-              commandQ.push(this, task.backoffPeriod())
-            SUCCEEDED, TERMINAL ->
-              eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, result.status))
-            else -> TODO()
+      if (stage.getExecution().getStatus().complete) {
+        eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, CANCELED))
+      } else {
+        try {
+          task.execute(stage).let { result ->
+            when (result.status) {
+              RUNNING ->
+                commandQ.push(this, task.backoffPeriod())
+              SUCCEEDED, TERMINAL ->
+                eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, result.status))
+              else -> TODO()
+            }
           }
+        } catch(e: Exception) {
+          // TODO: add context
+          eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, TERMINAL))
         }
-      } catch(e: Exception) {
-        // TODO: add context
-        eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, TERMINAL))
       }
     }
 
