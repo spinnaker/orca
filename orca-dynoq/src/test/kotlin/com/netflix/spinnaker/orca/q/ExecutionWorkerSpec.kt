@@ -25,10 +25,13 @@ import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Command.RunTask
@@ -39,6 +42,7 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.api.dsl.xcontext
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 import java.time.Clock
@@ -55,14 +59,14 @@ class ExecutionWorkerSpec : Spek({
 
     val singleTaskStage = object : StageDefinitionBuilder {
       override fun getType() = "singleTaskStage"
-      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: TaskNode.Builder) {
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
         builder.withTask("dummy", DummyTask::class.java)
       }
     }
 
     val multiTaskStage = object : StageDefinitionBuilder {
       override fun getType() = "multiTaskStage"
-      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: TaskNode.Builder) {
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
         builder
           .withTask("dummy1", DummyTask::class.java)
           .withTask("dummy2", DummyTask::class.java)
@@ -70,12 +74,36 @@ class ExecutionWorkerSpec : Spek({
       }
     }
 
+    val stageWithSyntheticBefore = object : StageDefinitionBuilder {
+      override fun getType() = "stageWithSyntheticBefore"
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
+        builder.withTask("dummy", DummyTask::class.java)
+      }
+
+      override fun <T : Execution<T>> aroundStages(stage: Stage<T>) = listOf(
+        newStage(stage.execution, singleTaskStage.type, "pre1", mutableMapOf(), stage, STAGE_BEFORE),
+        newStage(stage.execution, singleTaskStage.type, "pre2", mutableMapOf(), stage, STAGE_BEFORE)
+      )
+    }
+
+    val stageWithSyntheticAfter = object : StageDefinitionBuilder {
+      override fun getType() = "stageWithSyntheticAfter"
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
+        builder.withTask("dummy", DummyTask::class.java)
+      }
+
+      override fun <T : Execution<T>> aroundStages(stage: Stage<T>) = listOf(
+        newStage(stage.execution, singleTaskStage.type, "post1", mutableMapOf(), stage, STAGE_AFTER),
+        newStage(stage.execution, singleTaskStage.type, "post2", mutableMapOf(), stage, STAGE_AFTER)
+      )
+    }
+
     val executionWorker = ExecutionWorker(
       commandQ,
       eventQ,
       repository,
       clock,
-      listOf(singleTaskStage, multiTaskStage)
+      listOf(singleTaskStage, multiTaskStage, stageWithSyntheticBefore, stageWithSyntheticAfter)
     )
 
     describe("when disabled in discovery") {
@@ -208,7 +236,7 @@ class ExecutionWorkerSpec : Spek({
       }
 
       describe("starting a stage") {
-        describe("with a single initial task") {
+        context("with a single initial task") {
           val event = StageStarting(Pipeline::class.java, "1", "1")
           val pipeline = pipeline {
             id = event.executionId
@@ -269,7 +297,7 @@ class ExecutionWorkerSpec : Spek({
           }
         }
 
-        describe("with several linear tasks") {
+        context("with several linear tasks") {
           val event = StageStarting(Pipeline::class.java, "1", "1")
           val pipeline = pipeline {
             id = event.executionId
@@ -331,6 +359,93 @@ class ExecutionWorkerSpec : Spek({
               event.stageId,
               "1"
             ))
+          }
+        }
+
+        context("with synthetic stages") {
+          val event = StageStarting(Pipeline::class.java, "1", "1")
+
+          context("before the main stage") {
+            val pipeline = pipeline {
+              id = event.executionId
+              stage {
+                id = event.stageId
+                type = stageWithSyntheticBefore.type
+              }
+            }
+
+            beforeGroup {
+              whenever(eventQ.poll())
+                .thenReturn(event)
+              whenever(repository.retrievePipeline(event.executionId))
+                .thenReturn(pipeline)
+            }
+
+            action("the worker polls the queue") {
+              executionWorker.pollOnce()
+            }
+
+            afterGroup {
+              reset(commandQ, eventQ, repository)
+            }
+
+            it("attaches the synthetic stage to the pipeline") {
+              argumentCaptor<Pipeline>().apply {
+                verify(repository).store(capture())
+                assertThat(firstValue.stages.size, equalTo(3))
+                assertThat(firstValue.stages.map { it.id }, equalTo(listOf("${event.stageId}-1-pre1", "${event.stageId}-2-pre2", event.stageId)))
+              }
+            }
+
+            it("raises an event to indicate the synthetic stage is starting") {
+              verify(eventQ).push(StageStarting(
+                event.executionType,
+                event.executionId,
+                pipeline.stages.first().id
+              ))
+            }
+          }
+
+          context("after the main stage") {
+            val pipeline = pipeline {
+              id = event.executionId
+              stage {
+                id = event.stageId
+                type = stageWithSyntheticAfter.type
+              }
+            }
+
+            beforeGroup {
+              whenever(eventQ.poll())
+                .thenReturn(event)
+              whenever(repository.retrievePipeline(event.executionId))
+                .thenReturn(pipeline)
+            }
+
+            action("the worker polls the queue") {
+              executionWorker.pollOnce()
+            }
+
+            afterGroup {
+              reset(commandQ, eventQ, repository)
+            }
+
+            it("attaches the synthetic stage to the pipeline") {
+              argumentCaptor<Pipeline>().apply {
+                verify(repository).store(capture())
+                assertThat(firstValue.stages.size, equalTo(3))
+                assertThat(firstValue.stages.map { it.id }, equalTo(listOf(event.stageId, "${event.stageId}-1-post1", "${event.stageId}-2-post2")))
+              }
+            }
+
+            it("raises an event to indicate the first task is starting") {
+              verify(eventQ).push(TaskStarting(
+                event.executionType,
+                event.executionId,
+                event.stageId,
+                "1"
+              ))
+            }
           }
         }
       }
@@ -751,6 +866,83 @@ class ExecutionWorkerSpec : Spek({
 
           it("acks the message") {
             verify(eventQ).ack(event)
+          }
+        }
+      }
+
+      describe("when a synthetic stage completes successfully") {
+        context("before the main stage") {
+          val pipeline = pipeline {
+            id = "1"
+            stage {
+              id = "1"
+              type = stageWithSyntheticBefore.type
+              stageWithSyntheticBefore.buildSyntheticStages(this)
+              stageWithSyntheticBefore.buildTasks(this)
+            }
+          }
+
+          context("there are more before stages") {
+            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
+            beforeGroup {
+              whenever(repository.retrievePipeline(pipeline.id))
+                .thenReturn(pipeline)
+              whenever(eventQ.poll())
+                .thenReturn(event)
+            }
+
+            afterGroup {
+              reset(commandQ, eventQ, repository)
+            }
+
+            action("the worker polls the queue") {
+              executionWorker.pollOnce()
+            }
+
+            it("runs the next synthetic stage") {
+              verify(eventQ).push(StageStarting(
+                event.executionType,
+                event.executionId,
+                pipeline.stages[1].id
+              ))
+            }
+          }
+
+          context("it is the last before stage") {
+            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[1].id, SUCCEEDED)
+            beforeGroup {
+              whenever(repository.retrievePipeline(pipeline.id))
+                .thenReturn(pipeline)
+              whenever(eventQ.poll())
+                .thenReturn(event)
+            }
+
+            afterGroup {
+              reset(commandQ, eventQ, repository)
+            }
+
+            action("the worker polls the queue") {
+              executionWorker.pollOnce()
+            }
+
+            it("runs the next synthetic stage") {
+              verify(eventQ).push(TaskStarting(
+                event.executionType,
+                event.executionId,
+                pipeline.stages[2].id,
+                "1"
+              ))
+            }
+          }
+        }
+
+        xcontext("after the main stage") {
+          context("there are more after stages") {
+
+          }
+
+          context("it is the last after stage") {
+
           }
         }
       }

@@ -29,7 +29,7 @@ fun pipeline(init: Pipeline.() -> Unit): Pipeline {
 fun Pipeline.stage(init: PipelineStage.() -> Unit): Stage<Pipeline> {
   val stage = PipelineStage()
   stage.execution = this
-  stage.init()
   stages.add(stage)
+  stage.init()
   return stage
 }

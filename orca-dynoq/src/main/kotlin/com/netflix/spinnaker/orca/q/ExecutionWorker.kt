@@ -21,9 +21,9 @@ import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Event.*
 import org.slf4j.Logger
@@ -83,23 +83,45 @@ import java.util.concurrent.atomic.AtomicBoolean
 
   private fun StageStarting.handle() =
     withStage { stage ->
-      stage.builder().buildTasks(stage)
+      val stageDefinitionBuilder = stage.builder()
+
+      stageDefinitionBuilder.buildTasks(stage)
+
+      val execution = stage.getExecution()
+      val syntheticStages = stageDefinitionBuilder.buildSyntheticStages(stage)
+
+      if (syntheticStages.isNotEmpty()) {
+        when (execution) {
+          is Pipeline -> repository.store(execution)
+          is Orchestration -> repository.store(execution)
+        }
+      }
+
       stage.setStatus(RUNNING)
       stage.setStartTime(clock.millis())
 
       repository.storeStage(stage)
 
-      stage.getTasks().firstOrNull().let { task ->
-        if (task != null) {
-          eventQ.push(TaskStarting(
-            executionType,
-            executionId,
-            stageId,
-            task.id
-          ))
-        } else {
-          TODO("else what? Nothing to do, just indicate end of stage?")
+      val beforeStages = syntheticStages[STAGE_BEFORE].orEmpty()
+      if (beforeStages.isEmpty()) {
+        stage.getTasks().firstOrNull().let { task ->
+          if (task != null) {
+            eventQ.push(TaskStarting(
+              executionType,
+              executionId,
+              stageId,
+              task.id
+            ))
+          } else {
+            TODO("else what? Nothing to do, just indicate end of stage?")
+          }
         }
+      } else {
+        eventQ.push(StageStarting(
+          executionType,
+          executionId,
+          beforeStages.first().getId()
+        ))
       }
     }
 
@@ -110,15 +132,30 @@ import java.util.concurrent.atomic.AtomicBoolean
       repository.storeStage(stage)
 
       if (status == SUCCEEDED) {
-        stage.downstreamStages().forEach {
-          eventQ.push(StageStarting(
-            executionType,
-            executionId,
-            it.getId()
-          ))
+        val downstreamStages = stage.downstreamStages()
+        if (downstreamStages.isNotEmpty()) {
+          downstreamStages.forEach {
+            eventQ.push(StageStarting(
+              executionType,
+              executionId,
+              it.getId()
+            ))
+          }
+        } else if (stage.getSyntheticStageOwner() == STAGE_BEFORE) {
+          // TODO: this is kinda messy
+          val parentStage = stage.getExecution().getStages().find { it.getId() == stage.getParentStageId() }
+          parentStage?.let {
+            eventQ.push(TaskStarting(
+              executionType,
+              executionId,
+              it.getId(),
+              it.getTasks().first().id
+            ))
+          }
         }
       }
 
+      // TODO: preceding block shouldn't happen if we're short-circuiting out here
       if (status != SUCCEEDED || stage.getExecution().isComplete()) {
         eventQ.push(ExecutionComplete(
           executionType,
@@ -199,6 +236,8 @@ import java.util.concurrent.atomic.AtomicBoolean
   }
 }
 
+// TODO: stuff below should exist somewhere re-usable
+
 internal fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) =
   buildTaskGraph(stage)
     .listIterator()
@@ -216,3 +255,46 @@ internal fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) =
         else -> TODO("loops, etc.")
       }
     }
+
+internal fun StageDefinitionBuilder.buildSyntheticStages(stage: Stage<out Execution<*>>): Map<SyntheticStageOwner, List<Stage<*>>> {
+  val execution = stage.getExecution()
+  val syntheticStages = when (execution) {
+    is Pipeline ->
+      aroundStages(stage as Stage<Pipeline>)
+    is Orchestration ->
+      aroundStages(stage as Stage<Orchestration>)
+    else -> throw IllegalStateException()
+  }
+    .groupBy { it.getSyntheticStageOwner() }
+
+  val beforeStages = syntheticStages[STAGE_BEFORE].orEmpty()
+  beforeStages.forEachIndexed { i, it ->
+    val index = stage.getExecution().getStages().indexOf(stage)
+    it.setRefId("${stage.getId()}.${i + 1}")
+    if (i > 0) {
+      it.setRequisiteStageRefIds(listOf("${stage.getId()}.$i"))
+    }
+    when (execution) {
+      is Pipeline ->
+        execution.stages.add(index, it as Stage<Pipeline>)
+      is Orchestration ->
+        execution.stages.add(index, it as Stage<Orchestration>)
+    }
+  }
+
+  val afterStages = syntheticStages[STAGE_AFTER].orEmpty()
+  afterStages.reversed().forEachIndexed { i, it ->
+    val index = stage.getExecution().getStages().indexOf(stage)
+    it.setRefId("${stage.getId()}.${i + 1}")
+    if (i > 0) {
+      it.setRequisiteStageRefIds(listOf("${stage.getId()}.$i"))
+    }
+    when (execution) {
+      is Pipeline ->
+        execution.stages.add(index + 1, it as Stage<Pipeline>)
+      is Orchestration ->
+        execution.stages.add(index + 1, it as Stage<Orchestration>)
+    }
+  }
+  return syntheticStages
+}
