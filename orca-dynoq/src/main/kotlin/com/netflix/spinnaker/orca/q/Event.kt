@@ -38,6 +38,13 @@ sealed class Event : Message {
     val taskId: String
   }
 
+  data class TaskStarting(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String,
+    override val taskId: String
+  ) : Event(), TaskLevel
+
   data class TaskComplete(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,

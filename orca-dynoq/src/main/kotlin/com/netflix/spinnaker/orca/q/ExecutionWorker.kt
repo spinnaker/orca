@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean
       if (event != null) log.info("Received event $event")
       when (event) {
         null -> log.debug("No events")
+        is TaskStarting -> withAck(event) { handle() }
         is TaskComplete -> withAck(event) { handle() }
         is StageStarting -> withAck(event) { handle() }
         is StageComplete -> withAck(event) { handle() }
@@ -83,7 +84,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
   private fun StageStarting.handle() =
     withStage { stage ->
-      stage.buildTasks(stage.builder())
+      stage.builder().buildTasks(stage)
       stage.setStatus(RUNNING)
       stage.setStartTime(clock.millis())
 
@@ -91,6 +92,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 
       stage.getTasks().firstOrNull().let { task ->
         if (task != null) {
+          eventQ.push(TaskStarting(
+            executionType,
+            executionId,
+            stageId,
+            task.id
+          ))
           commandQ.push(RunTask(
             executionType,
             executionId,
@@ -129,6 +136,19 @@ import java.util.concurrent.atomic.AtomicBoolean
       }
     }
 
+  private fun TaskStarting.handle() {
+    withStage { stage ->
+      stage
+        .getTasks()
+        .find { it.id == taskId }
+        ?.let { task ->
+          task.status = RUNNING
+          task.startTime = clock.millis()
+        }
+      repository.storeStage(stage)
+    }
+  }
+
   private fun TaskComplete.handle() =
     withStage { stage ->
       val task = stage.getTasks().find { it.id == taskId }!!
@@ -146,6 +166,12 @@ import java.util.concurrent.atomic.AtomicBoolean
       } else {
         val index = stage.getTasks().indexOf(task)
         val nextTask = stage.getTasks()[index + 1]
+        eventQ.push(TaskStarting(
+          executionType,
+          executionId,
+          stageId,
+          nextTask.id
+        ))
         commandQ.push(RunTask(
           executionType,
           executionId,
@@ -181,9 +207,8 @@ import java.util.concurrent.atomic.AtomicBoolean
   }
 }
 
-internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =
-  builder
-    .buildTaskGraph(this)
+internal fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) =
+  buildTaskGraph(stage)
     .listIterator()
     .forEachWithMetadata { (taskNode, index, isFirst, isLast) ->
       when (taskNode) {
@@ -194,7 +219,7 @@ internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =
           task.implementingClass = taskNode.implementingClass
           task.stageStart = isFirst
           task.stageEnd = isLast
-          getTasks().add(task)
+          stage.getTasks().add(task)
         }
         else -> TODO("loops, etc.")
       }

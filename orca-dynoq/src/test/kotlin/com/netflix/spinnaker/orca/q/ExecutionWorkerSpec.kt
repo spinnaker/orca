@@ -249,6 +249,25 @@ class ExecutionWorkerSpec : Spek({
             }
           }
 
+          it("runs the task") {
+            verify(commandQ).push(RunTask(
+              event.executionType,
+              event.executionId,
+              event.stageId,
+              "1",
+              DummyTask::class.java
+            ))
+          }
+
+          it("raises an event to indicate the task is starting") {
+            verify(eventQ).push(TaskStarting(
+              event.executionType,
+              event.executionId,
+              event.stageId,
+              "1"
+            ))
+          }
+
           it("acks the message") {
             verify(eventQ).ack(event)
           }
@@ -304,6 +323,64 @@ class ExecutionWorkerSpec : Spek({
               }
             }
           }
+
+          it("runs the first task") {
+            verify(commandQ).push(RunTask(
+              event.executionType,
+              event.executionId,
+              event.stageId,
+              "1",
+              DummyTask::class.java
+            ))
+          }
+
+          it("raises an event to indicate the first task is starting") {
+            verify(eventQ).push(TaskStarting(
+              event.executionType,
+              event.executionId,
+              event.stageId,
+              "1"
+            ))
+          }
+        }
+      }
+
+      describe("when a task starts") {
+        val event = TaskStarting(Pipeline::class.java, "1", "1", "1")
+        val pipeline = Pipeline.builder().withId(event.executionId).build()
+        val stage = PipelineStage(pipeline, multiTaskStage.type)
+
+        beforeGroup {
+          stage.id = event.stageId
+          multiTaskStage.buildTasks(stage)
+          pipeline.stages.add(stage)
+
+          whenever(eventQ.poll())
+            .thenReturn(event)
+          whenever(repository.retrievePipeline(event.executionId))
+            .thenReturn(pipeline)
+        }
+
+        afterGroup {
+          reset(commandQ, eventQ, repository)
+        }
+
+        action("the worker polls the queue") {
+          executionWorker.pollOnce()
+        }
+
+        it("marks the task as running") {
+          argumentCaptor<Stage<Pipeline>>().apply {
+            verify(repository).storeStage(capture())
+            firstValue.tasks.first().apply {
+              assertThat(status, equalTo(RUNNING))
+              assertThat(startTime, equalTo(clock.millis()))
+            }
+          }
+        }
+
+        it("acks the message") {
+          verify(eventQ).ack(event)
         }
       }
 
@@ -316,7 +393,7 @@ class ExecutionWorkerSpec : Spek({
 
           beforeGroup {
             stage.id = event.stageId
-            stage.buildTasks(multiTaskStage)
+            multiTaskStage.buildTasks(stage)
             pipeline.stages.add(stage)
 
             whenever(eventQ.poll())
@@ -366,7 +443,7 @@ class ExecutionWorkerSpec : Spek({
 
           beforeGroup {
             stage1.id = event.stageId
-            stage1.buildTasks(singleTaskStage)
+            singleTaskStage.buildTasks(stage1)
             pipeline.stages.add(stage1)
 
             stage2.id = "2"
@@ -416,7 +493,7 @@ class ExecutionWorkerSpec : Spek({
 
           beforeGroup {
             stage.id = event.stageId
-            stage.buildTasks(multiTaskStage)
+            multiTaskStage.buildTasks(stage)
             pipeline.stages.add(stage)
 
             whenever(eventQ.poll())
