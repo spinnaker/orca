@@ -66,7 +66,7 @@ internal class TaskWorkerSpec : Spek({
       }
 
       it("does not poll the queue") {
-        verify(commandQ, never()).poll()
+        verifyZeroInteractions(commandQ)
       }
     }
 
@@ -91,6 +91,10 @@ internal class TaskWorkerSpec : Spek({
 
         it("does nothing") {
           verifyZeroInteractions(eventQ)
+        }
+
+        it("does not ack non-existent messages") {
+          verify(commandQ, never()).ack(anyOrNull())
         }
       }
 
@@ -136,6 +140,10 @@ internal class TaskWorkerSpec : Spek({
               assertThat(firstValue.status, equalTo(SUCCEEDED))
             }
           }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
+          }
         }
 
         describe("that is not yet complete") {
@@ -164,6 +172,10 @@ internal class TaskWorkerSpec : Spek({
 
           it("re-queues the command") {
             verify(commandQ).push(command, taskBackoffMs, MILLISECONDS)
+          }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
           }
         }
 
@@ -194,6 +206,10 @@ internal class TaskWorkerSpec : Spek({
               assertThat(firstValue.status, equalTo(TERMINAL))
             }
           }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
+          }
         }
 
         describe("that throws an exception") {
@@ -219,6 +235,10 @@ internal class TaskWorkerSpec : Spek({
               verify(eventQ).push(capture())
               assertThat(firstValue.status, equalTo(TERMINAL))
             }
+          }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
           }
         }
 
@@ -253,6 +273,10 @@ internal class TaskWorkerSpec : Spek({
           it("does not execute the task") {
             verifyZeroInteractions(task)
           }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
+          }
         }
       }
 
@@ -283,6 +307,10 @@ internal class TaskWorkerSpec : Spek({
           it("emits an error event") {
             verify(eventQ).push(isA<InvalidExecutionId>())
           }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
+          }
         }
 
         describe("no such stage") {
@@ -310,6 +338,10 @@ internal class TaskWorkerSpec : Spek({
 
           it("emits an error event") {
             verify(eventQ).push(isA<InvalidStageId>())
+          }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
           }
         }
 
@@ -342,6 +374,10 @@ internal class TaskWorkerSpec : Spek({
 
           it("emits an error event") {
             verify(eventQ).push(isA<InvalidTaskType>())
+          }
+
+          it("acks the message") {
+            verify(commandQ).ack(command)
           }
         }
       }

@@ -19,8 +19,11 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import java.util.*
 
-sealed class Event {
+sealed class Event : Message {
+
+  override val id: UUID = UUID.randomUUID()
 
   interface ExecutionLevel {
     val executionType: Class<out Execution<*>>

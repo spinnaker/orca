@@ -54,12 +54,11 @@ import java.util.concurrent.atomic.AtomicBoolean
       if (command != null) log.info("Received command $command")
       when (command) {
         null -> log.debug("No commands")
-        is RunTask -> command.execute()
+        is RunTask -> withAck(command) { execute() }
       }
     }
   }
 
-  // TODO: handle other states such as cancellation, suspension, etc.
   private fun RunTask.execute() =
     withTask { stage, task ->
       if (stage.getExecution().getStatus().complete) {
@@ -82,6 +81,7 @@ import java.util.concurrent.atomic.AtomicBoolean
               }
             }
             when (result.status) {
+            // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
                 commandQ.push(this, task.backoffPeriod())
               SUCCEEDED, TERMINAL ->
@@ -90,6 +90,7 @@ import java.util.concurrent.atomic.AtomicBoolean
             }
           }
         } catch(e: Exception) {
+          log.error("Error running ${taskType.simpleName} for ${executionType.simpleName}[$executionId]", e)
           // TODO: add context
           eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, TERMINAL))
         }
@@ -117,5 +118,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
   private fun Queue<Command>.push(command: Command, backoffPeriod: Pair<Long, TimeUnit>) =
     push(command, backoffPeriod.first, backoffPeriod.second)
+
+  fun <T : Command> withAck(message: T, handler: T.() -> Unit) {
+    message.handler()
+    commandQ.ack(message)
+  }
 }
 

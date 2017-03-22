@@ -88,12 +88,12 @@ class ExecutionWorkerSpec : Spek({
         reset(commandQ, eventQ, repository)
       }
 
-      action("the worker polls the queue") {
+      action("the worker runs") {
         executionWorker.pollOnce()
       }
 
       it("does not poll the queue") {
-        verify(eventQ, never()).poll()
+        verifyZeroInteractions(eventQ)
       }
     }
 
@@ -120,6 +120,10 @@ class ExecutionWorkerSpec : Spek({
 
         it("does nothing") {
           verifyZeroInteractions(commandQ, repository)
+        }
+
+        it("does not try to ack non-existent messages") {
+          verify(eventQ, never()).ack(anyOrNull())
         }
       }
 
@@ -157,6 +161,10 @@ class ExecutionWorkerSpec : Spek({
               event.executionId,
               stage.id
             ))
+          }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
           }
         }
 
@@ -239,6 +247,10 @@ class ExecutionWorkerSpec : Spek({
                 assertThat(isStageEnd, equalTo(true))
               }
             }
+          }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
           }
         }
 
@@ -341,6 +353,10 @@ class ExecutionWorkerSpec : Spek({
                 DummyTask::class.java
               ))
           }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
+          }
         }
 
         describe("the stage is complete") {
@@ -439,6 +455,10 @@ class ExecutionWorkerSpec : Spek({
           it("does not run the next task") {
             verifyZeroInteractions(commandQ)
           }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
+          }
         }
       }
 
@@ -485,6 +505,10 @@ class ExecutionWorkerSpec : Spek({
 
           it("does not emit any commands") {
             verifyZeroInteractions(commandQ)
+          }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
           }
         }
 
@@ -624,6 +648,10 @@ class ExecutionWorkerSpec : Spek({
               status
             ))
           }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
+          }
         }
       }
 
@@ -649,6 +677,10 @@ class ExecutionWorkerSpec : Spek({
         it("updates the execution") {
           verify(repository).updateStatus(event.executionId, SUCCEEDED)
         }
+
+        it("acks the message") {
+          verify(eventQ).ack(event)
+        }
       }
 
       setOf(TERMINAL, CANCELED).forEach { status ->
@@ -673,6 +705,10 @@ class ExecutionWorkerSpec : Spek({
 
           it("updates the execution") {
             verify(repository).updateStatus(event.executionId, status)
+          }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
           }
         }
       }
@@ -763,6 +799,10 @@ class ExecutionWorkerSpec : Spek({
               event.executionId,
               TERMINAL
             ))
+          }
+
+          it("acks the message") {
+            verify(eventQ).ack(event)
           }
         }
       }

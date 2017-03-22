@@ -29,12 +29,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 interface DiscoveryActivated : ApplicationListener<RemoteStatusChangedEvent> {
 
   override fun onApplicationEvent(event: RemoteStatusChangedEvent) =
-    event.source.run {
-      if (status == UP) {
-        log.info("Bean [${javaClass.simpleName}] starting...")
+    event.source.let { e ->
+      if (e.status == UP) {
+        log.info("Instance is ${e.status}... ${javaClass.simpleName} starting")
         enable()
-      } else if (previousStatus == UP) {
-        log.info("Bean [${javaClass.simpleName}] stopping...")
+      } else if (e.previousStatus == UP) {
+        log.info("Instance is ${e.status}... ${javaClass.simpleName} stopping")
         disable()
       }
     }

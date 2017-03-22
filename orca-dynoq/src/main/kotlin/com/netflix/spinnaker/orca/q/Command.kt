@@ -19,13 +19,16 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.q.Event.TaskLevel
+import java.util.*
 
-sealed class Command {
+sealed class Command : Message {
   data class RunTask(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val stageId: String,
     override val taskId: String,
     val taskType: Class<out Task>
-  ) : Command(), TaskLevel
+  ) : Command(), TaskLevel {
+    override val id: UUID = UUID.randomUUID()
+  }
 }

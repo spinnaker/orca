@@ -53,12 +53,12 @@ import java.util.concurrent.atomic.AtomicBoolean
       if (event != null) log.info("Received event $event")
       when (event) {
         null -> log.debug("No events")
-        is TaskComplete -> event.handle()
-        is StageStarting -> event.handle()
-        is StageComplete -> event.handle()
-        is ExecutionStarting -> event.handle()
-        is ExecutionComplete -> event.handle()
-        is ConfigurationError -> event.handle()
+        is TaskComplete -> withAck(event) { handle() }
+        is StageStarting -> withAck(event) { handle() }
+        is StageComplete -> withAck(event) { handle() }
+        is ExecutionStarting -> withAck(event) { handle() }
+        is ExecutionComplete -> withAck(event) { handle() }
+        is ConfigurationError -> withAck(event) { handle() }
         else -> TODO("remaining message types")
       }
     }
@@ -174,6 +174,11 @@ import java.util.concurrent.atomic.AtomicBoolean
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }
       ?: throw NoSuchStageDefinitionBuilder(getType())
+
+  fun <T : Event> withAck(message: T, handler: T.() -> Unit) {
+    message.handler()
+    eventQ.ack(message)
+  }
 }
 
 internal fun Stage<*>.buildTasks(builder: StageDefinitionBuilder) =
