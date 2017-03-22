@@ -152,6 +152,17 @@ import java.util.concurrent.atomic.AtomicBoolean
               it.getTasks().first().id
             ))
           }
+        } else if (stage.getSyntheticStageOwner() == STAGE_AFTER) {
+          // TODO: this is kinda messy
+          val parentStage = stage.getExecution().getStages().find { it.getId() == stage.getParentStageId() }
+          parentStage?.let {
+            eventQ.push(StageComplete(
+              executionType,
+              executionId,
+              it.getId(),
+              SUCCEEDED
+            ))
+          }
         }
       }
 
@@ -269,11 +280,11 @@ internal fun StageDefinitionBuilder.buildSyntheticStages(stage: Stage<out Execut
 
   val beforeStages = syntheticStages[STAGE_BEFORE].orEmpty()
   beforeStages.forEachIndexed { i, it ->
-    val index = stage.getExecution().getStages().indexOf(stage)
     it.setRefId("${stage.getId()}.${i + 1}")
     if (i > 0) {
       it.setRequisiteStageRefIds(listOf("${stage.getId()}.$i"))
     }
+    val index = stage.getExecution().getStages().indexOf(stage)
     when (execution) {
       is Pipeline ->
         execution.stages.add(index, it as Stage<Pipeline>)
@@ -283,12 +294,14 @@ internal fun StageDefinitionBuilder.buildSyntheticStages(stage: Stage<out Execut
   }
 
   val afterStages = syntheticStages[STAGE_AFTER].orEmpty()
-  afterStages.reversed().forEachIndexed { i, it ->
-    val index = stage.getExecution().getStages().indexOf(stage)
+  afterStages.forEachIndexed { i, it ->
     it.setRefId("${stage.getId()}.${i + 1}")
     if (i > 0) {
       it.setRequisiteStageRefIds(listOf("${stage.getId()}.$i"))
     }
+  }
+  afterStages.reversed().forEach {
+    val index = stage.getExecution().getStages().indexOf(stage)
     when (execution) {
       is Pipeline ->
         execution.stages.add(index + 1, it as Stage<Pipeline>)

@@ -42,7 +42,6 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.dsl.xcontext
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 import java.time.Clock
@@ -904,13 +903,66 @@ class ExecutionWorkerSpec : Spek({
           }
         }
 
-        xcontext("after the main stage") {
-          context("there are more after stages") {
+        context("after the main stage") {
+          val pipeline = pipeline {
+            stage {
+              type = stageWithSyntheticAfter.type
+              stageWithSyntheticAfter.buildSyntheticStages(this)
+              stageWithSyntheticAfter.buildTasks(this)
+            }
+          }
 
+          context("there are more after stages") {
+            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[1].id, SUCCEEDED)
+            beforeGroup {
+              whenever(repository.retrievePipeline(pipeline.id))
+                .thenReturn(pipeline)
+              whenever(eventQ.poll())
+                .thenReturn(event)
+            }
+
+            afterGroup {
+              reset(commandQ, eventQ, repository)
+            }
+
+            action("the worker polls the queue") {
+              executionWorker.pollOnce()
+            }
+
+            it("runs the next synthetic stage") {
+              verify(eventQ).push(StageStarting(
+                event.executionType,
+                event.executionId,
+                pipeline.stages.last().id
+              ))
+            }
           }
 
           context("it is the last after stage") {
+            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.last().id, SUCCEEDED)
+            beforeGroup {
+              whenever(repository.retrievePipeline(pipeline.id))
+                .thenReturn(pipeline)
+              whenever(eventQ.poll())
+                .thenReturn(event)
+            }
 
+            afterGroup {
+              reset(commandQ, eventQ, repository)
+            }
+
+            action("the worker polls the queue") {
+              executionWorker.pollOnce()
+            }
+
+            it("signals the completion of the parent stage") {
+              verify(eventQ).push(StageComplete(
+                event.executionType,
+                event.executionId,
+                pipeline.stages.first().id,
+                SUCCEEDED
+              ))
+            }
           }
         }
       }
