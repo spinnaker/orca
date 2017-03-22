@@ -25,7 +25,7 @@ import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Command.RunTask
@@ -101,22 +101,21 @@ internal class TaskWorkerSpec : Spek({
       describe("running a task") {
 
         val command = RunTask(Pipeline::class.java, "1", "1", "1", DummyTask::class.java)
-        val pipeline = Pipeline.builder().withId(command.executionId).build()
-        val stage = PipelineStage(pipeline, "whatever")
-
-        beforeGroup {
-          stage.id = command.stageId
-          pipeline.stages.add(stage)
+        val pipeline = pipeline {
+          id = command.executionId
+          stage {
+            id = command.stageId
+            type = "whatever"
+          }
         }
 
         describe("that completes successfully") {
-
           val taskResult = DefaultTaskResult(SUCCEEDED)
 
           beforeGroup {
             whenever(commandQ.poll())
               .thenReturn(command)
-            whenever(task.execute(stage))
+            whenever(task.execute(any<Stage<*>>()))
               .thenReturn(taskResult)
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
@@ -131,7 +130,7 @@ internal class TaskWorkerSpec : Spek({
           }
 
           it("executes the task") {
-            verify(task).execute(stage)
+            verify(task).execute(pipeline.stages.first())
           }
 
           it("emits a failure event") {
@@ -147,14 +146,13 @@ internal class TaskWorkerSpec : Spek({
         }
 
         describe("that is not yet complete") {
-
           val taskResult = DefaultTaskResult(RUNNING)
           val taskBackoffMs = 30_000L
 
           beforeGroup {
             whenever(commandQ.poll())
               .thenReturn(command)
-            whenever(task.execute(stage))
+            whenever(task.execute(any()))
               .thenReturn(taskResult)
             whenever(task.backoffPeriod)
               .thenReturn(taskBackoffMs)
@@ -180,13 +178,12 @@ internal class TaskWorkerSpec : Spek({
         }
 
         describe("that fails") {
-
           val taskResult = DefaultTaskResult(TERMINAL)
 
           beforeGroup {
             whenever(commandQ.poll())
               .thenReturn(command)
-            whenever(task.execute(stage))
+            whenever(task.execute(any()))
               .thenReturn(taskResult)
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
@@ -216,7 +213,7 @@ internal class TaskWorkerSpec : Spek({
           beforeGroup {
             whenever(commandQ.poll())
               .thenReturn(command)
-            whenever(task.execute(stage))
+            whenever(task.execute(any()))
               .thenThrow(RuntimeException("o noes"))
             whenever(repository.retrievePipeline(command.executionId))
               .thenReturn(pipeline)
@@ -315,7 +312,9 @@ internal class TaskWorkerSpec : Spek({
 
         describe("no such stage") {
           val command = RunTask(Pipeline::class.java, "1", "1", "1", DummyTask::class.java)
-          val pipeline = Pipeline.builder().withId(command.executionId).build()
+          val pipeline = pipeline {
+            id = command.executionId
+          }
 
           beforeGroup {
             whenever(commandQ.poll())
@@ -347,13 +346,15 @@ internal class TaskWorkerSpec : Spek({
 
         describe("no such task") {
           val command = RunTask(Pipeline::class.java, "1", "1", "1", InvalidTask::class.java)
-          val pipeline = Pipeline.builder().withId(command.executionId).build()
-          val stage = PipelineStage(pipeline, "whatever")
+          val pipeline = pipeline {
+            id = command.executionId
+            stage {
+              id = command.stageId
+              type = "whatever"
+            }
+          }
 
           beforeGroup {
-            stage.id = command.stageId
-            pipeline.stages.add(stage)
-
             whenever(commandQ.poll())
               .thenReturn(command)
             whenever(repository.retrievePipeline(command.executionId))
