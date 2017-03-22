@@ -156,14 +156,12 @@ class ExecutionWorkerSpec : Spek({
 
       describe("starting an execution") {
         context("with a single initial stage") {
-          val event = ExecutionStarting(Pipeline::class.java, "1")
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = "1"
               type = singleTaskStage.type
             }
           }
+          val event = ExecutionStarting(Pipeline::class.java, pipeline.id)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -188,7 +186,7 @@ class ExecutionWorkerSpec : Spek({
             verify(eventQ).push(StageStarting(
               event.executionType,
               event.executionId,
-              "1"
+              pipeline.stages.first().id
             ))
           }
 
@@ -198,18 +196,15 @@ class ExecutionWorkerSpec : Spek({
         }
 
         context("with multiple initial stages") {
-          val event = ExecutionStarting(Pipeline::class.java, "1")
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = "1"
               type = singleTaskStage.type
             }
             stage {
-              id = "2"
               type = singleTaskStage.type
             }
           }
+          val event = ExecutionStarting(Pipeline::class.java, pipeline.id)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -229,7 +224,10 @@ class ExecutionWorkerSpec : Spek({
           it("starts all the initial stages") {
             argumentCaptor<StageStarting>().apply {
               verify(eventQ, times(2)).push(capture())
-              assertThat(allValues.map { it.stageId }.toSet(), equalTo(pipeline.stages.map { it.id }.toSet()))
+              assertThat(
+                allValues.map { it.stageId }.toSet(),
+                equalTo(pipeline.stages.map { it.id }.toSet())
+              )
             }
           }
         }
@@ -237,14 +235,12 @@ class ExecutionWorkerSpec : Spek({
 
       describe("starting a stage") {
         context("with a single initial task") {
-          val event = StageStarting(Pipeline::class.java, "1", "1")
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
               type = singleTaskStage.type
             }
           }
+          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -298,14 +294,12 @@ class ExecutionWorkerSpec : Spek({
         }
 
         context("with several linear tasks") {
-          val event = StageStarting(Pipeline::class.java, "1", "1")
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
               type = multiTaskStage.type
             }
           }
+          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -363,16 +357,13 @@ class ExecutionWorkerSpec : Spek({
         }
 
         context("with synthetic stages") {
-          val event = StageStarting(Pipeline::class.java, "1", "1")
-
           context("before the main stage") {
             val pipeline = pipeline {
-              id = event.executionId
               stage {
-                id = event.stageId
                 type = stageWithSyntheticBefore.type
               }
             }
+            val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
 
             beforeGroup {
               whenever(eventQ.poll())
@@ -408,12 +399,11 @@ class ExecutionWorkerSpec : Spek({
 
           context("after the main stage") {
             val pipeline = pipeline {
-              id = event.executionId
               stage {
-                id = event.stageId
                 type = stageWithSyntheticAfter.type
               }
             }
+            val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
 
             beforeGroup {
               whenever(eventQ.poll())
@@ -451,15 +441,13 @@ class ExecutionWorkerSpec : Spek({
       }
 
       describe("when a task starts") {
-        val event = TaskStarting(Pipeline::class.java, "1", "1", "1")
         val pipeline = pipeline {
-          id = event.executionId
           stage {
-            id = event.stageId
             type = singleTaskStage.type
             singleTaskStage.buildTasks(this)
           }
         }
+        val event = TaskStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1")
 
         beforeGroup {
           whenever(eventQ.poll())
@@ -502,17 +490,14 @@ class ExecutionWorkerSpec : Spek({
       }
 
       describe("when a task completes successfully") {
-        val event = TaskComplete(Pipeline::class.java, "1", "1", "1", SUCCEEDED)
-
         describe("the stage contains further tasks") {
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
               type = multiTaskStage.type
               multiTaskStage.buildTasks(this)
             }
           }
+          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -556,17 +541,12 @@ class ExecutionWorkerSpec : Spek({
 
         describe("the stage is complete") {
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
               type = singleTaskStage.type
               singleTaskStage.buildTasks(this)
             }
-            stage {
-              id = "2"
-              type = singleTaskStage.type
-            }
           }
+          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -607,15 +587,13 @@ class ExecutionWorkerSpec : Spek({
 
       setOf(TERMINAL, CANCELED).forEach { status ->
         describe("when a task completes with $status status") {
-          val event = TaskComplete(Pipeline::class.java, "1", "1", "1", status)
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
               type = multiTaskStage.type
               multiTaskStage.buildTasks(this)
             }
           }
+          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", status)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -662,16 +640,13 @@ class ExecutionWorkerSpec : Spek({
       }
 
       describe("when a stage completes successfully") {
-        val event = StageComplete(Pipeline::class.java, "1", "1", SUCCEEDED)
-
         context("it is the last stage") {
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
               type = singleTaskStage.type
             }
           }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -715,19 +690,17 @@ class ExecutionWorkerSpec : Spek({
 
         context("there is a single downstream stage") {
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
-              refId = event.stageId
+              refId = "1"
               type = singleTaskStage.type
             }
             stage {
-              id = "2"
               refId = "2"
-              requisiteStageRefIds = setOf(event.stageId)
+              requisiteStageRefIds = setOf("1")
               type = singleTaskStage.type
             }
           }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -756,7 +729,7 @@ class ExecutionWorkerSpec : Spek({
             verify(eventQ).push(StageStarting(
               event.executionType,
               event.executionId,
-              "2"
+              pipeline.stages.last().id
             ))
           }
 
@@ -767,25 +740,22 @@ class ExecutionWorkerSpec : Spek({
 
         context("there are multiple downstream stages") {
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
-              refId = event.stageId
+              refId = "1"
               type = singleTaskStage.type
             }
             stage {
-              id = "2"
               refId = "2"
-              requisiteStageRefIds = setOf(event.stageId)
+              requisiteStageRefIds = setOf("1")
               type = singleTaskStage.type
             }
             stage {
-              id = "3"
               refId = "3"
-              requisiteStageRefIds = setOf(event.stageId)
+              requisiteStageRefIds = setOf("1")
               type = singleTaskStage.type
             }
           }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -805,7 +775,10 @@ class ExecutionWorkerSpec : Spek({
           it("runs the next stages") {
             argumentCaptor<StageStarting>().apply {
               verify(eventQ, times(2)).push(capture())
-              assertThat(allValues.map { it.stageId }.toSet(), equalTo(setOf("2", "3")))
+              assertThat(
+                allValues.map { it.stageId }.toSet(),
+                equalTo(pipeline.stages[1..2].map { it.id }.toSet())
+              )
             }
           }
         }
@@ -813,21 +786,18 @@ class ExecutionWorkerSpec : Spek({
 
       setOf(TERMINAL, CANCELED).forEach { status ->
         describe("when a stage fails with $status status") {
-          val event = StageComplete(Pipeline::class.java, "1", "1", status)
           val pipeline = pipeline {
-            id = event.executionId
             stage {
-              id = event.stageId
-              refId = event.stageId
+              refId = "1"
               type = singleTaskStage.type
             }
             stage {
-              id = "2"
               refId = "2"
-              requisiteStageRefIds = listOf(event.stageId)
+              requisiteStageRefIds = listOf("1")
               type = singleTaskStage.type
             }
           }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, status)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -873,9 +843,7 @@ class ExecutionWorkerSpec : Spek({
       describe("when a synthetic stage completes successfully") {
         context("before the main stage") {
           val pipeline = pipeline {
-            id = "1"
             stage {
-              id = "1"
               type = stageWithSyntheticBefore.type
               stageWithSyntheticBefore.buildSyntheticStages(this)
               stageWithSyntheticBefore.buildTasks(this)
@@ -948,10 +916,8 @@ class ExecutionWorkerSpec : Spek({
       }
 
       describe("when an execution completes successfully") {
-        val event = ExecutionComplete(Pipeline::class.java, "1", SUCCEEDED)
-        val pipeline = pipeline {
-          id = event.executionId
-        }
+        val pipeline = pipeline { }
+        val event = ExecutionComplete(Pipeline::class.java, pipeline.id, SUCCEEDED)
 
         beforeGroup {
           whenever(eventQ.poll())
@@ -979,10 +945,8 @@ class ExecutionWorkerSpec : Spek({
 
       setOf(TERMINAL, CANCELED).forEach { status ->
         describe("when an execution fails with $status status") {
-          val event = ExecutionComplete(Pipeline::class.java, "1", status)
-          val pipeline = pipeline {
-            id = event.executionId
-          }
+          val pipeline = pipeline { }
+          val event = ExecutionComplete(Pipeline::class.java, pipeline.id, status)
 
           beforeGroup {
             whenever(eventQ.poll())
@@ -1103,3 +1067,6 @@ class ExecutionWorkerSpec : Spek({
     }
   }
 })
+
+operator fun <E> List<E>.get(indices: IntRange): List<E> =
+  subList(indices.start, indices.endInclusive + 1)

@@ -99,15 +99,12 @@ internal class TaskWorkerSpec : Spek({
       }
 
       describe("running a task") {
-
-        val command = RunTask(Pipeline::class.java, "1", "1", "1", DummyTask::class.java)
         val pipeline = pipeline {
-          id = command.executionId
           stage {
-            id = command.stageId
             type = "whatever"
           }
         }
+        val command = RunTask(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", DummyTask::class.java)
 
         describe("that completes successfully") {
           val taskResult = DefaultTaskResult(SUCCEEDED)
@@ -311,10 +308,8 @@ internal class TaskWorkerSpec : Spek({
         }
 
         describe("no such stage") {
-          val command = RunTask(Pipeline::class.java, "1", "1", "1", DummyTask::class.java)
-          val pipeline = pipeline {
-            id = command.executionId
-          }
+          val pipeline = pipeline { }
+          val command = RunTask(Pipeline::class.java, pipeline.id, "1", "1", DummyTask::class.java)
 
           beforeGroup {
             whenever(commandQ.poll())
@@ -345,14 +340,12 @@ internal class TaskWorkerSpec : Spek({
         }
 
         describe("no such task") {
-          val command = RunTask(Pipeline::class.java, "1", "1", "1", InvalidTask::class.java)
           val pipeline = pipeline {
-            id = command.executionId
             stage {
-              id = command.stageId
               type = "whatever"
             }
           }
+          val command = RunTask(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", InvalidTask::class.java)
 
           beforeGroup {
             whenever(commandQ.poll())
