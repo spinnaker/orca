@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.q
+package com.netflix.spinnaker.orca.q.memory
 
+import com.netflix.spinnaker.orca.q.Message
+import com.netflix.spinnaker.orca.q.Queue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.threeten.extra.Temporals.chronoUnit

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.config
 
 import com.netflix.spinnaker.orca.q.CommandQueue
 import com.netflix.spinnaker.orca.q.EventQueue
-import com.netflix.spinnaker.orca.q.InMemoryQueue
+import com.netflix.spinnaker.orca.q.memory.InMemoryQueue
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
