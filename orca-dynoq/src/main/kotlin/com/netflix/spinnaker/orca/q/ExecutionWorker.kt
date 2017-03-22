@@ -25,7 +25,6 @@ import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Command.RunTask
 import com.netflix.spinnaker.orca.q.Event.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
@@ -98,13 +97,6 @@ import java.util.concurrent.atomic.AtomicBoolean
             stageId,
             task.id
           ))
-          commandQ.push(RunTask(
-            executionType,
-            executionId,
-            stageId,
-            task.id,
-            task.implementingClass
-          ))
         } else {
           TODO("else what? Nothing to do, just indicate end of stage?")
         }
@@ -144,6 +136,13 @@ import java.util.concurrent.atomic.AtomicBoolean
         ?.let { task ->
           task.status = RUNNING
           task.startTime = clock.millis()
+          commandQ.push(Command.RunTask(
+            executionType,
+            executionId,
+            stageId,
+            task.id,
+            task.implementingClass
+          ))
         }
       repository.storeStage(stage)
     }
@@ -171,13 +170,6 @@ import java.util.concurrent.atomic.AtomicBoolean
           executionId,
           stageId,
           nextTask.id
-        ))
-        commandQ.push(RunTask(
-          executionType,
-          executionId,
-          stageId,
-          nextTask.id,
-          nextTask.implementingClass
         ))
       }
     }

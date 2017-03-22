@@ -249,16 +249,6 @@ class ExecutionWorkerSpec : Spek({
             }
           }
 
-          it("runs the task") {
-            verify(commandQ).push(RunTask(
-              event.executionType,
-              event.executionId,
-              event.stageId,
-              "1",
-              DummyTask::class.java
-            ))
-          }
-
           it("raises an event to indicate the task is starting") {
             verify(eventQ).push(TaskStarting(
               event.executionType,
@@ -324,16 +314,6 @@ class ExecutionWorkerSpec : Spek({
             }
           }
 
-          it("runs the first task") {
-            verify(commandQ).push(RunTask(
-              event.executionType,
-              event.executionId,
-              event.stageId,
-              "1",
-              DummyTask::class.java
-            ))
-          }
-
           it("raises an event to indicate the first task is starting") {
             verify(eventQ).push(TaskStarting(
               event.executionType,
@@ -348,11 +328,11 @@ class ExecutionWorkerSpec : Spek({
       describe("when a task starts") {
         val event = TaskStarting(Pipeline::class.java, "1", "1", "1")
         val pipeline = Pipeline.builder().withId(event.executionId).build()
-        val stage = PipelineStage(pipeline, multiTaskStage.type)
+        val stage = PipelineStage(pipeline, singleTaskStage.type)
 
         beforeGroup {
           stage.id = event.stageId
-          multiTaskStage.buildTasks(stage)
+          singleTaskStage.buildTasks(stage)
           pipeline.stages.add(stage)
 
           whenever(eventQ.poll())
@@ -377,6 +357,16 @@ class ExecutionWorkerSpec : Spek({
               assertThat(startTime, equalTo(clock.millis()))
             }
           }
+        }
+
+        it("runs the task") {
+          verify(commandQ).push(RunTask(
+            event.executionType,
+            event.executionId,
+            event.stageId,
+            event.taskId,
+            DummyTask::class.java
+          ))
         }
 
         it("acks the message") {
@@ -421,13 +411,12 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("runs the next task") {
-            verify(commandQ)
-              .push(RunTask(
+            verify(eventQ)
+              .push(TaskStarting(
                 Pipeline::class.java,
                 event.executionId,
                 event.stageId,
-                "2",
-                DummyTask::class.java
+                "2"
               ))
           }
 
