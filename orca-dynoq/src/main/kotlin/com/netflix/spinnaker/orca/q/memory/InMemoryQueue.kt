@@ -64,6 +64,7 @@ class InMemoryQueue<T : Message>(
   }
 
   @PreDestroy override fun close() {
+    log.info("stopping redelivery watcher for $this")
     redeliveryWatcher.cancel(false)
     executor.shutdown()
   }

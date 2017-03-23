@@ -297,9 +297,9 @@ internal fun StageDefinitionBuilder.buildSyntheticStages(stage: Stage<out Execut
 
   val beforeStages = syntheticStages[STAGE_BEFORE].orEmpty()
   beforeStages.forEachIndexed { i, it ->
-    it.setRefId("${stage.getId()}.${i + 1}")
+    it.setRefId("${stage.getRefId()}<${i + 1}")
     if (i > 0) {
-      it.setRequisiteStageRefIds(listOf("${stage.getId()}.$i"))
+      it.setRequisiteStageRefIds(listOf("${stage.getRefId()}<$i"))
     }
     val index = stage.getExecution().getStages().indexOf(stage)
     when (execution) {
@@ -312,9 +312,9 @@ internal fun StageDefinitionBuilder.buildSyntheticStages(stage: Stage<out Execut
 
   val afterStages = syntheticStages[STAGE_AFTER].orEmpty()
   afterStages.forEachIndexed { i, it ->
-    it.setRefId("${stage.getId()}.${i + 1}")
+    it.setRefId("${stage.getRefId()}>${i + 1}")
     if (i > 0) {
-      it.setRequisiteStageRefIds(listOf("${stage.getId()}.$i"))
+      it.setRequisiteStageRefIds(listOf("${stage.getRefId()}>$i"))
     }
   }
   afterStages.reversed().forEach {
