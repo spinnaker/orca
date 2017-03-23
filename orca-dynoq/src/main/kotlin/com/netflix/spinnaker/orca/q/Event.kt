@@ -43,7 +43,13 @@ sealed class Event : Message {
     override val executionId: String,
     override val stageId: String,
     override val taskId: String
-  ) : Event(), TaskLevel
+  ) : Event(), TaskLevel {
+    constructor(source: ExecutionLevel, stageId: String, taskId: String) :
+      this(source.executionType, source.executionId, stageId, taskId)
+
+    constructor(source: StageLevel, taskId: String) :
+      this(source, source.stageId, taskId)
+  }
 
   data class TaskComplete(
     override val executionType: Class<out Execution<*>>,
@@ -51,20 +57,32 @@ sealed class Event : Message {
     override val stageId: String,
     override val taskId: String,
     val status: ExecutionStatus
-  ) : Event(), TaskLevel
+  ) : Event(), TaskLevel {
+    constructor(source: TaskLevel, status: ExecutionStatus) :
+      this(source.executionType, source.executionId, source.stageId, source.taskId, status)
+  }
 
   data class StageStarting(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val stageId: String
-  ) : Event(), StageLevel
+  ) : Event(), StageLevel {
+    constructor(source: ExecutionLevel, stageId: String) :
+      this(source.executionType, source.executionId, stageId)
+  }
 
   data class StageComplete(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val stageId: String,
     val status: ExecutionStatus
-  ) : Event(), StageLevel
+  ) : Event(), StageLevel {
+    constructor(source: ExecutionLevel, stageId: String, status: ExecutionStatus) :
+      this(source.executionType, source.executionId, stageId, status)
+
+    constructor(source: StageLevel, status: ExecutionStatus) :
+      this(source, source.stageId, status)
+  }
 
   data class ExecutionStarting(
     override val executionType: Class<out Execution<*>>,
@@ -75,7 +93,10 @@ sealed class Event : Message {
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     val status: ExecutionStatus
-  ) : Event(), ExecutionLevel
+  ) : Event(), ExecutionLevel {
+    constructor(source: ExecutionLevel, status: ExecutionStatus) :
+      this(source.executionType, source.executionId, status)
+  }
 
   /**
    * Fatal errors in processing the execution configuration.
@@ -87,7 +108,10 @@ sealed class Event : Message {
     data class InvalidExecutionId(
       override val executionType: Class<out Execution<*>>,
       override val executionId: String
-    ) : ConfigurationError()
+    ) : ConfigurationError() {
+      constructor(source: ExecutionLevel)
+        : this(source.executionType, source.executionId)
+    }
 
     /**
      * Stage id was not found in the execution.
@@ -96,7 +120,10 @@ sealed class Event : Message {
       override val executionType: Class<out Execution<*>>,
       override val executionId: String,
       override val stageId: String
-    ) : ConfigurationError(), StageLevel
+    ) : ConfigurationError(), StageLevel {
+      constructor(source: StageLevel)
+        : this(source.executionType, source.executionId, source.stageId)
+    }
 
     /**
      * No such [Task] class.
@@ -106,7 +133,10 @@ sealed class Event : Message {
       override val executionId: String,
       override val stageId: String,
       val className: String
-    ) : ConfigurationError(), StageLevel
+    ) : ConfigurationError(), StageLevel {
+      constructor(source: StageLevel, className: String)
+        : this(source.executionType, source.executionId, source.stageId, className)
+    }
   }
 
 }

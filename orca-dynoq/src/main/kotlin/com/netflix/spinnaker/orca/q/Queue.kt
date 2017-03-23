@@ -26,6 +26,9 @@ interface Queue<T : Message> {
   fun ack(message: T): Unit
 }
 
+fun <T : Message> Queue<T>.push(message: T, delay: Pair<Long, TimeUnit>) =
+  push(message, delay.first, delay.second)
+
 typealias CommandQueue = Queue<Command>
 
 typealias EventQueue = Queue<Event>

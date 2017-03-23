@@ -43,7 +43,7 @@ internal interface QueueProcessor {
         .find { it.getId() == stageId }
         .let { stage ->
           if (stage == null) {
-            eventQ.push(InvalidStageId(executionType, executionId, stageId))
+            eventQ.push(InvalidStageId(this))
           } else {
             block.invoke(stage)
           }
@@ -61,6 +61,13 @@ internal interface QueueProcessor {
           throw IllegalArgumentException("Unknown execution type $executionType")
       }
     } catch(e: ExecutionNotFoundException) {
-      eventQ.push(InvalidExecutionId(executionType, executionId))
+      eventQ.push(InvalidExecutionId(this))
     }
+
+  fun Execution<*>.update() {
+    when (this) {
+      is Pipeline -> repository.store(this)
+      is Orchestration -> repository.store(this)
+    }
+  }
 }

@@ -20,8 +20,6 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
-import com.netflix.spinnaker.orca.pipeline.model.Orchestration
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Command.RunTask
@@ -54,15 +52,15 @@ import java.util.concurrent.atomic.AtomicBoolean
       if (command != null) log.info("Received command $command")
       when (command) {
         null -> log.debug("No commands")
-        is RunTask -> withAck(command) { execute() }
+        is RunTask -> command.withAck(this::execute)
       }
     }
   }
 
-  private fun RunTask.execute() =
-    withTask { stage, task ->
+  private fun execute(command: RunTask) =
+    command.withTask { stage, task ->
       if (stage.getExecution().getStatus().complete) {
-        eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, CANCELED))
+        eventQ.push(TaskComplete(command, CANCELED))
       } else {
         try {
           task.execute(stage).let { result ->
@@ -74,25 +72,22 @@ import java.util.concurrent.atomic.AtomicBoolean
             if (result.globalOutputs.isNotEmpty()) {
               stage.getExecution().let { execution ->
                 execution.getContext().putAll(result.globalOutputs)
-                when (execution) {
-                  is Pipeline -> repository.store(execution)
-                  is Orchestration -> repository.store(execution)
-                }
+                execution.update()
               }
             }
             when (result.status) {
             // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
-                commandQ.push(this, task.backoffPeriod())
+                commandQ.push(command, task.backoffPeriod())
               SUCCEEDED, TERMINAL ->
-                eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, result.status))
+                eventQ.push(TaskComplete(command, result.status))
               else -> TODO()
             }
           }
         } catch(e: Exception) {
-          log.error("Error running ${taskType.simpleName} for ${executionType.simpleName}[$executionId]", e)
+          log.error("Error running ${command.taskType.simpleName} for ${command.executionType.simpleName}[${command.executionId}]", e)
           // TODO: add context
-          eventQ.push(TaskComplete(executionType, executionId, stageId, taskId, TERMINAL))
+          eventQ.push(TaskComplete(command, TERMINAL))
         }
       }
     }
@@ -103,7 +98,7 @@ import java.util.concurrent.atomic.AtomicBoolean
         .find { taskType.isAssignableFrom(it.javaClass) }
         .let { task ->
           if (task == null) {
-            eventQ.push(InvalidTaskType(executionType, executionId, stageId, taskType.name))
+            eventQ.push(InvalidTaskType(this, taskType.name))
           } else {
             block.invoke(stage, task)
           }
@@ -116,12 +111,9 @@ import java.util.concurrent.atomic.AtomicBoolean
       else -> Pair(1, SECONDS)
     }
 
-  private fun Queue<Command>.push(command: Command, backoffPeriod: Pair<Long, TimeUnit>) =
-    push(command, backoffPeriod.first, backoffPeriod.second)
-
-  fun <T : Command> withAck(message: T, handler: T.() -> Unit) {
-    message.handler()
-    commandQ.ack(message)
+  private fun <T : Command> T.withAck(handler: (T) -> Unit) {
+    handler(this)
+    commandQ.ack(this)
   }
 }
 
