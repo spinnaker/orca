@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component
 class KubernetesServerGroupCreator implements ServerGroupCreator {
 
   boolean katoResultExpected = false
+  String katoResultKeyExpected = null
   String cloudProvider = "kubernetes"
 
   @Override

@@ -85,6 +85,40 @@ class MonitorKatoTaskSpec extends Specification {
     taskId = "kato-task-id"
   }
 
+  @Unroll("result is #expectedResult if katoResultExpectedKey is #expectedKey and resultObject is #resultObjects")
+  def "result depends on Kato task status and result object contents when declared by stage"() {
+    given:
+    task.kato = Stub(KatoService) {
+      lookupTask(taskId) >> Observable.from(new Task(taskId, new Task.Status(completed: true), resultObjects, []))
+    }
+
+    and:
+    def stage = new PipelineStage(new Pipeline(), "whatever", [
+      "kato.last.task.id": new TaskId(taskId),
+      "kato.result.expected": katoResultExpected,
+      "kato.result.key.expected": expectedKey,
+      "deploy.server.groups": [:]
+    ])
+
+    expect:
+    task.execute(stage).status == expectedResult
+
+    where:
+    katoResultExpected | expectedKey | resultObjects || expectedResult
+    false              | null        | null          || ExecutionStatus.SUCCEEDED
+    false              | null        | []            || ExecutionStatus.SUCCEEDED
+    false              | 'b'         | null          || ExecutionStatus.SUCCEEDED
+    false              | 'b'         | [[a: 1]]      || ExecutionStatus.SUCCEEDED
+    true               | null        | null          || ExecutionStatus.RUNNING
+    true               | null        | []            || ExecutionStatus.RUNNING
+    true               | 'b'         | [[a: 1]]      || ExecutionStatus.RUNNING
+    true               | 'a'         | [[a: 1]]      || ExecutionStatus.SUCCEEDED
+    true               | 'a'         | [[a: false]]  || ExecutionStatus.SUCCEEDED
+    true               | 'a'         | [[a: 0]]      || ExecutionStatus.SUCCEEDED
+
+    taskId = "kato-task-id"
+  }
+
   @Unroll
   def "should automatically succeed if task id does not exist"() {
     given:

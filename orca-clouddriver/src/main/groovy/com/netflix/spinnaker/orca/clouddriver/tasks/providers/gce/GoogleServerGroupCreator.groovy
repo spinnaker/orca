@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component
 class GoogleServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAware {
 
   boolean katoResultExpected = false
+  String katoResultKeyExpected = null
   String cloudProvider = "gce"
 
   @Override

@@ -37,6 +37,11 @@ interface ServerGroupCreator {
   boolean isKatoResultExpected()
 
   /**
+   * @return an expected key in the resultObjects map indicating the task is complete
+   */
+  String getKatoResultKeyExpected()
+
+  /**
    * @return The cloud provider type that this object supports.
    */
   String getCloudProvider()

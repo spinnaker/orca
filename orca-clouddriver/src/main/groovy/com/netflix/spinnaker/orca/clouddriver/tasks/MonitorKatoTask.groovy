@@ -49,7 +49,8 @@ class MonitorKatoTask implements RetryableTask {
 
     Task katoTask = kato.lookupTask(taskId.id).toBlocking().first()
     def katoResultExpected = (stage.context["kato.result.expected"] as Boolean) ?: false
-    ExecutionStatus status = katoStatusToTaskStatus(katoTask, katoResultExpected)
+    String katoResultKeyExpected = stage.context["kato.result.key.expected"]
+    ExecutionStatus status = katoStatusToTaskStatus(katoTask, katoResultExpected, katoResultKeyExpected)
 
     if (status != ExecutionStatus.TERMINAL && status != ExecutionStatus.SUCCEEDED) {
       status = ExecutionStatus.RUNNING
@@ -91,12 +92,16 @@ class MonitorKatoTask implements RetryableTask {
     new DefaultTaskResult(status, outputs)
   }
 
-  private static ExecutionStatus katoStatusToTaskStatus(Task katoTask, boolean katoResultExpected) {
+  private static ExecutionStatus katoStatusToTaskStatus(Task katoTask, boolean katoResultExpected, String katoResultKeyExpected) {
     def katoStatus = katoTask.status
     if (katoStatus.failed) {
       return ExecutionStatus.TERMINAL
     } else if (katoStatus.completed) {
       if (katoResultExpected && !katoTask.resultObjects) {
+        return ExecutionStatus.RUNNING
+      }
+      if (katoResultExpected && katoTask.resultObjects
+        && katoResultKeyExpected && !katoTask.resultObjects.any { it.containsKey(katoResultKeyExpected) }) {
         return ExecutionStatus.RUNNING
       }
       return ExecutionStatus.SUCCEEDED

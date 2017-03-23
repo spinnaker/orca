@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component
 class CloudFoundryServerGroupCreator implements ServerGroupCreator {
 
   boolean katoResultExpected = false
+  String katoResultKeyExpected = null
   String cloudProvider = "cf"
 
   @Override
