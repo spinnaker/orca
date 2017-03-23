@@ -223,8 +223,8 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  <T extends Execution<T>> void storeStage(Stage<T> stage) {
-    Class<T> executionType = stage.execution.getClass()
+  void storeStage(Stage<? extends Execution> stage) {
+    Class<? extends Execution> executionType = stage.execution.getClass()
     withJedis(getJedisPoolForId("${executionType.simpleName.toLowerCase()}:${stage.execution.id}" )) { Jedis jedis ->
       storeStageInternal(jedis, executionType, stage)
     }

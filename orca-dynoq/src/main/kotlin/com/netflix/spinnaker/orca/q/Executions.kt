@@ -19,7 +19,8 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
 
 /**
@@ -43,7 +44,7 @@ fun Stage<out Execution<*>>.firstBeforeStage() =
   getExecution()
     .getStages()
     .firstOrNull {
-      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == SyntheticStageOwner.STAGE_BEFORE
+      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_BEFORE
     }
 
 /**
@@ -53,7 +54,7 @@ fun Stage<out Execution<*>>.firstAfterStage() =
   getExecution()
     .getStages()
     .firstOrNull {
-      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == SyntheticStageOwner.STAGE_AFTER
+      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_AFTER
     }
 
 /**

@@ -36,7 +36,7 @@ internal interface QueueProcessor {
   val eventQ: EventQueue
   val repository: ExecutionRepository
 
-  fun StageLevel.withStage(block: (Stage<out Execution<*>>) -> Unit) =
+  fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
     withExecution { execution ->
       execution
         .getStages()

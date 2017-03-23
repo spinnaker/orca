@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import java.util.*
 
@@ -28,8 +27,8 @@ fun pipeline(init: Pipeline.() -> Unit): Pipeline {
   return pipeline
 }
 
-fun Pipeline.stage(init: PipelineStage.() -> Unit): Stage<Pipeline> {
-  val stage = PipelineStage()
+fun Pipeline.stage(init: Stage<Pipeline>.() -> Unit): Stage<Pipeline> {
+  val stage = Stage<Pipeline>()
   stage.execution = this
   stages.add(stage)
   stage.init()
