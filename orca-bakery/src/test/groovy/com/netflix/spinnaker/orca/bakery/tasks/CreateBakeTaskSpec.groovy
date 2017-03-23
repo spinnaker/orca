@@ -652,45 +652,57 @@ class CreateBakeTaskSpec extends Specification {
   }
 
   @Unroll
-  def "sets rebake query parameter to #queryParameter when trigger is #trigger"() {
+  def "sets rebake query parameter to #queryParameter when trigger is #trigger and stage context rebake flag is #rebake"() {
     given:
     Pipeline pipeline = Pipeline.builder().withTrigger(trigger).build()
-    Stage pipelineStage = new PipelineStage(pipeline, "bake", bakeConfig)
+    def stageConfig = [:]
+    stageConfig.putAll(bakeConfig)
+    stageConfig.rebake = rebake
+    Stage pipelineStage = new PipelineStage(pipeline, "bake", stageConfig)
     task.bakery = Mock(BakeryService)
 
     when:
     task.execute(pipelineStage)
 
     then:
-    1 * task.bakery.createBake(bakeConfig.region,
+    1 * task.bakery.createBake(stageConfig.region,
                                {
                                  it.user == "bran" &&
                                  it.packageName == "hodor" &&
                                  it.baseLabel == BakeRequest.Label.release &&
                                  it.baseOs == "ubuntu"
                                } as BakeRequest,
-                               queryParameter) >> Observable.from(runningStatus)
+                               pipelineParam) >> Observable.from(runningStatus)
     0 * _
 
     when:
-    task.execute(new OrchestrationStage(new Orchestration(), "bake", bakeConfig))
+    task.execute(new OrchestrationStage(new Orchestration(), "bake", stageConfig))
 
     then:
-    1 * task.bakery.createBake(bakeConfig.region,
+    1 * task.bakery.createBake(stageConfig.region,
       {
         it.user == "bran" &&
           it.packageName == "hodor" &&
           it.baseLabel == BakeRequest.Label.release &&
           it.baseOs == "ubuntu"
       } as BakeRequest,
-      null) >> Observable.from(runningStatus)
+      stageParam) >> Observable.from(runningStatus)
     0 * _
 
     where:
-    trigger         | queryParameter
-    [rebake: true]  | "1"
-    [rebake: false] | null
-    null            | null
+    trigger         | rebake || pipelineParam | stageParam
+    [rebake: true]  | null   || "1"           | null
+    [rebake: true]  | true   || "1"           | "1"
+    [rebake: true]  | false  || "1"           | null
+    [rebake: false] | null   || null          | null
+    [rebake: false] | true   || null          | "1"
+    [rebake: false] | false  || null          | null
+    [:]             | false  || null          | null
+    [:]             | true   || "1"           | "1"
+    [rebake: null]  | true   || "1"           | "1"
+    null            | null   || null          | null
+    null            | false  || null          | null
+    null            | true   || "1"           | "1"
   }
 
 }
