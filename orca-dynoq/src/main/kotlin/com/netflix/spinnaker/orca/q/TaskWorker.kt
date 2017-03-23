@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean
   override val enabled = AtomicBoolean(false)
 
   @Scheduled(fixedDelay = 10)
-  fun pollOnce() {
+  fun pollOnce() =
     ifEnabled {
       val command = commandQ.poll()
       if (command != null) log.info("Received command $command")
@@ -55,7 +55,6 @@ import java.util.concurrent.atomic.AtomicBoolean
         is RunTask -> command.withAck(this::execute)
       }
     }
-  }
 
   private fun execute(command: RunTask) =
     command.withTask { stage, task ->
@@ -72,7 +71,7 @@ import java.util.concurrent.atomic.AtomicBoolean
             if (result.globalOutputs.isNotEmpty()) {
               stage.getExecution().let { execution ->
                 execution.getContext().putAll(result.globalOutputs)
-                execution.update()
+                execution.update() // TODO: optimize to only update context?
               }
             }
             when (result.status) {

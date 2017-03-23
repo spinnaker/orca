@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
@@ -89,3 +90,22 @@ fun Stage<out Execution<*>>.nextTask(task: Task) =
 fun Stage<out Execution<*>>.task(taskId: String) =
   getTasks().find { it.id == taskId } ?: throw IllegalArgumentException("No such task")
 
+/**
+ * @return the stage with the specified [refId].
+ * @throws IllegalArgumentException if there is no such stage.
+ */
+fun <T : Execution<T>> Execution<T>.stageByRef(refId: String) =
+  stages.find { it.refId == refId } ?: throw IllegalArgumentException("No such stage")
+
+/**
+ * @return all upstream stages of this stage.
+ */
+fun Stage<*>.upstreamStages(): List<Stage<*>> =
+  getExecution().getStages().filter { it.getRefId() in getRequisiteStageRefIds() }
+
+/**
+ * @return `true` if all upstream stages of this stage were run successfully.
+ */
+fun Stage<*>.allUpstreamStagesComplete(): Boolean =
+  // TODO: this needs to cover FAILED_CONTINUE as well
+  upstreamStages().all { it.getStatus() == SUCCEEDED }

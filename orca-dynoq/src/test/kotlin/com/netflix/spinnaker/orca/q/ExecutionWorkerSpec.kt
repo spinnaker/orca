@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.hasSize
+import com.natpryce.hamkrest.isEmpty
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
@@ -411,12 +412,12 @@ class ExecutionWorkerSpec : Spek({
                 .thenReturn(pipeline)
             }
 
-            action("the worker polls the queue") {
-              executionWorker.pollOnce()
-            }
-
             afterGroup {
               reset(commandQ, eventQ, repository)
+            }
+
+            action("the worker polls the queue") {
+              executionWorker.pollOnce()
             }
 
             it("attaches the synthetic stage to the pipeline") {
@@ -435,6 +436,50 @@ class ExecutionWorkerSpec : Spek({
                 "1"
               ))
             }
+          }
+        }
+
+        context("with other upstream stages that are incomplete") {
+          val pipeline = pipeline {
+            stage {
+              refId = "1"
+              status = SUCCEEDED
+              type = singleTaskStage.type
+            }
+            stage {
+              refId = "2"
+              status = RUNNING
+              type = singleTaskStage.type
+            }
+            stage {
+              refId = "3"
+              requisiteStageRefIds = setOf("1", "2")
+              type = singleTaskStage.type
+            }
+          }
+          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("3").id)
+
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("doesn't build its tasks") {
+            assertThat(pipeline.stageByRef("3").tasks, isEmpty)
+          }
+
+          it("waits for the other upstream stage to complete") {
+            verify(eventQ, never()).push(isA<TaskStarting>())
           }
         }
       }

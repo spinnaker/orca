@@ -79,28 +79,30 @@ import java.util.concurrent.atomic.AtomicBoolean
 
   private fun handle(event: StageStarting) =
     event.withStage { stage ->
-      stage.builder().let { builder ->
-        builder.buildTasks(stage)
-        builder.buildSyntheticStages(stage) {
-          stage.getExecution().update()
-        }
-      }
-
-      stage.setStatus(RUNNING)
-      stage.setStartTime(clock.millis())
-      repository.storeStage(stage)
-
-      stage.firstBeforeStage().let { beforeStage ->
-        if (beforeStage == null) {
-          stage.firstTask().let { task ->
-            if (task == null) {
-              TODO("do what? Nothing to do, just indicate end of stage?")
-            } else {
-              eventQ.push(TaskStarting(event, task.id))
-            }
+      if (stage.allUpstreamStagesComplete()) {
+        stage.builder().let { builder ->
+          builder.buildTasks(stage)
+          builder.buildSyntheticStages(stage) {
+            stage.getExecution().update()
           }
-        } else {
-          eventQ.push(StageStarting(event, beforeStage.getId()))
+        }
+
+        stage.setStatus(RUNNING)
+        stage.setStartTime(clock.millis())
+        repository.storeStage(stage)
+
+        stage.firstBeforeStage().let { beforeStage ->
+          if (beforeStage == null) {
+            stage.firstTask().let { task ->
+              if (task == null) {
+                TODO("do what? Nothing to do, just indicate end of stage?")
+              } else {
+                eventQ.push(TaskStarting(event, task.id))
+              }
+            }
+          } else {
+            eventQ.push(StageStarting(event, beforeStage.getId()))
+          }
         }
       }
     }
