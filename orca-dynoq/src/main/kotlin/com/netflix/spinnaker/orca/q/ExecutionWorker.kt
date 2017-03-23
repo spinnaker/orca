@@ -203,14 +203,18 @@ import java.util.concurrent.atomic.AtomicBoolean
       task.endTime = clock.millis()
       repository.storeStage(stage)
 
-      if (status != SUCCEEDED || task.isStageEnd) {
+      val afterStages = stage.getExecution().getStages().filter {
+        it.getParentStageId() == stage.getId() && it.getSyntheticStageOwner() == STAGE_AFTER
+      }
+      // TODO: first and last branches do the same thing ffs
+      if (status != SUCCEEDED) {
         eventQ.push(StageComplete(
           executionType,
           executionId,
           stageId,
           status
         ))
-      } else {
+      } else if (!task.isStageEnd) {
         val index = stage.getTasks().indexOf(task)
         val nextTask = stage.getTasks()[index + 1]
         eventQ.push(TaskStarting(
@@ -218,6 +222,19 @@ import java.util.concurrent.atomic.AtomicBoolean
           executionId,
           stageId,
           nextTask.id
+        ))
+      } else if (afterStages.isNotEmpty()) {
+        eventQ.push(StageStarting(
+          executionType,
+          executionId,
+          afterStages.first().getId()
+        ))
+      } else {
+        eventQ.push(StageComplete(
+          executionType,
+          executionId,
+          stageId,
+          status
         ))
       }
     }

@@ -582,6 +582,51 @@ class ExecutionWorkerSpec : Spek({
               ))
           }
         }
+
+        context("the stage has synthetic after stages") {
+          val pipeline = pipeline {
+            stage {
+              type = stageWithSyntheticAfter.type
+              stageWithSyntheticAfter.buildTasks(this)
+              stageWithSyntheticAfter.buildSyntheticStages(this)
+            }
+          }
+          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
+
+          beforeGroup {
+            whenever(eventQ.poll())
+              .thenReturn(event)
+            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(pipeline)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("updates the task state in the stage") {
+            argumentCaptor<Stage<Pipeline>>().apply {
+              verify(repository).storeStage(capture())
+              firstValue.tasks.last().apply {
+                assertThat(status, equalTo(SUCCEEDED))
+                assertThat(endTime, equalTo(clock.millis()))
+              }
+            }
+          }
+
+          it("triggers the first after stage") {
+            verify(eventQ)
+              .push(StageStarting(
+                event.executionType,
+                event.executionId,
+                pipeline.stages[1].id
+              ))
+          }
+        }
       }
 
       setOf(TERMINAL, CANCELED).forEach { status ->
