@@ -73,6 +73,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
 
     def stageOutputs = [
         "notification.type"   : serverGroupAction.toLowerCase(),
+        "kato.result.expected": true,
         "kato.last.task.id"   : taskId,
         "deploy.account.name" : account,
         "asgName"             : operation.serverGroupName,
