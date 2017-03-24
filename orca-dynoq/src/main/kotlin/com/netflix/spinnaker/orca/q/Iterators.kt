@@ -36,3 +36,11 @@ data class IteratorElement<out T>(
   val isFirst: Boolean,
   val isLast: Boolean
 )
+
+/**
+ * Groovy-style sublist using range. For example:
+ *
+ *     assert(listOf(1, 2, 3)[1..2] == listOf(2, 3)
+ */
+operator fun <E> List<E>.get(indices: IntRange): List<E> =
+  subList(indices.start, indices.endInclusive + 1)

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.natpryce.hamkrest.allElements
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.hasSize
@@ -25,6 +26,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
@@ -98,12 +100,39 @@ class ExecutionWorkerSpec : Spek({
       )
     }
 
+    val stageWithParallelBranches = object : BranchingStageDefinitionBuilder {
+      override fun <T : Execution<T>> parallelContexts(stage: Stage<T>): Collection<Map<String, Any>> =
+        listOf(
+          mapOf("region" to "us-east-1"),
+          mapOf("region" to "us-west-2"),
+          mapOf("region" to "eu-west-1")
+        )
+
+      override fun <T : Execution<T>> preBranchGraph(stage: Stage<T>, builder: Builder) {
+        builder.withTask("pre-branch", DummyTask::class.java)
+      }
+
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
+        builder.withTask("in-branch", DummyTask::class.java)
+      }
+
+      override fun <T : Execution<T>> postBranchGraph(stage: Stage<T>, builder: Builder) {
+        builder.withTask("pre-branch", DummyTask::class.java)
+      }
+    }
+
     val executionWorker = ExecutionWorker(
       commandQ,
       eventQ,
       repository,
       clock,
-      listOf(singleTaskStage, multiTaskStage, stageWithSyntheticBefore, stageWithSyntheticAfter)
+      listOf(
+        singleTaskStage,
+        multiTaskStage,
+        stageWithSyntheticBefore,
+        stageWithSyntheticAfter,
+        stageWithParallelBranches
+      )
     )
 
     describe("when disabled in discovery") {
@@ -1085,6 +1114,111 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
+      describe("running a branching stage") {
+        context("when the stage starts") {
+          val pipeline = pipeline {
+            stage {
+              refId = "1"
+              type = stageWithParallelBranches.type
+            }
+          }
+          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id)
+
+          beforeGroup {
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(eventQ.poll()).thenReturn(event)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("builds synthetic stages for each parallel branch") {
+            assertThat(pipeline.stages.size, equalTo(4))
+            assertThat(
+              pipeline.stages.map { it.type },
+              allElements(equalTo(stageWithParallelBranches.type))
+            )
+            // TODO: contexts, etc.
+          }
+
+          it("runs the parallel stages") {
+            argumentCaptor<StageStarting>().apply {
+              verify(eventQ, times(3)).push(capture())
+              assertThat(
+                allValues.map { pipeline.stageById(it.stageId).parentStageId },
+                allElements(equalTo(event.stageId))
+              )
+            }
+          }
+        }
+
+        context("when one branch completes") {
+          val pipeline = pipeline {
+            stage {
+              refId = "1"
+              type = stageWithParallelBranches.type
+              stageWithParallelBranches.buildSyntheticStages(this)
+              stageWithParallelBranches.buildTasks(this)
+            }
+          }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").firstBeforeStage()!!.getId(), SUCCEEDED)
+
+          beforeGroup {
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(eventQ.poll()).thenReturn(event)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("waits for other branches to finish") {
+            verify(eventQ, never()).push(any())
+          }
+        }
+
+        context("when all branches are complete") {
+          val pipeline = pipeline {
+            stage {
+              refId = "1"
+              type = stageWithParallelBranches.type
+              stageWithParallelBranches.buildSyntheticStages(this)
+              stageWithParallelBranches.buildTasks(this)
+            }
+          }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").firstBeforeStage()!!.getId(), SUCCEEDED)
+
+          beforeGroup {
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(eventQ.poll()).thenReturn(event)
+          }
+
+          afterGroup {
+            reset(commandQ, eventQ, repository)
+          }
+
+          action("the worker polls the queue") {
+            executionWorker.pollOnce()
+          }
+
+          it("runs any post-branch tasks") {
+            verify(eventQ).push(isA<TaskStarting>())
+          }
+        }
+      }
+
       setOf(TERMINAL, CANCELED).forEach { status ->
         describe("when an execution fails with $status status") {
           val pipeline = pipeline { }
@@ -1209,6 +1343,3 @@ class ExecutionWorkerSpec : Spek({
     }
   }
 })
-
-operator fun <E> List<E>.get(indices: IntRange): List<E> =
-  subList(indices.start, indices.endInclusive + 1)

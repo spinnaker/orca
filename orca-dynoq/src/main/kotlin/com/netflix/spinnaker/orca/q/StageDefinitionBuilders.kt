@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.model.*
@@ -53,9 +54,33 @@ fun StageDefinitionBuilder.buildSyntheticStages(
   stage: Stage<out Execution<*>>,
   callback: () -> Unit = {}
 ): Unit {
-  val syntheticStages = syntheticStages(stage)
+  syntheticStages(stage).apply {
+    buildBeforeStages(stage)
+    buildAfterStages(stage)
+    if (this is BranchingStageDefinitionBuilder) {
+//      parallelContexts(stage).forEach {
+//
+//      }
+    }
+    if (isNotEmpty()) {
+      callback.invoke()
+    }
+  }
+}
 
-  val beforeStages = syntheticStages[STAGE_BEFORE].orEmpty()
+private typealias SyntheticStages = Map<SyntheticStageOwner, List<Stage<*>>>
+
+@Suppress("UNCHECKED_CAST")
+private fun StageDefinitionBuilder.syntheticStages(stage: Stage<out Execution<*>>) =
+  when (stage.getExecution()) {
+    is Pipeline -> aroundStages(stage as Stage<Pipeline>)
+    is Orchestration -> aroundStages(stage as Stage<Orchestration>)
+    else -> throw IllegalStateException()
+  }
+    .groupBy { it.getSyntheticStageOwner() }
+
+private fun SyntheticStages.buildBeforeStages(stage: Stage<out Execution<*>>) {
+  val beforeStages = this[STAGE_BEFORE].orEmpty()
   beforeStages.forEachIndexed { i, it ->
     it.setRefId("${stage.getRefId()}<${i + 1}")
     if (i > 0) {
@@ -65,8 +90,10 @@ fun StageDefinitionBuilder.buildSyntheticStages(
       addStage(getStages().indexOf(stage), it)
     }
   }
+}
 
-  val afterStages = syntheticStages[STAGE_AFTER].orEmpty()
+private fun SyntheticStages.buildAfterStages(stage: Stage<out Execution<*>>) {
+  val afterStages = this[STAGE_AFTER].orEmpty()
   afterStages.forEachIndexed { i, it ->
     it.setRefId("${stage.getRefId()}>${i + 1}")
     if (i > 0) {
@@ -79,23 +106,6 @@ fun StageDefinitionBuilder.buildSyntheticStages(
       addStage(index, it)
     }
   }
-
-  if (syntheticStages.isNotEmpty()) {
-    callback.invoke()
-  }
-}
-
-@Suppress("UNCHECKED_CAST")
-private fun StageDefinitionBuilder.syntheticStages(
-  stage: Stage<out Execution<*>>
-): Map<SyntheticStageOwner, List<Stage<*>>> {
-  val execution = stage.getExecution()
-  return when (execution) {
-    is Pipeline -> aroundStages(stage as Stage<Pipeline>)
-    is Orchestration -> aroundStages(stage as Stage<Orchestration>)
-    else -> throw IllegalStateException()
-  }
-    .groupBy { it.getSyntheticStageOwner() }
 }
 
 @Suppress("UNCHECKED_CAST")
