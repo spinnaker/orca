@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
@@ -50,23 +51,49 @@ fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) =
  * @param callback invoked if the execution is mutated so calling code can
  * persist the updated execution.
  */
+@Suppress("UNCHECKED_CAST")
 fun StageDefinitionBuilder.buildSyntheticStages(
   stage: Stage<out Execution<*>>,
   callback: () -> Unit = {}
 ): Unit {
+  val stageCount = stage.getExecution().getStages().size
+
   syntheticStages(stage).apply {
     buildBeforeStages(stage)
     buildAfterStages(stage)
-    if (this is BranchingStageDefinitionBuilder) {
-//      parallelContexts(stage).forEach {
-//
-//      }
+  }
+
+  if (this is BranchingStageDefinitionBuilder) {
+    stage.setInitializationStage(true)
+    eachParallelContext(stage) { context ->
+      val execution = stage.getExecution()
+      when (execution) {
+        is Pipeline -> newStage(execution, stage.getType(), stage.getName(), context, stage as Stage<Pipeline>, STAGE_BEFORE)
+        is Orchestration -> newStage(execution, stage.getType(), stage.getName(), context, stage as Stage<Orchestration>, STAGE_BEFORE)
+        else -> throw IllegalStateException()
+      }
     }
-    if (isNotEmpty()) {
-      callback.invoke()
-    }
+      .forEachIndexed { i, it ->
+        it.setRefId("${stage.getRefId()}=${i + 1}")
+        stage.getExecution().apply {
+          addStage(getStages().indexOf(stage), it)
+        }
+      }
+  }
+
+  if (stage.getExecution().getStages().size > stageCount) {
+    callback.invoke()
   }
 }
+
+@Suppress("UNCHECKED_CAST")
+private fun BranchingStageDefinitionBuilder.eachParallelContext(stage: Stage<*>, block: (Map<String, Any>) -> Stage<*>) =
+  when (stage.getExecution()) {
+    is Pipeline -> parallelContexts(stage as Stage<Pipeline>)
+    is Orchestration -> parallelContexts(stage as Stage<Orchestration>)
+    else -> throw IllegalStateException()
+  }
+    .map(block)
 
 private typealias SyntheticStages = Map<SyntheticStageOwner, List<Stage<*>>>
 

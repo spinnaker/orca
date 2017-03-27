@@ -45,7 +45,6 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.dsl.xdescribe
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 import java.lang.RuntimeException
@@ -1235,7 +1234,7 @@ class ExecutionWorkerSpec : Spek({
         }
       }
 
-      xdescribe("running a branching stage") {
+      describe("running a branching stage") {
         context("when the stage starts") {
           val pipeline = pipeline {
             stage {
@@ -1277,61 +1276,67 @@ class ExecutionWorkerSpec : Spek({
           }
         }
 
-//        context("when one branch completes") {
-//          val pipeline = pipeline {
-//            stage {
-//              refId = "1"
-//              type = stageWithParallelBranches.type
-//              stageWithParallelBranches.buildSyntheticStages(this)
-//              stageWithParallelBranches.buildTasks(this)
-//            }
-//          }
-//          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").firstBeforeStage()!!.getId(), SUCCEEDED)
-//
-//          beforeGroup {
-//            whenever(repository.retrievePipeline(pipeline.id))
-//              .thenReturn(pipeline)
-//            whenever(queue.poll()).thenReturn(event)
-//          }
-//
-//          afterGroup(::resetMocks)
-//
-//          action("the worker polls the queue") {
-//            executionWorker.pollOnce()
-//          }
-//
-//          it("waits for other branches to finish") {
-//            verify(queue, never()).push(any())
-//          }
-//        }
+        context("when one branch completes") {
+          val pipeline = pipeline {
+            stage {
+              refId = "1"
+              type = stageWithParallelBranches.type
+              stageWithParallelBranches.buildSyntheticStages(this)
+              stageWithParallelBranches.buildTasks(this)
+            }
+          }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[0].id, SUCCEEDED)
 
-//        context("when all branches are complete") {
-//          val pipeline = pipeline {
-//            stage {
-//              refId = "1"
-//              type = stageWithParallelBranches.type
-//              stageWithParallelBranches.buildSyntheticStages(this)
-//              stageWithParallelBranches.buildTasks(this)
-//            }
-//          }
-//          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").firstBeforeStage()!!.getId(), SUCCEEDED)
-//
-//          beforeGroup {
-//            whenever(repository.retrievePipeline(pipeline.id))
-//              .thenReturn(pipeline)
-//            whenever(queue.poll()).thenReturn(event)
-//          }
-//
-//          afterGroup(::resetMocks)
-//
-//          action("the worker polls the queue") {
-//            executionWorker.pollOnce()
-//          }
-//
-//          it("runs any post-branch tasks") {
-//            verify(queue).push(isA<TaskStarting>())
-//          }
-//        }
+          beforeGroup {
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(queue.poll()).thenReturn(event)
+          }
+
+          afterGroup(::resetMocks)
+
+          action("the worker polls the queue") {
+            worker.pollOnce()
+          }
+
+          it("waits for other branches to finish") {
+            verify(queue, never()).push(any())
+          }
+        }
+
+        context("when all branches are complete") {
+          val pipeline = pipeline {
+            stage {
+              refId = "1"
+              type = stageWithParallelBranches.type
+              stageWithParallelBranches.buildSyntheticStages(this)
+              stageWithParallelBranches.buildTasks(this)
+            }
+          }
+          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[0].id, SUCCEEDED)
+
+          beforeGroup {
+            pipeline.stages.forEach {
+              if (it.syntheticStageOwner == STAGE_BEFORE && it.id != event.stageId) {
+                it.status = SUCCEEDED
+              }
+            }
+
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(queue.poll()).thenReturn(event)
+          }
+
+          afterGroup(::resetMocks)
+
+          action("the worker polls the queue") {
+            worker.pollOnce()
+          }
+
+          it("runs any post-branch tasks") {
+            verify(queue).push(isA<TaskStarting>())
+          }
+        }
       }
 
       setOf(TERMINAL, CANCELED).forEach { status ->

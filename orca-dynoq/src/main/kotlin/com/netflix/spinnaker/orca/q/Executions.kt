@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Task
  */
 fun Execution<*>.initialStages() =
   getStages()
-    .filter { it.getRequisiteStageRefIds().isEmpty() }
+    .filter { it.isInitial() }
 
 /**
  * @return `true` if all stages are complete, `false` otherwise.
@@ -40,11 +40,11 @@ fun Execution<*>.isComplete() =
 /**
  * @return the stage's first before stage or `null` if there are none.
  */
-fun Stage<out Execution<*>>.firstBeforeStage() =
+fun Stage<out Execution<*>>.firstBeforeStages() =
   getExecution()
     .getStages()
-    .firstOrNull {
-      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_BEFORE
+    .filter {
+      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_BEFORE && it.isInitial()
     }
 
 /**
@@ -53,9 +53,12 @@ fun Stage<out Execution<*>>.firstBeforeStage() =
 fun Stage<out Execution<*>>.firstAfterStage() =
   getExecution()
     .getStages()
-    .firstOrNull {
-      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_AFTER
+    .filter {
+      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_AFTER && it.isInitial()
     }
+
+fun Stage<*>.isInitial() =
+  getRequisiteStageRefIds() == null || getRequisiteStageRefIds().isEmpty()
 
 /**
  * @return the stage's first task or `null` if there are none.
@@ -117,3 +120,9 @@ fun Stage<*>.upstreamStages(): List<Stage<*>> =
 fun Stage<*>.allUpstreamStagesComplete(): Boolean =
   // TODO: this needs to cover FAILED_CONTINUE as well
   upstreamStages().all { it.getStatus() == SUCCEEDED }
+
+fun Stage<*>.beforeStages(): List<Stage<*>> =
+  getExecution().getStages().filter { it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_BEFORE }
+
+fun Stage<*>.allBeforeStagesComplete(): Boolean =
+  beforeStages().all { it.getStatus() == SUCCEEDED }

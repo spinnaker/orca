@@ -94,8 +94,8 @@ import java.util.concurrent.atomic.AtomicBoolean
         stage.setStartTime(clock.millis())
         repository.storeStage(stage)
 
-        stage.firstBeforeStage().let { beforeStage ->
-          if (beforeStage == null) {
+        stage.firstBeforeStages().let { beforeStages ->
+          if (beforeStages.isEmpty()) {
             stage.firstTask().let { task ->
               if (task == null) {
                 TODO("do what? Nothing to do, just indicate end of stage?")
@@ -104,7 +104,9 @@ import java.util.concurrent.atomic.AtomicBoolean
               }
             }
           } else {
-            queue.push(StageStarting(message, beforeStage.getId()))
+            beforeStages.forEach {
+              queue.push(StageStarting(message, it.getId()))
+            }
           }
         }
       }
@@ -120,13 +122,14 @@ import java.util.concurrent.atomic.AtomicBoolean
         val downstreamStages = stage.downstreamStages()
         if (downstreamStages.isNotEmpty()) {
           downstreamStages.forEach {
-            // TODO: only if other upstreams are complete
             queue.push(StageStarting(message, it.getId()))
           }
         } else if (stage.getSyntheticStageOwner() == STAGE_BEFORE) {
           // TODO: this is kinda messy
           stage.parent()!!.let { parent ->
-            queue.push(TaskStarting(message, parent.getId(), parent.getTasks().first().id))
+            if (parent.allBeforeStagesComplete()) {
+              queue.push(TaskStarting(message, parent.getId(), parent.getTasks().first().id))
+            }
           }
         } else if (stage.getSyntheticStageOwner() == STAGE_AFTER) {
           // TODO: this is kinda messy
@@ -166,11 +169,14 @@ import java.util.concurrent.atomic.AtomicBoolean
           queue.push(TaskStarting(message, it.id))
         }
       } else {
-        val afterStage = stage.firstAfterStage()
-        if (afterStage == null) {
-          queue.push(StageComplete(message, message.status))
-        } else {
-          queue.push(StageStarting(message, afterStage.getId()))
+        stage.firstAfterStage().let { afterStages ->
+          if (afterStages.isEmpty()) {
+            queue.push(StageComplete(message, message.status))
+          } else {
+            afterStages.forEach {
+              queue.push(StageStarting(message, it.getId()))
+            }
+          }
         }
       }
     }
@@ -235,9 +241,4 @@ import java.util.concurrent.atomic.AtomicBoolean
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }
       ?: throw NoSuchStageDefinitionBuilder(getType())
-
-  private fun <T : Message> T.withAck(handler: (T) -> Unit) {
-    handler(this)
-    queue.ack(this)
-  }
 }

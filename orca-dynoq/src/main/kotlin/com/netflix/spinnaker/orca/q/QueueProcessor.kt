@@ -35,6 +35,11 @@ internal interface QueueProcessor {
   val queue: Queue
   val repository: ExecutionRepository
 
+  fun <M : Message> M.withAck(handler: (M) -> Unit) {
+    handler(this)
+    queue.ack(this)
+  }
+
   fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
     withExecution { execution ->
       execution
@@ -51,14 +56,15 @@ internal interface QueueProcessor {
 
   fun ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
     try {
-      when (executionType) {
+      val execution = when (executionType) {
         Pipeline::class.java ->
-          block.invoke(repository.retrievePipeline(executionId))
+          repository.retrievePipeline(executionId)
         Orchestration::class.java ->
-          block.invoke(repository.retrieveOrchestration(executionId))
+          repository.retrieveOrchestration(executionId)
         else ->
           throw IllegalArgumentException("Unknown execution type $executionType")
       }
+      block.invoke(execution)
     } catch(e: ExecutionNotFoundException) {
       queue.push(InvalidExecutionId(this))
     }
