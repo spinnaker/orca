@@ -204,7 +204,7 @@ public class Stage<T extends Execution<T>> implements Serializable {
   }
 
   @JsonIgnore
-  private final transient ObjectMapper objectMapper = new OrcaObjectMapper();
+  private final transient ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
 
   /**
    * Maps the stage's context to a typed object at a provided pointer. Uses
@@ -295,7 +295,11 @@ public class Stage<T extends Execution<T>> implements Serializable {
     if (execution instanceof Pipeline) {
       Pipeline pipeline = (Pipeline) execution;
       Map<String, Object> parameters = (Map<String, Object>) pipeline.getTrigger().get("parameters");
-      if (parameters != null && (boolean) parameters.get("strategy")) {
+      boolean strategy = false;
+      if (parameters != null && parameters.get("strategy") != null) {
+        strategy = (boolean) parameters.get("strategy");
+      }
+      if (strategy) {
         context.put("cloudProvider", parameters.get("cloudProvider"));
         context.put("cluster", parameters.get("cluster"));
         context.put("credentials", parameters.get("credentials"));
