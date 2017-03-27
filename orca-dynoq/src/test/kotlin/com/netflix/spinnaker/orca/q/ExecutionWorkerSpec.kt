@@ -16,11 +16,8 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.natpryce.hamkrest.allElements
+import com.natpryce.hamkrest.*
 import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
-import com.natpryce.hamkrest.hasSize
-import com.natpryce.hamkrest.isEmpty
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
@@ -36,6 +33,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Message.*
@@ -110,7 +108,7 @@ class ExecutionWorkerSpec : Spek({
           mapOf("region" to "eu-west-1")
         )
 
-      override fun <T : Execution<T>> preBranchGraph(stage: Stage<T>, builder: Builder) {
+      override fun preBranchGraph(stage: Stage<*>, builder: Builder) {
         builder.withTask("pre-branch", DummyTask::class.java)
       }
 
@@ -118,8 +116,8 @@ class ExecutionWorkerSpec : Spek({
         builder.withTask("in-branch", DummyTask::class.java)
       }
 
-      override fun <T : Execution<T>> postBranchGraph(stage: Stage<T>, builder: Builder) {
-        builder.withTask("pre-branch", DummyTask::class.java)
+      override fun postBranchGraph(stage: Stage<*>, builder: Builder) {
+        builder.withTask("post-branch", DummyTask::class.java)
       }
     }
 
@@ -1256,6 +1254,11 @@ class ExecutionWorkerSpec : Spek({
             worker.pollOnce()
           }
 
+          it("builds tasks for the main branch") {
+            val stage = pipeline.stageById(event.stageId)
+            assertThat(stage.tasks.map(Task::getName), equalTo(listOf("post-branch")))
+          }
+
           it("builds synthetic stages for each parallel branch") {
             assertThat(pipeline.stages.size, equalTo(4))
             assertThat(
@@ -1273,6 +1276,41 @@ class ExecutionWorkerSpec : Spek({
                 allElements(equalTo(event.stageId))
               )
             }
+          }
+        }
+
+        context("when one branch starts") {
+          val pipeline = pipeline {
+            stage {
+              refId = "1"
+              type = stageWithParallelBranches.type
+              stageWithParallelBranches.buildSyntheticStages(this)
+              stageWithParallelBranches.buildTasks(this)
+            }
+          }
+          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages[0].id)
+
+          beforeGroup {
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(queue.poll()).thenReturn(event)
+          }
+
+          afterGroup(::resetMocks)
+
+          action("the worker polls the queue") {
+            worker.pollOnce()
+          }
+
+          it("builds tasks for the branch") {
+            val stage = pipeline.stageById(event.stageId)
+            assertThat(stage.tasks, !isEmpty)
+            assertThat(stage.tasks.map(Task::getName), equalTo(listOf("in-branch")))
+          }
+
+          it("does not build more synthetic stages") {
+            val stage = pipeline.stageById(event.stageId)
+            assertThat(pipeline.stages.map(Stage<Pipeline>::getParentStageId), !hasElement(stage.id))
           }
         }
 

@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
@@ -27,8 +28,16 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFOR
 /**
  * Build and append the tasks for [stage].
  */
-fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) =
-  buildTaskGraph(stage)
+fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) {
+  val taskGraph =
+    if (this is BranchingStageDefinitionBuilder && stage.getParentStageId() == null) {
+      TaskNode.build(TaskNode.GraphType.TAIL) {
+        postBranchGraph(stage, it)
+      }
+    } else {
+      buildTaskGraph(stage)
+    }
+  taskGraph
     .listIterator()
     .forEachWithMetadata { (taskNode, index, isFirst, isLast) ->
       when (taskNode) {
@@ -44,6 +53,7 @@ fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) =
         else -> TODO("loops, etc.")
       }
     }
+}
 
 /**
  * Build the synthetic stages for [stage] and inject them into the execution.
@@ -63,7 +73,7 @@ fun StageDefinitionBuilder.buildSyntheticStages(
     buildAfterStages(stage)
   }
 
-  if (this is BranchingStageDefinitionBuilder) {
+  if (this is BranchingStageDefinitionBuilder && stage.getParentStageId() == null) {
     stage.setInitializationStage(true)
     eachParallelContext(stage) { context ->
       val execution = stage.getExecution()

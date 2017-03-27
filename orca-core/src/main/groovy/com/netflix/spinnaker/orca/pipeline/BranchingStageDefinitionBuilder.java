@@ -35,13 +35,13 @@ public interface BranchingStageDefinitionBuilder extends StageDefinitionBuilder 
   /**
    * Define any tasks that should run _before_ the parallel split.
    */
-  default <T extends Execution<T>> void preBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+  default void preBranchGraph(Stage<?> stage, TaskNode.Builder builder) {
   }
 
   /**
    * Define any tasks that should run _after_ the parallel split.
    */
-  default <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+  default void postBranchGraph(Stage<?> stage, TaskNode.Builder builder) {
   }
 
   /**
