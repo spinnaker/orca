@@ -16,8 +16,7 @@
 
 package com.netflix.spinnaker.config
 
-import com.netflix.spinnaker.orca.q.CommandQueue
-import com.netflix.spinnaker.orca.q.EventQueue
+import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.memory.InMemoryQueue
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
@@ -31,9 +30,6 @@ open class QueueConfiguration {
   @Bean @ConditionalOnMissingBean(Clock::class) open fun systemClock(): Clock =
     Clock.systemDefaultZone()
 
-  @Bean open fun inMemoryCommandQueue(clock: Clock): CommandQueue =
-    InMemoryQueue(clock)
-
-  @Bean open fun inMemoryEventQueue(clock: Clock): EventQueue =
+  @Bean open fun inMemoryCommandQueue(clock: Clock): Queue =
     InMemoryQueue(clock)
 }

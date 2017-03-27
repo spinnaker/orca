@@ -16,23 +16,14 @@
 
 package com.netflix.spinnaker.orca.q
 
-import java.util.*
 import java.util.concurrent.TimeUnit
 
-interface Queue<T : Message> {
-  fun poll(): T?
-  fun push(message: T): Unit
-  fun push(message: T, delay: Long, unit: TimeUnit)
-  fun ack(message: T): Unit
+interface Queue {
+  fun poll(): Message?
+  fun push(message: Message): Unit
+  fun push(message: Message, delay: Long, unit: TimeUnit)
+  fun ack(message: Message): Unit
 }
 
-fun <T : Message> Queue<T>.push(message: T, delay: Pair<Long, TimeUnit>) =
+fun Queue.push(message: Message, delay: Pair<Long, TimeUnit>) =
   push(message, delay.first, delay.second)
-
-typealias CommandQueue = Queue<Command>
-
-typealias EventQueue = Queue<Event>
-
-interface Message {
-  val id: UUID
-}

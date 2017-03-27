@@ -32,20 +32,20 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import javax.annotation.PreDestroy
 
-class InMemoryQueue<T : Message>(
+class InMemoryQueue(
   val clock: Clock,
   val ackTimeout: Duration = Duration.ofMinutes(1)
-) : Queue<T>, Closeable {
+) : Queue, Closeable {
 
   private val log: Logger = getLogger(javaClass)
 
-  private val queue = DelayQueue<DelayedMessage<T>>()
-  private val unacked = DelayQueue<DelayedMessage<T>>()
+  private val queue = DelayQueue<DelayedMessage>()
+  private val unacked = DelayQueue<DelayedMessage>()
   private val executor = newSingleThreadScheduledExecutor()
   private val redeliveryWatcher = executor
     .scheduleWithFixedDelay(this::redeliver, 10, 10, MILLISECONDS)
 
-  override fun poll(): T? {
+  override fun poll(): Message? {
     val message = queue.poll()
     return message?.let {
       unacked.put(DelayedMessage(it.payload, clock.instant().plus(ackTimeout), clock))
@@ -53,13 +53,13 @@ class InMemoryQueue<T : Message>(
     }
   }
 
-  override fun push(message: T) =
+  override fun push(message: Message) =
     queue.put(DelayedMessage(message, clock.instant(), clock))
 
-  override fun push(message: T, delay: Long, unit: TimeUnit) =
+  override fun push(message: Message, delay: Long, unit: TimeUnit) =
     queue.put(DelayedMessage(message, clock.instant().plus(delay, unit.toChronoUnit()), clock))
 
-  override fun ack(message: T) {
+  override fun ack(message: Message) {
     unacked.removeIf { it.payload.id == message.id }
   }
 
@@ -89,8 +89,8 @@ class InMemoryQueue<T : Message>(
   }
 }
 
-internal data class DelayedMessage<out T : Message>(
-  val payload: T,
+internal data class DelayedMessage(
+  val payload: Message,
   val scheduledTime: Instant,
   val clock: Clock
 ) : Delayed {

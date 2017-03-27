@@ -17,13 +17,14 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import java.util.*
 
-sealed class Event : Message {
+sealed class Message {
 
-  override val id: UUID = UUID.randomUUID()
+  val id: UUID = UUID.randomUUID()
 
   interface ExecutionLevel {
     val executionType: Class<out Execution<*>>
@@ -43,7 +44,7 @@ sealed class Event : Message {
     override val executionId: String,
     override val stageId: String,
     override val taskId: String
-  ) : Event(), TaskLevel {
+  ) : Message(), TaskLevel {
     constructor(source: ExecutionLevel, stageId: String, taskId: String) :
       this(source.executionType, source.executionId, stageId, taskId)
 
@@ -57,16 +58,27 @@ sealed class Event : Message {
     override val stageId: String,
     override val taskId: String,
     val status: ExecutionStatus
-  ) : Event(), TaskLevel {
+  ) : Message(), TaskLevel {
     constructor(source: TaskLevel, status: ExecutionStatus) :
       this(source.executionType, source.executionId, source.stageId, source.taskId, status)
+  }
+
+  data class RunTask(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val stageId: String,
+    override val taskId: String,
+    val taskType: Class<out Task>
+  ) : Message(), TaskLevel {
+    constructor(message: StageLevel, taskId: String, taskType: Class<out Task>) :
+      this(message.executionType, message.executionId, message.stageId, taskId, taskType)
   }
 
   data class StageStarting(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val stageId: String
-  ) : Event(), StageLevel {
+  ) : Message(), StageLevel {
     constructor(source: ExecutionLevel, stageId: String) :
       this(source.executionType, source.executionId, stageId)
   }
@@ -76,7 +88,7 @@ sealed class Event : Message {
     override val executionId: String,
     override val stageId: String,
     val status: ExecutionStatus
-  ) : Event(), StageLevel {
+  ) : Message(), StageLevel {
     constructor(source: ExecutionLevel, stageId: String, status: ExecutionStatus) :
       this(source.executionType, source.executionId, stageId, status)
 
@@ -87,13 +99,13 @@ sealed class Event : Message {
   data class ExecutionStarting(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String
-  ) : Event(), ExecutionLevel
+  ) : Message(), ExecutionLevel
 
   data class ExecutionComplete(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     val status: ExecutionStatus
-  ) : Event(), ExecutionLevel {
+  ) : Message(), ExecutionLevel {
     constructor(source: ExecutionLevel, status: ExecutionStatus) :
       this(source.executionType, source.executionId, status)
   }
@@ -101,7 +113,7 @@ sealed class Event : Message {
   /**
    * Fatal errors in processing the execution configuration.
    */
-  sealed class ConfigurationError : Event(), ExecutionLevel {
+  sealed class ConfigurationError : Message(), ExecutionLevel {
     /**
      * Execution id was not found in the [ExecutionRepository].
      */

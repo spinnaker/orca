@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -24,22 +26,22 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Command.RunTask
-import com.netflix.spinnaker.orca.q.Event.*
+import com.netflix.spinnaker.orca.q.Message.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Clock
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Component open class ExecutionWorker @Autowired constructor(
-  override val commandQ: CommandQueue,
-  override val eventQ: EventQueue,
+  override val queue: Queue,
   override val repository: ExecutionRepository,
   val clock: Clock,
-  val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
+  val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
+  val tasks: Collection<Task>
 ) : DiscoveryActivated, QueueProcessor {
 
   override val log: Logger = getLogger(javaClass)
@@ -48,37 +50,38 @@ import java.util.concurrent.atomic.AtomicBoolean
   @Scheduled(fixedDelay = 10)
   fun pollOnce() =
     ifEnabled {
-      val event = eventQ.poll()
-      if (event != null) log.info("Received event $event")
-      when (event) {
+      val message = queue.poll()
+      if (message != null) log.info("Received message $message")
+      when (message) {
         null -> log.debug("No events") // TODO: DLQ
-        is TaskStarting -> event.withAck(this::handle)
-        is TaskComplete -> event.withAck(this::handle)
-        is StageStarting -> event.withAck(this::handle)
-        is StageComplete -> event.withAck(this::handle)
-        is ExecutionStarting -> event.withAck(this::handle)
-        is ExecutionComplete -> event.withAck(this::handle)
-        is ConfigurationError -> event.withAck(this::handle)
+        is TaskStarting -> message.withAck(this::handle)
+        is TaskComplete -> message.withAck(this::handle)
+        is RunTask -> message.withAck(this::handle)
+        is StageStarting -> message.withAck(this::handle)
+        is StageComplete -> message.withAck(this::handle)
+        is ExecutionStarting -> message.withAck(this::handle)
+        is ExecutionComplete -> message.withAck(this::handle)
+        is ConfigurationError -> message.withAck(this::handle)
         else -> TODO("remaining message types")
       }
     }
 
-  private fun handle(event: ExecutionStarting) =
-    event.withExecution { execution ->
-      repository.updateStatus(event.executionId, RUNNING)
+  private fun handle(message: ExecutionStarting) =
+    message.withExecution { execution ->
+      repository.updateStatus(message.executionId, RUNNING)
 
       execution
         .initialStages()
         .forEach {
-          eventQ.push(StageStarting(event, it.getId()))
+          queue.push(StageStarting(message, it.getId()))
         }
     }
 
-  private fun handle(event: ExecutionComplete) =
-    repository.updateStatus(event.executionId, event.status)
+  private fun handle(message: ExecutionComplete) =
+    repository.updateStatus(message.executionId, message.status)
 
-  private fun handle(event: StageStarting) =
-    event.withStage { stage ->
+  private fun handle(message: StageStarting) =
+    message.withStage { stage ->
       if (stage.allUpstreamStagesComplete()) {
         stage.builder().let { builder ->
           builder.buildTasks(stage)
@@ -97,90 +100,144 @@ import java.util.concurrent.atomic.AtomicBoolean
               if (task == null) {
                 TODO("do what? Nothing to do, just indicate end of stage?")
               } else {
-                eventQ.push(TaskStarting(event, task.id))
+                queue.push(TaskStarting(message, task.id))
               }
             }
           } else {
-            eventQ.push(StageStarting(event, beforeStage.getId()))
+            queue.push(StageStarting(message, beforeStage.getId()))
           }
         }
       }
     }
 
-  private fun handle(event: StageComplete) =
-    event.withStage { stage ->
-      stage.setStatus(event.status)
+  private fun handle(message: StageComplete) =
+    message.withStage { stage ->
+      stage.setStatus(message.status)
       stage.setEndTime(clock.millis())
       repository.storeStage(stage)
 
-      if (event.status == SUCCEEDED) {
+      if (message.status == SUCCEEDED) {
         val downstreamStages = stage.downstreamStages()
         if (downstreamStages.isNotEmpty()) {
           downstreamStages.forEach {
             // TODO: only if other upstreams are complete
-            eventQ.push(StageStarting(event, it.getId()))
+            queue.push(StageStarting(message, it.getId()))
           }
         } else if (stage.getSyntheticStageOwner() == STAGE_BEFORE) {
           // TODO: this is kinda messy
           stage.parent()!!.let { parent ->
-            eventQ.push(TaskStarting(event, parent.getId(), parent.getTasks().first().id))
+            queue.push(TaskStarting(message, parent.getId(), parent.getTasks().first().id))
           }
         } else if (stage.getSyntheticStageOwner() == STAGE_AFTER) {
           // TODO: this is kinda messy
           stage.parent()!!.let { parent ->
-            eventQ.push(StageComplete(event, parent.getId(), SUCCEEDED))
+            queue.push(StageComplete(message, parent.getId(), SUCCEEDED))
           }
         }
       }
 
-      if (event.status != SUCCEEDED || stage.getExecution().isComplete()) {
-        eventQ.push(ExecutionComplete(event, event.status))
+      if (message.status != SUCCEEDED || stage.getExecution().isComplete()) {
+        queue.push(ExecutionComplete(message, message.status))
       }
     }
 
-  private fun handle(event: TaskStarting) {
-    event.withStage { stage ->
-      val task = stage.task(event.taskId)
+  private fun handle(message: TaskStarting) {
+    message.withStage { stage ->
+      val task = stage.task(message.taskId)
       task.status = RUNNING
       task.startTime = clock.millis()
       repository.storeStage(stage)
 
-      commandQ.push(RunTask(event, task.id, task.implementingClass))
+      queue.push(RunTask(message, task.id, task.implementingClass))
     }
   }
 
-  private fun handle(event: TaskComplete) =
-    event.withStage { stage ->
-      val task = stage.task(event.taskId)
-      task.status = event.status
+  private fun handle(message: TaskComplete) =
+    message.withStage { stage ->
+      val task = stage.task(message.taskId)
+      task.status = message.status
       task.endTime = clock.millis()
       repository.storeStage(stage)
 
-      if (event.status != SUCCEEDED) {
-        eventQ.push(StageComplete(event, event.status))
+      if (message.status != SUCCEEDED) {
+        queue.push(StageComplete(message, message.status))
       } else if (!task.isStageEnd) {
         stage.nextTask(task)!!.let {
-          eventQ.push(TaskStarting(event, it.id))
+          queue.push(TaskStarting(message, it.id))
         }
       } else {
         val afterStage = stage.firstAfterStage()
         if (afterStage == null) {
-          eventQ.push(StageComplete(event, event.status))
+          queue.push(StageComplete(message, message.status))
         } else {
-          eventQ.push(StageStarting(event, afterStage.getId()))
+          queue.push(StageStarting(message, afterStage.getId()))
         }
       }
     }
 
-  private fun handle(event: ConfigurationError) =
-    eventQ.push(ExecutionComplete(event, TERMINAL))
+  private fun handle(message: RunTask) =
+    message.withTask { stage, task ->
+      if (stage.getExecution().getStatus().complete) {
+        queue.push(TaskComplete(message, CANCELED))
+      } else {
+        try {
+          task.execute(stage).let { result ->
+            // TODO: rather do this back in ExecutionWorker
+            if (result.stageOutputs.isNotEmpty()) {
+              stage.getContext().putAll(result.stageOutputs)
+              repository.storeStage(stage)
+            }
+            if (result.globalOutputs.isNotEmpty()) {
+              stage.getExecution().let { execution ->
+                execution.getContext().putAll(result.globalOutputs)
+                execution.update() // TODO: optimize to only update context?
+              }
+            }
+            when (result.status) {
+            // TODO: handle other states such as cancellation, suspension, etc.
+              RUNNING ->
+                queue.push(message, task.backoffPeriod())
+              SUCCEEDED, TERMINAL ->
+                queue.push(TaskComplete(message, result.status))
+              else -> TODO()
+            }
+          }
+        } catch(e: Exception) {
+          log.error("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]", e)
+          // TODO: add context
+          queue.push(TaskComplete(message, TERMINAL))
+        }
+      }
+    }
+
+  private fun handle(message: ConfigurationError) =
+    queue.push(ExecutionComplete(message, TERMINAL))
+
+  private fun RunTask.withTask(block: (Stage<*>, Task) -> Unit) =
+    withStage { stage ->
+      tasks
+        .find { taskType.isAssignableFrom(it.javaClass) }
+        .let { task ->
+          if (task == null) {
+            queue.push(ConfigurationError.InvalidTaskType(this, taskType.name))
+          } else {
+            block.invoke(stage, task)
+          }
+        }
+    }
+
+  private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =
+    when (this) {
+      is RetryableTask -> Pair(backoffPeriod, TimeUnit.MILLISECONDS)
+      else -> Pair(1, TimeUnit.SECONDS)
+    }
 
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }
       ?: throw NoSuchStageDefinitionBuilder(getType())
 
-  private fun <T : Event> T.withAck(handler: (T) -> Unit) {
+  private fun <T : Message> T.withAck(handler: (T) -> Unit) {
     handler(this)
-    eventQ.ack(this)
+    queue.ack(this)
   }
 }

@@ -22,18 +22,17 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Event.ConfigurationError.InvalidExecutionId
-import com.netflix.spinnaker.orca.q.Event.ConfigurationError.InvalidStageId
-import com.netflix.spinnaker.orca.q.Event.ExecutionLevel
-import com.netflix.spinnaker.orca.q.Event.StageLevel
+import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidExecutionId
+import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidStageId
+import com.netflix.spinnaker.orca.q.Message.ExecutionLevel
+import com.netflix.spinnaker.orca.q.Message.StageLevel
 
 /**
- * Some common functionality shared by [ExecutionWorker] and [TaskWorker].
+ * Some common functionality shared by [ExecutionWorker].
  */
 internal interface QueueProcessor {
 
-  val commandQ: CommandQueue
-  val eventQ: EventQueue
+  val queue: Queue
   val repository: ExecutionRepository
 
   fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
@@ -43,7 +42,7 @@ internal interface QueueProcessor {
         .find { it.getId() == stageId }
         .let { stage ->
           if (stage == null) {
-            eventQ.push(InvalidStageId(this))
+            queue.push(InvalidStageId(this))
           } else {
             block.invoke(stage)
           }
@@ -61,7 +60,7 @@ internal interface QueueProcessor {
           throw IllegalArgumentException("Unknown execution type $executionType")
       }
     } catch(e: ExecutionNotFoundException) {
-      eventQ.push(InvalidExecutionId(this))
+      queue.push(InvalidExecutionId(this))
     }
 
   fun Execution<*>.update() {
