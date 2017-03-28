@@ -60,7 +60,7 @@ import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDe
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
 import static java.lang.String.format;
-import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 
@@ -260,7 +260,7 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
       null
     );
     waitForStage.setId(format("%s-waitForRequisite", stage.getId()));
-    waitForStage.setRequisiteStageRefIds(emptyList());
+    waitForStage.setRequisiteStageRefIds(emptySet());
 
     // 'this' stage should be added after the join stage
     FlowBuilder<Flow> waitForFlow = flowBuilder(format("WaitForRequisite.%s.%s", stage.getRefId(), stage.getId()));

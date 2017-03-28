@@ -44,7 +44,7 @@ fun Stage<out Execution<*>>.firstBeforeStages() =
   getExecution()
     .getStages()
     .filter {
-      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_BEFORE && it.isInitial()
+      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_BEFORE && it.getRequisiteStageRefIds().isEmpty()
     }
 
 /**
@@ -54,7 +54,7 @@ fun Stage<out Execution<*>>.firstAfterStage() =
   getExecution()
     .getStages()
     .filter {
-      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_AFTER && it.isInitial()
+      it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_AFTER && it.getRequisiteStageRefIds().isEmpty()
     }
 
 fun Stage<*>.isInitial() =

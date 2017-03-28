@@ -150,5 +150,4 @@ sealed class Message {
         : this(source.executionType, source.executionId, source.stageId, className)
     }
   }
-
 }

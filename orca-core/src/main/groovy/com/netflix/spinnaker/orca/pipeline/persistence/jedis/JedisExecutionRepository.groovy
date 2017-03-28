@@ -46,6 +46,7 @@ import rx.schedulers.Schedulers
 import static com.google.common.base.Predicates.notNull
 import static com.google.common.collect.Maps.filterValues
 import static java.lang.System.currentTimeMillis
+import static java.util.Collections.emptySet
 
 @Component
 @Slf4j
@@ -544,7 +545,7 @@ class JedisExecutionRepository implements ExecutionRepository {
         stage.initializationStage = map["stage.${stageId}.initializationStage".toString()].toBoolean()
         stage.syntheticStageOwner = map["stage.${stageId}.syntheticStageOwner".toString()] ? SyntheticStageOwner.valueOf(map["stage.${stageId}.syntheticStageOwner".toString()]) : null
         stage.parentStageId = map["stage.${stageId}.parentStageId".toString()]
-        stage.requisiteStageRefIds = map["stage.${stageId}.requisiteStageRefIds".toString()]?.tokenize(",")
+        stage.requisiteStageRefIds = map["stage.${stageId}.requisiteStageRefIds".toString()]?.tokenize(",") ?: emptySet()
         stage.scheduledTime = map["stage.${stageId}.scheduledTime".toString()]?.toLong()
         stage.context = mapper.readValue(map["stage.${stageId}.context".toString()], MAP_STRING_TO_OBJECT)
         stage.tasks = mapper.readValue(map["stage.${stageId}.tasks".toString()], LIST_OF_TASKS)
