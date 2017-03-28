@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
-import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
@@ -31,9 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFOR
 fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) {
   val taskGraph =
     if (this is BranchingStageDefinitionBuilder && stage.getParentStageId() == null) {
-      TaskNode.build(TaskNode.GraphType.TAIL) {
-        postBranchGraph(stage, it)
-      }
+      buildPostGraph(stage)
     } else {
       buildTaskGraph(stage)
     }
