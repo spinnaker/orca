@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -55,16 +56,16 @@ import java.util.concurrent.atomic.AtomicBoolean
       val message = queue.poll()
       if (message != null) log.info("Received message $message")
       when (message) {
-        null -> log.debug("No events") // TODO: DLQ
-        is TaskStarting -> message.withAck(this::handle)
-        is TaskComplete -> message.withAck(this::handle)
-        is RunTask -> message.withAck(this::handle)
-        is StageStarting -> message.withAck(this::handle)
-        is StageComplete -> message.withAck(this::handle)
-        is ExecutionStarting -> message.withAck(this::handle)
-        is ExecutionComplete -> message.withAck(this::handle)
-        is ConfigurationError -> message.withAck(this::handle)
-        else -> TODO("remaining message types")
+        null -> log.debug("No events")
+        is TaskStarting -> withAck(message, this::handle)
+        is TaskComplete -> withAck(message, this::handle)
+        is RunTask -> withAck(message, this::handle)
+        is StageStarting -> withAck(message, this::handle)
+        is StageComplete -> withAck(message, this::handle)
+        is ExecutionStarting -> withAck(message, this::handle)
+        is ExecutionComplete -> withAck(message, this::handle)
+        is ConfigurationError -> withAck(message, this::handle)
+        else -> TODO("remaining message types") // TODO: DLQ
       }
     }
 
@@ -85,32 +86,13 @@ import java.util.concurrent.atomic.AtomicBoolean
   private fun handle(message: StageStarting) =
     message.withStage { stage ->
       if (stage.allUpstreamStagesComplete()) {
-        stage.builder().let { builder ->
-          builder.buildTasks(stage)
-          builder.buildSyntheticStages(stage) {
-            stage.getExecution().update()
-          }
-        }
+        stage.plan()
 
         stage.setStatus(RUNNING)
         stage.setStartTime(clock.millis())
         repository.storeStage(stage)
 
-        stage.firstBeforeStages().let { beforeStages ->
-          if (beforeStages.isEmpty()) {
-            stage.firstTask().let { task ->
-              if (task == null) {
-                TODO("do what? Nothing to do, just indicate end of stage?")
-              } else {
-                queue.push(TaskStarting(message, task.id))
-              }
-            }
-          } else {
-            beforeStages.forEach {
-              queue.push(StageStarting(message, it.getId()))
-            }
-          }
-        }
+        stage.start()
       }
     }
 
@@ -121,24 +103,7 @@ import java.util.concurrent.atomic.AtomicBoolean
       repository.storeStage(stage)
 
       if (message.status == SUCCEEDED) {
-        val downstreamStages = stage.downstreamStages()
-        if (downstreamStages.isNotEmpty()) {
-          downstreamStages.forEach {
-            queue.push(StageStarting(message, it.getId()))
-          }
-        } else if (stage.getSyntheticStageOwner() == STAGE_BEFORE) {
-          // TODO: this is kinda messy
-          stage.parent()!!.let { parent ->
-            if (parent.allBeforeStagesComplete()) {
-              queue.push(TaskStarting(message, parent.getId(), parent.getTasks().first().id))
-            }
-          }
-        } else if (stage.getSyntheticStageOwner() == STAGE_AFTER) {
-          // TODO: this is kinda messy
-          stage.parent()!!.let { parent ->
-            queue.push(StageComplete(message, parent.getId(), SUCCEEDED))
-          }
-        }
+        stage.startNext()
       }
 
       if (message.status != SUCCEEDED || stage.getExecution().isComplete()) {
@@ -165,16 +130,7 @@ import java.util.concurrent.atomic.AtomicBoolean
       repository.storeStage(stage)
 
       if (message.status == REDIRECT) {
-        stage.getTasks().let { tasks ->
-          val start = tasks.indexOfFirst { it.isLoopStart }
-          val end = tasks.indexOfLast { it.isLoopEnd }
-          tasks[start..end].forEach {
-            it.endTime = null
-            it.status = NOT_STARTED
-          }
-          repository.storeStage(stage)
-          queue.push(TaskStarting(message, tasks[start].id))
-        }
+        stage.handleRedirect()
       } else if (message.status != SUCCEEDED) {
         queue.push(StageComplete(message, message.status))
       } else if (task.isStageEnd) {
@@ -206,16 +162,7 @@ import java.util.concurrent.atomic.AtomicBoolean
         try {
           task.execute(stage).let { result ->
             // TODO: rather do this back in ExecutionWorker
-            if (result.stageOutputs.isNotEmpty()) {
-              stage.getContext().putAll(result.stageOutputs)
-              repository.storeStage(stage)
-            }
-            if (result.globalOutputs.isNotEmpty()) {
-              stage.getExecution().let { execution ->
-                execution.getContext().putAll(result.globalOutputs)
-                execution.update() // TODO: optimize to only update context?
-              }
-            }
+            stage.processTaskOutput(result)
             when (result.status) {
             // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
@@ -254,6 +201,80 @@ import java.util.concurrent.atomic.AtomicBoolean
       is RetryableTask -> Pair(backoffPeriod, TimeUnit.MILLISECONDS)
       else -> Pair(1, TimeUnit.SECONDS)
     }
+
+  private fun Stage<*>.plan() {
+    builder().let { builder ->
+      builder.buildTasks(this)
+      builder.buildSyntheticStages(this) {
+        getExecution().update()
+      }
+    }
+  }
+
+  private fun Stage<*>.start() {
+    firstBeforeStages().let { beforeStages ->
+      if (beforeStages.isEmpty()) {
+        firstTask().let { task ->
+          if (task == null) {
+            TODO("do what? Nothing to do, just indicate end of stage?")
+          } else {
+            queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), getId(), task.id))
+          }
+        }
+      } else {
+        beforeStages.forEach {
+          queue.push(StageStarting(getExecution().javaClass, getExecution().getId(), it.getId()))
+        }
+      }
+    }
+  }
+
+  private fun Stage<*>.startNext() {
+    val downstreamStages = downstreamStages()
+    if (downstreamStages.isNotEmpty()) {
+      downstreamStages.forEach {
+        queue.push(StageStarting(getExecution().javaClass, getExecution().getId(), it.getId()))
+      }
+    } else if (getSyntheticStageOwner() == STAGE_BEFORE) {
+      // TODO: this is kinda messy
+      parent()!!.let { parent ->
+        if (parent.allBeforeStagesComplete()) {
+          queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), parent.getId(), parent.getTasks().first().id))
+        }
+      }
+    } else if (getSyntheticStageOwner() == STAGE_AFTER) {
+      // TODO: this is kinda messy
+      parent()!!.let { parent ->
+        queue.push(StageComplete(getExecution().javaClass, getExecution().getId(), parent.getId(), SUCCEEDED))
+      }
+    }
+  }
+
+  private fun Stage<*>.processTaskOutput(result: TaskResult) {
+    if (result.stageOutputs.isNotEmpty()) {
+      getContext().putAll(result.stageOutputs)
+      repository.storeStage(this)
+    }
+    if (result.globalOutputs.isNotEmpty()) {
+      getExecution().let { execution ->
+        execution.getContext().putAll(result.globalOutputs)
+        execution.update() // TODO: optimize to only update context?
+      }
+    }
+  }
+
+  private fun Stage<*>.handleRedirect() {
+    getTasks().let { tasks ->
+      val start = tasks.indexOfFirst { it.isLoopStart }
+      val end = tasks.indexOfLast { it.isLoopEnd }
+      tasks[start..end].forEach {
+        it.endTime = null
+        it.status = NOT_STARTED
+      }
+      repository.storeStage(this)
+      queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), getId(), tasks[start].id))
+    }
+  }
 
   private fun Stage<*>.builder(): StageDefinitionBuilder =
     stageDefinitionBuilders.find { it.type == getType() }

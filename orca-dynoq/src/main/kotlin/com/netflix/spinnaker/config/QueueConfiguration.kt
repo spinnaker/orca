@@ -27,9 +27,9 @@ import java.time.Clock
 @Configuration
 @ComponentScan(basePackages = arrayOf("com.netflix.spinnaker.orca.q"))
 open class QueueConfiguration {
-  @Bean @ConditionalOnMissingBean(Clock::class) open fun systemClock(): Clock =
-    Clock.systemDefaultZone()
+  @Bean @ConditionalOnMissingBean(Clock::class)
+  open fun systemClock(): Clock = Clock.systemDefaultZone()
 
-  @Bean open fun inMemoryCommandQueue(clock: Clock): Queue =
-    InMemoryQueue(clock)
+  @Bean @ConditionalOnMissingBean(Queue::class)
+  open fun inMemoryQueue(clock: Clock): Queue = InMemoryQueue(clock)
 }

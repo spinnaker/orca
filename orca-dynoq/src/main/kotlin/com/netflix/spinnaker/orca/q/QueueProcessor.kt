@@ -35,9 +35,9 @@ internal interface QueueProcessor {
   val queue: Queue
   val repository: ExecutionRepository
 
-  fun <M : Message> M.withAck(handler: (M) -> Unit) {
-    handler(this)
-    queue.ack(this)
+  fun <M : Message> withAck(message: M, handler: (M) -> Unit) {
+    handler(message)
+    queue.ack(message)
   }
 
   fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
