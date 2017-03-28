@@ -149,5 +149,15 @@ sealed class Message {
       constructor(source: StageLevel, className: String)
         : this(source.executionType, source.executionId, source.stageId, className)
     }
+
+    data class NoDownstreamTasks(
+      override val executionType: Class<out Execution<*>>,
+      override val executionId: String,
+      override val stageId: String,
+      override val taskId: String
+    ) : ConfigurationError(), TaskLevel {
+      constructor(source: TaskLevel)
+        : this(source.executionType, source.executionId, source.stageId, source.taskId)
+    }
   }
 }

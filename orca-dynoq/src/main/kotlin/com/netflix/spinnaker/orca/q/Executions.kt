@@ -50,7 +50,7 @@ fun Stage<out Execution<*>>.firstBeforeStages() =
 /**
  * @return the stage's first after stage or `null` if there are none.
  */
-fun Stage<out Execution<*>>.firstAfterStage() =
+fun Stage<out Execution<*>>.firstAfterStages() =
   getExecution()
     .getStages()
     .filter {

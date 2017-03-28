@@ -27,6 +27,8 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Message.*
+import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidTaskType
+import com.netflix.spinnaker.orca.q.Message.ConfigurationError.NoDownstreamTasks
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
@@ -162,20 +164,35 @@ import java.util.concurrent.atomic.AtomicBoolean
       task.endTime = clock.millis()
       repository.storeStage(stage)
 
-      if (message.status != SUCCEEDED) {
-        queue.push(StageComplete(message, message.status))
-      } else if (!task.isStageEnd) {
-        stage.nextTask(task)!!.let {
-          queue.push(TaskStarting(message, it.id))
+      if (message.status == REDIRECT) {
+        stage.getTasks().let { tasks ->
+          val start = tasks.indexOfFirst { it.isLoopStart }
+          val end = tasks.indexOfLast { it.isLoopEnd }
+          tasks[start..end].forEach {
+            it.endTime = null
+            it.status = NOT_STARTED
+          }
+          repository.storeStage(stage)
+          queue.push(TaskStarting(message, tasks[start].id))
         }
-      } else {
-        stage.firstAfterStage().let { afterStages ->
+      } else if (message.status != SUCCEEDED) {
+        queue.push(StageComplete(message, message.status))
+      } else if (task.isStageEnd) {
+        stage.firstAfterStages().let { afterStages ->
           if (afterStages.isEmpty()) {
             queue.push(StageComplete(message, message.status))
           } else {
             afterStages.forEach {
               queue.push(StageStarting(message, it.getId()))
             }
+          }
+        }
+      } else {
+        stage.nextTask(task).let {
+          if (it == null) {
+            queue.push(NoDownstreamTasks(message))
+          } else {
+            queue.push(TaskStarting(message, it.id))
           }
         }
       }
@@ -203,7 +220,7 @@ import java.util.concurrent.atomic.AtomicBoolean
             // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
                 queue.push(message, task.backoffPeriod())
-              SUCCEEDED, TERMINAL ->
+              SUCCEEDED, TERMINAL, REDIRECT ->
                 queue.push(TaskComplete(message, result.status))
               else -> TODO()
             }
@@ -225,7 +242,7 @@ import java.util.concurrent.atomic.AtomicBoolean
         .find { taskType.isAssignableFrom(it.javaClass) }
         .let { task ->
           if (task == null) {
-            queue.push(ConfigurationError.InvalidTaskType(this, taskType.name))
+            queue.push(InvalidTaskType(this, taskType.name))
           } else {
             block.invoke(stage, task)
           }

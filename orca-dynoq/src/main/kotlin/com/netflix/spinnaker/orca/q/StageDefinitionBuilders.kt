@@ -19,7 +19,9 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
+import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
@@ -36,20 +38,39 @@ fun StageDefinitionBuilder.buildTasks(stage: Stage<*>) {
     }
   taskGraph
     .listIterator()
-    .forEachWithMetadata { (taskNode, index, isFirst, isLast) ->
-      when (taskNode) {
-        is TaskDefinition -> {
-          val task = DefaultTask()
-          task.id = (index + 1).toString()
-          task.name = taskNode.name
-          task.implementingClass = taskNode.implementingClass
+    .forEachWithMetadata { processTaskNode(stage, it) }
+}
+
+private fun processTaskNode(
+  stage: Stage<*>,
+  element: IteratorElement<TaskNode>,
+  isSubGraph: Boolean = false
+) {
+  element.apply {
+    when (value) {
+      is TaskDefinition -> {
+        val task = DefaultTask()
+        task.id = (stage.getTasks().size + 1).toString()
+        task.name = value.name
+        task.implementingClass = value.implementingClass
+        if (isSubGraph) {
+          task.loopStart = isFirst
+          task.loopEnd = isLast
+        } else {
           task.stageStart = isFirst
           task.stageEnd = isLast
-          stage.getTasks().add(task)
         }
-        else -> TODO("loops, etc.")
+        stage.getTasks().add(task)
+      }
+      is TaskGraph -> {
+        value
+          .listIterator()
+          .forEachWithMetadata {
+            processTaskNode(stage, it, isSubGraph = true)
+          }
       }
     }
+  }
 }
 
 /**
@@ -81,7 +102,10 @@ fun StageDefinitionBuilder.buildSyntheticStages(
       }
     }
       .forEachIndexed { i, it ->
+        // TODO: this is insane backwards nonsense, it doesn't need the child stage in any impl so we could determine this when building the stage in the first place
+        it.setType(getChildStageType(it))
         it.setRefId("${stage.getRefId()}=${i + 1}")
+        it.setRequisiteStageRefIds(emptySet())
         stage.getExecution().apply {
           addStage(getStages().indexOf(stage), it)
         }
@@ -118,7 +142,9 @@ private fun SyntheticStages.buildBeforeStages(stage: Stage<out Execution<*>>) {
   beforeStages.forEachIndexed { i, it ->
     it.setRefId("${stage.getRefId()}<${i + 1}")
     if (i > 0) {
-      it.setRequisiteStageRefIds(listOf("${stage.getRefId()}<$i"))
+      it.setRequisiteStageRefIds(setOf("${stage.getRefId()}<$i"))
+    } else {
+      it.setRequisiteStageRefIds(emptySet())
     }
     stage.getExecution().apply {
       addStage(getStages().indexOf(stage), it)
@@ -131,7 +157,9 @@ private fun SyntheticStages.buildAfterStages(stage: Stage<out Execution<*>>) {
   afterStages.forEachIndexed { i, it ->
     it.setRefId("${stage.getRefId()}>${i + 1}")
     if (i > 0) {
-      it.setRequisiteStageRefIds(listOf("${stage.getRefId()}>$i"))
+      it.setRequisiteStageRefIds(setOf("${stage.getRefId()}>$i"))
+    } else {
+      it.setRequisiteStageRefIds(emptySet())
     }
   }
   stage.getExecution().apply {

@@ -121,6 +121,21 @@ class ExecutionWorkerSpec : Spek({
       }
     }
 
+    val rollingPushStage = object : StageDefinitionBuilder {
+      override fun getType() = "rolling"
+      override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
+        builder
+          .withTask("beforeLoop", DummyTask::class.java)
+          .withLoop { subGraph ->
+            subGraph
+              .withTask("startLoop", DummyTask::class.java)
+              .withTask("inLoop", DummyTask::class.java)
+              .withTask("endLoop", DummyTask::class.java)
+          }
+          .withTask("afterLoop", DummyTask::class.java)
+      }
+    }
+
     val worker = ExecutionWorker(
       queue,
       repository,
@@ -130,7 +145,8 @@ class ExecutionWorkerSpec : Spek({
         multiTaskStage,
         stageWithSyntheticBefore,
         stageWithSyntheticAfter,
-        stageWithParallelBranches
+        stageWithParallelBranches,
+        rollingPushStage
       ),
       listOf(task)
     )
@@ -1373,6 +1389,90 @@ class ExecutionWorkerSpec : Spek({
 
           it("runs any post-branch tasks") {
             verify(queue).push(isA<TaskStarting>())
+          }
+        }
+      }
+
+      describe("running a rolling push stage") {
+        val pipeline = pipeline {
+          stage {
+            refId = "1"
+            type = rollingPushStage.type
+          }
+        }
+
+        context("when the stage starts") {
+          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id)
+
+          beforeGroup {
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(queue.poll()).thenReturn(event)
+          }
+
+          afterGroup(::resetMocks)
+
+          action("the worker polls the queue") {
+            worker.pollOnce()
+          }
+
+          it("builds tasks for the main branch") {
+            pipeline.stageById(event.stageId).let { stage ->
+              assertThat(stage.tasks.size, equalTo(5))
+              assertThat(stage.tasks[0].isLoopStart, equalTo(false))
+              assertThat(stage.tasks[1].isLoopStart, equalTo(true))
+              assertThat(stage.tasks[2].isLoopStart, equalTo(false))
+              assertThat(stage.tasks[3].isLoopStart, equalTo(false))
+              assertThat(stage.tasks[4].isLoopStart, equalTo(false))
+              assertThat(stage.tasks[0].isLoopEnd, equalTo(false))
+              assertThat(stage.tasks[1].isLoopEnd, equalTo(false))
+              assertThat(stage.tasks[2].isLoopEnd, equalTo(false))
+              assertThat(stage.tasks[3].isLoopEnd, equalTo(true))
+              assertThat(stage.tasks[4].isLoopEnd, equalTo(false))
+            }
+          }
+
+          it("runs the parallel stages") {
+            argumentCaptor<TaskStarting>().apply {
+              verify(queue).push(capture())
+              assertThat(firstValue.taskId, equalTo("1"))
+            }
+          }
+        }
+
+        context("when the last task in the loop returns REDIRECT") {
+          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id, "4", REDIRECT)
+
+          beforeGroup {
+            pipeline.stageByRef("1").apply {
+              tasks[0].status = SUCCEEDED
+              tasks[1].status = SUCCEEDED
+              tasks[2].status = SUCCEEDED
+            }
+
+            whenever(repository.retrievePipeline(pipeline.id))
+              .thenReturn(pipeline)
+            whenever(queue.poll()).thenReturn(event)
+          }
+
+          afterGroup(::resetMocks)
+
+          action("the worker polls the queue") {
+            worker.pollOnce()
+          }
+
+          it("repeats the loop") {
+            argumentCaptor<TaskStarting>().apply {
+              verify(queue).push(capture())
+              assertThat(firstValue.taskId, equalTo("2"))
+            }
+          }
+
+          it("resets the status of the loop tasks") {
+            argumentCaptor<Stage<Pipeline>>().apply {
+              verify(repository).storeStage(capture())
+              assertThat(firstValue.tasks[1..3].map(Task::getStatus), allElements(equalTo(NOT_STARTED)))
+            }
           }
         }
       }
