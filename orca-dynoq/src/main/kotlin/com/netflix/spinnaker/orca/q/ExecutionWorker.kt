@@ -127,28 +127,31 @@ import java.util.concurrent.atomic.AtomicBoolean
       val task = stage.task(message.taskId)
       task.status = message.status
       task.endTime = clock.millis()
-      repository.storeStage(stage)
 
       if (message.status == REDIRECT) {
         stage.handleRedirect()
-      } else if (message.status != SUCCEEDED) {
-        queue.push(StageComplete(message, message.status))
-      } else if (task.isStageEnd) {
-        stage.firstAfterStages().let { afterStages ->
-          if (afterStages.isEmpty()) {
-            queue.push(StageComplete(message, message.status))
-          } else {
-            afterStages.forEach {
-              queue.push(StageStarting(message, it.getId()))
+      } else {
+        repository.storeStage(stage)
+
+        if (message.status != SUCCEEDED) {
+          queue.push(StageComplete(message, message.status))
+        } else if (task.isStageEnd) {
+          stage.firstAfterStages().let { afterStages ->
+            if (afterStages.isEmpty()) {
+              queue.push(StageComplete(message, message.status))
+            } else {
+              afterStages.forEach {
+                queue.push(StageStarting(message, it.getId()))
+              }
             }
           }
-        }
-      } else {
-        stage.nextTask(task).let {
-          if (it == null) {
-            queue.push(NoDownstreamTasks(message))
-          } else {
-            queue.push(TaskStarting(message, it.id))
+        } else {
+          stage.nextTask(task).let {
+            if (it == null) {
+              queue.push(NoDownstreamTasks(message))
+            } else {
+              queue.push(TaskStarting(message, it.id))
+            }
           }
         }
       }

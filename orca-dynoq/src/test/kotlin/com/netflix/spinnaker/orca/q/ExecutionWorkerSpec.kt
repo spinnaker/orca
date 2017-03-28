@@ -1471,8 +1471,8 @@ class ExecutionWorkerSpec : Spek({
           it("resets the status of the loop tasks") {
             argumentCaptor<Stage<Pipeline>>().apply {
               // TODO: shouldn't be invoked twice
-              verify(repository, times(2)).storeStage(capture())
-              assertThat(secondValue.tasks[1..3].map(Task::getStatus), allElements(equalTo(NOT_STARTED)))
+              verify(repository).storeStage(capture())
+              assertThat(firstValue.tasks[1..3].map(Task::getStatus), allElements(equalTo(NOT_STARTED)))
             }
           }
         }
