@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import javax.annotation.PreDestroy
 
 class InMemoryQueue(
-  val clock: Clock,
-  val ackTimeout: Duration = Duration.ofMinutes(1)
+  private val clock: Clock,
+  override val ackTimeout: Duration = Duration.ofMinutes(1)
 ) : Queue, Closeable {
 
   private val log: Logger = getLogger(javaClass)
@@ -47,9 +47,9 @@ class InMemoryQueue(
 
   override fun poll(): Message? {
     val message = queue.poll()
-    return message?.let {
-      unacked.put(DelayedMessage(it.payload, clock.instant().plus(ackTimeout), clock))
-      it.payload
+    return message?.run {
+      unacked.put(DelayedMessage(payload, clock.instant().plus(ackTimeout), clock))
+      payload
     }
   }
 
@@ -69,7 +69,7 @@ class InMemoryQueue(
     executor.shutdown()
   }
 
-  private fun redeliver() {
+  internal fun redeliver() {
     unacked.pollAll {
       log.warn("redelivering unacked message ${it.payload}")
       queue.put(DelayedMessage(it.payload, clock.instant(), clock))
