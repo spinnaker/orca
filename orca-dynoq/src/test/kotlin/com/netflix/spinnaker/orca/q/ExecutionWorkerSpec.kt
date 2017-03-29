@@ -200,12 +200,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = ExecutionStarting(Pipeline::class.java, pipeline.id)
+          val message = ExecutionStarting(Pipeline::class.java, pipeline.id)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -216,19 +216,19 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("marks the execution as running") {
-            verify(repository).updateStatus(event.executionId, RUNNING)
+            verify(repository).updateStatus(message.executionId, RUNNING)
           }
 
           it("starts the first stage") {
             verify(queue).push(StageStarting(
-              event.executionType,
-              event.executionId,
+              message.executionType,
+              message.executionId,
               pipeline.stages.first().id
             ))
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
 
@@ -241,12 +241,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = ExecutionStarting(Pipeline::class.java, pipeline.id)
+          val message = ExecutionStarting(Pipeline::class.java, pipeline.id)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -275,12 +275,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
+          val message = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -314,15 +314,15 @@ class ExecutionWorkerSpec : Spek({
 
           it("raises an event to indicate the task is starting") {
             verify(queue).push(TaskStarting(
-              event.executionType,
-              event.executionId,
-              event.stageId,
+              message.executionType,
+              message.executionId,
+              message.stageId,
               "1"
             ))
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
 
@@ -332,12 +332,12 @@ class ExecutionWorkerSpec : Spek({
               type = multiTaskStage.type
             }
           }
-          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
+          val message = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -379,9 +379,9 @@ class ExecutionWorkerSpec : Spek({
 
           it("raises an event to indicate the first task is starting") {
             verify(queue).push(TaskStarting(
-              event.executionType,
-              event.executionId,
-              event.stageId,
+              message.executionType,
+              message.executionId,
+              message.stageId,
               "1"
             ))
           }
@@ -394,12 +394,12 @@ class ExecutionWorkerSpec : Spek({
                 type = stageWithSyntheticBefore.type
               }
             }
-            val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
+            val message = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id)
 
             beforeGroup {
               whenever(queue.poll())
-                .thenReturn(event)
-              whenever(repository.retrievePipeline(event.executionId))
+                .thenReturn(message)
+              whenever(repository.retrievePipeline(message.executionId))
                 .thenReturn(pipeline)
             }
 
@@ -413,14 +413,14 @@ class ExecutionWorkerSpec : Spek({
               argumentCaptor<Pipeline>().apply {
                 verify(repository).store(capture())
                 assertThat(firstValue.stages.size, equalTo(3))
-                assertThat(firstValue.stages.map { it.id }, equalTo(listOf("${event.stageId}-1-pre1", "${event.stageId}-2-pre2", event.stageId)))
+                assertThat(firstValue.stages.map { it.id }, equalTo(listOf("${message.stageId}-1-pre1", "${message.stageId}-2-pre2", message.stageId)))
               }
             }
 
             it("raises an event to indicate the synthetic stage is starting") {
               verify(queue).push(StageStarting(
-                event.executionType,
-                event.executionId,
+                message.executionType,
+                message.executionId,
                 pipeline.stages.first().id
               ))
             }
@@ -473,12 +473,12 @@ class ExecutionWorkerSpec : Spek({
                 stageWithSyntheticBefore.buildSyntheticStages(this)
               }
             }
-            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1<1").id, TERMINAL)
+            val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1<1").id, TERMINAL)
 
             beforeGroup {
               whenever(queue.poll())
-                .thenReturn(event)
-              whenever(repository.retrievePipeline(event.executionId))
+                .thenReturn(message)
+              whenever(repository.retrievePipeline(message.executionId))
                 .thenReturn(pipeline)
             }
 
@@ -492,7 +492,7 @@ class ExecutionWorkerSpec : Spek({
               argumentCaptor<StageComplete>().apply {
                 verify(queue).push(capture())
                 assertThat(firstValue.stageId, equalTo(pipeline.stageByRef("1").id))
-                assertThat(firstValue.status, equalTo(event.status))
+                assertThat(firstValue.status, equalTo(message.status))
               }
             }
           }
@@ -516,12 +516,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("3").id)
+          val message = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("3").id)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -548,12 +548,12 @@ class ExecutionWorkerSpec : Spek({
             singleTaskStage.buildTasks(this)
           }
         }
-        val event = TaskStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1")
+        val message = TaskStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1")
 
         beforeGroup {
           whenever(queue.poll())
-            .thenReturn(event)
-          whenever(repository.retrievePipeline(event.executionId))
+            .thenReturn(message)
+          whenever(repository.retrievePipeline(message.executionId))
             .thenReturn(pipeline)
         }
 
@@ -575,16 +575,16 @@ class ExecutionWorkerSpec : Spek({
 
         it("runs the task") {
           verify(queue).push(RunTask(
-            event.executionType,
-            event.executionId,
-            event.stageId,
-            event.taskId,
+            message.executionType,
+            message.executionId,
+            message.stageId,
+            message.taskId,
             DummyTask::class.java
           ))
         }
 
         it("acks the message") {
-          verify(queue).ack(event)
+          verify(queue).ack(message)
         }
       }
 
@@ -762,12 +762,12 @@ class ExecutionWorkerSpec : Spek({
               multiTaskStage.buildTasks(this)
             }
           }
-          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
+          val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -791,14 +791,14 @@ class ExecutionWorkerSpec : Spek({
             verify(queue)
               .push(TaskStarting(
                 Pipeline::class.java,
-                event.executionId,
-                event.stageId,
+                message.executionId,
+                message.stageId,
                 "2"
               ))
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
 
@@ -809,12 +809,12 @@ class ExecutionWorkerSpec : Spek({
               singleTaskStage.buildTasks(this)
             }
           }
-          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
+          val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -837,9 +837,9 @@ class ExecutionWorkerSpec : Spek({
           it("emits an event to signal the stage is complete") {
             verify(queue)
               .push(StageComplete(
-                event.executionType,
-                event.executionId,
-                event.stageId,
+                message.executionType,
+                message.executionId,
+                message.stageId,
                 SUCCEEDED
               ))
           }
@@ -853,12 +853,12 @@ class ExecutionWorkerSpec : Spek({
               stageWithSyntheticAfter.buildSyntheticStages(this)
             }
           }
-          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
+          val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -881,8 +881,8 @@ class ExecutionWorkerSpec : Spek({
           it("triggers the first after stage") {
             verify(queue)
               .push(StageStarting(
-                event.executionType,
-                event.executionId,
+                message.executionType,
+                message.executionId,
                 pipeline.stages[1].id
               ))
           }
@@ -897,12 +897,12 @@ class ExecutionWorkerSpec : Spek({
               multiTaskStage.buildTasks(this)
             }
           }
-          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", status)
+          val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", status)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -924,9 +924,9 @@ class ExecutionWorkerSpec : Spek({
 
           it("fails the stage") {
             verify(queue).push(StageComplete(
-              event.executionType,
-              event.executionId,
-              event.stageId,
+              message.executionType,
+              message.executionId,
+              message.stageId,
               status
             ))
           }
@@ -936,7 +936,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
       }
@@ -948,12 +948,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
+          val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -973,8 +973,8 @@ class ExecutionWorkerSpec : Spek({
 
           it("emits an event indicating the pipeline is complete") {
             verify(queue).push(ExecutionComplete(
-              event.executionType,
-              event.executionId,
+              message.executionType,
+              message.executionId,
               SUCCEEDED
             ))
           }
@@ -984,7 +984,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
 
@@ -1000,12 +1000,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
+          val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -1025,8 +1025,8 @@ class ExecutionWorkerSpec : Spek({
 
           it("runs the next stage") {
             verify(queue).push(StageStarting(
-              event.executionType,
-              event.executionId,
+              message.executionType,
+              message.executionId,
               pipeline.stages.last().id
             ))
           }
@@ -1053,12 +1053,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
+          val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -1093,12 +1093,12 @@ class ExecutionWorkerSpec : Spek({
               type = singleTaskStage.type
             }
           }
-          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, status)
+          val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, status)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -1122,14 +1122,14 @@ class ExecutionWorkerSpec : Spek({
 
           it("emits an event indicating the pipeline failed") {
             verify(queue).push(ExecutionComplete(
-              event.executionType,
-              event.executionId,
+              message.executionType,
+              message.executionId,
               status
             ))
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
       }
@@ -1145,12 +1145,12 @@ class ExecutionWorkerSpec : Spek({
           }
 
           context("there are more before stages") {
-            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
+            val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, SUCCEEDED)
             beforeGroup {
               whenever(repository.retrievePipeline(pipeline.id))
                 .thenReturn(pipeline)
               whenever(queue.poll())
-                .thenReturn(event)
+                .thenReturn(message)
             }
 
             afterGroup(::resetMocks)
@@ -1161,20 +1161,20 @@ class ExecutionWorkerSpec : Spek({
 
             it("runs the next synthetic stage") {
               verify(queue).push(StageStarting(
-                event.executionType,
-                event.executionId,
+                message.executionType,
+                message.executionId,
                 pipeline.stages[1].id
               ))
             }
           }
 
           context("it is the last before stage") {
-            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[1].id, SUCCEEDED)
+            val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[1].id, SUCCEEDED)
             beforeGroup {
               whenever(repository.retrievePipeline(pipeline.id))
                 .thenReturn(pipeline)
               whenever(queue.poll())
-                .thenReturn(event)
+                .thenReturn(message)
             }
 
             afterGroup(::resetMocks)
@@ -1185,8 +1185,8 @@ class ExecutionWorkerSpec : Spek({
 
             it("runs the next synthetic stage") {
               verify(queue).push(TaskStarting(
-                event.executionType,
-                event.executionId,
+                message.executionType,
+                message.executionId,
                 pipeline.stages[2].id,
                 "1"
               ))
@@ -1204,12 +1204,12 @@ class ExecutionWorkerSpec : Spek({
           }
 
           context("there are more after stages") {
-            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[1].id, SUCCEEDED)
+            val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[1].id, SUCCEEDED)
             beforeGroup {
               whenever(repository.retrievePipeline(pipeline.id))
                 .thenReturn(pipeline)
               whenever(queue.poll())
-                .thenReturn(event)
+                .thenReturn(message)
             }
 
             afterGroup(::resetMocks)
@@ -1220,20 +1220,20 @@ class ExecutionWorkerSpec : Spek({
 
             it("runs the next synthetic stage") {
               verify(queue).push(StageStarting(
-                event.executionType,
-                event.executionId,
+                message.executionType,
+                message.executionId,
                 pipeline.stages.last().id
               ))
             }
           }
 
           context("it is the last after stage") {
-            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.last().id, SUCCEEDED)
+            val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages.last().id, SUCCEEDED)
             beforeGroup {
               whenever(repository.retrievePipeline(pipeline.id))
                 .thenReturn(pipeline)
               whenever(queue.poll())
-                .thenReturn(event)
+                .thenReturn(message)
             }
 
             afterGroup(::resetMocks)
@@ -1244,8 +1244,8 @@ class ExecutionWorkerSpec : Spek({
 
             it("signals the completion of the parent stage") {
               verify(queue).push(StageComplete(
-                event.executionType,
-                event.executionId,
+                message.executionType,
+                message.executionId,
                 pipeline.stages.first().id,
                 SUCCEEDED
               ))
@@ -1256,12 +1256,12 @@ class ExecutionWorkerSpec : Spek({
 
       describe("when an execution completes successfully") {
         val pipeline = pipeline { }
-        val event = ExecutionComplete(Pipeline::class.java, pipeline.id, SUCCEEDED)
+        val message = ExecutionComplete(Pipeline::class.java, pipeline.id, SUCCEEDED)
 
         beforeGroup {
           whenever(queue.poll())
-            .thenReturn(event)
-          whenever(repository.retrievePipeline(event.executionId))
+            .thenReturn(message)
+          whenever(repository.retrievePipeline(message.executionId))
             .thenReturn(pipeline)
         }
 
@@ -1272,11 +1272,11 @@ class ExecutionWorkerSpec : Spek({
         }
 
         it("updates the execution") {
-          verify(repository).updateStatus(event.executionId, SUCCEEDED)
+          verify(repository).updateStatus(message.executionId, SUCCEEDED)
         }
 
         it("acks the message") {
-          verify(queue).ack(event)
+          verify(queue).ack(message)
         }
       }
 
@@ -1288,12 +1288,12 @@ class ExecutionWorkerSpec : Spek({
               type = stageWithParallelBranches.type
             }
           }
-          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id)
+          val message = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id)
 
           beforeGroup {
             whenever(repository.retrievePipeline(pipeline.id))
               .thenReturn(pipeline)
-            whenever(queue.poll()).thenReturn(event)
+            whenever(queue.poll()).thenReturn(message)
           }
 
           afterGroup(::resetMocks)
@@ -1303,7 +1303,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("builds tasks for the main branch") {
-            val stage = pipeline.stageById(event.stageId)
+            val stage = pipeline.stageById(message.stageId)
             assertThat(stage.tasks.map(Task::getName), equalTo(listOf("post-branch")))
           }
 
@@ -1321,7 +1321,7 @@ class ExecutionWorkerSpec : Spek({
               verify(queue, times(3)).push(capture())
               assertThat(
                 allValues.map { pipeline.stageById(it.stageId).parentStageId },
-                allElements(equalTo(event.stageId))
+                allElements(equalTo(message.stageId))
               )
             }
           }
@@ -1336,12 +1336,12 @@ class ExecutionWorkerSpec : Spek({
               stageWithParallelBranches.buildTasks(this)
             }
           }
-          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages[0].id)
+          val message = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stages[0].id)
 
           beforeGroup {
             whenever(repository.retrievePipeline(pipeline.id))
               .thenReturn(pipeline)
-            whenever(queue.poll()).thenReturn(event)
+            whenever(queue.poll()).thenReturn(message)
           }
 
           afterGroup(::resetMocks)
@@ -1351,13 +1351,13 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("builds tasks for the branch") {
-            val stage = pipeline.stageById(event.stageId)
+            val stage = pipeline.stageById(message.stageId)
             assertThat(stage.tasks, !isEmpty)
             assertThat(stage.tasks.map(Task::getName), equalTo(listOf("in-branch")))
           }
 
           it("does not build more synthetic stages") {
-            val stage = pipeline.stageById(event.stageId)
+            val stage = pipeline.stageById(message.stageId)
             assertThat(pipeline.stages.map(Stage<Pipeline>::getParentStageId), !hasElement(stage.id))
           }
         }
@@ -1371,12 +1371,12 @@ class ExecutionWorkerSpec : Spek({
               stageWithParallelBranches.buildTasks(this)
             }
           }
-          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[0].id, SUCCEEDED)
+          val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[0].id, SUCCEEDED)
 
           beforeGroup {
             whenever(repository.retrievePipeline(pipeline.id))
               .thenReturn(pipeline)
-            whenever(queue.poll()).thenReturn(event)
+            whenever(queue.poll()).thenReturn(message)
           }
 
           afterGroup(::resetMocks)
@@ -1399,18 +1399,18 @@ class ExecutionWorkerSpec : Spek({
               stageWithParallelBranches.buildTasks(this)
             }
           }
-          val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[0].id, SUCCEEDED)
+          val message = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stages[0].id, SUCCEEDED)
 
           beforeGroup {
             pipeline.stages.forEach {
-              if (it.syntheticStageOwner == STAGE_BEFORE && it.id != event.stageId) {
+              if (it.syntheticStageOwner == STAGE_BEFORE && it.id != message.stageId) {
                 it.status = SUCCEEDED
               }
             }
 
             whenever(repository.retrievePipeline(pipeline.id))
               .thenReturn(pipeline)
-            whenever(queue.poll()).thenReturn(event)
+            whenever(queue.poll()).thenReturn(message)
           }
 
           afterGroup(::resetMocks)
@@ -1434,12 +1434,12 @@ class ExecutionWorkerSpec : Spek({
         }
 
         context("when the stage starts") {
-          val event = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id)
+          val message = StageStarting(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id)
 
           beforeGroup {
             whenever(repository.retrievePipeline(pipeline.id))
               .thenReturn(pipeline)
-            whenever(queue.poll()).thenReturn(event)
+            whenever(queue.poll()).thenReturn(message)
           }
 
           afterGroup(::resetMocks)
@@ -1449,7 +1449,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("builds tasks for the main branch") {
-            pipeline.stageById(event.stageId).let { stage ->
+            pipeline.stageById(message.stageId).let { stage ->
               assertThat(stage.tasks.size, equalTo(5))
               assertThat(stage.tasks[0].isLoopStart, equalTo(false))
               assertThat(stage.tasks[1].isLoopStart, equalTo(true))
@@ -1473,7 +1473,7 @@ class ExecutionWorkerSpec : Spek({
         }
 
         context("when the last task in the loop returns REDIRECT") {
-          val event = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id, "4", REDIRECT)
+          val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id, "4", REDIRECT)
 
           beforeGroup {
             pipeline.stageByRef("1").apply {
@@ -1484,7 +1484,7 @@ class ExecutionWorkerSpec : Spek({
 
             whenever(repository.retrievePipeline(pipeline.id))
               .thenReturn(pipeline)
-            whenever(queue.poll()).thenReturn(event)
+            whenever(queue.poll()).thenReturn(message)
           }
 
           afterGroup(::resetMocks)
@@ -1513,12 +1513,12 @@ class ExecutionWorkerSpec : Spek({
       setOf(TERMINAL, CANCELED).forEach { status ->
         describe("when an execution fails with $status status") {
           val pipeline = pipeline { }
-          val event = ExecutionComplete(Pipeline::class.java, pipeline.id, status)
+          val message = ExecutionComplete(Pipeline::class.java, pipeline.id, status)
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -1529,25 +1529,25 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("updates the execution") {
-            verify(repository).updateStatus(event.executionId, status)
+            verify(repository).updateStatus(message.executionId, status)
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
       }
 
       describe("invalid commands") {
 
-        val event = StageStarting(Pipeline::class.java, "1", "1")
+        val message = StageStarting(Pipeline::class.java, "1", "1")
 
         describe("no such execution") {
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
-              .thenThrow(ExecutionNotFoundException("No Pipeline found for ${event.executionId}"))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
+              .thenThrow(ExecutionNotFoundException("No Pipeline found for ${message.executionId}"))
           }
 
           afterGroup(::resetMocks)
@@ -1563,13 +1563,13 @@ class ExecutionWorkerSpec : Spek({
 
         describe("no such stage") {
           val pipeline = pipeline {
-            id = event.executionId
+            id = message.executionId
           }
 
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
-            whenever(repository.retrievePipeline(event.executionId))
+              .thenReturn(message)
+            whenever(repository.retrievePipeline(message.executionId))
               .thenReturn(pipeline)
           }
 
@@ -1623,11 +1623,11 @@ class ExecutionWorkerSpec : Spek({
         InvalidExecutionId(Pipeline::class.java, "1"),
         InvalidStageId(Pipeline::class.java, "1", "1"),
         InvalidTaskType(Pipeline::class.java, "1", "1", InvalidTask::class.java.name)
-      ).forEach { event ->
-        describe("handing a ${event.javaClass.simpleName} event") {
+      ).forEach { message ->
+        describe("handing a ${message.javaClass.simpleName} event") {
           beforeGroup {
             whenever(queue.poll())
-              .thenReturn(event)
+              .thenReturn(message)
           }
 
           afterGroup(::resetMocks)
@@ -1639,13 +1639,13 @@ class ExecutionWorkerSpec : Spek({
           it("marks the execution as terminal") {
             verify(queue).push(ExecutionComplete(
               Pipeline::class.java,
-              event.executionId,
+              message.executionId,
               TERMINAL
             ))
           }
 
           it("acks the message") {
-            verify(queue).ack(event)
+            verify(queue).ack(message)
           }
         }
       }

@@ -166,7 +166,7 @@ import java.util.concurrent.atomic.AtomicBoolean
       } else {
         try {
           task.execute(stage).let { result ->
-            // TODO: rather do this back in ExecutionWorker
+            // TODO: rather send this data with TaskComplete message
             stage.processTaskOutput(result)
             when (result.status) {
             // TODO: handle other states such as cancellation, suspension, etc.
