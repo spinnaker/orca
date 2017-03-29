@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -55,7 +55,7 @@ class RunTaskHandlerSpec : Spek({
     val message = RunTask(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", DummyTask::class.java)
 
     describe("that completes successfully") {
-      val taskResult = DefaultTaskResult(SUCCEEDED)
+      val taskResult = TaskResult(SUCCEEDED)
 
       beforeGroup {
         whenever(task.execute(any<Stage<*>>())).thenReturn(taskResult)
@@ -82,7 +82,7 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("that is not yet complete") {
-      val taskResult = DefaultTaskResult(RUNNING)
+      val taskResult = TaskResult(RUNNING)
       val taskBackoffMs = 30_000L
 
       beforeGroup {
@@ -104,7 +104,7 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("that fails") {
-      val taskResult = DefaultTaskResult(TERMINAL)
+      val taskResult = TaskResult(TERMINAL)
 
       beforeGroup {
         whenever(task.execute(any())).thenReturn(taskResult)
