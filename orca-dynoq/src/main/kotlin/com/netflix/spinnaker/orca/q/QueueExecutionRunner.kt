@@ -23,7 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component open class QueueExecutionRunner @Autowired constructor(
-  val queue: Queue
+  private val queue: Queue
 ) : ExecutionRunner {
   override fun <T : Execution<T>> start(execution: T) =
     queue.push(ExecutionStarting(execution.javaClass, execution.id))

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Component
 open class ExecutionWorker
 @Autowired constructor(
-  val queue: Queue,
+  private val queue: Queue,
   handlers: Collection<MessageHandler<*>>
 ) : DiscoveryActivated {
 
