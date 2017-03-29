@@ -16,12 +16,35 @@
 
 package com.netflix.spinnaker.orca.q
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 interface Queue {
+  /**
+   * @return the next message from the queue or `null` if the queue contains no
+   * messages (or none whose delay has expired).
+   */
   fun poll(): Message?
+
+  /**
+   * Push [message] for immediate delivery.
+   */
   fun push(message: Message): Unit
+
+  /**
+   * Push [message] for delivery after [delay].
+   */
   fun push(message: Message, delay: Long, unit: TimeUnit)
+
+  /**
+   * The expired time after which un-acknowledged messages will be re-delivered.
+   */
+  val ackTimeout: Duration
+
+  /**
+   * Acknowledge successful processing of [message]. The message will not
+   * subsequently be re-delivered.
+   */
   fun ack(message: Message): Unit
 }
 

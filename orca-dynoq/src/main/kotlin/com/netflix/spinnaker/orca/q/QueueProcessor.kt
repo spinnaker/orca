@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.q.Message.ExecutionLevel
 import com.netflix.spinnaker.orca.q.Message.StageLevel
 
 /**
- * Some common functionality shared by [ExecutionWorker].
+ * Some common functionality shared by [MessageHandler] implementations.
  */
 interface QueueProcessor {
 
