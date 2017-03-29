@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.q.Message.StageLevel
 /**
  * Some common functionality shared by [ExecutionWorker].
  */
-internal interface QueueProcessor {
+interface QueueProcessor {
 
   val queue: Queue
   val repository: ExecutionRepository

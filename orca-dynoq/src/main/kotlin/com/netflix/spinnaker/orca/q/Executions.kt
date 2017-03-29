@@ -31,13 +31,6 @@ fun Execution<*>.initialStages() =
     .filter { it.isInitial() }
 
 /**
- * @return `true` if all stages are complete, `false` otherwise.
- */
-// TODO: doesn't handle failure / early termination
-fun Execution<*>.isComplete() =
-  getStages().map { it.getStatus() }.all { it.complete }
-
-/**
  * @return the stage's first before stage or `null` if there are none.
  */
 fun Stage<out Execution<*>>.firstBeforeStages() =
