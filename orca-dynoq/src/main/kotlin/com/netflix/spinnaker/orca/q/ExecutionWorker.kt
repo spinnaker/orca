@@ -104,10 +104,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 
       if (message.status == SUCCEEDED) {
         stage.startNext()
-      }
-
-      if (message.status != SUCCEEDED || stage.getExecution().isComplete()) {
-        queue.push(ExecutionComplete(message, message.status))
+      } else {
+        if (stage.getSyntheticStageOwner() == null) {
+          queue.push(ExecutionComplete(message, message.status))
+        } else {
+          queue.push(StageComplete(message, stage.getParentStageId(), message.status))
+        }
       }
     }
 
@@ -239,17 +241,17 @@ import java.util.concurrent.atomic.AtomicBoolean
         queue.push(StageStarting(getExecution().javaClass, getExecution().getId(), it.getId()))
       }
     } else if (getSyntheticStageOwner() == STAGE_BEFORE) {
-      // TODO: this is kinda messy
-      parent()!!.let { parent ->
+      parent().let { parent ->
         if (parent.allBeforeStagesComplete()) {
           queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), parent.getId(), parent.getTasks().first().id))
         }
       }
     } else if (getSyntheticStageOwner() == STAGE_AFTER) {
-      // TODO: this is kinda messy
-      parent()!!.let { parent ->
+      parent().let { parent ->
         queue.push(StageComplete(getExecution().javaClass, getExecution().getId(), parent.getId(), SUCCEEDED))
       }
+    } else {
+      queue.push(ExecutionComplete(getExecution().javaClass, getExecution().getId(), SUCCEEDED))
     }
   }
 

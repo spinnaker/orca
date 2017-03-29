@@ -464,6 +464,38 @@ class ExecutionWorkerSpec : Spek({
               ))
             }
           }
+
+          context("when a synthetic stage fails") {
+            val pipeline = pipeline {
+              stage {
+                refId = "1"
+                type = stageWithSyntheticBefore.type
+                stageWithSyntheticBefore.buildSyntheticStages(this)
+              }
+            }
+            val event = StageComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1<1").id, TERMINAL)
+
+            beforeGroup {
+              whenever(queue.poll())
+                .thenReturn(event)
+              whenever(repository.retrievePipeline(event.executionId))
+                .thenReturn(pipeline)
+            }
+
+            action("the worker polls the queue") {
+              worker.pollOnce()
+            }
+
+            afterGroup(::resetMocks)
+
+            it("rolls the failure up to the parent stage") {
+              argumentCaptor<StageComplete>().apply {
+                verify(queue).push(capture())
+                assertThat(firstValue.stageId, equalTo(pipeline.stageByRef("1").id))
+                assertThat(firstValue.status, equalTo(event.status))
+              }
+            }
+          }
         }
 
         context("with other upstream stages that are incomplete") {

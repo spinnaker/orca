@@ -66,14 +66,13 @@ fun Stage<*>.isInitial() =
 fun Stage<out Execution<*>>.firstTask() = getTasks().firstOrNull()
 
 /**
- * @return the stage's parent stage or `null` if the stage is not synthetic.
+ * @return the stage's parent stage.
+ * @throws IllegalStateException if the stage is not synthetic.
  */
 fun Stage<out Execution<*>>.parent() =
-  if (getParentStageId() == null) {
-    null
-  } else {
-    getExecution().getStages().find { it.getId() == getParentStageId() }
-  }
+  getExecution()
+    .getStages()
+    .find { it.getId() == getParentStageId() } ?: throw IllegalStateException("Not a synthetic stage")
 
 /**
  * @return the task that follows [task] or `null` if [task] is the end of the
