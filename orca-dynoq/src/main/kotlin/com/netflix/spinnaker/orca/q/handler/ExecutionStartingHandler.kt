@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
 import com.netflix.spinnaker.orca.q.Message.StageStarting
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.QueueProcessor
 import com.netflix.spinnaker.orca.q.initialStages
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -31,7 +32,7 @@ open class ExecutionStartingHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository
-) : MessageHandler<ExecutionStarting> {
+) : MessageHandler<ExecutionStarting>, QueueProcessor {
 
   override val messageType
     get() = ExecutionStarting::class.java

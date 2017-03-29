@@ -22,12 +22,9 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message
+import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidTaskType
 import com.netflix.spinnaker.orca.q.Message.RunTask
-import com.netflix.spinnaker.orca.q.MessageHandler
-import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.push
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,7 +39,7 @@ open class RunTaskHandler
   override val queue: Queue,
   override val repository: ExecutionRepository,
   val tasks: Collection<Task>
-) : MessageHandler<RunTask> {
+) : MessageHandler<RunTask>, QueueProcessor {
 
   private val log: Logger = getLogger(javaClass)
 

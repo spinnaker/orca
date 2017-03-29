@@ -34,7 +34,7 @@ open class StageStartingHandler @Autowired constructor(
   override val repository: ExecutionRepository,
   val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
   val clock: Clock
-) : MessageHandler<StageStarting> {
+) : MessageHandler<StageStarting>, QueueProcessor {
 
   override fun handle(message: StageStarting) {
     message.withStage { stage ->

@@ -19,9 +19,10 @@ package com.netflix.spinnaker.orca.q
 /**
  * Implementations handle a single message type from the queue.
  */
-interface MessageHandler<M : Message> : QueueProcessor {
+interface MessageHandler<M : Message> {
 
   val messageType: Class<M>
+  val queue: Queue
 
   fun handleAndAck(message: Message): Unit =
     when (message.javaClass) {
@@ -32,4 +33,9 @@ interface MessageHandler<M : Message> : QueueProcessor {
     }
 
   fun handle(message: M): Unit
+
+  fun withAck(message: M, handler: (M) -> Unit) {
+    handler(message)
+    queue.ack(message)
+  }
 }

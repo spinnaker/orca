@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError
 import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
 import com.netflix.spinnaker.orca.q.MessageHandler
@@ -28,8 +27,7 @@ import org.springframework.stereotype.Component
 @Component
 open class ConfigurationErrorHandler
 @Autowired constructor(
-  override val queue: Queue,
-  override val repository: ExecutionRepository
+  override val queue: Queue
 ) : MessageHandler<ConfigurationError> {
 
   override val messageType

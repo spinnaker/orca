@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.InvalidTask
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError.*
 import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
@@ -36,11 +35,10 @@ import org.junit.runner.RunWith
 class ConfigurationErrorHandlerSpec : Spek({
 
   val queue: Queue = mock()
-  val repository: ExecutionRepository = mock()
 
-  val handler = ConfigurationErrorHandler(queue, repository)
+  val handler = ConfigurationErrorHandler(queue)
 
-  fun resetMocks() = reset(queue, repository)
+  fun resetMocks() = reset(queue)
 
   setOf(
     InvalidExecutionId(Pipeline::class.java, "1"),

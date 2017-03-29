@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component
 open class ExecutionCompleteHandler
 @Autowired constructor(
   override val queue: Queue,
-  override val repository: ExecutionRepository
+  val repository: ExecutionRepository
 ) : MessageHandler<ExecutionComplete> {
 
   override fun handle(message: ExecutionComplete) =
