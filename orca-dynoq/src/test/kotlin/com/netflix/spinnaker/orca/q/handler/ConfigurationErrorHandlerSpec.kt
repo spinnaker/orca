@@ -41,9 +41,9 @@ class ConfigurationErrorHandlerSpec : Spek({
   fun resetMocks() = reset(queue)
 
   setOf(
-    InvalidExecutionId(Pipeline::class.java, "1"),
-    InvalidStageId(Pipeline::class.java, "1", "1"),
-    InvalidTaskType(Pipeline::class.java, "1", "1", InvalidTask::class.java.name)
+    InvalidExecutionId(Pipeline::class.java, "1", "foo"),
+    InvalidStageId(Pipeline::class.java, "1", "foo", "1"),
+    InvalidTaskType(Pipeline::class.java, "1", "foo", "1", InvalidTask::class.java.name)
   ).forEach { message ->
     describe("handing a ${message.javaClass.simpleName} event") {
       afterGroup(::resetMocks)
@@ -56,6 +56,7 @@ class ConfigurationErrorHandlerSpec : Spek({
         verify(queue).push(ExecutionComplete(
           Pipeline::class.java,
           message.executionId,
+          "foo",
           TERMINAL
         ))
       }

@@ -21,6 +21,9 @@ import com.natpryce.hamkrest.throws
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
+import com.netflix.spectator.api.Counter
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.Message.*
@@ -38,6 +41,10 @@ class ExecutionWorkerSpec : Spek({
     val queue: Queue = mock()
     val executionStartingHandler: MessageHandler<ExecutionStarting> = mock()
     val executionCompleteHandler: MessageHandler<ExecutionComplete> = mock()
+    val registry: Registry = mock {
+      on { createId(any<String>()) }.thenReturn(mock<Id>())
+      on { counter(any<Id>()) }.thenReturn(mock<Counter>())
+    }
 
     var worker: ExecutionWorker? = null
 
@@ -47,7 +54,7 @@ class ExecutionWorkerSpec : Spek({
       whenever(executionStartingHandler.messageType).thenReturn(ExecutionStarting::class.java)
       whenever(executionCompleteHandler.messageType).thenReturn(ExecutionComplete::class.java)
 
-      worker = ExecutionWorker(queue, listOf(executionStartingHandler, executionCompleteHandler))
+      worker = ExecutionWorker(queue, registry, listOf(executionStartingHandler, executionCompleteHandler))
     }
 
     describe("when disabled in discovery") {
@@ -91,7 +98,7 @@ class ExecutionWorkerSpec : Spek({
 
       describe("when a message is on the queue") {
         context("it is a supported message type") {
-          val message = ExecutionStarting(Pipeline::class.java, "1")
+          val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
           beforeGroup {
             whenever(queue.poll()).thenReturn(message)
@@ -113,7 +120,7 @@ class ExecutionWorkerSpec : Spek({
         }
 
         context("it is an unsupported message type") {
-          val message = StageStarting(Pipeline::class.java, "1", "1")
+          val message = StageStarting(Pipeline::class.java, "1", "foo", "1")
 
           beforeGroup {
             whenever(queue.poll()).thenReturn(message)

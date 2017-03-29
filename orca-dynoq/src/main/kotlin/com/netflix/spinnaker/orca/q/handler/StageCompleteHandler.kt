@@ -60,20 +60,20 @@ open class StageCompleteHandler
     val downstreamStages = downstreamStages()
     if (downstreamStages.isNotEmpty()) {
       downstreamStages.forEach {
-        queue.push(StageStarting(getExecution().javaClass, getExecution().getId(), it.getId()))
+        queue.push(StageStarting(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), it.getId()))
       }
     } else if (getSyntheticStageOwner() == STAGE_BEFORE) {
       parent().let { parent ->
         if (parent.allBeforeStagesComplete()) {
-          queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), parent.getId(), parent.getTasks().first().id))
+          queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), parent.getTasks().first().id))
         }
       }
     } else if (getSyntheticStageOwner() == STAGE_AFTER) {
       parent().let { parent ->
-        queue.push(StageComplete(getExecution().javaClass, getExecution().getId(), parent.getId(), SUCCEEDED))
+        queue.push(StageComplete(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), SUCCEEDED))
       }
     } else {
-      queue.push(ExecutionComplete(getExecution().javaClass, getExecution().getId(), SUCCEEDED))
+      queue.push(ExecutionComplete(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), SUCCEEDED))
     }
   }
 }

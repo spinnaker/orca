@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 open class ExecutionWorker
 @Autowired constructor(
   private val queue: Queue,
+  val registry: Registry,
   handlers: Collection<MessageHandler<*>>
 ) : DiscoveryActivated {
 
@@ -36,18 +38,29 @@ open class ExecutionWorker
   // TODO: this could be neater
   private val handlers = handlers.groupBy(MessageHandler<*>::messageType).mapValues { it.value.first() }
 
+  private val emptyReceivesId = registry.createId("orca.nu.worker.emptyReceives")
+  private val pollOpsRateId = registry.createId("orca.nu.worker.pollOpsRate")
+  private val pollErrorRateId = registry.createId("orca.nu.worker.pollErrorRate")
+
   @Scheduled(fixedDelay = 10)
   fun pollOnce() =
     ifEnabled {
+      registry.counter(pollOpsRateId).increment()
+
       val message = queue.poll()
       when (message) {
-        null -> log.debug("No events")
+        null -> {
+          log.debug("No events")
+          registry.counter(emptyReceivesId).increment()
+        }
         else -> {
           log.info("Received message $message")
           val handler = handlers[message.javaClass]
           if (handler != null) {
             handler.handleAndAck(message)
           } else {
+            registry.counter(pollErrorRateId).increment()
+
             // TODO: DLQ
             throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}")
           }

@@ -47,7 +47,7 @@ class ExecutionStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = Message.ExecutionStarting(Pipeline::class.java, pipeline.id)
+      val message = Message.ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -68,6 +68,7 @@ class ExecutionStartingHandlerSpec : Spek({
         verify(queue).push(Message.StageStarting(
           message.executionType,
           message.executionId,
+          "foo",
           pipeline.stages.first().id
         ))
       }
@@ -82,7 +83,7 @@ class ExecutionStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = Message.ExecutionStarting(Pipeline::class.java, pipeline.id)
+      val message = Message.ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))

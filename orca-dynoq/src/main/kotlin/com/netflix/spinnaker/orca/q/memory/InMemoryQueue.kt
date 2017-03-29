@@ -16,10 +16,12 @@
 
 package com.netflix.spinnaker.orca.q.memory
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Queue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
+import org.springframework.scheduling.annotation.Scheduled
 import org.threeten.extra.Temporals.chronoUnit
 import java.io.Closeable
 import java.time.Clock

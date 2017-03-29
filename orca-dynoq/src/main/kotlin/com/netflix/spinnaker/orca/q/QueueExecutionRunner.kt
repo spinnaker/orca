@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component
   private val queue: Queue
 ) : ExecutionRunner {
   override fun <T : Execution<T>> start(execution: T) =
-    queue.push(ExecutionStarting(execution.javaClass, execution.id))
+    queue.push(ExecutionStarting(execution.javaClass, execution.id, execution.application))
 
   override fun <T : Execution<T>> resume(execution: T) {
     TODO("not implemented") //To change body of created functions use File | Settings | File Templates.

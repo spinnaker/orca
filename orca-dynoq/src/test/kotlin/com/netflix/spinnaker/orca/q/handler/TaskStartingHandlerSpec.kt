@@ -51,7 +51,7 @@ class TaskStartingHandlerSpec : Spek({
         singleTaskStage.buildTasks(this)
       }
     }
-    val message = Message.TaskStarting(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1")
+    val message = Message.TaskStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))
@@ -78,6 +78,7 @@ class TaskStartingHandlerSpec : Spek({
       verify(queue).push(Message.RunTask(
         message.executionType,
         message.executionId,
+        "foo",
         message.stageId,
         message.taskId,
         DummyTask::class.java

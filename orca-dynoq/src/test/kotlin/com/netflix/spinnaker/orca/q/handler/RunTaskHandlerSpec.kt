@@ -52,7 +52,7 @@ class RunTaskHandlerSpec : Spek({
         type = "whatever"
       }
     }
-    val message = RunTask(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", DummyTask::class.java)
+    val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
     describe("that completes successfully") {
       val taskResult = TaskResult(SUCCEEDED)
@@ -165,6 +165,7 @@ class RunTaskHandlerSpec : Spek({
         verify(queue).push(TaskComplete(
           message.executionType,
           message.executionId,
+          "foo",
           message.stageId,
           message.taskId,
           CANCELED
@@ -183,7 +184,7 @@ class RunTaskHandlerSpec : Spek({
         type = "whatever"
       }
     }
-    val message = RunTask(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", InvalidTask::class.java)
+    val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", InvalidTask::class.java)
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))

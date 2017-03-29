@@ -53,7 +53,7 @@ class MessageHandlerSpec : Spek({
 
   describe("message acknowledgment") {
     context("when a message is processed successfully") {
-      val message = ExecutionStarting(Pipeline::class.java, "1")
+      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       afterGroup(::resetMocks)
 
@@ -71,7 +71,7 @@ class MessageHandlerSpec : Spek({
     }
 
     context("when the handler throws an exception") {
-      val message = ExecutionStarting(Pipeline::class.java, "1")
+      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         whenever(handleCallback.invoke(any()))
@@ -93,7 +93,7 @@ class MessageHandlerSpec : Spek({
     }
 
     context("when the handler is passed the wrong type of message") {
-      val message = ExecutionComplete(Pipeline::class.java, "1", SUCCEEDED)
+      val message = ExecutionComplete(Pipeline::class.java, "1", "foo", SUCCEEDED)
 
       afterGroup(::resetMocks)
 

@@ -56,7 +56,7 @@ abstract class QueueSpec<out Q : Queue>(
 
     context("there is a single message") {
       val queue = createQueue.invoke()
-      val message = ExecutionStarting(Pipeline::class.java, "1")
+      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue.push(message)
@@ -75,8 +75,8 @@ abstract class QueueSpec<out Q : Queue>(
 
     context("there are multiple messages") {
       val queue = createQueue.invoke()
-      val message1 = ExecutionStarting(Pipeline::class.java, "1")
-      val message2 = ExecutionStarting(Pipeline::class.java, "2")
+      val message1 = ExecutionStarting(Pipeline::class.java, "1", "foo")
+      val message2 = ExecutionStarting(Pipeline::class.java, "2", "foo")
 
       beforeGroup {
         queue.push(message1)
@@ -100,7 +100,7 @@ abstract class QueueSpec<out Q : Queue>(
 
       context("whose delay has not expired") {
         val queue = createQueue.invoke()
-        val message = ExecutionStarting(Pipeline::class.java, "1")
+        val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
           queue.push(message, delay.toHours(), HOURS)
@@ -115,7 +115,7 @@ abstract class QueueSpec<out Q : Queue>(
 
       context("whose delay has expired") {
         val queue = createQueue.invoke()
-        val message = ExecutionStarting(Pipeline::class.java, "1")
+        val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
           queue.push(message, delay.toHours(), HOURS)
@@ -138,7 +138,7 @@ abstract class QueueSpec<out Q : Queue>(
 
     it("ignores invalid ack calls") {
       assertThat(
-        { queue.ack(ExecutionStarting(Pipeline::class.java, "1")) },
+        { queue.ack(ExecutionStarting(Pipeline::class.java, "1", "foo")) },
         !throws<Exception>()
       )
     }
@@ -147,7 +147,7 @@ abstract class QueueSpec<out Q : Queue>(
   describe("message redelivery") {
     context("a message is acknowledged") {
       val queue = createQueue.invoke()
-      val message = ExecutionStarting(Pipeline::class.java, "1")
+      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue.push(message)
@@ -168,7 +168,7 @@ abstract class QueueSpec<out Q : Queue>(
 
     context("a message is not acknowledged") {
       val queue = createQueue.invoke()
-      val message = ExecutionStarting(Pipeline::class.java, "1")
+      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue.push(message)
@@ -189,7 +189,7 @@ abstract class QueueSpec<out Q : Queue>(
 
     context("a message is not acknowledged more than once") {
       val queue = createQueue.invoke()
-      val message = ExecutionStarting(Pipeline::class.java, "1")
+      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue.push(message)

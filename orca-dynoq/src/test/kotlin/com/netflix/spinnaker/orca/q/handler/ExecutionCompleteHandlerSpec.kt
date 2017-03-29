@@ -44,7 +44,7 @@ class ExecutionCompleteHandlerSpec : Spek({
 
   describe("when an execution completes successfully") {
     val pipeline = pipeline { }
-    val message = ExecutionComplete(Pipeline::class.java, pipeline.id, SUCCEEDED)
+    val message = ExecutionComplete(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))
@@ -65,7 +65,7 @@ class ExecutionCompleteHandlerSpec : Spek({
   setOf(TERMINAL, CANCELED).forEach { status ->
     describe("when an execution fails with $status status") {
       val pipeline = pipeline { }
-      val message = ExecutionComplete(Pipeline::class.java, pipeline.id, status)
+      val message = ExecutionComplete(Pipeline::class.java, pipeline.id, "foo", status)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))

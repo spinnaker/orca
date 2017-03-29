@@ -51,12 +51,13 @@ class TaskCompleteHandlerSpec : Spek({
   describe("when a task completes successfully") {
     describe("the stage contains further tasks") {
       val pipeline = pipeline {
+        application = "foo"
         stage {
           type = multiTaskStage.type
           multiTaskStage.buildTasks(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
+      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -84,6 +85,7 @@ class TaskCompleteHandlerSpec : Spek({
           .push(TaskStarting(
             Pipeline::class.java,
             message.executionId,
+            "foo",
             message.stageId,
             "2"
           ))
@@ -92,12 +94,13 @@ class TaskCompleteHandlerSpec : Spek({
 
     describe("the stage is complete") {
       val pipeline = pipeline {
+        application = "foo"
         stage {
           type = singleTaskStage.type
           singleTaskStage.buildTasks(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
+      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -125,6 +128,7 @@ class TaskCompleteHandlerSpec : Spek({
           .push(StageComplete(
             message.executionType,
             message.executionId,
+            "foo",
             message.stageId,
             SUCCEEDED
           ))
@@ -133,13 +137,14 @@ class TaskCompleteHandlerSpec : Spek({
 
     context("the stage has synthetic after stages") {
       val pipeline = pipeline {
+        application = "foo"
         stage {
           type = stageWithSyntheticAfter.type
           stageWithSyntheticAfter.buildTasks(this)
           stageWithSyntheticAfter.buildSyntheticStages(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", SUCCEEDED)
+      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -167,6 +172,7 @@ class TaskCompleteHandlerSpec : Spek({
           .push(StageStarting(
             message.executionType,
             message.executionId,
+            "foo",
             pipeline.stages[1].id
           ))
       }
@@ -174,6 +180,7 @@ class TaskCompleteHandlerSpec : Spek({
 
     describe("the task is the end of a rolling push loop") {
       val pipeline = pipeline {
+        application = "foo"
         stage {
           refId = "1"
           type = rollingPushStage.type
@@ -182,7 +189,7 @@ class TaskCompleteHandlerSpec : Spek({
       }
 
       context("when the task returns REDIRECT") {
-        val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stageByRef("1").id, "4", REDIRECT)
+        val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id, "4", REDIRECT)
 
         beforeGroup {
           pipeline.stageByRef("1").apply {
@@ -222,12 +229,13 @@ class TaskCompleteHandlerSpec : Spek({
   setOf(TERMINAL, CANCELED).forEach { status ->
     describe("when a task completes with $status status") {
       val pipeline = pipeline {
+        application = "foo"
         stage {
           type = multiTaskStage.type
           multiTaskStage.buildTasks(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, pipeline.stages.first().id, "1", status)
+      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", status)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -254,6 +262,7 @@ class TaskCompleteHandlerSpec : Spek({
         verify(queue).push(StageComplete(
           message.executionType,
           message.executionId,
+          "foo",
           message.stageId,
           status
         ))
