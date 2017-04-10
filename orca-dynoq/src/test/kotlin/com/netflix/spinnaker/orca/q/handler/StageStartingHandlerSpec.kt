@@ -81,7 +81,7 @@ class StageStartingHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -132,7 +132,7 @@ class StageStartingHandlerSpec : Spek({
           .thenReturn(pipeline)
       }
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -194,7 +194,7 @@ class StageStartingHandlerSpec : Spek({
             .thenReturn(pipeline)
         }
 
-        action("the worker polls the queue") {
+        action("the handler receives a message") {
           handler.handle(message)
         }
 
@@ -234,7 +234,7 @@ class StageStartingHandlerSpec : Spek({
 
         afterGroup(::resetMocks)
 
-        action("the worker polls the queue") {
+        action("the handler receives a message") {
           handler.handle(message)
         }
 
@@ -286,7 +286,7 @@ class StageStartingHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -318,7 +318,7 @@ class StageStartingHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -366,7 +366,7 @@ class StageStartingHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -402,7 +402,7 @@ class StageStartingHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -443,7 +443,7 @@ class StageStartingHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -465,7 +465,7 @@ class StageStartingHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 

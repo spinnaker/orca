@@ -47,13 +47,11 @@ class InMemoryQueue(
   private val redeliveryWatcher = executor
     .scheduleWithFixedDelay(this::redeliver, 10, 10, MILLISECONDS)
 
-  override fun poll(): Message? {
-    val message = queue.poll()
-    return message?.run {
+  override fun poll(): Message? =
+    queue.poll()?.run {
       unacked.put(DelayedMessage(payload, clock.instant().plus(ackTimeout), clock))
       payload
     }
-  }
 
   override fun push(message: Message) =
     queue.put(DelayedMessage(message, clock.instant(), clock))

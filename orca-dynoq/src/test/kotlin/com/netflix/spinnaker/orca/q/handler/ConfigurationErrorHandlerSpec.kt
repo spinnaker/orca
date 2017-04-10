@@ -48,7 +48,7 @@ class ConfigurationErrorHandlerSpec : Spek({
     describe("handing a ${message.javaClass.simpleName} event") {
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 

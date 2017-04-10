@@ -65,7 +65,7 @@ class RunTaskHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -94,7 +94,7 @@ class RunTaskHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -114,7 +114,7 @@ class RunTaskHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -135,7 +135,7 @@ class RunTaskHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -157,7 +157,7 @@ class RunTaskHandlerSpec : Spek({
 
       afterGroup(::resetMocks)
 
-      action("the worker polls the queue") {
+      action("the handler receives a message") {
         handler.handle(message)
       }
 
@@ -193,7 +193,7 @@ class RunTaskHandlerSpec : Spek({
 
     afterGroup(::resetMocks)
 
-    action("the worker polls the queue") {
+    action("the handler receives a message") {
       handler.handle(message)
     }
 
