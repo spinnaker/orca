@@ -21,14 +21,17 @@ import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Component
 open class ExecutionWorker
 @Autowired constructor(
   private val queue: Queue,
+  @Qualifier("messageHandlerPool") private val executor: Executor,
   val registry: Registry,
   handlers: Collection<MessageHandler<*>>
 ) : DiscoveryActivated {
@@ -57,7 +60,9 @@ open class ExecutionWorker
           log.info("Received message $message")
           val handler = handlers[message.javaClass]
           if (handler != null) {
-            handler.handleAndAck(message)
+            executor.execute {
+              handler.handleAndAck(message)
+            }
           } else {
             registry.counter(pollErrorRateId).increment()
 

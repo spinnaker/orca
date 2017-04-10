@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.google.common.util.concurrent.MoreExecutors.directExecutor
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.throws
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
@@ -54,7 +55,12 @@ class ExecutionWorkerSpec : Spek({
       whenever(executionStartingHandler.messageType).thenReturn(ExecutionStarting::class.java)
       whenever(executionCompleteHandler.messageType).thenReturn(ExecutionComplete::class.java)
 
-      worker = ExecutionWorker(queue, registry, listOf(executionStartingHandler, executionCompleteHandler))
+      worker = ExecutionWorker(
+        queue,
+        directExecutor(),
+        registry,
+        listOf(executionStartingHandler, executionCompleteHandler)
+      )
     }
 
     describe("when disabled in discovery") {

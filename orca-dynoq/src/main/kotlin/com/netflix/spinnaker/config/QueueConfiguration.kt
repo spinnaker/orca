@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import java.time.Clock
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors.newCachedThreadPool
 
 @Configuration
 @ComponentScan(basePackages = arrayOf("com.netflix.spinnaker.orca.q"))
@@ -33,4 +35,7 @@ open class QueueConfiguration {
 
   @Bean @ConditionalOnMissingBean(Queue::class)
   open fun inMemoryQueue(clock: Clock): Queue = InMemoryQueue(clock)
+
+  @Bean
+  open fun messageHandlerPool(): Executor = newCachedThreadPool() // TODO: ¯\_(ツ)_/¯
 }
