@@ -16,8 +16,11 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.*
+import com.natpryce.hamkrest.allElements
 import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
+import com.natpryce.hamkrest.hasElement
+import com.natpryce.hamkrest.isEmpty
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -93,7 +96,7 @@ class StageStartingHandlerSpec : Spek({
       it("attaches tasks to the stage") {
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
-          assertThat(firstValue.tasks, hasSize(equalTo(1)))
+          assertThat(firstValue.tasks.size, equalTo(1))
           firstValue.tasks.first().apply {
             assertThat(id, equalTo("1"))
             assertThat(name, equalTo("dummy"))
@@ -139,7 +142,7 @@ class StageStartingHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.apply {
-            assertThat(tasks, hasSize(equalTo(3)))
+            assertThat(tasks.size, equalTo(3))
             tasks[0].apply {
               assertThat(id, equalTo("1"))
               assertThat(name, equalTo("dummy1"))
