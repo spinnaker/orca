@@ -34,8 +34,7 @@ open class ExecutionStartingHandler
   override val repository: ExecutionRepository
 ) : MessageHandler<ExecutionStarting>, QueueProcessor {
 
-  override val messageType
-    get() = ExecutionStarting::class.java
+  override val messageType = ExecutionStarting::class.java
 
   override fun handle(message: ExecutionStarting) {
     message.withExecution { execution ->

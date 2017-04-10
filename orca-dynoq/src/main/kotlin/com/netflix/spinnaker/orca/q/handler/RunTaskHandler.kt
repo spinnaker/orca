@@ -70,8 +70,7 @@ open class RunTaskHandler
     }
   }
 
-  override val messageType
-    get() = RunTask::class.java
+  override val messageType = RunTask::class.java
 
   private fun RunTask.withTask(block: (Stage<*>, Task) -> Unit) =
     withStage { stage ->

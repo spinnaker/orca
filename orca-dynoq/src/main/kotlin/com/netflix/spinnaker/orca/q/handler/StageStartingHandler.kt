@@ -50,8 +50,7 @@ open class StageStartingHandler @Autowired constructor(
     }
   }
 
-  override val messageType
-    get() = StageStarting::class.java
+  override val messageType = StageStarting::class.java
 
   private fun Stage<*>.plan() {
     builder().let { builder ->

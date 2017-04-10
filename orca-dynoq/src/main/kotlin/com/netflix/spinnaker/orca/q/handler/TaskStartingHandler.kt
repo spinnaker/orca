@@ -47,6 +47,5 @@ open class TaskStartingHandler
     }
   }
 
-  override val messageType
-    get() = TaskStarting::class.java
+  override val messageType = TaskStarting::class.java
 }

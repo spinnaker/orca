@@ -70,8 +70,7 @@ open class TaskCompleteHandler
     }
   }
 
-  override val messageType
-    get() = TaskComplete::class.java
+  override val messageType = TaskComplete::class.java
 
   private fun Stage<*>.handleRedirect() {
     getTasks().let { tasks ->

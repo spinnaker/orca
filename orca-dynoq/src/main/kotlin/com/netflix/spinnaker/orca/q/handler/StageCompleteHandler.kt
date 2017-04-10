@@ -53,8 +53,7 @@ open class StageCompleteHandler
     }
   }
 
-  override val messageType
-    get() = StageComplete::class.java
+  override val messageType = StageComplete::class.java
 
   private fun Stage<*>.startNext() {
     val downstreamStages = downstreamStages()

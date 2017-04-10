@@ -33,6 +33,5 @@ open class ExecutionCompleteHandler
   override fun handle(message: ExecutionComplete) =
     repository.updateStatus(message.executionId, message.status)
 
-  override val messageType
-    get() = ExecutionComplete::class.java
+  override val messageType = ExecutionComplete::class.java
 }

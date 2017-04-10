@@ -30,8 +30,7 @@ open class ConfigurationErrorHandler
   override val queue: Queue
 ) : MessageHandler<ConfigurationError> {
 
-  override val messageType
-    get() = ConfigurationError::class.java
+  override val messageType = ConfigurationError::class.java
 
   override fun handle(message: ConfigurationError) {
     queue.push(ExecutionComplete(message, TERMINAL))
