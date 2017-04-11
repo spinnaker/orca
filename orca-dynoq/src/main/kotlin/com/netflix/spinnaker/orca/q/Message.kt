@@ -92,6 +92,9 @@ sealed class Message {
   ) : Message(), StageLevel {
     constructor(source: ExecutionLevel, stageId: String) :
       this(source.executionType, source.executionId, source.application, stageId)
+
+    constructor(source: StageLevel) :
+      this(source.executionType, source.executionId, source.application, source.stageId)
   }
 
   data class StageComplete(
@@ -107,6 +110,13 @@ sealed class Message {
     constructor(source: StageLevel, status: ExecutionStatus) :
       this(source, source.stageId, status)
   }
+
+  data class StageRestarting(
+    override val executionType: Class<out Execution<*>>,
+    override val executionId: String,
+    override val application: String,
+    override val stageId: String
+  ) : Message(), StageLevel
 
   data class ExecutionStarting(
     override val executionType: Class<out Execution<*>>,
