@@ -46,8 +46,10 @@ class ExecutionLatch(matcher: Matcher<ExecutionCompleteEvent>)
 }
 
 fun <E : Execution<E>> ConfigurableApplicationContext.runToCompletion(execution: E, launcher: (E) -> Unit) {
-  val latch = ExecutionLatch(has(ExecutionCompleteEvent::executionId, equalTo(execution.id)))
+  val latch = ExecutionLatch(
+    has(ExecutionCompleteEvent::executionId, equalTo(execution.id))
+  )
   addApplicationListener(latch)
   launcher.invoke(execution)
-  assert(latch.await()) { "Pipeline never completed" }
+  assert(latch.await()) { "Pipeline did not complete" }
 }

@@ -27,6 +27,7 @@ import com.netflix.spinnaker.config.QueueConfiguration
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
@@ -86,6 +87,26 @@ class SpringIntegrationSpec {
     argumentCaptor<ExecutionStatus>().apply {
       verify(repository, atLeastOnce()).updateStatus(eq(pipeline.id), capture())
       assertThat(lastValue, equalTo(SUCCEEDED))
+    }
+  }
+
+  @Test fun `pipeline fails if a task fails`() {
+    val pipeline = pipeline {
+      application = "spinnaker"
+      stage {
+        refId = "1"
+        type = "dummy"
+      }
+    }
+    whenever(repository.retrievePipeline(pipeline.id)).thenReturn(pipeline)
+
+    whenever(dummyTask.execute(any())).thenReturn(TaskResult(TERMINAL))
+
+    context.runToCompletion(pipeline, runner::start)
+
+    argumentCaptor<ExecutionStatus>().apply {
+      verify(repository, atLeastOnce()).updateStatus(eq(pipeline.id), capture())
+      assertThat(lastValue, equalTo(TERMINAL))
     }
   }
 }
