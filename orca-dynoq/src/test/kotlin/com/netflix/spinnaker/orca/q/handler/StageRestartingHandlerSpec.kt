@@ -21,6 +21,7 @@ import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.isEmpty
 import com.natpryce.hamkrest.present
 import com.natpryce.hamkrest.should.shouldMatch
+import com.natpryce.hamkrest.should.shouldNotMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -107,7 +108,7 @@ class StageRestartingHandlerSpec : Spek({
         endTime = clock.instant().minus(30, MINUTES).toEpochMilli()
         stage {
           refId = "1"
-          singleTaskStage.plan(this)
+          stageWithSyntheticBefore.plan(this)
           status = SUCCEEDED
           startTime = clock.instant().minus(1, HOURS).toEpochMilli()
           endTime = clock.instant().minus(59, MINUTES).toEpochMilli()
@@ -115,7 +116,7 @@ class StageRestartingHandlerSpec : Spek({
         stage {
           refId = "2"
           requisiteStageRefIds = listOf("1")
-          singleTaskStage.plan(this)
+          stageWithSyntheticBefore.plan(this)
           status = stageStatus
           startTime = clock.instant().minus(59, MINUTES).toEpochMilli()
           endTime = clock.instant().minus(30, MINUTES).toEpochMilli()
@@ -152,6 +153,13 @@ class StageRestartingHandlerSpec : Spek({
         }
       }
 
+      it("removes the stage's synthetic stages") {
+        argumentCaptor<Pipeline>().apply {
+          verify(repository).store(capture())
+          firstValue.stages.filter { it.parentStageId == message.stageId } shouldMatch isEmpty
+        }
+      }
+
       it("does not alter any preceding stages") {
         argumentCaptor<Pipeline>().apply {
           verify(repository).store(capture())
@@ -160,6 +168,13 @@ class StageRestartingHandlerSpec : Spek({
             startTime shouldMatch present()
             endTime shouldMatch present()
           }
+        }
+      }
+
+      it("does not affect preceding stages' synthetic stages") {
+        argumentCaptor<Pipeline>().apply {
+          verify(repository).store(capture())
+          firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("1").id } shouldNotMatch isEmpty
         }
       }
 
@@ -201,7 +216,7 @@ class StageRestartingHandlerSpec : Spek({
       stage {
         refId = "2"
         requisiteStageRefIds = listOf("1")
-        singleTaskStage.plan(this)
+        stageWithSyntheticBefore.plan(this)
         status = SUCCEEDED
         startTime = clock.instant().minus(59, MINUTES).toEpochMilli()
         endTime = clock.instant().minus(58, MINUTES).toEpochMilli()
@@ -209,7 +224,7 @@ class StageRestartingHandlerSpec : Spek({
       stage {
         refId = "3"
         requisiteStageRefIds = listOf("2")
-        singleTaskStage.plan(this)
+        stageWithSyntheticBefore.plan(this)
         status = SUCCEEDED
         startTime = clock.instant().minus(58, MINUTES).toEpochMilli()
         endTime = clock.instant().minus(57, MINUTES).toEpochMilli()
@@ -233,6 +248,81 @@ class StageRestartingHandlerSpec : Spek({
         verify(repository).store(capture())
         firstValue.stageByRef("2").tasks shouldMatch isEmpty
         firstValue.stageByRef("3").tasks shouldMatch isEmpty
+      }
+    }
+
+    it("removes downstream stages' synthetic stages") {
+      argumentCaptor<Pipeline>().apply {
+        verify(repository).store(capture())
+        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("2").id } shouldMatch isEmpty
+        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("3").id } shouldMatch isEmpty
+      }
+    }
+  }
+
+  describe("restarting a SUCCEEDED stage with a downstream join") {
+    val pipeline = pipeline {
+      application = "foo"
+      status = SUCCEEDED
+      startTime = clock.instant().minus(1, HOURS).toEpochMilli()
+      endTime = clock.instant().minus(30, MINUTES).toEpochMilli()
+      stage {
+        refId = "1"
+        singleTaskStage.plan(this)
+        status = SUCCEEDED
+        startTime = clock.instant().minus(1, HOURS).toEpochMilli()
+        endTime = clock.instant().minus(59, MINUTES).toEpochMilli()
+      }
+      stage {
+        refId = "2"
+        stageWithSyntheticBefore.plan(this)
+        status = SUCCEEDED
+        startTime = clock.instant().minus(59, MINUTES).toEpochMilli()
+        endTime = clock.instant().minus(58, MINUTES).toEpochMilli()
+      }
+      stage {
+        refId = "3"
+        requisiteStageRefIds = listOf("1", "2")
+        stageWithSyntheticBefore.plan(this)
+        status = SUCCEEDED
+        startTime = clock.instant().minus(59, MINUTES).toEpochMilli()
+        endTime = clock.instant().minus(58, MINUTES).toEpochMilli()
+      }
+      stage {
+        refId = "4"
+        requisiteStageRefIds = listOf("3")
+        stageWithSyntheticBefore.plan(this)
+        status = SUCCEEDED
+        startTime = clock.instant().minus(58, MINUTES).toEpochMilli()
+        endTime = clock.instant().minus(57, MINUTES).toEpochMilli()
+      }
+    }
+    val message = StageRestarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
+
+    beforeGroup {
+      whenever(repository.retrievePipeline(message.executionId))
+        .thenReturn(pipeline)
+    }
+
+    afterGroup(::resetMocks)
+
+    action("the handler receives a message") {
+      handler.handle(message)
+    }
+
+    it("removes join stages' tasks") {
+      argumentCaptor<Pipeline>().apply {
+        verify(repository).store(capture())
+        firstValue.stageByRef("3").tasks shouldMatch isEmpty
+        firstValue.stageByRef("4").tasks shouldMatch isEmpty
+      }
+    }
+
+    it("removes join stages' synthetic stages") {
+      argumentCaptor<Pipeline>().apply {
+        verify(repository).store(capture())
+        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("3").id } shouldMatch isEmpty
+        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("4").id } shouldMatch isEmpty
       }
     }
   }

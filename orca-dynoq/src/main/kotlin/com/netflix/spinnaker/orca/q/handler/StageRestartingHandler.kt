@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Message.StageRestarting
@@ -44,8 +45,7 @@ open class StageRestartingHandler
         stage.reset()
 
         stage.getExecution().let { execution ->
-          execution.setStatus(RUNNING)
-          execution.setEndTime(null)
+          execution.reset()
           execution.update()
         }
 
@@ -59,6 +59,14 @@ open class StageRestartingHandler
     setStartTime(null)
     setEndTime(null)
     setTasks(emptyList())
+
+    getExecution().getStages().removeAll { it.getParentStageId() == getId() }
+
     downstreamStages().forEach { it.reset() }
+  }
+
+  private fun Execution<*>.reset() {
+    setStatus(RUNNING)
+    setEndTime(null)
   }
 }
