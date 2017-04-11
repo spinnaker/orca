@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import java.util.*
 
-fun pipeline(init: Pipeline.() -> Unit): Pipeline {
+fun pipeline(init: Pipeline.() -> Unit = {}): Pipeline {
   val pipeline = Pipeline()
   pipeline.id = UUID.randomUUID().toString()
   pipeline.init()

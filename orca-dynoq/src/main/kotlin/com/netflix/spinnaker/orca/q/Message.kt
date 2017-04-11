@@ -22,6 +22,9 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import java.util.*
 
+/**
+ * Messages used internally by the queueing system.
+ */
 sealed class Message {
 
   val id: UUID = UUID.randomUUID()
@@ -30,7 +33,7 @@ sealed class Message {
     val application: String
   }
 
-  interface ExecutionLevel: ApplicationAware {
+  interface ExecutionLevel : ApplicationAware {
     val executionType: Class<out Execution<*>>
     val executionId: String
   }

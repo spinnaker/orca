@@ -41,7 +41,7 @@ import org.junit.runner.RunWith
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
+import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.ContextConfiguration
@@ -59,7 +59,7 @@ class SpringIntegrationSpec {
   @Autowired lateinit var runner: QueueExecutionRunner
   @Autowired lateinit var repository: ExecutionRepository
   @Autowired lateinit var dummyTask: DummyTask
-  @Autowired lateinit var context: ApplicationContext
+  @Autowired lateinit var context: ConfigurableApplicationContext
 
   @Before fun discoveryUp() {
     context.publishEvent(RemoteStatusChangedEvent(StatusChangeEvent(STARTING, UP)))
@@ -81,9 +81,7 @@ class SpringIntegrationSpec {
 
     whenever(dummyTask.execute(any())).thenReturn(TaskResult.SUCCEEDED)
 
-    runner.start(pipeline)
-
-    sleep(2_000)
+    context.runToCompletion(pipeline, runner::start)
 
     argumentCaptor<ExecutionStatus>().apply {
       verify(repository, atLeastOnce()).updateStatus(eq(pipeline.id), capture())
@@ -94,7 +92,7 @@ class SpringIntegrationSpec {
 
 @Configuration
 open class TestConfig {
-  @Bean open fun registry(): Registry = mock() {
+  @Bean open fun registry(): Registry = mock {
     on { createId(any<String>()) }.doReturn(mock<Id>())
     on { counter(any<Id>()) }.doReturn(mock<Counter>())
   }
@@ -127,3 +125,4 @@ open class TestConfig {
     }
   }
 }
+

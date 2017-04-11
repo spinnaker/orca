@@ -16,31 +16,33 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.ExecutionEvent
 import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.pipeline
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.reset
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
 class ExecutionCompleteHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
+  val publisher: ApplicationEventPublisher = mock()
 
-  val handler = ExecutionCompleteHandler(queue, repository)
+  val handler = ExecutionCompleteHandler(queue, repository, publisher)
 
-  fun resetMocks() = reset(queue, repository)
+  fun resetMocks() = reset(queue, repository, publisher)
 
   describe("when an execution completes successfully") {
     val pipeline = pipeline { }
@@ -64,7 +66,7 @@ class ExecutionCompleteHandlerSpec : Spek({
 
   setOf(TERMINAL, CANCELED).forEach { status ->
     describe("when an execution fails with $status status") {
-      val pipeline = pipeline { }
+      val pipeline = pipeline()
       val message = ExecutionComplete(Pipeline::class.java, pipeline.id, "foo", status)
 
       beforeGroup {
@@ -80,6 +82,32 @@ class ExecutionCompleteHandlerSpec : Spek({
 
       it("updates the execution") {
         verify(repository).updateStatus(message.executionId, status)
+      }
+    }
+  }
+
+  setOf(SUCCEEDED, TERMINAL, CANCELED).forEach { status ->
+    describe("when an execution completes with $status status") {
+      val pipeline = pipeline()
+      val message = ExecutionComplete(Pipeline::class.java, pipeline.id, "foo", status)
+
+      beforeGroup {
+        whenever(repository.retrievePipeline(message.executionId))
+          .thenReturn(pipeline)
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("emits an application event") {
+        argumentCaptor<ExecutionEvent.ExecutionCompleteEvent>().apply {
+          verify(publisher).publishEvent(capture())
+          assertThat(firstValue.executionId, equalTo(pipeline.id))
+          assertThat(firstValue.status, equalTo(status))
+        }
       }
     }
   }

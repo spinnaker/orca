@@ -17,21 +17,28 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.ExecutionEvent.ExecutionCompleteEvent
 import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
 open class ExecutionCompleteHandler
 @Autowired constructor(
   override val queue: Queue,
-  val repository: ExecutionRepository
+  private val repository: ExecutionRepository,
+  private val publisher: ApplicationEventPublisher
 ) : MessageHandler<ExecutionComplete> {
 
-  override fun handle(message: ExecutionComplete) =
+  override fun handle(message: ExecutionComplete) {
     repository.updateStatus(message.executionId, message.status)
+    publisher.publishEvent(message.toEvent())
+  }
+
+  private fun ExecutionComplete.toEvent() = ExecutionCompleteEvent(this@ExecutionCompleteHandler, executionType, executionId, status)
 
   override val messageType = ExecutionComplete::class.java
 }
