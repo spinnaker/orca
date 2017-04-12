@@ -40,11 +40,9 @@ repositories {
 }
 
 dependencies {
-  compile project(":orca-core")
-  compile "com.netflix.dyno-queues:dyno-queues-redis:1.0.6"
-  compile "org.threeten:threeten-extra:1.0"
+  compile project(":orca-queue")
 
-  testCompile project(":orca-test")
+  testCompile project(path: ":orca-queue", configuration: "testOutput")
   testCompile "org.junit.platform:junit-platform-runner:$junitVersion"
   testCompile "org.jetbrains.spek:spek-api:$spekVersion"
   testCompile "com.nhaarman:mockito-kotlin:1.4.0"
@@ -76,18 +74,4 @@ compileKotlin {
   kotlinOptions {
     languageVersion = "1.1"
   }
-}
-
-// export tests so the Queue TCK is available to other modules
-configurations {
-  testOutput.extendsFrom(testCompile)
-}
-
-task jarTest(type: Jar, dependsOn: testClasses) {
-  from sourceSets.test.output
-  classifier = "test"
-}
-
-artifacts {
-  testOutput jarTest
 }
