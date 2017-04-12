@@ -30,6 +30,8 @@ interface ExecutionRepository {
 
   void storeStage(Stage<? extends Execution> stage)
 
+  void removeStage(Execution execution, String stageId)
+
   void cancel(String id)
   void cancel(String id, String user, String reason)
 

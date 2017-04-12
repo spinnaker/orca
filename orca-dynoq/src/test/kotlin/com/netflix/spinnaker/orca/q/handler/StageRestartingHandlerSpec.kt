@@ -17,11 +17,10 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.natpryce.hamkrest.absent
+import com.natpryce.hamkrest.anyElement
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.isEmpty
-import com.natpryce.hamkrest.present
 import com.natpryce.hamkrest.should.shouldMatch
-import com.natpryce.hamkrest.should.shouldNotMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -136,9 +135,10 @@ class StageRestartingHandlerSpec : Spek({
       }
 
       it("resets the stage's status") {
-        argumentCaptor<Pipeline>().apply {
-          verify(repository).store(capture())
-          firstValue.stageById(message.stageId).apply {
+        argumentCaptor<Stage<Pipeline>>().apply {
+          verify(repository).storeStage(capture())
+          firstValue.apply {
+            id shouldBe message.stageId
             status shouldBe NOT_STARTED
             startTime shouldMatch absent()
             endTime shouldMatch absent()
@@ -147,43 +147,33 @@ class StageRestartingHandlerSpec : Spek({
       }
 
       it("removes the stage's tasks") {
-        argumentCaptor<Pipeline>().apply {
-          verify(repository).store(capture())
-          firstValue.stageById(message.stageId).tasks shouldMatch isEmpty
+        argumentCaptor<Stage<Pipeline>>().apply {
+          verify(repository).storeStage(capture())
+          firstValue.tasks shouldMatch isEmpty
         }
       }
 
       it("removes the stage's synthetic stages") {
-        argumentCaptor<Pipeline>().apply {
-          verify(repository).store(capture())
-          firstValue.stages.filter { it.parentStageId == message.stageId } shouldMatch isEmpty
-        }
-      }
-
-      it("does not alter any preceding stages") {
-        argumentCaptor<Pipeline>().apply {
-          verify(repository).store(capture())
-          firstValue.stageByRef("1").apply {
-            status shouldBe SUCCEEDED
-            startTime shouldMatch present()
-            endTime shouldMatch present()
+        pipeline
+          .stages
+          .filter { it.parentStageId == message.stageId }
+          .map { it.id }
+          .forEach {
+            verify(repository).removeStage(pipeline, it)
           }
-        }
       }
 
       it("does not affect preceding stages' synthetic stages") {
-        argumentCaptor<Pipeline>().apply {
-          verify(repository).store(capture())
-          firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("1").id } shouldNotMatch isEmpty
-        }
+        setOf(pipeline.stageByRef("1").id)
+          .flatMap { stageId -> pipeline.stages.filter { it.parentStageId == stageId } }
+          .map { it.id }
+          .forEach {
+            verify(repository, never()).removeStage(any(), eq(it))
+          }
       }
 
       it("marks the execution as running") {
-        argumentCaptor<Pipeline>().apply {
-          verify(repository).store(capture())
-          firstValue.status shouldBe RUNNING
-          firstValue.endTime shouldMatch absent()
-        }
+        verify(repository).updateStatus(pipeline.id, RUNNING)
       }
 
       it("runs the stage") {
@@ -244,19 +234,26 @@ class StageRestartingHandlerSpec : Spek({
     }
 
     it("removes downstream stages' tasks") {
-      argumentCaptor<Pipeline>().apply {
-        verify(repository).store(capture())
-        firstValue.stageByRef("2").tasks shouldMatch isEmpty
-        firstValue.stageByRef("3").tasks shouldMatch isEmpty
+      val downstreamStageIds = setOf("2", "3").map { pipeline.stageByRef(it).id }
+      argumentCaptor<Stage<Pipeline>>().apply {
+        verify(repository, atLeast(2)).storeStage(capture())
+        downstreamStageIds.forEach {
+          allValues.map { it.id } shouldMatch anyElement(equalTo(it))
+        }
+        allValues.forEach {
+          it.tasks shouldMatch isEmpty
+        }
       }
     }
 
     it("removes downstream stages' synthetic stages") {
-      argumentCaptor<Pipeline>().apply {
-        verify(repository).store(capture())
-        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("2").id } shouldMatch isEmpty
-        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("3").id } shouldMatch isEmpty
-      }
+      setOf("2", "3")
+        .map { pipeline.stageByRef(it).id }
+        .flatMap { stageId -> pipeline.stages.filter { it.parentStageId == stageId } }
+        .map { it.id }
+        .forEach {
+          verify(repository).removeStage(pipeline, it)
+        }
     }
   }
 
@@ -311,19 +308,24 @@ class StageRestartingHandlerSpec : Spek({
     }
 
     it("removes join stages' tasks") {
-      argumentCaptor<Pipeline>().apply {
-        verify(repository).store(capture())
-        firstValue.stageByRef("3").tasks shouldMatch isEmpty
-        firstValue.stageByRef("4").tasks shouldMatch isEmpty
+      val downstreamStageIds = setOf("1", "3", "4").map { pipeline.stageByRef(it).id }
+      argumentCaptor<Stage<Pipeline>>().apply {
+        verify(repository, times(3)).storeStage(capture())
+        allValues.map { it.id } shouldBe downstreamStageIds
+        allValues.forEach {
+          it.tasks shouldMatch isEmpty
+        }
       }
     }
 
     it("removes join stages' synthetic stages") {
-      argumentCaptor<Pipeline>().apply {
-        verify(repository).store(capture())
-        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("3").id } shouldMatch isEmpty
-        firstValue.stages.filter { it.parentStageId == firstValue.stageByRef("4").id } shouldMatch isEmpty
-      }
+      setOf("3", "4")
+        .map { pipeline.stageByRef(it).id }
+        .flatMap { stageId -> pipeline.stages.filter { it.parentStageId == stageId } }
+        .map { it.id }
+        .forEach {
+          verify(repository).removeStage(pipeline, it)
+        }
     }
   }
 })

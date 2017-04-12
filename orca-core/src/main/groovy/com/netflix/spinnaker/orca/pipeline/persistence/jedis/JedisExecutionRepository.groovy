@@ -232,6 +232,25 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
+  void removeStage(Execution execution, String stageId) {
+    Class<? extends Execution> executionType = execution.getClass()
+    def key = "${executionType.simpleName.toLowerCase()}:${execution.id}"
+    withJedis(getJedisPoolForId(key)) { Jedis jedis ->
+      def stageIds = jedis
+        .hget(key, "stageIndex")
+        .tokenize(",")
+      stageIds.remove(stageId)
+      jedis.hset(key, "stageIndex", stageIds.join(","))
+
+      def keys = jedis
+        .hkeys(key)
+        .findAll { it.startsWith("stage.$stageId.") }
+        .toArray(new String[0])
+      jedis.hdel(key, keys)
+    }
+  }
+
+  @Override
   Pipeline retrievePipeline(String id) {
     withJedis(getJedisPoolForId("pipeline:${id}")) { Jedis jedis ->
       retrieveInternal(jedis, Pipeline, id)
