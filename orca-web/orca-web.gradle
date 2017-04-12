@@ -44,7 +44,7 @@ dependencies {
   compile project(":orca-igor")
   compile project(":orca-webhook")
   compile project(":orca-eureka")
-  compile project(":orca-dynoq")
+  compile project(":orca-queue")
   compile project(":orca-pipelinetemplate")
 
 //  Replace below with this line when fiat becomes stable.
