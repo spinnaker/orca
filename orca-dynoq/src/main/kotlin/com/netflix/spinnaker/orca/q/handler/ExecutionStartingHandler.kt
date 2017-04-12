@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
 import com.netflix.spinnaker.orca.q.Message.StageStarting
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.QueueProcessor
 import com.netflix.spinnaker.orca.q.initialStages
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

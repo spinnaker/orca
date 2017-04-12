@@ -52,7 +52,11 @@ class StageRestartingHandlerSpec : Spek({
 
   val handler = StageRestartingHandler(
     queue,
-    repository
+    repository,
+    listOf(
+      singleTaskStage,
+      stageWithSyntheticBefore
+    )
   )
 
   fun resetMocks() = reset(queue, repository)

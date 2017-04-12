@@ -14,25 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.q
+package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.V3
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import java.util.*
 
-fun pipeline(init: Pipeline.() -> Unit = {}): Pipeline {
-  val pipeline = Pipeline()
-  pipeline.id = UUID.randomUUID().toString()
-  pipeline.executionEngine = V3
-  pipeline.init()
-  return pipeline
-}
+interface StageBuilderAware {
 
-fun Pipeline.stage(init: Stage<Pipeline>.() -> Unit): Stage<Pipeline> {
-  val stage = Stage<Pipeline>()
-  stage.execution = this
-  stages.add(stage)
-  stage.init()
-  return stage
+  val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
+
+  fun Stage<*>.builder(): StageDefinitionBuilder =
+    stageDefinitionBuilders.find { it.type == getType() }
+      ?: throw NoSuchStageDefinitionBuilder(getType())
 }

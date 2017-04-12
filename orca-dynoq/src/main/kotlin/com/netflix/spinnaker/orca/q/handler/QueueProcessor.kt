@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.q
+package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
@@ -26,11 +26,13 @@ import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidExecutionI
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidStageId
 import com.netflix.spinnaker.orca.q.Message.ExecutionLevel
 import com.netflix.spinnaker.orca.q.Message.StageLevel
+import com.netflix.spinnaker.orca.q.Queue
 
 /**
- * Some common functionality shared by [MessageHandler] implementations.
+ * Some common functionality shared by
+ * [com.netflix.spinnaker.orca.q.MessageHandler] implementations.
  */
-interface QueueProcessor {
+internal interface QueueProcessor {
 
   val queue: Queue
   val repository: ExecutionRepository

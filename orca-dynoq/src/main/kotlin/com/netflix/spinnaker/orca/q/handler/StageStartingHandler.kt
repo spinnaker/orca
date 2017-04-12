@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.pipeline.ExecutionRunner.NoSuchStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -32,9 +31,9 @@ import java.time.Clock
 open class StageStartingHandler @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
-  val clock: Clock
-) : MessageHandler<StageStarting>, QueueProcessor {
+  override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
+  private val clock: Clock
+) : MessageHandler<StageStarting>, QueueProcessor, StageBuilderAware {
 
   override fun handle(message: StageStarting) {
     message.withStage { stage ->
@@ -78,8 +77,4 @@ open class StageStartingHandler @Autowired constructor(
       }
     }
   }
-
-  private fun Stage<*>.builder(): StageDefinitionBuilder =
-    stageDefinitionBuilders.find { it.type == getType() }
-      ?: throw NoSuchStageDefinitionBuilder(getType())
 }

@@ -18,13 +18,13 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Message.StageRestarting
 import com.netflix.spinnaker.orca.q.Message.StageStarting
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.QueueProcessor
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -32,19 +32,17 @@ import org.springframework.stereotype.Component
 open class StageRestartingHandler
 @Autowired constructor(
   override val queue: Queue,
-  override val repository: ExecutionRepository
-) : MessageHandler<StageRestarting>, QueueProcessor {
+  override val repository: ExecutionRepository,
+  override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
+) : MessageHandler<StageRestarting>, QueueProcessor, StageBuilderAware {
 
   override val messageType = StageRestarting::class.java
 
   override fun handle(message: StageRestarting) {
     message.withStage { stage ->
       if (stage.getStatus().complete) {
-
         stage.reset()
-
         repository.updateStatus(stage.getExecution().getId(), RUNNING)
-
         queue.push(StageStarting(message))
       }
     }
@@ -55,6 +53,7 @@ open class StageRestartingHandler
     setStartTime(null)
     setEndTime(null)
     setTasks(emptyList())
+    builder().prepareStageForRestart(repository, this, stageDefinitionBuilders)
     repository.storeStage(this)
 
     getExecution()
