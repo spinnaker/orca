@@ -23,8 +23,10 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.config.SqsProperties
 import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.QueueCallback
 import java.time.Duration
-import java.util.*
+import java.time.temporal.ChronoUnit.SECONDS
+import java.time.temporal.TemporalAmount
 
 class SqsQueue(
   private val amazonSqs: AmazonSQS,
@@ -37,9 +39,9 @@ class SqsQueue(
   }
 
   private val queueUrl = amazonSqs.createQueue(sqsProperties.queueName).queueUrl
-  private val messageReceiptHandles: MutableMap<UUID, String> = mutableMapOf()
+  private val messageReceiptHandles = mutableSetOf<String>()
 
-  override fun poll(): Message? {
+  override fun poll(callback: QueueCallback) {
     val req = ReceiveMessageRequest(queueUrl)
       .withMaxNumberOfMessages(1)
       .withWaitTimeSeconds(10)
@@ -47,33 +49,32 @@ class SqsQueue(
       .withAttributeNames("ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount", "SentTimestamp")
     val result = amazonSqs.receiveMessage(req)
 
-    if (result.messages.isEmpty()) {
-      return null
+    if (result.messages.isNotEmpty()) {
+      val sqsMessage = result.messages.first()
+      val message = objectMapper.readValue(sqsMessage.body, Message::class.java)
+      messageReceiptHandles.add(sqsMessage.receiptHandle)
+
+      callback.invoke(message) {
+        ack(sqsMessage.receiptHandle)
+      }
     }
-
-    val sqsMessage = result.messages.first()
-    val message = objectMapper.readValue(sqsMessage.body, Message::class.java)
-    messageReceiptHandles[message.id] = sqsMessage.receiptHandle
-
-    return message
   }
 
   override fun push(message: Message) {
     amazonSqs.sendMessage(queueUrl, objectMapper.writeValueAsString(message))
   }
 
-  override fun push(message: Message, delay: Duration) {
+  override fun push(message: Message, delay: TemporalAmount) {
     amazonSqs.sendMessage(
       SendMessageRequest(queueUrl, objectMapper.writeValueAsString(message))
-        .withDelaySeconds(delay.seconds.toInt())
+        .withDelaySeconds(delay.get(SECONDS).toInt())
     )
   }
 
-  override fun ack(message: Message) {
-    if (messageReceiptHandles.contains(message.id)) {
-      amazonSqs.deleteMessage(queueUrl, messageReceiptHandles[message.id])
+  private fun ack(receiptHandle: String) {
+    if (messageReceiptHandles.remove(receiptHandle)) {
+      amazonSqs.deleteMessage(queueUrl, receiptHandle)
     }
-    messageReceiptHandles.remove(message.id)
   }
 
 }

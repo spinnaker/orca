@@ -36,6 +36,7 @@ class MessageHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val handleCallback: (Message) -> Unit = mock()
+  val ack: () -> Unit = mock()
 
   val handler = object : MessageHandler<ExecutionStarting> {
     override val queue
@@ -49,7 +50,7 @@ class MessageHandlerSpec : Spek({
     }
   }
 
-  fun resetMocks() = reset(queue, handleCallback)
+  fun resetMocks() = reset(queue, handleCallback, ack)
 
   describe("message acknowledgment") {
     context("when a message is processed successfully") {
@@ -58,7 +59,7 @@ class MessageHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       action("a message is handled") {
-        handler.handleAndAck(message)
+        handler.handleAndAck(message, ack)
       }
 
       it("invokes the handler") {
@@ -66,7 +67,7 @@ class MessageHandlerSpec : Spek({
       }
 
       it("acknowledges the message") {
-        verify(queue).ack(message)
+        verify(ack).invoke()
       }
     }
 
@@ -82,13 +83,13 @@ class MessageHandlerSpec : Spek({
 
       action("a message is handled") {
         assertThat(
-          { handler.handleAndAck(message) },
+          { handler.handleAndAck(message, ack) },
           throws(isA<RuntimeException>())
         )
       }
 
       it("does not acknowledge the message") {
-        verify(queue, never()).ack(message)
+        verify(ack, never()).invoke()
       }
     }
 
@@ -99,7 +100,7 @@ class MessageHandlerSpec : Spek({
 
       action("a message is handled") {
         assertThat(
-          { handler.handleAndAck(message) },
+          { handler.handleAndAck(message, ack) },
           throws<IllegalArgumentException>()
         )
       }
@@ -109,7 +110,7 @@ class MessageHandlerSpec : Spek({
       }
 
       it("does not acknowledge the message") {
-        verify(queue, never()).ack(message)
+        verify(ack, never()).invoke()
       }
     }
   }

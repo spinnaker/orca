@@ -27,14 +27,12 @@ import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidTaskType
 import com.netflix.spinnaker.orca.q.Message.RunTask
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.push
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeUnit.SECONDS
+import java.time.Duration
+import java.time.temporal.TemporalAmount
 
 @Component
 open class RunTaskHandler
@@ -88,10 +86,10 @@ open class RunTaskHandler
         }
     }
 
-  private fun Task.backoffPeriod(): Pair<Long, TimeUnit> =
+  private fun Task.backoffPeriod(): TemporalAmount =
     when (this) {
-      is RetryableTask -> Pair(backoffPeriod, MILLISECONDS)
-      else -> Pair(1, SECONDS)
+      is RetryableTask -> Duration.ofMillis(backoffPeriod)
+      else -> Duration.ofSeconds(1)
     }
 
   private fun Stage<*>.processTaskOutput(result: TaskResult) {

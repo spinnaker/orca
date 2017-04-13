@@ -86,28 +86,16 @@ class ExecutionWorkerSpec : Spek({
         worker!!.onApplicationEvent(instanceUpEvent)
       }
 
-      describe("no messages on the queue") {
-        beforeGroup {
-          whenever(queue.poll()).thenReturn(null)
-        }
-
-        afterGroup(::resetMocks)
-
-        action("the worker polls the queue") {
-          worker!!.pollOnce()
-        }
-
-        it("does not try to ack non-existent messages") {
-          verify(queue, never()).ack(anyOrNull())
-        }
-      }
-
       describe("when a message is on the queue") {
         context("it is a supported message type") {
           val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
           beforeGroup {
-            whenever(queue.poll()).thenReturn(message)
+            whenever(queue.poll(any())).then {
+              @Suppress("UNCHECKED_CAST")
+              val callback = it.arguments.first() as QueueCallback
+              callback.invoke(message, {})
+            }
           }
 
           afterGroup(::resetMocks)
@@ -117,7 +105,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("passes the message to the correct handler") {
-            verify(executionStartingHandler).handleAndAck(message)
+            verify(executionStartingHandler).handleAndAck(eq(message), any())
           }
 
           it("does not invoke other handlers") {
@@ -129,7 +117,11 @@ class ExecutionWorkerSpec : Spek({
           val message = StageStarting(Pipeline::class.java, "1", "foo", "1")
 
           beforeGroup {
-            whenever(queue.poll()).thenReturn(message)
+            whenever(queue.poll(any())).then {
+              @Suppress("UNCHECKED_CAST")
+              val callback = it.arguments.first() as QueueCallback
+              callback.invoke(message, {})
+            }
           }
 
           afterGroup(::resetMocks)

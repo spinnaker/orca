@@ -33,7 +33,7 @@ import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 import java.lang.RuntimeException
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.time.Duration
 
 @RunWith(JUnitPlatform::class)
 class RunTaskHandlerSpec : Spek({
@@ -99,7 +99,7 @@ class RunTaskHandlerSpec : Spek({
       }
 
       it("re-queues the command") {
-        verify(queue).push(message, taskBackoffMs, MILLISECONDS)
+        verify(queue).push(message, Duration.ofMillis(taskBackoffMs))
       }
     }
 

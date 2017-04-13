@@ -30,13 +30,16 @@ import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
+import java.time.temporal.TemporalAmount
+import java.util.*
+import java.util.UUID.randomUUID
 import javax.annotation.PreDestroy
 
 class RedisQueue(
   queueName: String,
   private val pool: Pool<Jedis>,
   private val clock: Clock,
-  override val ackTimeout: Duration = Duration.ofMinutes(1)
+  override val ackTimeout: TemporalAmount = Duration.ofMinutes(1)
 ) : Queue, Closeable {
 
   private val mapper = ObjectMapper().apply {
@@ -50,33 +53,38 @@ class RedisQueue(
 
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
-  override fun poll(): Message? =
+  override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
       redis
         .pop(queueKey, unackedKey, ackTimeout)
-        ?.let { redis.hget(messagesKey, it) }
-        ?.let { mapper.readValue(it, Message::class.java) }
-    }
-
-  override fun push(message: Message) = push(message, ZERO)
-
-  override fun push(message: Message, delay: Duration) {
-    pool.resource.use { redis ->
-      redis.hset(messagesKey, message.id.toString(), mapper.writeValueAsString(message))
-      redis.zadd(queueKey, score(delay), message.id.toString())
+        ?.let { Pair(UUID.fromString(it), redis.hget(messagesKey, it)) }
+        ?.let { Pair(it.first, mapper.readValue(it.second, Message::class.java)) }
+        ?.let {
+          callback.invoke(it.second) {
+            ack(it.first)
+          }
+        }
     }
   }
 
-  override fun ack(message: Message) {
+  override fun push(message: Message, delay: TemporalAmount) {
     pool.resource.use { redis ->
-      redis.zrem(unackedKey, message.id.toString())
-      redis.hdel(messagesKey, message.id.toString())
+      val id = randomUUID().toString()
+      redis.hset(messagesKey, id, mapper.writeValueAsString(message))
+      redis.zadd(queueKey, score(delay), id)
     }
   }
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
     redeliveryWatcher.close()
+  }
+
+  private fun ack(messageId: UUID) {
+    pool.resource.use { redis ->
+      redis.zrem(unackedKey, messageId.toString())
+      redis.hdel(messagesKey, messageId.toString())
+    }
   }
 
   internal fun redeliver() {
@@ -93,7 +101,7 @@ class RedisQueue(
    *
    * @return the popped value or `null`.
    */
-  private fun JedisCommands.pop(from: String, to: String, delay: Duration = ZERO) =
+  private fun JedisCommands.pop(from: String, to: String, delay: TemporalAmount = ZERO) =
     zrangeByScore(from, 0.0, score(), 0, 1)
       .also { move(from, to, delay, it) }
       .firstOrNull()
@@ -104,21 +112,18 @@ class RedisQueue(
    *
    * @return the popped values.
    */
-  private fun JedisCommands.popAll(from: String, to: String, delay: Duration = ZERO) =
+  private fun JedisCommands.popAll(from: String, to: String, delay: TemporalAmount = ZERO) =
     zrangeByScore(from, 0.0, score())
       .also { move(from, to, delay, it) }
 
   /**
    * Move [values] from sorted set [from] to sorted set [to]
    */
-  private fun JedisCommands.move(from: String, to: String, delay: Duration, values: Set<String>) {
+  private fun JedisCommands.move(from: String, to: String, delay: TemporalAmount, values: Set<String>) {
     if (values.isNotEmpty()) {
-      assert(zrem(from, *values.toTypedArray()) == values.size.toLong())
+      zrem(from, *values.toTypedArray())
       val score = score(delay)
-      zadd(
-        to,
-        values.associateBy(::identity) { score }
-      )
+      zadd(to, values.associate { Pair(it, score) })
     }
   }
 
@@ -126,8 +131,6 @@ class RedisQueue(
    * @return current time (plus optional [delay]) converted to a score for a
    * Redis sorted set.
    */
-  private fun score(delay: Duration = ZERO) =
+  private fun score(delay: TemporalAmount = ZERO) =
     clock.instant().plus(delay).toEpochMilli().toDouble()
 }
-
-private fun <T> identity(x: T): T = x

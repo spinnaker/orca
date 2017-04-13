@@ -16,45 +16,32 @@
 
 package com.netflix.spinnaker.orca.q
 
-import org.threeten.extra.Temporals.chronoUnit
-import java.time.Duration
-import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
+import java.time.Duration.ZERO
+import java.time.temporal.TemporalAmount
 
 interface Queue {
   /**
-   * @return the next message from the queue or `null` if the queue contains no
-   * messages (or none whose delay has expired).
+   * @param callback invoked with the next message from the queue if there is
+   * one and an _acknowledge_ function to call once processing is complete. If
+   * the acknowledge is never called the message will be re-queued after
+   * [ackTimeout].
    */
-  fun poll(): Message?
+  fun poll(callback: QueueCallback): Unit
 
   /**
    * Push [message] for immediate delivery.
    */
-  fun push(message: Message): Unit
+  fun push(message: Message): Unit = push(message, ZERO)
 
   /**
    * Push [message] for delivery after [delay].
    */
-  fun push(message: Message, delay: Duration)
+  fun push(message: Message, delay: TemporalAmount)
 
   /**
    * The expired time after which un-acknowledged messages will be re-delivered.
    */
-  val ackTimeout: Duration
-
-  /**
-   * Acknowledge successful processing of [message]. The message will not
-   * subsequently be re-delivered.
-   */
-  fun ack(message: Message): Unit
+  val ackTimeout: TemporalAmount
 }
 
-fun <Q : Queue> Q.push(message: Message, delay: Long, unit: ChronoUnit) =
-  push(message, Duration.of(delay, unit))
-
-fun <Q : Queue> Q.push(message: Message, delay: Long, unit: TimeUnit) =
-  push(message, delay, chronoUnit(unit))
-
-fun <Q : Queue> Q.push(message: Message, delay: Pair<Long, TimeUnit>) =
-  push(message, delay.first, delay.second)
+typealias QueueCallback = (Message, () -> Unit) -> Unit

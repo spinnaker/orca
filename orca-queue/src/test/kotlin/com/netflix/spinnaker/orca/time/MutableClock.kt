@@ -17,9 +17,9 @@
 package com.netflix.spinnaker.orca.time
 
 import java.time.Clock
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
+import java.time.temporal.TemporalAmount
 
 class MutableClock(
   private var instant: Instant,
@@ -32,8 +32,8 @@ class MutableClock(
 
   override fun instant() = instant
 
-  fun incrementBy(duration: Duration) {
-    instant = instant.plus(duration)
+  fun incrementBy(amount: TemporalAmount) {
+    instant = instant.plus(amount)
   }
 
   fun instant(newInstant: Instant): Unit {

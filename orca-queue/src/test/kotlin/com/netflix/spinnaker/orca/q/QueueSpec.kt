@@ -16,13 +16,10 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.natpryce.hamkrest.absent
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
-import com.natpryce.hamkrest.throws
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
 import com.netflix.spinnaker.orca.time.MutableClock
+import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
@@ -30,13 +27,16 @@ import org.jetbrains.spek.api.dsl.it
 import java.io.Closeable
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.TimeUnit.HOURS
 
 abstract class QueueSpec<out Q : Queue>(
   createQueue: () -> Q,
   triggerRedeliveryCheck: (Q) -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
+
+  val callback: QueueCallback = mock()
+
+  fun resetMocks() = reset(callback)
 
   fun shutdown(queue: Q) {
     if (queue is Closeable) {
@@ -50,9 +50,14 @@ abstract class QueueSpec<out Q : Queue>(
       val queue = createQueue.invoke()
 
       afterGroup { shutdown(queue) }
+      afterGroup(::resetMocks)
 
-      it("returns null") {
-        assertThat(queue.poll(), absent())
+      action("the queue is polled") {
+        queue.poll(callback)
+      }
+
+      it("does not invoke the callback") {
+        verifyZeroInteractions(callback)
       }
     }
 
@@ -65,13 +70,14 @@ abstract class QueueSpec<out Q : Queue>(
       }
 
       afterGroup { shutdown(queue) }
+      afterGroup(::resetMocks)
 
-      it("returns the queued message") {
-        assertThat(queue.poll()?.id, equalTo(message.id))
+      action("the queue is polled") {
+        queue.poll(callback)
       }
 
-      it("returns no further messages") {
-        assertThat(queue.poll(), absent())
+      it("passes the queued message to the callback") {
+        verify(callback).invoke(eq(message), any())
       }
     }
 
@@ -87,15 +93,16 @@ abstract class QueueSpec<out Q : Queue>(
       }
 
       afterGroup { shutdown(queue) }
+      afterGroup(::resetMocks)
 
-      it("returns the messages in the order they were queued") {
-        println(listOf(message1, message2).map(Message::id))
-        assertThat(queue.poll()?.id, equalTo(message1.id))
-        assertThat(queue.poll()?.id, equalTo(message2.id))
+      action("the queue is polled twice") {
+        queue.poll(callback)
+        queue.poll(callback)
       }
 
-      it("returns no further messages") {
-        assertThat(queue.poll(), absent())
+      it("passes the messages to the callback in the order they were queued") {
+        verify(callback).invoke(eq(message1), any())
+        verify(callback).invoke(eq(message2), any())
       }
     }
 
@@ -107,13 +114,18 @@ abstract class QueueSpec<out Q : Queue>(
         val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue.push(message, delay.toHours(), HOURS)
+          queue.push(message, delay)
         }
 
         afterGroup { shutdown(queue) }
+        afterGroup(::resetMocks)
 
-        it("returns null when polled") {
-          assertThat(queue.poll(), absent())
+        action("the queue is polled") {
+          queue.poll(callback)
+        }
+
+        it("does not invoke the callback") {
+          verifyZeroInteractions(callback)
         }
       }
 
@@ -122,29 +134,21 @@ abstract class QueueSpec<out Q : Queue>(
         val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue.push(message, delay.toHours(), HOURS)
+          queue.push(message, delay)
           clock.incrementBy(delay)
         }
 
         afterGroup { shutdown(queue) }
+        afterGroup(::resetMocks)
 
-        it("returns the message when polled") {
-          assertThat(queue.poll()?.id, equalTo(message.id))
+        action("the queue is polled") {
+          queue.poll(callback)
+        }
+
+        it("passes the message to the callback") {
+          verify(callback).invoke(eq(message), any())
         }
       }
-    }
-  }
-
-  describe("acknowledging a non-existent message") {
-    val queue = createQueue.invoke()
-
-    afterGroup { shutdown(queue) }
-
-    it("ignores invalid ack calls") {
-      assertThat(
-        { queue.ack(ExecutionStarting(Pipeline::class.java, "1", "foo")) },
-        !throws<Exception>()
-      )
     }
   }
 
@@ -158,15 +162,19 @@ abstract class QueueSpec<out Q : Queue>(
       }
 
       afterGroup { shutdown(queue) }
+      afterGroup(::resetMocks)
 
-      action("the queue is polled then the message acknowledged") {
-        queue.poll()?.let(queue::ack)
+      action("the queue is polled and the message is acknowledged") {
+        queue.poll { _, ack ->
+          ack.invoke()
+        }
         clock.incrementBy(queue.ackTimeout)
         triggerRedeliveryCheck(queue)
+        queue.poll(callback)
       }
 
       it("does not re-deliver the message") {
-        assertThat(queue.poll(), absent())
+        verifyZeroInteractions(callback)
       }
     }
 
@@ -179,15 +187,17 @@ abstract class QueueSpec<out Q : Queue>(
       }
 
       afterGroup { shutdown(queue) }
+      afterGroup(::resetMocks)
 
-      action("the queue is polled then the message acknowledged") {
-        queue.poll()
+      action("the queue is polled then the message is not acknowledged") {
+        queue.poll { _, _ -> }
         clock.incrementBy(queue.ackTimeout)
         triggerRedeliveryCheck(queue)
+        queue.poll(callback)
       }
 
       it("does not re-deliver the message") {
-        assertThat(queue.poll()?.id, equalTo(message.id))
+        verify(callback).invoke(eq(message), any())
       }
     }
 
@@ -200,17 +210,19 @@ abstract class QueueSpec<out Q : Queue>(
       }
 
       afterGroup { shutdown(queue) }
+      afterGroup(::resetMocks)
 
-      action("the queue is polled then the message acknowledged") {
-        (1..2).forEach {
-          assertThat(queue.poll()?.id, equalTo(message.id))
+      action("the queue is polled and the message is not acknowledged") {
+        repeat(2) {
+          queue.poll { _, _ -> }
           clock.incrementBy(queue.ackTimeout)
           triggerRedeliveryCheck(queue)
         }
+        queue.poll(callback)
       }
 
-      it("does not re-deliver the message") {
-        assertThat(queue.poll()?.id, equalTo(message.id))
+      it("re-delivers the message") {
+        verify(callback).invoke(eq(message), any())
       }
     }
   }

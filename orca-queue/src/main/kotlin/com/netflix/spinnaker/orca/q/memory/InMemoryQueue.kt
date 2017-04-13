@@ -26,6 +26,9 @@ import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.TemporalAmount
+import java.util.*
+import java.util.UUID.randomUUID
 import java.util.concurrent.DelayQueue
 import java.util.concurrent.Delayed
 import java.util.concurrent.TimeUnit
@@ -34,29 +37,29 @@ import javax.annotation.PreDestroy
 
 class InMemoryQueue(
   private val clock: Clock,
-  override val ackTimeout: Duration = Duration.ofMinutes(1)
+  override val ackTimeout: TemporalAmount = Duration.ofMinutes(1)
 ) : Queue, Closeable {
 
   private val log: Logger = getLogger(javaClass)
 
-  private val queue = DelayQueue<DelayedMessage>()
-  private val unacked = DelayQueue<DelayedMessage>()
+  private val queue = DelayQueue<Envelope>()
+  private val unacked = DelayQueue<Envelope>()
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
-  override fun poll(): Message? =
-    queue.poll()?.run {
-      unacked.put(DelayedMessage(payload, clock.instant().plus(ackTimeout), clock))
-      payload
+  override fun poll(callback: (Message, () -> Unit) -> Unit) {
+    queue.poll()?.let { envelope ->
+      unacked.put(envelope.copy(scheduledTime = clock.instant().plus(ackTimeout)))
+      callback.invoke(envelope.payload) {
+        ack(envelope.id)
+      }
     }
+  }
 
-  override fun push(message: Message) =
-    queue.put(DelayedMessage(message, clock.instant(), clock))
+  override fun push(message: Message, delay: TemporalAmount) =
+    queue.put(Envelope(message, clock.instant().plus(delay), clock))
 
-  override fun push(message: Message, delay: Duration) =
-    queue.put(DelayedMessage(message, clock.instant().plus(delay), clock))
-
-  override fun ack(message: Message) {
-    unacked.removeIf { it.payload.id == message.id }
+  private fun ack(messageId: UUID) {
+    unacked.removeIf { it.id == messageId }
   }
 
   @PreDestroy override fun close() {
@@ -67,7 +70,7 @@ class InMemoryQueue(
   internal fun redeliver() {
     unacked.pollAll {
       log.warn("redelivering unacked message ${it.payload}")
-      queue.put(DelayedMessage(it.payload, clock.instant(), clock))
+      queue.put(it.copy(scheduledTime = clock.instant()))
     }
   }
 
@@ -84,11 +87,14 @@ class InMemoryQueue(
   }
 }
 
-internal data class DelayedMessage(
+internal data class Envelope(
+  val id: UUID,
   val payload: Message,
   val scheduledTime: Instant,
   val clock: Clock
 ) : Delayed {
+  constructor(payload: Message, scheduledTime: Instant, clock: Clock) :
+    this(randomUUID(), payload, scheduledTime, clock)
 
   override fun compareTo(other: Delayed) =
     getDelay(MILLISECONDS).compareTo(other.getDelay(MILLISECONDS))

@@ -45,7 +45,10 @@ dependencies {
 
   compile spinnaker.dependency("clouddriverAws")
 
-  testCompile project(":orca-queue")
+  testCompile project(path: ":orca-queue", configuration: "testOutput")
+  testCompile "org.jetbrains.spek:spek-api:$spekVersion"
+
+  testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
 }
 
 configurations.all {

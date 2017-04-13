@@ -24,12 +24,13 @@ interface MessageHandler<M : Message> {
   val messageType: Class<M>
   val queue: Queue
 
+  // TODO : rename
   @Suppress("UNCHECKED_CAST")
-  fun handleAndAck(message: Message): Unit =
+  fun handleAndAck(message: Message, ack: () -> Unit): Unit =
     when (message.javaClass) {
       messageType -> {
         handle(message as M)
-        queue.ack(message)
+        ack.invoke()
       }
       else ->
         throw IllegalArgumentException("Unsupported message type ${message.javaClass.simpleName}")

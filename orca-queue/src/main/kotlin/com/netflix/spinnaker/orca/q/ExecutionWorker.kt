@@ -50,25 +50,18 @@ open class ExecutionWorker
     ifEnabled {
       registry.counter(pollOpsRateId).increment()
 
-      val message = queue.poll()
-      when (message) {
-        null -> {
-          log.debug("No events")
-          registry.counter(emptyReceivesId).increment()
-        }
-        else -> {
-          log.info("Received message $message")
-          val handler = handlers[message.javaClass]
-          if (handler != null) {
-            executor.execute {
-              handler.handleAndAck(message)
-            }
-          } else {
-            registry.counter(pollErrorRateId).increment()
-
-            // TODO: DLQ
-            throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}")
+      queue.poll { message, ack ->
+        log.info("Received message $message")
+        val handler = handlers[message.javaClass]
+        if (handler != null) {
+          executor.execute {
+            handler.handleAndAck(message, ack)
           }
+        } else {
+          registry.counter(pollErrorRateId).increment()
+
+          // TODO: DLQ
+          throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}")
         }
       }
     }
