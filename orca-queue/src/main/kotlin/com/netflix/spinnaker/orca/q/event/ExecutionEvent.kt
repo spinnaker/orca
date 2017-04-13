@@ -36,116 +36,116 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
    * Converts an event to the execution log entry format
    */
   abstract fun toLogEntry(): ExecutionLogEntry
+}
 
-  class ExecutionStarted(
-    source: Any,
-    val executionType: Class<out Execution<*>>,
-    val executionId: String
-  ) : ExecutionEvent(source) {
-    constructor(source: Any, message: StartExecution) :
-      this(source, message.executionType, message.executionId)
+class ExecutionStarted(
+  source: Any,
+  val executionType: Class<out Execution<*>>,
+  val executionId: String
+) : ExecutionEvent(source) {
+  constructor(source: Any, message: StartExecution) :
+    this(source, message.executionType, message.executionId)
 
-    override fun toLogEntry() = ExecutionLogEntry(
-      executionId,
-      timestamp,
-      javaClass.simpleName,
-      emptyMap()
-    )
-  }
+  override fun toLogEntry() = ExecutionLogEntry(
+    executionId,
+    timestamp,
+    javaClass.simpleName,
+    emptyMap()
+  )
+}
 
+/**
+ * An execution completed (either completed successfully or stopped due to
+ * failure/cancellation/whatever).
+ */
+class ExecutionComplete(
+  source: Any,
+  val executionType: Class<out Execution<*>>,
+  val executionId: String,
+  val status: ExecutionStatus
+) : ExecutionEvent(source) {
   /**
-   * An execution completed (either completed successfully or stopped due to
-   * failure/cancellation/whatever).
+   * Copy constructor to create a pub-sub event from a queue message.
    */
-  class ExecutionComplete(
-    source: Any,
-    val executionType: Class<out Execution<*>>,
-    val executionId: String,
-    val status: ExecutionStatus
-  ) : ExecutionEvent(source) {
-    /**
-     * Copy constructor to create a pub-sub event from a queue message.
-     */
-    constructor(source: Any, message: CompleteExecution) :
-      this(source, message.executionType, message.executionId, message.status)
+  constructor(source: Any, message: CompleteExecution) :
+    this(source, message.executionType, message.executionId, message.status)
 
-    override fun toLogEntry() = ExecutionLogEntry(
-      executionId,
-      timestamp,
-      javaClass.simpleName,
-      hashMapOf("status" to status.name)
-    )
-  }
+  override fun toLogEntry() = ExecutionLogEntry(
+    executionId,
+    timestamp,
+    javaClass.simpleName,
+    hashMapOf("status" to status.name)
+  )
+}
 
-  class StageStarted(
-    source: Any,
-    val executionType: Class<out Execution<*>>,
-    val executionId: String,
-    val stageId: String
-  ) : ExecutionEvent(source) {
-    constructor(source: Any, message: StartStage) :
-      this(source, message.executionType, message.executionId, message.stageId)
+class StageStarted(
+  source: Any,
+  val executionType: Class<out Execution<*>>,
+  val executionId: String,
+  val stageId: String
+) : ExecutionEvent(source) {
+  constructor(source: Any, message: StartStage) :
+    this(source, message.executionType, message.executionId, message.stageId)
 
-    override fun toLogEntry() = ExecutionLogEntry(
-      executionId,
-      timestamp,
-      javaClass.simpleName,
-      emptyMap()
-    )
-  }
+  override fun toLogEntry() = ExecutionLogEntry(
+    executionId,
+    timestamp,
+    javaClass.simpleName,
+    emptyMap()
+  )
+}
 
-  class StageComplete(
-    source: Any,
-    val executionType: Class<out Execution<*>>,
-    val executionId: String,
-    val stageId: String,
-    val status: ExecutionStatus
-  ) : ExecutionEvent(source) {
-    constructor(source: Any, message: CompleteStage) :
-      this(source, message.executionType, message.executionId, message.stageId, message.status)
+class StageComplete(
+  source: Any,
+  val executionType: Class<out Execution<*>>,
+  val executionId: String,
+  val stageId: String,
+  val status: ExecutionStatus
+) : ExecutionEvent(source) {
+  constructor(source: Any, message: CompleteStage) :
+    this(source, message.executionType, message.executionId, message.stageId, message.status)
 
-    override fun toLogEntry() = ExecutionLogEntry(
-      executionId,
-      timestamp,
-      javaClass.simpleName,
-      hashMapOf("status" to status.name)
-    )
-  }
+  override fun toLogEntry() = ExecutionLogEntry(
+    executionId,
+    timestamp,
+    javaClass.simpleName,
+    hashMapOf("status" to status.name)
+  )
+}
 
-  class TaskStarted(
-    source: Any,
-    val executionType: Class<out Execution<*>>,
-    val executionId: String,
-    val stageId: String,
-    val taskId: String
-  ) : ExecutionEvent(source) {
-    constructor(source: Any, message: StartTask) :
-      this(source, message.executionType, message.executionId, message.stageId, message.taskId)
+class TaskStarted(
+  source: Any,
+  val executionType: Class<out Execution<*>>,
+  val executionId: String,
+  val stageId: String,
+  val taskId: String
+) : ExecutionEvent(source) {
+  constructor(source: Any, message: StartTask) :
+    this(source, message.executionType, message.executionId, message.stageId, message.taskId)
 
-    override fun toLogEntry() = ExecutionLogEntry(
-      executionId,
-      timestamp,
-      javaClass.simpleName,
-      emptyMap()
-    )
-  }
+  override fun toLogEntry() = ExecutionLogEntry(
+    executionId,
+    timestamp,
+    javaClass.simpleName,
+    emptyMap()
+  )
+}
 
-  class TaskComplete(
-    source: Any,
-    val executionType: Class<out Execution<*>>,
-    val executionId: String,
-    val stageId: String,
-    val taskId: String,
-    val status: ExecutionStatus
-  ) : ExecutionEvent(source) {
-    constructor(source: Any, message: CompleteTask) :
-      this(source, message.executionType, message.executionId, message.stageId, message.taskId, message.status)
+class TaskComplete(
+  source: Any,
+  val executionType: Class<out Execution<*>>,
+  val executionId: String,
+  val stageId: String,
+  val taskId: String,
+  val status: ExecutionStatus
+) : ExecutionEvent(source) {
+  constructor(source: Any, message: CompleteTask) :
+    this(source, message.executionType, message.executionId, message.stageId, message.taskId, message.status)
 
-    override fun toLogEntry() = ExecutionLogEntry(
-      executionId,
-      timestamp,
-      javaClass.simpleName,
-      hashMapOf("status" to status.name)
-    )
-  }
+  override fun toLogEntry() = ExecutionLogEntry(
+    executionId,
+    timestamp,
+    javaClass.simpleName,
+    hashMapOf("status" to status.name)
+  )
 }

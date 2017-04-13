@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.echo.listeners;
 
 import com.netflix.spinnaker.orca.echo.EchoService;
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStarted;
+import com.netflix.spinnaker.orca.q.event.ExecutionStarted;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
