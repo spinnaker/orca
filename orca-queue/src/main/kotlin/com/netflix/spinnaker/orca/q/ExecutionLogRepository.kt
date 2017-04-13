@@ -31,6 +31,6 @@ interface ExecutionLogRepository {
 /**
  * Fallback (yet extra-unsafe) execution log repository.
  */
-class NoopExecutionLogRepository : ExecutionLogRepository {
+class BlackholeExecutionLogRepository : ExecutionLogRepository {
   override fun save(entry: ExecutionLogEntry) {}
 }

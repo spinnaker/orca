@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.config
 
 import com.netflix.spinnaker.orca.q.ExecutionLogRepository
-import com.netflix.spinnaker.orca.q.NoopExecutionLogRepository
+import com.netflix.spinnaker.orca.q.BlackholeExecutionLogRepository
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.memory.InMemoryQueue
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -38,7 +38,7 @@ open class QueueConfiguration {
   open fun inMemoryQueue(clock: Clock): Queue = InMemoryQueue(clock)
 
   @Bean @ConditionalOnMissingBean(ExecutionLogRepository::class)
-  open fun executionLogRepository(): ExecutionLogRepository = NoopExecutionLogRepository()
+  open fun executionLogRepository(): ExecutionLogRepository = BlackholeExecutionLogRepository()
 
   @Bean
   open fun messageHandlerPool(): Executor = newCachedThreadPool() // TODO: ¯\_(ツ)_/¯
