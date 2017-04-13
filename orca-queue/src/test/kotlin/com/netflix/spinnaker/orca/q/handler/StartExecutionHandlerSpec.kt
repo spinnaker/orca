@@ -21,13 +21,8 @@ import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.StartExecution
-import com.netflix.spinnaker.orca.q.Message.StartStage
-import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
-import com.netflix.spinnaker.orca.q.pipeline
-import com.netflix.spinnaker.orca.q.singleTaskStage
-import com.netflix.spinnaker.orca.q.stage
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context

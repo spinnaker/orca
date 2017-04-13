@@ -21,8 +21,6 @@ import com.natpryce.hamkrest.isA
 import com.natpryce.hamkrest.throws
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.q.Message.CompleteExecution
-import com.netflix.spinnaker.orca.q.Message.StartExecution
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context

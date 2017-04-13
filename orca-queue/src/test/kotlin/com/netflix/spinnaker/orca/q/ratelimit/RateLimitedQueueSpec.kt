@@ -21,9 +21,9 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.config.RateLimitConfiguration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
-import com.netflix.spinnaker.orca.q.Message.RunTask
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.QueueCallback
+import com.netflix.spinnaker.orca.q.RunTask
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe

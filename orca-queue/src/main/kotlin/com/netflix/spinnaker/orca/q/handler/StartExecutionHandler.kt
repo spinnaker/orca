@@ -18,12 +18,8 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.StartExecution
-import com.netflix.spinnaker.orca.q.Message.StartStage
-import com.netflix.spinnaker.orca.q.MessageHandler
-import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
-import com.netflix.spinnaker.orca.q.initialStages
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component

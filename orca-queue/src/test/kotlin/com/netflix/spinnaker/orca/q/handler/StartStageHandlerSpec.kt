@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.Message.*
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageStartedEvent
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
@@ -461,7 +460,7 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("emits an error event") {
-        verify(queue).push(isA<ConfigurationError.InvalidExecutionId>())
+        verify(queue).push(isA<InvalidExecutionId>())
       }
     }
 
@@ -483,7 +482,7 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("emits an error event") {
-        verify(queue).push(isA<ConfigurationError.InvalidStageId>())
+        verify(queue).push(isA<InvalidStageId>())
       }
     }
   }

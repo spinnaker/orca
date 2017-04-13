@@ -18,10 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.q.InvalidTask
-import com.netflix.spinnaker.orca.q.Message.CompleteExecution
-import com.netflix.spinnaker.orca.q.Message.ConfigurationError.*
-import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.*
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify

@@ -18,8 +18,7 @@ package com.netflix.spinnaker.orca.q.event
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.q.ExecutionLogEntry
-import com.netflix.spinnaker.orca.q.Message
+import com.netflix.spinnaker.orca.q.*
 import org.springframework.context.ApplicationEvent
 import java.time.Instant
 
@@ -43,7 +42,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val executionType: Class<out Execution<*>>,
     val executionId: String
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.StartExecution) :
+    constructor(source: Any, message: StartExecution) :
       this(source, message.executionType, message.executionId)
 
     override fun toLogEntry() = ExecutionLogEntry(
@@ -67,7 +66,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     /**
      * Copy constructor to create a pub-sub event from a queue message.
      */
-    constructor(source: Any, message: Message.CompleteExecution) :
+    constructor(source: Any, message: CompleteExecution) :
       this(source, message.executionType, message.executionId, message.status)
 
     override fun toLogEntry() = ExecutionLogEntry(
@@ -84,7 +83,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val executionId: String,
     val stageId: String
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.StartStage) :
+    constructor(source: Any, message: StartStage) :
       this(source, message.executionType, message.executionId, message.stageId)
 
     override fun toLogEntry() = ExecutionLogEntry(
@@ -102,7 +101,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val stageId: String,
     val status: ExecutionStatus
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.CompleteStage) :
+    constructor(source: Any, message: CompleteStage) :
       this(source, message.executionType, message.executionId, message.stageId, message.status)
 
     override fun toLogEntry() = ExecutionLogEntry(
@@ -120,7 +119,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val stageId: String,
     val taskId: String
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.StartTask) :
+    constructor(source: Any, message: StartTask) :
       this(source, message.executionType, message.executionId, message.stageId, message.taskId)
 
     override fun toLogEntry() = ExecutionLogEntry(
@@ -139,7 +138,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val taskId: String,
     val status: ExecutionStatus
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.CompleteTask) :
+    constructor(source: Any, message: CompleteTask) :
       this(source, message.executionType, message.executionId, message.stageId, message.taskId, message.status)
 
     override fun toLogEntry() = ExecutionLogEntry(

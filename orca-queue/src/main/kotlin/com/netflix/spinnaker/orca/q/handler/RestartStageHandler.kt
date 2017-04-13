@@ -21,10 +21,10 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.RestartStage
-import com.netflix.spinnaker.orca.q.Message.StartStage
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.RestartStage
+import com.netflix.spinnaker.orca.q.StartStage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 

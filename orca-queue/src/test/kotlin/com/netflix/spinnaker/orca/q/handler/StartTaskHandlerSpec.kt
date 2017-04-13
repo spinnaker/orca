@@ -23,8 +23,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.Message.RunTask
-import com.netflix.spinnaker.orca.q.Message.StartTask
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStartedEvent
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*

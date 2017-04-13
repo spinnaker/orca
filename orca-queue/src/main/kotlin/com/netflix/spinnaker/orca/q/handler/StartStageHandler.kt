@@ -21,8 +21,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.Message.StartStage
-import com.netflix.spinnaker.orca.q.Message.StartTask
+import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageStartedEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher

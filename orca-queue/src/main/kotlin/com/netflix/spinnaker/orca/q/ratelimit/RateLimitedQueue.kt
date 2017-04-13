@@ -17,8 +17,8 @@ package com.netflix.spinnaker.orca.q.ratelimit
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.config.RateLimitConfiguration
+import com.netflix.spinnaker.orca.q.ApplicationAware
 import com.netflix.spinnaker.orca.q.Message
-import com.netflix.spinnaker.orca.q.Message.ApplicationAware
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.QueueCallback
 import org.slf4j.Logger
