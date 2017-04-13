@@ -21,10 +21,21 @@ import java.time.temporal.TemporalAmount
 
 interface Queue {
   /**
+   * Polls the queue for ready messages.
+   *
+   * Implementations may invoke [callback] any number of times. Some
+   * implementations may deliver a maximum of one message per call, others may
+   * deliver all ready messages.
+   *
+   * If no messages exist on the queue or all messages have a remaining delay
+   * [callback] is not invoked.
+   *
+   * Messages *must* be acknowledged by calling the function passed to
+   * [callback] or they will be re-delivered after [ackTimeout]. Acknowledging
+   * via a nested callback allows the message to be processed asynchronously.
+   *
    * @param callback invoked with the next message from the queue if there is
-   * one and an _acknowledge_ function to call once processing is complete. If
-   * the acknowledge is never called the message will be re-queued after
-   * [ackTimeout].
+   * one and an _acknowledge_ function to call once processing is complete.
    */
   fun poll(callback: QueueCallback): Unit
 

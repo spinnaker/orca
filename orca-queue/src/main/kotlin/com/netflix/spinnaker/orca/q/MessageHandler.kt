@@ -24,11 +24,10 @@ interface MessageHandler<M : Message> {
   val messageType: Class<M>
   val queue: Queue
 
-  // TODO : rename
-  @Suppress("UNCHECKED_CAST")
   fun handleAndAck(message: Message, ack: () -> Unit): Unit =
     when (message.javaClass) {
       messageType -> {
+        @Suppress("UNCHECKED_CAST")
         handle(message as M)
         ack.invoke()
       }

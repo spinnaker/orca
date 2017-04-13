@@ -38,10 +38,8 @@ open class ExecutionWorker
 
   override val log: Logger = getLogger(javaClass)
   override val enabled = AtomicBoolean(false)
-  // TODO: this could be neater
-  private val handlers = handlers.groupBy(MessageHandler<*>::messageType).mapValues { it.value.first() }
+  private val handlers = handlers.associate { Pair(it.messageType, it) }
 
-  private val emptyReceivesId = registry.createId("orca.nu.worker.emptyReceives")
   private val pollOpsRateId = registry.createId("orca.nu.worker.pollOpsRate")
   private val pollErrorRateId = registry.createId("orca.nu.worker.pollErrorRate")
 
