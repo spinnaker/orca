@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Meter
+import com.netflix.spectator.api.Tag
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.springframework.context.ApplicationEvent
@@ -26,6 +29,12 @@ import org.springframework.context.ApplicationEvent
  * organize work but are published for external monitoring.
  */
 sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
+
+  /**
+   * Converts an event to the execution log entry format
+   */
+  abstract fun toLogEntry(): ExecutionLogEntry
+
   /**
    * An execution completed (either completed successfully or stopped due to
    * failure/cancellation/whatever).
@@ -35,5 +44,12 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val executionType: Class<out Execution<*>>,
     val executionId: String,
     val status: ExecutionStatus
-  ) : ExecutionEvent(source)
+  ) : ExecutionEvent(source) {
+    override fun toLogEntry() = ExecutionLogEntry(
+      executionId,
+      this.timestamp,
+      javaClass.simpleName,
+      hashMapOf("status" to status.name)
+    )
+  }
 }
