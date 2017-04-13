@@ -21,8 +21,8 @@ import com.natpryce.hamkrest.isA
 import com.natpryce.hamkrest.throws
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
-import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
+import com.netflix.spinnaker.orca.q.Message.CompleteExecution
+import com.netflix.spinnaker.orca.q.Message.StartExecution
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -37,14 +37,14 @@ class MessageHandlerSpec : Spek({
   val queue: Queue = mock()
   val handleCallback: (Message) -> Unit = mock()
 
-  val handler = object : MessageHandler<ExecutionStarting> {
+  val handler = object : MessageHandler<StartExecution> {
     override val queue
       get() = queue
 
     override val messageType
-      get() = ExecutionStarting::class.java
+      get() = StartExecution::class.java
 
-    override fun handle(message: ExecutionStarting) {
+    override fun handle(message: StartExecution) {
       handleCallback.invoke(message)
     }
   }
@@ -53,7 +53,7 @@ class MessageHandlerSpec : Spek({
 
   describe("message acknowledgment") {
     context("when a message is processed successfully") {
-      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+      val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       afterGroup(::resetMocks)
 
@@ -67,7 +67,7 @@ class MessageHandlerSpec : Spek({
     }
 
     context("when the handler throws an exception") {
-      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+      val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         whenever(handleCallback.invoke(any()))
@@ -85,7 +85,7 @@ class MessageHandlerSpec : Spek({
     }
 
     context("when the handler is passed the wrong type of message") {
-      val message = ExecutionComplete(Pipeline::class.java, "1", "foo", SUCCEEDED)
+      val message = CompleteExecution(Pipeline::class.java, "1", "foo", SUCCEEDED)
 
       afterGroup(::resetMocks)
 

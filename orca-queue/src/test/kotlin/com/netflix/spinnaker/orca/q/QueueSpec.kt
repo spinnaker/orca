@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
+import com.netflix.spinnaker.orca.q.Message.StartExecution
 import com.netflix.spinnaker.orca.time.MutableClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -67,7 +67,7 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("there is a single message") {
-      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+      val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue = createQueue.invoke()
@@ -87,8 +87,8 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("there are multiple messages") {
-      val message1 = ExecutionStarting(Pipeline::class.java, "1", "foo")
-      val message2 = ExecutionStarting(Pipeline::class.java, "2", "foo")
+      val message1 = StartExecution(Pipeline::class.java, "1", "foo")
+      val message2 = StartExecution(Pipeline::class.java, "2", "foo")
 
       beforeGroup {
         queue = createQueue.invoke().also { q ->
@@ -118,7 +118,7 @@ abstract class QueueSpec<out Q : Queue>(
       val delay = Duration.ofHours(1)
 
       context("whose delay has not expired") {
-        val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+        val message = StartExecution(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
           queue = createQueue.invoke()
@@ -138,7 +138,7 @@ abstract class QueueSpec<out Q : Queue>(
       }
 
       context("whose delay has expired") {
-        val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+        val message = StartExecution(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
           queue = createQueue.invoke()
@@ -162,7 +162,7 @@ abstract class QueueSpec<out Q : Queue>(
 
   describe("message redelivery") {
     context("a message is acknowledged") {
-      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+      val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue = createQueue.invoke()
@@ -189,7 +189,7 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("a message is not acknowledged") {
-      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+      val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue = createQueue.invoke()
@@ -214,7 +214,7 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("a message is not acknowledged more than once") {
-      val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+      val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
         queue = createQueue.invoke()

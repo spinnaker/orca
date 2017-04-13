@@ -38,14 +38,14 @@ import org.junit.runner.RunWith
 import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
-class TaskCompleteHandlerSpec : Spek({
+class CompleteTaskHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
-  val handler = TaskCompleteHandler(queue, repository, publisher, clock)
+  val handler = CompleteTaskHandler(queue, repository, publisher, clock)
 
   fun resetMocks() = reset(queue, repository, publisher)
 
@@ -58,7 +58,7 @@ class TaskCompleteHandlerSpec : Spek({
           multiTaskStage.buildTasks(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
+      val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -83,7 +83,7 @@ class TaskCompleteHandlerSpec : Spek({
 
       it("runs the next task") {
         verify(queue)
-          .push(TaskStarting(
+          .push(StartTask(
             Pipeline::class.java,
             message.executionId,
             "foo",
@@ -114,7 +114,7 @@ class TaskCompleteHandlerSpec : Spek({
           singleTaskStage.buildTasks(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
+      val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -139,7 +139,7 @@ class TaskCompleteHandlerSpec : Spek({
 
       it("emits an event to signal the stage is complete") {
         verify(queue)
-          .push(StageComplete(
+          .push(CompleteStage(
             message.executionType,
             message.executionId,
             "foo",
@@ -158,7 +158,7 @@ class TaskCompleteHandlerSpec : Spek({
           stageWithSyntheticAfter.buildSyntheticStages(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
+      val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -183,7 +183,7 @@ class TaskCompleteHandlerSpec : Spek({
 
       it("triggers the first after stage") {
         verify(queue)
-          .push(StageStarting(
+          .push(StartStage(
             message.executionType,
             message.executionId,
             "foo",
@@ -203,7 +203,7 @@ class TaskCompleteHandlerSpec : Spek({
       }
 
       context("when the task returns REDIRECT") {
-        val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id, "4", REDIRECT)
+        val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id, "4", REDIRECT)
 
         beforeGroup {
           pipeline.stageByRef("1").apply {
@@ -223,7 +223,7 @@ class TaskCompleteHandlerSpec : Spek({
         }
 
         it("repeats the loop") {
-          argumentCaptor<TaskStarting>().apply {
+          argumentCaptor<StartTask>().apply {
             verify(queue).push(capture())
             assertThat(firstValue.taskId, equalTo("2"))
           }
@@ -253,7 +253,7 @@ class TaskCompleteHandlerSpec : Spek({
           multiTaskStage.buildTasks(this)
         }
       }
-      val message = TaskComplete(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", status)
+      val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", status)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -277,7 +277,7 @@ class TaskCompleteHandlerSpec : Spek({
       }
 
       it("fails the stage") {
-        verify(queue).push(StageComplete(
+        verify(queue).push(CompleteStage(
           message.executionType,
           message.executionId,
           "foo",

@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.InvalidTask
+import com.netflix.spinnaker.orca.q.Message.CompleteExecution
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError.*
-import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
 import com.netflix.spinnaker.orca.q.Queue
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
@@ -53,7 +53,7 @@ class ConfigurationErrorHandlerSpec : Spek({
       }
 
       it("marks the execution as terminal") {
-        verify(queue).push(ExecutionComplete(
+        verify(queue).push(CompleteExecution(
           Pipeline::class.java,
           message.executionId,
           "foo",

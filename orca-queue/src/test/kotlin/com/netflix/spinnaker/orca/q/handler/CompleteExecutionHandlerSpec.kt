@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
+import com.netflix.spinnaker.orca.q.Message.CompleteExecution
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
 import com.netflix.spinnaker.orca.q.pipeline
@@ -32,19 +32,19 @@ import org.junit.runner.RunWith
 import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
-class ExecutionCompleteHandlerSpec : Spek({
+class CompleteExecutionHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
 
-  val handler = ExecutionCompleteHandler(queue, repository, publisher)
+  val handler = CompleteExecutionHandler(queue, repository, publisher)
 
   fun resetMocks() = reset(queue, repository, publisher)
 
   describe("when an execution completes successfully") {
     val pipeline = pipeline { }
-    val message = ExecutionComplete(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
+    val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))
@@ -65,7 +65,7 @@ class ExecutionCompleteHandlerSpec : Spek({
   setOf(TERMINAL, CANCELED).forEach { status ->
     describe("when an execution fails with $status status") {
       val pipeline = pipeline()
-      val message = ExecutionComplete(Pipeline::class.java, pipeline.id, "foo", status)
+      val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", status)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -87,7 +87,7 @@ class ExecutionCompleteHandlerSpec : Spek({
   setOf(SUCCEEDED, TERMINAL, CANCELED).forEach { status ->
     describe("when an execution completes with $status status") {
       val pipeline = pipeline()
-      val message = ExecutionComplete(Pipeline::class.java, pipeline.id, "foo", status)
+      val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", status)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))

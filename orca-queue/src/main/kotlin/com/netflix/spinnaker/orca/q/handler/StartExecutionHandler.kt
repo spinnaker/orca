@@ -18,38 +18,37 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.RunTask
-import com.netflix.spinnaker.orca.q.Message.TaskStarting
+import com.netflix.spinnaker.orca.q.Message.StartExecution
+import com.netflix.spinnaker.orca.q.Message.StartStage
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStartedEvent
-import com.netflix.spinnaker.orca.q.task
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
+import com.netflix.spinnaker.orca.q.initialStages
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
-import java.time.Clock
 
 @Component
-open class TaskStartingHandler
+open class StartExecutionHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher,
-  private val clock: Clock
-) : MessageHandler<TaskStarting>, QueueProcessor {
+  private val publisher: ApplicationEventPublisher
+) : MessageHandler<StartExecution>, QueueProcessor {
 
-  override fun handle(message: TaskStarting) {
-    message.withStage { stage ->
-      val task = stage.task(message.taskId)
-      task.status = RUNNING
-      task.startTime = clock.millis()
-      repository.storeStage(stage)
+  override val messageType = StartExecution::class.java
 
-      queue.push(RunTask(message, task.id, task.implementingClass))
+  override fun handle(message: StartExecution) {
+    message.withExecution { execution ->
+      repository.updateStatus(message.executionId, RUNNING)
+
+      execution
+        .initialStages()
+        .forEach {
+          queue.push(StartStage(message, it.getId()))
+        }
     }
 
-    publisher.publishEvent(TaskStartedEvent(this, message))
+    publisher.publishEvent(ExecutionStartedEvent(this, message))
   }
-
-  override val messageType = TaskStarting::class.java
 }

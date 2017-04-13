@@ -21,8 +21,8 @@ import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
-import com.netflix.spinnaker.orca.q.Message.StageStarting
+import com.netflix.spinnaker.orca.q.Message.StartExecution
+import com.netflix.spinnaker.orca.q.Message.StartStage
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
 import com.netflix.spinnaker.orca.q.pipeline
@@ -38,13 +38,13 @@ import org.junit.runner.RunWith
 import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
-class ExecutionStartingHandlerSpec : Spek({
+class StartExecutionHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
 
-  val handler = ExecutionStartingHandler(queue, repository, publisher)
+  val handler = StartExecutionHandler(queue, repository, publisher)
 
   fun resetMocks() = reset(queue, repository, publisher)
 
@@ -55,7 +55,7 @@ class ExecutionStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
+      val message = StartExecution(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -73,7 +73,7 @@ class ExecutionStartingHandlerSpec : Spek({
       }
 
       it("starts the first stage") {
-        verify(queue).push(StageStarting(
+        verify(queue).push(StartStage(
           message.executionType,
           message.executionId,
           "foo",
@@ -101,7 +101,7 @@ class ExecutionStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
+      val message = StartExecution(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -115,7 +115,7 @@ class ExecutionStartingHandlerSpec : Spek({
       }
 
       it("starts all the initial stages") {
-        argumentCaptor<StageStarting>().apply {
+        argumentCaptor<StartStage>().apply {
           verify(queue, times(2)).push(capture())
           assertThat(
             allValues.map { it.stageId }.toSet(),

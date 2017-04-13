@@ -47,7 +47,7 @@ sealed class Message {
     val taskId: String
   }
 
-  data class TaskStarting(
+  data class StartTask(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
@@ -61,7 +61,7 @@ sealed class Message {
       this(source, source.stageId, taskId)
   }
 
-  data class TaskComplete(
+  data class CompleteTask(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
@@ -83,12 +83,9 @@ sealed class Message {
   ) : Message(), TaskLevel {
     constructor(message: StageLevel, taskId: String, taskType: Class<out Task>) :
       this(message.executionType, message.executionId, message.application, message.stageId, taskId, taskType)
-
-    constructor(source: RunTask) :
-      this(source.executionType, source.executionId, source.application, source.stageId, source.taskId, source.taskType)
   }
 
-  data class StageStarting(
+  data class StartStage(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
@@ -101,7 +98,7 @@ sealed class Message {
       this(source, source.stageId)
   }
 
-  data class StageComplete(
+  data class CompleteStage(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
@@ -115,21 +112,20 @@ sealed class Message {
       this(source, source.stageId, status)
   }
 
-  data class StageRestarting(
+  data class RestartStage(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
     override val stageId: String
   ) : Message(), StageLevel
 
-  data class ExecutionStarting
-  constructor(
+  data class StartExecution(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String
   ) : Message(), ExecutionLevel
 
-  data class ExecutionComplete(
+  data class CompleteExecution(
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,

@@ -40,8 +40,8 @@ import org.junit.runner.RunWith
 class ExecutionWorkerSpec : Spek({
   describe("execution workers") {
     val queue: Queue = mock()
-    val executionStartingHandler: MessageHandler<ExecutionStarting> = mock()
-    val executionCompleteHandler: MessageHandler<ExecutionComplete> = mock()
+    val startExecutionHandler: MessageHandler<StartExecution> = mock()
+    val completeExecutionHandler: MessageHandler<CompleteExecution> = mock()
     val registry: Registry = mock {
       on { createId(any<String>()) }.thenReturn(mock<Id>())
       on { counter(any<Id>()) }.thenReturn(mock<Counter>())
@@ -49,17 +49,17 @@ class ExecutionWorkerSpec : Spek({
 
     var worker: ExecutionWorker? = null
 
-    fun resetMocks() = reset(queue, executionStartingHandler, executionCompleteHandler)
+    fun resetMocks() = reset(queue, startExecutionHandler, completeExecutionHandler)
 
     beforeGroup {
-      whenever(executionStartingHandler.messageType).thenReturn(ExecutionStarting::class.java)
-      whenever(executionCompleteHandler.messageType).thenReturn(ExecutionComplete::class.java)
+      whenever(startExecutionHandler.messageType).thenReturn(StartExecution::class.java)
+      whenever(completeExecutionHandler.messageType).thenReturn(CompleteExecution::class.java)
 
       worker = ExecutionWorker(
         queue,
         directExecutor(),
         registry,
-        listOf(executionStartingHandler, executionCompleteHandler)
+        listOf(startExecutionHandler, completeExecutionHandler)
       )
     }
 
@@ -88,7 +88,7 @@ class ExecutionWorkerSpec : Spek({
 
       describe("when a message is on the queue") {
         context("it is a supported message type") {
-          val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
+          val message = StartExecution(Pipeline::class.java, "1", "foo")
 
           beforeGroup {
             whenever(queue.poll(any())).then {
@@ -105,16 +105,16 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("passes the message to the correct handler") {
-            verify(executionStartingHandler).invoke(eq(message))
+            verify(startExecutionHandler).invoke(eq(message))
           }
 
           it("does not invoke other handlers") {
-            verifyZeroInteractions(executionCompleteHandler)
+            verifyZeroInteractions(completeExecutionHandler)
           }
         }
 
         context("it is an unsupported message type") {
-          val message = StageStarting(Pipeline::class.java, "1", "foo", "1")
+          val message = StartStage(Pipeline::class.java, "1", "foo", "1")
 
           beforeGroup {
             whenever(queue.poll(any())).then {
@@ -132,8 +132,8 @@ class ExecutionWorkerSpec : Spek({
 
           it("does not invoke any handlers") {
             verifyZeroInteractions(
-              executionStartingHandler,
-              executionCompleteHandler
+              startExecutionHandler,
+              completeExecutionHandler
             )
           }
         }

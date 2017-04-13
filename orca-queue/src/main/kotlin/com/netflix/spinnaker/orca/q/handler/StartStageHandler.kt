@@ -21,8 +21,8 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.Message.StageStarting
-import com.netflix.spinnaker.orca.q.Message.TaskStarting
+import com.netflix.spinnaker.orca.q.Message.StartStage
+import com.netflix.spinnaker.orca.q.Message.StartTask
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageStartedEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -30,15 +30,15 @@ import org.springframework.stereotype.Component
 import java.time.Clock
 
 @Component
-open class StageStartingHandler @Autowired constructor(
+open class StartStageHandler @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<StageStarting>, QueueProcessor, StageBuilderAware {
+) : MessageHandler<StartStage>, QueueProcessor, StageBuilderAware {
 
-  override fun handle(message: StageStarting) {
+  override fun handle(message: StartStage) {
     message.withStage { stage ->
       if (stage.allUpstreamStagesComplete()) {
         stage.plan()
@@ -54,7 +54,7 @@ open class StageStartingHandler @Autowired constructor(
     publisher.publishEvent(StageStartedEvent(this, message))
   }
 
-  override val messageType = StageStarting::class.java
+  override val messageType = StartStage::class.java
 
   private fun Stage<*>.plan() {
     builder().let { builder ->
@@ -72,12 +72,12 @@ open class StageStartingHandler @Autowired constructor(
           if (task == null) {
             TODO("do what? Nothing to do, just indicate end of stage?")
           } else {
-            queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), getId(), task.id))
+            queue.push(StartTask(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), getId(), task.id))
           }
         }
       } else {
         beforeStages.forEach {
-          queue.push(StageStarting(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), it.getId()))
+          queue.push(StartStage(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), it.getId()))
         }
       }
     }

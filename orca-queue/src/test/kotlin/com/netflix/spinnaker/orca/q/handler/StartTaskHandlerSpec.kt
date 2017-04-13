@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.RunTask
-import com.netflix.spinnaker.orca.q.Message.TaskStarting
+import com.netflix.spinnaker.orca.q.Message.StartTask
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStartedEvent
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
@@ -36,14 +36,14 @@ import org.junit.runner.RunWith
 import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
-class TaskStartingHandlerSpec : Spek({
+class StartTaskHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
-  val handler = TaskStartingHandler(queue, repository, publisher, clock)
+  val handler = StartTaskHandler(queue, repository, publisher, clock)
 
   fun resetMocks() = reset(queue, repository, publisher)
 
@@ -54,7 +54,7 @@ class TaskStartingHandlerSpec : Spek({
         singleTaskStage.buildTasks(this)
       }
     }
-    val message = TaskStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
+    val message = StartTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))

@@ -29,8 +29,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.Message.StageRestarting
-import com.netflix.spinnaker.orca.q.Message.StageStarting
+import com.netflix.spinnaker.orca.q.Message.RestartStage
+import com.netflix.spinnaker.orca.q.Message.StartStage
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
@@ -44,13 +44,13 @@ import java.time.temporal.ChronoUnit.HOURS
 import java.time.temporal.ChronoUnit.MINUTES
 
 @RunWith(JUnitPlatform::class)
-class StageRestartingHandlerSpec : Spek({
+class RestartStageHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val clock = fixed(now(), systemDefault())
 
-  val handler = StageRestartingHandler(
+  val handler = RestartStageHandler(
     queue,
     repository,
     listOf(
@@ -77,7 +77,7 @@ class StageRestartingHandlerSpec : Spek({
             startTime = clock.instant().minus(1, HOURS).toEpochMilli()
           }
         }
-        val message = StageRestarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
+        val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
         beforeGroup {
           whenever(repository.retrievePipeline(message.executionId))
@@ -95,7 +95,7 @@ class StageRestartingHandlerSpec : Spek({
         }
 
         it("runs the stage") {
-          verify(queue, never()).push(any<StageStarting>())
+          verify(queue, never()).push(any<StartStage>())
         }
 
         // TODO: should probably queue some kind of error
@@ -125,7 +125,7 @@ class StageRestartingHandlerSpec : Spek({
           endTime = clock.instant().minus(30, MINUTES).toEpochMilli()
         }
       }
-      val message = StageRestarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("2").id)
+      val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("2").id)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -181,7 +181,7 @@ class StageRestartingHandlerSpec : Spek({
       }
 
       it("runs the stage") {
-        argumentCaptor<StageStarting>().apply {
+        argumentCaptor<StartStage>().apply {
           verify(queue).push(capture())
           firstValue.apply {
             executionType shouldBe message.executionType
@@ -224,7 +224,7 @@ class StageRestartingHandlerSpec : Spek({
         endTime = clock.instant().minus(57, MINUTES).toEpochMilli()
       }
     }
-    val message = StageRestarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
+    val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))
@@ -298,7 +298,7 @@ class StageRestartingHandlerSpec : Spek({
         endTime = clock.instant().minus(57, MINUTES).toEpochMilli()
       }
     }
-    val message = StageRestarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
+    val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))

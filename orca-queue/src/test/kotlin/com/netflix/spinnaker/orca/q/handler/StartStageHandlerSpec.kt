@@ -42,14 +42,14 @@ import org.junit.runner.RunWith
 import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
-class StageStartingHandlerSpec : Spek({
+class StartStageHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
-  val handler = StageStartingHandler(
+  val handler = StartStageHandler(
     queue,
     repository,
     listOf(
@@ -74,7 +74,7 @@ class StageStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -110,7 +110,7 @@ class StageStartingHandlerSpec : Spek({
       }
 
       it("starts the first task") {
-        verify(queue).push(TaskStarting(
+        verify(queue).push(StartTask(
           message.executionType,
           message.executionId,
           "foo",
@@ -138,7 +138,7 @@ class StageStartingHandlerSpec : Spek({
           type = multiTaskStage.type
         }
       }
-      val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -182,7 +182,7 @@ class StageStartingHandlerSpec : Spek({
       }
 
       it("raises an event to indicate the first task is starting") {
-        verify(queue).push(TaskStarting(
+        verify(queue).push(StartTask(
           message.executionType,
           message.executionId,
           "foo",
@@ -200,7 +200,7 @@ class StageStartingHandlerSpec : Spek({
             type = stageWithSyntheticBefore.type
           }
         }
-        val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+        val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
         beforeGroup {
           whenever(repository.retrievePipeline(message.executionId))
@@ -222,7 +222,7 @@ class StageStartingHandlerSpec : Spek({
         }
 
         it("raises an event to indicate the synthetic stage is starting") {
-          verify(queue).push(StageStarting(
+          verify(queue).push(StartStage(
             message.executionType,
             message.executionId,
             "foo",
@@ -238,7 +238,7 @@ class StageStartingHandlerSpec : Spek({
             type = stageWithSyntheticAfter.type
           }
         }
-        val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+        val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
         beforeGroup {
           whenever(repository.retrievePipeline(message.executionId))
@@ -260,7 +260,7 @@ class StageStartingHandlerSpec : Spek({
         }
 
         it("raises an event to indicate the first task is starting") {
-          verify(queue).push(TaskStarting(
+          verify(queue).push(StartTask(
             message.executionType,
             message.executionId,
             "foo",
@@ -290,7 +290,7 @@ class StageStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("3").id)
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("3").id)
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -308,7 +308,7 @@ class StageStartingHandlerSpec : Spek({
       }
 
       it("waits for the other upstream stage to complete") {
-        verify(queue, never()).push(isA<TaskStarting>())
+        verify(queue, never()).push(isA<StartTask>())
       }
     }
   }
@@ -322,7 +322,7 @@ class StageStartingHandlerSpec : Spek({
           type = stageWithParallelBranches.type
         }
       }
-      val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
       beforeGroup {
         whenever(repository.retrievePipeline(pipeline.id))
@@ -350,7 +350,7 @@ class StageStartingHandlerSpec : Spek({
       }
 
       it("runs the parallel stages") {
-        argumentCaptor<StageStarting>().apply {
+        argumentCaptor<StartStage>().apply {
           verify(queue, times(3)).push(capture())
           assertThat(
             allValues.map { pipeline.stageById(it.stageId).parentStageId },
@@ -370,7 +370,7 @@ class StageStartingHandlerSpec : Spek({
           stageWithParallelBranches.buildTasks(this)
         }
       }
-      val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages[0].id)
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages[0].id)
 
       beforeGroup {
         whenever(repository.retrievePipeline(pipeline.id))
@@ -406,7 +406,7 @@ class StageStartingHandlerSpec : Spek({
     }
 
     context("when the stage starts") {
-      val message = StageStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
       beforeGroup {
         whenever(repository.retrievePipeline(pipeline.id))
@@ -436,7 +436,7 @@ class StageStartingHandlerSpec : Spek({
       }
 
       it("runs the parallel stages") {
-        argumentCaptor<TaskStarting>().apply {
+        argumentCaptor<StartTask>().apply {
           verify(queue).push(capture())
           assertThat(firstValue.taskId, equalTo("1"))
         }
@@ -446,7 +446,7 @@ class StageStartingHandlerSpec : Spek({
 
   describe("invalid commands") {
 
-    val message = StageStarting(Pipeline::class.java, "1", "foo", "1")
+    val message = StartStage(Pipeline::class.java, "1", "foo", "1")
 
     describe("no such execution") {
       beforeGroup {

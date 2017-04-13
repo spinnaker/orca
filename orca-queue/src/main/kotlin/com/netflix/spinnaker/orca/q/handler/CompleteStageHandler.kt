@@ -33,15 +33,15 @@ import org.springframework.stereotype.Component
 import java.time.Clock
 
 @Component
-open class StageCompleteHandler
+open class CompleteStageHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<StageComplete>, QueueProcessor {
+) : MessageHandler<CompleteStage>, QueueProcessor {
 
-  override fun handle(message: StageComplete) {
+  override fun handle(message: CompleteStage) {
     message.withStage { stage ->
       stage.setStatus(message.status)
       stage.setEndTime(clock.millis())
@@ -51,9 +51,9 @@ open class StageCompleteHandler
         stage.startNext()
       } else {
         if (stage.getSyntheticStageOwner() == null) {
-          queue.push(ExecutionComplete(message, message.status))
+          queue.push(CompleteExecution(message, message.status))
         } else {
-          queue.push(StageComplete(message, stage.getParentStageId(), message.status))
+          queue.push(CompleteStage(message, stage.getParentStageId(), message.status))
         }
       }
     }
@@ -61,26 +61,26 @@ open class StageCompleteHandler
     publisher.publishEvent(StageCompleteEvent(this, message))
   }
 
-  override val messageType = StageComplete::class.java
+  override val messageType = CompleteStage::class.java
 
   private fun Stage<*>.startNext() {
     val downstreamStages = downstreamStages()
     if (downstreamStages.isNotEmpty()) {
       downstreamStages.forEach {
-        queue.push(StageStarting(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), it.getId()))
+        queue.push(StartStage(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), it.getId()))
       }
     } else if (getSyntheticStageOwner() == STAGE_BEFORE) {
       parent().let { parent ->
         if (parent.allBeforeStagesComplete()) {
-          queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), parent.getTasks().first().id))
+          queue.push(StartTask(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), parent.getTasks().first().id))
         }
       }
     } else if (getSyntheticStageOwner() == STAGE_AFTER) {
       parent().let { parent ->
-        queue.push(StageComplete(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), SUCCEEDED))
+        queue.push(CompleteStage(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), SUCCEEDED))
       }
     } else {
-      queue.push(ExecutionComplete(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), SUCCEEDED))
+      queue.push(CompleteExecution(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), SUCCEEDED))
     }
   }
 }

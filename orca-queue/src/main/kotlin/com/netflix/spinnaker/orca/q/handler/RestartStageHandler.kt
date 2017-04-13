@@ -21,29 +21,29 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.StageRestarting
-import com.netflix.spinnaker.orca.q.Message.StageStarting
+import com.netflix.spinnaker.orca.q.Message.RestartStage
+import com.netflix.spinnaker.orca.q.Message.StartStage
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-open class StageRestartingHandler
+open class RestartStageHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
-) : MessageHandler<StageRestarting>, QueueProcessor, StageBuilderAware {
+) : MessageHandler<RestartStage>, QueueProcessor, StageBuilderAware {
 
-  override val messageType = StageRestarting::class.java
+  override val messageType = RestartStage::class.java
 
-  override fun handle(message: StageRestarting) {
+  override fun handle(message: RestartStage) {
     message.withStage { stage ->
       if (stage.getStatus().complete) {
         stage.reset()
         repository.updateStatus(stage.getExecution().getId(), RUNNING)
-        queue.push(StageStarting(message))
+        queue.push(StartStage(message))
       }
     }
   }

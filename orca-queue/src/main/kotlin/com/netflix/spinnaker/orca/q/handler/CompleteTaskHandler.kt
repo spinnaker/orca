@@ -29,15 +29,15 @@ import org.springframework.stereotype.Component
 import java.time.Clock
 
 @Component
-open class TaskCompleteHandler
+open class CompleteTaskHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<TaskComplete>, QueueProcessor {
+) : MessageHandler<CompleteTask>, QueueProcessor {
 
-  override fun handle(message: TaskComplete) {
+  override fun handle(message: CompleteTask) {
     message.withStage { stage ->
       val task = stage.task(message.taskId)
       task.status = message.status
@@ -49,14 +49,14 @@ open class TaskCompleteHandler
         repository.storeStage(stage)
 
         if (message.status != SUCCEEDED) {
-          queue.push(StageComplete(message, message.status))
+          queue.push(CompleteStage(message, message.status))
         } else if (task.isStageEnd) {
           stage.firstAfterStages().let { afterStages ->
             if (afterStages.isEmpty()) {
-              queue.push(StageComplete(message, message.status))
+              queue.push(CompleteStage(message, message.status))
             } else {
               afterStages.forEach {
-                queue.push(StageStarting(message, it.getId()))
+                queue.push(StartStage(message, it.getId()))
               }
             }
           }
@@ -65,7 +65,7 @@ open class TaskCompleteHandler
             if (it == null) {
               queue.push(NoDownstreamTasks(message))
             } else {
-              queue.push(TaskStarting(message, it.id))
+              queue.push(StartTask(message, it.id))
             }
           }
         }
@@ -75,7 +75,7 @@ open class TaskCompleteHandler
     }
   }
 
-  override val messageType = TaskComplete::class.java
+  override val messageType = CompleteTask::class.java
 
   private fun Stage<*>.handleRedirect() {
     getTasks().let { tasks ->
@@ -86,7 +86,7 @@ open class TaskCompleteHandler
         it.status = NOT_STARTED
       }
       repository.storeStage(this)
-      queue.push(TaskStarting(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), getId(), tasks[start].id))
+      queue.push(StartTask(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), getId(), tasks[start].id))
     }
   }
 }

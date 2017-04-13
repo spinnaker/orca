@@ -22,9 +22,9 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.Message.CompleteTask
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidTaskType
 import com.netflix.spinnaker.orca.q.Message.RunTask
-import com.netflix.spinnaker.orca.q.Message.TaskComplete
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import org.slf4j.Logger
@@ -47,25 +47,25 @@ open class RunTaskHandler
   override fun handle(message: RunTask) {
     message.withTask { stage, task ->
       if (stage.getExecution().getStatus().complete) {
-        queue.push(TaskComplete(message, CANCELED))
+        queue.push(CompleteTask(message, CANCELED))
       } else {
         try {
           task.execute(stage).let { result ->
-            // TODO: rather send this data with TaskComplete message
+            // TODO: rather send this data with CompleteTask message
             stage.processTaskOutput(result)
             when (result.status) {
             // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
                 queue.push(message, task.backoffPeriod())
               SUCCEEDED, TERMINAL, REDIRECT ->
-                queue.push(TaskComplete(message, result.status))
+                queue.push(CompleteTask(message, result.status))
               else -> TODO()
             }
           }
         } catch(e: Exception) {
           log.error("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]", e)
           // TODO: add context
-          queue.push(TaskComplete(message, TERMINAL))
+          queue.push(CompleteTask(message, TERMINAL))
         }
       }
     }

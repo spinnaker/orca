@@ -16,39 +16,27 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
-import com.netflix.spinnaker.orca.q.Message.StageStarting
+import com.netflix.spinnaker.orca.q.Message.CompleteExecution
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
-import com.netflix.spinnaker.orca.q.initialStages
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
-open class ExecutionStartingHandler
+open class CompleteExecutionHandler
 @Autowired constructor(
   override val queue: Queue,
-  override val repository: ExecutionRepository,
+  private val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher
-) : MessageHandler<ExecutionStarting>, QueueProcessor {
+) : MessageHandler<CompleteExecution> {
 
-  override val messageType = ExecutionStarting::class.java
-
-  override fun handle(message: ExecutionStarting) {
-    message.withExecution { execution ->
-      repository.updateStatus(message.executionId, RUNNING)
-
-      execution
-        .initialStages()
-        .forEach {
-          queue.push(StageStarting(message, it.getId()))
-        }
-    }
-
-    publisher.publishEvent(ExecutionStartedEvent(this, message))
+  override fun handle(message: CompleteExecution) {
+    repository.updateStatus(message.executionId, message.status)
+    publisher.publishEvent(ExecutionCompleteEvent(this, message))
   }
+
+  override val messageType = CompleteExecution::class.java
 }

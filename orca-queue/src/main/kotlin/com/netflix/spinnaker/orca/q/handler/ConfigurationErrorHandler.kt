@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.q.Message.CompleteExecution
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError
-import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,6 +33,6 @@ open class ConfigurationErrorHandler
   override val messageType = ConfigurationError::class.java
 
   override fun handle(message: ConfigurationError) {
-    queue.push(ExecutionComplete(message, TERMINAL))
+    queue.push(CompleteExecution(message, TERMINAL))
   }
 }

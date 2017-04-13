@@ -16,27 +16,40 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
+import com.netflix.spinnaker.orca.q.Message.RunTask
+import com.netflix.spinnaker.orca.q.Message.StartTask
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStartedEvent
+import com.netflix.spinnaker.orca.q.task
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import java.time.Clock
 
 @Component
-open class ExecutionCompleteHandler
+open class StartTaskHandler
 @Autowired constructor(
   override val queue: Queue,
-  private val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher
-) : MessageHandler<ExecutionComplete> {
+  override val repository: ExecutionRepository,
+  private val publisher: ApplicationEventPublisher,
+  private val clock: Clock
+) : MessageHandler<StartTask>, QueueProcessor {
 
-  override fun handle(message: ExecutionComplete) {
-    repository.updateStatus(message.executionId, message.status)
-    publisher.publishEvent(ExecutionCompleteEvent(this, message))
+  override fun handle(message: StartTask) {
+    message.withStage { stage ->
+      val task = stage.task(message.taskId)
+      task.status = RUNNING
+      task.startTime = clock.millis()
+      repository.storeStage(stage)
+
+      queue.push(RunTask(message, task.id, task.implementingClass))
+    }
+
+    publisher.publishEvent(TaskStartedEvent(this, message))
   }
 
-  override val messageType = ExecutionComplete::class.java
+  override val messageType = StartTask::class.java
 }
