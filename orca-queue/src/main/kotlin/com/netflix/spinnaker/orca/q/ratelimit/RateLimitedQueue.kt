@@ -38,7 +38,7 @@ class RateLimitedQueue(
 
   private val log: Logger = LoggerFactory.getLogger(javaClass)
 
-  private val throttledMessagesId = registry.createId("orca.nu.ratelimit.throttledMessages")
+  private val throttledMessagesId = registry.createId("queue.ratelimit.throttledMessages")
 
   override fun poll(callback: QueueCallback) =
     queue.poll { message, ack ->
