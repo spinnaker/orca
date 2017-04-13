@@ -48,7 +48,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
-      timestamp.toEpochMilli(),
+      timestamp,
       javaClass.simpleName,
       emptyMap()
     )
@@ -73,7 +73,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
-      timestamp.toEpochMilli(),
+      timestamp,
       javaClass.simpleName,
       hashMapOf("status" to status.name)
     )
@@ -91,7 +91,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
-      timestamp.toEpochMilli(),
+      timestamp,
       javaClass.simpleName,
       emptyMap()
     )
@@ -110,7 +110,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
-      timestamp.toEpochMilli(),
+      timestamp,
       javaClass.simpleName,
       hashMapOf("status" to status.name)
     )
@@ -129,7 +129,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
-      timestamp.toEpochMilli(),
+      timestamp,
       javaClass.simpleName,
       emptyMap()
     )
@@ -149,7 +149,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
-      timestamp.toEpochMilli(),
+      timestamp,
       javaClass.simpleName,
       hashMapOf("status" to status.name)
     )

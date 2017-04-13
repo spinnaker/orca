@@ -16,10 +16,11 @@
 package com.netflix.spinnaker.orca.q
 
 import java.io.Serializable
+import java.time.Instant
 
 data class ExecutionLogEntry(
   val executionId: String,
-  val eventTimestamp: Long,
+  val timestamp: Instant,
   val eventType: String,
   val details: Map<String, Serializable>
 )
