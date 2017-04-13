@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStarted
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -77,7 +77,7 @@ class StartExecutionHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<ExecutionStartedEvent>().apply {
+        argumentCaptor<ExecutionStarted>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.apply {
             executionType shouldBe message.executionType

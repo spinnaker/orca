@@ -37,7 +37,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
    */
   abstract fun toLogEntry(): ExecutionLogEntry
 
-  class ExecutionStartedEvent(
+  class ExecutionStarted(
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String
@@ -57,7 +57,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
    * An execution completed (either completed successfully or stopped due to
    * failure/cancellation/whatever).
    */
-  class ExecutionCompleteEvent(
+  class ExecutionComplete(
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String,
@@ -77,7 +77,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     )
   }
 
-  class StageStartedEvent(
+  class StageStarted(
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String,
@@ -94,7 +94,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     )
   }
 
-  class StageCompleteEvent(
+  class StageComplete(
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String,
@@ -112,7 +112,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     )
   }
 
-  class TaskStartedEvent(
+  class TaskStarted(
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String,
@@ -130,7 +130,7 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     )
   }
 
-  class TaskCompleteEvent(
+  class TaskComplete(
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String,

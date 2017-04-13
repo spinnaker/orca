@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStartedEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStarted
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -87,7 +87,7 @@ class StartTaskHandlerSpec : Spek({
     }
 
     it("publishes an event") {
-      argumentCaptor<TaskStartedEvent>().apply {
+      argumentCaptor<TaskStarted>().apply {
         verify(publisher).publishEvent(capture())
         firstValue.apply {
           executionType shouldBe pipeline.javaClass

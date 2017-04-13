@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageStartedEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageStarted
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -119,7 +119,7 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<StageStartedEvent>().apply {
+        argumentCaptor<StageStarted>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.apply {
             executionType shouldBe pipeline.javaClass

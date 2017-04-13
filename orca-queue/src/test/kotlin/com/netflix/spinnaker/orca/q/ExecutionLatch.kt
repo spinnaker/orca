@@ -20,7 +20,7 @@ import com.natpryce.hamkrest.Matcher
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionComplete
 import org.springframework.context.ApplicationListener
 import org.springframework.context.ConfigurableApplicationContext
 import java.util.concurrent.CountDownLatch
@@ -30,13 +30,13 @@ import java.util.concurrent.TimeUnit
  * An [ApplicationListener] implementation you can use to wait for an execution
  * to complete. Much better than `Thread.sleep(whatever)` in your tests.
  */
-class ExecutionLatch(matcher: Matcher<ExecutionCompleteEvent>)
-  : ApplicationListener<ExecutionCompleteEvent> {
+class ExecutionLatch(matcher: Matcher<ExecutionComplete>)
+  : ApplicationListener<ExecutionComplete> {
 
   private val predicate = matcher.asPredicate()
   private val latch = CountDownLatch(1)
 
-  override fun onApplicationEvent(event: ExecutionCompleteEvent) {
+  override fun onApplicationEvent(event: ExecutionComplete) {
     if (predicate.invoke(event)) {
       latch.countDown()
     }
@@ -47,7 +47,7 @@ class ExecutionLatch(matcher: Matcher<ExecutionCompleteEvent>)
 
 fun <E : Execution<E>> ConfigurableApplicationContext.runToCompletion(execution: E, launcher: (E) -> Unit) {
   val latch = ExecutionLatch(
-    has(ExecutionCompleteEvent::executionId, equalTo(execution.id))
+    has(ExecutionComplete::executionId, equalTo(execution.id))
   )
   addApplicationListener(latch)
   launcher.invoke(execution)

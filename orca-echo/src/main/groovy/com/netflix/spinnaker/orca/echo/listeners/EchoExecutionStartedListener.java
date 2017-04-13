@@ -17,13 +17,13 @@
 package com.netflix.spinnaker.orca.echo.listeners;
 
 import com.netflix.spinnaker.orca.echo.EchoService;
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent;
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStarted;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EchoExecutionStartedListener implements ApplicationListener<ExecutionStartedEvent> {
+public class EchoExecutionStartedListener implements ApplicationListener<ExecutionStarted> {
 
   private final EchoService echoService;
 
@@ -32,6 +32,6 @@ public class EchoExecutionStartedListener implements ApplicationListener<Executi
     this.echoService = echoService;
   }
 
-  @Override public void onApplicationEvent(ExecutionStartedEvent event) {
+  @Override public void onApplicationEvent(ExecutionStarted event) {
   }
 }

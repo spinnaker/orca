@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStarted
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -45,6 +45,6 @@ open class StartExecutionHandler
         }
     }
 
-    publisher.publishEvent(ExecutionStartedEvent(this, message))
+    publisher.publishEvent(ExecutionStarted(this, message))
   }
 }

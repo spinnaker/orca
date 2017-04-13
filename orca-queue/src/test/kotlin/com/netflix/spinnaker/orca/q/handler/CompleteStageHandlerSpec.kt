@@ -24,8 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.Message.*
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageCompleteEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageComplete
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -91,7 +90,7 @@ class CompleteStageHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<StageCompleteEvent>().apply {
+        argumentCaptor<StageComplete>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.apply {
             executionType shouldBe pipeline.javaClass
@@ -243,7 +242,7 @@ class CompleteStageHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<StageCompleteEvent>().apply {
+        argumentCaptor<StageComplete>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.let {
             it.executionType shouldBe pipeline.javaClass

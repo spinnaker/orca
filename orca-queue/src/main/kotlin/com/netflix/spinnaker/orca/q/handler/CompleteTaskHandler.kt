@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskCompleteEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskComplete
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -68,7 +68,7 @@ open class CompleteTaskHandler
           }
         }
 
-        publisher.publishEvent(TaskCompleteEvent(this, message))
+        publisher.publishEvent(TaskComplete(this, message))
       }
     }
   }

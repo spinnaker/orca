@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageCompleteEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageComplete
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -54,7 +54,7 @@ open class CompleteStageHandler
       }
     }
 
-    publisher.publishEvent(StageCompleteEvent(this, message))
+    publisher.publishEvent(StageComplete(this, message))
   }
 
   override val messageType = CompleteStage::class.java

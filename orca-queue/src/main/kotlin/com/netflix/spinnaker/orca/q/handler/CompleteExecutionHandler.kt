@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionComplete
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -35,7 +35,7 @@ open class CompleteExecutionHandler
 
   override fun handle(message: CompleteExecution) {
     repository.updateStatus(message.executionId, message.status)
-    publisher.publishEvent(ExecutionCompleteEvent(this, message))
+    publisher.publishEvent(ExecutionComplete(this, message))
   }
 
   override val messageType = CompleteExecution::class.java
