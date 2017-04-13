@@ -26,11 +26,11 @@ import org.junit.runner.RunWith
 class RedisQueueSpec : QueueSpec<RedisQueue>(::createQueue, ::triggerRedeliveryCheck, ::shutdownCallback)
 
 // surely this is bad
-var redis: EmbeddedRedis? = null
+private var redis: EmbeddedRedis? = null
 
 private fun createQueue(): RedisQueue {
-  val redis = EmbeddedRedis.embed()
-  return RedisQueue("test", redis.pool, clock)
+  redis = EmbeddedRedis.embed()
+  return RedisQueue("test", redis!!.pool, clock)
 }
 
 private fun triggerRedeliveryCheck(queue: RedisQueue) = queue.redeliver()

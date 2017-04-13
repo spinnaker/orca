@@ -34,26 +34,31 @@ abstract class QueueSpec<out Q : Queue>(
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
 
+  var queue: Q? = null
   val callback: QueueCallback = mock()
 
   fun resetMocks() = reset(callback)
 
-  fun shutdown(queue: Q) {
-    if (queue is Closeable) {
-      queue.close()
+  fun stopQueue() {
+    queue?.let { q ->
+      if (q is Closeable) {
+        q.close()
+      }
     }
     shutdownCallback?.invoke()
   }
 
   describe("polling the queue") {
     context("there are no messages") {
-      val queue = createQueue.invoke()
+      beforeGroup {
+        queue = createQueue.invoke()
+      }
 
-      afterGroup { shutdown(queue) }
+      afterGroup(::stopQueue)
       afterGroup(::resetMocks)
 
       action("the queue is polled") {
-        queue.poll(callback)
+        queue!!.poll(callback)
       }
 
       it("does not invoke the callback") {
@@ -62,18 +67,18 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("there is a single message") {
-      val queue = createQueue.invoke()
       val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue.push(message)
+        queue = createQueue.invoke()
+        queue!!.push(message)
       }
 
-      afterGroup { shutdown(queue) }
+      afterGroup(::stopQueue)
       afterGroup(::resetMocks)
 
       action("the queue is polled") {
-        queue.poll(callback)
+        queue!!.poll(callback)
       }
 
       it("passes the queued message to the callback") {
@@ -82,22 +87,25 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("there are multiple messages") {
-      val queue = createQueue.invoke()
       val message1 = ExecutionStarting(Pipeline::class.java, "1", "foo")
       val message2 = ExecutionStarting(Pipeline::class.java, "2", "foo")
 
       beforeGroup {
-        queue.push(message1)
-        clock.incrementBy(Duration.ofSeconds(1))
-        queue.push(message2)
+        queue = createQueue.invoke().also { q ->
+          q.push(message1)
+          clock.incrementBy(Duration.ofSeconds(1))
+          q.push(message2)
+        }
       }
 
-      afterGroup { shutdown(queue) }
+      afterGroup(::stopQueue)
       afterGroup(::resetMocks)
 
       action("the queue is polled twice") {
-        queue.poll(callback)
-        queue.poll(callback)
+        queue!!.let { q ->
+          q.poll(callback)
+          q.poll(callback)
+        }
       }
 
       it("passes the messages to the callback in the order they were queued") {
@@ -110,18 +118,18 @@ abstract class QueueSpec<out Q : Queue>(
       val delay = Duration.ofHours(1)
 
       context("whose delay has not expired") {
-        val queue = createQueue.invoke()
         val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue.push(message, delay)
+          queue = createQueue.invoke()
+          queue!!.push(message, delay)
         }
 
-        afterGroup { shutdown(queue) }
+        afterGroup(::stopQueue)
         afterGroup(::resetMocks)
 
         action("the queue is polled") {
-          queue.poll(callback)
+          queue!!.poll(callback)
         }
 
         it("does not invoke the callback") {
@@ -130,19 +138,19 @@ abstract class QueueSpec<out Q : Queue>(
       }
 
       context("whose delay has expired") {
-        val queue = createQueue.invoke()
         val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue.push(message, delay)
+          queue = createQueue.invoke()
+          queue!!.push(message, delay)
           clock.incrementBy(delay)
         }
 
-        afterGroup { shutdown(queue) }
+        afterGroup(::stopQueue)
         afterGroup(::resetMocks)
 
         action("the queue is polled") {
-          queue.poll(callback)
+          queue!!.poll(callback)
         }
 
         it("passes the message to the callback") {
@@ -154,23 +162,25 @@ abstract class QueueSpec<out Q : Queue>(
 
   describe("message redelivery") {
     context("a message is acknowledged") {
-      val queue = createQueue.invoke()
       val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue.push(message)
+        queue = createQueue.invoke()
+        queue!!.push(message)
       }
 
-      afterGroup { shutdown(queue) }
+      afterGroup(::stopQueue)
       afterGroup(::resetMocks)
 
       action("the queue is polled and the message is acknowledged") {
-        queue.poll { _, ack ->
-          ack.invoke()
+        queue!!.let { q ->
+          q.poll { _, ack ->
+            ack.invoke()
+          }
+          clock.incrementBy(q.ackTimeout)
+          triggerRedeliveryCheck(q)
+          q.poll(callback)
         }
-        clock.incrementBy(queue.ackTimeout)
-        triggerRedeliveryCheck(queue)
-        queue.poll(callback)
       }
 
       it("does not re-deliver the message") {
@@ -179,21 +189,23 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("a message is not acknowledged") {
-      val queue = createQueue.invoke()
       val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue.push(message)
+        queue = createQueue.invoke()
+        queue!!.push(message)
       }
 
-      afterGroup { shutdown(queue) }
+      afterGroup(::stopQueue)
       afterGroup(::resetMocks)
 
       action("the queue is polled then the message is not acknowledged") {
-        queue.poll { _, _ -> }
-        clock.incrementBy(queue.ackTimeout)
-        triggerRedeliveryCheck(queue)
-        queue.poll(callback)
+        queue!!.let { q ->
+          q.poll { _, _ -> }
+          clock.incrementBy(q.ackTimeout)
+          triggerRedeliveryCheck(q)
+          q.poll(callback)
+        }
       }
 
       it("does not re-deliver the message") {
@@ -202,23 +214,25 @@ abstract class QueueSpec<out Q : Queue>(
     }
 
     context("a message is not acknowledged more than once") {
-      val queue = createQueue.invoke()
       val message = ExecutionStarting(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue.push(message)
+        queue = createQueue.invoke()
+        queue!!.push(message)
       }
 
-      afterGroup { shutdown(queue) }
+      afterGroup(::stopQueue)
       afterGroup(::resetMocks)
 
       action("the queue is polled and the message is not acknowledged") {
-        repeat(2) {
-          queue.poll { _, _ -> }
-          clock.incrementBy(queue.ackTimeout)
-          triggerRedeliveryCheck(queue)
+        queue!!.let { q ->
+          repeat(2) {
+            q.poll { _, _ -> }
+            clock.incrementBy(q.ackTimeout)
+            triggerRedeliveryCheck(q)
+          }
+          q.poll(callback)
         }
-        queue.poll(callback)
       }
 
       it("re-delivers the message") {
