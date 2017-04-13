@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component

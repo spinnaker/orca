@@ -18,33 +18,34 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.RunTask
 import com.netflix.spinnaker.orca.q.Message.TaskStarting
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStartedEvent
+import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import java.time.Clock.fixed
-import java.time.Instant.now
-import java.time.ZoneId.systemDefault
+import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
 class TaskStartingHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val clock = fixed(now(), systemDefault())
+  val publisher: ApplicationEventPublisher = mock()
+  val clock = fixedClock()
 
-  val handler = TaskStartingHandler(queue, repository, clock)
+  val handler = TaskStartingHandler(queue, repository, publisher, clock)
 
-  fun resetMocks() = reset(queue, repository)
+  fun resetMocks() = reset(queue, repository, publisher)
 
   describe("when a task starts") {
     val pipeline = pipeline {
@@ -70,7 +71,7 @@ class TaskStartingHandlerSpec : Spek({
       argumentCaptor<Stage<Pipeline>>().apply {
         verify(repository).storeStage(capture())
         firstValue.tasks.first().apply {
-          assertThat(status, equalTo(ExecutionStatus.RUNNING))
+          assertThat(status, equalTo(RUNNING))
           assertThat(startTime, equalTo(clock.millis()))
         }
       }
@@ -85,6 +86,19 @@ class TaskStartingHandlerSpec : Spek({
         message.taskId,
         DummyTask::class.java
       ))
+    }
+
+    it("publishes an event") {
+      argumentCaptor<TaskStartedEvent>().apply {
+        verify(publisher).publishEvent(capture())
+        firstValue.apply {
+          executionType shouldBe pipeline.javaClass
+          executionId shouldBe pipeline.id
+          stageId shouldBe message.stageId
+          taskId shouldBe message.taskId
+          timestamp shouldBe clock.instant()
+        }
+      }
     }
   }
 })

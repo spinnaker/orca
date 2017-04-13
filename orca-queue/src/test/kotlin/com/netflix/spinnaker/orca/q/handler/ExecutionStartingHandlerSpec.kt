@@ -24,9 +24,11 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
 import com.netflix.spinnaker.orca.q.Message.StageStarting
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionStartedEvent
 import com.netflix.spinnaker.orca.q.pipeline
 import com.netflix.spinnaker.orca.q.singleTaskStage
 import com.netflix.spinnaker.orca.q.stage
+import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -34,16 +36,19 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
 class ExecutionStartingHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
+  val publisher: ApplicationEventPublisher = mock()
+  val clock = fixedClock()
 
-  val handler = ExecutionStartingHandler(queue, repository)
+  val handler = ExecutionStartingHandler(queue, repository, publisher, clock)
 
-  fun resetMocks() = reset(queue, repository)
+  fun resetMocks() = reset(queue, repository, publisher)
 
   describe("starting an execution") {
     context("with a single initial stage") {
@@ -76,6 +81,17 @@ class ExecutionStartingHandlerSpec : Spek({
           "foo",
           pipeline.stages.first().id
         ))
+      }
+
+      it("publishes an event") {
+        argumentCaptor<ExecutionStartedEvent>().apply {
+          verify(publisher).publishEvent(capture())
+          firstValue.apply {
+            executionType shouldBe message.executionType
+            executionId shouldBe message.executionId
+            timestamp shouldBe clock.instant()
+          }
+        }
       }
     }
 

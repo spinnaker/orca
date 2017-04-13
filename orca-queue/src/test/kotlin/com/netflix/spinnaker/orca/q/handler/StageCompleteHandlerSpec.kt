@@ -25,6 +25,8 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.*
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageCompleteEvent
+import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -32,20 +34,19 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import java.time.Clock.fixed
-import java.time.Instant.now
-import java.time.ZoneId.systemDefault
+import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
 class StageCompleteHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val clock = fixed(now(), systemDefault())
+  val publisher: ApplicationEventPublisher = mock()
+  val clock = fixedClock()
 
-  val handler = StageCompleteHandler(queue, repository, clock)
+  val handler = StageCompleteHandler(queue, repository, publisher, clock)
 
-  fun resetMocks() = reset(queue, repository)
+  fun resetMocks() = reset(queue, repository, publisher)
 
   describe("when a stage completes successfully") {
     context("it is the last stage") {
@@ -76,7 +77,7 @@ class StageCompleteHandlerSpec : Spek({
         }
       }
 
-      it("emits an event indicating the pipeline is complete") {
+      it("completes the execution") {
         verify(queue).push(ExecutionComplete(
           message.executionType,
           message.executionId,
@@ -87,6 +88,19 @@ class StageCompleteHandlerSpec : Spek({
 
       it("does not emit any commands") {
         verify(queue, never()).push(any<RunTask>())
+      }
+
+      it("publishes an event") {
+        argumentCaptor<StageCompleteEvent>().apply {
+          verify(publisher).publishEvent(capture())
+          firstValue.apply {
+            executionType shouldBe pipeline.javaClass
+            executionId shouldBe pipeline.id
+            stageId shouldBe message.stageId
+            status shouldBe SUCCEEDED
+            timestamp shouldBe clock.instant()
+          }
+        }
       }
     }
 
@@ -220,13 +234,26 @@ class StageCompleteHandlerSpec : Spek({
         verify(queue, never()).push(isA<StageStarting>())
       }
 
-      it("emits an event indicating the pipeline failed") {
+      it("fails the execution") {
         verify(queue).push(ExecutionComplete(
           message.executionType,
           message.executionId,
           "foo",
           status
         ))
+      }
+
+      it("publishes an event") {
+        argumentCaptor<StageCompleteEvent>().apply {
+          verify(publisher).publishEvent(capture())
+          firstValue.let {
+            it.executionType shouldBe pipeline.javaClass
+            it.executionId shouldBe pipeline.id
+            it.stageId shouldBe message.stageId
+            it.status shouldBe status
+            it.timestamp shouldBe clock.instant()
+          }
+        }
       }
     }
   }

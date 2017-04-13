@@ -20,7 +20,7 @@ import com.natpryce.hamkrest.Matcher
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.q.ExecutionEvent.ExecutionCompleteEvent
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
 import org.springframework.context.ApplicationListener
 import org.springframework.context.ConfigurableApplicationContext
 import java.util.concurrent.CountDownLatch

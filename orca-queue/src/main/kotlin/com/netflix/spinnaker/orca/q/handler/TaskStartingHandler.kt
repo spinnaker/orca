@@ -22,8 +22,10 @@ import com.netflix.spinnaker.orca.q.Message.RunTask
 import com.netflix.spinnaker.orca.q.Message.TaskStarting
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskStartedEvent
 import com.netflix.spinnaker.orca.q.task
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
 
@@ -32,7 +34,8 @@ open class TaskStartingHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  val clock: Clock
+  private val publisher: ApplicationEventPublisher,
+  private val clock: Clock
 ) : MessageHandler<TaskStarting>, QueueProcessor {
 
   override fun handle(message: TaskStarting) {
@@ -44,6 +47,8 @@ open class TaskStartingHandler
 
       queue.push(RunTask(message, task.id, task.implementingClass))
     }
+
+    publisher.publishEvent(TaskStartedEvent(this, message, clock.instant()))
   }
 
   override val messageType = TaskStarting::class.java

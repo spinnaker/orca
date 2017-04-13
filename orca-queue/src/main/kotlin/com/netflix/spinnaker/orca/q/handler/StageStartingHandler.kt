@@ -23,7 +23,9 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.StageStarting
 import com.netflix.spinnaker.orca.q.Message.TaskStarting
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageStartedEvent
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
 
@@ -32,6 +34,7 @@ open class StageStartingHandler @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
+  private val publisher: ApplicationEventPublisher,
   private val clock: Clock
 ) : MessageHandler<StageStarting>, QueueProcessor, StageBuilderAware {
 
@@ -47,6 +50,8 @@ open class StageStartingHandler @Autowired constructor(
         stage.start()
       }
     }
+
+    publisher.publishEvent(StageStartedEvent(this, message, clock.instant()))
   }
 
   override val messageType = StageStarting::class.java

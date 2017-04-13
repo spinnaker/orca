@@ -16,15 +16,14 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.ExecutionEvent
 import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
 import com.netflix.spinnaker.orca.q.pipeline
+import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
@@ -39,8 +38,9 @@ class ExecutionCompleteHandlerSpec : Spek({
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
+  val clock = fixedClock()
 
-  val handler = ExecutionCompleteHandler(queue, repository, publisher)
+  val handler = ExecutionCompleteHandler(queue, repository, publisher, clock)
 
   fun resetMocks() = reset(queue, repository, publisher)
 
@@ -102,11 +102,13 @@ class ExecutionCompleteHandlerSpec : Spek({
         handler.handle(message)
       }
 
-      it("emits an application event") {
-        argumentCaptor<ExecutionEvent.ExecutionCompleteEvent>().apply {
+      it("publishes an event") {
+        argumentCaptor<ExecutionCompleteEvent>().apply {
           verify(publisher).publishEvent(capture())
-          assertThat(firstValue.executionId, equalTo(pipeline.id))
-          assertThat(firstValue.status, equalTo(status))
+          firstValue.executionType shouldBe pipeline.javaClass
+          firstValue.executionId shouldBe pipeline.id
+          firstValue.status shouldBe status
+          firstValue.timestamp shouldBe clock.instant()
         }
       }
     }

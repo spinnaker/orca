@@ -30,6 +30,8 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundExceptio
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.*
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageStartedEvent
+import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -37,16 +39,15 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import java.time.Clock.fixed
-import java.time.Instant.now
-import java.time.ZoneId.systemDefault
+import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
 class StageStartingHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val clock = fixed(now(), systemDefault())
+  val publisher: ApplicationEventPublisher = mock()
+  val clock = fixedClock()
 
   val handler = StageStartingHandler(
     queue,
@@ -59,10 +60,11 @@ class StageStartingHandlerSpec : Spek({
       stageWithParallelBranches,
       rollingPushStage
     ),
+    publisher,
     clock
   )
 
-  fun resetMocks() = reset(queue, repository)
+  fun resetMocks() = reset(queue, repository, publisher)
 
   describe("starting a stage") {
     context("with a single initial task") {
@@ -107,7 +109,7 @@ class StageStartingHandlerSpec : Spek({
         }
       }
 
-      it("raises an event to indicate the task is starting") {
+      it("starts the first task") {
         verify(queue).push(TaskStarting(
           message.executionType,
           message.executionId,
@@ -115,6 +117,18 @@ class StageStartingHandlerSpec : Spek({
           message.stageId,
           "1"
         ))
+      }
+
+      it("publishes an event") {
+        argumentCaptor<StageStartedEvent>().apply {
+          verify(publisher).publishEvent(capture())
+          firstValue.apply {
+            executionType shouldBe pipeline.javaClass
+            executionId shouldBe pipeline.id
+            stageId shouldBe message.stageId
+            timestamp shouldBe clock.instant()
+          }
+        }
       }
     }
 

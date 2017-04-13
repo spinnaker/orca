@@ -22,7 +22,9 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.*
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError.NoDownstreamTasks
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskCompleteEvent
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
 
@@ -31,7 +33,8 @@ open class TaskCompleteHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  val clock: Clock
+  private val publisher: ApplicationEventPublisher,
+  private val clock: Clock
 ) : MessageHandler<TaskComplete>, QueueProcessor {
 
   override fun handle(message: TaskComplete) {
@@ -66,6 +69,8 @@ open class TaskCompleteHandler
             }
           }
         }
+
+        publisher.publishEvent(TaskCompleteEvent(this, message, clock.instant()))
       }
     }
   }

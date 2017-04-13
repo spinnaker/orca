@@ -26,6 +26,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Message.*
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.TaskCompleteEvent
+import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -33,20 +35,19 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import java.time.Clock.fixed
-import java.time.Instant.now
-import java.time.ZoneId.systemDefault
+import org.springframework.context.ApplicationEventPublisher
 
 @RunWith(JUnitPlatform::class)
 class TaskCompleteHandlerSpec : Spek({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val clock = fixed(now(), systemDefault())
+  val publisher: ApplicationEventPublisher = mock()
+  val clock = fixedClock()
 
-  val handler = TaskCompleteHandler(queue, repository, clock)
+  val handler = TaskCompleteHandler(queue, repository, publisher, clock)
 
-  fun resetMocks() = reset(queue, repository)
+  fun resetMocks() = reset(queue, repository, publisher)
 
   describe("when a task completes successfully") {
     describe("the stage contains further tasks") {
@@ -89,6 +90,20 @@ class TaskCompleteHandlerSpec : Spek({
             message.stageId,
             "2"
           ))
+      }
+
+      it("publishes an event") {
+        argumentCaptor<TaskCompleteEvent>().apply {
+          verify(publisher).publishEvent(capture())
+          firstValue.let {
+            it.executionType shouldBe pipeline.javaClass
+            it.executionId shouldBe pipeline.id
+            it.stageId shouldBe message.stageId
+            it.taskId shouldBe message.taskId
+            it.status shouldBe SUCCEEDED
+            it.timestamp shouldBe clock.instant()
+          }
+        }
       }
     }
 
@@ -221,6 +236,10 @@ class TaskCompleteHandlerSpec : Spek({
             assertThat(firstValue.tasks[1..3].map(Task::getStatus), allElements(equalTo(NOT_STARTED)))
           }
         }
+
+        it("does not publish an event") {
+          verifyZeroInteractions(publisher)
+        }
       }
     }
 
@@ -270,6 +289,20 @@ class TaskCompleteHandlerSpec : Spek({
 
       it("does not run the next task") {
         verify(queue, never()).push(any<RunTask>())
+      }
+
+      it("publishes an event") {
+        argumentCaptor<TaskCompleteEvent>().apply {
+          verify(publisher).publishEvent(capture())
+          firstValue.let {
+            it.executionType shouldBe pipeline.javaClass
+            it.executionId shouldBe pipeline.id
+            it.stageId shouldBe message.stageId
+            it.taskId shouldBe message.taskId
+            it.status shouldBe status
+            it.timestamp shouldBe clock.instant()
+          }
+        }
       }
     }
   }

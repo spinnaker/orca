@@ -25,8 +25,10 @@ import com.netflix.spinnaker.orca.q.Message.*
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.allBeforeStagesComplete
+import com.netflix.spinnaker.orca.q.event.ExecutionEvent.StageCompleteEvent
 import com.netflix.spinnaker.orca.q.parent
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
 
@@ -35,7 +37,8 @@ open class StageCompleteHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  val clock: Clock
+  private val publisher: ApplicationEventPublisher,
+  private val clock: Clock
 ) : MessageHandler<StageComplete>, QueueProcessor {
 
   override fun handle(message: StageComplete) {
@@ -54,6 +57,8 @@ open class StageCompleteHandler
         }
       }
     }
+
+    publisher.publishEvent(StageCompleteEvent(this, message, clock.instant()))
   }
 
   override val messageType = StageComplete::class.java
