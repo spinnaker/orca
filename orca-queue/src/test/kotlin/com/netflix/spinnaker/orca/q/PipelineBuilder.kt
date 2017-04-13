@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.V3
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -29,8 +30,8 @@ fun pipeline(init: Pipeline.() -> Unit = {}): Pipeline {
   return pipeline
 }
 
-fun Pipeline.stage(init: Stage<Pipeline>.() -> Unit): Stage<Pipeline> {
-  val stage = Stage<Pipeline>()
+fun <T : Execution<T>> T.stage(init: Stage<T>.() -> Unit): Stage<T> {
+  val stage = Stage<T>()
   stage.execution = this
   stages.add(stage)
   stage.init()

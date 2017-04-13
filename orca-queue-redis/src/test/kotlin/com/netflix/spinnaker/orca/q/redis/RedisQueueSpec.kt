@@ -23,9 +23,12 @@ import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 
 @RunWith(JUnitPlatform::class)
-class RedisQueueSpec : QueueSpec<RedisQueue>(::createQueue, ::triggerRedeliveryCheck, ::shutdownCallback)
+class RedisQueueSpec : QueueSpec<RedisQueue>(
+  ::createQueue,
+  ::triggerRedeliveryCheck,
+  ::shutdownCallback
+)
 
-// surely this is bad
 private var redis: EmbeddedRedis? = null
 
 private fun createQueue(): RedisQueue {

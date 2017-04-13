@@ -21,7 +21,12 @@ import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.Message.ExecutionStarting
+import com.netflix.spinnaker.orca.q.Message.StageStarting
+import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.pipeline
+import com.netflix.spinnaker.orca.q.singleTaskStage
+import com.netflix.spinnaker.orca.q.stage
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -47,7 +52,7 @@ class ExecutionStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = Message.ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
+      val message = ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -65,7 +70,7 @@ class ExecutionStartingHandlerSpec : Spek({
       }
 
       it("starts the first stage") {
-        verify(queue).push(Message.StageStarting(
+        verify(queue).push(StageStarting(
           message.executionType,
           message.executionId,
           "foo",
@@ -83,7 +88,7 @@ class ExecutionStartingHandlerSpec : Spek({
           type = singleTaskStage.type
         }
       }
-      val message = Message.ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
+      val message = ExecutionStarting(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
@@ -97,7 +102,7 @@ class ExecutionStartingHandlerSpec : Spek({
       }
 
       it("starts all the initial stages") {
-        argumentCaptor<Message.StageStarting>().apply {
+        argumentCaptor<StageStarting>().apply {
           verify(queue, times(2)).push(capture())
           assertThat(
             allValues.map { it.stageId }.toSet(),

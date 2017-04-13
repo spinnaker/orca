@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidTaskType
 import com.netflix.spinnaker.orca.q.Message.RunTask
 import com.netflix.spinnaker.orca.q.Message.TaskComplete
 import com.nhaarman.mockito_kotlin.*
@@ -74,7 +75,7 @@ class RunTaskHandlerSpec : Spek({
       }
 
       it("emits a failure event") {
-        argumentCaptor<Message.TaskComplete>().apply {
+        argumentCaptor<TaskComplete>().apply {
           verify(queue).push(capture())
           assertThat(firstValue.status, equalTo(SUCCEEDED))
         }
@@ -202,7 +203,7 @@ class RunTaskHandlerSpec : Spek({
     }
 
     it("emits an error event") {
-      verify(queue).push(isA<Message.ConfigurationError.InvalidTaskType>())
+      verify(queue).push(isA<InvalidTaskType>())
     }
   }
 })

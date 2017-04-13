@@ -217,7 +217,7 @@ class StageCompleteHandlerSpec : Spek({
       }
 
       it("does not run any downstream stages") {
-        verify(queue, never()).push(isA<Message.StageStarting>())
+        verify(queue, never()).push(isA<StageStarting>())
       }
 
       it("emits an event indicating the pipeline failed") {
@@ -373,7 +373,7 @@ class StageCompleteHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       it("rolls the failure up to the parent stage") {
-        argumentCaptor<Message.StageComplete>().apply {
+        argumentCaptor<StageComplete>().apply {
           verify(queue).push(capture())
           assertThat(firstValue.stageId, equalTo(pipeline.stageByRef("1").id))
           assertThat(firstValue.status, equalTo(message.status))
@@ -441,7 +441,7 @@ class StageCompleteHandlerSpec : Spek({
       }
 
       it("runs any post-branch tasks") {
-        verify(queue).push(isA<Message.TaskStarting>())
+        verify(queue).push(isA<TaskStarting>())
       }
     }
   }

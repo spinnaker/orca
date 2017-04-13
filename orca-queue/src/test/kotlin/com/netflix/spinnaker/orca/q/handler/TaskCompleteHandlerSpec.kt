@@ -269,7 +269,7 @@ class TaskCompleteHandlerSpec : Spek({
       }
 
       it("does not run the next task") {
-        verify(queue, never()).push(any<Message.RunTask>())
+        verify(queue, never()).push(any<RunTask>())
       }
     }
   }

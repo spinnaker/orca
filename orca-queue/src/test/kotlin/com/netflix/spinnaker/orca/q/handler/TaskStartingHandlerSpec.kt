@@ -23,6 +23,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.Message.RunTask
+import com.netflix.spinnaker.orca.q.Message.TaskStarting
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
@@ -51,7 +53,7 @@ class TaskStartingHandlerSpec : Spek({
         singleTaskStage.buildTasks(this)
       }
     }
-    val message = Message.TaskStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
+    val message = TaskStarting(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
       whenever(repository.retrievePipeline(message.executionId))
@@ -75,7 +77,7 @@ class TaskStartingHandlerSpec : Spek({
     }
 
     it("runs the task") {
-      verify(queue).push(Message.RunTask(
+      verify(queue).push(RunTask(
         message.executionType,
         message.executionId,
         "foo",

@@ -18,7 +18,9 @@ package com.netflix.spinnaker.orca.q.ratelimit
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.config.RateLimitConfiguration
 import com.netflix.spinnaker.orca.q.Message
+import com.netflix.spinnaker.orca.q.Message.ApplicationAware
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.QueueCallback
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.Closeable
@@ -38,10 +40,10 @@ class RateLimitedQueue(
 
   private val throttledMessagesId = registry.createId("orca.nu.ratelimit.throttledMessages")
 
-  override fun poll(callback: (Message, () -> Unit) -> Unit) =
+  override fun poll(callback: QueueCallback) =
     queue.poll { message, ack ->
       when (message) {
-        !is Message.ApplicationAware -> callback.invoke(message, ack)
+        !is ApplicationAware -> callback.invoke(message, ack)
         else -> {
           val rate = backend.getRate(message.application)
           if (rate.limiting) {

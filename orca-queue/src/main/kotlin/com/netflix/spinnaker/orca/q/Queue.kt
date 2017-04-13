@@ -55,4 +55,9 @@ interface Queue {
   val ackTimeout: TemporalAmount
 }
 
+/**
+ * The callback parameter type passed to [Queue.poll]. The queue implementation
+ * will invoke the callback passing the next message from the queue and an "ack"
+ * function used to acknowledge successful processing of the message.
+ */
 typealias QueueCallback = (Message, () -> Unit) -> Unit

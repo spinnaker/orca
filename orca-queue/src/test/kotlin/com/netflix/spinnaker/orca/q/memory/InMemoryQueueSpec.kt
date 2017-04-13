@@ -22,7 +22,10 @@ import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 
 @RunWith(JUnitPlatform::class)
-class InMemoryQueueSpec : QueueSpec<InMemoryQueue>(::createQueue, ::triggerRedeliveryCheck)
+class InMemoryQueueSpec : QueueSpec<InMemoryQueue>(
+  ::createQueue,
+  ::triggerRedeliveryCheck
+)
 
 private fun createQueue() = InMemoryQueue(clock)
 private fun triggerRedeliveryCheck(queue: InMemoryQueue) = queue.redeliver()

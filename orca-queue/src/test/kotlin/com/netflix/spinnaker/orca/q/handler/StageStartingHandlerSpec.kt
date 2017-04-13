@@ -295,7 +295,7 @@ class StageStartingHandlerSpec : Spek({
       }
 
       it("waits for the other upstream stage to complete") {
-        verify(queue, never()).push(isA<Message.TaskStarting>())
+        verify(queue, never()).push(isA<TaskStarting>())
       }
     }
   }
@@ -337,7 +337,7 @@ class StageStartingHandlerSpec : Spek({
       }
 
       it("runs the parallel stages") {
-        argumentCaptor<Message.StageStarting>().apply {
+        argumentCaptor<StageStarting>().apply {
           verify(queue, times(3)).push(capture())
           assertThat(
             allValues.map { pipeline.stageById(it.stageId).parentStageId },

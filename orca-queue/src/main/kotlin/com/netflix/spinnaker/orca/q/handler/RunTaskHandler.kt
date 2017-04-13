@@ -22,9 +22,9 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Message.ConfigurationError.InvalidTaskType
 import com.netflix.spinnaker.orca.q.Message.RunTask
+import com.netflix.spinnaker.orca.q.Message.TaskComplete
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import org.slf4j.Logger
@@ -47,7 +47,7 @@ open class RunTaskHandler
   override fun handle(message: RunTask) {
     message.withTask { stage, task ->
       if (stage.getExecution().getStatus().complete) {
-        queue.push(Message.TaskComplete(message, CANCELED))
+        queue.push(TaskComplete(message, CANCELED))
       } else {
         try {
           task.execute(stage).let { result ->
@@ -56,16 +56,16 @@ open class RunTaskHandler
             when (result.status) {
             // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
-                queue.push(RunTask(message), task.backoffPeriod())
+                queue.push(message, task.backoffPeriod())
               SUCCEEDED, TERMINAL, REDIRECT ->
-                queue.push(Message.TaskComplete(message, result.status))
+                queue.push(TaskComplete(message, result.status))
               else -> TODO()
             }
           }
         } catch(e: Exception) {
           log.error("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]", e)
           // TODO: add context
-          queue.push(Message.TaskComplete(message, TERMINAL))
+          queue.push(TaskComplete(message, TERMINAL))
         }
       }
     }
@@ -98,10 +98,10 @@ open class RunTaskHandler
       repository.storeStage(this)
     }
     if (result.globalOutputs.isNotEmpty()) {
-      getExecution().let { execution ->
-        execution.getContext().putAll(result.globalOutputs)
-        execution.update() // TODO: optimize to only update context?
-      }
+      repository.storeExecutionContext(
+        getExecution().getId(),
+        result.globalOutputs
+      )
     }
   }
 }
