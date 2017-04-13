@@ -19,17 +19,16 @@ package com.netflix.spinnaker.orca.q
 /**
  * Implementations handle a single message type from the queue.
  */
-interface MessageHandler<M : Message> {
+interface MessageHandler<M : Message> : (Message) -> Unit {
 
   val messageType: Class<M>
   val queue: Queue
 
-  fun handleAndAck(message: Message, ack: () -> Unit): Unit =
+  override fun invoke(message: Message): Unit =
     when (message.javaClass) {
       messageType -> {
         @Suppress("UNCHECKED_CAST")
         handle(message as M)
-        ack.invoke()
       }
       else ->
         throw IllegalArgumentException("Unsupported message type ${message.javaClass.simpleName}")

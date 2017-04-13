@@ -105,7 +105,7 @@ class ExecutionWorkerSpec : Spek({
           }
 
           it("passes the message to the correct handler") {
-            verify(executionStartingHandler).handleAndAck(eq(message), any())
+            verify(executionStartingHandler).invoke(eq(message))
           }
 
           it("does not invoke other handlers") {

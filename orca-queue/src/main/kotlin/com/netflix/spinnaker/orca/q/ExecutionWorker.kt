@@ -53,7 +53,8 @@ open class ExecutionWorker
         val handler = handlers[message.javaClass]
         if (handler != null) {
           executor.execute {
-            handler.handleAndAck(message, ack)
+            handler.invoke(message)
+            ack.invoke()
           }
         } else {
           registry.counter(pollErrorRateId).increment()
