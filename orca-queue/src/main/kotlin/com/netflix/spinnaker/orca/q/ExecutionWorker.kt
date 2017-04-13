@@ -26,6 +26,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.annotation.PostConstruct
 
 @Component
 open class ExecutionWorker
@@ -64,4 +65,7 @@ open class ExecutionWorker
         }
       }
     }
+
+  @PostConstruct fun confirmQueueType() =
+    log.info("Using ${queue.javaClass.simpleName} queue")
 }
