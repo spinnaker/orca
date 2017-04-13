@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.config.ErrorConfiguration
-import com.netflix.spinnaker.config.SqsQueueConfiguration
 import com.netflix.spinnaker.config.StackdriverConfig
 import com.netflix.spinnaker.config.TomcatConfiguration
 import com.netflix.spinnaker.kork.PlatformComponents
@@ -68,8 +67,7 @@ import org.springframework.scheduling.annotation.EnableAsync
   ApplicationConfig,
   StackdriverConfig,
   PipelineTemplateConfiguration,
-  ZombiePipelineCleanupConfig,
-  SqsQueueConfiguration
+  ZombiePipelineCleanupConfig
 ])
 @ComponentScan([
   "com.netflix.spinnaker.config"

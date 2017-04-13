@@ -36,7 +36,7 @@ interface Queue {
   /**
    * Push [message] for delivery after [delay].
    */
-  fun push(message: Message, delay: TemporalAmount)
+  fun push(message: Message, delay: TemporalAmount): Unit
 
   /**
    * The expired time after which un-acknowledged messages will be re-delivered.
