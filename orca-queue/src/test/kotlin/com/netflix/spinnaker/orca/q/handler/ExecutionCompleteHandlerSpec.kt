@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.q.Message.ExecutionComplete
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
 import com.netflix.spinnaker.orca.q.pipeline
-import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
@@ -38,9 +37,8 @@ class ExecutionCompleteHandlerSpec : Spek({
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
-  val clock = fixedClock()
 
-  val handler = ExecutionCompleteHandler(queue, repository, publisher, clock)
+  val handler = ExecutionCompleteHandler(queue, repository, publisher)
 
   fun resetMocks() = reset(queue, repository, publisher)
 
@@ -108,7 +106,6 @@ class ExecutionCompleteHandlerSpec : Spek({
           firstValue.executionType shouldBe pipeline.javaClass
           firstValue.executionId shouldBe pipeline.id
           firstValue.status shouldBe status
-          firstValue.timestamp shouldBe clock.instant()
         }
       }
     }

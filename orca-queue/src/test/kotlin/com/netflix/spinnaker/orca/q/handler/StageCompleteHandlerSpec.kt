@@ -98,7 +98,6 @@ class StageCompleteHandlerSpec : Spek({
             executionId shouldBe pipeline.id
             stageId shouldBe message.stageId
             status shouldBe SUCCEEDED
-            timestamp shouldBe clock.instant()
           }
         }
       }
@@ -251,7 +250,6 @@ class StageCompleteHandlerSpec : Spek({
             it.executionId shouldBe pipeline.id
             it.stageId shouldBe message.stageId
             it.status shouldBe status
-            it.timestamp shouldBe clock.instant()
           }
         }
       }

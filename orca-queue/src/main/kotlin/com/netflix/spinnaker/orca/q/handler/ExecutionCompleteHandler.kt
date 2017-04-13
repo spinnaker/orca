@@ -24,20 +24,18 @@ import com.netflix.spinnaker.orca.q.event.ExecutionEvent.ExecutionCompleteEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
-import java.time.Clock
 
 @Component
 open class ExecutionCompleteHandler
 @Autowired constructor(
   override val queue: Queue,
   private val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher,
-  private val clock: Clock
+  private val publisher: ApplicationEventPublisher
 ) : MessageHandler<ExecutionComplete> {
 
   override fun handle(message: ExecutionComplete) {
     repository.updateStatus(message.executionId, message.status)
-    publisher.publishEvent(ExecutionCompleteEvent(this, message, clock.instant()))
+    publisher.publishEvent(ExecutionCompleteEvent(this, message))
   }
 
   override val messageType = ExecutionComplete::class.java

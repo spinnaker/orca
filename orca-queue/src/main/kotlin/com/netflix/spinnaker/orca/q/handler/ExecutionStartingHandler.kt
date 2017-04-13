@@ -27,15 +27,13 @@ import com.netflix.spinnaker.orca.q.initialStages
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
-import java.time.Clock
 
 @Component
 open class ExecutionStartingHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher,
-  private val clock: Clock
+  private val publisher: ApplicationEventPublisher
 ) : MessageHandler<ExecutionStarting>, QueueProcessor {
 
   override val messageType = ExecutionStarting::class.java
@@ -51,6 +49,6 @@ open class ExecutionStartingHandler
         }
     }
 
-    publisher.publishEvent(ExecutionStartedEvent(this, message, clock.instant()))
+    publisher.publishEvent(ExecutionStartedEvent(this, message))
   }
 }

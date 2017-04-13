@@ -126,7 +126,6 @@ class StageStartingHandlerSpec : Spek({
             executionType shouldBe pipeline.javaClass
             executionId shouldBe pipeline.id
             stageId shouldBe message.stageId
-            timestamp shouldBe clock.instant()
           }
         }
       }

@@ -101,7 +101,6 @@ class TaskCompleteHandlerSpec : Spek({
             it.stageId shouldBe message.stageId
             it.taskId shouldBe message.taskId
             it.status shouldBe SUCCEEDED
-            it.timestamp shouldBe clock.instant()
           }
         }
       }
@@ -300,7 +299,6 @@ class TaskCompleteHandlerSpec : Spek({
             it.stageId shouldBe message.stageId
             it.taskId shouldBe message.taskId
             it.status shouldBe status
-            it.timestamp shouldBe clock.instant()
           }
         }
       }

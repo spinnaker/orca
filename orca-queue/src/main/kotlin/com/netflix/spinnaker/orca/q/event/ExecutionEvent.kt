@@ -30,7 +30,8 @@ import java.time.Instant
  */
 sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
-  abstract val timestamp: Instant
+  val timestamp: Instant
+    get() = Instant.ofEpochMilli(super.getTimestamp())
 
   /**
    * Converts an event to the execution log entry format
@@ -40,11 +41,10 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
   class ExecutionStartedEvent(
     source: Any,
     val executionType: Class<out Execution<*>>,
-    val executionId: String,
-    override val timestamp: Instant
+    val executionId: String
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.ExecutionStarting, timestamp: Instant) :
-      this(source, message.executionType, message.executionId, timestamp)
+    constructor(source: Any, message: Message.ExecutionStarting) :
+      this(source, message.executionType, message.executionId)
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
@@ -62,14 +62,13 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String,
-    val status: ExecutionStatus,
-    override val timestamp: Instant
+    val status: ExecutionStatus
   ) : ExecutionEvent(source) {
     /**
      * Copy constructor to create a pub-sub event from a queue message.
      */
-    constructor(source: Any, message: Message.ExecutionComplete, timestamp: Instant) :
-      this(source, message.executionType, message.executionId, message.status, timestamp)
+    constructor(source: Any, message: Message.ExecutionComplete) :
+      this(source, message.executionType, message.executionId, message.status)
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
@@ -83,11 +82,10 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     source: Any,
     val executionType: Class<out Execution<*>>,
     val executionId: String,
-    val stageId: String,
-    override val timestamp: Instant
+    val stageId: String
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.StageStarting, timestamp: Instant) :
-      this(source, message.executionType, message.executionId, message.stageId, timestamp)
+    constructor(source: Any, message: Message.StageStarting) :
+      this(source, message.executionType, message.executionId, message.stageId)
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
@@ -102,11 +100,10 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val executionType: Class<out Execution<*>>,
     val executionId: String,
     val stageId: String,
-    val status: ExecutionStatus,
-    override val timestamp: Instant
+    val status: ExecutionStatus
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.StageComplete, timestamp: Instant) :
-      this(source, message.executionType, message.executionId, message.stageId, message.status, timestamp)
+    constructor(source: Any, message: Message.StageComplete) :
+      this(source, message.executionType, message.executionId, message.stageId, message.status)
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
@@ -121,11 +118,10 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val executionType: Class<out Execution<*>>,
     val executionId: String,
     val stageId: String,
-    val taskId: String,
-    override val timestamp: Instant
+    val taskId: String
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.TaskStarting, timestamp: Instant) :
-      this(source, message.executionType, message.executionId, message.stageId, message.taskId, timestamp)
+    constructor(source: Any, message: Message.TaskStarting) :
+      this(source, message.executionType, message.executionId, message.stageId, message.taskId)
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,
@@ -141,11 +137,10 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
     val executionId: String,
     val stageId: String,
     val taskId: String,
-    val status: ExecutionStatus,
-    override val timestamp: Instant
+    val status: ExecutionStatus
   ) : ExecutionEvent(source) {
-    constructor(source: Any, message: Message.TaskComplete, timestamp: Instant) :
-      this(source, message.executionType, message.executionId, message.stageId, message.taskId, message.status, timestamp)
+    constructor(source: Any, message: Message.TaskComplete) :
+      this(source, message.executionType, message.executionId, message.stageId, message.taskId, message.status)
 
     override fun toLogEntry() = ExecutionLogEntry(
       executionId,

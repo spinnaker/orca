@@ -70,7 +70,7 @@ open class TaskCompleteHandler
           }
         }
 
-        publisher.publishEvent(TaskCompleteEvent(this, message, clock.instant()))
+        publisher.publishEvent(TaskCompleteEvent(this, message))
       }
     }
   }

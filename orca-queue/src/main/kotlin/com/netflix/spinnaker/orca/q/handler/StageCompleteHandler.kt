@@ -58,7 +58,7 @@ open class StageCompleteHandler
       }
     }
 
-    publisher.publishEvent(StageCompleteEvent(this, message, clock.instant()))
+    publisher.publishEvent(StageCompleteEvent(this, message))
   }
 
   override val messageType = StageComplete::class.java

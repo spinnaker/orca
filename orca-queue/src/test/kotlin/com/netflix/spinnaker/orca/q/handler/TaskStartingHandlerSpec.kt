@@ -96,7 +96,6 @@ class TaskStartingHandlerSpec : Spek({
           executionId shouldBe pipeline.id
           stageId shouldBe message.stageId
           taskId shouldBe message.taskId
-          timestamp shouldBe clock.instant()
         }
       }
     }

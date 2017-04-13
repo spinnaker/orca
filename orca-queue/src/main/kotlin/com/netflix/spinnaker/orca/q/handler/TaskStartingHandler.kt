@@ -48,7 +48,7 @@ open class TaskStartingHandler
       queue.push(RunTask(message, task.id, task.implementingClass))
     }
 
-    publisher.publishEvent(TaskStartedEvent(this, message, clock.instant()))
+    publisher.publishEvent(TaskStartedEvent(this, message))
   }
 
   override val messageType = TaskStarting::class.java
