@@ -57,11 +57,11 @@ class RedisQueue(
     pool.resource.use { redis ->
       redis
         .pop(queueKey, unackedKey, ackTimeout)
-        ?.let { Pair(UUID.fromString(it), redis.hget(messagesKey, it)) }
-        ?.let { Pair(it.first, mapper.readValue(it.second, Message::class.java)) }
-        ?.let {
-          callback.invoke(it.second) {
-            ack(it.first)
+        ?.let { id -> Pair(UUID.fromString(id), redis.hget(messagesKey, id)) }
+        ?.let { (id, json) -> Pair(id, mapper.readValue(json, Message::class.java)) }
+        ?.let { (id, payload) ->
+          callback.invoke(payload) {
+            ack(id)
           }
         }
     }
@@ -80,10 +80,10 @@ class RedisQueue(
     redeliveryWatcher.close()
   }
 
-  private fun ack(messageId: UUID) {
+  private fun ack(id: UUID) {
     pool.resource.use { redis ->
-      redis.zrem(unackedKey, messageId.toString())
-      redis.hdel(messagesKey, messageId.toString())
+      redis.zrem(unackedKey, id.toString())
+      redis.hdel(messagesKey, id.toString())
     }
   }
 
