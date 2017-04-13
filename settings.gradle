@@ -34,6 +34,7 @@ include "orca-extensionpoint",
   "orca-spring-batch",
   "orca-queue",
   "orca-queue-redis",
+  "orca-queue-sqs",
   "orca-pipelinetemplate",
   "orca-validation",
   "orca-loadtest"
