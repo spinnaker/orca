@@ -19,13 +19,20 @@ package com.netflix.spinnaker.orca.q
 import java.io.Closeable
 import java.util.concurrent.Executors.newSingleThreadScheduledExecutor
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.SECONDS
 
+/**
+ * Encapsulates an action that runs regularly. Used by queue implementation for
+ * checking for unacknowledged messages and re-delivering them.
+ *
+ * The function passed to [action] is called on a regular cycle by a single
+ * dedicated thread.
+ */
 class ScheduledAction(
   action: () -> Unit,
   initialDelay: Long = 10,
   delay: Long = 10,
-  unit: TimeUnit = MILLISECONDS
+  unit: TimeUnit = SECONDS
 ) : Closeable {
 
   private val executor = newSingleThreadScheduledExecutor()

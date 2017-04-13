@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.redis.RedisQueue
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import redis.clients.jedis.Jedis
@@ -28,7 +29,11 @@ import java.time.Clock
 
 @Configuration
 @ConditionalOnExpression("\${queue.redis.enabled:true}")
+@EnableConfigurationProperties(RedisQueueProperties::class)
 open class RedisQueueConfiguration {
-  @Bean open fun redisQueue(@Qualifier("jedisPool") redisPool: Pool<Jedis>, clock: Clock): Queue =
-    RedisQueue("orca", redisPool, clock)
+  @Bean open fun redisQueue(
+    @Qualifier("jedisPool") redisPool: Pool<Jedis>,
+    redisQueueProperties: RedisQueueProperties,
+    clock: Clock
+  ): Queue = RedisQueue(redisQueueProperties.queueName, redisPool, clock)
 }
