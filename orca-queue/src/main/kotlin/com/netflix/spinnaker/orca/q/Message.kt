@@ -99,6 +99,9 @@ sealed class Message {
 
     constructor(message: StageLevel, taskId: String, taskType: Class<out Task>) :
       this(message.executionType, message.executionId, message.application, message.stageId, taskId, taskType)
+
+    constructor(source: RunTask) :
+      this(source.executionType, source.executionId, source.application, source.stageId, source.taskId, source.taskType)
   }
 
   data class StageStarting(

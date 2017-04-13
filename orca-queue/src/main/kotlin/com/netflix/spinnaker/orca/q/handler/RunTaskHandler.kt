@@ -58,7 +58,7 @@ open class RunTaskHandler
             when (result.status) {
             // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
-                queue.push(message, task.backoffPeriod())
+                queue.push(RunTask(message), task.backoffPeriod())
               SUCCEEDED, TERMINAL, REDIRECT ->
                 queue.push(Message.TaskComplete(message, result.status))
               else -> TODO()
