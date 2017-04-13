@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.memory
 
 import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.ScheduledAction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.threeten.extra.Temporals.chronoUnit
@@ -27,7 +28,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.DelayQueue
 import java.util.concurrent.Delayed
-import java.util.concurrent.Executors.newSingleThreadScheduledExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import javax.annotation.PreDestroy
@@ -41,9 +41,7 @@ class InMemoryQueue(
 
   private val queue = DelayQueue<DelayedMessage>()
   private val unacked = DelayQueue<DelayedMessage>()
-  private val executor = newSingleThreadScheduledExecutor()
-  private val redeliveryWatcher = executor
-    .scheduleWithFixedDelay(this::redeliver, 10, 10, MILLISECONDS)
+  private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
   override fun poll(): Message? =
     queue.poll()?.run {
@@ -54,8 +52,8 @@ class InMemoryQueue(
   override fun push(message: Message) =
     queue.put(DelayedMessage(message, clock.instant(), clock))
 
-  override fun push(message: Message, delay: Long, unit: TimeUnit) =
-    queue.put(DelayedMessage(message, clock.instant().plus(delay, unit.toChronoUnit()), clock))
+  override fun push(message: Message, delay: Duration) =
+    queue.put(DelayedMessage(message, clock.instant().plus(delay), clock))
 
   override fun ack(message: Message) {
     unacked.removeIf { it.payload.id == message.id }
@@ -63,8 +61,7 @@ class InMemoryQueue(
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
-    redeliveryWatcher.cancel(false)
-    executor.shutdown()
+    redeliveryWatcher.close()
   }
 
   internal fun redeliver() {

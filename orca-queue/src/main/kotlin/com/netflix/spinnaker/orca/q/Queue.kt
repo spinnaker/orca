@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca.q
 
+import org.threeten.extra.Temporals.chronoUnit
 import java.time.Duration
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 interface Queue {
@@ -34,7 +36,7 @@ interface Queue {
   /**
    * Push [message] for delivery after [delay].
    */
-  fun push(message: Message, delay: Long, unit: TimeUnit)
+  fun push(message: Message, delay: Duration)
 
   /**
    * The expired time after which un-acknowledged messages will be re-delivered.
@@ -48,5 +50,11 @@ interface Queue {
   fun ack(message: Message): Unit
 }
 
-fun Queue.push(message: Message, delay: Pair<Long, TimeUnit>) =
+fun <Q : Queue> Q.push(message: Message, delay: Long, unit: ChronoUnit) =
+  push(message, Duration.of(delay, unit))
+
+fun <Q : Queue> Q.push(message: Message, delay: Long, unit: TimeUnit) =
+  push(message, delay, chronoUnit(unit))
+
+fun <Q : Queue> Q.push(message: Message, delay: Pair<Long, TimeUnit>) =
   push(message, delay.first, delay.second)

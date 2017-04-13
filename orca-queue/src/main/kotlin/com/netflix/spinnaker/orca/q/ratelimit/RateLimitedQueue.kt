@@ -19,9 +19,11 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.config.RateLimitConfiguration
 import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.push
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.Closeable
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 class RateLimitedQueue(
@@ -62,8 +64,8 @@ class RateLimitedQueue(
     queue.push(message)
   }
 
-  override fun push(message: Message, delay: Long, unit: TimeUnit) {
-    queue.push(message, delay, unit)
+  override fun push(message: Message, delay: Duration) {
+    queue.push(message, delay)
   }
 
   override fun ack(message: Message) {

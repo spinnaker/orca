@@ -29,7 +29,7 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 @RunWith(JUnitPlatform::class)
 class RateLimitedQueueSpec : Spek({
@@ -60,7 +60,7 @@ class RateLimitedQueueSpec : Spek({
       }
 
       it("does not throttle") {
-        verify(backingQueue, times(0)).push(any<Message>(), any<Long>(), any<TimeUnit>())
+        verify(backingQueue, times(0)).push(any<Message>(), any<Duration>())
         verify(backingQueue, times(0)).ack(any<Message>())
       }
     }
@@ -80,7 +80,7 @@ class RateLimitedQueueSpec : Spek({
       }
 
       it("does throttle messages") {
-        verify(backingQueue, times(1)).push(any<Message>(), any<Long>(), any<TimeUnit>())
+        verify(backingQueue, times(1)).push(any<Message>(), any<Duration>())
         verify(backingQueue, times(1)).ack(any<Message>())
       }
     }

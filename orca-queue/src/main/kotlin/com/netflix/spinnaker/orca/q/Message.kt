@@ -16,18 +16,23 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.MINIMAL_CLASS
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import java.util.*
+import java.util.UUID.randomUUID
 
 /**
  * Messages used internally by the queueing system.
  */
+@JsonTypeInfo(use = MINIMAL_CLASS, include = PROPERTY, property = "@class")
 sealed class Message {
 
-  val id: UUID = UUID.randomUUID()
+  abstract val id: UUID
 
   interface ApplicationAware {
     val application: String
@@ -47,12 +52,16 @@ sealed class Message {
   }
 
   data class TaskStarting(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
     override val stageId: String,
     override val taskId: String
   ) : Message(), TaskLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String, taskId: String) :
+      this(randomUUID(), executionType, executionId, application, stageId, taskId)
+
     constructor(source: ExecutionLevel, stageId: String, taskId: String) :
       this(source.executionType, source.executionId, source.application, stageId, taskId)
 
@@ -61,6 +70,7 @@ sealed class Message {
   }
 
   data class TaskComplete(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
@@ -68,11 +78,15 @@ sealed class Message {
     override val taskId: String,
     val status: ExecutionStatus
   ) : Message(), TaskLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String, taskId: String, status: ExecutionStatus) :
+      this(randomUUID(), executionType, executionId, application, stageId, taskId, status)
+
     constructor(source: TaskLevel, status: ExecutionStatus) :
       this(source.executionType, source.executionId, source.application, source.stageId, source.taskId, status)
   }
 
   data class RunTask(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
@@ -80,30 +94,41 @@ sealed class Message {
     override val taskId: String,
     val taskType: Class<out Task>
   ) : Message(), TaskLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String, taskId: String, taskType: Class<out Task>) :
+      this(randomUUID(), executionType, executionId, application, stageId, taskId, taskType)
+
     constructor(message: StageLevel, taskId: String, taskType: Class<out Task>) :
       this(message.executionType, message.executionId, message.application, message.stageId, taskId, taskType)
   }
 
   data class StageStarting(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
     override val stageId: String
   ) : Message(), StageLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String) :
+      this(randomUUID(), executionType, executionId, application, stageId)
+
     constructor(source: ExecutionLevel, stageId: String) :
       this(source.executionType, source.executionId, source.application, stageId)
 
     constructor(source: StageLevel) :
-      this(source.executionType, source.executionId, source.application, source.stageId)
+      this(source, source.stageId)
   }
 
   data class StageComplete(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
     override val stageId: String,
     val status: ExecutionStatus
   ) : Message(), StageLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String, status: ExecutionStatus) :
+      this(randomUUID(), executionType, executionId, application, stageId, status)
+
     constructor(source: ExecutionLevel, stageId: String, status: ExecutionStatus) :
       this(source.executionType, source.executionId, source.application, stageId, status)
 
@@ -112,24 +137,37 @@ sealed class Message {
   }
 
   data class StageRestarting(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
     override val stageId: String
-  ) : Message(), StageLevel
+  ) : Message(), StageLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String) :
+      this(randomUUID(), executionType, executionId, application, stageId)
+  }
 
-  data class ExecutionStarting(
+  data class ExecutionStarting
+  constructor(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String
-  ) : Message(), ExecutionLevel
+  ) : Message(), ExecutionLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String) :
+      this(randomUUID(), executionType, executionId, application)
+  }
 
   data class ExecutionComplete(
+    override val id: UUID,
     override val executionType: Class<out Execution<*>>,
     override val executionId: String,
     override val application: String,
     val status: ExecutionStatus
   ) : Message(), ExecutionLevel {
+    constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, status: ExecutionStatus) :
+      this(randomUUID(), executionType, executionId, application, status)
+
     constructor(source: ExecutionLevel, status: ExecutionStatus) :
       this(source.executionType, source.executionId, source.application, status)
   }
@@ -142,50 +180,66 @@ sealed class Message {
      * Execution id was not found in the [ExecutionRepository].
      */
     data class InvalidExecutionId(
+      override val id: UUID,
       override val executionType: Class<out Execution<*>>,
       override val executionId: String,
       override val application: String
     ) : ConfigurationError() {
-      constructor(source: ExecutionLevel)
-        : this(source.executionType, source.executionId, source.application)
+      constructor(executionType: Class<out Execution<*>>, executionId: String, application: String) :
+        this(randomUUID(), executionType, executionId, application)
+
+      constructor(source: ExecutionLevel) :
+        this(source.executionType, source.executionId, source.application)
     }
 
     /**
      * Stage id was not found in the execution.
      */
     data class InvalidStageId(
+      override val id: UUID,
       override val executionType: Class<out Execution<*>>,
       override val executionId: String,
       override val application: String,
       override val stageId: String
     ) : ConfigurationError(), StageLevel {
-      constructor(source: StageLevel)
-        : this(source.executionType, source.executionId, source.application, source.stageId)
+      constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String) :
+        this(randomUUID(), executionType, executionId, application, stageId)
+
+      constructor(source: StageLevel) :
+        this(source.executionType, source.executionId, source.application, source.stageId)
     }
 
     /**
      * No such [Task] class.
      */
     data class InvalidTaskType(
+      override val id: UUID,
       override val executionType: Class<out Execution<*>>,
       override val executionId: String,
       override val application: String,
       override val stageId: String,
       val className: String
     ) : ConfigurationError(), StageLevel {
-      constructor(source: StageLevel, className: String)
-        : this(source.executionType, source.executionId, source.application, source.stageId, className)
+      constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String, className: String) :
+        this(randomUUID(), executionType, executionId, application, stageId, className)
+
+      constructor(source: StageLevel, className: String) :
+        this(source.executionType, source.executionId, source.application, source.stageId, className)
     }
 
     data class NoDownstreamTasks(
+      override val id: UUID,
       override val executionType: Class<out Execution<*>>,
       override val executionId: String,
       override val application: String,
       override val stageId: String,
       override val taskId: String
     ) : ConfigurationError(), TaskLevel {
-      constructor(source: TaskLevel)
-        : this(source.executionType, source.executionId, source.application, source.stageId, source.taskId)
+      constructor(executionType: Class<out Execution<*>>, executionId: String, application: String, stageId: String, taskId: String) :
+        this(randomUUID(), executionType, executionId, application, stageId, taskId)
+
+      constructor(source: TaskLevel) :
+        this(source.executionType, source.executionId, source.application, source.stageId, source.taskId)
     }
   }
 }

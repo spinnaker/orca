@@ -34,13 +34,15 @@ import java.util.concurrent.TimeUnit.HOURS
 
 abstract class QueueSpec<out Q : Queue>(
   createQueue: () -> Q,
-  triggerRedeliveryCheck: (Q) -> Unit
+  triggerRedeliveryCheck: (Q) -> Unit,
+  shutdownCallback: (() -> Unit)? = null
 ) : Spek({
 
   fun shutdown(queue: Q) {
     if (queue is Closeable) {
       queue.close()
     }
+    shutdownCallback?.invoke()
   }
 
   describe("polling the queue") {
@@ -80,12 +82,14 @@ abstract class QueueSpec<out Q : Queue>(
 
       beforeGroup {
         queue.push(message1)
+        clock.incrementBy(Duration.ofSeconds(1))
         queue.push(message2)
       }
 
       afterGroup { shutdown(queue) }
 
       it("returns the messages in the order they were queued") {
+        println(listOf(message1, message2).map(Message::id))
         assertThat(queue.poll()?.id, equalTo(message1.id))
         assertThat(queue.poll()?.id, equalTo(message2.id))
       }

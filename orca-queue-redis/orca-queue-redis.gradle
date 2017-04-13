@@ -41,6 +41,7 @@ repositories {
 
 dependencies {
   compile project(":orca-queue")
+  compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.7"
 
   testCompile project(path: ":orca-queue", configuration: "testOutput")
   testCompile "org.junit.platform:junit-platform-runner:$junitVersion"
