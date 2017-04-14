@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.q.event.*
+import com.netflix.spinnaker.orca.events.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
@@ -37,6 +37,7 @@ open class ExecutionLogListener
         is StageComplete -> toLogEntry(event, hashMapOf("status" to status.name))
         is TaskStarted -> toLogEntry(event, emptyMap())
         is TaskComplete -> toLogEntry(event, hashMapOf("status" to status.name))
+        else -> throw IllegalArgumentException("Unknown event type $javaClass")
       }
     })
   }
@@ -44,7 +45,7 @@ open class ExecutionLogListener
   private fun toLogEntry(event: ExecutionEvent, details: Map<String, Serializable>): ExecutionLogEntry = event.run {
     ExecutionLogEntry(
       executionId,
-      timestamp,
+      timestamp(),
       javaClass.simpleName,
       details,
       currentInstanceId

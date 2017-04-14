@@ -17,9 +17,9 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.event.TaskStarted
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -44,7 +44,7 @@ open class StartTaskHandler
       queue.push(RunTask(message, task.id, task.implementingClass))
     }
 
-    publisher.publishEvent(TaskStarted(this, message))
+    publisher.publishEvent(TaskStarted(this, message.executionType, message.executionId, message.stageId, message.taskId))
   }
 
   override val messageType = StartTask::class.java

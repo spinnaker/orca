@@ -1,0 +1,59 @@
+/*
+ * Copyright 2017 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.netflix.spinnaker.orca.events;
+
+import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.listeners.DefaultPersister;
+import com.netflix.spinnaker.orca.listeners.ExecutionListener;
+import com.netflix.spinnaker.orca.listeners.Persister;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
+import org.springframework.context.ApplicationListener;
+
+/**
+ * Adapts events emitted by the nu-orca queue to an old-style listener.
+ */
+public final class ExecutionEventAdapter implements ApplicationListener<ExecutionEvent> {
+
+  private final ExecutionListener delegate;
+  private final ExecutionRepository repository;
+  private final Persister persister;
+
+  public ExecutionEventAdapter(ExecutionListener delegate, ExecutionRepository repository) {
+    this.delegate = delegate;
+    this.repository = repository;
+    persister = new DefaultPersister(repository);
+  }
+
+  @Override public void onApplicationEvent(ExecutionEvent event) {
+    if (event instanceof ExecutionStarted) {
+      delegate.beforeExecution(persister, executionFor(event));
+    } else if (event instanceof ExecutionComplete) {
+      ExecutionStatus status = ((ExecutionComplete) event).getStatus();
+      delegate.afterExecution(persister, executionFor(event), status, status.isSuccessful());
+    }
+  }
+
+  private Execution<?> executionFor(ExecutionEvent event) {
+    if (event.getExecutionType().equals(Pipeline.class)) {
+      return repository.retrievePipeline(event.getExecutionId());
+    } else {
+      return repository.retrieveOrchestration(event.getExecutionId());
+    }
+  }
+}

@@ -17,12 +17,12 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.StartStage
-import com.netflix.spinnaker.orca.q.event.StageStarted
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -50,7 +50,7 @@ open class StartStageHandler @Autowired constructor(
       }
     }
 
-    publisher.publishEvent(StageStarted(this, message))
+    publisher.publishEvent(StageStarted(this, message.executionType, message.executionId, message.stageId))
   }
 
   override val messageType = StartStage::class.java

@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.q
 import com.natpryce.hamkrest.Matcher
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
+import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.q.event.ExecutionComplete
 import org.springframework.context.ApplicationListener
 import org.springframework.context.ConfigurableApplicationContext
 import java.util.concurrent.CountDownLatch
@@ -47,7 +47,7 @@ class ExecutionLatch(matcher: Matcher<ExecutionComplete>)
 
 fun <E : Execution<E>> ConfigurableApplicationContext.runToCompletion(execution: E, launcher: (E) -> Unit) {
   val latch = ExecutionLatch(
-    has(ExecutionComplete::executionId, equalTo(execution.id))
+    has(ExecutionComplete::getExecutionId, equalTo(execution.id))
   )
   addApplicationListener(latch)
   launcher.invoke(execution)
