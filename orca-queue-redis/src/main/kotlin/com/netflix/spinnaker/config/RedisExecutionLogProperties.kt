@@ -16,10 +16,8 @@
 package com.netflix.spinnaker.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import java.time.Duration
-import java.time.temporal.ChronoUnit
 
 @ConfigurationProperties("executionLog.redis")
 class RedisExecutionLogProperties {
-  var ttlDays: Long = Duration.of(6, ChronoUnit.MONTHS).toDays()
+  var ttlDays: Long = 180
 }
