@@ -58,7 +58,7 @@ class RedisQueue(
       redis
         .pop(queueKey, unackedKey, ackTimeout)
         ?.let { id -> Pair(UUID.fromString(id), redis.hget(messagesKey, id)) }
-        ?.let { (id, json) -> Pair(id, mapper.readValue(json, Message::class.java)) }
+        ?.let { (id, json) -> Pair(id, mapper.readValue<Message>(json)) }
         ?.let { (id, payload) ->
           callback.invoke(payload) {
             ack(id)
@@ -133,4 +133,7 @@ class RedisQueue(
    */
   private fun score(delay: TemporalAmount = ZERO) =
     clock.instant().plus(delay).toEpochMilli().toDouble()
+
+  inline fun <reified R> ObjectMapper.readValue(content: String): R =
+    readValue(content, R::class.java)
 }

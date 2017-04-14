@@ -19,7 +19,6 @@ dependencies {
   compile project(":orca-retrofit")
   compile project(":orca-igor")
   compile project(":orca-front50")
-  compile project(":orca-queue")
   compile spinnaker.dependency('kork')
   compile spinnaker.dependency('bootAutoConfigure')
   compile "net.lariverosc:jesque-spring:1.0.1"
