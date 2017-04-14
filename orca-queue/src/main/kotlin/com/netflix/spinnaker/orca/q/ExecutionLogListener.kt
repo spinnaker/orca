@@ -15,20 +15,39 @@
  */
 package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent
+import com.netflix.spinnaker.orca.q.event.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
+import java.io.Serializable
 
 @Component
 open class ExecutionLogListener
 @Autowired constructor(
-  private val executionLogRepository: ExecutionLogRepository
+  private val executionLogRepository: ExecutionLogRepository,
+  private val currentInstanceId: String
 ) : ApplicationListener<ExecutionEvent> {
 
-  override fun onApplicationEvent(event: ExecutionEvent?) {
-    if (event != null) {
-      executionLogRepository.save(event.toLogEntry())
-    }
+  override fun onApplicationEvent(event: ExecutionEvent) {
+    executionLogRepository.save(event.run {
+      when (this) {
+        is ExecutionStarted -> toLogEntry(event, emptyMap())
+        is ExecutionComplete -> toLogEntry(event, hashMapOf("status" to status.name))
+        is StageStarted -> toLogEntry(event, emptyMap())
+        is StageComplete -> toLogEntry(event, hashMapOf("status" to status.name))
+        is TaskStarted -> toLogEntry(event, emptyMap())
+        is TaskComplete -> toLogEntry(event, hashMapOf("status" to status.name))
+      }
+    })
+  }
+
+  private fun toLogEntry(event: ExecutionEvent, details: Map<String, Serializable>): ExecutionLogEntry = event.run {
+    ExecutionLogEntry(
+      executionId,
+      timestamp,
+      javaClass.simpleName,
+      details,
+      currentInstanceId
+    )
   }
 }

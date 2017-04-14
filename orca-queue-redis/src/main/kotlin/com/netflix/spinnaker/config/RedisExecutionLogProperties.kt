@@ -13,26 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.q
+package com.netflix.spinnaker.config
 
-import java.io.Serializable
-import java.time.Instant
+import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 
-data class ExecutionLogEntry(
-  val executionId: String,
-  val timestamp: Instant,
-  val eventType: String,
-  val details: Map<String, Serializable>,
-  var currentInstanceId: String
-)
-
-interface ExecutionLogRepository {
-  fun save(entry: ExecutionLogEntry)
-}
-
-/**
- * Fallback (yet extra-unsafe) execution log repository.
- */
-class BlackholeExecutionLogRepository : ExecutionLogRepository {
-  override fun save(entry: ExecutionLogEntry) {}
+@ConfigurationProperties("executionLog.redis")
+class RedisExecutionLogProperties {
+  var ttlDays: Long = Duration.of(6, ChronoUnit.MONTHS).toDays()
 }
