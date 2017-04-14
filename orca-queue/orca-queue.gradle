@@ -41,8 +41,6 @@ repositories {
 
 dependencies {
   compile project(":orca-core")
-  compile project(":orca-echo")
-  compile project(":orca-front50")
   compile "com.netflix.dyno-queues:dyno-queues-redis:1.0.6"
   compile "org.threeten:threeten-extra:1.0"
 

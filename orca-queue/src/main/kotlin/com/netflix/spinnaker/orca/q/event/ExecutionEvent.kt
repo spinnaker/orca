@@ -29,6 +29,8 @@ import java.time.Instant
  */
 sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
+  abstract val executionType: Class<out Execution<*>>
+  abstract val executionId: String
   val timestamp: Instant
     get() = Instant.ofEpochMilli(super.getTimestamp())
 
@@ -40,8 +42,8 @@ sealed class ExecutionEvent(source: Any) : ApplicationEvent(source) {
 
 class ExecutionStarted(
   source: Any,
-  val executionType: Class<out Execution<*>>,
-  val executionId: String
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String
 ) : ExecutionEvent(source) {
   constructor(source: Any, message: StartExecution) :
     this(source, message.executionType, message.executionId)
@@ -60,8 +62,8 @@ class ExecutionStarted(
  */
 class ExecutionComplete(
   source: Any,
-  val executionType: Class<out Execution<*>>,
-  val executionId: String,
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
   val status: ExecutionStatus
 ) : ExecutionEvent(source) {
   /**
@@ -80,8 +82,8 @@ class ExecutionComplete(
 
 class StageStarted(
   source: Any,
-  val executionType: Class<out Execution<*>>,
-  val executionId: String,
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
   val stageId: String
 ) : ExecutionEvent(source) {
   constructor(source: Any, message: StartStage) :
@@ -97,8 +99,8 @@ class StageStarted(
 
 class StageComplete(
   source: Any,
-  val executionType: Class<out Execution<*>>,
-  val executionId: String,
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
   val stageId: String,
   val status: ExecutionStatus
 ) : ExecutionEvent(source) {
@@ -115,8 +117,8 @@ class StageComplete(
 
 class TaskStarted(
   source: Any,
-  val executionType: Class<out Execution<*>>,
-  val executionId: String,
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
   val stageId: String,
   val taskId: String
 ) : ExecutionEvent(source) {
@@ -133,8 +135,8 @@ class TaskStarted(
 
 class TaskComplete(
   source: Any,
-  val executionType: Class<out Execution<*>>,
-  val executionId: String,
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
   val stageId: String,
   val taskId: String,
   val status: ExecutionStatus

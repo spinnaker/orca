@@ -142,4 +142,9 @@ class PipelineBuilder {
     pipeline.startTime = startTime
     return this
   }
+
+  PipelineBuilder withExecutionEngine(Execution.ExecutionEngine executionEngine) {
+    pipeline.executionEngine = executionEngine
+    return this
+  }
 }

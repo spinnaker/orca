@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine;
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +64,7 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
       .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
       .withExecutingInstance(currentInstanceId)
       .withNotifications((List<Map<String, Object>>) config.get("notifications"))
+      .withExecutionEngine(getEnum(config, "executionEngine", ExecutionEngine.class))
       .build();
   }
 

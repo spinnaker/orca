@@ -16,14 +16,17 @@
 
 package com.netflix.spinnaker.config
 
-import com.netflix.spinnaker.orca.q.ExecutionLogRepository
 import com.netflix.spinnaker.orca.q.BlackholeExecutionLogRepository
+import com.netflix.spinnaker.orca.q.ExecutionLogRepository
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.memory.InMemoryQueue
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.event.ApplicationEventMulticaster
+import org.springframework.context.event.SimpleApplicationEventMulticaster
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Clock
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors.newCachedThreadPool
@@ -42,4 +45,18 @@ open class QueueConfiguration {
 
   @Bean
   open fun messageHandlerPool(): Executor = newCachedThreadPool() // TODO: ¯\_(ツ)_/¯
+
+  /**
+   * This overrides Spring's default application event multicaster as we need
+   * to _guarantee_ that exceptions thrown by listeners or just listeners taking
+   * a long time to do stuff do not affect the processing of the queue.
+   */
+  @Bean
+  open fun applicationEventMulticaster(taskExecutor: ThreadPoolTaskExecutor): ApplicationEventMulticaster =
+    SimpleApplicationEventMulticaster().apply {
+      setTaskExecutor(taskExecutor)
+      // TODO: should set an error handler as well
+    }
+
+  @Bean open fun taskExecutor(): ThreadPoolTaskExecutor = ThreadPoolTaskExecutor()
 }

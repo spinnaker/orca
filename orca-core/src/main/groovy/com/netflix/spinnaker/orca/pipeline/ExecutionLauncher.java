@@ -140,6 +140,10 @@ public abstract class ExecutionLauncher<T extends Execution> {
     return result == null ? emptyList() : result;
   }
 
+  protected final <E extends Enum<E>> E getEnum(Map<String, ?> map, String key, Class<E> type) {
+    return map.containsKey(key) ? Enum.valueOf(type, map.get(key).toString()) : null;
+  }
+
   /**
    * Hook for subclasses to decide if this execution should be queued or start immediately.
    *
