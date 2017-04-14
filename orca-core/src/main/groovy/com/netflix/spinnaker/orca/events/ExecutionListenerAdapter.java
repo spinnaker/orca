@@ -28,13 +28,13 @@ import org.springframework.context.ApplicationListener;
 /**
  * Adapts events emitted by the nu-orca queue to an old-style listener.
  */
-public final class ExecutionEventAdapter implements ApplicationListener<ExecutionEvent> {
+public final class ExecutionListenerAdapter implements ApplicationListener<ExecutionEvent> {
 
   private final ExecutionListener delegate;
   private final ExecutionRepository repository;
   private final Persister persister;
 
-  public ExecutionEventAdapter(ExecutionListener delegate, ExecutionRepository repository) {
+  public ExecutionListenerAdapter(ExecutionListener delegate, ExecutionRepository repository) {
     this.delegate = delegate;
     this.repository = repository;
     persister = new DefaultPersister(repository);
