@@ -22,14 +22,16 @@ import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
-import com.netflix.spinnaker.orca.q.event.ExecutionEvent
-import com.netflix.spinnaker.orca.q.event.ExecutionStarted
+import com.netflix.spinnaker.orca.q.event.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
 
-@Component open class EchoExecutionStartedListener
+@Component
+@ConditionalOnExpression("\${echo.enabled:true}")
+open class EchoExecutionStartedListener
 @Autowired constructor(
   private val repository: ExecutionRepository,
   private val echoService: EchoService,
@@ -39,11 +41,15 @@ import org.springframework.stereotype.Component
 
   private val log = LoggerFactory.getLogger(javaClass)
 
-  override fun onApplicationEvent(event: ExecutionEvent) {
+  override fun onApplicationEvent(event: ExecutionEvent) =
     when (event) {
       is ExecutionStarted -> onExecutionStarted(event)
+      is ExecutionComplete -> onExecutionComplete(event)
+      is StageStarted -> onStageStarted(event)
+      is StageComplete -> onStageComplete(event)
+      is TaskStarted -> onTaskStarted(event)
+      is TaskComplete -> onTaskComplete(event)
     }
-  }
 
   private fun onExecutionStarted(event: ExecutionStarted) {
     if (event.executionType is Pipeline) {
@@ -67,6 +73,26 @@ import org.springframework.stereotype.Component
     }
   }
 
+  private fun onExecutionComplete(event: ExecutionComplete) {
+    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  }
+
+  private fun onStageStarted(event: StageStarted) {
+    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  }
+
+  private fun onStageComplete(event: StageComplete) {
+    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  }
+
+  private fun onTaskStarted(event: TaskStarted) {
+    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  }
+
+  private fun onTaskComplete(event: TaskComplete) {
+    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  }
+
   /**
    * Adds any application-level notifications to the pipeline's notifications
    * If a notification exists on both with the same address and type, the pipeline's notification will be treated as an
@@ -77,7 +103,6 @@ import org.springframework.stereotype.Component
    */
   private fun addApplicationNotifications(pipeline: Pipeline) {
     val notifications = front50Service.getApplicationNotifications(pipeline.application)
-
     if (notifications != null) {
       notifications
         .pipelineNotifications
