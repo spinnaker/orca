@@ -174,6 +174,37 @@ class RunTaskHandlerSpec : Spek({
         verifyZeroInteractions(task)
       }
     }
+
+    describe("when the execution has been canceled") {
+      beforeGroup {
+        pipeline.status = RUNNING
+        pipeline.isCanceled = true
+
+        whenever(repository.retrievePipeline(message.executionId))
+          .thenReturn(pipeline)
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("emits an event indicating that the task was canceled") {
+        verify(queue).push(CompleteTask(
+          message.executionType,
+          message.executionId,
+          "foo",
+          message.stageId,
+          message.taskId,
+          CANCELED
+        ))
+      }
+
+      it("does not execute the task") {
+        verifyZeroInteractions(task)
+      }
+    }
   }
 
   describe("no such task") {

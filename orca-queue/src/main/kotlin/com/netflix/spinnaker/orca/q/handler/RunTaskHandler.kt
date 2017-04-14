@@ -42,7 +42,7 @@ open class RunTaskHandler
 
   override fun handle(message: RunTask) {
     message.withTask { stage, task ->
-      if (stage.getExecution().getStatus().complete) {
+      if (stage.getExecution().isCanceled() || stage.getExecution().getStatus().complete) {
         queue.push(CompleteTask(message, CANCELED))
       } else {
         try {
@@ -50,12 +50,12 @@ open class RunTaskHandler
             // TODO: rather send this data with CompleteTask message
             stage.processTaskOutput(result)
             when (result.status) {
-            // TODO: handle other states such as cancellation, suspension, etc.
               RUNNING ->
                 queue.push(message, task.backoffPeriod())
               SUCCEEDED, TERMINAL, REDIRECT ->
                 queue.push(CompleteTask(message, result.status))
-              else -> TODO()
+              else ->
+                TODO("handle other states such as cancellation, suspension, etc.")
             }
           }
         } catch(e: Exception) {
