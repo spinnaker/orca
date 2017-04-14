@@ -42,11 +42,19 @@ public final class ExecutionListenerAdapter implements ApplicationListener<Execu
 
   @Override public void onApplicationEvent(ExecutionEvent event) {
     if (event instanceof ExecutionStarted) {
-      delegate.beforeExecution(persister, executionFor(event));
+      onExecutionStarted((ExecutionStarted) event);
     } else if (event instanceof ExecutionComplete) {
-      ExecutionStatus status = ((ExecutionComplete) event).getStatus();
-      delegate.afterExecution(persister, executionFor(event), status, status.isSuccessful());
+      onExecutionComplete((ExecutionComplete) event);
     }
+  }
+
+  private void onExecutionStarted(ExecutionStarted event) {
+    delegate.beforeExecution(persister, executionFor(event));
+  }
+
+  private void onExecutionComplete(ExecutionComplete event) {
+    ExecutionStatus status = event.getStatus();
+    delegate.afterExecution(persister, executionFor(event), status, status.isSuccessful());
   }
 
   private Execution<?> executionFor(ExecutionEvent event) {

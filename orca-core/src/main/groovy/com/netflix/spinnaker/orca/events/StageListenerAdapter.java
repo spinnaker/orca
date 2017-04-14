@@ -14,51 +14,43 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.echo.spring;
+package com.netflix.spinnaker.orca.events;
 
 import java.util.List;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.events.*;
 import com.netflix.spinnaker.orca.listeners.DefaultPersister;
 import com.netflix.spinnaker.orca.listeners.Persister;
+import com.netflix.spinnaker.orca.listeners.StageListener;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
-import org.springframework.stereotype.Component;
 
 /**
  * This listener translates events coming from the nu-orca queueing system to
  * the old Spring Batch style listeners. Once we're running full-time on the
  * queue we should simplify things.
  */
-@Component
-public class EchoExecutionEventListener implements ApplicationListener<ExecutionEvent> {
+public final class StageListenerAdapter implements ApplicationListener<ExecutionEvent> {
 
-  private final EchoNotifyingExecutionListener executionListener;
-  private final EchoNotifyingStageListener stageListener;
+  private final StageListener delegate;
   private final ExecutionRepository repository;
   private final Persister persister;
 
   @Autowired
-  public EchoExecutionEventListener(
-    EchoNotifyingExecutionListener executionListener,
-    EchoNotifyingStageListener stageListener,
-    ExecutionRepository repository) {
-    this.executionListener = executionListener;
-    this.stageListener = stageListener;
+  public StageListenerAdapter(
+    StageListener delegate,
+    ExecutionRepository repository
+  ) {
+    this.delegate = delegate;
     this.repository = repository;
-    this.persister = new DefaultPersister(repository);
+    this.persister = new DefaultPersister(this.repository);
   }
 
   @Override public void onApplicationEvent(ExecutionEvent event) {
-    if (event instanceof ExecutionStarted) {
-      onExecutionStarted((ExecutionStarted) event);
-    } else if (event instanceof ExecutionComplete) {
-      onExecutionComplete((ExecutionComplete) event);
-    } else if (event instanceof StageStarted) {
+    if (event instanceof StageStarted) {
       onStageStarted((StageStarted) event);
     } else if (event instanceof StageComplete) {
       onStageComplete((StageComplete) event);
@@ -69,18 +61,6 @@ public class EchoExecutionEventListener implements ApplicationListener<Execution
     }
   }
 
-  private void onExecutionStarted(ExecutionStarted event) {
-    Execution execution = retrieve(event);
-    executionListener.beforeExecution(persister, execution);
-  }
-
-  private void onExecutionComplete(ExecutionComplete event) {
-    Execution execution = retrieve(event);
-    ExecutionStatus status = event.getStatus();
-    // TODO: not sure if status.isSuccessful covers all the weird cases here
-    executionListener.afterExecution(persister, execution, status, status.isSuccessful());
-  }
-
   private void onStageStarted(StageStarted event) {
     Execution execution = retrieve(event);
     List<Stage<?>> stages = execution.getStages();
@@ -88,7 +68,7 @@ public class EchoExecutionEventListener implements ApplicationListener<Execution
       .stream()
       .filter(it -> it.getId().equals(event.getStageId()))
       .findFirst()
-      .ifPresent(stage -> stageListener.beforeStage(persister, stage));
+      .ifPresent(stage -> delegate.beforeStage(persister, stage));
   }
 
   private void onStageComplete(StageComplete event) {
@@ -98,7 +78,7 @@ public class EchoExecutionEventListener implements ApplicationListener<Execution
       .stream()
       .filter(it -> it.getId().equals(event.getStageId()))
       .findFirst()
-      .ifPresent(stage -> stageListener.afterStage(persister, stage));
+      .ifPresent(stage -> delegate.afterStage(persister, stage));
   }
 
   private void onTaskStarted(TaskStarted event) {
@@ -109,7 +89,7 @@ public class EchoExecutionEventListener implements ApplicationListener<Execution
       .filter(it -> it.getId().equals(event.getStageId()))
       .findFirst()
       .ifPresent(stage ->
-        stageListener.beforeTask(
+        delegate.beforeTask(
           persister,
           stage,
           stage.getTasks().stream().filter(it -> it.getId().equals(event.getTaskId())).findFirst().get()
@@ -126,7 +106,7 @@ public class EchoExecutionEventListener implements ApplicationListener<Execution
       .filter(it -> it.getId().equals(event.getStageId()))
       .findFirst()
       .ifPresent(stage ->
-        stageListener.afterTask(persister,
+        delegate.afterTask(persister,
           stage,
           stage.getTasks().stream().filter(it -> it.getId().equals(event.getTaskId())).findFirst().get(),
           status,
