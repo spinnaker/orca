@@ -45,6 +45,7 @@ import rx.functions.Func1
 import rx.schedulers.Schedulers
 import static com.google.common.base.Predicates.notNull
 import static com.google.common.collect.Maps.filterValues
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.DEFAULT_EXECUTION_ENGINE
 import static java.lang.System.currentTimeMillis
 import static java.util.Collections.emptySet
 
@@ -487,7 +488,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       authentication      : mapper.writeValueAsString(execution.authentication),
       paused              : mapper.writeValueAsString(execution.paused),
       keepWaitingPipelines: String.valueOf(execution.keepWaitingPipelines),
-      executionEngine     : execution.executionEngine.name()
+      executionEngine     : execution.executionEngine?.name() ?: DEFAULT_EXECUTION_ENGINE.name()
     ]
     // TODO: store separately? Seems crazy to be using a hash rather than a set
     map.stageIndex = execution.stages.id.join(",")
@@ -562,7 +563,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       execution.authentication = mapper.readValue(map.authentication, Execution.AuthenticationDetails)
       execution.paused = map.paused ? mapper.readValue(map.paused, Execution.PausedDetails) : null
       execution.keepWaitingPipelines = Boolean.parseBoolean(map.keepWaitingPipelines)
-      execution.executionEngine = map.executionEngine == null ? Execution.DEFAULT_EXECUTION_ENGINE : Execution.ExecutionEngine.valueOf(map.executionEngine)
+      execution.executionEngine = map.executionEngine == null ? DEFAULT_EXECUTION_ENGINE : Execution.ExecutionEngine.valueOf(map.executionEngine)
 
       def stageIds = map.stageIndex.tokenize(",")
       stageIds.each { stageId ->
