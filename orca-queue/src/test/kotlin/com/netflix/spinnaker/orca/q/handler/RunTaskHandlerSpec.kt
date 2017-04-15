@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
+import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
@@ -104,22 +105,72 @@ class RunTaskHandlerSpec : Spek({
     describe("that fails") {
       val taskResult = TaskResult(TERMINAL)
 
-      beforeGroup {
-        whenever(task.execute(any())).thenReturn(taskResult)
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+      context("no overrides are in place") {
+        beforeGroup {
+          whenever(task.execute(any())).thenReturn(taskResult)
+          whenever(repository.retrievePipeline(message.executionId))
+            .thenReturn(pipeline)
+        }
+
+        afterGroup(::resetMocks)
+
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("emits a failure event") {
+          argumentCaptor<CompleteTask>().apply {
+            verify(queue).push(capture())
+            assertThat(firstValue.status, equalTo(TERMINAL))
+          }
+        }
       }
 
-      afterGroup(::resetMocks)
+      context("the task should not fail the whole pipeline, only the branch") {
+        beforeGroup {
+          pipeline.stages.first().context["failPipeline"] = false
 
-      action("the handler receives a message") {
-        handler.handle(message)
+          whenever(task.execute(any())).thenReturn(taskResult)
+          whenever(repository.retrievePipeline(message.executionId))
+            .thenReturn(pipeline)
+        }
+
+        afterGroup(::resetMocks)
+        afterGroup { pipeline.stages.first().context.clear() }
+
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("emits a failure event") {
+          argumentCaptor<CompleteTask>().apply {
+            verify(queue).push(capture())
+            assertThat(firstValue.status, equalTo(STOPPED))
+          }
+        }
       }
 
-      it("emits a failure event") {
-        argumentCaptor<CompleteTask>().apply {
-          verify(queue).push(capture())
-          assertThat(firstValue.status, equalTo(TERMINAL))
+      context("the task should allow the pipeline to proceed") {
+        beforeGroup {
+          pipeline.stages.first().context["continuePipeline"] = true
+
+          whenever(task.execute(any())).thenReturn(taskResult)
+          whenever(repository.retrievePipeline(message.executionId))
+            .thenReturn(pipeline)
+        }
+
+        afterGroup(::resetMocks)
+        afterGroup { pipeline.stages.first().context.clear() }
+
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("emits a failure event") {
+          argumentCaptor<CompleteTask>().apply {
+            verify(queue).push(capture())
+            assertThat(firstValue.status, equalTo(FAILED_CONTINUE))
+          }
         }
       }
     }

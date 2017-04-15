@@ -42,7 +42,8 @@ open class RunTaskHandler
 
   override fun handle(message: RunTask) {
     message.withTask { stage, task ->
-      if (stage.getExecution().isCanceled() || stage.getExecution().getStatus().complete) {
+      val execution = stage.getExecution()
+      if (execution.isCanceled() || execution.getStatus().complete) {
         queue.push(CompleteTask(message, CANCELED))
       } else {
         try {
@@ -52,8 +53,17 @@ open class RunTaskHandler
             when (result.status) {
               RUNNING ->
                 queue.push(message, task.backoffPeriod())
-              SUCCEEDED, TERMINAL, REDIRECT ->
+              SUCCEEDED, REDIRECT ->
                 queue.push(CompleteTask(message, result.status))
+              TERMINAL -> {
+                if (!stage.shouldFailPipeline()) {
+                  queue.push(CompleteTask(message, STOPPED))
+                } else if (stage.shouldContinueOnFailure()) {
+                  queue.push(CompleteTask(message, FAILED_CONTINUE))
+                } else {
+                  queue.push(CompleteTask(message, result.status))
+                }
+              }
               else ->
                 TODO("handle other states such as cancellation, suspension, etc.")
             }
@@ -100,4 +110,10 @@ open class RunTaskHandler
       )
     }
   }
+
+  private fun Stage<*>.shouldFailPipeline() =
+    getContext()["failPipeline"] in listOf(null, true)
+
+  private fun Stage<*>.shouldContinueOnFailure() =
+    getContext()["continuePipeline"] == true
 }
