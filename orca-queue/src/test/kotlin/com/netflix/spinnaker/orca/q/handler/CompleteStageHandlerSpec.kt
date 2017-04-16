@@ -47,147 +47,150 @@ class CompleteStageHandlerSpec : Spek({
 
   fun resetMocks() = reset(queue, repository, publisher)
 
-  describe("when a stage completes successfully") {
-    context("it is the last stage") {
-      val pipeline = pipeline {
-        application = "foo"
-        stage {
-          type = singleTaskStage.type
+  setOf(SUCCEEDED, FAILED_CONTINUE).forEach { status ->
+    describe("when a stage completes with $status status") {
+      context("it is the last stage") {
+        val pipeline = pipeline {
+          application = "foo"
+          stage {
+            type = singleTaskStage.type
+          }
         }
-      }
-      val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, SUCCEEDED)
+        val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, status)
 
-      beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
-      }
-
-      afterGroup(::resetMocks)
-
-      action("the handler receives a message") {
-        handler.handle(message)
-      }
-
-      it("updates the stage state") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          assertThat(firstValue.status, equalTo(SUCCEEDED))
-          assertThat(firstValue.endTime, equalTo(clock.millis()))
+        beforeGroup {
+          whenever(repository.retrievePipeline(message.executionId))
+            .thenReturn(pipeline)
         }
-      }
 
-      it("completes the execution") {
-        verify(queue).push(CompleteExecution(
-          message.executionType,
-          message.executionId,
-          "foo",
-          SUCCEEDED
-        ))
-      }
+        afterGroup(::resetMocks)
 
-      it("does not emit any commands") {
-        verify(queue, never()).push(any<RunTask>())
-      }
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
 
-      it("publishes an event") {
-        argumentCaptor<StageComplete>().apply {
-          verify(publisher).publishEvent(capture())
-          firstValue.apply {
-            executionType shouldBe pipeline.javaClass
-            executionId shouldBe pipeline.id
-            stageId shouldBe message.stageId
-            status shouldBe SUCCEEDED
+        it("updates the stage state") {
+          argumentCaptor<Stage<Pipeline>>().apply {
+            verify(repository).storeStage(capture())
+            firstValue.let {
+              it.status shouldBe status
+              it.endTime shouldBe clock.millis()
+            }
+          }
+        }
+
+        it("completes the execution") {
+          verify(queue).push(CompleteExecution(
+            message.executionType,
+            message.executionId,
+            "foo",
+            SUCCEEDED // execution is SUCCEEDED even if stage was FAILED_CONTINUE
+          ))
+        }
+
+        it("does not emit any commands") {
+          verify(queue, never()).push(any<RunTask>())
+        }
+
+        it("publishes an event") {
+          argumentCaptor<StageComplete>().apply {
+            verify(publisher).publishEvent(capture())
+            firstValue.let {
+              it.executionType shouldBe pipeline.javaClass
+              it.executionId shouldBe pipeline.id
+              it.stageId shouldBe message.stageId
+              it.status shouldBe status
+            }
           }
         }
       }
-    }
 
-    context("there is a single downstream stage") {
-      val pipeline = pipeline {
-        application = "foo"
-        stage {
-          refId = "1"
-          type = singleTaskStage.type
+      context("there is a single downstream stage") {
+        val pipeline = pipeline {
+          application = "foo"
+          stage {
+            refId = "1"
+            type = singleTaskStage.type
+          }
+          stage {
+            refId = "2"
+            requisiteStageRefIds = setOf("1")
+            type = singleTaskStage.type
+          }
         }
-        stage {
-          refId = "2"
-          requisiteStageRefIds = setOf("1")
-          type = singleTaskStage.type
+        val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, status)
+
+        beforeGroup {
+          whenever(repository.retrievePipeline(message.executionId))
+            .thenReturn(pipeline)
         }
-      }
-      val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, SUCCEEDED)
 
-      beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
-      }
+        afterGroup(::resetMocks)
 
-      afterGroup(::resetMocks)
-
-      action("the handler receives a message") {
-        handler.handle(message)
-      }
-
-      it("updates the stage state") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          assertThat(firstValue.status, equalTo(SUCCEEDED))
-          assertThat(firstValue.endTime, equalTo(clock.millis()))
+        action("the handler receives a message") {
+          handler.handle(message)
         }
-      }
 
-      it("runs the next stage") {
-        verify(queue).push(StartStage(
-          message.executionType,
-          message.executionId,
-          "foo",
-          pipeline.stages.last().id
-        ))
-      }
-
-      it("does not run any tasks") {
-        verify(queue, never()).push(any<RunTask>())
-      }
-    }
-
-    context("there are multiple downstream stages") {
-      val pipeline = pipeline {
-        application = "foo"
-        stage {
-          refId = "1"
-          type = singleTaskStage.type
+        it("updates the stage state") {
+          argumentCaptor<Stage<Pipeline>>().apply {
+            verify(repository).storeStage(capture())
+            firstValue.let {
+              it.status shouldBe status
+              it.endTime shouldBe clock.millis()
+            }
+          }
         }
-        stage {
-          refId = "2"
-          requisiteStageRefIds = setOf("1")
-          type = singleTaskStage.type
+
+        it("runs the next stage") {
+          verify(queue).push(StartStage(
+            message.executionType,
+            message.executionId,
+            "foo",
+            pipeline.stages.last().id
+          ))
         }
-        stage {
-          refId = "3"
-          requisiteStageRefIds = setOf("1")
-          type = singleTaskStage.type
+
+        it("does not run any tasks") {
+          verify(queue, never()).push(any<RunTask>())
         }
       }
-      val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, SUCCEEDED)
 
-      beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
-      }
+      context("there are multiple downstream stages") {
+        val pipeline = pipeline {
+          application = "foo"
+          stage {
+            refId = "1"
+            type = singleTaskStage.type
+          }
+          stage {
+            refId = "2"
+            requisiteStageRefIds = setOf("1")
+            type = singleTaskStage.type
+          }
+          stage {
+            refId = "3"
+            requisiteStageRefIds = setOf("1")
+            type = singleTaskStage.type
+          }
+        }
+        val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, status)
 
-      afterGroup(::resetMocks)
+        beforeGroup {
+          whenever(repository.retrievePipeline(message.executionId))
+            .thenReturn(pipeline)
+        }
 
-      action("the handler receives a message") {
-        handler.handle(message)
-      }
+        afterGroup(::resetMocks)
 
-      it("runs the next stages") {
-        argumentCaptor<StartStage>().apply {
-          verify(queue, times(2)).push(capture())
-          assertThat(
-            allValues.map { it.stageId }.toSet(),
-            equalTo(pipeline.stages[1..2].map { it.id }.toSet())
-          )
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("runs the next stages") {
+          argumentCaptor<StartStage>().apply {
+            verify(queue, times(2)).push(capture())
+            allValues.map { it.stageId }.toSet() shouldBe pipeline.stages[1..2].map { it.id }.toSet()
+          }
         }
       }
     }

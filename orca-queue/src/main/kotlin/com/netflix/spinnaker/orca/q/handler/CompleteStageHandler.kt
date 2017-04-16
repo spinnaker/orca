@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.netflix.spinnaker.orca.ExecutionStatus.FAILED_CONTINUE
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -43,7 +44,7 @@ open class CompleteStageHandler
       stage.setEndTime(clock.millis())
       repository.storeStage(stage)
 
-      if (message.status == SUCCEEDED) {
+      if (message.status in listOf(SUCCEEDED, FAILED_CONTINUE)) {
         stage.startNext()
       } else {
         if (stage.getSyntheticStageOwner() == null) {

@@ -55,7 +55,7 @@ open class RunTaskHandler
                 queue.push(message, task.backoffPeriod())
               SUCCEEDED, REDIRECT ->
                 queue.push(CompleteTask(message, result.status))
-              TERMINAL -> {
+              TERMINAL ->
                 if (!stage.shouldFailPipeline()) {
                   queue.push(CompleteTask(message, STOPPED))
                 } else if (stage.shouldContinueOnFailure()) {
@@ -63,7 +63,6 @@ open class RunTaskHandler
                 } else {
                   queue.push(CompleteTask(message, result.status))
                 }
-              }
               else ->
                 TODO("handle other states such as cancellation, suspension, etc.")
             }
