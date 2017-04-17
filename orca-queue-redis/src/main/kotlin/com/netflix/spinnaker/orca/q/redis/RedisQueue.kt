@@ -39,6 +39,8 @@ class RedisQueue(
   queueName: String,
   private val pool: Pool<Jedis>,
   private val clock: Clock,
+  private val currentInstanceId: String,
+  private val lockTtlSeconds: Int = Duration.ofDays(1).seconds.toInt(),
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1)
 ) : Queue, Closeable {
 
@@ -50,6 +52,7 @@ class RedisQueue(
   private val queueKey = queueName + ".queue"
   private val unackedKey = queueName + ".unacked"
   private val messagesKey = queueName + ".messages"
+  private val locksKey = queueName + ".locks"
 
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
@@ -96,15 +99,19 @@ class RedisQueue(
   }
 
   /**
-   * Pop a single value from sorted set [from] and add them to sorted set [to]
-   * (with optional [delay]).
-   *
-   * @return the popped value or `null`.
+   * Attempt to acquire a lock on a single value from a sorted set [from], adding
+   * them to sorted set [to] (with optional [delay]).
    */
   private fun JedisCommands.pop(from: String, to: String, delay: TemporalAmount = ZERO) =
     zrangeByScore(from, 0.0, score(), 0, 1)
-      .also { move(from, to, delay, it) }
-      .firstOrNull()
+      .takeIf {
+        getSet("$locksKey:$it", currentInstanceId) in listOf(null, currentInstanceId)
+      }
+      ?.also {
+        expire("$locksKey:$it", lockTtlSeconds)
+        move(from, to, delay, it)
+      }
+      ?.firstOrNull()
 
   /**
    * Pop values from sorted set [from] and add them to sorted set [to] (with
@@ -114,6 +121,7 @@ class RedisQueue(
    */
   private fun JedisCommands.popAll(from: String, to: String, delay: TemporalAmount = ZERO) =
     zrangeByScore(from, 0.0, score())
+      .also { it.forEach { del("$locksKey:$it") } }
       .also { move(from, to, delay, it) }
 
   /**

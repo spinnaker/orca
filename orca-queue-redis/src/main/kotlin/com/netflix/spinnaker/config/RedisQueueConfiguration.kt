@@ -34,7 +34,8 @@ open class RedisQueueConfiguration {
   @Bean open fun redisQueue(
     @Qualifier("jedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
-    clock: Clock
-  ): Queue = RedisQueue(redisQueueProperties.queueName, redisPool, clock)
+    clock: Clock,
+    currentInstanceId: String
+  ): Queue = RedisQueue(redisQueueProperties.queueName, redisPool, clock, currentInstanceId)
 
 }

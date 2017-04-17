@@ -33,7 +33,7 @@ private var redis: EmbeddedRedis? = null
 
 private fun createQueue(): RedisQueue {
   redis = EmbeddedRedis.embed()
-  return RedisQueue("test", redis!!.pool, clock)
+  return RedisQueue("test", redis!!.pool, clock, "i-1234")
 }
 
 private fun triggerRedeliveryCheck(queue: RedisQueue) = queue.redeliver()
