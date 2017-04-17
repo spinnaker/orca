@@ -64,6 +64,7 @@ class DetermineSourceServerGroupTask implements RetryableTask {
           serverGroupName  : source.serverGroupName,
           account          : source.account,
           region           : source.region,
+          zone             : source.zone,
           useSourceCapacity: useSourceCapacity
         ]
       }

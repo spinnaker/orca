@@ -70,6 +70,7 @@ class StageData {
   static class Source {
     String account
     String region
+    String zone
     String asgName
     String serverGroupName
     Boolean useSourceCapacity
