@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(SpringJUnit4ClassRunner::class)
 @ContextConfiguration(classes = arrayOf(TestConfig::class))
-class SpringIntegrationSpec {
+class SpringIntegrationTest {
 
   @Autowired lateinit var queue: Queue
   @Autowired lateinit var runner: QueueExecutionRunner
