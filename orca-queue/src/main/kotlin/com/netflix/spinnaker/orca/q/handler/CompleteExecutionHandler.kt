@@ -16,7 +16,11 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.netflix.spinnaker.orca.ExecutionStatus.FAILED_CONTINUE
+import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.events.ExecutionComplete
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.MessageHandler
@@ -34,9 +38,27 @@ open class CompleteExecutionHandler
 ) : MessageHandler<CompleteExecution> {
 
   override fun handle(message: CompleteExecution) {
-    repository.updateStatus(message.executionId, message.status)
-    publisher.publishEvent(ExecutionComplete(this, message.executionType, message.executionId, message.status))
+    val status = if (message.execution.shouldOverrideSuccess()) {
+      TERMINAL
+    } else {
+      message.status
+    }
+    repository.updateStatus(message.executionId, status)
+    publisher.publishEvent(
+      ExecutionComplete(this, message.executionType, message.executionId, status)
+    )
   }
+
+  private fun Execution<*>.shouldOverrideSuccess(): Boolean =
+    getStages()
+      .filter { it.getStatus() == FAILED_CONTINUE }
+      .any { it.getContext()["completeOtherBranchesThenFail"] == true }
+
+  private val CompleteExecution.execution
+    get(): Execution<*> = when (executionType) {
+      Pipeline::class.java -> repository.retrievePipeline(executionId)
+      else -> repository.retrieveOrchestration(executionId)
+    }
 
   override val messageType = CompleteExecution::class.java
 }

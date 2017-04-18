@@ -198,6 +198,53 @@ class SpringIntegrationTest {
 
     repository.retrievePipeline(pipeline.id).status shouldBe SUCCEEDED
   }
+
+  @Test fun `stages set to allow failure but fail the pipeline will run to completion but then mark the pipeline failed`() {
+    val pipeline = pipeline {
+      application = "spinnaker"
+      stage {
+        refId = "1"
+        type = "dummy"
+      }
+      stage {
+        refId = "2a1"
+        type = "dummy"
+        requisiteStageRefIds = listOf("1")
+        context["continuePipeline"] = true
+        context["completeOtherBranchesThenFail"] = true
+      }
+      stage {
+        refId = "2a2"
+        type = "dummy"
+        requisiteStageRefIds = listOf("2a1")
+      }
+      stage {
+        refId = "2b"
+        type = "dummy"
+        requisiteStageRefIds = listOf("1")
+      }
+      stage {
+        refId = "3"
+        type = "dummy"
+        requisiteStageRefIds = listOf("2a2", "2b")
+      }
+    }
+    repository.store(pipeline)
+
+    whenever(dummyTask.execute(argThat { getRefId() == "2a1" }))
+      .thenReturn(TaskResult(TERMINAL))
+    whenever(dummyTask.execute(argThat { getRefId() != "2a1" }))
+      .thenReturn(TaskResult.SUCCEEDED)
+
+    context.runToCompletion(pipeline, runner::start)
+
+    argumentCaptor<Stage<Pipeline>>().apply {
+      verify(dummyTask, atLeastOnce()).execute(capture())
+      allValues.map { it.refId }.toSet() shouldBe setOf("1", "2a1", "2a2", "2b", "3")
+    }
+
+    repository.retrievePipeline(pipeline.id).status shouldBe TERMINAL
+  }
 }
 
 @Configuration

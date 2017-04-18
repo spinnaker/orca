@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.pipeline
+import com.netflix.spinnaker.orca.q.stage
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
@@ -108,6 +109,58 @@ class CompleteExecutionHandlerSpec : Spek({
           firstValue.status shouldBe status
         }
       }
+    }
+  }
+
+  describe("when a stage status was FAILED_CONTINUE but should fail the pipeline at the end") {
+    val pipeline = pipeline {
+      stage {
+        type = "dummy"
+        status = FAILED_CONTINUE
+        context["completeOtherBranchesThenFail"] = true
+      }
+    }
+    val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
+
+    beforeGroup {
+      whenever(repository.retrievePipeline(message.executionId))
+        .thenReturn(pipeline)
+    }
+
+    afterGroup(::resetMocks)
+
+    action("the handler receives a message") {
+      handler.handle(message)
+    }
+
+    it("updates the execution") {
+      verify(repository).updateStatus(message.executionId, TERMINAL)
+    }
+  }
+
+  describe("when a stage status was FAILED_CONTINUE and should not fail the pipeline at the end") {
+    val pipeline = pipeline {
+      stage {
+        type = "dummy"
+        status = FAILED_CONTINUE
+        context["completeOtherBranchesThenFail"] = false
+      }
+    }
+    val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
+
+    beforeGroup {
+      whenever(repository.retrievePipeline(message.executionId))
+        .thenReturn(pipeline)
+    }
+
+    afterGroup(::resetMocks)
+
+    action("the handler receives a message") {
+      handler.handle(message)
+    }
+
+    it("updates the execution") {
+      verify(repository).updateStatus(message.executionId, SUCCEEDED)
     }
   }
 })
