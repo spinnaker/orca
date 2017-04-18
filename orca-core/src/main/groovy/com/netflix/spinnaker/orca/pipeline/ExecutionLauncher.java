@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,26 +29,27 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import lombok.extern.slf4j.Slf4j;
 import static java.lang.Boolean.parseBoolean;
+import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 @Slf4j
-public abstract class ExecutionLauncher<T extends Execution> {
+public abstract class ExecutionLauncher<T extends Execution<T>> {
 
   protected final ObjectMapper objectMapper;
   protected final String currentInstanceId;
   protected final ExecutionRepository executionRepository;
 
-  private final ExecutionRunner runner;
+  private final Collection<ExecutionRunner> runners;
 
   protected ExecutionLauncher(ObjectMapper objectMapper,
                               String currentInstanceId,
                               ExecutionRepository executionRepository,
-                              ExecutionRunner runner) {
+                              Collection<ExecutionRunner> runners) {
     this.objectMapper = objectMapper;
     this.currentInstanceId = currentInstanceId;
     this.executionRepository = executionRepository;
-    this.runner = runner;
+    this.runners = runners;
   }
 
   public T start(String configJson) throws Exception {
@@ -74,6 +76,11 @@ public abstract class ExecutionLauncher<T extends Execution> {
     if (shouldQueue(execution)) {
       log.info("Queueing {}", execution.getId());
     } else {
+      ExecutionRunner runner = runners
+        .stream()
+        .filter(it -> it.engine() == execution.getExecutionEngine())
+        .findFirst()
+        .orElseThrow(()-> new IllegalStateException(format("Unsupported execution engine %s", execution.getExecutionEngine())));
       runner.start(execution);
       onExecutionStarted(execution);
     }

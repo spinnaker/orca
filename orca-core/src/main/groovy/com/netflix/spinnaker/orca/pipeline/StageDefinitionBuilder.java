@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.V2;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v2;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
@@ -53,7 +53,7 @@ public interface StageDefinitionBuilder {
     return StageDefinitionBuilderSupport.getType(this.getClass());
   }
 
-  // TODO: simplify signature once V2 is phased out
+  // TODO: simplify signature once v2 is phased out
   default Stage prepareStageForRestart(
     ExecutionRepository executionRepository,
     Stage stage,
@@ -79,8 +79,8 @@ public interface StageDefinitionBuilder {
       StageDefinitionBuilder self,
       Collection<StageDefinitionBuilder> allStageBuilders) {
 
-      // TODO: all this can go once V2 is phased out
-      if (stage.getExecution().getExecutionEngine() == V2) {
+      // TODO: all this can go once v2 is phased out
+      if (stage.getExecution().getExecutionEngine() == v2) {
         stage.getExecution().setCanceled(false);
 
         List<Stage<T>> stages = stage.getExecution().getStages();

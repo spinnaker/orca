@@ -40,6 +40,8 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.access.prepost.PreFilter
 import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v2
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3
 import static java.time.ZoneOffset.UTC
 
 @RestController
@@ -54,7 +56,7 @@ class TaskController {
   PipelineStartTracker startTracker
 
   @Autowired
-  ExecutionRunner executionRunner
+  Collection<ExecutionRunner> executionRunners
 
   @Autowired
   Collection<StageDefinitionBuilder> stageBuilders
@@ -247,12 +249,16 @@ class TaskController {
   Pipeline retryPipelineStage(
     @PathVariable String id, @PathVariable String stageId) {
     def pipeline = executionRepository.retrievePipeline(id)
-    def stage = pipeline.stages.find { it.id == stageId }
-    if (stage) {
-      def stageBuilder = stageBuilders.find { it.type == stage.type }
-      stage = stageBuilder.prepareStageForRestart(executionRepository, stage, stageBuilders)
-      executionRepository.storeStage(stage)
-      executionRunner.resume(pipeline)
+    if (pipeline.executionEngine == v3) {
+      executionRunners.find { it.engine() == v3 }.resume(pipeline, stageId)
+    } else {
+      def stage = pipeline.stages.find { it.id == stageId }
+      if (stage) {
+        def stageBuilder = stageBuilders.find { it.type == stage.type }
+        stage = stageBuilder.prepareStageForRestart(executionRepository, stage, stageBuilders)
+        executionRepository.storeStage(stage)
+        executionRunners.find { it.engine() == v2 }.resume(pipeline)
+      }
     }
     pipeline
   }

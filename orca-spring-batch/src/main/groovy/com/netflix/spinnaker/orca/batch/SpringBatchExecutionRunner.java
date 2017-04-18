@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.pipeline.ExecutionRunnerSupport;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.*;
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine;
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -132,6 +133,10 @@ public class SpringBatchExecutionRunner extends ExecutionRunnerSupport {
     } else {
       jobOperator.restart(batchExecution.getId());
     }
+  }
+
+  @Override public ExecutionEngine engine() {
+    return ExecutionEngine.v2;
   }
 
   private <E extends Execution<E>> JobParameters createJobParameters(E subject) {

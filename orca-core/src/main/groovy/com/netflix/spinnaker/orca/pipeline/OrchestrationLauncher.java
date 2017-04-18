@@ -19,14 +19,17 @@ package com.netflix.spinnaker.orca.pipeline;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Clock;
+import java.util.Collection;
 import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.AuthenticationDetails;
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine;
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.DEFAULT_EXECUTION_ENGINE;
 import static java.lang.String.format;
 
 @Component
@@ -39,9 +42,9 @@ public class OrchestrationLauncher extends ExecutionLauncher<Orchestration> {
     ObjectMapper objectMapper,
     String currentInstanceId,
     ExecutionRepository executionRepository,
-    ExecutionRunner runner,
+    Collection<ExecutionRunner> runners,
     Clock clock) {
-    super(objectMapper, currentInstanceId, executionRepository, runner);
+    super(objectMapper, currentInstanceId, executionRepository, runners);
     this.clock = clock;
   }
 
@@ -62,6 +65,7 @@ public class OrchestrationLauncher extends ExecutionLauncher<Orchestration> {
     if (config.containsKey("appConfig")) {
       orchestration.getAppConfig().putAll(getMap(config, "appConfig"));
     }
+    orchestration.setExecutionEngine(ExecutionEngine.valueOf(config.getOrDefault("executionEngine", DEFAULT_EXECUTION_ENGINE).toString()));
 
     for (Map<String, Object> context : getList(config, "stages")) {
       String type = context.remove("type").toString();

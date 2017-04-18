@@ -18,16 +18,19 @@ package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component open class QueueExecutionRunner @Autowired constructor(
   private val queue: Queue
 ) : ExecutionRunner {
+  override fun engine(): ExecutionEngine = ExecutionEngine.v3
+
   override fun <T : Execution<T>> start(execution: T) =
     queue.push(StartExecution(execution.javaClass, execution.id, execution.application))
 
-  override fun <T : Execution<T>> resume(execution: T) {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  override fun <T : Execution<T>> resume(execution: T, stageId: String) {
+    queue.push(RestartStage(execution.javaClass, execution.id, execution.application, stageId))
   }
 }
