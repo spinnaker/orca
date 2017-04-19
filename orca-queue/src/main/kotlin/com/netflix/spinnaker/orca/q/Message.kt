@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.MINIMAL_CLASS
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 
 /**
@@ -59,6 +60,9 @@ data class StartTask(
 
   constructor(source: StageLevel, taskId: String) :
     this(source, source.stageId, taskId)
+
+  constructor(source: Stage<*>, taskId: String) :
+    this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId(), taskId)
 }
 
 data class CompleteTask(
@@ -96,6 +100,9 @@ data class StartStage(
 
   constructor(source: StageLevel) :
     this(source, source.stageId)
+
+  constructor(source: Stage<*>) :
+    this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
 }
 
 data class CompleteStage(
@@ -110,6 +117,9 @@ data class CompleteStage(
 
   constructor(source: StageLevel, status: ExecutionStatus) :
     this(source, source.stageId, status)
+
+  constructor(source: Stage<*>, status: ExecutionStatus) :
+    this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId(), status)
 }
 
 data class RestartStage(
@@ -133,6 +143,9 @@ data class CompleteExecution(
 ) : Message(), ExecutionLevel {
   constructor(source: ExecutionLevel, status: ExecutionStatus) :
     this(source.executionType, source.executionId, source.application, status)
+
+  constructor(source: Execution<*>, status: ExecutionStatus) :
+    this(source.javaClass, source.getId(), source.getApplication(), status)
 }
 
 /**

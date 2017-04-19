@@ -60,23 +60,25 @@ open class CompleteStageHandler
   override val messageType = CompleteStage::class.java
 
   private fun Stage<*>.startNext() {
-    val downstreamStages = downstreamStages()
-    if (downstreamStages.isNotEmpty()) {
-      downstreamStages.forEach {
-        queue.push(StartStage(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), it.getId()))
-      }
-    } else if (getSyntheticStageOwner() == STAGE_BEFORE) {
-      parent().let { parent ->
-        if (parent.allBeforeStagesComplete()) {
-          queue.push(StartTask(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), parent.getTasks().first().id))
+    getExecution().let { execution ->
+      val downstreamStages = downstreamStages()
+      if (downstreamStages.isNotEmpty()) {
+        downstreamStages.forEach {
+          queue.push(StartStage(it))
         }
+      } else if (getSyntheticStageOwner() == STAGE_BEFORE) {
+        parent().let { parent ->
+          if (parent.allBeforeStagesComplete()) {
+            queue.push(StartTask(parent, parent.getTasks().first().id))
+          }
+        }
+      } else if (getSyntheticStageOwner() == STAGE_AFTER) {
+        parent().let { parent ->
+          queue.push(CompleteStage(parent, SUCCEEDED))
+        }
+      } else {
+        queue.push(CompleteExecution(execution, SUCCEEDED))
       }
-    } else if (getSyntheticStageOwner() == STAGE_AFTER) {
-      parent().let { parent ->
-        queue.push(CompleteStage(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), parent.getId(), SUCCEEDED))
-      }
-    } else {
-      queue.push(CompleteExecution(getExecution().javaClass, getExecution().getId(), getExecution().getApplication(), SUCCEEDED))
     }
   }
 }
