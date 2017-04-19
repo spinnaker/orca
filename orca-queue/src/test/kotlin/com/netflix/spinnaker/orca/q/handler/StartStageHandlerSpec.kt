@@ -24,8 +24,10 @@ import com.natpryce.hamkrest.isEmpty
 import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageStarted
+import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -310,6 +312,47 @@ class StartStageHandlerSpec : Spek({
 
       it("waits for the other upstream stage to complete") {
         verify(queue, never()).push(isA<StartTask>())
+      }
+    }
+
+    context("with an execution window") {
+      val pipeline = pipeline {
+        application = "foo"
+        stage {
+          type = stageWithSyntheticBefore.type
+          context["restrictExecutionDuringTimeWindow"] = true
+        }
+      }
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+
+      beforeGroup {
+        whenever(repository.retrievePipeline(message.executionId))
+          .thenReturn(pipeline)
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("injects a 'wait for execution window' stage before any other synthetic stages") {
+        argumentCaptor<Pipeline>().apply {
+          verify(repository).store(capture())
+          firstValue.stages.size shouldBe 4
+          firstValue.stages.first().apply {
+            type shouldBe RestrictExecutionDuringTimeWindow.TYPE
+            parentStageId shouldBe message.stageId
+            syntheticStageOwner shouldBe STAGE_BEFORE
+          }
+        }
+      }
+
+      it("starts the 'wait for execution window' stage") {
+        argumentCaptor<StartStage>().apply {
+          verify(queue).push(capture())
+          firstValue.stageId shouldBe pipeline.stages.find { it.type == RestrictExecutionDuringTimeWindow.TYPE }!!.id
+        }
       }
     }
   }

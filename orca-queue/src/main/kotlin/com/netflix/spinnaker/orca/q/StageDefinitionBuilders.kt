@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode
@@ -90,27 +91,8 @@ fun StageDefinitionBuilder.buildSyntheticStages(
     buildBeforeStages(stage)
     buildAfterStages(stage)
   }
-
-  if (this is BranchingStageDefinitionBuilder && stage.getParentStageId() == null) {
-    stage.setInitializationStage(true)
-    eachParallelContext(stage) { context ->
-      val execution = stage.getExecution()
-      when (execution) {
-        is Pipeline -> newStage(execution, stage.getType(), stage.getName(), context, stage as Stage<Pipeline>, STAGE_BEFORE)
-        is Orchestration -> newStage(execution, stage.getType(), stage.getName(), context, stage as Stage<Orchestration>, STAGE_BEFORE)
-        else -> throw IllegalStateException()
-      }
-    }
-      .forEachIndexed { i, it ->
-        // TODO: this is insane backwards nonsense, it doesn't need the child stage in any impl so we could determine this when building the stage in the first place
-        it.setType(getChildStageType(it))
-        it.setRefId("${stage.getRefId()}=${i + 1}")
-        it.setRequisiteStageRefIds(emptySet())
-        stage.getExecution().apply {
-          addStage(getStages().indexOf(stage), it)
-        }
-      }
-  }
+  buildParallelStages(stage)
+  stage.buildExecutionWindow()
 
   if (stage.getExecution().getStages().size > stageCount) {
     callback.invoke()
@@ -167,6 +149,61 @@ private fun SyntheticStages.buildAfterStages(stage: Stage<out Execution<*>>) {
     afterStages.reversed().forEach {
       addStage(index, it)
     }
+  }
+}
+
+private fun StageDefinitionBuilder.buildParallelStages(stage: Stage<out Execution<*>>) {
+  if (this is BranchingStageDefinitionBuilder && stage.getParentStageId() == null) {
+    stage.setInitializationStage(true)
+    eachParallelContext(stage) { context ->
+      val execution = stage.getExecution()
+      when (execution) {
+        is Pipeline -> newStage(execution, stage.getType(), stage.getName(), context, stage as Stage<Pipeline>, STAGE_BEFORE)
+        is Orchestration -> newStage(execution, stage.getType(), stage.getName(), context, stage as Stage<Orchestration>, STAGE_BEFORE)
+        else -> throw IllegalStateException()
+      }
+    }
+      .forEachIndexed { i, it ->
+        // TODO: this is insane backwards nonsense, it doesn't need the child stage in any impl so we could determine this when building the stage in the first place
+        it.setType(getChildStageType(it))
+        it.setRefId("${stage.getRefId()}=${i + 1}")
+        it.setRequisiteStageRefIds(emptySet())
+        stage.getExecution().apply {
+          addStage(getStages().indexOf(stage), it)
+        }
+      }
+  }
+}
+
+private fun Stage<out Execution<*>>.buildExecutionWindow() {
+  if (getContext().getOrDefault("restrictExecutionDuringTimeWindow", false) as Boolean) {
+    val execution = getExecution()
+    val executionWindow = when (execution) {
+      is Pipeline -> newStage(
+        execution,
+        RestrictExecutionDuringTimeWindow.TYPE,
+        RestrictExecutionDuringTimeWindow.TYPE, // TODO: base on stage.name?
+        getContext(),
+        this as Stage<Pipeline>,
+        STAGE_BEFORE
+      )
+      is Orchestration -> newStage(
+        execution,
+        RestrictExecutionDuringTimeWindow.TYPE,
+        RestrictExecutionDuringTimeWindow.TYPE, // TODO: base on stage.name?
+        getContext(),
+        this as Stage<Orchestration>,
+        STAGE_BEFORE
+      )
+      else -> throw IllegalStateException()
+    }
+    executionWindow.setRefId("${getRefId()}<0")
+    // inject before the first before stage of this stage, or this stage itself
+    val injectBefore = execution.getStages().first { it.getParentStageId() == getId() || it.getId() == getId() }
+    if (injectBefore.getSyntheticStageOwner() != null) {
+      injectBefore.setRequisiteStageRefIds(setOf(executionWindow.getRefId()))
+    }
+    execution.addStage(execution.getStages().indexOf(injectBefore), executionWindow)
   }
 }
 
