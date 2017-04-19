@@ -33,6 +33,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.handler.shouldBe
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
@@ -89,6 +90,27 @@ class SpringIntegrationTest {
     context.runToCompletion(pipeline, runner::start)
 
     repository.retrievePipeline(pipeline.id).status shouldBe SUCCEEDED
+  }
+
+  @Test fun `can skip stages`() {
+    val pipeline = pipeline {
+      application = "spinnaker"
+      stage {
+        refId = "1"
+        type = "dummy"
+        context["stageEnabled"] = mapOf(
+          "type" to "expression",
+          "expression" to "false"
+        )
+      }
+    }
+    repository.store(pipeline)
+
+    context.runToCompletion(pipeline, runner::start)
+
+    repository.retrievePipeline(pipeline.id).status shouldBe SUCCEEDED
+
+    verifyZeroInteractions(dummyTask)
   }
 
   @Test fun `pipeline fails if a task fails`() {
@@ -289,5 +311,7 @@ open class TestConfig {
   }
 
   @Bean open fun currentInstanceId() = "localhost"
+
+  @Bean open fun contextParameterProcessor() = ContextParameterProcessor()
 }
 

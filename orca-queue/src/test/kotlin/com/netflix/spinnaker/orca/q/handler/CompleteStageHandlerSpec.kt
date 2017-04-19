@@ -47,7 +47,7 @@ class CompleteStageHandlerSpec : Spek({
 
   fun resetMocks() = reset(queue, repository, publisher)
 
-  setOf(SUCCEEDED, FAILED_CONTINUE).forEach { status ->
+  setOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED).forEach { status ->
     describe("when a stage completes with $status status") {
       context("it is the last stage") {
         val pipeline = pipeline {
@@ -84,7 +84,7 @@ class CompleteStageHandlerSpec : Spek({
             message.executionType,
             message.executionId,
             "foo",
-            SUCCEEDED // execution is SUCCEEDED even if stage was FAILED_CONTINUE
+            SUCCEEDED // execution is SUCCEEDED even if stage was FAILED_CONTINUE or SKIPPED
           ))
         }
 

@@ -21,14 +21,15 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.hasElement
 import com.natpryce.hamkrest.isEmpty
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.natpryce.hamkrest.should.shouldMatch
+import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
@@ -60,7 +61,8 @@ class StartStageHandlerSpec : Spek({
       rollingPushStage
     ),
     publisher,
-    clock
+    clock,
+    ContextParameterProcessor()
   )
 
   fun resetMocks() = reset(queue, repository, publisher)
@@ -439,6 +441,79 @@ class StartStageHandlerSpec : Spek({
           verify(queue).push(capture())
           assertThat(firstValue.taskId, equalTo("1"))
         }
+      }
+    }
+  }
+
+  describe("running an optional stage") {
+    context("if the stage should be run") {
+      val pipeline = pipeline {
+        application = "foo"
+        stage {
+          refId = "1"
+          type = stageWithSyntheticBefore.type
+          context["stageEnabled"] = mapOf(
+            "type" to "expression",
+            "expression" to "true"
+          )
+        }
+      }
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+
+      beforeGroup {
+        whenever(repository.retrievePipeline(pipeline.id))
+          .thenReturn(pipeline)
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("proceeds with the first synthetic stage as normal") {
+        verify(queue).push(any<StartStage>())
+      }
+    }
+
+    context("if the stage should be skipped") {
+      val pipeline = pipeline {
+        application = "foo"
+        stage {
+          refId = "1"
+          type = stageWithSyntheticBefore.type
+          context["stageEnabled"] = mapOf(
+            "type" to "expression",
+            "expression" to "false"
+          )
+        }
+      }
+      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+
+      beforeGroup {
+        whenever(repository.retrievePipeline(pipeline.id))
+          .thenReturn(pipeline)
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("skips the stage") {
+        argumentCaptor<CompleteStage>().apply {
+          verify(queue).push(capture())
+          firstValue.status shouldBe SKIPPED
+        }
+      }
+
+      it("doesn't build any tasks") {
+        pipeline.stageById(message.stageId).tasks shouldMatch isEmpty
+      }
+
+      it("doesn't build any synthetic stages") {
+        pipeline.stages.filter { it.parentStageId == message.stageId } shouldMatch isEmpty
       }
     }
   }

@@ -72,7 +72,7 @@ class RunTaskHandlerSpec : Spek({
         verify(task).execute(pipeline.stages.first())
       }
 
-      it("emits a failure event") {
+      it("completes the task") {
         argumentCaptor<CompleteTask>().apply {
           verify(queue).push(capture())
           assertThat(firstValue.status, equalTo(SUCCEEDED))

@@ -17,10 +17,13 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.StartStage
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,19 +37,24 @@ open class StartStageHandler @Autowired constructor(
   override val repository: ExecutionRepository,
   override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
   private val publisher: ApplicationEventPublisher,
-  private val clock: Clock
+  private val clock: Clock,
+  private val contextParameterProcessor: ContextParameterProcessor
 ) : MessageHandler<StartStage>, QueueProcessor, StageBuilderAware {
 
   override fun handle(message: StartStage) {
     message.withStage { stage ->
       if (stage.allUpstreamStagesComplete()) {
-        stage.plan()
+        if (stage.shouldSkip()) {
+          queue.push(CompleteStage(message, SKIPPED))
+        } else {
+          stage.plan()
 
-        stage.setStatus(RUNNING)
-        stage.setStartTime(clock.millis())
-        repository.storeStage(stage)
+          stage.setStatus(RUNNING)
+          stage.setStartTime(clock.millis())
+          repository.storeStage(stage)
 
-        stage.start()
+          stage.start()
+        }
       }
     }
 
@@ -81,4 +89,7 @@ open class StartStageHandler @Autowired constructor(
       }
     }
   }
+
+  private fun Stage<*>.shouldSkip() =
+    OptionalStageSupport.isOptional(this, contextParameterProcessor)
 }
