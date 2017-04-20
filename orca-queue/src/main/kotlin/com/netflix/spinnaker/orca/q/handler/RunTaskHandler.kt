@@ -53,7 +53,7 @@ open class RunTaskHandler
         queue.push(CompleteTask(message, TERMINAL))
       } else {
         try {
-          task.execute(stage).let { result ->
+          task.execute(stage.withMergedContext()).let { result ->
             // TODO: rather send this data with CompleteTask message
             stage.processTaskOutput(result)
             when (result.status) {
@@ -131,4 +131,12 @@ open class RunTaskHandler
 
   private fun Stage<*>.shouldContinueOnFailure() =
     getContext()["continuePipeline"] == true
+
+  private fun Stage<*>.withMergedContext(): Stage<*> {
+    // TODO: this isn't ideal as the additional data will get permanently added to the stage context
+    val context = getExecution().getContext().toMutableMap()
+    context.putAll(getContext())
+    this.setContext(context)
+    return this
+  }
 }

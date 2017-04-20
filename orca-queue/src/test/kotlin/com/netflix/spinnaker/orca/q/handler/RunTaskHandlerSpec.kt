@@ -349,6 +349,47 @@ class RunTaskHandlerSpec : Spek({
         verify(task, never()).execute(any())
       }
     }
+
+    describe("the context passed to the task") {
+      val pipeline = pipeline {
+        context["global"] = "foo"
+        context["override"] = "global"
+        stage {
+          type = "whatever"
+          context["stage"] = "foo"
+          context["override"] = "stage"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.qualifiedName
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
+      val taskResult = TaskResult(SUCCEEDED)
+
+      beforeGroup {
+        whenever(task.execute(any<Stage<*>>())).thenReturn(taskResult)
+        whenever(repository.retrievePipeline(message.executionId))
+          .thenReturn(pipeline)
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("merges stage and global contexts") {
+        verify(task).execute(check {
+          it.getContext() shouldEqual mapOf(
+            "global" to "foo",
+            "stage" to "foo",
+            "override" to "stage"
+          )
+        })
+      }
+    }
   }
 
   describe("no such task") {
