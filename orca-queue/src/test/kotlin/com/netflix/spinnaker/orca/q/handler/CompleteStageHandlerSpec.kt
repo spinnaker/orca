@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -226,8 +224,8 @@ class CompleteStageHandlerSpec : Spek({
       it("updates the stage state") {
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
-          assertThat(firstValue.status, equalTo(status))
-          assertThat(firstValue.endTime, equalTo(clock.millis()))
+          firstValue.status shouldBe status
+          firstValue.endTime shouldBe clock.millis()
         }
       }
 
@@ -402,8 +400,8 @@ class CompleteStageHandlerSpec : Spek({
       it("rolls the failure up to the parent stage") {
         argumentCaptor<CompleteStage>().apply {
           verify(queue).push(capture())
-          assertThat(firstValue.stageId, equalTo(pipeline.stageByRef("1").id))
-          assertThat(firstValue.status, equalTo(message.status))
+          firstValue.stageId shouldBe pipeline.stageByRef("1").id
+          firstValue.status shouldBe message.status
         }
       }
     }

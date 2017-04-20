@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.natpryce.hamkrest.allElements
-import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
+import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.TaskComplete
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -74,8 +74,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.first().apply {
-            assertThat(status, equalTo(SUCCEEDED))
-            assertThat(endTime, equalTo(clock.millis()))
+            status shouldBe SUCCEEDED
+            endTime shouldBe clock.millis()
           }
         }
       }
@@ -130,8 +130,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.last().apply {
-            assertThat(status, equalTo(SUCCEEDED))
-            assertThat(endTime, equalTo(clock.millis()))
+            status shouldBe SUCCEEDED
+            endTime shouldBe clock.millis()
           }
         }
       }
@@ -174,8 +174,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.last().apply {
-            assertThat(status, equalTo(SUCCEEDED))
-            assertThat(endTime, equalTo(clock.millis()))
+            status shouldBe SUCCEEDED
+            endTime shouldBe clock.millis()
           }
         }
       }
@@ -224,14 +224,14 @@ class CompleteTaskHandlerSpec : Spek({
         it("repeats the loop") {
           argumentCaptor<StartTask>().apply {
             verify(queue).push(capture())
-            assertThat(firstValue.taskId, equalTo("2"))
+            firstValue.taskId shouldBe "2"
           }
         }
 
         it("resets the status of the loop tasks") {
           argumentCaptor<Stage<Pipeline>>().apply {
             verify(repository).storeStage(capture())
-            assertThat(firstValue.tasks[1..3].map(Task::getStatus), allElements(equalTo(NOT_STARTED)))
+            firstValue.tasks[1..3].map(Task::getStatus) shouldMatch allElements(equalTo(NOT_STARTED))
           }
         }
 
@@ -269,8 +269,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.first().apply {
-            assertThat(status, equalTo(status))
-            assertThat(endTime, equalTo(clock.millis()))
+            status shouldBe status
+            endTime shouldBe clock.millis()
           }
         }
       }

@@ -93,21 +93,21 @@ class StartStageHandlerSpec : Spek({
       it("updates the stage status") {
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
-          assertThat(firstValue.status, equalTo(RUNNING))
-          assertThat(firstValue.startTime, equalTo(clock.millis()))
+          firstValue.status shouldBe RUNNING
+          firstValue.startTime shouldBe clock.millis()
         }
       }
 
       it("attaches tasks to the stage") {
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
-          assertThat(firstValue.tasks.size, equalTo(1))
+          firstValue.tasks.size shouldBe 1
           firstValue.tasks.first().apply {
-            assertThat(id, equalTo("1"))
-            assertThat(name, equalTo("dummy"))
-            assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
-            assertThat(isStageStart, equalTo(true))
-            assertThat(isStageEnd, equalTo(true))
+            id shouldBe "1"
+            name shouldBe "dummy"
+            implementingClass.name shouldBe DummyTask::class.java.name
+            isStageStart shouldBe true
+            isStageEnd shouldBe true
           }
         }
       }
@@ -158,27 +158,27 @@ class StartStageHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.apply {
-            assertThat(tasks.size, equalTo(3))
+            tasks.size shouldBe 3
             tasks[0].apply {
-              assertThat(id, equalTo("1"))
-              assertThat(name, equalTo("dummy1"))
-              assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
-              assertThat(isStageStart, equalTo(true))
-              assertThat(isStageEnd, equalTo(false))
+              id shouldBe "1"
+              name shouldBe "dummy1"
+              implementingClass.name shouldBe DummyTask::class.java.name
+              isStageStart shouldBe true
+              isStageEnd shouldBe false
             }
             tasks[1].apply {
-              assertThat(id, equalTo("2"))
-              assertThat(name, equalTo("dummy2"))
-              assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
-              assertThat(isStageStart, equalTo(false))
-              assertThat(isStageEnd, equalTo(false))
+              id shouldBe "2"
+              name shouldBe "dummy2"
+              implementingClass.name shouldBe DummyTask::class.java.name
+              isStageStart shouldBe false
+              isStageEnd shouldBe false
             }
             tasks[2].apply {
-              assertThat(id, equalTo("3"))
-              assertThat(name, equalTo("dummy3"))
-              assertThat(implementingClass.name, equalTo(DummyTask::class.java.name))
-              assertThat(isStageStart, equalTo(false))
-              assertThat(isStageEnd, equalTo(true))
+              id shouldBe "3"
+              name shouldBe "dummy3"
+              implementingClass.name shouldBe DummyTask::class.java.name
+              isStageStart shouldBe false
+              isStageEnd shouldBe true
             }
           }
         }
@@ -219,8 +219,8 @@ class StartStageHandlerSpec : Spek({
         it("attaches the synthetic stage to the pipeline") {
           argumentCaptor<Pipeline>().apply {
             verify(repository).store(capture())
-            assertThat(firstValue.stages.size, equalTo(3))
-            assertThat(firstValue.stages.map { it.id }, equalTo(listOf("${message.stageId}-1-pre1", "${message.stageId}-2-pre2", message.stageId)))
+            firstValue.stages.size shouldBe 3
+            firstValue.stages.map { it.id } shouldBe listOf("${message.stageId}-1-pre1", "${message.stageId}-2-pre2", message.stageId)
           }
         }
 
@@ -257,8 +257,8 @@ class StartStageHandlerSpec : Spek({
         it("attaches the synthetic stage to the pipeline") {
           argumentCaptor<Pipeline>().apply {
             verify(repository).store(capture())
-            assertThat(firstValue.stages.size, equalTo(3))
-            assertThat(firstValue.stages.map { it.id }, equalTo(listOf(message.stageId, "${message.stageId}-1-post1", "${message.stageId}-2-post2")))
+            firstValue.stages.size shouldBe 3
+            firstValue.stages.map { it.id } shouldBe listOf(message.stageId, "${message.stageId}-1-post1", "${message.stageId}-2-post2")
           }
         }
 
@@ -307,7 +307,7 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("doesn't build its tasks") {
-        assertThat(pipeline.stageByRef("3").tasks, isEmpty)
+        pipeline.stageByRef("3").tasks shouldMatch isEmpty
       }
 
       it("waits for the other upstream stage to complete") {
@@ -385,11 +385,11 @@ class StartStageHandlerSpec : Spek({
 
       it("builds tasks for the main branch") {
         val stage = pipeline.stageById(message.stageId)
-        assertThat(stage.tasks.map(Task::getName), equalTo(listOf("post-branch")))
+        stage.tasks.map(Task::getName) shouldBe listOf("post-branch")
       }
 
       it("builds synthetic stages for each parallel branch") {
-        assertThat(pipeline.stages.size, equalTo(4))
+        pipeline.stages.size shouldBe 4
         assertThat(
           pipeline.stages.map { it.type },
           allElements(equalTo(stageWithParallelBranches.type))
@@ -400,10 +400,7 @@ class StartStageHandlerSpec : Spek({
       it("runs the parallel stages") {
         argumentCaptor<StartStage>().apply {
           verify(queue, times(3)).push(capture())
-          assertThat(
-            allValues.map { pipeline.stageById(it.stageId).parentStageId },
-            allElements(equalTo(message.stageId))
-          )
+          allValues.map { pipeline.stageById(it.stageId).parentStageId } shouldMatch allElements(equalTo(message.stageId))
         }
       }
     }
@@ -434,12 +431,12 @@ class StartStageHandlerSpec : Spek({
       it("builds tasks for the branch") {
         val stage = pipeline.stageById(message.stageId)
         assertThat(stage.tasks, !isEmpty)
-        assertThat(stage.tasks.map(Task::getName), equalTo(listOf("in-branch")))
+        stage.tasks.map(Task::getName) shouldBe listOf("in-branch")
       }
 
       it("does not build more synthetic stages") {
         val stage = pipeline.stageById(message.stageId)
-        assertThat(pipeline.stages.map(Stage<Pipeline>::getParentStageId), !hasElement(stage.id))
+        pipeline.stages.map(Stage<Pipeline>::getParentStageId) shouldMatch !hasElement(stage.id)
       }
     }
   }
@@ -469,24 +466,24 @@ class StartStageHandlerSpec : Spek({
 
       it("builds tasks for the main branch") {
         pipeline.stageById(message.stageId).let { stage ->
-          assertThat(stage.tasks.size, equalTo(5))
-          assertThat(stage.tasks[0].isLoopStart, equalTo(false))
-          assertThat(stage.tasks[1].isLoopStart, equalTo(true))
-          assertThat(stage.tasks[2].isLoopStart, equalTo(false))
-          assertThat(stage.tasks[3].isLoopStart, equalTo(false))
-          assertThat(stage.tasks[4].isLoopStart, equalTo(false))
-          assertThat(stage.tasks[0].isLoopEnd, equalTo(false))
-          assertThat(stage.tasks[1].isLoopEnd, equalTo(false))
-          assertThat(stage.tasks[2].isLoopEnd, equalTo(false))
-          assertThat(stage.tasks[3].isLoopEnd, equalTo(true))
-          assertThat(stage.tasks[4].isLoopEnd, equalTo(false))
+          stage.tasks.size shouldBe 5
+          stage.tasks[0].isLoopStart shouldBe false
+          stage.tasks[1].isLoopStart shouldBe true
+          stage.tasks[2].isLoopStart shouldBe false
+          stage.tasks[3].isLoopStart shouldBe false
+          stage.tasks[4].isLoopStart shouldBe false
+          stage.tasks[0].isLoopEnd shouldBe false
+          stage.tasks[1].isLoopEnd shouldBe false
+          stage.tasks[2].isLoopEnd shouldBe false
+          stage.tasks[3].isLoopEnd shouldBe true
+          stage.tasks[4].isLoopEnd shouldBe false
         }
       }
 
       it("runs the parallel stages") {
         argumentCaptor<StartTask>().apply {
           verify(queue).push(capture())
-          assertThat(firstValue.taskId, equalTo("1"))
+          firstValue.taskId shouldBe "1"
         }
       }
     }

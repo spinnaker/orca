@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -112,10 +110,7 @@ class StartExecutionHandlerSpec : Spek({
       it("starts all the initial stages") {
         argumentCaptor<StartStage>().apply {
           verify(queue, times(2)).push(capture())
-          assertThat(
-            allValues.map { it.stageId }.toSet(),
-            equalTo(pipeline.stages.map { it.id }.toSet())
-          )
+          allValues.map { it.stageId }.toSet() shouldBe pipeline.stages.map { it.id }.toSet()
         }
       }
     }

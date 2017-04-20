@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -69,8 +67,8 @@ class StartTaskHandlerSpec : Spek({
       argumentCaptor<Stage<Pipeline>>().apply {
         verify(repository).storeStage(capture())
         firstValue.tasks.first().apply {
-          assertThat(status, equalTo(RUNNING))
-          assertThat(startTime, equalTo(clock.millis()))
+          status shouldBe RUNNING
+          startTime shouldBe clock.millis()
         }
       }
     }

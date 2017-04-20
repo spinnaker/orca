@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -75,7 +73,7 @@ class RunTaskHandlerSpec : Spek({
       it("completes the task") {
         argumentCaptor<CompleteTask>().apply {
           verify(queue).push(capture())
-          assertThat(firstValue.status, equalTo(SUCCEEDED))
+          firstValue.status shouldBe SUCCEEDED
         }
       }
     }
@@ -121,7 +119,7 @@ class RunTaskHandlerSpec : Spek({
         it("emits a failure event") {
           argumentCaptor<CompleteTask>().apply {
             verify(queue).push(capture())
-            assertThat(firstValue.status, equalTo(TERMINAL))
+            firstValue.status shouldBe TERMINAL
           }
         }
       }
@@ -145,7 +143,7 @@ class RunTaskHandlerSpec : Spek({
         it("emits a failure event") {
           argumentCaptor<CompleteTask>().apply {
             verify(queue).push(capture())
-            assertThat(firstValue.status, equalTo(STOPPED))
+            firstValue.status shouldBe STOPPED
           }
         }
       }
@@ -169,7 +167,7 @@ class RunTaskHandlerSpec : Spek({
         it("emits a failure event") {
           argumentCaptor<CompleteTask>().apply {
             verify(queue).push(capture())
-            assertThat(firstValue.status, equalTo(FAILED_CONTINUE))
+            firstValue.status shouldBe FAILED_CONTINUE
           }
         }
       }
@@ -191,7 +189,7 @@ class RunTaskHandlerSpec : Spek({
       it("emits a failure event") {
         argumentCaptor<CompleteTask>().apply {
           verify(queue).push(capture())
-          assertThat(firstValue.status, equalTo(TERMINAL))
+          firstValue.status shouldBe TERMINAL
         }
       }
     }
