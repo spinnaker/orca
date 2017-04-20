@@ -22,7 +22,6 @@ import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.TaskComplete
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -71,13 +70,12 @@ class CompleteTaskHandlerSpec : Spek({
       }
 
       it("updates the task state in the stage") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.tasks.first().apply {
+        verify(repository).storeStage(check {
+          it.getTasks().first().apply {
             status shouldEqual SUCCEEDED
             endTime shouldEqual clock.millis()
           }
-        }
+        })
       }
 
       it("runs the next task") {
@@ -92,16 +90,13 @@ class CompleteTaskHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<TaskComplete>().apply {
-          verify(publisher).publishEvent(capture())
-          firstValue.let {
-            it.executionType shouldEqual pipeline.javaClass
-            it.executionId shouldEqual pipeline.id
-            it.stageId shouldEqual message.stageId
-            it.taskId shouldEqual message.taskId
-            it.status shouldEqual SUCCEEDED
-          }
-        }
+        verify(publisher).publishEvent(check<TaskComplete> {
+          it.executionType shouldEqual pipeline.javaClass
+          it.executionId shouldEqual pipeline.id
+          it.stageId shouldEqual message.stageId
+          it.taskId shouldEqual message.taskId
+          it.status shouldEqual SUCCEEDED
+        })
       }
     }
 
@@ -127,13 +122,12 @@ class CompleteTaskHandlerSpec : Spek({
       }
 
       it("updates the task state in the stage") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.tasks.last().apply {
+        verify(repository).storeStage(check {
+          it.getTasks().last().apply {
             status shouldEqual SUCCEEDED
             endTime shouldEqual clock.millis()
           }
-        }
+        })
       }
 
       it("emits an event to signal the stage is complete") {
@@ -171,13 +165,12 @@ class CompleteTaskHandlerSpec : Spek({
       }
 
       it("updates the task state in the stage") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.tasks.last().apply {
+        verify(repository).storeStage(check {
+          it.getTasks().last().apply {
             status shouldEqual SUCCEEDED
             endTime shouldEqual clock.millis()
           }
-        }
+        })
       }
 
       it("triggers the first after stage") {
@@ -222,17 +215,15 @@ class CompleteTaskHandlerSpec : Spek({
         }
 
         it("repeats the loop") {
-          argumentCaptor<StartTask>().apply {
-            verify(queue).push(capture())
-            firstValue.taskId shouldEqual "2"
-          }
+          verify(queue).push(check<StartTask> {
+            it.taskId shouldEqual "2"
+          })
         }
 
         it("resets the status of the loop tasks") {
-          argumentCaptor<Stage<Pipeline>>().apply {
-            verify(repository).storeStage(capture())
-            firstValue.tasks[1..3].map(Task::getStatus) shouldMatch allElements(equalTo(NOT_STARTED))
-          }
+          verify(repository).storeStage(check {
+            it.getTasks()[1..3].map(Task::getStatus) shouldMatch allElements(equalTo(NOT_STARTED))
+          })
         }
 
         it("does not publish an event") {
@@ -266,13 +257,12 @@ class CompleteTaskHandlerSpec : Spek({
       }
 
       it("updates the task state in the stage") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.tasks.first().apply {
+        verify(repository).storeStage(check {
+          it.getTasks().first().apply {
             status shouldEqual status
             endTime shouldEqual clock.millis()
           }
-        }
+        })
       }
 
       it("fails the stage") {
@@ -290,16 +280,13 @@ class CompleteTaskHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<TaskComplete>().apply {
-          verify(publisher).publishEvent(capture())
-          firstValue.let {
-            it.executionType shouldEqual pipeline.javaClass
-            it.executionId shouldEqual pipeline.id
-            it.stageId shouldEqual message.stageId
-            it.taskId shouldEqual message.taskId
-            it.status shouldEqual status
-          }
-        }
+        verify(publisher).publishEvent(check<TaskComplete> {
+          it.executionType shouldEqual pipeline.javaClass
+          it.executionId shouldEqual pipeline.id
+          it.stageId shouldEqual message.stageId
+          it.taskId shouldEqual message.taskId
+          it.status shouldEqual status
+        })
       }
     }
   }

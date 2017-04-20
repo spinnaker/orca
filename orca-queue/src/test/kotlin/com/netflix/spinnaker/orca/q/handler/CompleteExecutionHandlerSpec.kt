@@ -102,12 +102,11 @@ class CompleteExecutionHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<ExecutionComplete>().apply {
-          verify(publisher).publishEvent(capture())
-          firstValue.executionType shouldEqual pipeline.javaClass
-          firstValue.executionId shouldEqual pipeline.id
-          firstValue.status shouldEqual status
-        }
+        verify(publisher).publishEvent(check<ExecutionComplete> {
+          it.executionType shouldEqual pipeline.javaClass
+          it.executionId shouldEqual pipeline.id
+          it.status shouldEqual status
+        })
       }
     }
   }

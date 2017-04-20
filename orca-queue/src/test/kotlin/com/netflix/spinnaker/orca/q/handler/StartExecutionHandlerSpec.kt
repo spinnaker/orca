@@ -75,13 +75,10 @@ class StartExecutionHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<ExecutionStarted>().apply {
-          verify(publisher).publishEvent(capture())
-          firstValue.apply {
-            executionType shouldEqual message.executionType
-            executionId shouldEqual message.executionId
-          }
-        }
+        verify(publisher).publishEvent(check<ExecutionStarted> {
+          it.executionType shouldEqual message.executionType
+          it.executionId shouldEqual message.executionId
+        })
       }
     }
 

@@ -91,25 +91,23 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("updates the stage status") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.status shouldEqual RUNNING
-          firstValue.startTime shouldEqual clock.millis()
-        }
+        verify(repository).storeStage(check {
+          it.getStatus() shouldEqual RUNNING
+          it.getStartTime() shouldEqual clock.millis()
+        })
       }
 
       it("attaches tasks to the stage") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.tasks.size shouldEqual 1
-          firstValue.tasks.first().apply {
+        verify(repository).storeStage(check {
+          it.getTasks().size shouldEqual 1
+          it.getTasks().first().apply {
             id shouldEqual "1"
             name shouldEqual "dummy"
             implementingClass shouldEqual DummyTask::class.java.name
             isStageStart shouldEqual true
             isStageEnd shouldEqual true
           }
-        }
+        })
       }
 
       it("starts the first task") {
@@ -123,14 +121,11 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<StageStarted>().apply {
-          verify(publisher).publishEvent(capture())
-          firstValue.apply {
-            executionType shouldEqual pipeline.javaClass
-            executionId shouldEqual pipeline.id
-            stageId shouldEqual message.stageId
-          }
-        }
+        verify(publisher).publishEvent(check<StageStarted> {
+          it.executionType shouldEqual pipeline.javaClass
+          it.executionId shouldEqual pipeline.id
+          it.stageId shouldEqual message.stageId
+        })
       }
     }
 
@@ -155,33 +150,30 @@ class StartStageHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       it("attaches tasks to the stage") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.apply {
-            tasks.size shouldEqual 3
-            tasks[0].apply {
-              id shouldEqual "1"
-              name shouldEqual "dummy1"
-              implementingClass shouldEqual DummyTask::class.java.name
-              isStageStart shouldEqual true
-              isStageEnd shouldEqual false
-            }
-            tasks[1].apply {
-              id shouldEqual "2"
-              name shouldEqual "dummy2"
-              implementingClass shouldEqual DummyTask::class.java.name
-              isStageStart shouldEqual false
-              isStageEnd shouldEqual false
-            }
-            tasks[2].apply {
-              id shouldEqual "3"
-              name shouldEqual "dummy3"
-              implementingClass shouldEqual DummyTask::class.java.name
-              isStageStart shouldEqual false
-              isStageEnd shouldEqual true
-            }
+        verify(repository).storeStage(check {
+          it.getTasks().size shouldEqual 3
+          it.getTasks()[0].apply {
+            id shouldEqual "1"
+            name shouldEqual "dummy1"
+            implementingClass shouldEqual DummyTask::class.java.name
+            isStageStart shouldEqual true
+            isStageEnd shouldEqual false
           }
-        }
+          it.getTasks()[1].apply {
+            id shouldEqual "2"
+            name shouldEqual "dummy2"
+            implementingClass shouldEqual DummyTask::class.java.name
+            isStageStart shouldEqual false
+            isStageEnd shouldEqual false
+          }
+          it.getTasks()[2].apply {
+            id shouldEqual "3"
+            name shouldEqual "dummy3"
+            implementingClass shouldEqual DummyTask::class.java.name
+            isStageStart shouldEqual false
+            isStageEnd shouldEqual true
+          }
+        })
       }
 
       it("raises an event to indicate the first task is starting") {
@@ -217,11 +209,10 @@ class StartStageHandlerSpec : Spek({
         afterGroup(::resetMocks)
 
         it("attaches the synthetic stage to the pipeline") {
-          argumentCaptor<Pipeline>().apply {
-            verify(repository).store(capture())
-            firstValue.stages.size shouldEqual 3
-            firstValue.stages.map { it.id } shouldEqual listOf("${message.stageId}-1-pre1", "${message.stageId}-2-pre2", message.stageId)
-          }
+          verify(repository).store(check<Pipeline> {
+            it.stages.size shouldEqual 3
+            it.stages.map { it.id } shouldEqual listOf("${message.stageId}-1-pre1", "${message.stageId}-2-pre2", message.stageId)
+          })
         }
 
         it("raises an event to indicate the synthetic stage is starting") {
@@ -255,11 +246,10 @@ class StartStageHandlerSpec : Spek({
         }
 
         it("attaches the synthetic stage to the pipeline") {
-          argumentCaptor<Pipeline>().apply {
-            verify(repository).store(capture())
-            firstValue.stages.size shouldEqual 3
-            firstValue.stages.map { it.id } shouldEqual listOf(message.stageId, "${message.stageId}-1-post1", "${message.stageId}-2-post2")
-          }
+          verify(repository).store(check<Pipeline> {
+            it.stages.size shouldEqual 3
+            it.stages.map { it.id } shouldEqual listOf(message.stageId, "${message.stageId}-1-post1", "${message.stageId}-2-post2")
+          })
         }
 
         it("raises an event to indicate the first task is starting") {
@@ -341,22 +331,20 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("injects a 'wait for execution window' stage before any other synthetic stages") {
-        argumentCaptor<Pipeline>().apply {
-          verify(repository).store(capture())
-          firstValue.stages.size shouldEqual 4
-          firstValue.stages.first().apply {
+        verify(repository).store(check<Pipeline> {
+          it.stages.size shouldEqual 4
+          it.stages.first().apply {
             type shouldEqual RestrictExecutionDuringTimeWindow.TYPE
             parentStageId shouldEqual message.stageId
             syntheticStageOwner shouldEqual STAGE_BEFORE
           }
-        }
+        })
       }
 
       it("starts the 'wait for execution window' stage") {
-        argumentCaptor<StartStage>().apply {
-          verify(queue).push(capture())
-          firstValue.stageId shouldEqual pipeline.stages.find { it.type == RestrictExecutionDuringTimeWindow.TYPE }!!.id
-        }
+        verify(queue).push(check<StartStage> {
+          it.stageId shouldEqual pipeline.stages.find { it.type == RestrictExecutionDuringTimeWindow.TYPE }!!.id
+        })
       }
     }
   }
@@ -398,10 +386,9 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("runs the parallel stages") {
-        argumentCaptor<StartStage>().apply {
-          verify(queue, times(3)).push(capture())
-          allValues.map { pipeline.stageById(it.stageId).parentStageId } shouldMatch allElements(equalTo(message.stageId))
-        }
+        verify(queue, times(3)).push(check<StartStage> {
+          pipeline.stageById(it.stageId).parentStageId shouldEqual message.stageId
+        })
       }
     }
 
@@ -481,10 +468,9 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("runs the parallel stages") {
-        argumentCaptor<StartTask>().apply {
-          verify(queue).push(capture())
-          firstValue.taskId shouldEqual "1"
-        }
+        verify(queue).push(check<StartTask> {
+          it.taskId shouldEqual "1"
+        })
       }
     }
   }
@@ -546,10 +532,9 @@ class StartStageHandlerSpec : Spek({
       }
 
       it("skips the stage") {
-        argumentCaptor<CompleteStage>().apply {
-          verify(queue).push(capture())
-          firstValue.status shouldEqual SKIPPED
-        }
+        verify(queue).push(check<CompleteStage> {
+          it.status shouldEqual SKIPPED
+        })
       }
 
       it("doesn't build any tasks") {

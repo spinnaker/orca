@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
@@ -64,13 +63,12 @@ class StartTaskHandlerSpec : Spek({
     }
 
     it("marks the task as running") {
-      argumentCaptor<Stage<Pipeline>>().apply {
-        verify(repository).storeStage(capture())
-        firstValue.tasks.first().apply {
+      verify(repository).storeStage(check {
+        it.getTasks().first().apply {
           status shouldEqual RUNNING
           startTime shouldEqual clock.millis()
         }
-      }
+      })
     }
 
     it("runs the task") {

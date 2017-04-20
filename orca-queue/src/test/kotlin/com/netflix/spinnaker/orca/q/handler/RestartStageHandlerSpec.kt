@@ -137,22 +137,18 @@ class RestartStageHandlerSpec : Spek({
       }
 
       it("resets the stage's status") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.apply {
-            id shouldEqual message.stageId
-            status shouldEqual NOT_STARTED
-            startTime shouldMatch absent()
-            endTime shouldMatch absent()
-          }
-        }
+        verify(repository).storeStage(check {
+          it.getId() shouldEqual message.stageId
+          it.getStatus() shouldEqual NOT_STARTED
+          it.getStartTime() shouldMatch absent()
+          it.getEndTime() shouldMatch absent()
+        })
       }
 
       it("removes the stage's tasks") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.tasks shouldMatch isEmpty
-        }
+        verify(repository).storeStage(check {
+          it.getTasks() shouldMatch isEmpty
+        })
       }
 
       it("removes the stage's synthetic stages") {
@@ -179,15 +175,12 @@ class RestartStageHandlerSpec : Spek({
       }
 
       it("runs the stage") {
-        argumentCaptor<StartStage>().apply {
-          verify(queue).push(capture())
-          firstValue.apply {
-            executionType shouldEqual message.executionType
-            executionId shouldEqual message.executionId
-            application shouldEqual message.application
-            stageId shouldEqual message.stageId
-          }
-        }
+        verify(queue).push(check<StartStage> {
+          it.executionType shouldEqual message.executionType
+          it.executionId shouldEqual message.executionId
+          it.application shouldEqual message.application
+          it.stageId shouldEqual message.stageId
+        })
       }
     }
   }

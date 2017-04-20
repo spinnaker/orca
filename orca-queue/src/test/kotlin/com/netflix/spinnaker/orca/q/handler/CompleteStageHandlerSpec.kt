@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -68,13 +67,10 @@ class CompleteStageHandlerSpec : Spek({
         }
 
         it("updates the stage state") {
-          argumentCaptor<Stage<Pipeline>>().apply {
-            verify(repository).storeStage(capture())
-            firstValue.let {
-              it.status shouldEqual status
-              it.endTime shouldEqual clock.millis()
-            }
-          }
+          verify(repository).storeStage(check {
+            it.getStatus() shouldEqual status
+            it.getEndTime() shouldEqual clock.millis()
+          })
         }
 
         it("completes the execution") {
@@ -91,15 +87,12 @@ class CompleteStageHandlerSpec : Spek({
         }
 
         it("publishes an event") {
-          argumentCaptor<StageComplete>().apply {
-            verify(publisher).publishEvent(capture())
-            firstValue.let {
-              it.executionType shouldEqual pipeline.javaClass
-              it.executionId shouldEqual pipeline.id
-              it.stageId shouldEqual message.stageId
-              it.status shouldEqual status
-            }
-          }
+          verify(publisher).publishEvent(check<StageComplete> {
+            it.executionType shouldEqual pipeline.javaClass
+            it.executionId shouldEqual pipeline.id
+            it.stageId shouldEqual message.stageId
+            it.status shouldEqual status
+          })
         }
       }
 
@@ -130,13 +123,10 @@ class CompleteStageHandlerSpec : Spek({
         }
 
         it("updates the stage state") {
-          argumentCaptor<Stage<Pipeline>>().apply {
-            verify(repository).storeStage(capture())
-            firstValue.let {
-              it.status shouldEqual status
-              it.endTime shouldEqual clock.millis()
-            }
-          }
+          verify(repository).storeStage(check {
+            it.getStatus() shouldEqual status
+            it.getEndTime() shouldEqual clock.millis()
+          })
         }
 
         it("runs the next stage") {
@@ -222,11 +212,10 @@ class CompleteStageHandlerSpec : Spek({
       }
 
       it("updates the stage state") {
-        argumentCaptor<Stage<Pipeline>>().apply {
-          verify(repository).storeStage(capture())
-          firstValue.status shouldEqual status
-          firstValue.endTime shouldEqual clock.millis()
-        }
+        verify(repository).storeStage(check {
+          it.getStatus() shouldEqual status
+          it.getEndTime() shouldEqual clock.millis()
+        })
       }
 
       it("does not run any downstream stages") {
@@ -243,15 +232,12 @@ class CompleteStageHandlerSpec : Spek({
       }
 
       it("publishes an event") {
-        argumentCaptor<StageComplete>().apply {
-          verify(publisher).publishEvent(capture())
-          firstValue.let {
-            it.executionType shouldEqual pipeline.javaClass
-            it.executionId shouldEqual pipeline.id
-            it.stageId shouldEqual message.stageId
-            it.status shouldEqual status
-          }
-        }
+        verify(publisher).publishEvent(check<StageComplete> {
+          it.executionType shouldEqual pipeline.javaClass
+          it.executionId shouldEqual pipeline.id
+          it.stageId shouldEqual message.stageId
+          it.status shouldEqual status
+        })
       }
     }
   }
@@ -398,11 +384,10 @@ class CompleteStageHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       it("rolls the failure up to the parent stage") {
-        argumentCaptor<CompleteStage>().apply {
-          verify(queue).push(capture())
-          firstValue.stageId shouldEqual pipeline.stageByRef("1").id
-          firstValue.status shouldEqual message.status
-        }
+        verify(queue).push(check<CompleteStage> {
+          it.stageId shouldEqual pipeline.stageByRef("1").id
+          it.status shouldEqual message.status
+        })
       }
     }
   }
