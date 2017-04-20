@@ -25,10 +25,10 @@ import org.springframework.context.ApplicationEvent;
  */
 public abstract class ExecutionEvent extends ApplicationEvent {
 
-  private final Class<? extends Execution<?>> executionType;
+  private final Class<? extends Execution> executionType;
   private final String executionId;
 
-  protected ExecutionEvent(Object source, Class<? extends Execution<?>> executionType, String executionId) {
+  protected ExecutionEvent(Object source, Class<? extends Execution> executionType, String executionId) {
     super(source);
     this.executionType = executionType;
     this.executionId = executionId;
@@ -38,7 +38,7 @@ public abstract class ExecutionEvent extends ApplicationEvent {
     return Instant.ofEpochMilli(super.getTimestamp());
   }
 
-  public final Class<? extends Execution<?>> getExecutionType() {return executionType;}
+  public final Class<? extends Execution> getExecutionType() {return executionType;}
 
   public final String getExecutionId() {return executionId;}
 }

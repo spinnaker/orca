@@ -17,13 +17,18 @@
 package com.netflix.spinnaker.orca.events;
 
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
 
 public final class StageStarted extends ExecutionEvent {
   private final String stageId;
 
-  public StageStarted(Object source, Class<? extends Execution<?>> executionType, String executionId, String stageId) {
+  public StageStarted(Object source, Class<? extends Execution> executionType, String executionId, String stageId) {
     super(source, executionType, executionId);
     this.stageId = stageId;
+  }
+
+  public StageStarted(Object source, Stage<? extends Execution<?>> stage) {
+    this(source, stage.getExecution().getClass(), stage.getExecution().getId(), stage.getId());
   }
 
   public String getStageId() {

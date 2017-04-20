@@ -55,10 +55,9 @@ open class StartStageHandler @Autowired constructor(
 
           stage.start()
         }
+        publisher.publishEvent(StageStarted(this, stage))
       }
     }
-
-    publisher.publishEvent(StageStarted(this, message.executionType, message.executionId, message.stageId))
   }
 
   override val messageType = StartStage::class.java

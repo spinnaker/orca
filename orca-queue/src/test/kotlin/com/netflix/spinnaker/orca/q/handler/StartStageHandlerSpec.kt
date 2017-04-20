@@ -313,6 +313,10 @@ class StartStageHandlerSpec : Spek({
       it("waits for the other upstream stage to complete") {
         verify(queue, never()).push(isA<StartTask>())
       }
+
+      it("does not publish an event") {
+        verifyZeroInteractions(publisher)
+      }
     }
 
     context("with an execution window") {
