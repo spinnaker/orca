@@ -73,7 +73,7 @@ class RunTaskHandlerSpec : Spek({
       it("completes the task") {
         argumentCaptor<CompleteTask>().apply {
           verify(queue).push(capture())
-          firstValue.status shouldBe SUCCEEDED
+          firstValue.status shouldEqual SUCCEEDED
         }
       }
     }
@@ -119,7 +119,7 @@ class RunTaskHandlerSpec : Spek({
         it("emits a failure event") {
           argumentCaptor<CompleteTask>().apply {
             verify(queue).push(capture())
-            firstValue.status shouldBe TERMINAL
+            firstValue.status shouldEqual TERMINAL
           }
         }
       }
@@ -143,7 +143,7 @@ class RunTaskHandlerSpec : Spek({
         it("emits a failure event") {
           argumentCaptor<CompleteTask>().apply {
             verify(queue).push(capture())
-            firstValue.status shouldBe STOPPED
+            firstValue.status shouldEqual STOPPED
           }
         }
       }
@@ -167,7 +167,7 @@ class RunTaskHandlerSpec : Spek({
         it("emits a failure event") {
           argumentCaptor<CompleteTask>().apply {
             verify(queue).push(capture())
-            firstValue.status shouldBe FAILED_CONTINUE
+            firstValue.status shouldEqual FAILED_CONTINUE
           }
         }
       }
@@ -189,7 +189,7 @@ class RunTaskHandlerSpec : Spek({
       it("emits a failure event") {
         argumentCaptor<CompleteTask>().apply {
           verify(queue).push(capture())
-          firstValue.status shouldBe TERMINAL
+          firstValue.status shouldEqual TERMINAL
         }
       }
     }

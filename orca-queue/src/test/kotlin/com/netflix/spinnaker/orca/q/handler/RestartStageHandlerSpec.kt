@@ -140,8 +140,8 @@ class RestartStageHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.apply {
-            id shouldBe message.stageId
-            status shouldBe NOT_STARTED
+            id shouldEqual message.stageId
+            status shouldEqual NOT_STARTED
             startTime shouldMatch absent()
             endTime shouldMatch absent()
           }
@@ -182,10 +182,10 @@ class RestartStageHandlerSpec : Spek({
         argumentCaptor<StartStage>().apply {
           verify(queue).push(capture())
           firstValue.apply {
-            executionType shouldBe message.executionType
-            executionId shouldBe message.executionId
-            application shouldBe message.application
-            stageId shouldBe message.stageId
+            executionType shouldEqual message.executionType
+            executionId shouldEqual message.executionId
+            application shouldEqual message.application
+            stageId shouldEqual message.stageId
           }
         }
       }
@@ -313,7 +313,7 @@ class RestartStageHandlerSpec : Spek({
       val downstreamStageIds = setOf("1", "3", "4").map { pipeline.stageByRef(it).id }
       argumentCaptor<Stage<Pipeline>>().apply {
         verify(repository, times(3)).storeStage(capture())
-        allValues.map { it.id } shouldBe downstreamStageIds
+        allValues.map { it.id } shouldEqual downstreamStageIds
         allValues.forEach {
           it.tasks shouldMatch isEmpty
         }
@@ -338,6 +338,6 @@ fun <T : Execution<T>> StageDefinitionBuilder.plan(stage: Stage<T>) {
   buildSyntheticStages(stage)
 }
 
-infix fun <T> T.shouldBe(expected: T) {
+infix fun <T> T.shouldEqual(expected: T) {
   this shouldMatch equalTo(expected)
 }

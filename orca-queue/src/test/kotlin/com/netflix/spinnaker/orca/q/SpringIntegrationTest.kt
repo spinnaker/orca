@@ -35,7 +35,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import com.netflix.spinnaker.orca.q.handler.shouldBe
+import com.netflix.spinnaker.orca.q.handler.shouldEqual
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
 import com.nhaarman.mockito_kotlin.*
 import org.junit.After
@@ -89,7 +89,7 @@ class SpringIntegrationTest {
 
     context.runToCompletion(pipeline, runner::start)
 
-    repository.retrievePipeline(pipeline.id).status shouldBe SUCCEEDED
+    repository.retrievePipeline(pipeline.id).status shouldEqual SUCCEEDED
   }
 
   @Test fun `can skip stages`() {
@@ -108,7 +108,7 @@ class SpringIntegrationTest {
 
     context.runToCompletion(pipeline, runner::start)
 
-    repository.retrievePipeline(pipeline.id).status shouldBe SUCCEEDED
+    repository.retrievePipeline(pipeline.id).status shouldEqual SUCCEEDED
 
     verifyZeroInteractions(dummyTask)
   }
@@ -127,7 +127,7 @@ class SpringIntegrationTest {
 
     context.runToCompletion(pipeline, runner::start)
 
-    repository.retrievePipeline(pipeline.id).status shouldBe TERMINAL
+    repository.retrievePipeline(pipeline.id).status shouldEqual TERMINAL
   }
 
   @Test fun `parallel stages that fail cancel other branches`() {
@@ -169,10 +169,10 @@ class SpringIntegrationTest {
 
     argumentCaptor<Stage<Pipeline>>().apply {
       verify(dummyTask, atLeastOnce()).execute(capture())
-      allValues.map { it.refId } shouldBe listOf("1", "2a1", "2b")
+      allValues.map { it.refId } shouldEqual listOf("1", "2a1", "2b")
     }
 
-    repository.retrievePipeline(pipeline.id).status shouldBe TERMINAL
+    repository.retrievePipeline(pipeline.id).status shouldEqual TERMINAL
   }
 
   @Test fun `stages set to allow failure will proceed in spite of errors`() {
@@ -215,10 +215,10 @@ class SpringIntegrationTest {
 
     argumentCaptor<Stage<Pipeline>>().apply {
       verify(dummyTask, atLeastOnce()).execute(capture())
-      allValues.map { it.refId }.toSet() shouldBe setOf("1", "2a1", "2a2", "2b", "3")
+      allValues.map { it.refId }.toSet() shouldEqual setOf("1", "2a1", "2a2", "2b", "3")
     }
 
-    repository.retrievePipeline(pipeline.id).status shouldBe SUCCEEDED
+    repository.retrievePipeline(pipeline.id).status shouldEqual SUCCEEDED
   }
 
   @Test fun `stages set to allow failure but fail the pipeline will run to completion but then mark the pipeline failed`() {
@@ -262,10 +262,10 @@ class SpringIntegrationTest {
 
     argumentCaptor<Stage<Pipeline>>().apply {
       verify(dummyTask, atLeastOnce()).execute(capture())
-      allValues.map { it.refId }.toSet() shouldBe setOf("1", "2a1", "2a2", "2b", "3")
+      allValues.map { it.refId }.toSet() shouldEqual setOf("1", "2a1", "2a2", "2b", "3")
     }
 
-    repository.retrievePipeline(pipeline.id).status shouldBe TERMINAL
+    repository.retrievePipeline(pipeline.id).status shouldEqual TERMINAL
   }
 }
 

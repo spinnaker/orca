@@ -74,8 +74,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.first().apply {
-            status shouldBe SUCCEEDED
-            endTime shouldBe clock.millis()
+            status shouldEqual SUCCEEDED
+            endTime shouldEqual clock.millis()
           }
         }
       }
@@ -95,11 +95,11 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<TaskComplete>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.let {
-            it.executionType shouldBe pipeline.javaClass
-            it.executionId shouldBe pipeline.id
-            it.stageId shouldBe message.stageId
-            it.taskId shouldBe message.taskId
-            it.status shouldBe SUCCEEDED
+            it.executionType shouldEqual pipeline.javaClass
+            it.executionId shouldEqual pipeline.id
+            it.stageId shouldEqual message.stageId
+            it.taskId shouldEqual message.taskId
+            it.status shouldEqual SUCCEEDED
           }
         }
       }
@@ -130,8 +130,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.last().apply {
-            status shouldBe SUCCEEDED
-            endTime shouldBe clock.millis()
+            status shouldEqual SUCCEEDED
+            endTime shouldEqual clock.millis()
           }
         }
       }
@@ -174,8 +174,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.last().apply {
-            status shouldBe SUCCEEDED
-            endTime shouldBe clock.millis()
+            status shouldEqual SUCCEEDED
+            endTime shouldEqual clock.millis()
           }
         }
       }
@@ -224,7 +224,7 @@ class CompleteTaskHandlerSpec : Spek({
         it("repeats the loop") {
           argumentCaptor<StartTask>().apply {
             verify(queue).push(capture())
-            firstValue.taskId shouldBe "2"
+            firstValue.taskId shouldEqual "2"
           }
         }
 
@@ -269,8 +269,8 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
           firstValue.tasks.first().apply {
-            status shouldBe status
-            endTime shouldBe clock.millis()
+            status shouldEqual status
+            endTime shouldEqual clock.millis()
           }
         }
       }
@@ -293,11 +293,11 @@ class CompleteTaskHandlerSpec : Spek({
         argumentCaptor<TaskComplete>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.let {
-            it.executionType shouldBe pipeline.javaClass
-            it.executionId shouldBe pipeline.id
-            it.stageId shouldBe message.stageId
-            it.taskId shouldBe message.taskId
-            it.status shouldBe status
+            it.executionType shouldEqual pipeline.javaClass
+            it.executionId shouldEqual pipeline.id
+            it.stageId shouldEqual message.stageId
+            it.taskId shouldEqual message.taskId
+            it.status shouldEqual status
           }
         }
       }

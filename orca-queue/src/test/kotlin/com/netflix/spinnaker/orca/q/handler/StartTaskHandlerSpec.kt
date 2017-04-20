@@ -67,8 +67,8 @@ class StartTaskHandlerSpec : Spek({
       argumentCaptor<Stage<Pipeline>>().apply {
         verify(repository).storeStage(capture())
         firstValue.tasks.first().apply {
-          status shouldBe RUNNING
-          startTime shouldBe clock.millis()
+          status shouldEqual RUNNING
+          startTime shouldEqual clock.millis()
         }
       }
     }
@@ -88,10 +88,10 @@ class StartTaskHandlerSpec : Spek({
       argumentCaptor<TaskStarted>().apply {
         verify(publisher).publishEvent(capture())
         firstValue.apply {
-          executionType shouldBe pipeline.javaClass
-          executionId shouldBe pipeline.id
-          stageId shouldBe message.stageId
-          taskId shouldBe message.taskId
+          executionType shouldEqual pipeline.javaClass
+          executionId shouldEqual pipeline.id
+          stageId shouldEqual message.stageId
+          taskId shouldEqual message.taskId
         }
       }
     }

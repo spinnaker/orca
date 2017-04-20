@@ -78,8 +78,8 @@ class StartExecutionHandlerSpec : Spek({
         argumentCaptor<ExecutionStarted>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.apply {
-            executionType shouldBe message.executionType
-            executionId shouldBe message.executionId
+            executionType shouldEqual message.executionType
+            executionId shouldEqual message.executionId
           }
         }
       }
@@ -110,7 +110,7 @@ class StartExecutionHandlerSpec : Spek({
       it("starts all the initial stages") {
         argumentCaptor<StartStage>().apply {
           verify(queue, times(2)).push(capture())
-          allValues.map { it.stageId }.toSet() shouldBe pipeline.stages.map { it.id }.toSet()
+          allValues.map { it.stageId }.toSet() shouldEqual pipeline.stages.map { it.id }.toSet()
         }
       }
     }

@@ -71,8 +71,8 @@ class CompleteStageHandlerSpec : Spek({
           argumentCaptor<Stage<Pipeline>>().apply {
             verify(repository).storeStage(capture())
             firstValue.let {
-              it.status shouldBe status
-              it.endTime shouldBe clock.millis()
+              it.status shouldEqual status
+              it.endTime shouldEqual clock.millis()
             }
           }
         }
@@ -94,10 +94,10 @@ class CompleteStageHandlerSpec : Spek({
           argumentCaptor<StageComplete>().apply {
             verify(publisher).publishEvent(capture())
             firstValue.let {
-              it.executionType shouldBe pipeline.javaClass
-              it.executionId shouldBe pipeline.id
-              it.stageId shouldBe message.stageId
-              it.status shouldBe status
+              it.executionType shouldEqual pipeline.javaClass
+              it.executionId shouldEqual pipeline.id
+              it.stageId shouldEqual message.stageId
+              it.status shouldEqual status
             }
           }
         }
@@ -133,8 +133,8 @@ class CompleteStageHandlerSpec : Spek({
           argumentCaptor<Stage<Pipeline>>().apply {
             verify(repository).storeStage(capture())
             firstValue.let {
-              it.status shouldBe status
-              it.endTime shouldBe clock.millis()
+              it.status shouldEqual status
+              it.endTime shouldEqual clock.millis()
             }
           }
         }
@@ -187,7 +187,7 @@ class CompleteStageHandlerSpec : Spek({
         it("runs the next stages") {
           argumentCaptor<StartStage>().apply {
             verify(queue, times(2)).push(capture())
-            allValues.map { it.stageId }.toSet() shouldBe pipeline.stages[1..2].map { it.id }.toSet()
+            allValues.map { it.stageId }.toSet() shouldEqual pipeline.stages[1..2].map { it.id }.toSet()
           }
         }
       }
@@ -224,8 +224,8 @@ class CompleteStageHandlerSpec : Spek({
       it("updates the stage state") {
         argumentCaptor<Stage<Pipeline>>().apply {
           verify(repository).storeStage(capture())
-          firstValue.status shouldBe status
-          firstValue.endTime shouldBe clock.millis()
+          firstValue.status shouldEqual status
+          firstValue.endTime shouldEqual clock.millis()
         }
       }
 
@@ -246,10 +246,10 @@ class CompleteStageHandlerSpec : Spek({
         argumentCaptor<StageComplete>().apply {
           verify(publisher).publishEvent(capture())
           firstValue.let {
-            it.executionType shouldBe pipeline.javaClass
-            it.executionId shouldBe pipeline.id
-            it.stageId shouldBe message.stageId
-            it.status shouldBe status
+            it.executionType shouldEqual pipeline.javaClass
+            it.executionId shouldEqual pipeline.id
+            it.stageId shouldEqual message.stageId
+            it.status shouldEqual status
           }
         }
       }
@@ -400,8 +400,8 @@ class CompleteStageHandlerSpec : Spek({
       it("rolls the failure up to the parent stage") {
         argumentCaptor<CompleteStage>().apply {
           verify(queue).push(capture())
-          firstValue.stageId shouldBe pipeline.stageByRef("1").id
-          firstValue.status shouldBe message.status
+          firstValue.stageId shouldEqual pipeline.stageByRef("1").id
+          firstValue.status shouldEqual message.status
         }
       }
     }
