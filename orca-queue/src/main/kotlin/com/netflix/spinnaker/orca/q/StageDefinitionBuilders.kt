@@ -53,7 +53,7 @@ private fun processTaskNode(
         val task = Task()
         task.id = (stage.getTasks().size + 1).toString()
         task.name = value.name
-        task.implementingClass = value.implementingClass
+        task.implementingClass = value.implementingClass.name
         if (isSubGraph) {
           task.isLoopStart = isFirst
           task.isLoopEnd = isLast

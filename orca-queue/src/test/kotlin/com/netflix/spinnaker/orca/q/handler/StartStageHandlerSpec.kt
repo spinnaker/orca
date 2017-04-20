@@ -105,7 +105,7 @@ class StartStageHandlerSpec : Spek({
           firstValue.tasks.first().apply {
             id shouldEqual "1"
             name shouldEqual "dummy"
-            implementingClass.name shouldEqual DummyTask::class.java.name
+            implementingClass shouldEqual DummyTask::class.java.name
             isStageStart shouldEqual true
             isStageEnd shouldEqual true
           }
@@ -162,21 +162,21 @@ class StartStageHandlerSpec : Spek({
             tasks[0].apply {
               id shouldEqual "1"
               name shouldEqual "dummy1"
-              implementingClass.name shouldEqual DummyTask::class.java.name
+              implementingClass shouldEqual DummyTask::class.java.name
               isStageStart shouldEqual true
               isStageEnd shouldEqual false
             }
             tasks[1].apply {
               id shouldEqual "2"
               name shouldEqual "dummy2"
-              implementingClass.name shouldEqual DummyTask::class.java.name
+              implementingClass shouldEqual DummyTask::class.java.name
               isStageStart shouldEqual false
               isStageEnd shouldEqual false
             }
             tasks[2].apply {
               id shouldEqual "3"
               name shouldEqual "dummy3"
-              implementingClass.name shouldEqual DummyTask::class.java.name
+              implementingClass shouldEqual DummyTask::class.java.name
               isStageStart shouldEqual false
               isStageEnd shouldEqual true
             }

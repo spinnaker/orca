@@ -53,7 +53,7 @@ class RunTaskHandlerSpec : Spek({
           type = "whatever"
           task {
             id = "1"
-            implementingClass = DummyTask::class.java
+            implementingClass = DummyTask::class.qualifiedName
             startTime = clock.instant().toEpochMilli()
           }
         }
@@ -91,7 +91,7 @@ class RunTaskHandlerSpec : Spek({
           type = "whatever"
           task {
             id = "1"
-            implementingClass = DummyTask::class.java
+            implementingClass = DummyTask::class.qualifiedName
             startTime = clock.instant().toEpochMilli()
           }
         }
@@ -124,7 +124,7 @@ class RunTaskHandlerSpec : Spek({
           type = "whatever"
           task {
             id = "1"
-            implementingClass = DummyTask::class.java
+            implementingClass = DummyTask::class.qualifiedName
             startTime = clock.instant().toEpochMilli()
           }
         }
@@ -208,7 +208,7 @@ class RunTaskHandlerSpec : Spek({
           type = "whatever"
           task {
             id = "1"
-            implementingClass = DummyTask::class.java
+            implementingClass = DummyTask::class.qualifiedName
             startTime = clock.instant().toEpochMilli()
           }
         }
@@ -242,7 +242,7 @@ class RunTaskHandlerSpec : Spek({
           type = "whatever"
           task {
             id = "1"
-            implementingClass = DummyTask::class.java
+            implementingClass = DummyTask::class.qualifiedName
             startTime = clock.instant().toEpochMilli()
           }
         }
@@ -284,7 +284,7 @@ class RunTaskHandlerSpec : Spek({
           type = "whatever"
           task {
             id = "1"
-            implementingClass = DummyTask::class.java
+            implementingClass = DummyTask::class.qualifiedName
             startTime = clock.instant().toEpochMilli()
           }
         }
@@ -325,7 +325,7 @@ class RunTaskHandlerSpec : Spek({
           type = "whatever"
           task {
             id = "1"
-            implementingClass = DummyTask::class.java
+            implementingClass = DummyTask::class.qualifiedName
             status = RUNNING
             startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
           }
