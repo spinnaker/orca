@@ -53,6 +53,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner
 import java.lang.Thread.sleep
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(SpringJUnit4ClassRunner::class)
@@ -85,6 +86,7 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
+    whenever(dummyTask.timeout).thenReturn(2000L)
     whenever(dummyTask.execute(any())).thenReturn(TaskResult.SUCCEEDED)
 
     context.runToCompletion(pipeline, runner::start)
@@ -110,7 +112,7 @@ class SpringIntegrationTest {
 
     repository.retrievePipeline(pipeline.id).status shouldEqual SUCCEEDED
 
-    verifyZeroInteractions(dummyTask)
+    verify(dummyTask, never()).execute(any())
   }
 
   @Test fun `pipeline fails if a task fails`() {
@@ -206,6 +208,7 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
+    whenever(dummyTask.timeout).thenReturn(2000L)
     whenever(dummyTask.execute(argThat { getRefId() == "2a1" }))
       .thenReturn(TaskResult(TERMINAL))
     whenever(dummyTask.execute(argThat { getRefId() != "2a1" }))
@@ -253,6 +256,7 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
+    whenever(dummyTask.timeout).thenReturn(2000L)
     whenever(dummyTask.execute(argThat { getRefId() == "2a1" }))
       .thenReturn(TaskResult(TERMINAL))
     whenever(dummyTask.execute(argThat { getRefId() != "2a1" }))
@@ -283,7 +287,10 @@ open class TestConfig {
     on { counter(any<Id>()) }.doReturn(mock<Counter>())
   }
 
-  @Bean open fun dummyTask(): DummyTask = mock()
+  @Bean open fun dummyTask(): DummyTask = mock {
+    on { timeout } doReturn Duration.ofMinutes(2).toMillis()
+  }
+
   @Bean open fun dummyStage(): StageDefinitionBuilder = object : StageDefinitionBuilder {
     override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
       builder.withTask("dummy", DummyTask::class.java)

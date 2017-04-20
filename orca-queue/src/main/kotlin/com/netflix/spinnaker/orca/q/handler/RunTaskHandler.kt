@@ -27,7 +27,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.time.temporal.TemporalAmount
 
 @Component
@@ -35,7 +37,8 @@ open class RunTaskHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  val tasks: Collection<Task>
+  private val tasks: Collection<Task>,
+  private val clock: Clock
 ) : MessageHandler<RunTask>, QueueProcessor {
 
   private val log: Logger = getLogger(javaClass)
@@ -45,6 +48,9 @@ open class RunTaskHandler
       val execution = stage.getExecution()
       if (execution.isCanceled() || execution.getStatus().complete) {
         queue.push(CompleteTask(message, CANCELED))
+      } else if (task.isTimedOut(stage, message)) {
+        // TODO: probably want something specific in the execution log
+        queue.push(CompleteTask(message, TERMINAL))
       } else {
         try {
           task.execute(stage).let { result ->
@@ -95,6 +101,16 @@ open class RunTaskHandler
     when (this) {
       is RetryableTask -> Duration.ofMillis(backoffPeriod)
       else -> Duration.ofSeconds(1)
+    }
+
+  private fun Task.isTimedOut(stage: Stage<*>, message: RunTask): Boolean =
+    when(this) {
+      is RetryableTask -> {
+        val taskModel = stage.task(message.taskId)
+        val startTime = Instant.ofEpochMilli(taskModel.startTime)
+        Duration.between(startTime, clock.instant()).toMillis() > timeout
+      }
+      else -> false
     }
 
   private fun Stage<*>.processTaskOutput(result: TaskResult) {

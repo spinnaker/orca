@@ -50,16 +50,16 @@ private fun processTaskNode(
   element.apply {
     when (value) {
       is TaskDefinition -> {
-        val task = DefaultTask()
+        val task = Task()
         task.id = (stage.getTasks().size + 1).toString()
         task.name = value.name
         task.implementingClass = value.implementingClass
         if (isSubGraph) {
-          task.loopStart = isFirst
-          task.loopEnd = isLast
+          task.isLoopStart = isFirst
+          task.isLoopEnd = isLast
         } else {
-          task.stageStart = isFirst
-          task.stageEnd = isLast
+          task.isStageStart = isFirst
+          task.isStageEnd = isLast
         }
         stage.getTasks().add(task)
       }

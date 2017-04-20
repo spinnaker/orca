@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import java.lang.System.currentTimeMillis
 import java.util.*
 
@@ -38,4 +39,11 @@ fun <T : Execution<T>> T.stage(init: Stage<T>.() -> Unit): Stage<T> {
   stages.add(stage)
   stage.init()
   return stage
+}
+
+fun <T : Execution<T>> Stage<T>.task(init: Task.() -> Unit): Task {
+  val task = Task()
+  tasks.add(task)
+  task.init()
+  return task
 }

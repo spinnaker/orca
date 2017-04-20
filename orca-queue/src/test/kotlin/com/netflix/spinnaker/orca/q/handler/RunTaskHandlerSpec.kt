@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -38,20 +39,26 @@ class RunTaskHandlerSpec : Spek({
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val task: DummyTask = mock()
+  val clock = fixedClock()
 
-  val handler = RunTaskHandler(queue, repository, listOf(task))
+  val handler = RunTaskHandler(queue, repository, listOf(task), clock)
 
   fun resetMocks() = reset(queue, repository, task)
 
   describe("running a task") {
-    val pipeline = pipeline {
-      stage {
-        type = "whatever"
-      }
-    }
-    val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
     describe("that completes successfully") {
+      val pipeline = pipeline {
+        stage {
+          type = "whatever"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.java
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
       val taskResult = TaskResult(SUCCEEDED)
 
       beforeGroup {
@@ -79,6 +86,17 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("that is not yet complete") {
+      val pipeline = pipeline {
+        stage {
+          type = "whatever"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.java
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
       val taskResult = TaskResult(RUNNING)
       val taskBackoffMs = 30_000L
 
@@ -101,6 +119,17 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("that fails") {
+      val pipeline = pipeline {
+        stage {
+          type = "whatever"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.java
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
       val taskResult = TaskResult(TERMINAL)
 
       context("no overrides are in place") {
@@ -174,6 +203,18 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("that throws an exception") {
+      val pipeline = pipeline {
+        stage {
+          type = "whatever"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.java
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
+
       beforeGroup {
         whenever(task.execute(any())).thenThrow(RuntimeException("o noes"))
         whenever(repository.retrievePipeline(message.executionId))
@@ -195,9 +236,20 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("when the execution has stopped") {
-      beforeGroup {
-        pipeline.status = TERMINAL
+      val pipeline = pipeline {
+        status = TERMINAL
+        stage {
+          type = "whatever"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.java
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
+      beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
           .thenReturn(pipeline)
       }
@@ -225,10 +277,21 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("when the execution has been canceled") {
-      beforeGroup {
-        pipeline.status = RUNNING
-        pipeline.isCanceled = true
+      val pipeline = pipeline {
+        status = RUNNING
+        isCanceled = true
+        stage {
+          type = "whatever"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.java
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
+      beforeGroup {
         whenever(repository.retrievePipeline(message.executionId))
           .thenReturn(pipeline)
       }
@@ -252,6 +315,43 @@ class RunTaskHandlerSpec : Spek({
 
       it("does not execute the task") {
         verifyZeroInteractions(task)
+      }
+    }
+
+    describe("when the task has exceeded its timeout") {
+      val timeout = Duration.ofMinutes(5)
+      val pipeline = pipeline {
+        stage {
+          type = "whatever"
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.java
+            status = RUNNING
+            startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
+
+      beforeGroup {
+        whenever(repository.retrievePipeline(message.executionId))
+          .thenReturn(pipeline)
+
+        whenever(task.timeout).thenReturn(timeout.toMillis())
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("fails the task") {
+        verify(queue).push(CompleteTask(message, TERMINAL))
+      }
+
+      it("does not execute the task") {
+        verify(task, never()).execute(any())
       }
     }
   }
