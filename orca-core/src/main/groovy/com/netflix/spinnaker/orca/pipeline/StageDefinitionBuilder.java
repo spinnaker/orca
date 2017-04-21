@@ -115,10 +115,7 @@ public interface StageDefinitionBuilder {
       List<String> restartingStageAndChildren = Stream.concat(Stream.of(stage), childStages.stream()).map(Stage::getId).collect(toList());
       List<Stage<T>> syntheticStages = stages
         .stream()
-        .filter(it -> {
-          System.out.printf("Stage %s complete %b in list %b%n", it.getName(), it.getStatus().isComplete() , restartingStageAndChildren.contains(it.getParentStageId()));
-          return it.getStatus().isComplete() && restartingStageAndChildren.contains(it.getParentStageId());
-        })
+        .filter(it -> it.getStatus().isComplete() && restartingStageAndChildren.contains(it.getParentStageId()))
         .collect(toList());
 
       Stream
