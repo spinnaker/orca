@@ -76,12 +76,14 @@ open class RunTaskHandler
             }
           }
         } catch(e: Exception) {
-          if (shouldRetry(e, stage.getTasks().find { it.id == message.taskId })) {
+          val exceptionDetails = shouldRetry(e, stage.task(message.taskId))
+          if (exceptionDetails?.shouldRetry ?: false) {
             log.warn("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]")
             queue.push(message, task.backoffPeriod())
           } else {
             log.error("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]", e)
-            // TODO: add context
+            stage.getContext()["exception"] = exceptionDetails
+            repository.storeStage(stage)
             queue.push(CompleteTask(message, TERMINAL))
           }
         }
@@ -147,8 +149,8 @@ open class RunTaskHandler
     return this
   }
 
-  private fun shouldRetry(ex: Exception, task: com.netflix.spinnaker.orca.pipeline.model.Task?): Boolean {
+  private fun shouldRetry(ex: Exception, task: com.netflix.spinnaker.orca.pipeline.model.Task?): ExceptionHandler.Response? {
     val exceptionHandler = exceptionHandlers.find { it.handles(ex) }
-    return exceptionHandler != null && exceptionHandler.handle(task?.name, ex).shouldRetry
+    return exceptionHandler?.handle(task?.name, ex)
   }
 }

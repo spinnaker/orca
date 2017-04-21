@@ -214,12 +214,19 @@ class RunTaskHandlerSpec : Spek({
       val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
       context("that is not recoverable") {
+        val exceptionDetails = ExceptionHandler.Response(
+          RuntimeException::class.qualifiedName,
+          "o noes",
+          ExceptionHandler.ResponseDetails("o noes"),
+          false
+        )
+
         beforeGroup {
           whenever(task.execute(any())).thenThrow(RuntimeException("o noes"))
           whenever(repository.retrievePipeline(message.executionId))
             .thenReturn(pipeline)
           whenever(exceptionHandler.handles(any())) doReturn true
-          whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), false)
+          whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
         }
 
         afterGroup(::resetMocks)
@@ -233,17 +240,29 @@ class RunTaskHandlerSpec : Spek({
             it.status shouldEqual TERMINAL
           })
         }
+
+        it("attaches the exception to the stage context") {
+          verify(repository).storeStage(check {
+            it.getContext()["exception"] shouldEqual exceptionDetails
+          })
+        }
       }
 
       context("that is recoverable") {
         val taskBackoffMs = 30_000L
+        val exceptionDetails = ExceptionHandler.Response(
+          RuntimeException::class.qualifiedName,
+          "o noes",
+          ExceptionHandler.ResponseDetails("o noes"),
+          true
+        )
 
         beforeGroup {
           whenever(task.backoffPeriod) doReturn taskBackoffMs
           whenever(task.execute(any())) doThrow RuntimeException("o noes")
           whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
           whenever(exceptionHandler.handles(any())) doReturn true
-          whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), true)
+          whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
         }
 
         afterGroup(::resetMocks)
