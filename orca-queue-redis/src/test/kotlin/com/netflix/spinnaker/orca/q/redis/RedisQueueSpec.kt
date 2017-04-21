@@ -25,7 +25,7 @@ import org.junit.runner.RunWith
 @RunWith(JUnitPlatform::class)
 class RedisQueueSpec : QueueSpec<RedisQueue>(
   ::createQueue,
-  ::triggerRedeliveryCheck,
+  RedisQueue::redeliver,
   ::shutdownCallback
 )
 
@@ -35,8 +35,6 @@ private fun createQueue(): RedisQueue {
   redis = EmbeddedRedis.embed()
   return RedisQueue("test", redis!!.pool, clock, "i-1234")
 }
-
-private fun triggerRedeliveryCheck(queue: RedisQueue) = queue.redeliver()
 
 private fun shutdownCallback() {
   println("shutting down the redis")

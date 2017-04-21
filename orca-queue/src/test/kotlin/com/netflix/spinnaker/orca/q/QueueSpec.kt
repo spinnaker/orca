@@ -29,7 +29,7 @@ import java.time.Instant
 
 abstract class QueueSpec<out Q : Queue>(
   createQueue: () -> Q,
-  triggerRedeliveryCheck: (Q) -> Unit,
+  triggerRedeliveryCheck: Q.() -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
 
@@ -90,10 +90,10 @@ abstract class QueueSpec<out Q : Queue>(
       val message2 = StartExecution(Pipeline::class.java, "2", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke().also { q ->
-          q.push(message1)
+        queue = createQueue.invoke().apply {
+          push(message1)
           clock.incrementBy(Duration.ofSeconds(1))
-          q.push(message2)
+          push(message2)
         }
       }
 
@@ -101,9 +101,9 @@ abstract class QueueSpec<out Q : Queue>(
       afterGroup(::resetMocks)
 
       action("the queue is polled twice") {
-        queue!!.let { q ->
-          q.poll(callback)
-          q.poll(callback)
+        queue!!.apply {
+          poll(callback)
+          poll(callback)
         }
       }
 
@@ -172,13 +172,13 @@ abstract class QueueSpec<out Q : Queue>(
       afterGroup(::resetMocks)
 
       action("the queue is polled and the message is acknowledged") {
-        queue!!.let { q ->
-          q.poll { _, ack ->
+        queue!!.apply {
+          poll { _, ack ->
             ack.invoke()
           }
-          clock.incrementBy(q.ackTimeout)
-          triggerRedeliveryCheck(q)
-          q.poll(callback)
+          clock.incrementBy(ackTimeout)
+          triggerRedeliveryCheck()
+          poll(callback)
         }
       }
 
@@ -199,11 +199,11 @@ abstract class QueueSpec<out Q : Queue>(
       afterGroup(::resetMocks)
 
       action("the queue is polled then the message is not acknowledged") {
-        queue!!.let { q ->
-          q.poll { _, _ -> }
-          clock.incrementBy(q.ackTimeout)
-          triggerRedeliveryCheck(q)
-          q.poll(callback)
+        queue!!.apply {
+          poll { _, _ -> }
+          clock.incrementBy(ackTimeout)
+          triggerRedeliveryCheck()
+          poll(callback)
         }
       }
 
@@ -224,13 +224,13 @@ abstract class QueueSpec<out Q : Queue>(
       afterGroup(::resetMocks)
 
       action("the queue is polled and the message is not acknowledged") {
-        queue!!.let { q ->
+        queue!!.apply {
           repeat(2) {
-            q.poll { _, _ -> }
-            clock.incrementBy(q.ackTimeout)
-            triggerRedeliveryCheck(q)
+            poll { _, _ -> }
+            clock.incrementBy(ackTimeout)
+            triggerRedeliveryCheck()
           }
-          q.poll(callback)
+          poll(callback)
         }
       }
 
