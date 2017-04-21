@@ -25,15 +25,18 @@ import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.RestartStage
 import com.netflix.spinnaker.orca.q.StartStage
+import com.netflix.spinnaker.security.AuthenticatedRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.time.Clock
 
 @Component
 open class RestartStageHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>
+  override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
+  private val clock: Clock
 ) : MessageHandler<RestartStage>, QueueProcessor, StageBuilderAware {
 
   override val messageType = RestartStage::class.java
@@ -41,11 +44,23 @@ open class RestartStageHandler
   override fun handle(message: RestartStage) {
     message.withStage { stage ->
       if (stage.getStatus().complete) {
+        stage.addRestartDetails()
         stage.reset()
         repository.updateStatus(stage.getExecution().getId(), RUNNING)
         queue.push(StartStage(message))
       }
     }
+  }
+
+  private fun Stage<*>.addRestartDetails() {
+    val restartDetails = mutableMapOf(
+      "restartedBy" to AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
+      "restartTime" to clock.millis()
+    )
+    if (getContext().containsKey("exception")) {
+      restartDetails["previousException"] = getContext().remove("exception")
+    }
+    getContext()["restartDetails"] = restartDetails
   }
 
   private fun Stage<*>.reset() {

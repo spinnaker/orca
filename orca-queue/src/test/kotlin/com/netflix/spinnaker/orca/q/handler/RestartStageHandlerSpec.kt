@@ -16,11 +16,9 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.absent
-import com.natpryce.hamkrest.anyElement
-import com.natpryce.hamkrest.equalTo
-import com.natpryce.hamkrest.isEmpty
+import com.natpryce.hamkrest.*
 import com.natpryce.hamkrest.should.shouldMatch
+import com.natpryce.hamkrest.should.shouldNotMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -54,7 +52,8 @@ class RestartStageHandlerSpec : Spek({
     listOf(
       singleTaskStage,
       stageWithSyntheticBefore
-    )
+    ),
+    clock
   )
 
   fun resetMocks() = reset(queue, repository)
@@ -121,6 +120,7 @@ class RestartStageHandlerSpec : Spek({
           status = stageStatus
           startTime = clock.instant().minus(59, MINUTES).toEpochMilli()
           endTime = clock.instant().minus(30, MINUTES).toEpochMilli()
+          context["exception"] = "o noes"
         }
       }
       val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("2").id)
@@ -148,6 +148,17 @@ class RestartStageHandlerSpec : Spek({
       it("removes the stage's tasks") {
         verify(repository).storeStage(check {
           it.getTasks() shouldMatch isEmpty
+        })
+      }
+
+      it("adds restart details to the stage context") {
+        verify(repository).storeStage(check {
+          it.getContext().keys shouldNotMatch hasElement("exception")
+          it.getContext()["restartDetails"] shouldEqual mapOf(
+            "restartedBy" to "anonymous",
+            "restartTime" to clock.millis(),
+            "previousException" to "o noes"
+          )
         })
       }
 
