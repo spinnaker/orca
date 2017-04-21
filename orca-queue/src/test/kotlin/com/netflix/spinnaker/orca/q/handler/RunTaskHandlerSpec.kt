@@ -219,7 +219,7 @@ class RunTaskHandlerSpec : Spek({
           whenever(repository.retrievePipeline(message.executionId))
             .thenReturn(pipeline)
           whenever(exceptionHandler.handles(any())) doReturn true
-          whenever(exceptionHandler.handle(any(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), false)
+          whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), false)
         }
 
         afterGroup(::resetMocks)
@@ -243,7 +243,7 @@ class RunTaskHandlerSpec : Spek({
           whenever(task.execute(any())) doThrow RuntimeException("o noes")
           whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
           whenever(exceptionHandler.handles(any())) doReturn true
-          whenever(exceptionHandler.handle(any(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), true)
+          whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), true)
         }
 
         afterGroup(::resetMocks)
