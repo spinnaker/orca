@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -39,11 +40,12 @@ class RunTaskHandlerSpec : Spek({
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val task: DummyTask = mock()
+  val exceptionHandler: ExceptionHandler<in Exception> = mock()
   val clock = fixedClock()
 
-  val handler = RunTaskHandler(queue, repository, listOf(task), clock)
+  val handler = RunTaskHandler(queue, repository, listOf(task), clock, listOf(exceptionHandler))
 
-  fun resetMocks() = reset(queue, repository, task)
+  fun resetMocks() = reset(queue, repository, task, exceptionHandler)
 
   describe("running a task") {
 
@@ -211,22 +213,48 @@ class RunTaskHandlerSpec : Spek({
       }
       val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
-      beforeGroup {
-        whenever(task.execute(any())).thenThrow(RuntimeException("o noes"))
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+      context("that is not recoverable") {
+        beforeGroup {
+          whenever(task.execute(any())).thenThrow(RuntimeException("o noes"))
+          whenever(repository.retrievePipeline(message.executionId))
+            .thenReturn(pipeline)
+          whenever(exceptionHandler.handles(any())) doReturn true
+          whenever(exceptionHandler.handle(any(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), false)
+        }
+
+        afterGroup(::resetMocks)
+
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("marks the task as terminal") {
+          verify(queue).push(check<CompleteTask> {
+            it.status shouldEqual TERMINAL
+          })
+        }
       }
 
-      afterGroup(::resetMocks)
+      context("that is recoverable") {
+        val taskBackoffMs = 30_000L
 
-      action("the handler receives a message") {
-        handler.handle(message)
-      }
+        beforeGroup {
+          whenever(task.backoffPeriod) doReturn taskBackoffMs
+          whenever(task.execute(any())) doThrow RuntimeException("o noes")
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(exceptionHandler.handles(any())) doReturn true
+          whenever(exceptionHandler.handle(any(), any())) doReturn ExceptionHandler.Response(RuntimeException::class.qualifiedName, "o noes", ExceptionHandler.ResponseDetails("o noes"), true)
+        }
 
-      it("emits a failure event") {
-        verify(queue).push(check<CompleteTask> {
-          it.status shouldEqual TERMINAL
-        })
+        afterGroup(::resetMocks)
+
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("re-runs the task") {
+          verify(queue).push(eq(message), eq(Duration.ofMillis(taskBackoffMs)))
+        }
       }
     }
 

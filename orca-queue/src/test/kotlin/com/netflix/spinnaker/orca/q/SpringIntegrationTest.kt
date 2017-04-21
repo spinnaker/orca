@@ -26,6 +26,7 @@ import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.batch.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -320,5 +321,7 @@ open class TestConfig {
   @Bean open fun currentInstanceId() = "localhost"
 
   @Bean open fun contextParameterProcessor() = ContextParameterProcessor()
+
+  @Bean open fun defaultExceptionHandler() = DefaultExceptionHandler()
 }
 

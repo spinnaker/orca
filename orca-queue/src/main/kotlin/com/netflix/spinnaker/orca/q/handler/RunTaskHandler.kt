@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -38,7 +39,8 @@ open class RunTaskHandler
   override val queue: Queue,
   override val repository: ExecutionRepository,
   private val tasks: Collection<Task>,
-  private val clock: Clock
+  private val clock: Clock,
+  private val exceptionHandlers: Collection<ExceptionHandler<in Exception>>
 ) : MessageHandler<RunTask>, QueueProcessor {
 
   private val log: Logger = getLogger(javaClass)
@@ -74,9 +76,15 @@ open class RunTaskHandler
             }
           }
         } catch(e: Exception) {
-          log.error("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]", e)
-          // TODO: add context
-          queue.push(CompleteTask(message, TERMINAL))
+          val exceptionHandler = exceptionHandlers.find { it.handles(e) }
+          if (exceptionHandler != null && exceptionHandler.handle("whatever", e).shouldRetry) {
+            log.warn("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]")
+            queue.push(message, task.backoffPeriod())
+          } else {
+            log.error("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]", e)
+            // TODO: add context
+            queue.push(CompleteTask(message, TERMINAL))
+          }
         }
       }
     }
@@ -104,7 +112,7 @@ open class RunTaskHandler
     }
 
   private fun Task.isTimedOut(stage: Stage<*>, message: RunTask): Boolean =
-    when(this) {
+    when (this) {
       is RetryableTask -> {
         val taskModel = stage.task(message.taskId)
         val startTime = Instant.ofEpochMilli(taskModel.startTime)
