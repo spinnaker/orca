@@ -53,8 +53,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
       parentPipelineId         : parentPipeline.id,
       parentPipelineApplication: parentPipeline.application,
       parentStatus             : parentPipeline.status,
-      parentExecution          : parentPipeline,
-      isPipeline               : false
+      parentExecution          : parentPipeline
     ]
 
     if (parentPipelineStageId) {
@@ -63,7 +62,6 @@ class DependentPipelineStarter implements ApplicationContextAware {
 
     if( parentPipeline instanceof Pipeline){
       pipelineConfig.trigger.parentPipelineName = parentPipeline.name
-      pipelineConfig.trigger.isPipeline = true
     }
 
     if (pipelineConfig.parameterConfig || !suppliedParameters.empty) {

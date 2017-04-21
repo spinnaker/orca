@@ -131,7 +131,7 @@ trait DeploymentDetailsAware {
     if (execution instanceof Pipeline) {
       if (execution.trigger.parentExecution instanceof Pipeline) {
         return execution.trigger.parentExecution
-      } else if (execution.trigger?.isPipeline) {
+      } else if (execution.trigger?.parentPipelineId) {
         return pipelineObjectMapper.convertValue(execution.trigger.parentExecution, Pipeline)
       }
     }
