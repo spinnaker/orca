@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.netflix.spinnaker.orca.AuthenticatedStage
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
@@ -24,6 +25,8 @@ import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.security.AuthenticatedRequest.propagate
+import com.netflix.spinnaker.security.User
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,7 +58,7 @@ open class RunTaskHandler
         queue.push(CompleteTask(message, TERMINAL))
       } else {
         try {
-          task.execute(stage.withMergedContext()).let { result ->
+          task.executeTask(stage) { result ->
             // TODO: rather send this data with CompleteTask message
             stage.processTaskOutput(result)
             when (result.status) {
@@ -89,6 +92,24 @@ open class RunTaskHandler
         }
       }
     }
+  }
+
+  private fun Task.executeTask(stage: Stage<*>, function: (TaskResult) -> Unit) {
+    // An AuthenticatedStage can override the default pipeline authentication credentials
+    val authenticatedUser = stage
+      .ancestors()
+      .filter { it.stageBuilder is AuthenticatedStage }
+      .firstOrNull()
+      ?.let { (it.stageBuilder as AuthenticatedStage).authenticatedUser(it.stage).orElse(null) }
+
+    val currentUser = authenticatedUser ?: User().apply {
+      email = stage.getExecution().getAuthentication()?.user
+      allowedAccounts = stage.getExecution().getAuthentication()?.allowedAccounts
+    }
+
+    propagate({
+      execute(stage.withMergedContext()).let(function)
+    }, false, currentUser).call()
   }
 
   override val messageType = RunTask::class.java
