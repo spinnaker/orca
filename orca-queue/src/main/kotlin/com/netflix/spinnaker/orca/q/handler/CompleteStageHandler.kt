@@ -46,10 +46,11 @@ open class CompleteStageHandler
       if (message.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED)) {
         stage.startNext()
       } else {
+        queue.push(CancelStage(message))
         if (stage.getSyntheticStageOwner() == null) {
           queue.push(CompleteExecution(message, message.status))
         } else {
-          queue.push(CompleteStage(message, stage.getParentStageId(), message.status))
+          queue.push(message.copy(stageId = stage.getParentStageId()))
         }
       }
     }

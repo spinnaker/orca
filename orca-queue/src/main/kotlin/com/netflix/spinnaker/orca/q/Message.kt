@@ -148,6 +148,16 @@ data class CompleteExecution(
     this(source.javaClass, source.getId(), source.getApplication(), status)
 }
 
+data class CancelStage(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String
+) : Message(), StageLevel {
+  constructor(source: StageLevel) :
+    this(source.executionType, source.executionId, source.application, source.stageId)
+}
+
 /**
  * Fatal errors in processing the execution configuration.
  */

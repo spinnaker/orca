@@ -231,6 +231,10 @@ class CompleteStageHandlerSpec : Spek({
         ))
       }
 
+      it("runs the stage's cancellation routine") {
+        verify(queue).push(CancelStage(message))
+      }
+
       it("publishes an event") {
         verify(publisher).publishEvent(check<StageComplete> {
           it.executionType shouldEqual pipeline.javaClass
@@ -384,10 +388,11 @@ class CompleteStageHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       it("rolls the failure up to the parent stage") {
-        verify(queue).push(check<CompleteStage> {
-          it.stageId shouldEqual pipeline.stageByRef("1").id
-          it.status shouldEqual message.status
-        })
+        verify(queue).push(message.copy(stageId = pipeline.stageByRef("1").id))
+      }
+
+      it("runs the stage's cancel routine") {
+        verify(queue).push(CancelStage(message))
       }
     }
   }
