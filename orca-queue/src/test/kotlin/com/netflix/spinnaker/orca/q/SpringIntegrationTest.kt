@@ -170,7 +170,7 @@ class SpringIntegrationTest {
 
     argumentCaptor<Stage<Pipeline>>().apply {
       verify(dummyTask, atLeastOnce()).execute(capture())
-      allValues.map { it.refId } shouldEqual listOf("1", "2a1", "2b")
+      allValues.map { it.refId }.toSet() shouldEqual setOf("1", "2a1", "2b")
     }
 
     repository.retrievePipeline(pipeline.id).status shouldEqual TERMINAL
