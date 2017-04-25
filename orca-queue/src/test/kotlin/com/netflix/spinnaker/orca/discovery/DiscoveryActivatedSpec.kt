@@ -28,12 +28,9 @@ import com.nhaarman.mockito_kotlin.verify
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
-@RunWith(JUnitPlatform::class)
 class DiscoveryActivatedSpec : Spek({
 
   describe("a discovery-activated poller") {

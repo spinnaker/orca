@@ -19,10 +19,7 @@ package com.netflix.spinnaker.orca.q.redis
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.q.QueueSpec
 import com.netflix.spinnaker.orca.q.QueueSpec.Companion.clock
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 
-@RunWith(JUnitPlatform::class)
 class RedisQueueSpec : QueueSpec<RedisQueue>(
   ::createQueue,
   RedisQueue::redeliver,

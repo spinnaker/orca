@@ -18,10 +18,7 @@ package com.netflix.spinnaker.orca.q.memory
 
 import com.netflix.spinnaker.orca.q.QueueSpec
 import com.netflix.spinnaker.orca.q.QueueSpec.Companion.clock
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 
-@RunWith(JUnitPlatform::class)
 class InMemoryQueueSpec : QueueSpec<InMemoryQueue>(
   ::createQueue,
   InMemoryQueue::redeliver
