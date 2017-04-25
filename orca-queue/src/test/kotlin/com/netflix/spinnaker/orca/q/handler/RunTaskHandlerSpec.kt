@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
+import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -31,6 +32,7 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
+import org.threeten.extra.Minutes
 import java.lang.RuntimeException
 import java.time.Duration
 
@@ -387,38 +389,113 @@ class RunTaskHandlerSpec : Spek({
     }
 
     describe("when the task has exceeded its timeout") {
-      val timeout = Duration.ofMinutes(5)
-      val pipeline = pipeline {
-        stage {
-          type = "whatever"
-          task {
-            id = "1"
-            implementingClass = DummyTask::class.qualifiedName
-            status = RUNNING
-            startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
+      context("the execution was never paused") {
+        val timeout = Duration.ofMinutes(5)
+        val pipeline = pipeline {
+          stage {
+            type = "whatever"
+            task {
+              id = "1"
+              implementingClass = DummyTask::class.qualifiedName
+              status = RUNNING
+              startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
+            }
           }
         }
+        val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
+
+        beforeGroup {
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(task.timeout) doReturn timeout.toMillis()
+        }
+
+        afterGroup(::resetMocks)
+
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("fails the task") {
+          verify(queue).push(CompleteTask(message, TERMINAL))
+        }
+
+        it("does not execute the task") {
+          verify(task, never()).execute(any())
+        }
       }
-      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
-      beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      context("the execution had been paused") {
+        val timeout = Duration.ofMinutes(5)
+        val pipeline = pipeline {
+          paused = PausedDetails().apply {
+            pauseTime = clock.instant().minus(Minutes.of(3)).toEpochMilli()
+            resumeTime = clock.instant().minus(Minutes.of(2)).toEpochMilli()
+          }
+          stage {
+            type = "whatever"
+            task {
+              id = "1"
+              implementingClass = DummyTask::class.qualifiedName
+              status = RUNNING
+              startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
+            }
+          }
+        }
+        val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
-        whenever(task.timeout) doReturn timeout.toMillis()
+        beforeGroup {
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(task.timeout) doReturn timeout.toMillis()
+        }
+
+        afterGroup(::resetMocks)
+
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("executes the task") {
+          verify(task).execute(any())
+        }
       }
 
-      afterGroup(::resetMocks)
+      context("the execution had been paused but is timed out anyway") {
+        val timeout = Duration.ofMinutes(5)
+        val pipeline = pipeline {
+          paused = PausedDetails().apply {
+            pauseTime = clock.instant().minus(Minutes.of(3)).toEpochMilli()
+            resumeTime = clock.instant().minus(Minutes.of(2)).toEpochMilli()
+          }
+          stage {
+            type = "whatever"
+            task {
+              id = "1"
+              implementingClass = DummyTask::class.qualifiedName
+              status = RUNNING
+              startTime = clock.instant().minusMillis(timeout.plusMinutes(1).toMillis() + 1).toEpochMilli()
+            }
+          }
+        }
+        val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
-      action("the handler receives a message") {
-        handler.handle(message)
-      }
+        beforeGroup {
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(task.timeout) doReturn timeout.toMillis()
+        }
 
-      it("fails the task") {
-        verify(queue).push(CompleteTask(message, TERMINAL))
-      }
+        afterGroup(::resetMocks)
 
-      it("does not execute the task") {
-        verify(task, never()).execute(any())
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
+
+        it("fails the task") {
+          verify(queue).push(CompleteTask(message, TERMINAL))
+        }
+
+        it("does not execute the task") {
+          verify(task, never()).execute(any())
+        }
       }
     }
 

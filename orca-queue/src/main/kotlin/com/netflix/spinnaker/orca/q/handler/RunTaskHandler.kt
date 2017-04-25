@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -140,10 +141,17 @@ open class RunTaskHandler
       is RetryableTask -> {
         val taskModel = stage.task(message.taskId)
         val startTime = Instant.ofEpochMilli(taskModel.startTime)
-        Duration.between(startTime, clock.instant()).toMillis() > timeout
+        val pausedDuration = stage.getExecution().pausedDuration()
+        Duration
+          .between(startTime, clock.instant())
+          .minus(pausedDuration)
+          .toMillis() > timeout
       }
       else -> false
     }
+
+  private fun Execution<*>.pausedDuration() =
+    Duration.ofMillis(getPaused()?.pausedMs ?: 0)
 
   private fun Stage<*>.processTaskOutput(result: TaskResult) {
     if (result.stageOutputs.isNotEmpty()) {
