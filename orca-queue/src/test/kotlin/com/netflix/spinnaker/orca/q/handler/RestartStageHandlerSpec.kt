@@ -31,15 +31,12 @@ import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 import java.time.Clock.fixed
 import java.time.Instant.now
 import java.time.ZoneId.systemDefault
 import java.time.temporal.ChronoUnit.HOURS
 import java.time.temporal.ChronoUnit.MINUTES
 
-@RunWith(JUnitPlatform::class)
 class RestartStageHandlerSpec : Spek({
 
   val queue: Queue = mock()

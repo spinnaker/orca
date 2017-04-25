@@ -88,6 +88,17 @@ data class PauseTask(
     this(message.executionType, message.executionId, message.application, message.stageId, message.taskId)
 }
 
+data class ResumeTask(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String,
+  override val taskId: String
+) : Message(), TaskLevel {
+  constructor(message: StageLevel, taskId: String) :
+    this(message.executionType, message.executionId, message.application, message.stageId, taskId)
+}
+
 data class RunTask(
   override val executionType: Class<out Execution<*>>,
   override val executionId: String,
@@ -133,12 +144,45 @@ data class CompleteStage(
     this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId(), status)
 }
 
+data class PauseStage(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String
+) : Message(), StageLevel {
+  constructor(source: StageLevel) :
+    this(source, source.stageId)
+
+  constructor(source: ExecutionLevel, stageId: String) :
+    this(source.executionType, source.executionId, source.application, stageId)
+}
+
 data class RestartStage(
   override val executionType: Class<out Execution<*>>,
   override val executionId: String,
   override val application: String,
   override val stageId: String
 ) : Message(), StageLevel
+
+data class ResumeStage(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String
+) : Message(), StageLevel {
+  constructor(source: ExecutionLevel, stageId: String) :
+    this(source.executionType, source.executionId, source.application, stageId)
+}
+
+data class CancelStage(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String
+) : Message(), StageLevel {
+  constructor(source: StageLevel) :
+    this(source.executionType, source.executionId, source.application, source.stageId)
+}
 
 data class StartExecution(
   override val executionType: Class<out Execution<*>>,
@@ -159,28 +203,11 @@ data class CompleteExecution(
     this(source.javaClass, source.getId(), source.getApplication(), status)
 }
 
-data class CancelStage(
+data class ResumeExecution(
   override val executionType: Class<out Execution<*>>,
   override val executionId: String,
-  override val application: String,
-  override val stageId: String
-) : Message(), StageLevel {
-  constructor(source: StageLevel) :
-    this(source.executionType, source.executionId, source.application, source.stageId)
-}
-
-data class PauseStage(
-  override val executionType: Class<out Execution<*>>,
-  override val executionId: String,
-  override val application: String,
-  override val stageId: String
-) : Message(), StageLevel {
-  constructor(source: StageLevel) :
-    this(source, source.stageId)
-
-  constructor(source: ExecutionLevel, stageId: String) :
-    this(source.executionType, source.executionId, source.application, stageId)
-}
+  override val application: String
+) : Message(), ExecutionLevel
 
 /**
  * Fatal errors in processing the execution configuration.

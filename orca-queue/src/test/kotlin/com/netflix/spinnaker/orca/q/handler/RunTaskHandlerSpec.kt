@@ -30,13 +30,10 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 import org.threeten.extra.Minutes
 import java.lang.RuntimeException
 import java.time.Duration
 
-@RunWith(JUnitPlatform::class)
 class RunTaskHandlerSpec : Spek({
 
   val queue: Queue = mock()

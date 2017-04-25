@@ -28,11 +28,8 @@ import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
 import org.springframework.context.ApplicationEventPublisher
 
-@RunWith(JUnitPlatform::class)
 class CompleteExecutionHandlerSpec : Spek({
 
   val queue: Queue = mock()
