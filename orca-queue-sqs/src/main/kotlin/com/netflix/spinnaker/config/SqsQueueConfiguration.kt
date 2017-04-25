@@ -41,7 +41,6 @@ open class SqsQueueConfiguration {
       .build()
   }
 
-  @Bean
-  @Primary
+  @Bean(name = arrayOf("queueImpl"))
   open fun sqsQueue(amazonSqs: AmazonSQS, sqsProperties: SqsProperties): Queue = SqsQueue(amazonSqs, sqsProperties)
 }

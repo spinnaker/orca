@@ -37,7 +37,7 @@ open class QueueConfiguration {
   @Bean @ConditionalOnMissingBean(Clock::class)
   open fun systemClock(): Clock = Clock.systemDefaultZone()
 
-  @Bean @ConditionalOnMissingBean(Queue::class)
+  @Bean(name = arrayOf("queueImpl")) @ConditionalOnMissingBean(Queue::class)
   open fun inMemoryQueue(clock: Clock): Queue = InMemoryQueue(clock)
 
   @Bean @ConditionalOnMissingBean(ExecutionLogRepository::class)

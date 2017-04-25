@@ -31,7 +31,7 @@ import java.time.Clock
 @ConditionalOnExpression("\${queue.redis.enabled:true}")
 @EnableConfigurationProperties(RedisQueueProperties::class)
 open class RedisQueueConfiguration {
-  @Bean open fun redisQueue(
+  @Bean(name = arrayOf("queueImpl")) open fun redisQueue(
     @Qualifier("jedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
