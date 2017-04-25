@@ -28,9 +28,13 @@ import org.springframework.stereotype.Component
   override fun engine(): ExecutionEngine = ExecutionEngine.v3
 
   override fun <T : Execution<T>> start(execution: T) =
-    queue.push(StartExecution(execution.javaClass, execution.id, execution.application))
+    queue.push(StartExecution(execution))
 
   override fun <T : Execution<T>> resume(execution: T, stageId: String) {
-    queue.push(RestartStage(execution.javaClass, execution.id, execution.application, stageId))
+    queue.push(RestartStage(execution, stageId))
+  }
+
+  override fun <T : Execution<T>> unpause(execution: T) {
+    queue.push(ResumeExecution(execution))
   }
 }

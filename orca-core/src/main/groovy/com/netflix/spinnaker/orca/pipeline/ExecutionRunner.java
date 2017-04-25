@@ -32,6 +32,10 @@ public interface ExecutionRunner {
     throw new UnsupportedOperationException();
   }
 
+  default <T extends Execution<T>> void unpause(T execution) throws Exception {
+    throw new UnsupportedOperationException();
+  }
+
   ExecutionEngine engine();
 
   class NoSuchStageDefinitionBuilder extends RuntimeException {

@@ -109,6 +109,9 @@ data class RunTask(
 ) : Message(), TaskLevel {
   constructor(message: StageLevel, taskId: String, taskType: Class<out Task>) :
     this(message.executionType, message.executionId, message.application, message.stageId, taskId, taskType)
+
+  constructor(message: TaskLevel, taskType: Class<out Task>) :
+    this(message.executionType, message.executionId, message.application, message.stageId, message.taskId, taskType)
 }
 
 data class StartStage(
@@ -162,7 +165,10 @@ data class RestartStage(
   override val executionId: String,
   override val application: String,
   override val stageId: String
-) : Message(), StageLevel
+) : Message(), StageLevel {
+  constructor(source: Execution<*>, stageId: String) :
+    this(source.javaClass, source.getId(), source.getApplication(), stageId)
+}
 
 data class ResumeStage(
   override val executionType: Class<out Execution<*>>,
@@ -188,7 +194,10 @@ data class StartExecution(
   override val executionType: Class<out Execution<*>>,
   override val executionId: String,
   override val application: String
-) : Message(), ExecutionLevel
+) : Message(), ExecutionLevel {
+  constructor(source: Execution<*>) :
+    this(source.javaClass, source.getId(), source.getApplication())
+}
 
 data class CompleteExecution(
   override val executionType: Class<out Execution<*>>,
@@ -207,7 +216,10 @@ data class ResumeExecution(
   override val executionType: Class<out Execution<*>>,
   override val executionId: String,
   override val application: String
-) : Message(), ExecutionLevel
+) : Message(), ExecutionLevel {
+  constructor(source: Execution<*>) :
+    this(source.javaClass, source.getId(), source.getApplication())
+}
 
 /**
  * Fatal errors in processing the execution configuration.

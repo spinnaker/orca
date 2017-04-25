@@ -204,6 +204,10 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void resume(@PathVariable String id) {
     executionRepository.resume(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"))
+    def pipeline = executionRepository.retrievePipeline(id)
+    if (pipeline.executionEngine == v3) {
+      executionRunners.find { it.engine() == v3 }.unpause(pipeline)
+    }
   }
 
   @PreAuthorize("@fiatPermissionEvaluator.storeWholePermission()")
