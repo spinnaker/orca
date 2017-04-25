@@ -47,8 +47,7 @@ class PauseTaskHandlerSpec : Spek({
     val message = PauseTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId))
-        .thenReturn(pipeline)
+      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

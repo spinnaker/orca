@@ -48,8 +48,7 @@ class CompleteExecutionHandlerSpec : Spek({
     val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId))
-        .thenReturn(pipeline)
+      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -69,8 +68,7 @@ class CompleteExecutionHandlerSpec : Spek({
       val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", status)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -91,8 +89,7 @@ class CompleteExecutionHandlerSpec : Spek({
       val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", status)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -122,8 +119,7 @@ class CompleteExecutionHandlerSpec : Spek({
     val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId))
-        .thenReturn(pipeline)
+      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -148,8 +144,7 @@ class CompleteExecutionHandlerSpec : Spek({
     val message = CompleteExecution(Pipeline::class.java, pipeline.id, "foo", SUCCEEDED)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId))
-        .thenReturn(pipeline)
+      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

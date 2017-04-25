@@ -68,8 +68,7 @@ class MessageHandlerSpec : Spek({
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        whenever(handleCallback.invoke(any()))
-          .thenThrow(RuntimeException("o noes"))
+        whenever(handleCallback.invoke(any())) doThrow RuntimeException("o noes")
       }
 
       afterGroup(::resetMocks)

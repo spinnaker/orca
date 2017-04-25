@@ -64,9 +64,8 @@ class RunTaskHandlerSpec : Spek({
       val taskResult = TaskResult(SUCCEEDED)
 
       beforeGroup {
-        whenever(task.execute(any<Stage<*>>())).thenReturn(taskResult)
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(task.execute(any<Stage<*>>())) doReturn taskResult
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -102,10 +101,9 @@ class RunTaskHandlerSpec : Spek({
       val taskBackoffMs = 30_000L
 
       beforeGroup {
-        whenever(task.execute(any())).thenReturn(taskResult)
-        whenever(task.backoffPeriod).thenReturn(taskBackoffMs)
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(task.execute(any())) doReturn taskResult
+        whenever(task.backoffPeriod) doReturn taskBackoffMs
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -135,9 +133,8 @@ class RunTaskHandlerSpec : Spek({
 
       context("no overrides are in place") {
         beforeGroup {
-          whenever(task.execute(any())).thenReturn(taskResult)
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(task.execute(any())) doReturn taskResult
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -157,9 +154,8 @@ class RunTaskHandlerSpec : Spek({
         beforeGroup {
           pipeline.stages.first().context["failPipeline"] = false
 
-          whenever(task.execute(any())).thenReturn(taskResult)
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(task.execute(any())) doReturn taskResult
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -180,9 +176,8 @@ class RunTaskHandlerSpec : Spek({
         beforeGroup {
           pipeline.stages.first().context["continuePipeline"] = true
 
-          whenever(task.execute(any())).thenReturn(taskResult)
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(task.execute(any())) doReturn taskResult
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -222,9 +217,8 @@ class RunTaskHandlerSpec : Spek({
         )
 
         beforeGroup {
-          whenever(task.execute(any())).thenThrow(RuntimeException("o noes"))
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(task.execute(any())) doThrow RuntimeException("o noes")
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
           whenever(exceptionHandler.handles(any())) doReturn true
           whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
         }
@@ -292,8 +286,7 @@ class RunTaskHandlerSpec : Spek({
       val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -409,10 +402,9 @@ class RunTaskHandlerSpec : Spek({
       val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
 
-        whenever(task.timeout).thenReturn(timeout.toMillis())
+        whenever(task.timeout) doReturn timeout.toMillis()
       }
 
       afterGroup(::resetMocks)
@@ -449,9 +441,8 @@ class RunTaskHandlerSpec : Spek({
       val taskResult = TaskResult(SUCCEEDED)
 
       beforeGroup {
-        whenever(task.execute(any<Stage<*>>())).thenReturn(taskResult)
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(task.execute(any<Stage<*>>())) doReturn taskResult
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -481,8 +472,7 @@ class RunTaskHandlerSpec : Spek({
     val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", InvalidTask::class.java)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId))
-        .thenReturn(pipeline)
+      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

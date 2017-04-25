@@ -48,7 +48,7 @@ class RateLimitedQueueSpec : Spek({
 
     describe("when rate limiter disabled") {
       beforeGroup {
-        whenever(backend.getRate(any<String>())).thenReturn(Rate(false, 0, 0))
+        whenever(backend.getRate(any<String>())) doReturn Rate(false, 0, 0)
         whenever(backingQueue.poll(any())).then {
           @Suppress("UNCHECKED_CAST")
           val callback = it.arguments.first() as QueueCallback
@@ -73,7 +73,7 @@ class RateLimitedQueueSpec : Spek({
 
     describe("when rate limiter enabled") {
       beforeGroup {
-        whenever(backend.getRate(any<String>())).thenReturn(Rate(true, 0, 0))
+        whenever(backend.getRate(any<String>())) doReturn Rate(true, 0, 0)
         whenever(backingQueue.poll(any())).then {
           @Suppress("UNCHECKED_CAST")
           val callback = it.arguments.first() as QueueCallback

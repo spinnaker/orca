@@ -87,8 +87,8 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout).thenReturn(2000L)
-    whenever(dummyTask.execute(any())).thenReturn(TaskResult.SUCCEEDED)
+    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start)
 
@@ -126,7 +126,7 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.execute(any())).thenReturn(TaskResult(TERMINAL))
+    whenever(dummyTask.execute(any())) doReturn TaskResult(TERMINAL)
 
     context.runToCompletion(pipeline, runner::start)
 
@@ -163,10 +163,8 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.execute(argThat { getRefId() == "2a1" }))
-      .thenReturn(TaskResult(TERMINAL))
-    whenever(dummyTask.execute(argThat { getRefId() != "2a1" }))
-      .thenReturn(TaskResult.SUCCEEDED)
+    whenever(dummyTask.execute(argThat { getRefId() == "2a1" })) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(argThat { getRefId() != "2a1" })) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start)
 
@@ -209,11 +207,9 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout).thenReturn(2000L)
-    whenever(dummyTask.execute(argThat { getRefId() == "2a1" }))
-      .thenReturn(TaskResult(TERMINAL))
-    whenever(dummyTask.execute(argThat { getRefId() != "2a1" }))
-      .thenReturn(TaskResult.SUCCEEDED)
+    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.execute(argThat { getRefId() == "2a1" })) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(argThat { getRefId() != "2a1" })) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start)
 
@@ -257,11 +253,9 @@ class SpringIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout).thenReturn(2000L)
-    whenever(dummyTask.execute(argThat { getRefId() == "2a1" }))
-      .thenReturn(TaskResult(TERMINAL))
-    whenever(dummyTask.execute(argThat { getRefId() != "2a1" }))
-      .thenReturn(TaskResult.SUCCEEDED)
+    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.execute(argThat { getRefId() == "2a1" })) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(argThat { getRefId() != "2a1" })) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start)
 

@@ -404,8 +404,7 @@ class CompleteStageHandlerSpec : Spek({
       val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages[0].id, SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -438,8 +437,7 @@ class CompleteStageHandlerSpec : Spek({
           }
         }
 
-        whenever(repository.retrievePipeline(pipeline.id))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

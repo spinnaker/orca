@@ -51,8 +51,7 @@ class StartExecutionHandlerSpec : Spek({
       val message = StartExecution(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -94,8 +93,7 @@ class StartExecutionHandlerSpec : Spek({
       val message = StartExecution(Pipeline::class.java, pipeline.id, "foo")
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

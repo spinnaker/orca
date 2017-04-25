@@ -59,8 +59,7 @@ class CompleteTaskHandlerSpec : Spek({
       val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -111,8 +110,7 @@ class CompleteTaskHandlerSpec : Spek({
       val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -154,8 +152,7 @@ class CompleteTaskHandlerSpec : Spek({
       val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -204,8 +201,7 @@ class CompleteTaskHandlerSpec : Spek({
             tasks[2].status = SUCCEEDED
           }
 
-          whenever(repository.retrievePipeline(pipeline.id))
-            .thenReturn(pipeline)
+          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -246,8 +242,7 @@ class CompleteTaskHandlerSpec : Spek({
       val message = CompleteTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", status)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

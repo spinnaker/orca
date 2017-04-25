@@ -27,7 +27,6 @@ import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.q.Message.*
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
@@ -52,8 +51,8 @@ class ExecutionWorkerSpec : Spek({
     fun resetMocks() = reset(queue, startExecutionHandler, completeExecutionHandler)
 
     beforeGroup {
-      whenever(startExecutionHandler.messageType).thenReturn(StartExecution::class.java)
-      whenever(completeExecutionHandler.messageType).thenReturn(CompleteExecution::class.java)
+      whenever(startExecutionHandler.messageType) doReturn StartExecution::class.java
+      whenever(completeExecutionHandler.messageType) doReturn CompleteExecution::class.java
 
       worker = ExecutionWorker(
         queue,

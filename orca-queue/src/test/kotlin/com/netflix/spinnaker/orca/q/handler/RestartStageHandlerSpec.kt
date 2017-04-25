@@ -77,8 +77,7 @@ class RestartStageHandlerSpec : Spek({
         val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -126,8 +125,7 @@ class RestartStageHandlerSpec : Spek({
       val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("2").id)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -229,8 +227,7 @@ class RestartStageHandlerSpec : Spek({
     val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId))
-        .thenReturn(pipeline)
+      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -303,8 +300,7 @@ class RestartStageHandlerSpec : Spek({
     val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId))
-        .thenReturn(pipeline)
+      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
