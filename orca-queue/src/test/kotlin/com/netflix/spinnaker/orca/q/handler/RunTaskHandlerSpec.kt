@@ -334,8 +334,7 @@ class RunTaskHandlerSpec : Spek({
       val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -344,7 +343,7 @@ class RunTaskHandlerSpec : Spek({
         handler.handle(message)
       }
 
-      it("emits an event indicating that the task was canceled") {
+      it("marks the task as canceled") {
         verify(queue).push(CompleteTask(
           message.executionType,
           message.executionId,
@@ -353,6 +352,40 @@ class RunTaskHandlerSpec : Spek({
           message.taskId,
           CANCELED
         ))
+      }
+
+      it("does not execute the task") {
+        verifyZeroInteractions(task)
+      }
+    }
+
+    describe("when the execution has been paused") {
+      val pipeline = pipeline {
+        status = PAUSED
+        stage {
+          type = "whatever"
+          status = RUNNING
+          task {
+            id = "1"
+            implementingClass = DummyTask::class.qualifiedName
+            startTime = clock.instant().toEpochMilli()
+          }
+        }
+      }
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
+
+      beforeGroup {
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        handler.handle(message)
+      }
+
+      it("marks the task as paused") {
+        verify(queue).push(PauseTask(message))
       }
 
       it("does not execute the task") {

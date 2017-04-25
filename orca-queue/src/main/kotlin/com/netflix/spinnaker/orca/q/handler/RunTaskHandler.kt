@@ -53,6 +53,8 @@ open class RunTaskHandler
       val execution = stage.getExecution()
       if (execution.isCanceled() || execution.getStatus().complete) {
         queue.push(CompleteTask(message, CANCELED))
+      } else if (execution.getStatus() == PAUSED) {
+        queue.push(PauseTask(message))
       } else if (task.isTimedOut(stage, message)) {
         // TODO: probably want something specific in the execution log
         queue.push(CompleteTask(message, TERMINAL))

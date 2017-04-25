@@ -56,8 +56,7 @@ class CompleteStageHandlerSpec : Spek({
         val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, status)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -112,8 +111,7 @@ class CompleteStageHandlerSpec : Spek({
         val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, status)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -164,8 +162,7 @@ class CompleteStageHandlerSpec : Spek({
         val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, status)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId))
-            .thenReturn(pipeline)
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -201,8 +198,7 @@ class CompleteStageHandlerSpec : Spek({
       val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, status)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
+        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -261,8 +257,7 @@ class CompleteStageHandlerSpec : Spek({
         context("there are more before stages") {
           val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, SUCCEEDED)
           beforeGroup {
-            whenever(repository.retrievePipeline(pipeline.id))
-              .thenReturn(pipeline)
+            whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -284,8 +279,7 @@ class CompleteStageHandlerSpec : Spek({
         context("it is the last before stage") {
           val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages[1].id, SUCCEEDED)
           beforeGroup {
-            whenever(repository.retrievePipeline(pipeline.id))
-              .thenReturn(pipeline)
+            whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -319,8 +313,7 @@ class CompleteStageHandlerSpec : Spek({
         context("there are more after stages") {
           val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages[1].id, SUCCEEDED)
           beforeGroup {
-            whenever(repository.retrievePipeline(pipeline.id))
-              .thenReturn(pipeline)
+            whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -342,8 +335,7 @@ class CompleteStageHandlerSpec : Spek({
         context("it is the last after stage") {
           val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.last().id, SUCCEEDED)
           beforeGroup {
-            whenever(repository.retrievePipeline(pipeline.id))
-              .thenReturn(pipeline)
+            whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -365,34 +357,35 @@ class CompleteStageHandlerSpec : Spek({
       }
     }
 
-    context("when a synthetic stage fails") {
-      val pipeline = pipeline {
-        application = "foo"
-        stage {
-          refId = "1"
-          type = stageWithSyntheticBefore.type
-          stageWithSyntheticBefore.buildSyntheticStages(this)
+    setOf(TERMINAL, CANCELED).forEach { status ->
+      context("when a synthetic stage ends with $status status") {
+        val pipeline = pipeline {
+          application = "foo"
+          stage {
+            refId = "1"
+            type = stageWithSyntheticBefore.type
+            stageWithSyntheticBefore.buildSyntheticStages(this)
+          }
         }
-      }
-      val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1<1").id, TERMINAL)
+        val message = CompleteStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1<1").id, status)
 
-      beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId))
-          .thenReturn(pipeline)
-      }
+        beforeGroup {
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        }
 
-      action("the handler receives a message") {
-        handler.handle(message)
-      }
+        action("the handler receives a message") {
+          handler.handle(message)
+        }
 
-      afterGroup(::resetMocks)
+        afterGroup(::resetMocks)
 
-      it("rolls the failure up to the parent stage") {
-        verify(queue).push(message.copy(stageId = pipeline.stageByRef("1").id))
-      }
+        it("rolls up to the parent stage") {
+          verify(queue).push(message.copy(stageId = pipeline.stageByRef("1").id))
+        }
 
-      it("runs the stage's cancel routine") {
-        verify(queue).push(CancelStage(message))
+        it("runs the stage's cancel routine") {
+          verify(queue).push(CancelStage(message))
+        }
       }
     }
   }

@@ -77,6 +77,17 @@ data class CompleteTask(
     this(source.executionType, source.executionId, source.application, source.stageId, source.taskId, status)
 }
 
+data class PauseTask(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String,
+  override val taskId: String
+) : Message(), TaskLevel {
+  constructor(message: TaskLevel) :
+    this(message.executionType, message.executionId, message.application, message.stageId, message.taskId)
+}
+
 data class RunTask(
   override val executionType: Class<out Execution<*>>,
   override val executionId: String,
@@ -156,6 +167,19 @@ data class CancelStage(
 ) : Message(), StageLevel {
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
+}
+
+data class PauseStage(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String
+) : Message(), StageLevel {
+  constructor(source: StageLevel) :
+    this(source, source.stageId)
+
+  constructor(source: ExecutionLevel, stageId: String) :
+    this(source.executionType, source.executionId, source.application, stageId)
 }
 
 /**
