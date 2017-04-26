@@ -33,7 +33,7 @@ import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 
-class ExecutionWorkerSpec : Spek({
+class QueueProcessorSpec : Spek({
   describe("execution workers") {
     val queue: Queue = mock()
     val startExecutionHandler: MessageHandler<StartExecution> = mock()
@@ -43,7 +43,7 @@ class ExecutionWorkerSpec : Spek({
       on { counter(any<Id>()) }.thenReturn(mock<Counter>())
     }
 
-    var worker: ExecutionWorker? = null
+    var queueProcessor: QueueProcessor? = null
 
     fun resetMocks() = reset(queue, startExecutionHandler, completeExecutionHandler)
 
@@ -51,7 +51,7 @@ class ExecutionWorkerSpec : Spek({
       whenever(startExecutionHandler.messageType) doReturn StartExecution::class.java
       whenever(completeExecutionHandler.messageType) doReturn CompleteExecution::class.java
 
-      worker = ExecutionWorker(
+      queueProcessor = QueueProcessor(
         queue,
         directExecutor(),
         registry,
@@ -61,13 +61,13 @@ class ExecutionWorkerSpec : Spek({
 
     describe("when disabled in discovery") {
       beforeGroup {
-        worker!!.onApplicationEvent(RemoteStatusChangedEvent(StatusChangeEvent(UP, OUT_OF_SERVICE)))
+        queueProcessor!!.onApplicationEvent(RemoteStatusChangedEvent(StatusChangeEvent(UP, OUT_OF_SERVICE)))
       }
 
       afterGroup(::resetMocks)
 
       action("the worker runs") {
-        worker!!.pollOnce()
+        queueProcessor!!.pollOnce()
       }
 
       it("does not poll the queue") {
@@ -79,7 +79,7 @@ class ExecutionWorkerSpec : Spek({
       val instanceUpEvent = RemoteStatusChangedEvent(StatusChangeEvent(OUT_OF_SERVICE, UP))
 
       beforeGroup {
-        worker!!.onApplicationEvent(instanceUpEvent)
+        queueProcessor!!.onApplicationEvent(instanceUpEvent)
       }
 
       describe("when a message is on the queue") {
@@ -97,7 +97,7 @@ class ExecutionWorkerSpec : Spek({
           afterGroup(::resetMocks)
 
           action("the worker polls the queue") {
-            worker!!.pollOnce()
+            queueProcessor!!.pollOnce()
           }
 
           it("passes the message to the correct handler") {
@@ -123,7 +123,7 @@ class ExecutionWorkerSpec : Spek({
           afterGroup(::resetMocks)
 
           action("the worker polls the queue") {
-            assertThat({ worker!!.pollOnce() }, throws<IllegalStateException>())
+            assertThat({ queueProcessor!!.pollOnce() }, throws<IllegalStateException>())
           }
 
           it("does not invoke any handlers") {

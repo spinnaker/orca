@@ -294,23 +294,24 @@ open class TestConfig {
     override fun getType() = "dummy"
   }
 
-  @Bean open fun stupidPretendScheduler(worker: ExecutionWorker): Any = object : InitializingBean, DisposableBean {
-    private val running = AtomicBoolean(false)
+  @Bean open fun stupidPretendScheduler(queueProcessor: QueueProcessor): Any =
+    object : InitializingBean, DisposableBean {
+      private val running = AtomicBoolean(false)
 
-    override fun afterPropertiesSet() {
-      running.set(true)
-      Thread(Runnable {
-        while (running.get()) {
-          worker.pollOnce()
-          sleep(10)
-        }
-      }).start()
-    }
+      override fun afterPropertiesSet() {
+        running.set(true)
+        Thread(Runnable {
+          while (running.get()) {
+            queueProcessor.pollOnce()
+            sleep(10)
+          }
+        }).start()
+      }
 
-    override fun destroy() {
-      running.set(false)
+      override fun destroy() {
+        running.set(false)
+      }
     }
-  }
 
   @Bean open fun currentInstanceId() = "localhost"
 

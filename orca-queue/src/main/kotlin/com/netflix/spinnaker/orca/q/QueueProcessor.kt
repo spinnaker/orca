@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.PostConstruct
 
 @Component
-open class ExecutionWorker
+open class QueueProcessor
 @Autowired constructor(
   private val queue: Queue,
   @Qualifier("messageHandlerPool") private val executor: Executor,
