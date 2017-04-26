@@ -88,13 +88,6 @@ fun Stage<out Execution<*>>.task(taskId: String) =
   getTasks().find { it.id == taskId } ?: throw IllegalArgumentException("No such task")
 
 /**
- * @return the stage with the specified [id].
- * @throws IllegalArgumentException if there is no such stage.
- */
-fun <T : Execution<T>> Execution<T>.stageById(id: String) =
-  stages.find { it.id == id } ?: throw IllegalArgumentException("No such stage")
-
-/**
  * @return the stage with the specified [refId].
  * @throws IllegalArgumentException if there is no such stage.
  */

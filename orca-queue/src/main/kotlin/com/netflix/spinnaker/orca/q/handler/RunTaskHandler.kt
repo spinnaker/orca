@@ -45,7 +45,7 @@ open class RunTaskHandler
   private val tasks: Collection<Task>,
   private val clock: Clock,
   private val exceptionHandlers: Collection<ExceptionHandler<in Exception>>
-) : MessageHandler<RunTask>, QueueProcessor {
+) : MessageHandler<RunTask> {
 
   private val log: Logger = getLogger(javaClass)
 

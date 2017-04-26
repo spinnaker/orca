@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component
 open class ResumeStageHandler
 @Autowired constructor(
   override val queue: Queue, override val repository: ExecutionRepository
-) : MessageHandler<ResumeStage>, QueueProcessor {
+) : MessageHandler<ResumeStage> {
 
   override val messageType = ResumeStage::class.java
 

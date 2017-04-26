@@ -17,27 +17,31 @@
 package com.netflix.spinnaker.orca.q
 
 import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.isA
 import com.natpryce.hamkrest.throws
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.nhaarman.mockito_kotlin.*
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.reset
+import com.nhaarman.mockito_kotlin.verifyZeroInteractions
 import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 
 class MessageHandlerSpec : Spek({
 
   val queue: Queue = mock()
+  val repository: ExecutionRepository = mock()
   val handleCallback: (Message) -> Unit = mock()
 
   val handler = object : MessageHandler<StartExecution> {
     override val queue
       get() = queue
 
-    override val messageType
-      get() = StartExecution::class.java
+    override val repository
+      get() = repository
+
+    override val messageType = StartExecution::class.java
 
     override fun handle(message: StartExecution) {
       handleCallback.invoke(message)
@@ -46,53 +50,20 @@ class MessageHandlerSpec : Spek({
 
   fun resetMocks() = reset(queue, handleCallback)
 
-  describe("message acknowledgment") {
-    context("when a message is processed successfully") {
-      val message = StartExecution(Pipeline::class.java, "1", "foo")
+  describe("when the handler is passed the wrong type of message") {
+    val message = CompleteExecution(Pipeline::class.java, "1", "foo", SUCCEEDED)
 
-      afterGroup(::resetMocks)
+    afterGroup(::resetMocks)
 
-      action("a message is handled") {
-        handler.invoke(message)
-      }
-
-      it("invokes the handler") {
-        verify(handleCallback).invoke(message)
-      }
+    action("a message is handled") {
+      assertThat(
+        { handler.invoke(message) },
+        throws<IllegalArgumentException>()
+      )
     }
 
-    context("when the handler throws an exception") {
-      val message = StartExecution(Pipeline::class.java, "1", "foo")
-
-      beforeGroup {
-        whenever(handleCallback.invoke(any())) doThrow RuntimeException("o noes")
-      }
-
-      afterGroup(::resetMocks)
-
-      action("a message is handled") {
-        assertThat(
-          { handler.invoke(message) },
-          throws(isA<RuntimeException>())
-        )
-      }
-    }
-
-    context("when the handler is passed the wrong type of message") {
-      val message = CompleteExecution(Pipeline::class.java, "1", "foo", SUCCEEDED)
-
-      afterGroup(::resetMocks)
-
-      action("a message is handled") {
-        assertThat(
-          { handler.invoke(message) },
-          throws<IllegalArgumentException>()
-        )
-      }
-
-      it("does not invoke the handler") {
-        verifyZeroInteractions(handleCallback)
-      }
+    it("does not invoke the handler") {
+      verifyZeroInteractions(handleCallback)
     }
   }
 })

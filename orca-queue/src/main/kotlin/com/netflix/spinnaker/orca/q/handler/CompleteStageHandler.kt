@@ -35,7 +35,7 @@ open class CompleteStageHandler
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<CompleteStage>, QueueProcessor {
+) : MessageHandler<CompleteStage> {
 
   override fun handle(message: CompleteStage) {
     message.withStage { stage ->

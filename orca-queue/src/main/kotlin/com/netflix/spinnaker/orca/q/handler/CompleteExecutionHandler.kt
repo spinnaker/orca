@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component
 open class CompleteExecutionHandler
 @Autowired constructor(
   override val queue: Queue,
-  private val repository: ExecutionRepository,
+  override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher
 ) : MessageHandler<CompleteExecution> {
 

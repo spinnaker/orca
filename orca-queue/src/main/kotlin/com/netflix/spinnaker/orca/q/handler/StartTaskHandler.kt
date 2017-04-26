@@ -33,7 +33,7 @@ open class StartTaskHandler
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<StartTask>, QueueProcessor {
+) : MessageHandler<StartTask> {
 
   override fun handle(message: StartTask) {
     message.withStage { stage ->

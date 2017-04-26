@@ -32,7 +32,7 @@ open class ResumeTaskHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository
-) : MessageHandler<ResumeTask>, QueueProcessor {
+) : MessageHandler<ResumeTask> {
 
   override val messageType = ResumeTask::class.java
 

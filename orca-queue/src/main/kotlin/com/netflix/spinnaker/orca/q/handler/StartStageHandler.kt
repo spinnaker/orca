@@ -39,7 +39,7 @@ open class StartStageHandler @Autowired constructor(
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock,
   private val contextParameterProcessor: ContextParameterProcessor
-) : MessageHandler<StartStage>, QueueProcessor, StageBuilderAware {
+) : MessageHandler<StartStage>, StageBuilderAware {
 
   override fun handle(message: StartStage) {
     message.withStage { stage ->

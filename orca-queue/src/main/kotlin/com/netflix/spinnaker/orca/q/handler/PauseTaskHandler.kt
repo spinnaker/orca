@@ -27,7 +27,7 @@ open class PauseTaskHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository
-) : MessageHandler<PauseTask>, QueueProcessor {
+) : MessageHandler<PauseTask> {
 
   override val messageType = PauseTask::class.java
 

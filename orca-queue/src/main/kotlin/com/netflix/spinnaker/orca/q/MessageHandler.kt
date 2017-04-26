@@ -16,6 +16,13 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+
 /**
  * Implementations handle a single message type from the queue.
  */
@@ -23,6 +30,7 @@ interface MessageHandler<M : Message> : (Message) -> Unit {
 
   val messageType: Class<M>
   val queue: Queue
+  val repository: ExecutionRepository
 
   override fun invoke(message: Message): Unit =
     when (message.javaClass) {
@@ -35,4 +43,40 @@ interface MessageHandler<M : Message> : (Message) -> Unit {
     }
 
   fun handle(message: M): Unit
+
+  fun StageLevel.withStage(block: (Stage<*>) -> Unit) =
+    withExecution { execution ->
+      execution
+        .getStages()
+        .find { it.getId() == stageId }
+        .let { stage ->
+          if (stage == null) {
+            queue.push(InvalidStageId(this))
+          } else {
+            block.invoke(stage)
+          }
+        }
+    }
+
+  fun ExecutionLevel.withExecution(block: (Execution<*>) -> Unit) =
+    try {
+      val execution = when (executionType) {
+        Pipeline::class.java ->
+          repository.retrievePipeline(executionId)
+        Orchestration::class.java ->
+          repository.retrieveOrchestration(executionId)
+        else ->
+          throw IllegalArgumentException("Unknown execution type $executionType")
+      }
+      block.invoke(execution)
+    } catch(e: ExecutionNotFoundException) {
+      queue.push(InvalidExecutionId(this))
+    }
+
+  fun Execution<*>.update() {
+    when (this) {
+      is Pipeline -> repository.store(this)
+      is Orchestration -> repository.store(this)
+    }
+  }
 }

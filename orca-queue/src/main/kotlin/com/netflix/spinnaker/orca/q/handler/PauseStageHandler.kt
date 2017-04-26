@@ -29,7 +29,7 @@ open class PauseStageHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository
-) : MessageHandler<PauseStage>, QueueProcessor {
+) : MessageHandler<PauseStage> {
 
   override val messageType = PauseStage::class.java
 

@@ -30,7 +30,7 @@ open class StartExecutionHandler
   override val queue: Queue,
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher
-) : MessageHandler<StartExecution>, QueueProcessor {
+) : MessageHandler<StartExecution> {
 
   override val messageType = StartExecution::class.java
 

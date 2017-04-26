@@ -34,7 +34,7 @@ open class CancelStageHandler
   override val repository: ExecutionRepository,
   override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
   @Qualifier("messageHandlerPool") private val executor: Executor
-) : MessageHandler<CancelStage>, QueueProcessor, StageBuilderAware {
+) : MessageHandler<CancelStage>, StageBuilderAware {
 
   override val messageType = CancelStage::class.java
 

@@ -37,7 +37,7 @@ open class RestartStageHandler
   override val repository: ExecutionRepository,
   override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
   private val clock: Clock
-) : MessageHandler<RestartStage>, QueueProcessor, StageBuilderAware {
+) : MessageHandler<RestartStage>, StageBuilderAware {
 
   override val messageType = RestartStage::class.java
 
