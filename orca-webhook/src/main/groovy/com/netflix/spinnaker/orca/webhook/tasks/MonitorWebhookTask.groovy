@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.webhook.WebhookService
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -49,8 +48,10 @@ class MonitorWebhookTask implements Task {
     String successStatuses = stage.context.successStatuses
     String canceledStatuses = stage.context.canceledStatuses
     String terminalStatuses = stage.context.terminalStatuses
+    List<Map<String, String>> headers = stage.context.headers ? (stage.context.headers as List<Map<String, String>>) : []
 
-    def response = webhookService.getStatus(statusEndpoint)
+    def response = webhookService.getStatus(statusEndpoint, headers)
+
     def result
     try {
       result = JsonPath.read(response.body, statusJsonPath)
@@ -58,6 +59,10 @@ class MonitorWebhookTask implements Task {
       return new TaskResult(ExecutionStatus.TERMINAL,
         [error: [reason: e.message, response: response.body]])
     }
+
+    if (isSingleElementCollection(result))
+      result = ((List) result).get(0)
+
     if (!(result instanceof String || result instanceof Number || result instanceof Boolean)) {
       return new TaskResult(ExecutionStatus.TERMINAL,
         [error: [reason: "The json path '${statusJsonPath}' did not resolve to a single value", value: result]])
@@ -73,6 +78,10 @@ class MonitorWebhookTask implements Task {
         return new TaskResult(ExecutionStatus.TERMINAL,
           [error: [reason: e.message, response: response.body]])
       }
+
+      if (isSingleElementCollection(progress))
+        progress = ((List) progress).get(0)
+
       if (!(progress instanceof String)) {
         return new TaskResult(ExecutionStatus.TERMINAL,
           [error: [reason: "The json path '${progressJsonPath}' did not resolve to a String value", value: progress]])
@@ -108,5 +117,9 @@ class MonitorWebhookTask implements Task {
 
   private static Map mapStatuses(String statuses, ExecutionStatus status) {
     statuses.split(",").collectEntries { [(it.trim().toUpperCase()): status] }
+  }
+
+  private static boolean isSingleElementCollection(result) {
+    result instanceof List && ((List) result).size() == 1
   }
 }

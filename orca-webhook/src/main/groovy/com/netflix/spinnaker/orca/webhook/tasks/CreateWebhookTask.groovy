@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.webhook.WebhookService
-import groovy.transform.CompileStatic
 import org.apache.http.HttpHeaders
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod
@@ -45,8 +44,9 @@ class CreateWebhookTask implements RetryableTask {
     def method = stage.context.method ? HttpMethod.valueOf(stage.context.method.toString().toUpperCase()) : HttpMethod.POST
     def payload = stage.context.payload
     boolean waitForCompletion = (stage.context.waitForCompletion as String)?.toBoolean()
+    List<Map<String, String>> headers = stage.context.headers ? (stage.context.headers as List<Map<String, String>>) : []
 
-    def response = webhookService.exchange(method, url, payload)
+    def response = webhookService.exchange(method, url, payload, headers)
 
     def outputs = [:]
     outputs << [statusCode: response.statusCode]
