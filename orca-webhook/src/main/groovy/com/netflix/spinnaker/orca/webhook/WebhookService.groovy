@@ -20,9 +20,11 @@ package com.netflix.spinnaker.orca.webhook
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import org.springframework.util.MultiValueMap
 import org.springframework.web.client.RestTemplate
 
 @Service
@@ -34,14 +36,27 @@ class WebhookService {
   @Autowired
   UserConfiguredUrlRestrictions userConfiguredUrlRestrictions
 
-  ResponseEntity<Object> exchange(HttpMethod httpMethod, String url, Object payload) {
+  ResponseEntity<Object> exchange(HttpMethod httpMethod, String url, Object payload, List<Map<String, String>> headers) {
     URI validatedUri = userConfiguredUrlRestrictions.validateURI(url)
-    HttpEntity<Object> payloadEntity = new HttpEntity<>(payload)
-    return restTemplate.exchange(validatedUri, httpMethod, payloadEntity, Object)
+    HttpHeaders headersMap = buildHttpHeadersForRequest(headers)
+    HttpEntity<Object> payloadEntity = new HttpEntity<>(payload, headersMap)
+    def exchange = restTemplate.exchange(validatedUri, httpMethod, payloadEntity, Object)
+    return exchange
   }
 
-  ResponseEntity<Object> getStatus(String url) {
+  ResponseEntity<Object> getStatus(String url, List<Map<String, String>> headers) {
     URI validatedUri = userConfiguredUrlRestrictions.validateURI(url)
-    return restTemplate.getForEntity(validatedUri, Object)
+    HttpHeaders headersMap = buildHttpHeadersForRequest(headers)
+    HttpEntity<Object> headersEntity = new HttpEntity<>(headersMap)
+    def exchange = restTemplate.exchange(validatedUri, HttpMethod.GET, headersEntity, Object)
+    return exchange
+  }
+
+  private static HttpHeaders buildHttpHeadersForRequest(List<Map<String, String>> headers) {
+    MultiValueMap<String, String> headersMap = new HttpHeaders()
+    for (Map<String, String> entryMap in headers) {
+      headersMap.add(entryMap.get("name"), entryMap.get("value"))
+    }
+    return headersMap
   }
 }

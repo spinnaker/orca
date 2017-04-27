@@ -17,16 +17,19 @@
 
 package com.netflix.spinnaker.orca.webhook
 
+import com.jayway.jsonpath.JsonPath
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.web.client.RestTemplate
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
@@ -49,6 +52,7 @@ class WebhookServiceSpec extends Specification {
     expect:
     server.expect(requestTo("https://localhost/v1/test"))
       .andExpect(method(HttpMethod.POST))
+      .andExpect(header("Authorization", "basic credential"))
       .andExpect(jsonPath('$.payload1').value("Hello"))
       .andExpect(jsonPath('$.payload2').value("World!"))
       .andRespond(withSuccess('{"status": "SUCCESS"}', MediaType.APPLICATION_JSON))
@@ -57,7 +61,8 @@ class WebhookServiceSpec extends Specification {
     def responseEntity = webhookService.exchange(
       HttpMethod.POST,
       "https://localhost/v1/test",
-      ["payload1": "Hello", "payload2": "World!"])
+      ["payload1": "Hello", "payload2": "World!"],
+      [["name": "Authorization", "value": "basic credential"]])
 
     then:
     server.verify()
@@ -69,10 +74,11 @@ class WebhookServiceSpec extends Specification {
     expect:
     server.expect(requestTo("https://localhost/v1/status/123"))
       .andExpect(method(HttpMethod.GET))
+      .andExpect(header("Authorization", "basic credential"))
       .andRespond(withSuccess('["element1", 123, false]', MediaType.APPLICATION_JSON))
 
     when:
-    def responseEntity = webhookService.getStatus("https://localhost/v1/status/123")
+    def responseEntity = webhookService.getStatus("https://localhost/v1/status/123", [["name": "Authorization", "value": "basic credential"]])
 
     then:
     server.verify()

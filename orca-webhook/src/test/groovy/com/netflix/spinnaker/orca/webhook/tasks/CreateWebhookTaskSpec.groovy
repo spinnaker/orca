@@ -39,15 +39,18 @@ class CreateWebhookTaskSpec extends Specification {
     setup:
     def stage = new Stage(pipeline, "webhook", "My webhook", [
       url: "https://my-service.io/api/",
+      authorization: "",
       method: "post",
-      payload: [payload1: "Hello Spinnaker!"]
+      payload: [payload1: "Hello Spinnaker!"],
+      headers: [["name": "Authorization", "value": "basic credential"]]
     ])
 
     createWebhookTask.webhookService = Stub(WebhookService) {
       exchange(
         HttpMethod.POST,
         "https://my-service.io/api/",
-        [payload1: "Hello Spinnaker!"]
+        [payload1: "Hello Spinnaker!"],
+        [["name": "Authorization", "value": "basic credential"]]
       ) >> new ResponseEntity<Map>([:], HttpStatus.OK)
     }
 
@@ -69,7 +72,8 @@ class CreateWebhookTaskSpec extends Specification {
       exchange(
         HttpMethod.POST,
         "https://my-service.io/api/",
-        null
+        null,
+        []
       ) >> new ResponseEntity<Map>([:], HttpStatus.OK)
     }
 
@@ -92,7 +96,8 @@ class CreateWebhookTaskSpec extends Specification {
       exchange(
         HttpMethod.GET,
         "https://my-service.io/api/",
-        null
+        null,
+        []
       ) >> new ResponseEntity<Map>([:], HttpStatus.OK)
     }
 
@@ -115,7 +120,8 @@ class CreateWebhookTaskSpec extends Specification {
       exchange(
         HttpMethod.DELETE,
         "https://my-service.io/api/",
-        [:]
+        [:],
+        []
       ) >> new ResponseEntity<Map>([error: "Oh noes, you can't do this"], HttpStatus.BAD_REQUEST)
     }
 
@@ -136,7 +142,7 @@ class CreateWebhookTaskSpec extends Specification {
     ])
 
     createWebhookTask.webhookService = Stub(WebhookService) {
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null) >> new ResponseEntity<Map>([success: true], HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, []) >> new ResponseEntity<Map>([success: true], HttpStatus.CREATED)
     }
 
     when:
@@ -159,7 +165,7 @@ class CreateWebhookTaskSpec extends Specification {
     createWebhookTask.webhookService = Stub(WebhookService) {
       def headers = new HttpHeaders()
       headers.add(HttpHeaders.LOCATION, "https://my-service.io/api/status/123")
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null) >> new ResponseEntity<Map>([success: true], headers, HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, []) >> new ResponseEntity<Map>([success: true], headers, HttpStatus.CREATED)
     }
 
     when:
@@ -183,7 +189,7 @@ class CreateWebhookTaskSpec extends Specification {
     def body = [success: true, location: "https://my-service.io/api/status/123"]
 
     createWebhookTask.webhookService = Stub(WebhookService) {
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null) >> new ResponseEntity<Map>(body, HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, []) >> new ResponseEntity<Map>(body, HttpStatus.CREATED)
     }
 
     when:
@@ -213,7 +219,7 @@ class CreateWebhookTaskSpec extends Specification {
     ]
 
     createWebhookTask.webhookService = Stub(WebhookService) {
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null) >> new ResponseEntity<Map>(body, HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, []) >> new ResponseEntity<Map>(body, HttpStatus.CREATED)
     }
 
     when:
