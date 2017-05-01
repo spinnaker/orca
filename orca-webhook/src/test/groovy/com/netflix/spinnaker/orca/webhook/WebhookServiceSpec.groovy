@@ -92,10 +92,11 @@ class WebhookServiceSpec extends Specification {
     expect:
     server.expect(requestTo("https://localhost/v1/status/123"))
       .andExpect(method(HttpMethod.GET))
+      .andExpect(header("Authorization", "Basic password"))
       .andRespond(withSuccess('["element1", 123, false]', MediaType.APPLICATION_JSON))
 
     when:
-    def responseEntity = webhookService.getStatus("https://localhost/v1/status/123")
+    def responseEntity = webhookService.getStatus("https://localhost/v1/status/123", [Authorization: "Basic password"])
 
     then:
     server.verify()
