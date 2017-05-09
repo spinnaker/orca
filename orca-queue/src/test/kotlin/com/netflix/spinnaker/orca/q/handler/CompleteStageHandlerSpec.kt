@@ -24,20 +24,22 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
-import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.subject.SubjectSpek
 import org.springframework.context.ApplicationEventPublisher
 
-object CompleteStageHandlerSpec : Spek({
+object CompleteStageHandlerSpec : SubjectSpek<CompleteStageHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
-  val handler = CompleteStageHandler(queue, repository, publisher, clock)
+  subject {
+    CompleteStageHandler(queue, repository, publisher, clock)
+  }
 
   fun resetMocks() = reset(queue, repository, publisher)
 
@@ -59,7 +61,7 @@ object CompleteStageHandlerSpec : Spek({
         afterGroup(::resetMocks)
 
         action("the handler receives a message") {
-          handler.handle(message)
+          subject.handle(message)
         }
 
         it("updates the stage state") {
@@ -114,7 +116,7 @@ object CompleteStageHandlerSpec : Spek({
         afterGroup(::resetMocks)
 
         action("the handler receives a message") {
-          handler.handle(message)
+          subject.handle(message)
         }
 
         it("updates the stage state") {
@@ -165,7 +167,7 @@ object CompleteStageHandlerSpec : Spek({
         afterGroup(::resetMocks)
 
         action("the handler receives a message") {
-          handler.handle(message)
+          subject.handle(message)
         }
 
         it("runs the next stages") {
@@ -201,7 +203,7 @@ object CompleteStageHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       action("the handler receives a message") {
-        handler.handle(message)
+        subject.handle(message)
       }
 
       it("updates the stage state") {
@@ -261,7 +263,7 @@ object CompleteStageHandlerSpec : Spek({
             afterGroup(::resetMocks)
 
             action("the handler receives a message") {
-              handler.handle(message)
+              subject.handle(message)
             }
 
             it("runs the next synthetic stage") {
@@ -283,7 +285,7 @@ object CompleteStageHandlerSpec : Spek({
             afterGroup(::resetMocks)
 
             action("the handler receives a message") {
-              handler.handle(message)
+              subject.handle(message)
             }
 
             it("runs the next synthetic stage") {
@@ -318,7 +320,7 @@ object CompleteStageHandlerSpec : Spek({
             afterGroup(::resetMocks)
 
             action("the handler receives a message") {
-              handler.handle(message)
+              subject.handle(message)
             }
 
             it("completes the stage") {
@@ -353,7 +355,7 @@ object CompleteStageHandlerSpec : Spek({
             afterGroup(::resetMocks)
 
             action("the handler receives a message") {
-              handler.handle(message)
+              subject.handle(message)
             }
 
             it("starts the first after stage") {
@@ -387,7 +389,7 @@ object CompleteStageHandlerSpec : Spek({
           afterGroup(::resetMocks)
 
           action("the handler receives a message") {
-            handler.handle(message)
+            subject.handle(message)
           }
 
           it("runs the next synthetic stage") {
@@ -409,7 +411,7 @@ object CompleteStageHandlerSpec : Spek({
           afterGroup(::resetMocks)
 
           action("the handler receives a message") {
-            handler.handle(message)
+            subject.handle(message)
           }
 
           it("signals the completion of the parent stage") {
@@ -442,7 +444,7 @@ object CompleteStageHandlerSpec : Spek({
         }
 
         action("the handler receives a message") {
-          handler.handle(message)
+          subject.handle(message)
         }
 
         afterGroup(::resetMocks)
@@ -479,7 +481,7 @@ object CompleteStageHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       action("the handler receives a message") {
-        handler.handle(message)
+        subject.handle(message)
       }
 
       it("waits for other branches to finish") {
@@ -513,7 +515,7 @@ object CompleteStageHandlerSpec : Spek({
       afterGroup(::resetMocks)
 
       action("the handler receives a message") {
-        handler.handle(message)
+        subject.handle(message)
       }
 
       it("runs any post-branch tasks") {
