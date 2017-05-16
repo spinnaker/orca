@@ -20,6 +20,7 @@ import com.netflix.spectator.api.Clock
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Timer
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.loader.FileTemplateSchemeLoader
 import com.netflix.spinnaker.orca.pipelinetemplate.loader.TemplateLoader
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.JinjaRenderer
@@ -39,6 +40,8 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
 
   Renderer renderer = new JinjaRenderer(objectMapper)
 
+  ContextParameterProcessor contextParameterProcessor = new ContextParameterProcessor()
+
   Registry registry = Mock() {
     clock() >> Mock(Clock) {
       monotonicTime() >> 0L
@@ -51,7 +54,8 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
     objectMapper,
     templateLoader,
     renderer,
-    registry
+    registry,
+    contextParameterProcessor
   )
 
   def 'should ignore non-templated pipeline requests'() {
@@ -191,6 +195,19 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
     false       || ['wait']                   || ['wait', 'childOfConditionalStage']
   }
 
+  @Unroll
+  def 'should be able to set source using spel'() {
+    when:
+    def result = subject.process(createInjectedTemplateRequest(template))
+
+    then:
+    result.stages*.name == expectedStageNames
+
+    where:
+    template       || expectedStageNames
+    'spel-001.yml' || ['spel1']
+    'spel-002.yml' || ['spel2']
+  }
 
   Map<String, Object> createTemplateRequest(String templatePath, Map<String, Object> variables = [:], List<Map<String, Object>> stages = [], boolean plan = false) {
     return [
@@ -214,6 +231,28 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
         stages: stages
       ],
       plan: plan
+    ]
+  }
+
+  Map<String, Object> createInjectedTemplateRequest(String templatePath) {
+    return [
+      type: 'templatedPipeline',
+      trigger: [
+        parameters: [
+          template: getClass().getResource("/templates/${templatePath}").toURI()
+        ]
+      ],
+      config: [
+        schema: '1',
+        id: 'myTemplate',
+        pipeline: [
+          application: 'myapp',
+          template: [
+            source: '${trigger.parameters.template}'
+          ],
+        ],
+      ],
+      plan: false
     ]
   }
 }

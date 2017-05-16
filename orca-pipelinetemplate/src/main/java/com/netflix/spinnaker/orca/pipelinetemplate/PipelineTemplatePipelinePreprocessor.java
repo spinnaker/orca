@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipelinetemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor;
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.IllegalTemplateConfigurationException;
 import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.TemplateLoaderException;
 import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.TemplateRenderException;
@@ -57,20 +58,27 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
   private final Renderer renderer;
   private final Registry registry;
 
+  ContextParameterProcessor contextParameterProcessor;
+
   @Autowired
   public PipelineTemplatePipelinePreprocessor(ObjectMapper pipelineTemplateObjectMapper,
                                               TemplateLoader templateLoader,
                                               Renderer renderer,
-                                              Registry registry) {
+                                              Registry registry,
+                                              ContextParameterProcessor contextParameterProcessor) {
     this.pipelineTemplateObjectMapper = pipelineTemplateObjectMapper;
     this.templateLoader = templateLoader;
     this.renderer = renderer;
     this.registry = registry;
+    this.contextParameterProcessor = contextParameterProcessor;
   }
 
   @Override
-  public Map<String, Object> process(Map<String, Object> pipeline) {
+  public Map<String, Object> process(Map<String, Object> rawPipeline) {
     Errors errors;
+    Map<String, Object> augmentedContext = new HashMap<>();
+    augmentedContext.put("trigger", rawPipeline.get("trigger"));
+    Map<String, Object> pipeline = contextParameterProcessor.process(rawPipeline, augmentedContext, false);
     try {
       return processInternal(pipeline);
     } catch (TemplateLoaderException e) {

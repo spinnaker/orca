@@ -1,0 +1,8 @@
+schema: "1"
+id: spel2
+stages:
+- id: wait
+  type: wait
+  name: spel2
+  config:
+    waitTime: 5
