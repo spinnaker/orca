@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.q.memory
+package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.q.DeadMessageCallback
-import com.netflix.spinnaker.orca.q.QueueSpec
-import java.time.Clock
+/**
+ * Optional interface [Queue] implementations may support in order to provide
+ * hooks for analytics.
+ */
+interface MonitoredQueue : Queue {
 
-object InMemoryQueueSpec : QueueSpec<InMemoryQueue>(
-  ::createQueue,
-  InMemoryQueue::redeliver
+  fun queueState(): QueueMetrics
+
+}
+
+data class QueueMetrics(
+  val queueDepth: Long,
+  val unackedDepth: Long
 )
-
-private fun createQueue(clock: Clock, deadLetterCallback: DeadMessageCallback) =
-  InMemoryQueue(clock, deadMessageHandler = deadLetterCallback)

@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.q.redis
+package com.netflix.spinnaker.orca.q.memory
 
-import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
-import com.netflix.spinnaker.orca.q.QueueSpec
+import com.netflix.spinnaker.orca.q.MonitoredQueueSpec
 import java.time.Clock
 
-object RedisQueueSpec : QueueSpec<RedisQueue>(
+object InMemoryMonitoredQueueSpec : MonitoredQueueSpec<InMemoryQueue>(
   ::createQueue,
-  RedisQueue::redeliver,
-  ::shutdownCallback
+  InMemoryQueue::redeliver
 )
 
-private var redis: EmbeddedRedis? = null
-
-private fun createQueue(clock: Clock, deadLetterCallback: DeadMessageCallback): RedisQueue {
-  redis = EmbeddedRedis.embed()
-  return RedisQueue("test", redis!!.pool, clock, "i-1234", deadMessageHandler = deadLetterCallback)
-}
-
-private fun shutdownCallback() {
-  println("shutting down the redis")
-  redis?.destroy()
-}
+private fun createQueue(clock: Clock, deadLetterCallback: DeadMessageCallback) =
+  InMemoryQueue(clock, deadMessageHandler = deadLetterCallback)

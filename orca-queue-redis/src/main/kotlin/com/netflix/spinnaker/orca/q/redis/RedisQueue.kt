@@ -18,9 +18,7 @@ package com.netflix.spinnaker.orca.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.netflix.spinnaker.orca.q.Message
-import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.ScheduledAction
+import com.netflix.spinnaker.orca.q.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
@@ -44,7 +42,7 @@ class RedisQueue(
   private val lockTtlSeconds: Int = Duration.ofDays(1).seconds.toInt(),
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandler: (Queue, Message) -> Unit
-) : Queue, Closeable {
+) : MonitoredQueue, Closeable {
 
   private val mapper = ObjectMapper().apply {
     registerModule(KotlinModule())
@@ -84,6 +82,16 @@ class RedisQueue(
       }
     }
   }
+
+  override fun queueState() =
+    pool.resource.use { redis ->
+      redis.multi {
+        zcard(queueKey)
+        zcard(unackedKey)
+      }.let { result ->
+        QueueMetrics(result[0] as Long, result[1] as Long)
+      }
+    }
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
@@ -203,10 +211,9 @@ class RedisQueue(
   inline fun <reified R> ObjectMapper.readValue(content: String): R =
     readValue(content, R::class.java)
 
-  private fun Jedis.multi(block: Transaction.() -> Unit) {
+  private fun Jedis.multi(block: Transaction.() -> Unit) =
     multi().use { tx ->
       tx.block()
       tx.exec()
     }
-  }
 }

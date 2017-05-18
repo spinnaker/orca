@@ -25,18 +25,20 @@ import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import java.io.Closeable
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 
 abstract class QueueSpec<out Q : Queue>(
-  createQueue: ((Queue, Message) -> Unit) -> Q,
+  createQueue: (Clock, DeadMessageCallback) -> Q,
   triggerRedeliveryCheck: Q.() -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
 
   var queue: Q? = null
   val callback: QueueCallback = mock()
-  val deadLetterCallback: (Queue, Message) -> Unit = mock()
+  val deadLetterCallback: DeadMessageCallback = mock()
+  val clock = MutableClock(Instant.now())
 
   fun resetMocks() = reset(callback)
 
@@ -52,7 +54,7 @@ abstract class QueueSpec<out Q : Queue>(
   describe("polling the queue") {
     context("there are no messages") {
       beforeGroup {
-        queue = createQueue.invoke(deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback)
       }
 
       afterGroup(::stopQueue)
@@ -71,7 +73,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback)
         queue!!.push(message)
       }
 
@@ -92,7 +94,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message2 = StartExecution(Pipeline::class.java, "2", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(deadLetterCallback).apply {
+        queue = createQueue.invoke(clock, deadLetterCallback).apply {
           push(message1)
           clock.incrementBy(Duration.ofSeconds(1))
           push(message2)
@@ -122,7 +124,7 @@ abstract class QueueSpec<out Q : Queue>(
         val message = StartExecution(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue = createQueue.invoke(deadLetterCallback)
+          queue = createQueue.invoke(clock, deadLetterCallback)
           queue!!.push(message, delay)
         }
 
@@ -142,7 +144,7 @@ abstract class QueueSpec<out Q : Queue>(
         val message = StartExecution(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue = createQueue.invoke(deadLetterCallback)
+          queue = createQueue.invoke(clock, deadLetterCallback)
           queue!!.push(message, delay)
           clock.incrementBy(delay)
         }
@@ -166,7 +168,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback)
         queue!!.push(message)
       }
 
@@ -193,7 +195,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback)
         queue!!.push(message)
       }
 
@@ -218,7 +220,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback)
         queue!!.push(message)
       }
 
@@ -245,7 +247,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback)
         queue!!.push(message)
       }
 
@@ -289,8 +291,4 @@ abstract class QueueSpec<out Q : Queue>(
       }
     }
   }
-}) {
-  companion object {
-    val clock = MutableClock(Instant.now())
-  }
-}
+})

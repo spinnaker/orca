@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.q.redis
 
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
-import com.netflix.spinnaker.orca.q.QueueSpec
+import com.netflix.spinnaker.orca.q.MonitoredQueueSpec
 import java.time.Clock
 
-object RedisQueueSpec : QueueSpec<RedisQueue>(
+object RedisMonitoredQueueSpec : MonitoredQueueSpec<RedisQueue>(
   ::createQueue,
   RedisQueue::redeliver,
   ::shutdownCallback
@@ -38,3 +38,4 @@ private fun shutdownCallback() {
   println("shutting down the redis")
   redis?.destroy()
 }
+

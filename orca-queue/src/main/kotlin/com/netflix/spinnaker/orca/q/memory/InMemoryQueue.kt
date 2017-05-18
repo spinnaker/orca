@@ -16,9 +16,8 @@
 
 package com.netflix.spinnaker.orca.q.memory
 
-import com.netflix.spinnaker.orca.q.Message
+import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.ScheduledAction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.threeten.extra.Temporals.chronoUnit
@@ -38,8 +37,8 @@ import javax.annotation.PreDestroy
 class InMemoryQueue(
   private val clock: Clock,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
-  override val deadMessageHandler: (Queue, Message) -> Unit
-) : Queue, Closeable {
+  override val deadMessageHandler: DeadMessageCallback
+) : MonitoredQueue, Closeable {
 
   private val log: Logger = getLogger(javaClass)
 
@@ -62,6 +61,8 @@ class InMemoryQueue(
   private fun ack(messageId: UUID) {
     unacked.removeIf { it.id == messageId }
   }
+
+  override fun queueState() = QueueMetrics(queue.size.toLong(), unacked.size.toLong())
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
