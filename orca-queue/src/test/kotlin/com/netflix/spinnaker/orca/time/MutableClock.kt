@@ -22,7 +22,7 @@ import java.time.ZoneId
 import java.time.temporal.TemporalAmount
 
 class MutableClock(
-  private var instant: Instant,
+  private var instant: Instant = Instant.now(),
   private val zone: ZoneId = ZoneId.systemDefault()
 ) : Clock() {
 

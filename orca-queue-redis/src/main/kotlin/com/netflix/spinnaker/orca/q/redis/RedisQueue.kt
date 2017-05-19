@@ -25,6 +25,7 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisCommands
 import redis.clients.jedis.Transaction
 import redis.clients.util.Pool
+import toInstant
 import java.io.Closeable
 import java.io.IOException
 import java.time.Clock
@@ -54,6 +55,8 @@ class RedisQueue(
   private val messagesKey = queueName + ".messages"
   private val attemptsKey = queueName + ".attempts"
   private val locksKey = queueName + ".locks"
+  private val redeliveryCountKey = queueName + ".redelivery.count"
+  private val redeliveryTimestampKey = queueName + ".redelivery.timestamp"
 
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
@@ -88,8 +91,15 @@ class RedisQueue(
       redis.multi {
         zcard(queueKey)
         zcard(unackedKey)
+        get(redeliveryCountKey)
+        get(redeliveryTimestampKey)
       }.let { result ->
-        QueueMetrics(result[0] as Long, result[1] as Long)
+        QueueMetrics(
+          result[0] as Long,
+          result[1] as Long,
+          (result[2] as String?)?.toLong() ?: 0L,
+          (result[3] as String?)?.toLong()?.toInstant()
+        )
       }
     }
 
@@ -128,8 +138,12 @@ class RedisQueue(
               } else {
                 log.warn("Re-delivering message $id after $attempts attempts")
                 move(unackedKey, queueKey, ZERO, setOf(id))
+                incr(redeliveryCountKey)
               }
             }
+          }
+          .also {
+            set(redeliveryTimestampKey, clock.millis().toString())
           }
       }
     }

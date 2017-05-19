@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.q
 
+import java.time.Instant
+
 /**
  * Optional interface [Queue] implementations may support in order to provide
  * hooks for analytics.
@@ -28,5 +30,7 @@ interface MonitoredQueue : Queue {
 
 data class QueueMetrics(
   val queueDepth: Long,
-  val unackedDepth: Long
+  val unackedDepth: Long,
+  val redeliveredMessages: Long,
+  val lastRedeliveryCheck: Instant?
 )

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.time.fixedClock
+import com.netflix.spinnaker.orca.time.MutableClock
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
@@ -34,7 +34,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
 ) : Spek({
 
   var queue: Q? = null
-  val clock = fixedClock()
+  val clock = MutableClock()
   val deadMessageHandler: DeadMessageCallback = mock()
 
   fun startQueue() {
@@ -116,6 +116,57 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       queue!!.queueState().apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 0
+      }
+    }
+  }
+
+  given("no messages have been redelivered") {
+    beforeGroup(::startQueue)
+    beforeGroup {
+      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+      queue!!.poll { _, ack ->
+        ack.invoke()
+      }
+      clock.incrementBy(queue!!.ackTimeout)
+      triggerRedeliveryCheck.invoke(queue!!)
+    }
+
+    afterGroup(::stopQueue)
+    afterGroup(::resetMocks)
+
+    it("reports the time of the last redelivery check") {
+      queue!!.queueState().apply {
+        redeliveredMessages shouldEqual 0
+        lastRedeliveryCheck shouldEqual clock.instant()
+      }
+    }
+  }
+
+  given("a message has been redelivered") {
+    beforeGroup(::startQueue)
+    beforeGroup {
+      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+      queue!!.poll { _, _ -> }
+      clock.incrementBy(queue!!.ackTimeout)
+      triggerRedeliveryCheck.invoke(queue!!)
+    }
+
+    afterGroup(::stopQueue)
+    afterGroup(::resetMocks)
+
+    it("reports the depth with the message re-queued") {
+      queue!!.queueState().apply {
+        queueDepth shouldEqual 1
+        unackedDepth shouldEqual 0
+      }
+    }
+
+    it("reports the redelivered message") {
+      queue!!.queueState().apply {
+        queueDepth shouldEqual 1
+        unackedDepth shouldEqual 0
+        redeliveredMessages shouldEqual 1
+        lastRedeliveryCheck shouldEqual clock.instant()
       }
     }
   }

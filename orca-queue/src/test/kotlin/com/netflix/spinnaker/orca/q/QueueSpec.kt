@@ -27,7 +27,6 @@ import org.jetbrains.spek.api.dsl.it
 import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 
 abstract class QueueSpec<out Q : Queue>(
   createQueue: (Clock, DeadMessageCallback) -> Q,
@@ -38,7 +37,7 @@ abstract class QueueSpec<out Q : Queue>(
   var queue: Q? = null
   val callback: QueueCallback = mock()
   val deadLetterCallback: DeadMessageCallback = mock()
-  val clock = MutableClock(Instant.now())
+  val clock = MutableClock()
 
   fun resetMocks() = reset(callback)
 

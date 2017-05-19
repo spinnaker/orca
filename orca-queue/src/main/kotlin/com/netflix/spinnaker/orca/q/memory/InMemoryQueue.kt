@@ -32,6 +32,8 @@ import java.util.concurrent.DelayQueue
 import java.util.concurrent.Delayed
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PreDestroy
 
 class InMemoryQueue(
@@ -45,6 +47,8 @@ class InMemoryQueue(
   private val queue = DelayQueue<Envelope>()
   private val unacked = DelayQueue<Envelope>()
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
+  private val redeliveredMessages = AtomicLong()
+  private val lastRedeliveryCheck = AtomicReference<Instant?>()
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     queue.poll()?.let { envelope ->
@@ -62,7 +66,12 @@ class InMemoryQueue(
     unacked.removeIf { it.id == messageId }
   }
 
-  override fun queueState() = QueueMetrics(queue.size.toLong(), unacked.size.toLong())
+  override fun queueState() = QueueMetrics(
+    queue.size.toLong(),
+    unacked.size.toLong(),
+    redeliveredMessages.get(),
+    lastRedeliveryCheck.get()
+  )
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
@@ -70,12 +79,15 @@ class InMemoryQueue(
   }
 
   internal fun redeliver() {
+    val now = clock.instant()
+    lastRedeliveryCheck.lazySet(now)
     unacked.pollAll {
       if (it.count >= Queue.maxRedeliveries) {
         deadMessageHandler.invoke(this, it.payload)
       } else {
         log.warn("redelivering unacked message ${it.payload}")
-        queue.put(it.copy(scheduledTime = clock.instant(), count = it.count + 1))
+        queue.put(it.copy(scheduledTime = now, count = it.count + 1))
+        redeliveredMessages.incrementAndGet()
       }
     }
   }
