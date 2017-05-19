@@ -29,8 +29,31 @@ interface MonitoredQueue : Queue {
 }
 
 data class QueueMetrics(
+  /**
+   * Number of messages currently queued for delivery including any not yet due.
+   */
   val queueDepth: Long,
+
+  /**
+   * Number of messages currently being processed but not yet acknowledged.
+   */
   val unackedDepth: Long,
-  val redeliveredMessages: Long,
+
+  /**
+   * Count of messages that have been re-delivered. This does not mean unique
+   * messages, so re-delivering the same message again will still increment this
+   * count.
+   */
+  val redeliveryCount: Long,
+
+  /**
+   * Count of messages that have exceeded [Queue.maxRedeliveries] re-delivery
+   * attempts and have been sent to the dead message handler.
+   */
+  val deadLetterCount: Long,
+
+  /**
+   * The time the last re-delivery check was executed.
+   */
   val lastRedeliveryCheck: Instant?
 )

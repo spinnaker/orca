@@ -136,8 +136,9 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
 
     it("reports the time of the last redelivery check") {
       queue!!.queueState().apply {
-        redeliveredMessages shouldEqual 0
+        redeliveryCount shouldEqual 0
         lastRedeliveryCheck shouldEqual clock.instant()
+        deadLetterCount shouldEqual 0
       }
     }
   }
@@ -163,10 +164,38 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
 
     it("reports the redelivered message") {
       queue!!.queueState().apply {
-        queueDepth shouldEqual 1
-        unackedDepth shouldEqual 0
-        redeliveredMessages shouldEqual 1
+        redeliveryCount shouldEqual 1
         lastRedeliveryCheck shouldEqual clock.instant()
+        deadLetterCount shouldEqual 0
+      }
+    }
+  }
+
+  given("a message has been dead lettered") {
+    beforeGroup(::startQueue)
+    beforeGroup {
+      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+      (1..Queue.maxRedeliveries).forEach {
+        queue!!.poll { _, _ -> }
+        clock.incrementBy(queue!!.ackTimeout)
+        triggerRedeliveryCheck.invoke(queue!!)
+      }
+    }
+
+    afterGroup(::stopQueue)
+    afterGroup(::resetMocks)
+
+    it("reports the depth without the message re-queued") {
+      queue!!.queueState().apply {
+        queueDepth shouldEqual 0
+        unackedDepth shouldEqual 0
+      }
+    }
+
+    it("reports the redelivered message") {
+      queue!!.queueState().apply {
+        redeliveryCount shouldEqual (Queue.maxRedeliveries - 1).toLong()
+        deadLetterCount shouldEqual 1
       }
     }
   }

@@ -47,8 +47,9 @@ class InMemoryQueue(
   private val queue = DelayQueue<Envelope>()
   private val unacked = DelayQueue<Envelope>()
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
-  private val redeliveredMessages = AtomicLong()
+  private val redeliveryCount = AtomicLong()
   private val lastRedeliveryCheck = AtomicReference<Instant?>()
+  private val deadLetterCount = AtomicLong()
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     queue.poll()?.let { envelope ->
@@ -69,7 +70,8 @@ class InMemoryQueue(
   override fun queueState() = QueueMetrics(
     queue.size.toLong(),
     unacked.size.toLong(),
-    redeliveredMessages.get(),
+    redeliveryCount.get(),
+    deadLetterCount.get(),
     lastRedeliveryCheck.get()
   )
 
@@ -84,10 +86,11 @@ class InMemoryQueue(
     unacked.pollAll {
       if (it.count >= Queue.maxRedeliveries) {
         deadMessageHandler.invoke(this, it.payload)
+        deadLetterCount.incrementAndGet()
       } else {
         log.warn("redelivering unacked message ${it.payload}")
         queue.put(it.copy(scheduledTime = now, count = it.count + 1))
-        redeliveredMessages.incrementAndGet()
+        redeliveryCount.incrementAndGet()
       }
     }
   }

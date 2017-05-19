@@ -56,6 +56,7 @@ class RedisQueue(
   private val attemptsKey = queueName + ".attempts"
   private val locksKey = queueName + ".locks"
   private val redeliveryCountKey = queueName + ".redelivery.count"
+  private val deadLetterCountKey = queueName + ".deadLetter.count"
   private val redeliveryTimestampKey = queueName + ".redelivery.timestamp"
 
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
@@ -92,13 +93,15 @@ class RedisQueue(
         zcard(queueKey)
         zcard(unackedKey)
         get(redeliveryCountKey)
+        get(deadLetterCountKey)
         get(redeliveryTimestampKey)
       }.let { result ->
         QueueMetrics(
           result[0] as Long,
           result[1] as Long,
           (result[2] as String?)?.toLong() ?: 0L,
-          (result[3] as String?)?.toLong()?.toInstant()
+          (result[3] as String?)?.toLong() ?: 0L,
+          (result[4] as String?)?.toLong()?.toInstant()
         )
       }
     }
@@ -134,6 +137,7 @@ class RedisQueue(
                   log.warn("Message $id with payload $message exceeded max re-deliveries")
                   handleDeadMessage(message)
                   ack(id)
+                  incr(deadLetterCountKey)
                 }
               } else {
                 log.warn("Re-delivering message $id after $attempts attempts")
