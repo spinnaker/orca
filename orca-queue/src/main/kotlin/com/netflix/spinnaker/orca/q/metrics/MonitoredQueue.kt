@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.q
+package com.netflix.spinnaker.orca.q.metrics
 
+import com.netflix.spinnaker.orca.q.Queue
 import java.time.Instant
 
 /**
@@ -23,37 +24,31 @@ import java.time.Instant
  * hooks for analytics.
  */
 interface MonitoredQueue : Queue {
-
-  fun queueState(): QueueMetrics
-
-}
-
-data class QueueMetrics(
   /**
    * Number of messages currently queued for delivery including any not yet due.
    */
-  val queueDepth: Long,
+  val queueDepth: Int
 
   /**
    * Number of messages currently being processed but not yet acknowledged.
    */
-  val unackedDepth: Long,
+  val unackedDepth: Int
 
   /**
    * Count of messages that have been re-delivered. This does not mean unique
    * messages, so re-delivering the same message again will still increment this
    * count.
    */
-  val redeliveryCount: Long,
+  val redeliveryCount: Int
 
   /**
    * Count of messages that have exceeded [Queue.maxRedeliveries] re-delivery
    * attempts and have been sent to the dead message handler.
    */
-  val deadLetterCount: Long,
+  val deadLetterCount: Int
 
   /**
    * The time the last re-delivery check was executed.
    */
   val lastRedeliveryCheck: Instant?
-)
+}

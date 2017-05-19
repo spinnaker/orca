@@ -18,7 +18,10 @@ package com.netflix.spinnaker.orca.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.Message
+import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.ScheduledAction
+import com.netflix.spinnaker.orca.q.metrics.MonitoredQueue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
@@ -31,6 +34,7 @@ import java.io.IOException
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
+import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.UUID.randomUUID
 import javax.annotation.PreDestroy
@@ -57,7 +61,7 @@ class RedisQueue(
   private val locksKey = queueName + ".locks"
   private val redeliveryCountKey = queueName + ".redelivery.count"
   private val deadLetterCountKey = queueName + ".deadLetter.count"
-  private val redeliveryTimestampKey = queueName + ".redelivery.timestamp"
+  private val lastRedeliveryCheckKey = queueName + ".redelivery.timestamp"
 
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
@@ -87,24 +91,20 @@ class RedisQueue(
     }
   }
 
-  override fun queueState() =
-    pool.resource.use { redis ->
-      redis.multi {
-        zcard(queueKey)
-        zcard(unackedKey)
-        get(redeliveryCountKey)
-        get(deadLetterCountKey)
-        get(redeliveryTimestampKey)
-      }.let { result ->
-        QueueMetrics(
-          result[0] as Long,
-          result[1] as Long,
-          (result[2] as String?)?.toLong() ?: 0L,
-          (result[3] as String?)?.toLong() ?: 0L,
-          (result[4] as String?)?.toLong()?.toInstant()
-        )
-      }
-    }
+  override val queueDepth: Int
+    get() = pool.resource.use { it.zcard(queueKey).toInt() }
+
+  override val unackedDepth: Int
+    get() = pool.resource.use { it.zcard(unackedKey).toInt() }
+
+  override val redeliveryCount: Int
+    get() = pool.resource.use { it.getInt(redeliveryCountKey) }
+
+  override val deadLetterCount: Int
+    get() = pool.resource.use { it.getInt(deadLetterCountKey) }
+
+  override val lastRedeliveryCheck: Instant?
+    get() = pool.resource.use { it.getInstant(lastRedeliveryCheckKey) }
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
@@ -147,7 +147,7 @@ class RedisQueue(
             }
           }
           .also {
-            set(redeliveryTimestampKey, clock.millis().toString())
+            set(lastRedeliveryCheckKey, clock.millis().toString())
           }
       }
     }
@@ -218,6 +218,12 @@ class RedisQueue(
 
   private fun JedisCommands.hgetInt(key: String, field: String, default: Int = 0) =
     hget(key, field)?.toInt() ?: default
+
+  private fun JedisCommands.getInt(key: String, default: Int = 0) =
+    get(key)?.toInt() ?: default
+
+  private fun JedisCommands.getInstant(key: String) =
+    get(key)?.toLong()?.toInstant()
 
   /**
    * @return current time (plus optional [delay]) converted to a score for a

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.q.memory
 
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
-import com.netflix.spinnaker.orca.q.MonitoredQueueSpec
+import com.netflix.spinnaker.orca.q.metrics.MonitoredQueueSpec
 import java.time.Clock
 
 object InMemoryMonitoredQueueSpec : MonitoredQueueSpec<InMemoryQueue>(

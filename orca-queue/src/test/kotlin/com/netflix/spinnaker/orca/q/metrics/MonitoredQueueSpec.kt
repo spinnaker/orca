@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.q
+package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.q.DeadMessageCallback
+import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.time.MutableClock
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.mock
@@ -58,7 +61,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     afterGroup(::resetMocks)
 
     it("reports empty") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 0
       }
@@ -75,7 +78,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     afterGroup(::resetMocks)
 
     it("reports the messages on the queue") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         queueDepth shouldEqual 1
         unackedDepth shouldEqual 0
       }
@@ -93,7 +96,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     afterGroup(::resetMocks)
 
     it("reports unacknowledged messages") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 1
       }
@@ -113,7 +116,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     afterGroup(::resetMocks)
 
     it("reports an empty queue") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 0
       }
@@ -135,7 +138,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     afterGroup(::resetMocks)
 
     it("reports the time of the last redelivery check") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         redeliveryCount shouldEqual 0
         lastRedeliveryCheck shouldEqual clock.instant()
         deadLetterCount shouldEqual 0
@@ -156,14 +159,14 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     afterGroup(::resetMocks)
 
     it("reports the depth with the message re-queued") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         queueDepth shouldEqual 1
         unackedDepth shouldEqual 0
       }
     }
 
     it("reports the redelivered message") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         redeliveryCount shouldEqual 1
         lastRedeliveryCheck shouldEqual clock.instant()
         deadLetterCount shouldEqual 0
@@ -186,15 +189,15 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     afterGroup(::resetMocks)
 
     it("reports the depth without the message re-queued") {
-      queue!!.queueState().apply {
+      queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 0
       }
     }
 
     it("reports the redelivered message") {
-      queue!!.queueState().apply {
-        redeliveryCount shouldEqual (Queue.maxRedeliveries - 1).toLong()
+      queue!!.apply {
+        redeliveryCount shouldEqual Queue.maxRedeliveries - 1
         deadLetterCount shouldEqual 1
       }
     }

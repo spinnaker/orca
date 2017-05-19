@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.q.redis
 
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
-import com.netflix.spinnaker.orca.q.MonitoredQueueSpec
+import com.netflix.spinnaker.orca.q.metrics.MonitoredQueueSpec
 import java.time.Clock
 
 object RedisMonitoredQueueSpec : MonitoredQueueSpec<RedisQueue>(
