@@ -45,20 +45,21 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
 
   val pushCounter: Counter = mock()
   val ackCounter: Counter = mock()
-  val redeliverCounter: Counter = mock()
+  val retryCounter: Counter = mock()
   val deadMessageCounter: Counter = mock()
+
   val registry: Registry = mock {
-    on { counter("push") } doReturn pushCounter
-    on { counter("ack") } doReturn ackCounter
-    on { counter("redeliver") } doReturn redeliverCounter
-    on { counter("deadMessage") } doReturn deadMessageCounter
+    on { counter("queue.pushed.messages") } doReturn pushCounter
+    on { counter("queue.acknowledged.messages") } doReturn ackCounter
+    on { counter("queue.retried.messages") } doReturn retryCounter
+    on { counter("queue.dead.messages") } doReturn deadMessageCounter
   }
 
   fun startQueue() {
     queue = createQueue(clock, deadMessageHandler, registry)
   }
 
-  fun resetMocks() = reset(deadMessageHandler, pushCounter, ackCounter, redeliverCounter)
+  fun resetMocks() = reset(deadMessageHandler, pushCounter, ackCounter, retryCounter)
 
   fun stopQueue() {
     queue?.let { q ->
@@ -94,7 +95,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
 
     it("increments a counter") {
       verify(pushCounter).increment()
-      verifyNoMoreInteractions(pushCounter, ackCounter, redeliverCounter)
+      verifyNoMoreInteractions(pushCounter, ackCounter, retryCounter)
     }
 
     it("reports the queue depth") {
@@ -175,7 +176,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       }
 
       it("does not increment the redelivery count") {
-        verifyZeroInteractions(redeliverCounter)
+        verifyZeroInteractions(retryCounter)
       }
 
       it("reports the time of the last redelivery check") {
@@ -206,7 +207,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       }
 
       it("increments the redelivery count") {
-        verify(redeliverCounter).increment()
+        verify(retryCounter).increment()
       }
 
       it("reports the time of the last redelivery check") {
@@ -239,7 +240,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       }
 
       it("counts the redelivery attempts") {
-        verify(redeliverCounter, times(Queue.maxRedeliveries - 1)).increment()
+        verify(retryCounter, times(Queue.maxRedeliveries - 1)).increment()
       }
 
       it("increments the dead letter count") {

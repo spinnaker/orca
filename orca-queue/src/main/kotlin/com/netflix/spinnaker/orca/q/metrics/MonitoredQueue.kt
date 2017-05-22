@@ -54,10 +54,10 @@ interface MonitoredQueue : Queue {
   val lastRedeliveryPoll: Instant?
 
   val pushCounter: Counter
-    get() = registry.counter("push")
+    get() = registry.counter("queue.pushed.messages")
 
   val ackCounter: Counter
-    get() = registry.counter("ack")
+    get() = registry.counter("queue.acknowledged.messages")
 
   /**
    * Count of messages that have been re-delivered. This does not mean unique
@@ -65,27 +65,19 @@ interface MonitoredQueue : Queue {
    * count.
    */
   val redeliverCounter: Counter
-    get() = registry.counter("redeliver")
+    get() = registry.counter("queue.retried.messages")
 
   /**
    * Count of messages that have exceeded [Queue.maxRedeliveries] re-delivery
    * attempts and have been sent to the dead message handler.
    */
   val deadMessageCounter: Counter
-    get() = registry.counter("deadMessage")
+    get() = registry.counter("queue.dead.messages")
 
-  @PostConstruct fun registerMetrics() {
-    val createGauge = { name: String, valueCallback: MonitoredQueue.() -> Number ->
-      val id = registry
-        .createId("queue.$name")
-        .withTag("id", name)
-
-      registry.gauge(id, this, { valueCallback().toDouble() })
-    }
-
-    createGauge("queueDepth", { queueDepth })
-    createGauge("unackedDepth", { unackedDepth })
-    createGauge("timeSinceLastQueuePoll", { Duration.between(lastQueuePoll ?: EPOCH, now()).toMillis() })
-    createGauge("timeSinceLastRedeliveryPoll", { Duration.between(lastRedeliveryPoll ?: EPOCH, now()).toMillis() })
+  @PostConstruct fun registerGauges() {
+    registry.gauge("queue.depth", this, { it.queueDepth.toDouble() })
+    registry.gauge("unacked.depth", this, { it.unackedDepth.toDouble() })
+    registry.gauge("last.poll.age", this, { Duration.between(it.lastQueuePoll ?: EPOCH, now()).toMillis().toDouble() })
+    registry.gauge("last.redelivery.check.age", this, { Duration.between(it.lastRedeliveryPoll ?: EPOCH, now()).toMillis().toDouble() })
   }
 }
