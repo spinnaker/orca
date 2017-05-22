@@ -36,7 +36,6 @@ import java.util.concurrent.DelayQueue
 import java.util.concurrent.Delayed
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PreDestroy
 
@@ -59,12 +58,15 @@ class InMemoryQueue(
       unacked.put(envelope.copy(scheduledTime = clock.instant().plus(ackTimeout)))
       callback.invoke(envelope.payload) {
         ack(envelope.id)
+        ackCounter.increment()
       }
     }
   }
 
-  override fun push(message: Message, delay: TemporalAmount) =
+  override fun push(message: Message, delay: TemporalAmount) {
     queue.put(Envelope(message, clock.instant().plus(delay), clock))
+    pushCounter.increment()
+  }
 
   private fun ack(messageId: UUID) {
     unacked.removeIf { it.id == messageId }
@@ -75,14 +77,6 @@ class InMemoryQueue(
 
   override val unackedDepth: Int
     get() = unacked.size
-
-  private val _redeliveryCount = AtomicInteger()
-  override val redeliveryCount: Int
-    get() = _redeliveryCount.get()
-
-  private val _deadLetterCount = AtomicInteger()
-  override val deadLetterCount: Int
-    get() = _deadLetterCount.get()
 
   private val _lastQueuePoll = AtomicReference<Instant?>()
   override val lastQueuePoll: Instant?
@@ -103,11 +97,11 @@ class InMemoryQueue(
     unacked.pollAll {
       if (it.count >= Queue.maxRedeliveries) {
         deadMessageHandler.invoke(this, it.payload)
-        _deadLetterCount.incrementAndGet()
+        deadMessageCounter.increment()
       } else {
         log.warn("redelivering unacked message ${it.payload}")
         queue.put(it.copy(scheduledTime = now, count = it.count + 1))
-        _redeliveryCount.incrementAndGet()
+        redeliverCounter.increment()
       }
     }
   }

@@ -61,8 +61,6 @@ class RedisQueue(
   private val messagesKey = queueName + ".messages"
   private val attemptsKey = queueName + ".attempts"
   private val locksKey = queueName + ".locks"
-  private val redeliveryCountKey = queueName + ".redelivery.count"
-  private val deadLetterCountKey = queueName + ".deadLetter.count"
   private val lastQueuePollKey = queueName + ".poll.timestamp"
   private val lastRedeliveryPollKey = queueName + ".redelivery.timestamp"
 
@@ -77,6 +75,7 @@ class RedisQueue(
             readMessage(id) { payload ->
               callback.invoke(payload) {
                 ack(id)
+                ackCounter.increment()
               }
             }
           }
@@ -93,6 +92,7 @@ class RedisQueue(
         zadd(queueKey, score(delay), id)
       }
     }
+    pushCounter.increment()
   }
 
   override val queueDepth: Int
@@ -100,12 +100,6 @@ class RedisQueue(
 
   override val unackedDepth: Int
     get() = pool.resource.use { it.zcard(unackedKey).toInt() }
-
-  override val redeliveryCount: Int
-    get() = pool.resource.use { it.getInt(redeliveryCountKey) }
-
-  override val deadLetterCount: Int
-    get() = pool.resource.use { it.getInt(deadLetterCountKey) }
 
   override val lastQueuePoll: Instant?
     get() = pool.resource.use { it.getInstant(lastQueuePollKey) }
@@ -144,12 +138,12 @@ class RedisQueue(
                   log.warn("Message $id with payload $message exceeded max re-deliveries")
                   handleDeadMessage(message)
                   ack(id)
-                  incr(deadLetterCountKey)
                 }
+                deadMessageCounter.increment()
               } else {
                 log.warn("Re-delivering message $id after $attempts attempts")
                 move(unackedKey, queueKey, ZERO, setOf(id))
-                incr(redeliveryCountKey)
+                redeliverCounter.increment()
               }
             }
           }

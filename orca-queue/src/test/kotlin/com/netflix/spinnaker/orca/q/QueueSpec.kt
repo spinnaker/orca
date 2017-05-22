@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.Queue.Companion.maxRedeliveries
@@ -38,10 +39,10 @@ abstract class QueueSpec<out Q : Queue>(
   var queue: Q? = null
   val callback: QueueCallback = mock()
   val deadLetterCallback: DeadMessageCallback = mock()
-  val registry: Registry = mock()
+  val registry = NoopRegistry()
   val clock = MutableClock()
 
-  fun resetMocks() = reset(callback)
+  fun resetMocks() = reset(callback, deadLetterCallback)
 
   fun stopQueue() {
     queue?.let { q ->

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.metrics
 
+import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.Queue
 import java.time.Duration
@@ -43,19 +44,6 @@ interface MonitoredQueue : Queue {
   val unackedDepth: Int
 
   /**
-   * Count of messages that have been re-delivered. This does not mean unique
-   * messages, so re-delivering the same message again will still increment this
-   * count.
-   */
-  val redeliveryCount: Int
-
-  /**
-   * Count of messages that have exceeded [Queue.maxRedeliveries] re-delivery
-   * attempts and have been sent to the dead message handler.
-   */
-  val deadLetterCount: Int
-
-  /**
    * The last time the queue was polled.
    */
   val lastQueuePoll: Instant?
@@ -65,7 +53,28 @@ interface MonitoredQueue : Queue {
    */
   val lastRedeliveryPoll: Instant?
 
-  @PostConstruct fun registerGauges() {
+  val pushCounter: Counter
+    get() = registry.counter("push")
+
+  val ackCounter: Counter
+    get() = registry.counter("ack")
+
+  /**
+   * Count of messages that have been re-delivered. This does not mean unique
+   * messages, so re-delivering the same message again will still increment this
+   * count.
+   */
+  val redeliverCounter: Counter
+    get() = registry.counter("redeliver")
+
+  /**
+   * Count of messages that have exceeded [Queue.maxRedeliveries] re-delivery
+   * attempts and have been sent to the dead message handler.
+   */
+  val deadMessageCounter: Counter
+    get() = registry.counter("deadMessage")
+
+  @PostConstruct fun registerMetrics() {
     val createGauge = { name: String, valueCallback: MonitoredQueue.() -> Number ->
       val id = registry
         .createId("queue.$name")
@@ -76,8 +85,6 @@ interface MonitoredQueue : Queue {
 
     createGauge("queueDepth", { queueDepth })
     createGauge("unackedDepth", { unackedDepth })
-    createGauge("redeliveryCount", { redeliveryCount })
-    createGauge("deadLetterCount", { deadLetterCount })
     createGauge("timeSinceLastQueuePoll", { Duration.between(lastQueuePoll ?: EPOCH, now()).toMillis() })
     createGauge("timeSinceLastRedeliveryPoll", { Duration.between(lastRedeliveryPoll ?: EPOCH, now()).toMillis() })
   }

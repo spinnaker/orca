@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.metrics
 
+import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
@@ -23,11 +24,12 @@ import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.time.MutableClock
 import com.netflix.spinnaker.spek.shouldEqual
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.reset
+import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
+import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.api.dsl.on
 import java.io.Closeable
 import java.time.Clock
 
@@ -40,13 +42,23 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
   var queue: Q? = null
   val clock = MutableClock()
   val deadMessageHandler: DeadMessageCallback = mock()
-  val registry: Registry = mock()
+
+  val pushCounter: Counter = mock()
+  val ackCounter: Counter = mock()
+  val redeliverCounter: Counter = mock()
+  val deadMessageCounter: Counter = mock()
+  val registry: Registry = mock {
+    on { counter("push") } doReturn pushCounter
+    on { counter("ack") } doReturn ackCounter
+    on { counter("redeliver") } doReturn redeliverCounter
+    on { counter("deadMessage") } doReturn deadMessageCounter
+  }
 
   fun startQueue() {
     queue = createQueue(clock, deadMessageHandler, registry)
   }
 
-  fun resetMocks() = reset(deadMessageHandler)
+  fun resetMocks() = reset(deadMessageHandler, pushCounter, ackCounter, redeliverCounter)
 
   fun stopQueue() {
     queue?.let { q ->
@@ -57,7 +69,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     shutdownCallback?.invoke()
   }
 
-  given("an empty queue") {
+  describe("an empty queue") {
     beforeGroup(::startQueue)
     afterGroup(::stopQueue)
     afterGroup(::resetMocks)
@@ -71,16 +83,21 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     }
   }
 
-  given("a queue with messages") {
+  describe("pushing a message") {
     beforeGroup(::startQueue)
-    beforeGroup {
-      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
-    }
-
     afterGroup(::stopQueue)
     afterGroup(::resetMocks)
 
-    it("reports the messages on the queue") {
+    on("pushing a message") {
+      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+    }
+
+    it("increments a counter") {
+      verify(pushCounter).increment()
+      verifyNoMoreInteractions(pushCounter, ackCounter, redeliverCounter)
+    }
+
+    it("reports the queue depth") {
       queue!!.apply {
         queueDepth shouldEqual 1
         unackedDepth shouldEqual 0
@@ -89,17 +106,20 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     }
   }
 
-  given("in process messages") {
+  describe("in process messages") {
     beforeGroup(::startQueue)
-    beforeGroup {
-      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
-      queue!!.poll { _, _ -> }
-    }
-
     afterGroup(::stopQueue)
     afterGroup(::resetMocks)
 
-    it("reports unacknowledged messages") {
+    beforeGroup {
+      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+    }
+
+    on("processing the message") {
+      queue!!.poll { _, _ -> }
+    }
+
+    it("reports unacknowledged message depth") {
       queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 1
@@ -108,17 +128,24 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     }
   }
 
-  given("messages have been acknowledged") {
+  describe("acknowledged messages") {
     beforeGroup(::startQueue)
+    afterGroup(::stopQueue)
+    afterGroup(::resetMocks)
+
     beforeGroup {
       queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+    }
+
+    on("successfully processing a message") {
       queue!!.poll { _, ack ->
         ack.invoke()
       }
     }
 
-    afterGroup(::stopQueue)
-    afterGroup(::resetMocks)
+    it("increments a counter") {
+      verify(ackCounter).increment()
+    }
 
     it("reports an empty queue") {
       queue!!.apply {
@@ -129,82 +156,94 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     }
   }
 
-  given("no messages have been redelivered") {
-    beforeGroup(::startQueue)
-    beforeGroup {
-      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
-      queue!!.poll { _, ack ->
-        ack.invoke()
+  describe("checking redelivery") {
+    given("no messages need to be re-delivered") {
+      beforeGroup(::startQueue)
+      afterGroup(::stopQueue)
+      afterGroup(::resetMocks)
+
+      beforeGroup {
+        queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+        queue!!.poll { _, ack ->
+          ack.invoke()
+        }
       }
-      clock.incrementBy(queue!!.ackTimeout)
-      triggerRedeliveryCheck.invoke(queue!!)
-    }
 
-    afterGroup(::stopQueue)
-    afterGroup(::resetMocks)
-
-    it("reports the time of the last redelivery check") {
-      queue!!.apply {
-        redeliveryCount shouldEqual 0
-        lastRedeliveryPoll shouldEqual clock.instant()
-        deadLetterCount shouldEqual 0
-      }
-    }
-  }
-
-  given("a message has been redelivered") {
-    beforeGroup(::startQueue)
-    beforeGroup {
-      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
-      queue!!.poll { _, _ -> }
-      clock.incrementBy(queue!!.ackTimeout)
-      triggerRedeliveryCheck.invoke(queue!!)
-    }
-
-    afterGroup(::stopQueue)
-    afterGroup(::resetMocks)
-
-    it("reports the depth with the message re-queued") {
-      queue!!.apply {
-        queueDepth shouldEqual 1
-        unackedDepth shouldEqual 0
-      }
-    }
-
-    it("reports the redelivered message") {
-      queue!!.apply {
-        redeliveryCount shouldEqual 1
-        lastRedeliveryPoll shouldEqual clock.instant()
-        deadLetterCount shouldEqual 0
-      }
-    }
-  }
-
-  given("a message has been dead lettered") {
-    beforeGroup(::startQueue)
-    beforeGroup {
-      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
-      (1..Queue.maxRedeliveries).forEach {
-        queue!!.poll { _, _ -> }
+      on("checking for unacknowledged messages") {
         clock.incrementBy(queue!!.ackTimeout)
         triggerRedeliveryCheck.invoke(queue!!)
       }
-    }
 
-    afterGroup(::stopQueue)
-    afterGroup(::resetMocks)
+      it("does not increment the redelivery count") {
+        verifyZeroInteractions(redeliverCounter)
+      }
 
-    it("reports the depth without the message re-queued") {
-      queue!!.apply {
-        queueDepth shouldEqual 0
-        unackedDepth shouldEqual 0
+      it("reports the time of the last redelivery check") {
+        queue!!.lastRedeliveryPoll shouldEqual clock.instant()
       }
     }
 
-    it("reports the redelivered message") {
-      queue!!.apply {
-        redeliveryCount shouldEqual Queue.maxRedeliveries - 1
-        deadLetterCount shouldEqual 1
+    given("a message needs to be redelivered") {
+      beforeGroup(::startQueue)
+      afterGroup(::stopQueue)
+      afterGroup(::resetMocks)
+
+      beforeGroup {
+        queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+        queue!!.poll { _, _ -> }
+      }
+
+      on("checking for unacknowledged messages") {
+        clock.incrementBy(queue!!.ackTimeout)
+        triggerRedeliveryCheck.invoke(queue!!)
+      }
+
+      it("reports the depth with the message re-queued") {
+        queue!!.apply {
+          queueDepth shouldEqual 1
+          unackedDepth shouldEqual 0
+        }
+      }
+
+      it("increments the redelivery count") {
+        verify(redeliverCounter).increment()
+      }
+
+      it("reports the time of the last redelivery check") {
+        queue!!.lastRedeliveryPoll shouldEqual clock.instant()
+      }
+    }
+
+    given("a message needs to be dead lettered") {
+      beforeGroup(::startQueue)
+      afterGroup(::stopQueue)
+      afterGroup(::resetMocks)
+
+      beforeGroup {
+        queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+      }
+
+      on("failing to acknowledge the message ${Queue.maxRedeliveries} times") {
+        (1..Queue.maxRedeliveries).forEach {
+          queue!!.poll { _, _ -> }
+          clock.incrementBy(queue!!.ackTimeout)
+          triggerRedeliveryCheck.invoke(queue!!)
+        }
+      }
+
+      it("reports the depth without the message re-queued") {
+        queue!!.apply {
+          queueDepth shouldEqual 0
+          unackedDepth shouldEqual 0
+        }
+      }
+
+      it("counts the redelivery attempts") {
+        verify(redeliverCounter, times(Queue.maxRedeliveries - 1)).increment()
+      }
+
+      it("increments the dead letter count") {
+        verify(deadMessageCounter).increment()
       }
     }
   }
