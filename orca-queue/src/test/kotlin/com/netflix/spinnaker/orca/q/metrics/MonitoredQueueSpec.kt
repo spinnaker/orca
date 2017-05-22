@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.metrics
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
 import com.netflix.spinnaker.orca.q.Queue
@@ -31,7 +32,7 @@ import java.io.Closeable
 import java.time.Clock
 
 abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
-  createQueue: (Clock, DeadMessageCallback) -> Q,
+  createQueue: (Clock, DeadMessageCallback, Registry) -> Q,
   triggerRedeliveryCheck: Q.() -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
@@ -39,9 +40,10 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
   var queue: Q? = null
   val clock = MutableClock()
   val deadMessageHandler: DeadMessageCallback = mock()
+  val registry: Registry = mock()
 
   fun startQueue() {
-    queue = createQueue(clock, deadMessageHandler)
+    queue = createQueue(clock, deadMessageHandler, registry)
   }
 
   fun resetMocks() = reset(deadMessageHandler)
@@ -64,6 +66,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 0
+        lastQueuePoll shouldEqual null
       }
     }
   }
@@ -81,6 +84,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       queue!!.apply {
         queueDepth shouldEqual 1
         unackedDepth shouldEqual 0
+        lastQueuePoll shouldEqual null
       }
     }
   }
@@ -99,6 +103,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 1
+        lastQueuePoll shouldEqual clock.instant()
       }
     }
   }
@@ -119,6 +124,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
       queue!!.apply {
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 0
+        lastQueuePoll shouldEqual clock.instant()
       }
     }
   }
@@ -140,7 +146,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     it("reports the time of the last redelivery check") {
       queue!!.apply {
         redeliveryCount shouldEqual 0
-        lastRedeliveryCheck shouldEqual clock.instant()
+        lastRedeliveryPoll shouldEqual clock.instant()
         deadLetterCount shouldEqual 0
       }
     }
@@ -168,7 +174,7 @@ abstract class MonitoredQueueSpec<out Q : MonitoredQueue>(
     it("reports the redelivered message") {
       queue!!.apply {
         redeliveryCount shouldEqual 1
-        lastRedeliveryCheck shouldEqual clock.instant()
+        lastRedeliveryPoll shouldEqual clock.instant()
         deadLetterCount shouldEqual 0
       }
     }

@@ -16,14 +16,22 @@
 
 package com.netflix.spinnaker.orca.q.metrics
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.Queue
+import java.time.Duration
 import java.time.Instant
+import java.time.Instant.EPOCH
+import java.time.Instant.now
+import javax.annotation.PostConstruct
 
 /**
  * Optional interface [Queue] implementations may support in order to provide
  * hooks for analytics.
  */
 interface MonitoredQueue : Queue {
+
+  val registry: Registry
+
   /**
    * Number of messages currently queued for delivery including any not yet due.
    */
@@ -48,7 +56,29 @@ interface MonitoredQueue : Queue {
   val deadLetterCount: Int
 
   /**
+   * The last time the queue was polled.
+   */
+  val lastQueuePoll: Instant?
+
+  /**
    * The time the last re-delivery check was executed.
    */
-  val lastRedeliveryCheck: Instant?
+  val lastRedeliveryPoll: Instant?
+
+  @PostConstruct fun registerGauges() {
+    val createGauge = { name: String, valueCallback: MonitoredQueue.() -> Number ->
+      val id = registry
+        .createId("queue.$name")
+        .withTag("id", name)
+
+      registry.gauge(id, this, { valueCallback().toDouble() })
+    }
+
+    createGauge("queueDepth", { queueDepth })
+    createGauge("unackedDepth", { unackedDepth })
+    createGauge("redeliveryCount", { redeliveryCount })
+    createGauge("deadLetterCount", { deadLetterCount })
+    createGauge("timeSinceLastQueuePoll", { Duration.between(lastQueuePoll ?: EPOCH, now()).toMillis() })
+    createGauge("timeSinceLastRedeliveryPoll", { Duration.between(lastRedeliveryPoll ?: EPOCH, now()).toMillis() })
+  }
 }

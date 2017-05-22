@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.memory
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
 import com.netflix.spinnaker.orca.q.metrics.MonitoredQueueSpec
 import java.time.Clock
@@ -25,5 +26,12 @@ object InMemoryMonitoredQueueSpec : MonitoredQueueSpec<InMemoryQueue>(
   InMemoryQueue::redeliver
 )
 
-private fun createQueue(clock: Clock, deadLetterCallback: DeadMessageCallback) =
-  InMemoryQueue(clock, deadMessageHandler = deadLetterCallback)
+private fun createQueue(
+  clock: Clock,
+  deadLetterCallback: DeadMessageCallback,
+  registry: Registry
+) = InMemoryQueue(
+  clock = clock,
+  deadMessageHandler = deadLetterCallback,
+  registry = registry
+)

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.Queue.Companion.maxRedeliveries
 import com.netflix.spinnaker.orca.time.MutableClock
@@ -29,7 +30,7 @@ import java.time.Clock
 import java.time.Duration
 
 abstract class QueueSpec<out Q : Queue>(
-  createQueue: (Clock, DeadMessageCallback) -> Q,
+  createQueue: (Clock, DeadMessageCallback, Registry) -> Q,
   triggerRedeliveryCheck: Q.() -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
@@ -37,6 +38,7 @@ abstract class QueueSpec<out Q : Queue>(
   var queue: Q? = null
   val callback: QueueCallback = mock()
   val deadLetterCallback: DeadMessageCallback = mock()
+  val registry: Registry = mock()
   val clock = MutableClock()
 
   fun resetMocks() = reset(callback)
@@ -53,7 +55,7 @@ abstract class QueueSpec<out Q : Queue>(
   describe("polling the queue") {
     context("there are no messages") {
       beforeGroup {
-        queue = createQueue.invoke(clock, deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback, registry)
       }
 
       afterGroup(::stopQueue)
@@ -72,7 +74,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(clock, deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback, registry)
         queue!!.push(message)
       }
 
@@ -93,7 +95,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message2 = StartExecution(Pipeline::class.java, "2", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(clock, deadLetterCallback).apply {
+        queue = createQueue.invoke(clock, deadLetterCallback, registry).apply {
           push(message1)
           clock.incrementBy(Duration.ofSeconds(1))
           push(message2)
@@ -123,7 +125,7 @@ abstract class QueueSpec<out Q : Queue>(
         val message = StartExecution(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue = createQueue.invoke(clock, deadLetterCallback)
+          queue = createQueue.invoke(clock, deadLetterCallback, registry)
           queue!!.push(message, delay)
         }
 
@@ -143,7 +145,7 @@ abstract class QueueSpec<out Q : Queue>(
         val message = StartExecution(Pipeline::class.java, "1", "foo")
 
         beforeGroup {
-          queue = createQueue.invoke(clock, deadLetterCallback)
+          queue = createQueue.invoke(clock, deadLetterCallback, registry)
           queue!!.push(message, delay)
           clock.incrementBy(delay)
         }
@@ -167,7 +169,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(clock, deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback, registry)
         queue!!.push(message)
       }
 
@@ -194,7 +196,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(clock, deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback, registry)
         queue!!.push(message)
       }
 
@@ -219,7 +221,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(clock, deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback, registry)
         queue!!.push(message)
       }
 
@@ -246,7 +248,7 @@ abstract class QueueSpec<out Q : Queue>(
       val message = StartExecution(Pipeline::class.java, "1", "foo")
 
       beforeGroup {
-        queue = createQueue.invoke(clock, deadLetterCallback)
+        queue = createQueue.invoke(clock, deadLetterCallback, registry)
         queue!!.push(message)
       }
 

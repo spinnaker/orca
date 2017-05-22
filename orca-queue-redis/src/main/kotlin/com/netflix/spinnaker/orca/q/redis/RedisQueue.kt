@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.ScheduledAction
@@ -46,7 +47,8 @@ class RedisQueue(
   private val currentInstanceId: String,
   private val lockTtlSeconds: Int = Duration.ofDays(1).seconds.toInt(),
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
-  override val deadMessageHandler: (Queue, Message) -> Unit
+  override val deadMessageHandler: (Queue, Message) -> Unit,
+  override val registry: Registry
 ) : MonitoredQueue, Closeable {
 
   private val mapper = ObjectMapper().apply {
@@ -61,7 +63,8 @@ class RedisQueue(
   private val locksKey = queueName + ".locks"
   private val redeliveryCountKey = queueName + ".redelivery.count"
   private val deadLetterCountKey = queueName + ".deadLetter.count"
-  private val lastRedeliveryCheckKey = queueName + ".redelivery.timestamp"
+  private val lastQueuePollKey = queueName + ".poll.timestamp"
+  private val lastRedeliveryPollKey = queueName + ".redelivery.timestamp"
 
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
@@ -77,6 +80,7 @@ class RedisQueue(
               }
             }
           }
+        setCurrentTimestamp(lastQueuePollKey)
       }
     }
   }
@@ -103,8 +107,11 @@ class RedisQueue(
   override val deadLetterCount: Int
     get() = pool.resource.use { it.getInt(deadLetterCountKey) }
 
-  override val lastRedeliveryCheck: Instant?
-    get() = pool.resource.use { it.getInstant(lastRedeliveryCheckKey) }
+  override val lastQueuePoll: Instant?
+    get() = pool.resource.use { it.getInstant(lastQueuePollKey) }
+
+  override val lastRedeliveryPoll: Instant?
+    get() = pool.resource.use { it.getInstant(lastRedeliveryPollKey) }
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
@@ -147,7 +154,7 @@ class RedisQueue(
             }
           }
           .also {
-            set(lastRedeliveryCheckKey, clock.millis().toString())
+            setCurrentTimestamp(lastRedeliveryPollKey)
           }
       }
     }
@@ -215,6 +222,9 @@ class RedisQueue(
       }
     }
   }
+
+  private fun JedisCommands.setCurrentTimestamp(key: String) =
+    set(key, clock.millis().toString())
 
   private fun JedisCommands.hgetInt(key: String, field: String, default: Int = 0) =
     hget(key, field)?.toInt() ?: default

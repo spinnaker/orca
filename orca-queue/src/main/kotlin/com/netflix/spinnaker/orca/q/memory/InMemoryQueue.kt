@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.memory
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
 import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Queue
@@ -42,7 +43,8 @@ import javax.annotation.PreDestroy
 class InMemoryQueue(
   private val clock: Clock,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
-  override val deadMessageHandler: DeadMessageCallback
+  override val deadMessageHandler: DeadMessageCallback,
+  override val registry: Registry
 ) : MonitoredQueue, Closeable {
 
   private val log: Logger = getLogger(javaClass)
@@ -52,6 +54,7 @@ class InMemoryQueue(
   private val redeliveryWatcher = ScheduledAction(this::redeliver)
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
+    _lastQueuePoll.lazySet(clock.instant())
     queue.poll()?.let { envelope ->
       unacked.put(envelope.copy(scheduledTime = clock.instant().plus(ackTimeout)))
       callback.invoke(envelope.payload) {
@@ -81,9 +84,13 @@ class InMemoryQueue(
   override val deadLetterCount: Int
     get() = _deadLetterCount.get()
 
-  private val _lastRedeliveryCheck = AtomicReference<Instant?>()
-  override val lastRedeliveryCheck: Instant?
-    get() = _lastRedeliveryCheck.get()
+  private val _lastQueuePoll = AtomicReference<Instant?>()
+  override val lastQueuePoll: Instant?
+    get() = _lastQueuePoll.get()
+
+  private val _lastRedeliveryPoll = AtomicReference<Instant?>()
+  override val lastRedeliveryPoll: Instant?
+    get() = _lastRedeliveryPoll.get()
 
   @PreDestroy override fun close() {
     log.info("stopping redelivery watcher for $this")
@@ -92,7 +99,7 @@ class InMemoryQueue(
 
   internal fun redeliver() {
     val now = clock.instant()
-    _lastRedeliveryCheck.lazySet(now)
+    _lastRedeliveryPoll.lazySet(now)
     unacked.pollAll {
       if (it.count >= Queue.maxRedeliveries) {
         deadMessageHandler.invoke(this, it.payload)
