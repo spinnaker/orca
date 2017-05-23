@@ -50,6 +50,15 @@ interface Queue {
   fun push(message: Message, delay: TemporalAmount): Unit
 
   /**
+   * Check for any un-acknowledged messages that are overdue and move them back
+   * onto the queue.
+   *
+   * This method is not intended to be called by clients directly but typically
+   * scheduled in some way.
+   */
+  fun redeliver()
+
+  /**
    * The expired time after which un-acknowledged messages will be re-delivered.
    */
   val ackTimeout: TemporalAmount

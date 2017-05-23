@@ -32,7 +32,6 @@ import java.time.Duration
 
 abstract class QueueSpec<out Q : Queue>(
   createQueue: (Clock, DeadMessageCallback, Registry) -> Q,
-  triggerRedeliveryCheck: Q.() -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
 
@@ -183,7 +182,7 @@ abstract class QueueSpec<out Q : Queue>(
             ack.invoke()
           }
           clock.incrementBy(ackTimeout)
-          triggerRedeliveryCheck()
+          redeliver()
           poll(callback)
         }
       }
@@ -208,7 +207,7 @@ abstract class QueueSpec<out Q : Queue>(
         queue!!.apply {
           poll { _, _ -> }
           clock.incrementBy(ackTimeout)
-          triggerRedeliveryCheck()
+          redeliver()
           poll(callback)
         }
       }
@@ -234,7 +233,7 @@ abstract class QueueSpec<out Q : Queue>(
           repeat(2) {
             poll { _, _ -> }
             clock.incrementBy(ackTimeout)
-            triggerRedeliveryCheck()
+            redeliver()
           }
           poll(callback)
         }
@@ -261,7 +260,7 @@ abstract class QueueSpec<out Q : Queue>(
           repeat(maxRedeliveries) {
             poll { _, _ -> }
             clock.incrementBy(ackTimeout)
-            triggerRedeliveryCheck()
+            redeliver()
           }
           poll(callback)
         }
@@ -278,7 +277,7 @@ abstract class QueueSpec<out Q : Queue>(
       context("once the message has been dead-lettered") {
         action("the next time re-delivery checks happen") {
           queue!!.apply {
-            triggerRedeliveryCheck()
+            redeliver()
             poll(callback)
           }
         }

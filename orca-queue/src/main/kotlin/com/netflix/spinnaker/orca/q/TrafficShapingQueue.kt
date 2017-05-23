@@ -84,6 +84,10 @@ import java.time.temporal.TemporalAmount
 
   override fun push(message: Message, delay: TemporalAmount) = queueImpl.push(message, delay)
 
+  override fun redeliver() {
+    queueImpl.redeliver()
+  }
+
   override fun close() {
     if (queueImpl is Closeable) {
       queueImpl.close()
