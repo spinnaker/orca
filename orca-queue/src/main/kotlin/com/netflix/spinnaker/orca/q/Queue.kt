@@ -56,7 +56,7 @@ interface Queue {
    * This method is not intended to be called by clients directly but typically
    * scheduled in some way.
    */
-  fun retry()
+  fun retry(): Unit {}
 
   /**
    * The expired time after which un-acknowledged messages will be retried.
