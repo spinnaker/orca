@@ -91,7 +91,7 @@ class RedisQueue(
     pushCounter.increment()
   }
 
-  @Scheduled(fixedDelay = 10_000)
+  @Scheduled(fixedDelayString = "\${queue.retry.frequency:10000}")
   override fun redeliver() {
     pool.resource.use { redis ->
       redis.apply {

@@ -65,7 +65,7 @@ class InMemoryQueue(
     pushCounter.increment()
   }
 
-  @Scheduled(fixedDelay = 10_000)
+  @Scheduled(fixedDelayString = "\${queue.retry.frequency:10000}")
   override fun redeliver() {
     val now = clock.instant()
     _lastRedeliveryPoll.lazySet(now)
