@@ -66,17 +66,17 @@ class InMemoryQueue(
   }
 
   @Scheduled(fixedDelayString = "\${queue.retry.frequency:10000}")
-  override fun redeliver() {
+  override fun retry() {
     val now = clock.instant()
     _lastRedeliveryPoll.lazySet(now)
     unacked.pollAll {
-      if (it.count >= Queue.maxRedeliveries) {
+      if (it.count >= Queue.maxRetries) {
         deadMessageHandler.invoke(this, it.payload)
         deadMessageCounter.increment()
       } else {
         log.warn("redelivering unacked message ${it.payload}")
         queue.put(it.copy(scheduledTime = now, count = it.count + 1))
-        redeliverCounter.increment()
+        retryCounter.increment()
       }
     }
   }
@@ -96,7 +96,7 @@ class InMemoryQueue(
     get() = _lastQueuePoll.get()
 
   private val _lastRedeliveryPoll = AtomicReference<Instant?>()
-  override val lastRedeliveryPoll: Instant?
+  override val lastRetryPoll: Instant?
     get() = _lastRedeliveryPoll.get()
 
   private fun <T : Delayed> DelayQueue<T>.pollAll(block: (T) -> Unit) {

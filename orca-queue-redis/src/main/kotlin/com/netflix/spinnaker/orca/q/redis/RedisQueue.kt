@@ -92,7 +92,7 @@ class RedisQueue(
   }
 
   @Scheduled(fixedDelayString = "\${queue.retry.frequency:10000}")
-  override fun redeliver() {
+  override fun retry() {
     pool.resource.use { redis ->
       redis.apply {
         zrangeByScore(unackedKey, 0.0, score())
@@ -103,17 +103,17 @@ class RedisQueue(
 
             ids.forEach { id ->
               val attempts = hgetInt(attemptsKey, id)
-              if (attempts >= Queue.maxRedeliveries) {
+              if (attempts >= Queue.maxRetries) {
                 readMessage(id) { message ->
-                  log.warn("Message $id with payload $message exceeded max re-deliveries")
+                  log.warn("Message $id with payload $message exceeded max retries")
                   handleDeadMessage(message)
                   ack(id)
                 }
                 deadMessageCounter.increment()
               } else {
-                log.warn("Re-delivering message $id after $attempts attempts")
+                log.warn("Retrying message $id after $attempts attempts")
                 move(unackedKey, queueKey, ZERO, setOf(id))
-                redeliverCounter.increment()
+                retryCounter.increment()
               }
             }
           }
@@ -133,7 +133,7 @@ class RedisQueue(
   override val lastQueuePoll: Instant?
     get() = pool.resource.use { it.getInstant(lastQueuePollKey) }
 
-  override val lastRedeliveryPoll: Instant?
+  override val lastRetryPoll: Instant?
     get() = pool.resource.use { it.getInstant(lastRedeliveryPollKey) }
 
   private fun ack(id: String) {
