@@ -39,22 +39,24 @@ open class CompleteStageHandler
 
   override fun handle(message: CompleteStage) {
     message.withStage { stage ->
-      stage.setStatus(message.status)
-      stage.setEndTime(clock.millis())
-      repository.storeStage(stage)
+      if (stage.getStatus() in setOf(RUNNING, NOT_STARTED)) {
+        stage.setStatus(message.status)
+        stage.setEndTime(clock.millis())
+        repository.storeStage(stage)
 
-      if (message.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED)) {
-        stage.startNext()
-      } else {
-        queue.push(CancelStage(message))
-        if (stage.getSyntheticStageOwner() == null) {
-          queue.push(CompleteExecution(message))
+        if (message.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED)) {
+          stage.startNext()
         } else {
-          queue.push(message.copy(stageId = stage.getParentStageId()))
+          queue.push(CancelStage(message))
+          if (stage.getSyntheticStageOwner() == null) {
+            queue.push(CompleteExecution(message))
+          } else {
+            queue.push(message.copy(stageId = stage.getParentStageId()))
+          }
         }
-      }
 
-      publisher.publishEvent(StageComplete(this, stage))
+        publisher.publishEvent(StageComplete(this, stage))
+      }
     }
   }
 

@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import org.slf4j.Logger
@@ -41,19 +43,36 @@ open class ContinueParentStageHandler
     message.withStage { stage ->
       if (stage.allBeforeStagesComplete()) {
         if (stage.hasTasks()) {
-          queue.push(StartTask(stage, stage.getTasks().first()))
+          stage.runFirstTask()
         } else if (stage.hasAfterStages()) {
-          stage.firstAfterStages().forEach {
-            queue.push(StartStage(it))
-          }
+          stage.runAfterStages()
         } else {
-          queue.push(CompleteStage(stage, ExecutionStatus.SUCCEEDED))
+          queue.push(CompleteStage(stage, SUCCEEDED))
         }
       } else {
         log.warn("Re-queuing $message as other BEFORE stages are still running")
         queue.push(message, retryDelay)
-        // TODO: no-op if message already processed
       }
+    }
+  }
+
+  private fun Stage<*>.runFirstTask() {
+    val firstTask = getTasks().first()
+    if (firstTask.status == NOT_STARTED) {
+      queue.push(StartTask(this, firstTask))
+    } else {
+      log.warn("Ignoring $messageType for ${getId()} as tasks are already running")
+    }
+  }
+
+  private fun Stage<*>.runAfterStages() {
+    val afterStages = firstAfterStages()
+    if (afterStages.all { it.getStatus() == NOT_STARTED }) {
+      afterStages.forEach {
+        queue.push(StartStage(it))
+      }
+    } else {
+      log.warn("Ignoring $messageType for ${getId()} as AFTER stages are already running")
     }
   }
 

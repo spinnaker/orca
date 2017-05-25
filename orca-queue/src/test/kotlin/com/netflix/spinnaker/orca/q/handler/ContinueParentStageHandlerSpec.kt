@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -87,17 +88,39 @@ object ContinueParentStageHandlerSpec : SubjectSpek<ContinueParentStageHandler>(
 
       beforeGroup {
         pipeline.stageByRef("1").beforeStages().forEach { it.setStatus(SUCCEEDED) }
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
       }
 
-      afterGroup(::resetMocks)
+      and("they have not started yet") {
+        beforeGroup {
+          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        }
 
-      on("receiving $message") {
-        subject.handle(message)
+        afterGroup(::resetMocks)
+
+        on("receiving $message") {
+          subject.handle(message)
+        }
+
+        it("runs the parent stage's first task") {
+          verify(queue).push(StartTask(pipeline.stageByRef("1"), "1"))
+        }
       }
 
-      it("runs the parent stage's first task") {
-        verify(queue).push(StartTask(pipeline.stageByRef("1"), "1"))
+      and("they have already started") {
+        beforeGroup {
+          pipeline.stageByRef("1").tasks.first().status = RUNNING
+          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving $message") {
+          subject.handle(message)
+        }
+
+        it("ignores the message") {
+          verifyZeroInteractions(queue)
+        }
       }
     }
 
@@ -145,17 +168,39 @@ object ContinueParentStageHandlerSpec : SubjectSpek<ContinueParentStageHandler>(
 
       beforeGroup {
         pipeline.stageByRef("1").beforeStages().forEach { it.setStatus(SUCCEEDED) }
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
       }
 
-      afterGroup(::resetMocks)
+      and("they didn't start yet") {
+        beforeGroup {
+          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        }
 
-      on("receiving $message") {
-        subject.handle(message)
+        afterGroup(::resetMocks)
+
+        on("receiving $message") {
+          subject.handle(message)
+        }
+
+        it("starts the first after stage") {
+          verify(queue).push(StartStage(pipeline.stageByRef("1>1")))
+        }
       }
 
-      it("starts the first after stage") {
-        verify(queue).push(StartStage(pipeline.stageByRef("1>1")))
+      and("they already started") {
+        beforeGroup {
+          pipeline.stageByRef("1>1").status = RUNNING
+          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving $message") {
+          subject.handle(message)
+        }
+
+        it("ignores the message") {
+          verifyZeroInteractions(queue)
+        }
       }
     }
   }
