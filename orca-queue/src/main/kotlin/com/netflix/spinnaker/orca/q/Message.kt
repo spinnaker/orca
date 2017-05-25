@@ -133,6 +133,16 @@ data class StartStage(
     this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
 }
 
+data class ContinueParentStage(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String,
+  override val stageId: String
+) : Message(), StageLevel {
+  constructor(source: Stage<*>) :
+    this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
+}
+
 data class CompleteStage(
   override val executionType: Class<out Execution<*>>,
   override val executionId: String,
