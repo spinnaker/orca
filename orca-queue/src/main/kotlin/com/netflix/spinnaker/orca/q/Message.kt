@@ -63,6 +63,9 @@ data class StartTask(
 
   constructor(source: Stage<*>, taskId: String) :
     this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId(), taskId)
+
+  constructor(source: Stage<*>, task: com.netflix.spinnaker.orca.pipeline.model.Task) :
+    this(source.getExecution().javaClass, source.getExecution().getId(), source.getExecution().getApplication(), source.getId(), task.id)
 }
 
 data class CompleteTask(

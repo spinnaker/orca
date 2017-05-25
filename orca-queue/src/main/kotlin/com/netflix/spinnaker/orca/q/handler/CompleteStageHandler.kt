@@ -71,9 +71,9 @@ open class CompleteStageHandler
         // TODO: I'm not convinced this is a good approach, we should probably signal completion of the branch and have downstream handler no-op if other branches are incomplete
         parent().let { parent ->
           if (parent.allBeforeStagesComplete()) {
-            if (parent.getTasks().isNotEmpty()) {
-              queue.push(StartTask(parent, parent.getTasks().first().id))
-            } else if (parent.firstAfterStages().isNotEmpty()) {
+            if (parent.hasTasks()) {
+              queue.push(StartTask(parent, parent.getTasks().first()))
+            } else if (parent.hasAfterStages()) {
               parent.firstAfterStages().forEach {
                 queue.push(StartStage(it))
               }
