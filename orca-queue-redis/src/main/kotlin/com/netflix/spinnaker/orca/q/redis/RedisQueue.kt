@@ -133,14 +133,16 @@ class RedisQueue(
 
   override val orphanedMessages: Int
     get() = pool.resource.use { redis ->
-      val (messages, queue, unacked) = redis
+      redis
         .multi {
           hlen(messagesKey)
           zcard(queueKey)
           zcard(unackedKey)
         }
         .map { it as Long }
-      (messages - (queue + unacked)).toInt()
+        .let { (messages, queue, unacked) ->
+          (messages - (queue + unacked)).toInt()
+        }
     }
 
   override fun toString() = "RedisQueue[$queueName]"
