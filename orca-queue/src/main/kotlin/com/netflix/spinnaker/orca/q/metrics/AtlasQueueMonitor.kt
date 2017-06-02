@@ -64,6 +64,7 @@ open class AtlasQueueMonitor
   fun pollQueueDepth() {
     _lastQueueDepth.set(queue.queueDepth)
     _lastUnackedDepth.set(queue.unackedDepth)
+    _lastOrphanedMessages.set(queue.orphanedMessages)
   }
 
   @PostConstruct fun registerGauges() {
@@ -74,6 +75,9 @@ open class AtlasQueueMonitor
     })
     registry.gauge("queue.unacked.depth", this, {
       it.lastUnackedDepth.toDouble()
+    })
+    registry.gauge("queue.orphaned.messages", this, {
+      it.lastOrphanedMessages.toDouble()
     })
     registry.gauge("queue.last.poll.age", this, {
       Duration
@@ -118,6 +122,10 @@ open class AtlasQueueMonitor
   val lastUnackedDepth: Int
     get() = _lastUnackedDepth.get()
   private val _lastUnackedDepth = AtomicInteger()
+
+  val lastOrphanedMessages: Int
+    get() = _lastOrphanedMessages.get()
+  private val _lastOrphanedMessages = AtomicInteger()
 
   /**
    * Count of messages pushed to the queue.

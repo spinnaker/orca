@@ -128,6 +128,18 @@ class RedisQueue(
   override val unackedDepth: Int
     get() = pool.resource.use { it.zcard(unackedKey).toInt() }
 
+  override val orphanedMessages: Int
+    get() = pool.resource.use { redis ->
+      val (messages, queue, unacked) = redis
+        .multi {
+          hlen(messagesKey)
+          zcard(queueKey)
+          zcard(unackedKey)
+        }
+        .map { it as Long }
+      (messages - (queue + unacked)).toInt()
+    }
+
   override fun toString() = "RedisQueue[$queueName]"
 
   private fun ack(id: String) {

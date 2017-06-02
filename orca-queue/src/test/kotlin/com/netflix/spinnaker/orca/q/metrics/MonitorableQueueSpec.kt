@@ -70,6 +70,10 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
         unackedDepth shouldEqual 0
       }
     }
+
+    it("reports no orphaned messages") {
+      queue!!.orphanedMessages shouldEqual 0
+    }
   }
 
   describe("pushing a message") {
@@ -90,6 +94,10 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
         queueDepth shouldEqual 1
         unackedDepth shouldEqual 0
       }
+    }
+
+    it("reports no orphaned messages") {
+      queue!!.orphanedMessages shouldEqual 0
     }
   }
 
@@ -115,6 +123,10 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 1
       }
+    }
+
+    it("reports no orphaned messages") {
+      queue!!.orphanedMessages shouldEqual 0
     }
   }
 
@@ -142,6 +154,10 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
         queueDepth shouldEqual 0
         unackedDepth shouldEqual 0
       }
+    }
+
+    it("reports no orphaned messages") {
+      queue!!.orphanedMessages shouldEqual 0
     }
   }
 
@@ -193,6 +209,10 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
           unackedDepth shouldEqual 0
         }
       }
+
+      it("reports no orphaned messages") {
+        queue!!.orphanedMessages shouldEqual 0
+      }
     }
 
     given("a message needs to be dead lettered") {
@@ -225,6 +245,10 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
           queueDepth shouldEqual 0
           unackedDepth shouldEqual 0
         }
+      }
+
+      it("reports no orphaned messages") {
+        queue!!.orphanedMessages shouldEqual 0
       }
     }
   }
