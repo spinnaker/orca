@@ -45,6 +45,11 @@ interface MonitorableQueue : Queue {
    */
   val orphanedMessages: Int
     get() = 0
+
+  /**
+   * Number of messages ready for delivery.
+   */
+  val readyDepth: Int
 }
 
 /**

@@ -64,6 +64,7 @@ open class AtlasQueueMonitor
   fun pollQueueDepth() {
     _lastQueueDepth.set(queue.queueDepth)
     _lastUnackedDepth.set(queue.unackedDepth)
+    _lastReadyDepth.set(queue.readyDepth)
     _lastOrphanedMessages.set(queue.orphanedMessages)
   }
 
@@ -75,6 +76,9 @@ open class AtlasQueueMonitor
     })
     registry.gauge("queue.unacked.depth", this, {
       it.lastUnackedDepth.toDouble()
+    })
+    registry.gauge("queue.ready.depth", this, {
+      it.lastReadyDepth.toDouble()
     })
     registry.gauge("queue.orphaned.messages", this, {
       it.lastOrphanedMessages.toDouble()
@@ -123,6 +127,18 @@ open class AtlasQueueMonitor
     get() = _lastUnackedDepth.get()
   private val _lastUnackedDepth = AtomicInteger()
 
+  /**
+   * Number of ready messages on the queue when last measured with
+   * [MonitorableQueue.readyDepth].
+   */
+  val lastReadyDepth: Int
+    get() = _lastReadyDepth.get()
+  private val _lastReadyDepth = AtomicInteger()
+
+  /**
+   * Number of orphaned messages when last measured with
+   * [MonitorableQueue.orphanedMessages].
+   */
   val lastOrphanedMessages: Int
     get() = _lastOrphanedMessages.get()
   private val _lastOrphanedMessages = AtomicInteger()
