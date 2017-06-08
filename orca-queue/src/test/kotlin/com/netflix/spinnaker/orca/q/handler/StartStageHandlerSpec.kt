@@ -415,6 +415,29 @@ object StartStageHandlerSpec : SubjectSpek<StartStageHandler>({
         }
       }
 
+      and("one of them failed") {
+        beforeGroup {
+          pipeline.stageByRef("1").status = SUCCEEDED
+          pipeline.stageByRef("2").status = TERMINAL
+          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving $message") {
+          subject.handle(message)
+        }
+
+        it("publishes no events") {
+          verifyZeroInteractions(publisher)
+        }
+
+        it("completes the execution") {
+          verify(queue).push(CompleteExecution(message))
+          verifyNoMoreInteractions(queue)
+        }
+      }
+
       and("completion of another has already started this stage") {
         beforeGroup {
           pipeline.stageByRef("1").status = SUCCEEDED
@@ -711,7 +734,7 @@ object StartStageHandlerSpec : SubjectSpek<StartStageHandler>({
           )
         }
       }
-      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+      val message = StartStage(pipeline.stages.first())
 
       beforeGroup {
         whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
@@ -740,7 +763,7 @@ object StartStageHandlerSpec : SubjectSpek<StartStageHandler>({
           )
         }
       }
-      val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+      val message = StartStage(pipeline.stages.first())
 
       beforeGroup {
         whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
@@ -764,6 +787,78 @@ object StartStageHandlerSpec : SubjectSpek<StartStageHandler>({
 
       it("doesn't build any synthetic stages") {
         pipeline.stages.filter { it.parentStageId == message.stageId } shouldMatch isEmpty
+      }
+    }
+
+    given("the stage's optionality is a nested condition") {
+      val pipeline = pipeline {
+        application = "foo"
+        stage {
+          refId = "1"
+          name = "Preceding"
+          status = FAILED_CONTINUE
+        }
+        stage {
+          refId = "2"
+          type = stageWithSyntheticBefore.type
+          context["stageEnabled"] = mapOf(
+            "type" to "expression",
+            "expression" to "execution.stages.?[name == 'Preceding'][0]['status'].toString() != \"SUCCEEDED\""
+          )
+        }
+      }
+      val message = StartStage(pipeline.stageByRef("2"))
+
+      and("the stage should be run") {
+        beforeGroup {
+          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving $message") {
+          subject.handle(message)
+        }
+
+        it("proceeds with the first synthetic stage as normal") {
+          verify(queue).push(any<StartStage>())
+        }
+      }
+
+      and("the stage should be skipped") {
+        val pipeline = pipeline {
+          application = "foo"
+          stage {
+            refId = "1"
+            name = "Preceding"
+            status = SUCCEEDED
+          }
+          stage {
+            refId = "2"
+            type = stageWithSyntheticBefore.type
+            context["stageEnabled"] = mapOf(
+              "type" to "expression",
+              "expression" to "execution.stages.?[name == 'Preceding'][0]['status'].toString() != \"SUCCEEDED\""
+            )
+          }
+        }
+        val message = StartStage(pipeline.stageByRef("2"))
+
+        beforeGroup {
+          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving $message") {
+          subject.handle(message)
+        }
+
+        it("skips the stage") {
+          verify(queue).push(check<CompleteStage> {
+            it.status shouldEqual SKIPPED
+          })
+        }
       }
     }
   }
