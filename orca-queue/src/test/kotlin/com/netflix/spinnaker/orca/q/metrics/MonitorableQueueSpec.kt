@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.q.DeadMessageCallback
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.StartExecution
-import com.netflix.spinnaker.orca.q.metrics.QueueEvent.*
 import com.netflix.spinnaker.orca.time.MutableClock
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
@@ -35,7 +34,7 @@ import java.time.Clock
 import java.time.Duration
 
 abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
-  createQueue: (Clock, DeadMessageCallback, ApplicationEventPublisher) -> Q,
+  createQueue: (Clock, DeadMessageCallback, ApplicationEventPublisher?) -> Q,
   triggerRedeliveryCheck: Q.() -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
@@ -66,15 +65,12 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
     afterGroup(::resetMocks)
 
     it("reports empty") {
-      queue!!.apply {
-        queueDepth shouldEqual 0
-        unackedDepth shouldEqual 0
-        readyDepth shouldEqual 0
+      with(queue!!.readState()) {
+        depth shouldEqual 0
+        ready shouldEqual 0
+        unacked shouldEqual 0
+        orphaned shouldEqual 0
       }
-    }
-
-    it("reports no orphaned messages") {
-      queue!!.orphanedMessages shouldEqual 0
     }
   }
 
@@ -92,15 +88,38 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
     }
 
     it("reports the updated queue depth") {
-      queue!!.apply {
-        queueDepth shouldEqual 1
-        unackedDepth shouldEqual 0
-        readyDepth shouldEqual 1
+      with(queue!!.readState()) {
+        depth shouldEqual 1
+        unacked shouldEqual 0
+        ready shouldEqual 1
+        orphaned shouldEqual 0
       }
     }
+  }
 
-    it("reports no orphaned messages") {
-      queue!!.orphanedMessages shouldEqual 0
+  describe("pushing a duplicate message") {
+    beforeGroup(::startQueue)
+    afterGroup(::stopQueue)
+    afterGroup(::resetMocks)
+
+    beforeGroup {
+      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+    }
+
+    on("pushing a duplicate message") {
+      queue!!.push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+    }
+
+    it("fires an event to report the push") {
+      verify(publisher).publishEvent(isA<MessageDuplicate>())
+    }
+
+    it("reports an unchanged queue depth") {
+      with(queue!!.readState()) {
+        depth shouldEqual 1
+        unacked shouldEqual 0
+        ready shouldEqual 1
+      }
     }
   }
 
@@ -118,15 +137,12 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
     }
 
     it("reports the updated queue depth") {
-      queue!!.apply {
-        queueDepth shouldEqual 1
-        unackedDepth shouldEqual 0
-        readyDepth shouldEqual 0
+      with(queue!!.readState()) {
+        depth shouldEqual 1
+        unacked shouldEqual 0
+        ready shouldEqual 0
+        orphaned shouldEqual 0
       }
-    }
-
-    it("reports no orphaned messages") {
-      queue!!.orphanedMessages shouldEqual 0
     }
   }
 
@@ -148,15 +164,12 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
     }
 
     it("reports unacknowledged message depth") {
-      queue!!.apply {
-        queueDepth shouldEqual 0
-        unackedDepth shouldEqual 1
-        readyDepth shouldEqual 0
+      with(queue!!.readState()) {
+        depth shouldEqual 0
+        unacked shouldEqual 1
+        ready shouldEqual 0
+        orphaned shouldEqual 0
       }
-    }
-
-    it("reports no orphaned messages") {
-      queue!!.orphanedMessages shouldEqual 0
     }
   }
 
@@ -180,15 +193,12 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
     }
 
     it("reports an empty queue") {
-      queue!!.apply {
-        queueDepth shouldEqual 0
-        unackedDepth shouldEqual 0
-        readyDepth shouldEqual 0
+      with(queue!!.readState()) {
+        depth shouldEqual 0
+        unacked shouldEqual 0
+        ready shouldEqual 0
+        orphaned shouldEqual 0
       }
-    }
-
-    it("reports no orphaned messages") {
-      queue!!.orphanedMessages shouldEqual 0
     }
   }
 
@@ -235,15 +245,44 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
       }
 
       it("reports the depth with the message re-queued") {
-        queue!!.apply {
-          queueDepth shouldEqual 1
-          unackedDepth shouldEqual 0
-          readyDepth shouldEqual 1
+        with(queue!!.readState()) {
+          depth shouldEqual 1
+          unacked shouldEqual 0
+          ready shouldEqual 1
+          orphaned shouldEqual 0
+        }
+      }
+    }
+
+    given("a message needs to be redelivered but another copy was already pushed") {
+      beforeGroup(::startQueue)
+      afterGroup(::stopQueue)
+      afterGroup(::resetMocks)
+
+      beforeGroup {
+        with(queue!!) {
+          push(StartExecution(Pipeline::class.java, "1", "spinnaker"))
+          poll { message, _ ->
+            push(message)
+          }
         }
       }
 
-      it("reports no orphaned messages") {
-        queue!!.orphanedMessages shouldEqual 0
+      on("checking for unacknowledged messages") {
+        clock.incrementBy(queue!!.ackTimeout)
+        triggerRedeliveryCheck.invoke(queue!!)
+      }
+
+      it("fires an event indicating the message is a duplicate") {
+        verify(publisher).publishEvent(isA<MessageDuplicate>())
+      }
+
+      it("reports the depth without the message re-queued") {
+        with(queue!!.readState()) {
+          depth shouldEqual 1
+          unacked shouldEqual 0
+          ready shouldEqual 1
+        }
       }
     }
 
@@ -273,15 +312,12 @@ abstract class MonitorableQueueSpec<out Q : MonitorableQueue>(
       }
 
       it("reports the depth without the message re-queued") {
-        queue!!.apply {
-          queueDepth shouldEqual 0
-          unackedDepth shouldEqual 0
-          readyDepth shouldEqual 0
+        with(queue!!.readState()) {
+          depth shouldEqual 0
+          unacked shouldEqual 0
+          ready shouldEqual 0
+          orphaned shouldEqual 0
         }
-      }
-
-      it("reports no orphaned messages") {
-        queue!!.orphanedMessages shouldEqual 0
       }
     }
   }

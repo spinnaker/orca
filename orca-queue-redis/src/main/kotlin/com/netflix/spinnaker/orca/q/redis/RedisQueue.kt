@@ -18,11 +18,11 @@ package com.netflix.spinnaker.orca.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.google.common.hash.Hashing
 import com.netflix.spinnaker.orca.q.Message
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.metrics.MonitorableQueue
-import com.netflix.spinnaker.orca.q.metrics.QueueEvent.*
-import com.netflix.spinnaker.orca.q.metrics.fire
+import com.netflix.spinnaker.orca.q.metrics.*
+import org.funktionale.partials.partially1
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -32,6 +32,7 @@ import redis.clients.jedis.JedisCommands
 import redis.clients.jedis.Transaction
 import redis.clients.util.Pool
 import java.io.IOException
+import java.nio.charset.Charset
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
@@ -42,8 +43,7 @@ class RedisQueue(
   private val queueName: String,
   private val pool: Pool<Jedis>,
   private val clock: Clock,
-  private val currentInstanceId: String,
-  private val lockTtlSeconds: Int = Duration.ofDays(1).seconds.toInt(),
+  private val lockTtlSeconds: Int = 10,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandler: (Queue, Message) -> Unit,
   override val publisher: ApplicationEventPublisher
@@ -54,106 +54,139 @@ class RedisQueue(
   }
   private val log: Logger = LoggerFactory.getLogger(javaClass)
 
-  private val queueKey = queueName + ".queue"
-  private val unackedKey = queueName + ".unacked"
-  private val messagesKey = queueName + ".messages"
-  private val attemptsKey = queueName + ".attempts"
-  private val locksKey = queueName + ".locks"
+  private val queueKey = "$queueName.queue"
+  private val unackedKey = "$queueName.unacked"
+  private val messagesKey = "$queueName.messages"
+  private val attemptsKey = "$queueName.attempts"
+  private val locksKey = "$queueName.locks"
+  private val hashKey = "$queueName.hash"
+  private val hashesKey = "$queueName.hashes"
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
-      redis.apply {
-        pop(queueKey, unackedKey, ackTimeout)
-          ?.also { id -> hincrBy(attemptsKey, id, 1) }
-          ?.let { id ->
-            readMessage(id) { payload ->
-              callback.invoke(payload) {
-                ack(id)
-                fire<MessageAcknowledged>()
-              }
-            }
+      redis.zrangeByScore(queueKey, 0.0, score(), 0, 1)
+        .firstOrNull()
+        ?.takeIf { id -> redis.acquireLock(id) }
+        ?.also { id ->
+          val ack = this::ackMessage.partially1(id)
+          redis.readMessage(id) { message ->
+            callback(message, ack)
           }
-        fire<QueuePolled>()
-      }
+        }
+      fire<QueuePolled>()
     }
   }
 
   override fun push(message: Message, delay: TemporalAmount) {
     pool.resource.use { redis ->
-      val id = randomUUID().toString()
-      redis.multi {
-        hset(messagesKey, id, mapper.writeValueAsString(message))
-        zadd(queueKey, score(delay), id)
+      val messageHash = message.hash()
+      if (redis.sismember(hashesKey, messageHash)) {
+        log.warn("Ignoring message as an identical one is already on the queue: $message")
+        fire<MessageDuplicate>()
+      } else {
+        redis.queueMessage(message, delay)
+        fire<MessagePushed>()
       }
     }
-    fire<MessagePushed>()
   }
 
   @Scheduled(fixedDelayString = "\${queue.retry.frequency.ms:10000}")
   override fun retry() {
     pool.resource.use { redis ->
-      redis.apply {
-        zrangeByScore(unackedKey, 0.0, score())
-          .let { ids ->
-            if (ids.size > 0) {
-              ids.map { "$locksKey:$it" }.let { del(*it.toTypedArray()) }
-            }
+      redis
+        .zrangeByScore(unackedKey, 0.0, score())
+        .let { ids ->
+          if (ids.size > 0) {
+            ids
+              .map { "$locksKey:$it" }
+              .let { redis.del(*it.toTypedArray()) }
+          }
 
-            ids.forEach { id ->
-              val attempts = hgetInt(attemptsKey, id)
-              if (attempts >= Queue.maxRetries) {
-                readMessage(id) { message ->
-                  log.warn("Message $id with payload $message exceeded max retries")
-                  handleDeadMessage(message)
-                  ack(id)
-                }
-                fire<MessageDead>()
+          ids.forEach { id ->
+            val attempts = redis.hgetInt(attemptsKey, id)
+            if (attempts >= Queue.maxRetries) {
+              redis.readMessage(id) { message ->
+                log.warn("Message $id with payload $message exceeded max retries")
+                handleDeadMessage(message)
+                redis.removeMessage(id)
+              }
+              fire<MessageDead>()
+            } else {
+              if (redis.sismember(hashesKey, redis.hget(hashKey, id))) {
+                log.warn("Not retrying message $id because an identical message is already on the queue")
+                redis.removeMessage(id)
+                fire<MessageDuplicate>()
               } else {
                 log.warn("Retrying message $id after $attempts attempts")
-                move(unackedKey, queueKey, ZERO, setOf(id))
+                redis.requeueMessage(id)
                 fire<MessageRetried>()
               }
             }
           }
-          .also {
-            fire<RetryPolled>()
-          }
-      }
+        }
+        .also {
+          fire<RetryPolled>()
+        }
     }
   }
 
-  override val queueDepth: Int
-    get() = pool.resource.use { it.zcard(queueKey).toInt() }
-
-  override val unackedDepth: Int
-    get() = pool.resource.use { it.zcard(unackedKey).toInt() }
-
-  override val readyDepth: Int
-    get() = pool.resource.use { it.zcount(queueKey, 0.0, score()).toInt() }
-
-  override val orphanedMessages: Int
-    get() = pool.resource.use { redis ->
-      redis
-        .multi {
-          hlen(messagesKey)
-          zcard(queueKey)
-          zcard(unackedKey)
-        }
-        .map { it as Long }
-        .let { (messages, queue, unacked) ->
-          (messages - (queue + unacked)).toInt()
+  override fun readState(): QueueState =
+    pool.resource.use { redis ->
+      redis.multi {
+        zcard(queueKey)
+        zcount(queueKey, 0.0, score())
+        zcard(unackedKey)
+        hlen(messagesKey)
+      }
+        .map { (it as Long).toInt() }
+        .let { (queued, ready, processing, messages) ->
+          return QueueState(
+            depth = queued,
+            ready = ready,
+            unacked = processing,
+            orphaned = messages - (queued + processing)
+          )
         }
     }
 
   override fun toString() = "RedisQueue[$queueName]"
 
-  private fun ack(id: String) {
+  private fun ackMessage(id: String) {
     pool.resource.use { redis ->
-      redis.multi {
-        zrem(unackedKey, id)
-        hdel(messagesKey, id)
-        hdel(attemptsKey, id)
+      redis.removeMessage(id)
+      fire<MessageAcknowledged>()
+    }
+  }
+
+  private fun Jedis.queueMessage(message: Message, delay: TemporalAmount = ZERO) {
+    val id = randomUUID().toString()
+    val hash = message.hash()
+    multi {
+      hset(messagesKey, id, mapper.writeValueAsString(message))
+      zadd(queueKey, score(delay), id)
+      hset(hashKey, id, hash)
+      sadd(hashesKey, hash)
+    }
+  }
+
+  private fun Jedis.requeueMessage(id: String) {
+    val hash = hget(hashKey, id)
+    multi {
+      zrem(unackedKey, id)
+      zadd(queueKey, score(), id)
+      if (hash != null) {
+        sadd(hashesKey, hash)
       }
+    }
+  }
+
+  private fun Jedis.removeMessage(id: String) {
+    multi {
+      zrem(queueKey, id)
+      zrem(unackedKey, id)
+      hdel(messagesKey, id)
+      hdel(attemptsKey, id)
+      hdel(hashKey, id)
     }
   }
 
@@ -162,26 +195,28 @@ class RedisQueue(
    * If it's not accessible for whatever reason any references are cleaned up.
    */
   private fun Jedis.readMessage(id: String, block: (Message) -> Unit) {
-    val json = hget(messagesKey, id)
-    if (json == null) {
-      log.error("Payload for message $id is missing")
-      // clean up what is essentially an unrecoverable message
-      multi {
-        zrem(queueKey, id)
-        zrem(unackedKey, id)
-        hdel(attemptsKey, id)
+    val hash = hget(hashKey, id)
+    multi {
+      hget(messagesKey, id)
+      zrem(queueKey, id)
+      zadd(unackedKey, score(ackTimeout), id)
+      if (hash != null) {
+        srem(hashesKey, hash)
       }
-    } else {
-      try {
-        val message = mapper.readValue<Message>(json)
-        block.invoke(message)
-      } catch(e: IOException) {
-        log.error("Failed to read message $id", e)
-        multi {
-          zrem(queueKey, id)
-          zrem(unackedKey, id)
-          hdel(messagesKey, id)
-          hdel(attemptsKey, id)
+      hincrBy(attemptsKey, id, 1)
+    }.let {
+      val json = it[0] as String?
+      if (json == null) {
+        log.error("Payload for message $id is missing")
+        // clean up what is essentially an unrecoverable message
+        removeMessage(id)
+      } else {
+        try {
+          val message = mapper.readValue<Message>(json)
+          block.invoke(message)
+        } catch(e: IOException) {
+          log.error("Failed to read message $id", e)
+          removeMessage(id)
         }
       }
     }
@@ -191,37 +226,13 @@ class RedisQueue(
     deadMessageHandler.invoke(this, it)
   }
 
-  /**
-   * Attempt to acquire a lock on a single value from a sorted set [from], adding
-   * them to sorted set [to] (with optional [delay]).
-   */
-  private fun Jedis.pop(from: String, to: String, delay: TemporalAmount = ZERO) =
-    zrangeByScore(from, 0.0, score(), 0, 1)
-      .takeIf {
-        // TODO: this isn't right, `it` is a set (often an empty one)
-        getSet("$locksKey:$it", currentInstanceId) in listOf(null, currentInstanceId)
+  private fun Jedis.acquireLock(id: String) =
+    (set("$locksKey:$id", "\uD83D\uDD12", "NX", "EX", lockTtlSeconds) == "OK")
+      .also {
+        if (!it) {
+          fire<LockFailed>()
+        }
       }
-      ?.also {
-        expire("$locksKey:$it", lockTtlSeconds)
-        move(from, to, delay, it)
-      }
-      ?.firstOrNull()
-
-  /**
-   * Move [values] from sorted set [from] to sorted set [to]
-   */
-  private fun Jedis.move(from: String, to: String, delay: TemporalAmount, values: Set<String>) {
-    if (values.isNotEmpty()) {
-      val score = score(delay)
-      multi {
-        zrem(from, *values.toTypedArray())
-        zadd(to, values.associate { Pair(it, score) })
-      }
-    }
-  }
-
-  private fun JedisCommands.hgetInt(key: String, field: String, default: Int = 0) =
-    hget(key, field)?.toInt() ?: default
 
   /**
    * @return current time (plus optional [delay]) converted to a score for a
@@ -238,4 +249,13 @@ class RedisQueue(
       tx.block()
       tx.exec()
     }
+
+  private fun JedisCommands.hgetInt(key: String, field: String, default: Int = 0) =
+    hget(key, field)?.toInt() ?: default
+
+  private fun Message.hash() =
+    Hashing
+      .murmur3_32()
+      .hashString(toString(), Charset.defaultCharset())
+      .toString()
 }

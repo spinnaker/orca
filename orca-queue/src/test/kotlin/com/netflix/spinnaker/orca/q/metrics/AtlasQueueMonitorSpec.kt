@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.orca.q.metrics.QueueEvent.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
@@ -39,11 +38,15 @@ object AtlasQueueMonitorSpec : SubjectSpek<AtlasQueueMonitor>({
   val ackCounter: Counter = mock()
   val retryCounter: Counter = mock()
   val deadCounter: Counter = mock()
+  val duplicateCounter: Counter = mock()
+  val lockFailedCounter: Counter = mock()
   val registry: Registry = mock {
     on { counter("queue.pushed.messages") } doReturn pushCounter
     on { counter("queue.acknowledged.messages") } doReturn ackCounter
     on { counter("queue.retried.messages") } doReturn retryCounter
     on { counter("queue.dead.messages") } doReturn deadCounter
+    on { counter("queue.duplicate.messages") } doReturn duplicateCounter
+    on { counter("queue.lock.failed") } doReturn lockFailedCounter
   }
 
   subject(GROUP) {
@@ -51,7 +54,7 @@ object AtlasQueueMonitorSpec : SubjectSpek<AtlasQueueMonitor>({
   }
 
   fun resetMocks() =
-    reset(queue, pushCounter, ackCounter, retryCounter, deadCounter)
+    reset(queue, pushCounter, ackCounter, retryCounter, deadCounter, duplicateCounter)
 
   describe("default values") {
     it("reports system uptime if the queue has never been polled") {
@@ -145,29 +148,50 @@ object AtlasQueueMonitorSpec : SubjectSpek<AtlasQueueMonitor>({
       }
     }
 
+    describe("when a duplicate message is pushed") {
+      afterGroup(::resetMocks)
+
+      val event = MessageDuplicate(queue)
+
+      on("receiving a ${event.javaClass.simpleName} event") {
+        subject.onApplicationEvent(event)
+      }
+
+      it("increments a counter") {
+        verify(duplicateCounter).increment()
+      }
+    }
+
+    describe("when an instance fails to lock a message") {
+      afterGroup(::resetMocks)
+
+      val event = LockFailed(queue)
+
+      on("receiving a ${event.javaClass.simpleName} event") {
+        subject.onApplicationEvent(event)
+      }
+
+      it("increments a counter") {
+        verify(lockFailedCounter).increment()
+      }
+    }
   }
 
-  describe("checking queue depth") {
+  describe("checking queue state") {
     afterGroup(::resetMocks)
 
-    val queueDepth = 4
-    val unackedDepth = 2
+    val queueState = QueueState(4, 1, 2, 0)
 
     beforeGroup {
-      whenever(queue.queueDepth) doReturn queueDepth
-      whenever(queue.unackedDepth) doReturn unackedDepth
+      whenever(queue.readState()) doReturn queueState
     }
 
-    on("checking queue depth") {
-      subject.pollQueueDepth()
+    on("checking queue state") {
+      subject.pollQueueState()
     }
 
-    it("updates last known queue depth") {
-      subject.lastQueueDepth shouldEqual queueDepth
-    }
-
-    it("updates last known unacked depth") {
-      subject.lastUnackedDepth shouldEqual unackedDepth
+    it("updates the queue state") {
+      subject.lastState shouldEqual queueState
     }
   }
 })

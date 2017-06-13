@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.metrics.QueueEvent.*
 import org.springframework.context.ApplicationEventPublisher
 
 /**
@@ -28,28 +27,7 @@ interface MonitorableQueue : Queue {
 
   val publisher: ApplicationEventPublisher
 
-  /**
-   * Number of messages currently queued for delivery including any not yet due.
-   */
-  val queueDepth: Int
-
-  /**
-   * Number of messages currently being processed but not yet acknowledged.
-   */
-  val unackedDepth: Int
-
-  /**
-   * Number of messages neither queued or in-process. Some implementations
-   * may not have any way to implement this metric. It is only intended for
-   * alerting leaks.
-   */
-  val orphanedMessages: Int
-    get() = 0
-
-  /**
-   * Number of messages ready for delivery.
-   */
-  val readyDepth: Int
+  fun readState(): QueueState
 }
 
 /**
@@ -63,7 +41,30 @@ inline fun <reified E : QueueEvent> MonitorableQueue.fire(): Unit {
     MessageAcknowledged::class -> MessageAcknowledged(this)
     MessageRetried::class -> MessageRetried(this)
     MessageDead::class -> MessageDead(this)
+    MessageDuplicate::class -> MessageDuplicate(this)
+    LockFailed::class -> LockFailed(this)
     else -> throw IllegalArgumentException("Unknown event type ${E::class}")
   }
   publisher.publishEvent(event)
 }
+
+data class QueueState(
+  /**
+   * Number of messages currently queued for delivery including any not yet due.
+   */
+  val depth: Int,
+  /**
+   * Number of messages ready for delivery.
+   */
+  val ready: Int,
+  /**
+   * Number of messages currently being processed but not yet acknowledged.
+   */
+  val unacked: Int,
+  /**
+   * Number of messages neither queued or in-process. Some implementations
+   * may not have any way to implement this metric. It is only intended for
+   * alerting leaks.
+   */
+  val orphaned: Int = 0
+)
