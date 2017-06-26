@@ -17,12 +17,12 @@
 package com.netflix.spinnaker.orca.mine.tasks
 
 class DeployedClustersUtil {
-  static List<Map> toKatoAsgOperations(String asgOperationDescription, Map stageContext) {
+  static List<Map> toKatoAsgOperations(String asgOperationDescription, Map stageContext, boolean forceAsgDelete = true) {
     stageContext.deployedClusterPairs.findAll { it.canaryStage == stageContext.canaryStageId }.collect {
       [it.canaryCluster, it.baselineCluster].collect {
         [
           (asgOperationDescription): [
-            serverGroupName: it.serverGroup, asgName: it.serverGroup, regions: [it.region], region: it.region, credentials: it.clusterAccount ?: it.accountName, cloudProvider: it.type ?: 'aws'
+            serverGroupName: it.serverGroup, asgName: it.serverGroup, regions: [it.region], region: it.region, credentials: it.clusterAccount ?: it.accountName, cloudProvider: it.type ?: 'aws', force: forceAsgDelete
           ]
         ]
       }
