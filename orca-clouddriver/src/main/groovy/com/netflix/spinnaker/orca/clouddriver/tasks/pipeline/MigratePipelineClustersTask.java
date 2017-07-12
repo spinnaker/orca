@@ -16,7 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline;
 
-import com.netflix.spinnaker.orca.DefaultTaskResult;
+import java.util.*;
+import java.util.stream.Collectors;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
@@ -28,16 +29,13 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 @Component
 public class MigratePipelineClustersTask extends AbstractCloudProviderAwareTask {
 
   @Autowired
   KatoService katoService;
 
-  @Autowired
+  @Autowired(required = false)
   Front50Service front50Service;
 
   @Autowired
@@ -45,6 +43,9 @@ public class MigratePipelineClustersTask extends AbstractCloudProviderAwareTask 
 
   @Override
   public TaskResult execute(Stage stage) {
+    if (front50Service == null) {
+      throw new UnsupportedOperationException("Cannot migrate pipeline clusters, front50 is not enabled. Fix this by setting front50.enabled: true");
+    }
 
     Map<String, Object> context = stage.getContext();
     Optional<Map<String, Object>> pipelineMatch = getPipeline(context);
@@ -63,7 +64,7 @@ public class MigratePipelineClustersTask extends AbstractCloudProviderAwareTask 
     outputs.put("notification.type", "migratepipelineclusters");
     outputs.put("kato.last.task.id", taskId);
     outputs.put("source.pipeline", pipelineMatch.get());
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs);
+    return new TaskResult(ExecutionStatus.SUCCEEDED, outputs);
   }
 
   private List<Map> getSources(Map<String, Object> pipeline) {
@@ -112,7 +113,7 @@ public class MigratePipelineClustersTask extends AbstractCloudProviderAwareTask 
   private TaskResult pipelineNotFound(Map<String, Object> context) {
     Map<String, Object> outputs = new HashMap<>();
     outputs.put("exception", "Could not find pipeline with ID " + context.get("pipelineConfigId"));
-    return new DefaultTaskResult(ExecutionStatus.TERMINAL, outputs);
+    return new TaskResult(ExecutionStatus.TERMINAL, outputs);
   }
 
 }

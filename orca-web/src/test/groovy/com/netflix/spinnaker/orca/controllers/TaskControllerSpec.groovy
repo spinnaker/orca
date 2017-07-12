@@ -18,12 +18,15 @@ package com.netflix.spinnaker.orca.controllers
 
 import java.time.Clock
 import java.time.Instant
-import groovy.json.JsonSlurper
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.PipelineStartTracker
-import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import groovy.json.JsonSlurper
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
@@ -32,9 +35,7 @@ import spock.lang.Specification
 import static java.time.ZoneOffset.UTC
 import static java.time.temporal.ChronoUnit.DAYS
 import static java.time.temporal.ChronoUnit.HOURS
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 class TaskControllerSpec extends Specification {
@@ -81,8 +82,8 @@ class TaskControllerSpec extends Specification {
 
     then:
     response.andExpect(status().isAccepted())
-    1 * executionRepository.cancel('id2', _)
-    1 * executionRepository.cancel('id1', _)
+    1 * executionRepository.cancel('id2', _, null)
+    1 * executionRepository.cancel('id1', _, null)
   }
 
   void 'step names are properly translated'() {
@@ -91,7 +92,7 @@ class TaskControllerSpec extends Specification {
 
     then:
     executionRepository.retrieveOrchestrations() >> rx.Observable.from([new Orchestration(
-      stages: [new OrchestrationStage(tasks: [new DefaultTask(name: 'jobOne'), new DefaultTask(name: 'jobTwo')])])])
+      stages: [new Stage<>(tasks: [new Task(name: 'jobOne'), new Task(name: 'jobTwo')])])])
     with(new JsonSlurper().parseText(response.contentAsString).first()) {
       steps.name == ['jobOne', 'jobTwo']
     }
@@ -102,7 +103,7 @@ class TaskControllerSpec extends Specification {
     setup:
     def orchestration = new Orchestration(id: "1")
     orchestration.stages = [
-      new OrchestrationStage(orchestration, "OrchestratedType", ["customOutput": "variable"])
+      new Stage<>(orchestration, "OrchestratedType", ["customOutput": "variable"])
     ]
 
     when:
@@ -160,17 +161,17 @@ class TaskControllerSpec extends Specification {
   void '/applications/{application}/pipelines should only return pipelines from the past two weeks, newest first'() {
     given:
     def pipelines = [
-      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(1, HOURS).toEpochMilli(), id: 'old'],
-      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).plus(1, HOURS).toEpochMilli(), id: 'newer'],
+      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(), id: 'old'],
+      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).plus(2, HOURS).toEpochMilli(), id: 'newer'],
       [pipelineConfigId: "1", id: 'not-started'],
       [pipelineConfigId: "1", id: 'also-not-started'],
 
       /*
        * If a pipeline has no recent executions, the most recent N executions should be included
        */
-      [pipelineConfigId: "2", id: 'older1', startTime: clock.instant().minus(daysOfExecutionHistory + 1, DAYS).minus(1, HOURS).toEpochMilli()],
-      [pipelineConfigId: "2", id: 'older2', startTime: clock.instant().minus(daysOfExecutionHistory + 1, DAYS).minus(2, HOURS).toEpochMilli()],
-      [pipelineConfigId: "2", id: 'older3', startTime: clock.instant().minus(daysOfExecutionHistory + 1, DAYS).minus(3, HOURS).toEpochMilli()]
+      [pipelineConfigId: "2", id: 'older1', startTime: clock.instant().minus(daysOfExecutionHistory + 1, DAYS).minus(2, HOURS).toEpochMilli()],
+      [pipelineConfigId: "2", id: 'older2', startTime: clock.instant().minus(daysOfExecutionHistory + 1, DAYS).minus(3, HOURS).toEpochMilli()],
+      [pipelineConfigId: "2", id: 'older3', startTime: clock.instant().minus(daysOfExecutionHistory + 1, DAYS).minus(4, HOURS).toEpochMilli()]
     ]
     def app = 'test'
 
@@ -198,13 +199,13 @@ class TaskControllerSpec extends Specification {
   void '/pipelines should only return the latest pipelines for the provided config ids, newest first'() {
     given:
     def pipelines = [
-      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(1, HOURS).toEpochMilli(), id: 'old-1'],
-      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).plus(1, HOURS).toEpochMilli(), id: 'newer-1'],
+      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(), id: 'old-1'],
+      [pipelineConfigId: "1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).plus(2, HOURS).toEpochMilli(), id: 'newer-1'],
       [pipelineConfigId: "1", id: 'not-started-1'],
-      [pipelineConfigId: "2", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(1, HOURS).toEpochMilli(), id: 'old-2'],
-      [pipelineConfigId: "2", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).plus(1, HOURS).toEpochMilli(), id: 'newer-2'],
+      [pipelineConfigId: "2", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(), id: 'old-2'],
+      [pipelineConfigId: "2", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).plus(2, HOURS).toEpochMilli(), id: 'newer-2'],
       [pipelineConfigId: "2", id: 'not-started-2'],
-      [pipelineConfigId: "3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(1, HOURS).toEpochMilli(), id: 'old-3']
+      [pipelineConfigId: "3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(), id: 'old-3']
     ]
 
     executionRepository.retrievePipelinesForPipelineConfigId("1", _) >> rx.Observable.from(pipelines.findAll {
@@ -233,7 +234,7 @@ class TaskControllerSpec extends Specification {
 
   void 'should update existing stage context'() {
     given:
-    def pipelineStage = new PipelineStage(new Pipeline(), "", [value: "1"])
+    def pipelineStage = new Stage<>(new Pipeline(), "", [value: "1"])
     pipelineStage.id = "s1"
 
     when:
@@ -254,9 +255,9 @@ class TaskControllerSpec extends Specification {
         stage.context == [
         judgmentStatus: "stop", value: "1", lastModifiedBy: "anonymous"
       ]
-    } as PipelineStage)
+    } as Stage)
     objectMapper.readValue(response.contentAsString, Map).stages*.context == [
-      [value: "1", judgmentStatus: "stop", , lastModifiedBy: "anonymous"]
+      [value: "1", judgmentStatus: "stop", lastModifiedBy: "anonymous"]
     ]
     0 * _
   }

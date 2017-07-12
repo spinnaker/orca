@@ -17,23 +17,30 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 class ExpressionPreconditionTask implements PreconditionTask {
   final String preconditionType = 'expression'
 
+  final ContextParameterProcessor contextParameterProcessor
+
+  @Autowired
+  ExpressionPreconditionTask(ContextParameterProcessor contextParameterProcessor) {
+    this.contextParameterProcessor = contextParameterProcessor
+  }
+
   @Override
   TaskResult execute(Stage stage) {
     def stageData = stage.mapTo("/context", StageData)
-    String expression = ContextParameterProcessor.process([
+    String expression = contextParameterProcessor.process([
         "expression": '${' + stageData.expression + '}'
-    ], ContextParameterProcessor.buildExecutionContext(stage, true), true).expression
+    ], contextParameterProcessor.buildExecutionContext(stage, true), true).expression
 
     def matcher = expression =~ /\$\{(.*)\}/
     if (matcher.matches()) {
@@ -41,7 +48,7 @@ class ExpressionPreconditionTask implements PreconditionTask {
     }
 
     def status = Boolean.valueOf(expression) ? ExecutionStatus.SUCCEEDED : ExecutionStatus.TERMINAL
-    return new DefaultTaskResult(status, [
+    return new TaskResult(status, [
       context: new HashMap(stage.context.context as Map) + [
           expressionResult: expression
       ]

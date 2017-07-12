@@ -15,7 +15,6 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -46,9 +45,9 @@ class DeleteLoadBalancerTask extends AbstractCloudProviderAwareTask implements T
         "notification.type"  : "deleteloadbalancer",
         "kato.last.task.id"  : taskId,
         "delete.name"        : stage.context.loadBalancerName,
-        "delete.regions"     : stage.context.regions.join(','),
+        "delete.regions"     : stage.context.regions?.join(',') ?: [],
         "delete.account.name": account
     ]
-    new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs)
+    new TaskResult(ExecutionStatus.SUCCEEDED, outputs)
   }
 }

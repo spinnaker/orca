@@ -24,44 +24,29 @@ import retrofit.RetrofitError
 @Component
 class DeleteApplicationTask extends AbstractFront50Task {
   @Override
-  Map<String, Object> performRequest(String account, Application application) {
+  Map<String, Object> performRequest(Application application) {
     Map<String, Object> outputs = [:]
-
-    boolean deletePermission
 
     try {
       def existingApplication = front50Service.get(application.name)
       if (existingApplication) {
         outputs.previousState = existingApplication
-
-        existingApplication.updateAccounts(existingApplication.listAccounts() - account)
-        if (existingApplication.listAccounts()) {
-          // application still exists in at least one other account, do not delete.
-          front50Service.update(application.name, existingApplication)
-        } else {
-          // application is not associated with any accounts, delete.
-          front50Service.delete(application.name)
-          deletePermission = true
+        front50Service.delete(application.name)
+        try {
+          front50Service.deletePermission(application.name)
+        } catch (RetrofitError re) {
+          if (re.response?.status == 404) {
+            return [:]
+          }
+          throw re
         }
       }
     } catch (RetrofitError e) {
-      if (e.response.status == 404) {
+      if (e.response?.status == 404) {
         return [:]
       }
       throw e
     }
-
-    if (deletePermission) {
-      try {
-        front50Service.deletePermission(application.name)
-      } catch (RetrofitError re) {
-        if (re.response.status == 404) {
-          return [:]
-        }
-        throw re
-      }
-    }
-
     return outputs
   }
 

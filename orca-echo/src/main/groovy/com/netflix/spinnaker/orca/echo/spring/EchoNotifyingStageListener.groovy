@@ -1,16 +1,17 @@
 package com.netflix.spinnaker.orca.echo.spring
 
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
-import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import static com.netflix.spinnaker.orca.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3
 import static java.lang.System.currentTimeMillis
 
 /**
@@ -21,17 +22,19 @@ import static java.lang.System.currentTimeMillis
 class EchoNotifyingStageListener implements StageListener {
 
   private final EchoService echoService
+  private final ExecutionRepository repository
 
   @Autowired
-  EchoNotifyingStageListener(EchoService echoService) {
+  EchoNotifyingStageListener(EchoService echoService, ExecutionRepository repository) {
     this.echoService = echoService
+    this.repository = repository
   }
 
   @Override
   <T extends Execution<T>> void beforeTask(Persister persister,
                                            Stage<T> stage,
                                            Task task) {
-    if (task.status == NOT_STARTED) {
+    if (task.status == NOT_STARTED || stage.execution.executionEngine == v3) {
       recordEvent('task', 'starting', stage, task)
     }
   }
@@ -40,7 +43,7 @@ class EchoNotifyingStageListener implements StageListener {
   @CompileDynamic
   <T extends Execution<T>> void beforeStage(Persister persister,
                                             Stage<T> stage) {
-    if (stage.status == NOT_STARTED) {
+    if (stage.status == NOT_STARTED || stage.execution.executionEngine == v3) {
       def details = [
         name       : stage.name,
         type       : stage.type,
@@ -50,7 +53,7 @@ class EchoNotifyingStageListener implements StageListener {
         isSynthetic: stage.syntheticStageOwner != null
       ]
       stage.context.stageDetails = details
-      persister.save(stage)
+      repository.updateStageContext(stage)
 
       log.debug("***** $stage.execution.id Echo stage $stage.name starting v2")
       recordEvent("stage", "starting", stage)
@@ -68,22 +71,6 @@ class EchoNotifyingStageListener implements StageListener {
     }
 
     recordEvent('task', (wasSuccessful ? "complete" : "failed"), stage, task)
-
-    // TODO: this should all be deleted once we move to v2 engine
-    if (stage.execution instanceof Pipeline && stage.execution.executionEngine == "v1") {
-      if (wasSuccessful) {
-        if (task.name.contains('stageEnd')) {
-          log.debug("***** $stage.execution.id Echo stage $stage.name complete")
-          recordEvent('stage', 'complete', stage, task)
-        } else if (task.name.contains('stageStart')) {
-          log.debug("***** $stage.execution.id Echo stage $stage.name starting")
-          recordEvent('stage', 'starting', stage, task)
-        }
-      } else {
-        log.debug("***** $stage.execution.id Echo stage $stage.name failed")
-        recordEvent('stage', 'failed', stage, task)
-      }
-    }
   }
 
   @Override
@@ -94,9 +81,12 @@ class EchoNotifyingStageListener implements StageListener {
       if (stage.endTime) {
         stage.context.stageDetails.endTime = stage.endTime
       }
-      persister.save(stage)
+      repository.updateStageContext(stage)
 
-      if (stage.status.successful) {
+      // STOPPED stages are "successful" because they allow the pipeline to
+      // proceed but they are still failures in terms of the stage and should
+      // send failure notifications
+      if (stage.status in [SUCCEEDED, SKIPPED]) {
         log.debug("***** $stage.execution.id Echo stage $stage.name complete v2")
         recordEvent('stage', 'complete', stage)
       } else {

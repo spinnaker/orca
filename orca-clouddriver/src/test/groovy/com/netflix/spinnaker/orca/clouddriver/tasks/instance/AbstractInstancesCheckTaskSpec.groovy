@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import retrofit.mime.TypedInput
@@ -73,11 +72,11 @@ class AbstractInstancesCheckTaskSpec extends Specification {
 
   void "should be provided with health provider names"() {
     task.oortService = Mock(OortService)
-    task.objectMapper = new OrcaObjectMapper()
+    task.objectMapper = OrcaObjectMapper.newInstance()
     task.hasSucceededSpy = Mock(HasSucceededSpy)
 
     def pipeline = new Pipeline()
-    def stage = new PipelineStage(pipeline, "whatever", [
+    def stage = new Stage<>(pipeline, "whatever", [
       "account.name"                  : "test",
       "targetop.asg.enableAsg.name"   : "front50-v000",
       "targetop.asg.enableAsg.regions": ["us-west-1"]
@@ -117,11 +116,11 @@ class AbstractInstancesCheckTaskSpec extends Specification {
   @Unroll
   void 'should reset zeroDesiredCapacityCount when targetDesiredCapacity is not zero, otherwise increment'() {
     task.oortService = Mock(OortService)
-    task.objectMapper = new OrcaObjectMapper()
+    task.objectMapper = OrcaObjectMapper.newInstance()
     task.hasSucceededSpy = Mock(HasSucceededSpy)
 
     def pipeline = new Pipeline()
-    def stage = new PipelineStage(pipeline, "whatever", [
+    def stage = new Stage<>(pipeline, "whatever", [
       "account.name"                  : "test",
       "targetop.asg.enableAsg.name"   : "front50-v000",
       "targetop.asg.enableAsg.regions": ["us-west-1"],
@@ -173,11 +172,11 @@ class AbstractInstancesCheckTaskSpec extends Specification {
 
   void 'should set zeroDesiredCapacityCount when targetDesiredCapacity is zero and no zeroDesiredCapacityCount is not present on context'() {
     task.oortService = Mock(OortService)
-    task.objectMapper = new OrcaObjectMapper()
+    task.objectMapper = OrcaObjectMapper.newInstance()
     task.hasSucceededSpy = Mock(HasSucceededSpy)
 
     def pipeline = new Pipeline()
-    def stage = new PipelineStage(pipeline, "whatever", [
+    def stage = new Stage<>(pipeline, "whatever", [
       "account.name"                  : "test",
       "targetop.asg.enableAsg.name"   : "front50-v000",
       "targetop.asg.enableAsg.regions": ["us-west-1"],

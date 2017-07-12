@@ -1,37 +1,40 @@
 package com.netflix.spinnaker.orca.kato.pipeline;
 
 import java.util.Map;
-import com.netflix.spinnaker.orca.DefaultTaskResult;
 import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.TerminateInstancesTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForDownInstanceHealthTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstanceHealthTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CaptureParentInterestingHealthProviderNamesTask;
 import com.netflix.spinnaker.orca.kato.tasks.DisableInstancesTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.CheckForRemainingTerminationsTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationCandidatesTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationPhaseInstancesTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.WaitForNewInstanceLaunchTask;
+import com.netflix.spinnaker.orca.kato.tasks.rollingpush.*;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static java.lang.String.format;
 
 @Component
 @Slf4j
 public class RollingPushStage implements StageDefinitionBuilder {
-
   public static final String PIPELINE_CONFIG_TYPE = "rollingPush";
+
+  @Autowired
+  private FeaturesService featuresService;
 
   @Override
   public <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+    boolean taggingEnabled = featuresService.isStageAvailable("upsertEntityTags");
     builder
+      .withTask("captureParentInterestingHealthProviderNames", CaptureParentInterestingHealthProviderNamesTask.class)
       .withTask("determineTerminationCandidates", DetermineTerminationCandidatesTask.class)
       .withLoop(subGraph -> {
           subGraph
@@ -52,9 +55,15 @@ public class RollingPushStage implements StageDefinitionBuilder {
             .withTask("waitForNewInstances", WaitForNewInstanceLaunchTask.class)
             .withTask("waitForUpInstances", WaitForUpInstanceHealthTask.class)
             .withTask("checkForRemainingTerminations", CheckForRemainingTerminationsTask.class);
-        }
-      )
-      .withTask("pushComplete", PushCompleteTask.class);
+        });
+
+    if (taggingEnabled) {
+      builder
+        .withTask("cleanUpTags", CleanUpTagsTask.class)
+        .withTask("monitorTagCleanUp", MonitorKatoTask.class);
+    }
+
+    builder.withTask("pushComplete", PushCompleteTask.class);
   }
 
   private <T extends Execution<T>> boolean shouldWaitForTermination(Stage<T> stage) {
@@ -72,7 +81,7 @@ public class RollingPushStage implements StageDefinitionBuilder {
         stage.getContext().get("account"),
         stage.getContext().get("region")
       ));
-      return DefaultTaskResult.SUCCEEDED;
+      return TaskResult.SUCCEEDED;
     }
   }
 }

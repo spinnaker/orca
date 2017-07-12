@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.config
 
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.JesqueActivator
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import net.greghaines.jesque.Config
 import net.greghaines.jesque.ConfigBuilder
 import net.greghaines.jesque.client.Client
@@ -27,6 +27,7 @@ import net.greghaines.jesque.client.ClientPoolImpl
 import net.greghaines.jesque.worker.WorkerPool
 import net.lariverosc.jesquespring.SpringWorkerFactory
 import net.lariverosc.jesquespring.SpringWorkerPool
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
@@ -34,6 +35,7 @@ import org.springframework.context.annotation.Configuration
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
 
+@Deprecated
 @Configuration
 @Slf4j
 @CompileStatic
@@ -58,7 +60,7 @@ class JesqueConfiguration {
   }
 
   @Bean
-  Client jesqueClient(Config jesqueConfig, Pool<Jedis> jedisPool) {
+  Client jesqueClient(Config jesqueConfig, @Qualifier("jedisPool") Pool<Jedis> jedisPool) {
     new ClientPoolImpl(jesqueConfig, jedisPool)
   }
 

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
-import com.netflix.spinnaker.orca.pipeline.model.OrchestrationStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 import spock.lang.Specification
@@ -36,13 +36,13 @@ class WaitForNewInstanceLaunchTaskSpec extends Specification {
       application     : application,
       stack           : stack,
       region          : region,
-      providerType    : providerType,
+      cloudProvider   : cloudProvider,
       asgName         : serverGroup,
       knownInstanceIds: knownInstanceIds,
       instanceIds     : terminatedInstanceIds
     ]
 
-    def stage = new OrchestrationStage(new Orchestration(), 'test', context)
+    def stage = new Stage<>(new Orchestration(), 'test', context)
 
     def oortResponse = oortResponse([
       instances: currentInstances.collect { [instanceId: it] }
@@ -52,7 +52,7 @@ class WaitForNewInstanceLaunchTaskSpec extends Specification {
     def response = task.execute(stage)
 
     then:
-    1 * oortService.getServerGroup(application, account, cluster, serverGroup, region, providerType) >> oortResponse
+    1 * oortService.getServerGroup(application, account, cluster, serverGroup, region, cloudProvider) >> oortResponse
     response.status == expectedStatus
 
 
@@ -72,7 +72,7 @@ class WaitForNewInstanceLaunchTaskSpec extends Specification {
     cluster = "$application-$stack".toString()
     serverGroup = "$cluster-v000".toString()
     region = 'us-east-1'
-    providerType = 'aws'
+    cloudProvider = 'aws'
 
   }
 

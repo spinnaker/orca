@@ -16,11 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.job
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,7 +30,7 @@ class DestroyJobForceCacheRefreshTask extends AbstractCloudProviderAwareTask imp
   static final String REFRESH_TYPE = "Job"
 
   @Autowired
-  OortService oort
+  CloudDriverCacheService cacheService
 
   @Override
   TaskResult execute(Stage stage) {
@@ -42,8 +41,8 @@ class DestroyJobForceCacheRefreshTask extends AbstractCloudProviderAwareTask imp
     String region = stage.context.region
 
     def model = [jobName: name, region: region, account: account, evict: true]
-    oort.forceCacheUpdate(cloudProvider, REFRESH_TYPE, model)
-    new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+    cacheService.forceCacheUpdate(cloudProvider, REFRESH_TYPE, model)
+    new TaskResult(ExecutionStatus.SUCCEEDED)
   }
 }
 

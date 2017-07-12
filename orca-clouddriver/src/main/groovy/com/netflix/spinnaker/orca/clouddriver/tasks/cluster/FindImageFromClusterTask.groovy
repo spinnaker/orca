@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -138,7 +137,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
         }
         return [(location): summaries]
       } catch (RetrofitError e) {
-        if (e.response.status == 404) {
+        if (e.response?.status == 404) {
           final Map reason
           try {
             reason = objectMapper.readValue(e.response.body.in(), new TypeReference<Map<String, Object>>() {})
@@ -162,13 +161,13 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
     if (!locationsWithMissingImageIds.isEmpty()) {
       // signifies that at least one summary was missing image details, let's retry until we see image details
       log.warn("One or more locations are missing image details (locations: ${locationsWithMissingImageIds*.value}, cluster: ${config.cluster}, account: ${account})")
-      return new DefaultTaskResult(ExecutionStatus.RUNNING)
+      return new TaskResult(ExecutionStatus.RUNNING)
     }
 
     if (missingLocations) {
       Set<String> searchNames = extractBaseImageNames(imageNames)
       if (searchNames.size() != 1) {
-        throw new IllegalStateException("Request to resolve images for missing ${config.requiredLocations.first().pluralType()} requires exactly one image. (Found ${searchNames})")
+        throw new IllegalStateException("Request to resolve images for missing ${config.requiredLocations.first().pluralType()} requires exactly one image. (Found ${searchNames}, missing locations: ${missingLocations*.value.join(',')})")
       }
 
       def deploymentDetailTemplate = imageSummaries.find { k, v -> v != null }.value[0]
@@ -228,7 +227,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
       }
     }.flatten()
 
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [
+    return new TaskResult(ExecutionStatus.SUCCEEDED, [
       amiDetails: deploymentDetails
     ], [
       deploymentDetails: deploymentDetails

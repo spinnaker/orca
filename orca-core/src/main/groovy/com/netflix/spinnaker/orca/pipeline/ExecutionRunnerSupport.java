@@ -16,21 +16,27 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition;
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.pipeline.model.Task;
 import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage;
+import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.HEAD;
-import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.TAIL;
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
 import static java.lang.String.format;
@@ -65,9 +71,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       BranchingStageDefinitionBuilder branchBuilder = (BranchingStageDefinitionBuilder) builder;
 
       // build tasks that should run before the branch
-      TaskNode.TaskGraph beforeGraph = TaskNode.build(HEAD, preBranch ->
-        branchBuilder.preBranchGraph(stage, preBranch)
-      );
+      TaskNode.TaskGraph beforeGraph = branchBuilder.buildPreGraph(stage);
       if (beforeGraph.isEmpty()) {
         callback.accept(singleton(stage), TaskNode.singleton(HEAD, "beginParallel", NoOpTask.class));
       } else {
@@ -103,9 +107,7 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       callback.accept(parallelStages, taskGraph);
 
       // build tasks that run after the branch
-      TaskNode.TaskGraph afterGraph = TaskNode.build(TAIL, postBranch -> {
-        branchBuilder.postBranchGraph(stage, postBranch);
-      });
+      TaskNode.TaskGraph afterGraph = branchBuilder.buildPostGraph(stage);
       callback.accept(singleton(stage), afterGraph);
 
       // ensure parallel stages have the correct stage type (ie. createServerGroup -> deploy to satisfy deck)
@@ -130,36 +132,32 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
     if (type == STAGE_BEFORE) {
       planExecutionWindow(stage, callback);
 
-      reverse(aroundStages.getOrDefault(type, emptyList()))
+      aroundStages
+        .getOrDefault(type, emptyList())
         .forEach(syntheticStage -> {
           injectStage(stage, syntheticStage, type);
           callback.accept(syntheticStage);
         });
     } else {
-      aroundStages.getOrDefault(type, emptyList())
-        .forEach(syntheticStage -> {
-          injectStage(stage, syntheticStage, type);
-          callback.accept(syntheticStage);
-        });
+      List<Stage<T>> afterStages = aroundStages
+        .getOrDefault(type, emptyList());
+      // inject after stages in reverse order as it's easier to calculate index
+      reverse(afterStages)
+        .forEach(syntheticStage ->
+          injectStage(stage, syntheticStage, type)
+        );
+      // process the stages in execution order
+      afterStages.forEach(callback);
     }
   }
 
   private <T extends Execution<T>> void planExecutionWindow(Stage<T> stage, Consumer<Stage<T>> callback) {
-    Optional<Stage<T>> parentStage = stage
-      .getExecution()
-      .getStages()
-      .stream()
-      .filter(it -> it.getId().equals(stage.getParentStageId()))
-      .findFirst();
     boolean hasExecutionWindow = (Boolean) stage
       .getContext()
       .getOrDefault("restrictExecutionDuringTimeWindow", false);
     boolean isNonSynthetic = stage.getSyntheticStageOwner() == null &&
       stage.getParentStageId() == null;
-    boolean parentIsInitializingStage = parentStage
-      .map(Stage::isInitializationStage)
-      .orElse(false);
-    if (hasExecutionWindow && (isNonSynthetic || parentIsInitializingStage)) {
+    if (hasExecutionWindow && isNonSynthetic) {
       Stage<T> syntheticStage = newStage(
         stage.getExecution(),
         RestrictExecutionDuringTimeWindow.TYPE,
@@ -179,14 +177,19 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
     SyntheticStageOwner type
   ) {
     List<Stage<T>> stages = parent.getExecution().getStages();
-    int index = stages.indexOf(parent);
-    int offset = type == STAGE_BEFORE ? 0 : 1;
-    stages.add(index + offset, stage);
-    stage.setParentStageId(parent.getId());
+    if (stages.stream().filter(it -> it.getId().equals(stage.getId())).count() == 0) {
+      int index = stages.indexOf(parent);
+      int offset = type == STAGE_BEFORE ? 0 : 1;
+      stages.add(index + offset, stage);
+      stage.setParentStageId(parent.getId());
+    }
   }
 
   // TODO: change callback type to Consumer<TaskDefinition>
-  protected <T extends Execution<T>> void planTasks(Stage<T> stage, TaskNode.TaskGraph taskGraph, Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
+  protected <T extends Execution<T>> void planTasks(Stage<T> stage, TaskNode.TaskGraph taskGraph, Supplier<String> idGenerator, Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
+    if (taskGraph.isEmpty()) {
+      taskGraph = TaskNode.singleton(FULL, "no-op", NoOpTask.class);
+    }
     for (ListIterator<TaskNode> itr = taskGraph.listIterator(); itr.hasNext(); ) {
       boolean isStart = !itr.hasPrevious();
       // do this after calling itr.hasPrevious because ListIterator is stupid
@@ -194,17 +197,38 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       boolean isEnd = !itr.hasNext();
 
       if (taskDef instanceof TaskDefinition) {
-        planTask(stage, (TaskDefinition) taskDef, taskGraph.getType(), isStart, isEnd, callback);
+        planTask(stage, (TaskDefinition) taskDef, taskGraph.getType(), idGenerator, isStart, isEnd, callback);
       } else if (taskDef instanceof TaskNode.TaskGraph) {
-        planTasks(stage, (TaskNode.TaskGraph) taskDef, callback);
+        planTasks(stage, (TaskNode.TaskGraph) taskDef, idGenerator, callback);
       } else {
         throw new UnsupportedOperationException(format("Unknown TaskNode type %s", taskDef.getClass().getName()));
       }
     }
   }
 
-  private <T extends Execution<T>> void planTask(Stage<T> stage, TaskDefinition taskDef, TaskNode.GraphType type, boolean isStart, boolean isEnd, Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
-    DefaultTask task = new DefaultTask();
+  private <T extends Execution<T>> void planTask(
+    Stage<T> stage,
+    TaskDefinition taskDef,
+    TaskNode.GraphType type,
+    Supplier<String> idGenerator,
+    boolean isStart,
+    boolean isEnd,
+    Consumer<com.netflix.spinnaker.orca.pipeline.model.Task> callback) {
+
+    String taskId = idGenerator.get();
+
+    com.netflix.spinnaker.orca.pipeline.model.Task task = stage
+      .getTasks()
+      .stream()
+      .filter(it -> it.getId().equals(taskId))
+      .findFirst()
+      .orElseGet(() -> createTask(stage, taskDef, type, isStart, isEnd, taskId));
+
+    callback.accept(task);
+  }
+
+  private <T extends Execution<T>> Task createTask(Stage<T> stage, TaskDefinition taskDef, TaskNode.GraphType type, boolean isStart, boolean isEnd, String taskId) {
+    Task task = new Task();
     if (isStart) {
       switch (type) {
         case FULL:
@@ -216,10 +240,10 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
           break;
       }
     }
-    task.setId(String.valueOf((stage.getTasks().size() + 1)));
+    task.setId(taskId);
     task.setName(taskDef.getName());
     task.setStatus(NOT_STARTED);
-    task.setImplementingClass(taskDef.getImplementingClass());
+    task.setImplementingClass(taskDef.getImplementingClass().getName());
     if (isEnd) {
       switch (type) {
         case FULL:
@@ -232,14 +256,13 @@ public abstract class ExecutionRunnerSupport implements ExecutionRunner {
       }
     }
     stage.getTasks().add(task);
-
-    callback.accept(task);
+    return task;
   }
 
   private <T extends Execution<T>> StageDefinitionBuilder findBuilderForStage(Stage<T> stage) {
-    return stageDefinitionBuilders
-      .stream()
-      .filter(builder -> builder.getType().equals(stage.getType()))
+    return stageDefinitionBuilders.stream()
+      .filter(builder -> builder.getType().equals(stage.getType())
+        || (stage.getContext() != null && stage.getContext().get("alias") != null && builder.getType().equals(stage.getContext().get("alias"))))
       .findFirst()
       .orElseThrow(() -> new NoSuchStageDefinitionBuilder(stage.getType()));
   }

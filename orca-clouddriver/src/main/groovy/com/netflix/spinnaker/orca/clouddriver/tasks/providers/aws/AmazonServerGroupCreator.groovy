@@ -30,7 +30,6 @@ import org.springframework.stereotype.Component
 @Component
 class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAware {
 
-  static final List<String> DEFAULT_VPC_SECURITY_GROUPS = ["nf-infrastructure-vpc", "nf-datacenter-vpc"]
   static final List<String> DEFAULT_SECURITY_GROUPS = ["nf-infrastructure", "nf-datacenter"]
 
   @Autowired
@@ -38,9 +37,6 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
 
   @Value('${default.bake.account:default}')
   String defaultBakeAccount
-
-  @Value('${default.vpc.securityGroups:#{T(com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask).DEFAULT_VPC_SECURITY_GROUPS}}')
-  List<String> defaultVpcSecurityGroups = DEFAULT_VPC_SECURITY_GROUPS
 
   @Value('${default.securityGroups:#{T(com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask).DEFAULT_SECURITY_GROUPS}}')
   List<String> defaultSecurityGroups = DEFAULT_SECURITY_GROUPS
@@ -99,8 +95,15 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
           if (trigger && trigger.repository && trigger.tag) {
             operation.imageId = "${trigger.repository}:${trigger.tag}".toString()
           }
+          if (!operation.imageId && trigger.properties && trigger.properties.imageName) {
+            operation.imageId = trigger.properties.imageName
+          }
         }
       }
+    }
+
+    if (context.cloudProvider == 'titus' && stage.execution.authentication?.user) {
+      operation.user = stage.execution.authentication?.user
     }
 
     log.info("Deploying ${operation.amiName ?: operation.imageId} to ${targetRegion}")
@@ -111,15 +114,8 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
     operation.keyPair = (operation.keyPair ?: "nf-${operation.credentials}-keypair-a").toString()
 
     operation.securityGroups = operation.securityGroups ?: []
-    def defaultSecurityGroupsForAccount
 
-    if (operation.subnetType && !operation.subnetType.contains('vpc0')) {
-      //TODO(cfieber)- remove the VPC special case asap
-      defaultSecurityGroupsForAccount = defaultVpcSecurityGroups
-    } else {
-      defaultSecurityGroupsForAccount = defaultSecurityGroups
-    }
-
+    def defaultSecurityGroupsForAccount = defaultSecurityGroups
     try {
       // Check for any explicitly provided per-account security group defaults (and use them)
       def accountDetails = mortService.getAccountDetails(operation.credentials as String)

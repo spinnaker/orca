@@ -18,14 +18,12 @@
 package com.netflix.spinnaker.orca.listeners
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import static com.netflix.spinnaker.orca.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 
 class StageTaskPropagationListenerSpec extends Specification {
   def persister = Mock(Persister)
@@ -34,8 +32,8 @@ class StageTaskPropagationListenerSpec extends Specification {
   void "before should update task status to RUNNING if not already started"() {
     given:
     def listener = new StageTaskPropagationListener()
-    def task = new DefaultTask(startTime: startTime)
-    def stage = new PipelineStage(new Pipeline(), "test")
+    def task = new Task(startTime: startTime)
+    def stage = new Stage<>(new Pipeline(), "test")
     stage.tasks = [task]
 
     when:
@@ -58,8 +56,8 @@ class StageTaskPropagationListenerSpec extends Specification {
   void "afterTask should update task status to #sourceExecutionStatus"() {
     given:
     def listener = new StageTaskPropagationListener()
-    def task = new DefaultTask()
-    def stage = new PipelineStage(new Pipeline(), "test")
+    def task = new Task()
+    def stage = new Stage<>(new Pipeline(), "test")
     stage.tasks = [task]
 
     when:

@@ -20,14 +20,13 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
 class ScaleToServerGroupResizeStrategySpec extends Specification {
-  Stage stage = new PipelineStage(new Pipeline(), "Scale", [:])
+  Stage stage = new Stage<>(new Pipeline(), "Scale", [:])
   OortHelper oortHelper = Mock(OortHelper)
 
   @Subject
@@ -69,13 +68,17 @@ class ScaleToServerGroupResizeStrategySpec extends Specification {
     thrown(IllegalStateException)
   }
 
-  def "should return source server group's capacity"() {
+  @Unroll
+  def "should return source server group capacity"() {
     given:
-    stage.context.source = [
-      credentials    : "test",
-      serverGroupName: "s-v001",
-      region         : "us-west-1",
-      cloudProvider  : "aws"
+    stage.context = [
+      source            : [
+        credentials    : "test",
+        serverGroupName: "s-v001",
+        region         : "us-west-1",
+        cloudProvider  : "aws"
+      ],
+      pinMinimumCapacity: pinMinimumCapacity
     ]
 
     when:
@@ -86,15 +89,21 @@ class ScaleToServerGroupResizeStrategySpec extends Specification {
       return Optional.of(new TargetServerGroup(
         capacity: [
           min    : 1,
-          max    : 2,
+          max    : 3,
           desired: 3
         ]
       ))
     }
 
-    capacity.min == 1
-    capacity.max == 2
+    capacity.min == expectedMinimumCapacity
+    capacity.max == 3
     capacity.desired == 3
+
+    where:
+    pinMinimumCapacity || expectedMinimumCapacity
+    null               || 1
+    false              || 1
+    true               || 3
   }
 
   @Unroll

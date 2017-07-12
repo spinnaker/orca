@@ -16,15 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.AmazonServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.GoogleServerGroupCreator
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import rx.Observable
 import spock.lang.Shared
@@ -37,19 +34,19 @@ class CreateServerGroupTaskSpec extends Specification {
   ServerGroupCreator aCreator = Stub(ServerGroupCreator) {
     getCloudProvider() >> "aCloud"
     isKatoResultExpected() >> false
-    getOperations(spock.lang.Specification._) >> [["aOp": "foo"]]
+    getOperations(_) >> [["aOp": "foo"]]
   }
   @Shared
   ServerGroupCreator bCreator = Stub(ServerGroupCreator) {
     getCloudProvider() >> "bCloud"
     isKatoResultExpected() >> false
-    getOperations(spock.lang.Specification._) >> [["bOp": "bar"]]
+    getOperations(_) >> [["bOp": "bar"]]
   }
   @Shared
   ServerGroupCreator cCreator = Stub(ServerGroupCreator) {
     getCloudProvider() >> "cCloud"
     isKatoResultExpected() >> true
-    getOperations(spock.lang.Specification._) >> [["cOp": "baz"]]
+    getOperations(_) >> [["cOp": "baz"]]
   }
   @Shared
   TaskId taskId = new TaskId(UUID.randomUUID().toString())
@@ -66,7 +63,7 @@ class CreateServerGroupTaskSpec extends Specification {
     given:
       KatoService katoService = Mock(KatoService)
       def task = new CreateServerGroupTask(kato: katoService, serverGroupCreators: [aCreator, bCreator, cCreator])
-      def stage = new PipelineStage(new Pipeline(), "whatever", [credentials: "abc", cloudProvider: cloudProvider])
+      def stage = new Stage<>(new Pipeline(), "whatever", [credentials: "abc", cloudProvider: cloudProvider])
 
     when:
       def result = task.execute(stage)
@@ -146,12 +143,12 @@ class CreateServerGroupTaskSpec extends Specification {
         ["imageId": "parent-ami", "ami": "parent-ami", "region": deployRegion]
       ]
     ]
-    def parentPipeline = new Pipeline.Builder().withName("parent").withGlobalContext(parentGlobalContext).build()
+    def parentPipeline = Pipeline.builder().withName("parent").withGlobalContext(parentGlobalContext).build()
 
     def childTrigger = [
       parentExecution: parentPipeline
     ]
-    def childPipeline = new Pipeline.Builder().withName("child").withTrigger(childTrigger).build()
+    def childPipeline = Pipeline.builder().withName("child").withTrigger(childTrigger).build()
     def manualJudgmentStage = buildStageForPipeline(childPipeline, "manualJudgment")
 
     def deployConfig = buildDeployConfig(deployRegion, operationCloudProvider)
@@ -220,15 +217,13 @@ class CreateServerGroupTaskSpec extends Specification {
         trigger: parentTrigger
       ]
     ]
-    def childPipeline = new Pipeline.Builder().withName("child").withTrigger(childTrigger).build()
+    def childPipeline = Pipeline.builder().withName("child").withTrigger(childTrigger).build()
     def manualJudgmentStage = buildStageForPipeline(childPipeline, "manualJudgment")
 
     def deployConfig = buildDeployConfig(deployRegion, operationCloudProvider)
     def deployStage = buildStageForPipeline(childPipeline, "createServerGroup", deployConfig)
     makeDependentOn(deployStage, manualJudgmentStage)
 
-    def pipelineObjectMapper =
-      new ObjectMapper().registerModule(new SimpleModule("MyConverterModule").addAbstractTypeMapping(Stage, PipelineStage))
     def deployTask = new CreateServerGroupTask(kato: katoService, serverGroupCreators: buildServerGroupCreators(mortService))
 
     when:
@@ -263,7 +258,7 @@ class CreateServerGroupTaskSpec extends Specification {
     KatoService katoService = Mock(KatoService)
     MortService mortService = Mock(MortService)
     def deployRegion = "us-east-1"
-    def parentPipeline = new Pipeline.Builder().withName("parent").build()
+    def parentPipeline = Pipeline.builder().withName("parent").build()
 
     def bakeStage1 = buildStageForPipeline(parentPipeline, "bake")
 
@@ -273,7 +268,7 @@ class CreateServerGroupTaskSpec extends Specification {
     def childTrigger = [
       parentExecution: parentPipeline
     ]
-    def childPipeline = new Pipeline.Builder().withName("child").withTrigger(childTrigger).build()
+    def childPipeline = Pipeline.builder().withName("child").withTrigger(childTrigger).build()
     def manualJudgmentStage = buildStageForPipeline(childPipeline, "manualJudgment")
 
     def deployConfig = buildDeployConfig(deployRegion, operationCloudProvider)
@@ -317,7 +312,7 @@ class CreateServerGroupTaskSpec extends Specification {
     KatoService katoService = Mock(KatoService)
     MortService mortService = Mock(MortService)
     def deployRegion = "us-east-1"
-    def grandparentPipeline = new Pipeline.Builder().withName("grandparent").build()
+    def grandparentPipeline = Pipeline.builder().withName("grandparent").build()
 
     def bakeStage1 = buildStageForPipeline(grandparentPipeline, "bake")
 
@@ -327,12 +322,12 @@ class CreateServerGroupTaskSpec extends Specification {
     def parentTrigger = [
       parentExecution: grandparentPipeline
     ]
-    def parentPipeline = new Pipeline.Builder().withName("parent").withTrigger(parentTrigger).build()
+    def parentPipeline = Pipeline.builder().withName("parent").withTrigger(parentTrigger).build()
 
     def childTrigger = [
       parentExecution: parentPipeline
     ]
-    def childPipeline = new Pipeline.Builder().withName("child").withTrigger(childTrigger).build()
+    def childPipeline = Pipeline.builder().withName("child").withTrigger(childTrigger).build()
     def manualJudgmentStage = buildStageForPipeline(childPipeline, "manualJudgment")
 
     def deployConfig = buildDeployConfig(deployRegion, operationCloudProvider)
@@ -378,7 +373,7 @@ class CreateServerGroupTaskSpec extends Specification {
         ["imageId": "parent-ami", "ami": "parent-ami", "region": deployRegion]
       ]
     ]
-    def parentPipeline = new Pipeline.Builder().withName("parent").withGlobalContext(parentGlobalContext).build()
+    def parentPipeline = Pipeline.builder().withName("parent").withGlobalContext(parentGlobalContext).build()
 
     def pipelineStage = buildStageForPipeline(parentPipeline, "pipeline")
 
@@ -386,7 +381,7 @@ class CreateServerGroupTaskSpec extends Specification {
       parentExecution: parentPipeline,
       parentPipelineStageId: pipelineStage.id
     ]
-    def childPipeline = new Pipeline.Builder().withName("child").withTrigger(childTrigger).build()
+    def childPipeline = Pipeline.builder().withName("child").withTrigger(childTrigger).build()
     def manualJudgmentStage = buildStageForPipeline(childPipeline, "manualJudgment")
 
     def deployConfig = buildDeployConfig(deployRegion, operationCloudProvider)
@@ -433,7 +428,7 @@ class CreateServerGroupTaskSpec extends Specification {
     KatoService katoService = Mock(KatoService)
     MortService mortService = Mock(MortService)
     def deployRegion = "us-east-1"
-    def parentPipeline = new Pipeline.Builder().withName("parent").build()
+    def parentPipeline = Pipeline.builder().withName("parent").build()
 
     def waitStage = buildStageForPipeline(parentPipeline, "wait")
 
@@ -456,7 +451,7 @@ class CreateServerGroupTaskSpec extends Specification {
       parentExecution: parentPipeline,
       parentPipelineStageId: pipelineStageA.id
     ]
-    def childPipelineA = new Pipeline.Builder().withName("child").withTrigger(childTriggerA).build()
+    def childPipelineA = Pipeline.builder().withName("child").withTrigger(childTriggerA).build()
     def manualJudgmentStageA = buildStageForPipeline(childPipelineA, "manualJudgment")
 
     def deployConfig = buildDeployConfig(deployRegion, operationCloudProvider)
@@ -472,7 +467,7 @@ class CreateServerGroupTaskSpec extends Specification {
       parentExecution: parentPipeline,
       parentPipelineStageId: pipelineStageB.id
     ]
-    def childPipelineB = new Pipeline.Builder().withName("child").withTrigger(childTriggerB).build()
+    def childPipelineB = Pipeline.builder().withName("child").withTrigger(childTriggerB).build()
     def manualJudgmentStageB = buildStageForPipeline(childPipelineB, "manualJudgment")
 
     def deployStageB = buildStageForPipeline(childPipelineB, "createServerGroup", deployConfig)
@@ -539,14 +534,14 @@ class CreateServerGroupTaskSpec extends Specification {
   }
 
   private def buildStageForPipeline(def pipeline, String stageType, def context = [:]) {
-    def stage = new PipelineStage(pipeline, stageType, context)
+    def stage = new Stage<>(pipeline, stageType, context)
 
     pipeline.stages << stage
 
     return stage
   }
 
-  private void makeDependentOn(PipelineStage dependent, PipelineStage dependency) {
+  private void makeDependentOn(Stage<Pipeline> dependent, Stage<Pipeline> dependency) {
     if (!dependency.refId) {
       dependency.refId = UUID.randomUUID()
     }
@@ -554,7 +549,7 @@ class CreateServerGroupTaskSpec extends Specification {
     dependent.requisiteStageRefIds = [dependency.refId]
   }
 
-  private void makeChildOf(PipelineStage child, PipelineStage parent) {
+  private void makeChildOf(Stage<Pipeline> child, Stage<Pipeline> parent) {
     child.parentStageId = parent.id
   }
 

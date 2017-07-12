@@ -21,10 +21,9 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Client
-import retrofit.client.OkClient
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Specification
@@ -45,10 +44,10 @@ class InstanceHealthCheckTaskSpec extends Specification {
   @Unroll
   def "check different tasks statuses, servers with responseCode #responseCode expect #executionStatus"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'instanceHealthCheck', [:])
+    def stage = new Stage<>(pipe, 'instanceHealthCheck', [:])
     stage.context.instances = instances
 
     def responses = []
@@ -85,10 +84,10 @@ class InstanceHealthCheckTaskSpec extends Specification {
   @Unroll
   def "missing instance healthCheckUrl returns running"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'instanceHealthCheck', [:])
+    def stage = new Stage<>(pipe, 'instanceHealthCheck', [:])
     stage.context.instances = instances
 
     when:
@@ -110,10 +109,10 @@ class InstanceHealthCheckTaskSpec extends Specification {
 
   def "retry on missing instance healthCheckUrl"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'instanceHealthCheck', [:])
+    def stage = new Stage<>(pipe, 'instanceHealthCheck', [:])
     stage.context.instances = instances
     task.oortHelper = oortHelper
     when:

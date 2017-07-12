@@ -17,9 +17,11 @@
 package com.netflix.spinnaker.orca.echo.pipeline
 
 import java.util.concurrent.TimeUnit
-import groovy.util.logging.Slf4j
 import com.google.common.annotations.VisibleForTesting
-import com.netflix.spinnaker.orca.*
+import com.netflix.spinnaker.orca.AuthenticatedStage
+import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.batch.RestartableStage
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -28,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.security.User
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -76,29 +79,58 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
 
     @Override
     TaskResult execute(Stage stage) {
-      def stageData = stage.mapTo(StageData)
+      StageData stageData = stage.mapTo(StageData)
+      NotificationState notificationState
+      ExecutionStatus executionStatus
+
       switch (stageData.state) {
         case StageData.State.CONTINUE:
-          return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+          notificationState = NotificationState.manualJudgmentContinue
+          executionStatus = ExecutionStatus.SUCCEEDED
+          break
         case StageData.State.STOP:
-          def executionStatus = ExecutionStatus.TERMINAL
-          return new DefaultTaskResult(executionStatus)
+          notificationState = NotificationState.manualJudgmentStop
+          executionStatus = ExecutionStatus.TERMINAL
+          break
+        default:
+          notificationState = NotificationState.manualJudgment
+          executionStatus = ExecutionStatus.RUNNING
+          break
       }
 
-      def outputs = [:]
+      Map outputs = processNotifications(stage, stageData, notificationState)
+
+      return new TaskResult(executionStatus, outputs)
+    }
+
+    Map processNotifications(Stage stage, StageData stageData, NotificationState notificationState) {
       if (echoService) {
-        outputs = [notifications: stageData.notifications]
-        stageData.notifications.findAll { it.shouldNotify() }.each {
+        // sendNotifications will be true if using the new scheme for configuration notifications.
+        // The new scheme matches the scheme used by the other stages.
+        // If the deprecated scheme is in use, only the original 'awaiting judgment' notification is supported.
+        if (notificationState != NotificationState.manualJudgment && !stage.context.sendNotifications) {
+          return [:]
+        }
+
+        stageData.notifications.findAll { it.shouldNotify(notificationState) }.each {
           try {
-            it.notify(echoService, stage)
+            it.notify(echoService, stage, notificationState)
           } catch (Exception e) {
             log.error("Unable to send notification (executionId: ${stage.execution.id}, address: ${it.address}, type: ${it.type})", e)
           }
         }
-      }
 
-      return new DefaultTaskResult(ExecutionStatus.RUNNING, outputs)
+        return [notifications: stageData.notifications]
+      } else {
+        return [:]
+      }
     }
+  }
+
+  static enum NotificationState {
+    manualJudgment,
+    manualJudgmentContinue,
+    manualJudgmentStop
   }
 
   static class StageData {
@@ -126,12 +158,23 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
 
   static class Notification {
     String address
+    String cc
     String type
+    List<NotificationState> when
+    Map<NotificationState, Map> message
 
-    Date lastNotified
+    Map<NotificationState, Date> lastNotifiedByNotificationState = [:]
     Long notifyEveryMs = -1
 
-    boolean shouldNotify(Date now = new Date()) {
+    boolean shouldNotify(NotificationState notificationState, Date now = new Date()) {
+      // The new scheme for configuring notifications requires the use of the when list (just like the other stages).
+      // If this list is present, but does not contain an entry for this particular notification state, do not notify.
+      if (when && !when.contains(notificationState)) {
+        return false
+      }
+
+      Date lastNotified = lastNotifiedByNotificationState[notificationState]
+
       if (!lastNotified?.time) {
         return true
       }
@@ -143,11 +186,12 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
       return new Date(lastNotified.time + notifyEveryMs) <= now
     }
 
-    void notify(EchoService echoService, Stage stage) {
+    void notify(EchoService echoService, Stage stage, NotificationState notificationState) {
       echoService.create(new EchoService.Notification(
         notificationType: EchoService.Notification.Type.valueOf(type.toUpperCase()),
-        to: [address],
-        templateGroup: "manualJudgment",
+        to: address ? [address] : null,
+        cc: cc ? [cc] : null,
+        templateGroup: notificationState,
         severity: EchoService.Notification.Severity.HIGH,
         source: new EchoService.Notification.Source(
           executionType: stage.execution.class.simpleName.toLowerCase(),
@@ -159,10 +203,14 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
           stageId: stage.refId,
           restrictExecutionDuringTimeWindow: stage.context.restrictExecutionDuringTimeWindow,
           execution: stage.execution,
-          instructions: stage.context.instructions ?: ""
+          instructions: stage.context.instructions ?: "",
+          message: message?.get(notificationState)?.text,
+          judgmentInputs: stage.context.judgmentInputs,
+          judgmentInput: stage.context.judgmentInput,
+          judgedBy: stage.context.lastModifiedBy
         ]
       ))
-      lastNotified = new Date()
+      lastNotifiedByNotificationState[notificationState] = new Date()
     }
   }
 }

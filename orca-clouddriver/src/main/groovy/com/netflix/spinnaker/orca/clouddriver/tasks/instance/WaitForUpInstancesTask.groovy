@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
+import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper.HealthCountSnapshot
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
@@ -30,6 +31,14 @@ class WaitForUpInstancesTask extends AbstractWaitingForInstancesTask {
   // We do not want to fail before the server group has been created.
   boolean waitForUpServerGroup() {
     return true
+  }
+
+  @Override
+  Map getAdditionalRunningStageContext(Stage stage, Map serverGroup) {
+    [
+      targetDesiredSize: calculateTargetDesiredSize(stage, serverGroup),
+      lastCapacityCheck: getHealthCountSnapshot(stage, serverGroup)
+    ]
   }
 
   static boolean allInstancesMatch(Stage stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
@@ -66,7 +75,7 @@ class WaitForUpInstancesTask extends AbstractWaitingForInstancesTask {
     return healthyCount >= targetDesiredSize
   }
 
-  private static int calculateTargetDesiredSize(Stage stage, Map serverGroup) {
+  static int calculateTargetDesiredSize(Stage stage, Map serverGroup) {
     // favor using configured target capacity whenever available (rather than in-progress server group's desiredCapacity)
     Map capacity = (Map) serverGroup.capacity
     Integer targetDesiredSize = capacity.desired as Integer
@@ -86,6 +95,9 @@ class WaitForUpInstancesTask extends AbstractWaitingForInstancesTask {
       }
       targetDesiredSize = Math.ceil(percentage * targetDesiredSize / 100D) as Integer
       log.info("${serverGroup.name}: Calculating target desired size based on configured percentage (${percentage}) as ${targetDesiredSize} instances")
+    } else if (stage.context.desiredPercentage != null) {
+      Integer percentage = (Integer) stage.context.desiredPercentage
+      targetDesiredSize = getDesiredInstanceCount(capacity, percentage)
     }
     log.info("${serverGroup.name}: Target desired size is ${targetDesiredSize}")
     targetDesiredSize
@@ -94,5 +106,45 @@ class WaitForUpInstancesTask extends AbstractWaitingForInstancesTask {
   @Override
   protected boolean hasSucceeded(Stage stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
     allInstancesMatch(stage, serverGroup, instances, interestingHealthProviderNames)
+  }
+
+  private static HealthCountSnapshot getHealthCountSnapshot(Stage stage, Map serverGroup) {
+    HealthCountSnapshot snapshot = new HealthCountSnapshot()
+    Collection<String> interestingHealthProviderNames = stage.context.interestingHealthProviderNames as Collection
+    if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {
+      snapshot.up = serverGroup.instances.size()
+      return snapshot
+    }
+    serverGroup.instances.each { Map instance ->
+      List<Map> healths = HealthHelper.filterHealths(instance, interestingHealthProviderNames)
+      if (HealthHelper.someAreUpAndNoneAreDown(instance, interestingHealthProviderNames)) {
+        snapshot.up++
+      } else if (someAreDown(instance, interestingHealthProviderNames)) {
+        snapshot.down++
+      } else if (healths.any { it.state == 'OutOfService' } ) {
+        snapshot.outOfService++
+      } else if (healths.any { it.state == 'Starting' } ) {
+        snapshot.starting++
+      } else if (healths.every { it.state == 'Succeeded' } ) {
+        snapshot.succeeded++
+      } else if (healths.any { it.state == 'Failed' } ) {
+        snapshot.failed++
+      } else {
+        snapshot.unknown++
+      }
+    }
+    return snapshot
+  }
+
+  private static boolean someAreDown(Map instance, Collection<String> interestingHealthProviderNames) {
+    List<Map> healths = HealthHelper.filterHealths(instance, interestingHealthProviderNames)
+
+    if (!interestingHealthProviderNames && !healths) {
+      // No health indications (and no specific providers to check), consider instance to be in an unknown state.
+      return false
+    }
+
+    // no health indicators is indicative of being down
+    return !healths || healths.any { it.state == 'Down' || it.state == 'OutOfService' }
   }
 }

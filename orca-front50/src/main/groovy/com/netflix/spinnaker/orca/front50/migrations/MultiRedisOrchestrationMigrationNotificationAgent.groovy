@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepos
 import groovy.util.logging.Slf4j
 import net.greghaines.jesque.client.Client
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Component
@@ -49,8 +50,10 @@ class MultiRedisOrchestrationMigrationNotificationAgent extends AbstractPollingN
 
   Pool<Jedis> jedisPool
   Pool<Jedis> jedisPoolPrevious
-  Front50Service front50Service
   JedisExecutionRepository executionRepositoryPrevious
+
+  @Autowired(required = false)
+  Front50Service front50Service
 
   @Value('${pollers.multiRedisOrchestrationMigration.intervalMs:3600000}')
   long pollingIntervalMs
@@ -59,13 +62,11 @@ class MultiRedisOrchestrationMigrationNotificationAgent extends AbstractPollingN
   MultiRedisOrchestrationMigrationNotificationAgent(ObjectMapper objectMapper,
                                                     Client jesqueClient,
                                                     Registry registry,
-                                                    Pool<Jedis> jedisPool,
-                                                    Pool<Jedis> jedisPoolPrevious,
-                                                    Front50Service front50Service) {
+                                                    @Qualifier("jedisPool") Pool<Jedis> jedisPool,
+                                                    @Qualifier("jedisPoolPrevious") Pool<Jedis> jedisPoolPrevious) {
     super(objectMapper, jesqueClient)
     this.jedisPool = jedisPool
     this.jedisPoolPrevious = jedisPoolPrevious
-    this.front50Service = front50Service
 
     def queryAllScheduler = Schedulers.from(JedisExecutionRepository.newFixedThreadPool(registry, 1, "QueryAll"))
     def queryByAppScheduler = Schedulers.from(JedisExecutionRepository.newFixedThreadPool(registry, 1, "QueryByApp"))
@@ -91,6 +92,9 @@ class MultiRedisOrchestrationMigrationNotificationAgent extends AbstractPollingN
   }
 
   void migrate() {
+    if (!front50Service) {
+      throw new UnsupportedOperationException("Front50 is not enabled, fix this by setting front50.enabled: true")
+    }
     log.info("Starting Orchestration Migration...")
 
     def previouslyMigratedOrchestrationIds = new HashSet<String>()

@@ -17,46 +17,106 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration;
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import lombok.extern.slf4j.Slf4j;
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.String.format;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 
 @Slf4j
-public abstract class ExecutionLauncher<T extends Execution> {
+public abstract class ExecutionLauncher<T extends Execution<T>> {
 
   protected final ObjectMapper objectMapper;
   protected final String currentInstanceId;
   protected final ExecutionRepository executionRepository;
 
-  private final ExecutionRunner runner;
+  private final Collection<ExecutionRunner> runners;
 
   protected ExecutionLauncher(ObjectMapper objectMapper,
                               String currentInstanceId,
                               ExecutionRepository executionRepository,
-                              ExecutionRunner runner) {
+                              Collection<ExecutionRunner> runners) {
     this.objectMapper = objectMapper;
     this.currentInstanceId = currentInstanceId;
     this.executionRepository = executionRepository;
-    this.runner = runner;
+    this.runners = runners;
   }
 
   public T start(String configJson) throws Exception {
     final T execution = parse(configJson);
 
+    checkRunnable(execution);
+
     persistExecution(execution);
 
-    return start(execution);
+    try {
+      start(execution);
+    } catch (Throwable t) {
+      handleStartupFailure(execution, t);
+    }
+
+    return execution;
+  }
+
+  protected void checkRunnable(T execution) {
+    // no-op by default
   }
 
   public T start(T execution) throws Exception {
     if (shouldQueue(execution)) {
       log.info("Queueing {}", execution.getId());
     } else {
+      ExecutionRunner runner = runners
+        .stream()
+        .filter(it -> it.engine() == execution.getExecutionEngine())
+        .findFirst()
+        .orElseThrow(()-> new IllegalStateException(format("Unsupported execution engine %s", execution.getExecutionEngine())));
       runner.start(execution);
       onExecutionStarted(execution);
     }
     return execution;
+  }
+
+  protected T handleStartupFailure(T execution, Throwable failure) {
+    final String canceledBy = "system";
+    final String reason = "Failed on startup: " + failure.getMessage();
+    final ExecutionStatus status = ExecutionStatus.TERMINAL;
+    final Function<Execution, Execution> reloader;
+    final String executionType;
+    if (execution instanceof Pipeline) {
+      executionType = "pipeline";
+      reloader = (e) -> executionRepository.retrievePipeline(e.getId());
+    } else if (execution instanceof Orchestration) {
+      executionType = "orchestration";
+      reloader = (e) -> executionRepository.retrieveOrchestration(e.getId());
+    } else {
+      //This should really never happen. If it does, git-blame whoever added the third
+      // type of Execution and yell at them...
+      log.error("Unknown execution type: " + execution.getClass().getSimpleName());
+      executionType = "unknown";
+      reloader = (e) -> {
+        e.setCancellationReason(reason);
+        e.setCanceled(true);
+        e.setCanceledBy(canceledBy);
+        e.setStatus(status);
+        return e;
+      };
+    }
+
+    log.error("Failed to start " + executionType + " " + execution.getId(), failure);
+    executionRepository.updateStatus(execution.getId(), status);
+    executionRepository.cancel(execution.getId(), canceledBy, reason);
+    return (T) reloader.apply(execution);
   }
 
   protected void onExecutionStarted(T execution) {
@@ -68,6 +128,29 @@ public abstract class ExecutionLauncher<T extends Execution> {
    * Persist the initial execution configuration.
    */
   protected abstract void persistExecution(T execution);
+
+  protected final boolean getBoolean(Map<String, ?> map, String key) {
+    return parseBoolean(getString(map, key));
+  }
+
+  protected final String getString(Map<String, ?> map, String key) {
+    return map.containsKey(key) ? map.get(key).toString() : null;
+  }
+
+  protected final <K, V> Map<K, V> getMap(Map<String, ?> map, String key) {
+    Map<K, V> result = (Map<K, V>) map.get(key);
+    return result == null ? emptyMap() : result;
+  }
+
+  protected final List<Map<String, Object>> getList(Map<String, ?> map, String key) {
+    List<Map<String, Object>> result = (List<Map<String, Object>>) map.get(key);
+    return result == null ? emptyList() : result;
+  }
+
+  protected final <E extends Enum<E>> E getEnum(Map<String, ?> map, String key, Class<E> type) {
+    String value = (String) map.get(key);
+    return value != null ? Enum.valueOf(type, value) : null;
+  }
 
   /**
    * Hook for subclasses to decide if this execution should be queued or start immediately.

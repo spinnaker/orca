@@ -16,13 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.DefaultTaskResult
+import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.batch.SpringBatchExecutionRunner
-import com.netflix.spinnaker.orca.batch.StageBuilderProvider
 import com.netflix.spinnaker.orca.batch.TaskTaskletAdapterImpl
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.batch.listeners.SpringBatchExecutionListenerProvider
+import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.NoStrategy
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.Strategy
@@ -36,14 +35,15 @@ import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage.CompletePara
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionTask
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
+import groovy.transform.CompileStatic
 import org.spockframework.spring.xml.SpockMockFactoryBean
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,7 +55,6 @@ import org.springframework.test.context.ContextConfiguration
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD
@@ -75,7 +74,7 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER
 abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> extends Specification {
 
   private static
-  final DefaultTaskResult SUCCESS = new DefaultTaskResult(SUCCEEDED)
+  final TaskResult SUCCESS = TaskResult.SUCCEEDED
 
   abstract R create(StageDefinitionBuilder... stageDefBuilders)
 
@@ -95,7 +94,7 @@ abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> exte
   @Unroll
   def "parallel deploy stages create server groups"() {
     given:
-    def stage = new PipelineStage(execution, "deploy", "deploy", deployStageContext("prod", "none", *regions))
+    def stage = new Stage<>(execution, "deploy", "deploy", deployStageContext("prod", "none", *regions))
     execution.stages << stage
 
     and:
@@ -129,7 +128,7 @@ abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> exte
   @Unroll
   def "deploy stages will run tasks from a strategy"() {
     given:
-    def stage = new PipelineStage(execution, "deploy", "deploy", deployStageContext("prod", "test", *regions))
+    def stage = new Stage<>(execution, "deploy", "deploy", deployStageContext("prod", "test", *regions))
     execution.stages << stage
 
     and:
@@ -201,6 +200,11 @@ abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> exte
   @CompileStatic
   static class Config {
     @Bean
+    FactoryBean<FeaturesService> featuresService() {
+      new SpockMockFactoryBean(FeaturesService)
+    }
+
+    @Bean
     FactoryBean<ExceptionHandler> exceptionHandler() {
       new SpockMockFactoryBean(ExceptionHandler)
     }
@@ -211,11 +215,6 @@ abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> exte
     @Bean
     FactoryBean<ExecutionRepository> executionRepository() {
       new SpockMockFactoryBean(ExecutionRepository)
-    }
-
-    @Bean
-    FactoryBean<StageBuilderProvider> builderProvider() {
-      new SpockMockFactoryBean(StageBuilderProvider)
     }
 
     @Bean
@@ -260,6 +259,11 @@ abstract class DeploymentStrategiesExecutionSpec<R extends ExecutionRunner> exte
     @Bean
     FactoryBean<ExecutionRunnerSpec.TestTask> testTask() {
       new SpockMockFactoryBean(ExecutionRunnerSpec.TestTask)
+    }
+
+    @Bean
+    ContextParameterProcessor contextParameterProcessor() {
+      new ContextParameterProcessor()
     }
   }
 }

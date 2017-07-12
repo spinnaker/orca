@@ -44,6 +44,7 @@ public class AmazonImageFinder implements ImageFinder {
     List<AmazonImage> allMatchedImages =
         oortService.findImage(getCloudProvider(), packageName, null, null, prefixTags(tags)).stream()
         .map(image -> objectMapper.convertValue(image, AmazonImage.class))
+        .filter(image -> image.tagsByImageId != null && image.tagsByImageId.size() != 0)
         .sorted()
         .collect(Collectors.toList());
 
@@ -126,8 +127,7 @@ public class AmazonImageFinder implements ImageFinder {
       put("imageName", imageName);
       put("imageId", imageId);
 
-      put("ami", imageName);
-      put("amiId", imageId);
+      put("ami", imageId);
 
       put("region", region);
 

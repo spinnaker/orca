@@ -43,8 +43,7 @@ class HealthHelper {
 
   /**
    * Return true if platform health was specified in interestingHealthProviderNames, and its state is not 'Down'.
-   * Otherwise, return the value of someAreUp. This method is only intended to be called from
-   * WaitForUpInstancesTask.allInstancesMatch().
+   * Otherwise, return the value of someAreUp.
    */
   static boolean areSomeUpConsideringPlatformHealth(List<Map> healths,
                                                     Collection<String> interestingHealthProviderNames,
@@ -61,8 +60,8 @@ class HealthHelper {
  }
 
   /**
-   * Return true if there is exactly one (filtered) health, it is a platform health, and its state is 'Unknown'. This
-   * method is only intended to be called from WaitForAllInstancesDownTask.hasSucceeded(). Otherwise, return false.
+   * Return true if there is exactly one (filtered) health, it is a platform health, and its state is 'Unknown'.
+   * Otherwise, return false.
    */
   static boolean isDownConsideringPlatformHealth(List<Map> healths) {
     Map platformHealth = findPlatformHealth(healths)
@@ -82,7 +81,6 @@ class HealthHelper {
       health.healthClass == 'platform'
     } as Map
   }
-
 
   static boolean someAreDownAndNoneAreUp(Map instance, Collection<String> interestingHealthProviderNames) {
 
@@ -112,4 +110,15 @@ class HealthHelper {
     boolean noneAreDown = !healths.any { Map health -> health.state == 'Down' }
     return someAreUp && noneAreDown
   }
+
+  static class HealthCountSnapshot {
+    int up
+    int down
+    int outOfService
+    int starting
+    int succeeded
+    int failed
+    int unknown
+  }
+
 }

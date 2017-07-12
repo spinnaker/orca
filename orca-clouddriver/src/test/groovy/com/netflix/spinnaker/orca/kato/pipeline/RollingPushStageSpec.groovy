@@ -16,26 +16,24 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import groovy.transform.CompileStatic
 import com.netflix.spinnaker.config.SpringBatchConfiguration
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.TerminateInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForDownInstanceHealthTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstanceHealthTask
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CaptureParentInterestingHealthProviderNamesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.config.JesqueConfiguration
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.config.OrcaPersistenceConfiguration
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.tasks.DisableInstancesTask
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.CheckForRemainingTerminationsTask
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationCandidatesTask
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationPhaseInstancesTask
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.WaitForNewInstanceLaunchTask
+import com.netflix.spinnaker.orca.kato.tasks.rollingpush.*
 import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
@@ -45,6 +43,7 @@ import com.netflix.spinnaker.orca.test.JobCompletionListener
 import com.netflix.spinnaker.orca.test.TestConfiguration
 import com.netflix.spinnaker.orca.test.batch.BatchTestConfiguration
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
+import groovy.transform.CompileStatic
 import org.spockframework.spring.xml.SpockMockFactoryBean
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,7 +54,6 @@ import org.springframework.test.context.ContextConfiguration
 import spock.lang.Shared
 import spock.lang.Specification
 import static com.netflix.spinnaker.orca.ExecutionStatus.REDIRECT
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage.PushCompleteTask
 
 @ContextConfiguration(classes = [EmbeddedRedisConfiguration, JesqueConfiguration,
@@ -64,13 +62,14 @@ import static com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage.PushComp
   MockTaskConfig, RollingPushStage, DownstreamStage])
 class RollingPushStageSpec extends Specification {
 
-  @Shared def mapper = new OrcaObjectMapper()
+  @Shared def mapper = OrcaObjectMapper.newInstance()
   @Autowired PipelineLauncher pipelineLauncher
 
   /**
    * Task that runs before the loop
    */
   @Autowired @Qualifier("preLoop") Task preLoopTask
+  @Autowired @Qualifier("anotherPreLoop") Task anotherPreLoop
 
   /**
    * Task that is the start of the loop
@@ -91,18 +90,22 @@ class RollingPushStageSpec extends Specification {
    * Task that is after the end of the loop
    */
   @Autowired @Qualifier("postLoop") Task postLoopTask
+  @Autowired @Qualifier("cleanup") Task cleanupTask
 
   /**
    * Task in the stage downstream from rolling push
    */
   @Autowired @Qualifier("downstream") Task downstreamTask
 
-  private static final SUCCESS = new DefaultTaskResult(SUCCEEDED)
-  private static final REDIR = new DefaultTaskResult(REDIRECT)
+  @Autowired @Qualifier("featuresService") FeaturesService featuresService
+
+  private static final SUCCESS = TaskResult.SUCCEEDED
+  private static final REDIR = new TaskResult(REDIRECT)
 
   def "rolling push loops until completion"() {
     given: "everything in the rolling push loop will succeed"
     preLoopTask.execute(_) >> SUCCESS
+    anotherPreLoop.execute(_) >> SUCCESS
     startOfLoopTask.execute(_) >> SUCCESS
     loopTasks.each { task ->
       task.execute(_) >> SUCCESS
@@ -114,6 +117,13 @@ class RollingPushStageSpec extends Specification {
 
     and: "the loop will repeat a couple of times"
     endOfLoopTask.execute(_) >> REDIR >> REDIR >> SUCCESS
+
+    1 * featuresService.isStageAvailable('upsertEntityTags') >> true
+    with(cleanupTask) {
+      1 * execute(_) >> SUCCESS
+      1 * getBackoffPeriod() >> 5000L
+      1 * getTimeout() >> 3600000L
+    }
 
     when:
     pipelineLauncher.start(configJson)
@@ -129,13 +139,14 @@ class RollingPushStageSpec extends Specification {
 
     where:
     config = [
-      application: "app",
-      name       : "my-pipeline",
-      stages     : [
+      application    : "app",
+      name           : "my-pipeline",
+      stages         : [
         [type: RollingPushStage.PIPELINE_CONFIG_TYPE, refId: "1"],
         [type: "downstream", refId: "2", requisiteStageRefIds: ["1"]]
       ],
-      version    : 2
+      version        : 2,
+      executionEngine: "v2"
     ]
     configJson = mapper.writeValueAsString(config)
   }
@@ -145,6 +156,12 @@ class RollingPushStageSpec extends Specification {
     @Qualifier("preLoop")
     FactoryBean<DetermineTerminationCandidatesTask> determineTerminationCandidatesTask() {
       new SpockMockFactoryBean<>(DetermineTerminationCandidatesTask)
+    }
+
+    @Bean
+    @Qualifier("anotherPreLoop")
+    FactoryBean<CaptureParentInterestingHealthProviderNamesTask> captureParentInterestingHealthProviderNamesTask() {
+      new SpockMockFactoryBean<>(CaptureParentInterestingHealthProviderNamesTask)
     }
 
     @Bean
@@ -163,6 +180,12 @@ class RollingPushStageSpec extends Specification {
     @Qualifier("postLoop")
     FactoryBean<PushCompleteTask> pushCompleteTask() {
       new SpockMockFactoryBean<>(PushCompleteTask)
+    }
+
+    @Bean
+    @Qualifier("cleanup")
+    FactoryBean<CleanUpTagsTask> cleanUpTagsTask() {
+      new SpockMockFactoryBean<>(CleanUpTagsTask)
     }
 
     @Bean
@@ -217,6 +240,12 @@ class RollingPushStageSpec extends Specification {
     @Qualifier("inLoop")
     FactoryBean<WaitForUpInstanceHealthTask> waitForUpInstanceHealthTask() {
       new SpockMockFactoryBean<>(WaitForUpInstanceHealthTask)
+    }
+
+    @Bean
+    @Qualifier("featuresService")
+    FactoryBean<FeaturesService> featuresService() {
+      new SpockMockFactoryBean<>(FeaturesService)
     }
   }
 

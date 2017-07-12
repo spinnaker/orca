@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Shared
 import spock.lang.Specification
@@ -40,9 +39,9 @@ class AbstractDeployStrategyStageSpec extends Specification {
   def "should compose list of steps"() {
     given:
     // Step mocks
-    def determineSourceServerGroupTask = new TaskNode.TaskDefinition("determineSourceServerGroup", null)
-    def determineHealthProvidersTask = new TaskNode.TaskDefinition("determineHealthProviders", null)
-    def basicTask = new TaskNode.TaskDefinition("basic", null)
+    def determineSourceServerGroupTask = TaskNode.task("determineSourceServerGroup", null)
+    def determineHealthProvidersTask = TaskNode.task("determineHealthProviders", null)
+    def basicTask = TaskNode.task("basic", null)
 
     AbstractDeployStrategyStage testStage = Spy(AbstractDeployStrategyStage)
     testStage.with {
@@ -50,7 +49,7 @@ class AbstractDeployStrategyStageSpec extends Specification {
       noStrategy = noStrat
     }
 
-    Stage stage = new PipelineStage(new Pipeline(), "whatever", [strategy: specifiedStrategy])
+    Stage stage = new Stage<>(new Pipeline(), "whatever", [strategy: specifiedStrategy])
 
     when:
     def tasks = testStage.buildTaskGraph(stage)

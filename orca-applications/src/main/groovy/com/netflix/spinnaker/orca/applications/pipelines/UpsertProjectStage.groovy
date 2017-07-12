@@ -17,10 +17,7 @@
 
 package com.netflix.spinnaker.orca.applications.pipelines
 
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import com.google.common.annotations.VisibleForTesting
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -29,11 +26,12 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-@CompileStatic
 class UpsertProjectStage implements StageDefinitionBuilder {
   @Override
   <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
@@ -45,13 +43,17 @@ class UpsertProjectStage implements StageDefinitionBuilder {
   @Component
   @VisibleForTesting
   public static class UpsertProjectTask implements Task {
-    @Autowired
+    @Autowired(required = false)
     Front50Service front50Service
 
     UpsertProjectTask() {}
 
     @Override
     TaskResult execute(Stage stage) {
+      if (!front50Service) {
+        throw new UnsupportedOperationException("Unable to modify projects, front50 has not been enabled. Fix this by setting front50.enabled: true")
+      }
+
       def projectId = stage.mapTo("/project", Front50Service.Project)
       def project = stage.mapTo("/project", Map)
 
@@ -65,7 +67,7 @@ class UpsertProjectStage implements StageDefinitionBuilder {
         "notification.type": "upsertproject"
       ]
 
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs)
+      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs)
     }
   }
 }

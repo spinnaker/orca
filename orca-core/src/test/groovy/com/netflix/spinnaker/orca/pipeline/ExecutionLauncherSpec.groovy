@@ -25,13 +25,22 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Unroll
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.DEFAULT_EXECUTION_ENGINE
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v2
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3
 
 abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLauncher<T>> extends Specification {
 
   abstract L create()
 
   @Shared def objectMapper = new ObjectMapper()
-  def runner = Mock(ExecutionRunner)
+  def v2Runner = Mock(ExecutionRunner) {
+    engine() >> v2
+  }
+  def v3Runner = Mock(ExecutionRunner) {
+    engine() >> v3
+  }
   def executionRepository = Mock(ExecutionRepository)
 
 }
@@ -39,10 +48,11 @@ abstract class ExecutionLauncherSpec<T extends Execution, L extends ExecutionLau
 class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLauncher> {
 
   def startTracker = Mock(PipelineStartTracker)
+  def pipelineValidator = Stub(PipelineValidator)
 
   @Override
   PipelineLauncher create() {
-    return new PipelineLauncher(objectMapper, "currentInstanceId", executionRepository, runner, Optional.of(startTracker))
+    return new PipelineLauncher(objectMapper, "currentInstanceId", executionRepository, [v2Runner, v3Runner], Optional.of(startTracker), Optional.of(pipelineValidator))
   }
 
   def "can autowire pipeline launcher with optional dependencies"() {
@@ -53,7 +63,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
         register(TestConfiguration)
         registerSingleton("objectMapper", objectMapper)
         registerSingleton("executionRepository", executionRepository)
-        registerSingleton("executionRunner", runner)
+        registerSingleton("executionRunner", v2Runner)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
           @Override
           String getType() {
@@ -78,7 +88,7 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
         register(TestConfiguration)
         registerSingleton("objectMapper", objectMapper)
         registerSingleton("executionRepository", executionRepository)
-        registerSingleton("executionRunner", runner)
+        registerSingleton("executionRunner", v2Runner)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
           @Override
           String getType() {
@@ -106,10 +116,10 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
 
     then:
     1 * executionRepository.store(_)
-    0 * runner.start(_)
+    0 * v2Runner.start(_)
 
     where:
-    config = [id: "whatever", stages: [], limitConcurrent: true]
+    config = [id: "whatever", stages: [], limitConcurrent: true, executionEngine: "v2"]
     json = objectMapper.writeValueAsString(config)
   }
 
@@ -124,11 +134,35 @@ class PipelineLauncherSpec extends ExecutionLauncherSpec<Pipeline, PipelineLaunc
     launcher.start(json)
 
     then:
-    1 * runner.start(_)
+    1 * v2Runner.start(_)
     1 * startTracker.addToStarted(config.id, _)
 
     where:
-    config = [id: "whatever", stages: []]
+    config = [id: "whatever", stages: [], executionEngine: "v2"]
+    json = objectMapper.writeValueAsString(config)
+  }
+
+  @Unroll
+  def "sets executionEngine correctly"() {
+    given:
+    @Subject def launcher = create()
+
+    when:
+    launcher.start(json)
+
+    then:
+    1 * executionRepository.store({
+      it.executionEngine == expected
+    })
+
+    where:
+    supplied                | expected
+    [executionEngine: "v3"] | v3
+    [executionEngine: "v2"] | v2
+    [executionEngine: null] | DEFAULT_EXECUTION_ENGINE
+    [:]                     | DEFAULT_EXECUTION_ENGINE
+
+    config = [id: "1", stages: []] + supplied
     json = objectMapper.writeValueAsString(config)
   }
 }

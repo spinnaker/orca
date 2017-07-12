@@ -15,14 +15,14 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup
 
-import com.netflix.spinnaker.orca.clouddriver.MortService
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
 
 class DeleteSecurityGroupForceRefreshTaskSpec extends Specification {
   @Subject task = new DeleteSecurityGroupForceRefreshTask()
-  def stage = new PipelineStage(type: "whatever")
+  def stage = new Stage<>(type: "whatever")
 
   def config = [
     cloudProvider     : 'gce',
@@ -38,13 +38,13 @@ class DeleteSecurityGroupForceRefreshTaskSpec extends Specification {
 
   void "should force cache refresh security group via mort"() {
     setup:
-    task.mort = Mock(MortService)
+    task.cacheService = Mock(CloudDriverCacheService)
 
     when:
     task.execute(stage)
 
     then:
-    1 * task.mort.forceCacheUpdate(stage.context.cloudProvider, DeleteSecurityGroupForceRefreshTask.REFRESH_TYPE, _) >> {
+    1 * task.cacheService.forceCacheUpdate(stage.context.cloudProvider, DeleteSecurityGroupForceRefreshTask.REFRESH_TYPE, _) >> {
       String cloudProvider, String type, Map<String, ? extends Object> body ->
 
       assert body.securityGroupName == config.securityGroupName

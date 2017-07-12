@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.igor.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -53,6 +52,7 @@ class StartScriptTask implements Task {
     String cluster = stage.context.cluster
     String cmc = stage.context.cmc
     String repoUrl = stage.context.repoUrl
+    String repoBranch = stage.context.repoBranch
 
     if (stage.execution instanceof Pipeline && stage.execution.trigger.parameters?.strategy == true) {
       Map trigger = ((Pipeline) stage.execution).trigger
@@ -76,8 +76,12 @@ class StartScriptTask implements Task {
       parameters.REPO_URL = repoUrl
     }
 
+    if (repoBranch) {
+      parameters.REPO_BRANCH = repoBranch
+    }
+
     String queuedBuild = buildService.build(master, job, parameters)
-    new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [master: master, job: job, queuedBuild: queuedBuild])
+    new TaskResult(ExecutionStatus.SUCCEEDED, [master: master, job: job, queuedBuild: queuedBuild])
   }
 
 }

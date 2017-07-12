@@ -17,12 +17,13 @@
 package com.netflix.spinnaker.orca.restart
 
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.orca.pipeline.PipelineStarter
+import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
@@ -33,6 +34,7 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 /**
  * Looks for pipelines that were previously running on the current instance before it restarted and resumes them.
  */
+@Deprecated
 @Component
 @ConditionalOnExpression('${pollers.stalePipelines.enabled:true}')
 @Slf4j
@@ -40,13 +42,13 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 class PipelineRecoveryListener implements ApplicationListener<ContextRefreshedEvent> {
 
   private final ExecutionRepository executionRepository
-  private final PipelineStarter pipelineStarter
+  private final ExecutionRunner pipelineStarter
   private final String currentInstanceId
   private final Registry registry
 
   @Autowired
   PipelineRecoveryListener(ExecutionRepository executionRepository,
-                           PipelineStarter pipelineStarter,
+                           @Qualifier("springBatchExecutionRunner") ExecutionRunner pipelineStarter,
                            String currentInstanceId,
                            Registry registry) {
     this.currentInstanceId = currentInstanceId
@@ -69,7 +71,7 @@ class PipelineRecoveryListener implements ApplicationListener<ContextRefreshedEv
 
   private void onResumablePipeline(Pipeline pipeline) {
     try {
-      pipelineStarter.resume(pipeline)
+      pipelineStarter.restart(pipeline)
       registry.counter("pipeline.restarts").increment()
     } catch (Exception e) {
       registry.counter("pipeline.failed.restarts").increment()

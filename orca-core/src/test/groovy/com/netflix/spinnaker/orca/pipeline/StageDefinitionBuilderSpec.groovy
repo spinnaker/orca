@@ -16,15 +16,16 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.batch.pipeline.TestStage
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import groovy.transform.CompileStatic
 import spock.lang.Specification
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v2
 
 class StageDefinitionBuilderSpec extends Specification {
 
@@ -34,14 +35,14 @@ class StageDefinitionBuilderSpec extends Specification {
     given:
     def stageBuilder = new TestStage()
 
-    def pipeline = new Pipeline()
+    def pipeline = new Pipeline(executionEngine: v2)
     pipeline.stages = [
-      new PipelineStage(pipeline, "1"),
-      new PipelineStage(pipeline, "2"),
-      new PipelineStage(pipeline, "3"),
-      new PipelineStage(pipeline, "4")
+      new Stage<>(pipeline, "1"),
+      new Stage<>(pipeline, "2"),
+      new Stage<>(pipeline, "3"),
+      new Stage<>(pipeline, "4")
     ]
-    pipeline.stages.eachWithIndex { PipelineStage stage, int index ->
+    pipeline.stages.eachWithIndex { Stage<Pipeline> stage, int index ->
       stage.refId = index.toString()
       if (index > 0) {
         stage.requisiteStageRefIds = ["${index - 1}".toString()]
@@ -50,7 +51,7 @@ class StageDefinitionBuilderSpec extends Specification {
       }
 
       stage.tasks = [
-        new DefaultTask(startTime: 1L, endTime: 2L, status: SUCCEEDED)
+        new Task(startTime: 1L, endTime: 2L, status: SUCCEEDED)
       ]
     }
 
@@ -87,9 +88,9 @@ class StageDefinitionBuilderSpec extends Specification {
     given:
     def stageBuilder = new TestStage()
 
-    def pipeline = new Pipeline()
+    def pipeline = new Pipeline(executionEngine: v2)
     pipeline.stages = [
-      new PipelineStage(pipeline, "1"),
+      new Stage<>(pipeline, "1"),
     ]
 
     and:
@@ -103,5 +104,10 @@ class StageDefinitionBuilderSpec extends Specification {
 
     then:
     1 * executionRepository.resume(pipeline.id, _, true)
+  }
+
+  @CompileStatic
+  class TestStage implements StageDefinitionBuilder {
+
   }
 }

@@ -16,10 +16,6 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -27,10 +23,12 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGr
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.AbstractStage
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
 @Component
@@ -51,13 +49,8 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @Override
-  <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+  void postBranchGraph(Stage<?> stage, TaskNode.Builder builder) {
     builder.withTask("completeParallelDeploy", CompleteParallelDeployTask)
-  }
-
-  @Override
-  Task completeParallelTask() {
-    return new CompleteParallelDeployTask()
   }
 
   @Override
@@ -123,7 +116,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
         cluster.remove("stageEnabled")
 
         // Parent stage can be deploy or cloneServerGroup.
-        ((AbstractStage) stage).type = parentStage.type
+        stage.type = parentStage.type
         stage.context.clusters = [cluster as Map<String, Object>]
       }
     }
@@ -153,7 +146,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @Override
-  <T extends Execution<T>> String parallelStageName(Stage<T> stage, boolean hasParallelFlows) {
+  String parallelStageName(Stage<?> stage, boolean hasParallelFlows) {
     return isClone(stage) ? "Clone" : stage.name
   }
 
@@ -176,7 +169,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   public static class CompleteParallelDeployTask implements Task {
     TaskResult execute(Stage stage) {
       log.info("Completed Parallel Deploy")
-      new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
+      new TaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
     }
   }
 }

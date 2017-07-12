@@ -21,9 +21,11 @@ buildscript {
     maven { url "https://plugins.gradle.org/m2/" }
   }
   dependencies {
-    classpath "com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.9.0"
+    classpath "com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.12.0"
     classpath "org.springframework.boot:spring-boot-gradle-plugin:1.2.8.RELEASE"
     classpath "io.franzbecker:gradle-lombok:1.6"
+    classpath "org.junit.platform:junit-platform-gradle-plugin:$junitVersion"
+    classpath "com.netflix.nebula:nebula-kotlin-plugin:$kotlinVersion"
   }
 }
 
@@ -33,7 +35,7 @@ allprojects {
   group = "com.netflix.spinnaker.orca"
 
   ext {
-    spinnakerDependenciesVersion = project.hasProperty('spinnakerDependenciesVersion') ? project.property('spinnakerDependenciesVersion') : '0.68.0'
+    spinnakerDependenciesVersion = project.hasProperty('spinnakerDependenciesVersion') ? project.property('spinnakerDependenciesVersion') : '0.91.0'
   }
 
   def checkLocalVersions = [spinnakerDependenciesVersion: spinnakerDependenciesVersion]
@@ -70,7 +72,7 @@ allprojects {
       force "org.antlr:antlr-runtime:3.5.2"
       eachDependency {
         if (it.requested.group.startsWith("com.fasterxml.jackson")) {
-          it.useVersion "2.4.5"
+          it.useVersion spinnaker.version('jackson')
         }
         if (it.requested.group == "com.netflix.rxjava" && it.requested.name == "rxjava-core") {
           it.useTarget group: "io.reactivex", name: "rxjava", version: "1.0.12"
@@ -94,14 +96,10 @@ allprojects {
     }
   }
 }
-
 subprojects {
   dependencies {
     spinnaker.group('spockBase')
-    compile spinnaker.dependency('groovy')
-    compile spinnaker.dependency('guava')
-    compile spinnaker.dependency('slf4jApi')
-    testRuntime spinnaker.dependency('slf4jSimple')
+    testCompile spinnaker.dependency('groovy')
   }
 }
 

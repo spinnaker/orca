@@ -17,11 +17,10 @@
 package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.module.SimpleModule
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 
 /**
@@ -33,8 +32,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
  */
 trait DeploymentDetailsAware {
 
-  private ObjectMapper pipelineObjectMapper =
-    new ObjectMapper().registerModule(new SimpleModule("MyConverterModule").addAbstractTypeMapping(Stage, PipelineStage))
+  private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.newInstance()
 
   void withImageFromPrecedingStage(
     Stage stage,
@@ -67,7 +65,7 @@ trait DeploymentDetailsAware {
       def regions = (it.context.region ? [it.context.region] : it.context.regions) as Set<String>
       def cloudProviderFromContext = it.context.cloudProvider ?: it.context.cloudProviderType
       boolean hasTargetCloudProvider = !cloudProviderFromContext || targetCloudProvider == cloudProviderFromContext
-      boolean hasTargetRegion = !targetRegion || regions?.contains(targetRegion)
+      boolean hasTargetRegion = !targetRegion || regions?.contains(targetRegion) || regions?.contains("global")
       boolean hasImage = it.context.containsKey("ami") || it.context.containsKey("amiDetails")
 
       return hasImage && hasTargetRegion && hasTargetCloudProvider
@@ -158,7 +156,7 @@ trait DeploymentDetailsAware {
 
     if (deploymentDetails) {
       result.amiName = deploymentDetails.find {
-        (!targetRegion || it.region == targetRegion) &&
+        (!targetRegion || it.region == targetRegion || it.region == "global") &&
         (targetCloudProvider == it.cloudProvider || targetCloudProvider == it.cloudProviderType)
       }?.ami
       // docker image ids are not region or cloud provider specific so no need to filter by region

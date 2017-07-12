@@ -18,7 +18,6 @@
 package com.netflix.spinnaker.orca.front50.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -29,27 +28,26 @@ import org.springframework.beans.factory.annotation.Autowired
 import retrofit.RetrofitError
 
 abstract class AbstractFront50Task implements Task {
-  @Autowired
+  @Autowired(required = false)
   Front50Service front50Service
 
   @Autowired
   ObjectMapper mapper
 
-  abstract  Map<String, Object>  performRequest(String account, Application application)
+  abstract  Map<String, Object> performRequest(Application application)
   abstract String getNotificationType()
 
   @Override
   TaskResult execute(Stage stage) {
+    if (!front50Service) {
+      throw new UnsupportedOperationException("Front50 was not enabled. Fix this by setting front50.enabled: true")
+    }
+
     def application = mapper.convertValue(stage.context.application, Application)
     if (stage.context.user){
       application.user = stage.context.user
     }
-    def account = (stage.context.account as String)?.toLowerCase()
-
     def missingInputs = []
-    if (!account) {
-      missingInputs << 'account'
-    }
 
     if (!application.name) {
       missingInputs << 'application.name'
@@ -62,13 +60,12 @@ abstract class AbstractFront50Task implements Task {
 
     def outputs = [
       "notification.type": getNotificationType(),
-      "application.name": application.name,
-      "account": account
+      "application.name": application.name
     ]
     def executionStatus = ExecutionStatus.SUCCEEDED
 
-    Map<String, Object> results = performRequest(account, application)
-    return new DefaultTaskResult(executionStatus, outputs + (results ?: [:]))
+    Map<String, Object> results = performRequest(application)
+    return new TaskResult(executionStatus, outputs + (results ?: [:]))
   }
 
   Application fetchApplication(String applicationName) {

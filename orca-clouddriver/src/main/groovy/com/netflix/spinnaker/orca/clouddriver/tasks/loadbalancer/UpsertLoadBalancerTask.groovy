@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -54,7 +53,16 @@ class UpsertLoadBalancerTask extends AbstractCloudProviderAwareTask implements R
     String account = getCredentials(stage)
 
     def context = new HashMap(stage.context)
-    context.name = context.name ?: "${stage.context.clusterName}-frontend"
+    if (!context.name) {
+      if (context.clusterName) {
+        context.name = "${stage.context.clusterName}-frontend"
+      } else if (context.loadBalancerName) {
+        context.name = context.loadBalancerName
+      } else {
+        throw new IllegalArgumentException("Context for ${CLOUD_OPERATION_TYPE} is missing a name and has no default fallback options.")
+      }
+    }
+
     context.availabilityZones = context.availabilityZones ?: [(context.region): context.regionZones]
 
     def operations = [
@@ -79,6 +87,6 @@ class UpsertLoadBalancerTask extends AbstractCloudProviderAwareTask implements R
       }
     ]
 
-    new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs)
+    new TaskResult(ExecutionStatus.SUCCEEDED, outputs)
   }
 }

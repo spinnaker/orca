@@ -16,25 +16,31 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.orca.webhook.config.PreconfiguredWebhookProperties
+import com.netflix.spinnaker.orca.webhook.service.WebhookService
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+
+import javax.servlet.http.HttpServletResponse
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.security.AuthenticatedRequest
-import org.apache.log4j.MDC
-import org.springframework.mock.env.MockEnvironment
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.PipelineStarter
+import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.InvalidPipelineTemplateException
+import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.json.JsonSlurper
+import org.apache.log4j.MDC
 import org.springframework.http.MediaType
+import org.springframework.mock.env.MockEnvironment
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 
 class OperationsControllerSpec extends Specification {
 
@@ -42,16 +48,25 @@ class OperationsControllerSpec extends Specification {
     MDC.clear()
   }
 
-  def pipelineStarter = Mock(PipelineStarter)
+  def pipelineLauncher = Mock(PipelineLauncher)
   def buildService = Stub(BuildService)
-  def mapper = new OrcaObjectMapper()
+  def mapper = OrcaObjectMapper.newInstance()
   def executionRepository = Mock(ExecutionRepository)
+  def webhookService = Mock(WebhookService)
 
   def env = new MockEnvironment()
   def buildArtifactFilter = new BuildArtifactFilter(environment: env)
 
   @Subject
-    controller = new OperationsController(objectMapper: mapper, pipelineStarter: pipelineStarter, buildService: buildService, buildArtifactFilter: buildArtifactFilter, executionRepository: executionRepository)
+    controller = new OperationsController(
+      objectMapper: mapper,
+      buildService: buildService,
+      buildArtifactFilter: buildArtifactFilter,
+      executionRepository: executionRepository,
+      pipelineLauncher: pipelineLauncher,
+      contextParameterProcessor: new ContextParameterProcessor(),
+      webhookService: webhookService
+    )
 
   @Unroll
   void '#endpoint accepts #contentType'() {
@@ -64,7 +79,7 @@ class OperationsControllerSpec extends Specification {
     ).andReturn().response
 
     then:
-    1 * pipelineStarter.start(_) >> pipeline
+    1 * pipelineLauncher.start(_) >> pipeline
 
     and:
     resp.status == 200
@@ -83,13 +98,13 @@ class OperationsControllerSpec extends Specification {
   def "uses trigger details from pipeline if present"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
     buildService.getBuild(buildNumber, master, job) >> buildInfo
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     with(startedPipeline) {
@@ -118,12 +133,12 @@ class OperationsControllerSpec extends Specification {
   def "should not get pipeline execution details from trigger if provided"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     0 * executionRepository._
@@ -141,7 +156,7 @@ class OperationsControllerSpec extends Specification {
   def "should get pipeline execution details from trigger if not provided"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
     Pipeline parentPipeline = new Pipeline(name:"pipeline from orca")
@@ -149,7 +164,7 @@ class OperationsControllerSpec extends Specification {
     parentPipeline.id = "12345"
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     1 * executionRepository.retrievePipeline("12345") >> parentPipeline
@@ -174,7 +189,7 @@ class OperationsControllerSpec extends Specification {
   def "trigger user takes precedence over query parameter"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
     buildService.getBuild(buildNumber, master, job) >> buildInfo
@@ -183,7 +198,7 @@ class OperationsControllerSpec extends Specification {
       MDC.put(AuthenticatedRequest.SPINNAKER_USER, queryUser)
     }
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     with(startedPipeline) {
@@ -220,14 +235,14 @@ class OperationsControllerSpec extends Specification {
   def "gets properties file from igor if specified in pipeline"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
     buildService.getBuild(buildNumber, master, job) >> [result: "SUCCESS"]
     buildService.getPropertyFile(buildNumber, propertyFile, master, job) >> propertyFileContent
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     with(startedPipeline) {
@@ -255,7 +270,7 @@ class OperationsControllerSpec extends Specification {
   def "context parameters are processed before pipeline is started"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
 
@@ -274,7 +289,7 @@ class OperationsControllerSpec extends Specification {
     ]
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     startedPipeline.id == 'val1'
@@ -286,7 +301,7 @@ class OperationsControllerSpec extends Specification {
   def "processes pipeline parameters"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
 
@@ -302,7 +317,7 @@ class OperationsControllerSpec extends Specification {
     ]
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     startedPipeline.id == 'value1'
@@ -312,7 +327,7 @@ class OperationsControllerSpec extends Specification {
   def "fills out pipeline parameters with defaults"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
 
@@ -345,7 +360,7 @@ class OperationsControllerSpec extends Specification {
     ]
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     startedPipeline.id == 'value1'
@@ -356,7 +371,7 @@ class OperationsControllerSpec extends Specification {
   def "an empty string does not get overriden with default values"() {
     given:
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
 
@@ -377,7 +392,7 @@ class OperationsControllerSpec extends Specification {
     ]
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     startedPipeline.pipelineConfigId == ''
@@ -389,13 +404,13 @@ class OperationsControllerSpec extends Specification {
     env.withProperty(BuildArtifactFilter.MAX_ARTIFACTS_PROP, maxArtifacts.toString())
     env.withProperty(BuildArtifactFilter.PREFERRED_ARTIFACTS_PROP, preferredArtifacts)
     Pipeline startedPipeline = null
-    pipelineStarter.start(_) >> { String json ->
+    pipelineLauncher.start(_) >> { String json ->
       startedPipeline = mapper.readValue(json, Pipeline)
     }
     buildService.getBuild(buildNumber, master, job) >> buildInfo
 
     when:
-    controller.orchestrate(requestedPipeline)
+    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
     with(startedPipeline) {
@@ -412,6 +427,7 @@ class OperationsControllerSpec extends Specification {
     2            | 'deb'              | ['foo1.deb', 'foo2.rpm']
     2            | 'deb,properties'   | ['foo1.deb', 'foo3.properties']
     2            | 'properties,rpm'   | ['foo3.properties', 'foo2.rpm']
+    1            | 'nupkg'            | ['foo8.nupkg']
 
 
     master = "master"
@@ -434,6 +450,7 @@ class OperationsControllerSpec extends Specification {
       [fileName: 'foo5.json'],
       [fileName: 'foo6.xml'],
       [fileName: 'foo7.txt'],
+      [fileName: 'foo8.nupkg'],
     ]]
   }
 
@@ -449,10 +466,10 @@ class OperationsControllerSpec extends Specification {
     ]
 
     when:
-    controller.orchestrate(pipelineConfig)
+    controller.orchestrate(pipelineConfig, Mock(HttpServletResponse))
 
     then:
-    1 * pipelineStarter.start(_) >> { String json ->
+    1 * pipelineLauncher.start(_) >> { String json ->
       if (shouldConvert) {
         def cfg = mapper.readValue(json, Map)
         assert cfg.parallel == true
@@ -469,5 +486,78 @@ class OperationsControllerSpec extends Specification {
     false      || true
     null       || true
     true       || false
+  }
+
+  def "should not start pipeline when truthy plan pipeline attribute is present"() {
+    given:
+    def pipelineConfig = [
+      plan: true
+    ]
+
+    when:
+    controller.orchestrate(pipelineConfig, Mock(HttpServletResponse))
+
+    then:
+    0 * pipelineLauncher.start(_)
+  }
+
+  def "should throw validation exception when templated pipeline contains errors"() {
+    given:
+    def pipelineConfig = [
+      plan: true,
+      errors: [
+        'things broke': 'because of the way it is'
+      ]
+    ]
+    def response = Mock(HttpServletResponse)
+
+    when:
+    controller.orchestrate(pipelineConfig, response)
+
+    then:
+    thrown(InvalidPipelineTemplateException)
+    0 * pipelineLauncher.start(_)
+  }
+
+  def "should return empty list if webhook stage is not enabled"() {
+    given:
+    controller.webhookService = null
+
+    when:
+    def preconfiguredWebhooks = controller.preconfiguredWebhooks()
+
+    then:
+    0 * webhookService.preconfiguredWebhooks
+    preconfiguredWebhooks == []
+  }
+
+  def "should call webhookService and return correct information"() {
+    given:
+    def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "waitForCompletion", "statusUrlResolution",
+      "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+
+    when:
+    def preconfiguredWebhooks = controller.preconfiguredWebhooks()
+
+    then:
+    1 * webhookService.preconfiguredWebhooks >> [
+      createPreconfiguredWebhook("Webhook #1", "Description #1", "webhook_1"),
+      createPreconfiguredWebhook("Webhook #2", "Description #2", "webhook_2")
+    ]
+    preconfiguredWebhooks == [
+      [label: "Webhook #1", description: "Description #1", type: "webhook_1", waitForCompletion: true, preconfiguredProperties: preconfiguredProperties, noUserConfigurableFields: true],
+      [label: "Webhook #2", description: "Description #2", type: "webhook_2", waitForCompletion: true, preconfiguredProperties: preconfiguredProperties, noUserConfigurableFields: true]
+    ]
+  }
+
+  static PreconfiguredWebhookProperties.PreconfiguredWebhook createPreconfiguredWebhook(def label, def description, def type) {
+    def customHeaders = new HttpHeaders()
+    customHeaders.put("header", ["value1"])
+    return new PreconfiguredWebhookProperties.PreconfiguredWebhook(
+      label: label, description: description, type: type,
+      url: "a", customHeaders: customHeaders, method: HttpMethod.POST, payload: "b",
+      waitForCompletion: true, statusUrlResolution: PreconfiguredWebhookProperties.StatusUrlResolution.webhookResponse,
+      statusUrlJsonPath: "c", statusJsonPath: "d", progressJsonPath: "e", successStatuses: "f", canceledStatuses: "g", terminalStatuses: "h"
+    )
   }
 }

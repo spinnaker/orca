@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-
-
 package com.netflix.spinnaker.orca.front50
 
 import com.netflix.spinnaker.orca.front50.model.Application
+import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
 import com.netflix.spinnaker.orca.front50.model.Front50Credential
 import retrofit.client.Response
 import retrofit.http.*
@@ -43,23 +40,38 @@ interface Front50Service {
   @PATCH("/v2/applications/{applicationName}")
   Response update(@Path("applicationName") String applicationName, @Body Application application)
 
-  @DELETE("/permissions/applications/{name}")
-  Response deletePermission(@Path("name") String name)
+  @DELETE("/permissions/applications/{applicationName}")
+  Response deletePermission(@Path("applicationName") String applicationName)
 
-  @PUT("/permissions/applications/{name}")
-  Response updatePermission(@Path("name") String name, @Body Application.Permission permission)
+  @PUT("/permissions/applications/{applicationName}")
+  Response updatePermission(@Path("applicationName") String applicationName, @Body Application.Permission permission)
 
-  @GET("/pipelines/{application}")
-  List<Map<String, Object>> getPipelines(@Path("application") String application)
+  @GET("/pipelines/{applicationName}")
+  List<Map<String, Object>> getPipelines(@Path("applicationName") String applicationName)
 
   @POST("/pipelines")
   Response savePipeline(@Body Map pipeline)
 
-  @GET("/strategies/{application}")
-  List<Map<String, Object>> getStrategies(@Path("application") String application)
+  @PUT("/pipelines/{pipelineId}")
+  Response updatePipeline(@Path("pipelineId") String pipelineId, @Body Map pipeline)
 
-  @GET("/pipelines")
+  @GET("/strategies/{applicationName}")
+  List<Map<String, Object>> getStrategies(@Path("applicationName") String applicationName)
+
+  @GET("/pipelines?restricted=false")
   List<Map<String, Object>> getAllPipelines()
+
+  @GET("/pipelineTemplates")
+  List<Map<String, Object>> getPipelineTemplates(@Query("scopes") List<String> scopes)
+
+  @POST("/pipelineTemplates")
+  Response savePipelineTemplate(@Body Map pipelineTemplate)
+
+  @GET("/pipelineTemplates/{pipelineTemplateId}")
+  Map<String, Object> getPipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId)
+
+  @PUT("/pipelineTemplates/{pipelineTemplateId}")
+  Response updatePipelineTemplate(@Path("pipelineTemplateId") String pipelieneTemplateId, @Body Map pipelineTemplate)
 
   @GET("/strategies")
   List<Map<String, Object>> getAllStrategies()
@@ -75,6 +87,9 @@ interface Front50Service {
 
   @DELETE("/v2/projects/{projectId}")
   Response deleteProject(@Path("projectId") String projectId)
+
+  @GET("/notifications/application/{applicationName}")
+  ApplicationNotifications getApplicationNotifications(@Path("applicationName") String applicationName)
 
   static class Project {
     String id

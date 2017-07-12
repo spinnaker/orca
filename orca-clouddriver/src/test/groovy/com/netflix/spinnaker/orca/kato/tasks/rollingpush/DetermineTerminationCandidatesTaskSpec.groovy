@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
-import com.netflix.spinnaker.orca.pipeline.model.OrchestrationStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 import spock.lang.Specification
@@ -35,18 +35,18 @@ class DetermineTerminationCandidatesTaskSpec extends Specification {
     def termination = buildTermination(order, relaunchAllInstances, totalRelaunches, concurrentRelaunches, instances)
 
     def context = [
-      account     : account,
-      application : application,
-      stack       : stack,
-      region      : region,
-      providerType: providerType,
-      asgName     : serverGroup,
+      account       : account,
+      application   : application,
+      stack         : stack,
+      region        : region,
+      cloudProvider : cloudProvider,
+      asgName       : serverGroup,
     ]
     if (termination) {
       context.termination = termination
     }
 
-    def stage = new OrchestrationStage(new Orchestration(), 'test', context)
+    def stage = new Stage<>(new Orchestration(), 'test', context)
 
     def oortResponse = oortResponse([
       instances: knownInstanceIds.inject([]) { List l, id -> l << [instanceId: id, launchTime: l.size()] }
@@ -56,7 +56,7 @@ class DetermineTerminationCandidatesTaskSpec extends Specification {
     def response = task.execute(stage)
 
     then:
-    1 * oortService.getServerGroup(application, account, cluster, serverGroup, region, providerType) >> oortResponse
+    1 * oortService.getServerGroup(application, account, cluster, serverGroup, region, cloudProvider) >> oortResponse
     response.stageOutputs.terminationInstanceIds == expectedTerminations
     response.stageOutputs.knownInstanceIds.toSet() == knownInstanceIds.toSet()
 
@@ -79,7 +79,7 @@ class DetermineTerminationCandidatesTaskSpec extends Specification {
     cluster = "$application-$stack".toString()
     serverGroup = "$cluster-v000".toString()
     region = 'us-east-1'
-    providerType = 'aws'
+    cloudProvider = 'aws'
     knownInstanceIds = ['i-1', 'i-2', 'i-3', 'i-4']
     concurrentRelaunches = totalRelaunches
   }

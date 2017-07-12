@@ -16,15 +16,12 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import com.netflix.frigga.NameBuilder
 import com.netflix.frigga.ami.AppVersion
 import com.netflix.spinnaker.orca.CancellableStage
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
@@ -32,7 +29,13 @@ import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,11 +52,11 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   @Autowired
   FindImageFromClusterTask findImage
 
-  @Autowired(required = false)
-  List<DiffTask> diffTasks
-
   @Autowired
   MineService mineService
+
+  @Autowired
+  MortService mortService
 
   @Override
   String getType() {
@@ -61,13 +64,8 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @Override
-  <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+  void postBranchGraph(Stage<?> stage, TaskNode.Builder builder) {
     builder.withTask("completeDeployCanary", CompleteDeployCanaryTask)
-  }
-
-  @Override
-  com.netflix.spinnaker.orca.Task completeParallelTask() {
-    return new CompleteDeployCanaryTask(Optional.of(diffTasks))
   }
 
   @Override
@@ -84,12 +82,13 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
       def baseline = canaryDeployment.baseline
       baseline.strategy = "highlander"
       def baselineAmi = baselineAmis.find {
-        it.region == baseline.availabilityZones.keySet()[0]
+        it.region == (baseline.region ?: baseline.availabilityZones.keySet()[0])
       }
       if (!baselineAmi) {
         throw new IllegalStateException("Could not find an image for the baseline cluster")
       }
       baseline.amiName = baselineAmi?.imageId
+      baseline.imageId = baselineAmi?.imageId
       baseline.buildUrl = createBuildUrl(baselineAmi)
 
       [baseline, canary]
@@ -101,12 +100,23 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   @CompileDynamic
   List<Map> findBaselineAmis(Stage stage) {
     Set<String> regions = stage.context.clusterPairs.collect {
-      it.canary.availabilityZones.keySet() + it.baseline.availabilityZones.keySet()
+      if (it.canary.availabilityZones) {
+        it.canary.availabilityZones?.keySet() + it.baseline.availabilityZones?.keySet()
+      } else {
+        [it.canary.region] + [it.baseline.region]
+      }
     }.flatten()
-    def findImageCtx = [application: stage.execution.application, account: stage.context.baseline.account, cluster: stage.context.baseline.cluster, regions: regions]
-    Stage s = new OrchestrationStage(new Orchestration(), "findImage", findImageCtx)
+
+    def findImageCtx = [application: stage.execution.application, account: stage.context.baseline.account, cluster: stage.context.baseline.cluster, regions: regions, cloudProvider: stage.context.baseline.cloudProvider ?: 'aws']
+    Stage s = new Stage<>(new Orchestration(), "findImage", findImageCtx)
     TaskResult result = findImage.execute(s)
-    return result.stageOutputs.amiDetails
+    try {
+      return result.stageOutputs.amiDetails
+    } catch (Exception e) {
+      throw new IllegalStateException("Could not determine image for baseline deployment (account: ${findImageCtx.account}, " +
+        "cluster: ${findImageCtx.cluster}, regions: ${findImageCtx.regions}, " +
+        "cloudProvider: ${findImageCtx.cloudProvider})", e)
+    }
   }
 
   @CompileDynamic
@@ -129,9 +139,12 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
 
     private final List<DiffTask> diffTasks
 
+    private final MortService mortService
+
     @Autowired
-    CompleteDeployCanaryTask(Optional<List<DiffTask>> diffTasks) {
+    CompleteDeployCanaryTask(Optional<List<DiffTask>> diffTasks, MortService mortService) {
       this.diffTasks = diffTasks.orElse((List<DiffTask>) emptyList())
+      this.mortService = mortService
     }
 
     @CompileDynamic
@@ -139,7 +152,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
       def context = stage.context
       def allStages = stage.execution.stages
       def deployStages = allStages.findAll {
-        it.parentStageId == stage.id && it.type == ParallelDeployStage.PIPELINE_CONFIG_TYPE
+        it.parentStageId == stage.id
       }
       def deployedClusterPairs = []
       for (Map pair in context.clusterPairs) {
@@ -150,9 +163,10 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
               it.context.application == cluster.application &&
               it.context.stack == cluster.stack &&
               it.context.freeFormDetails == cluster.freeFormDetails &&
-              it.context.availabilityZones.keySet()[0] == cluster.availabilityZones.keySet()[0]
+              (it.context.region && it.context.region == cluster.region ||
+                it.context.availabilityZones && it.context.availabilityZones.keySet()[0] == cluster.availabilityZones.keySet()[0])
           }
-          def region = cluster.availabilityZones.keySet()[0]
+          def region = cluster.region ?: cluster.availabilityZones.keySet()[0]
           def nameBuilder = new NameBuilder() {
             @Override
             String combineAppStackDetail(String appName, String stack, String detail) {
@@ -167,14 +181,18 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
             cluster.amiName = ami?.ami
             cluster.buildUrl = createBuildUrl(ami) ?: ((Pipeline) stage.execution).trigger?.buildInfo?.url
           }
+
+          def accountDetails = mortService.getAccountDetails(cluster.account)
+
           resultPair[type + "Cluster"] = [
-            name       : nameBuilder.combineAppStackDetail(cluster.application, cluster.stack, cluster.freeFormDetails),
-            serverGroup: deployStage.context.'deploy.server.groups'[region].first(),
-            type       : 'aws',
-            accountName: cluster.account,
-            region     : region,
-            imageId    : cluster.amiName,
-            buildId    : cluster.buildUrl
+            name          : nameBuilder.combineAppStackDetail(cluster.application, cluster.stack, cluster.freeFormDetails),
+            serverGroup   : deployStage.context.'deploy.server.groups'[region].first(),
+            accountName   : accountDetails.environment ?: cluster.account,
+            type          : cluster.cloudProvider ?: 'aws',
+            clusterAccount: cluster.account,
+            region        : region,
+            imageId       : cluster.amiName,
+            buildId       : cluster.buildUrl
           ]
         }
         if (diffTasks) {
@@ -189,7 +207,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
       log.info("Completed Canary Deploys")
       Map canary = stage.context.canary
       canary.canaryDeployments = deployedClusterPairs
-      new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [canary: canary, deployedClusterPairs: deployedClusterPairs])
+      new TaskResult(ExecutionStatus.SUCCEEDED, [canary: canary, deployedClusterPairs: deployedClusterPairs])
     }
   }
 

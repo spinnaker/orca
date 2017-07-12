@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
+import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -30,8 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
-import java.util.concurrent.TimeUnit
-
 @Component
 class ResolveQuipVersionTask implements RetryableTask {
 
@@ -39,7 +37,7 @@ class ResolveQuipVersionTask implements RetryableTask {
 
   final long timeout = TimeUnit.SECONDS.toMillis(30)
 
-  @Autowired
+  @Autowired(required = false)
   BakeryService bakeryService
 
   @Value('${bakery.roscoApisEnabled:false}')
@@ -54,6 +52,9 @@ class ResolveQuipVersionTask implements RetryableTask {
   @Override
   TaskResult execute(Stage stage) {
     PackageType packageType
+    if (!bakeryService) {
+      throw new UnsupportedOperationException("You have not enabled baking for this orca instance. Set bakery.enabled: true")
+    }
     if (roscoApisEnabled) {
       def baseImage = bakeryService.getBaseImage(stage.context.cloudProviderType as String,
         stage.context.baseOs as String).toBlocking().single()
@@ -70,6 +71,6 @@ class ResolveQuipVersionTask implements RetryableTask {
       objectMapper)
     String version = stage.context?.patchVersion ?:  packageInfo.findTargetPackage(allowMissingPackageInstallation)?.packageVersion
 
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [version: version])
+    return new TaskResult(ExecutionStatus.SUCCEEDED, [version: version], [version:version])
   }
 }

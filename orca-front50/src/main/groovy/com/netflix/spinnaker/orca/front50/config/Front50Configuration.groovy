@@ -17,14 +17,19 @@
 package com.netflix.spinnaker.orca.front50.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.events.ExecutionEvent
+import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.spring.DependentPipelineExecutionListener
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
+import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -44,6 +49,7 @@ import static retrofit.Endpoints.newFixedEndpoint
   "com.netflix.spinnaker.orca.front50"
 ])
 @CompileStatic
+@ConditionalOnExpression('${front50.enabled:true}')
 class Front50Configuration {
 
   @Autowired
@@ -80,5 +86,10 @@ class Front50Configuration {
     DependentPipelineStarter dependentPipelineStarter
   ) {
     new DependentPipelineExecutionListener(front50Service, dependentPipelineStarter)
+  }
+
+  @Bean
+  ApplicationListener<ExecutionEvent> dependentPipelineExecutionListenerAdapter(DependentPipelineExecutionListener delegate, ExecutionRepository repository) {
+    return new ExecutionListenerAdapter(delegate, repository)
   }
 }

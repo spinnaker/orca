@@ -16,11 +16,17 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import com.netflix.frigga.Names;
-import com.netflix.spinnaker.orca.DefaultTaskResult;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.InterestingHealthProviderNamesSupplier;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.front50.Front50Service;
@@ -30,24 +36,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.HashMap;
 
 @Component
 public class DetermineHealthProvidersTask implements RetryableTask, CloudProviderAware {
   private static final Logger log = LoggerFactory.getLogger(DetermineHealthProvidersTask.class);
 
   private final Front50Service front50Service;
+
   private final Map<String, String> healthProviderNamesByPlatform;
+  private final Collection<InterestingHealthProviderNamesSupplier> interestingHealthProviderNamesSuppliers;
 
   @Autowired
-  public DetermineHealthProvidersTask(Front50Service front50Service,
+  public DetermineHealthProvidersTask(Optional<Front50Service> front50Service,
+                                      Collection<InterestingHealthProviderNamesSupplier> interestingHealthProviderNamesSuppliers,
                                       Collection<ServerGroupCreator> serverGroupCreators) {
-    this.front50Service = front50Service;
+    this.front50Service = front50Service.orElse(null);
+    this.interestingHealthProviderNamesSuppliers = interestingHealthProviderNamesSuppliers;
     this.healthProviderNamesByPlatform = serverGroupCreators
       .stream()
       .filter(serverGroupCreator ->  serverGroupCreator.getHealthProviderName().isPresent())
@@ -61,15 +67,32 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
 
   @Override
   public TaskResult execute(Stage stage) {
+    Optional<InterestingHealthProviderNamesSupplier> healthProviderNamesSupplierOptional = interestingHealthProviderNamesSuppliers
+      .stream()
+      .filter(supplier -> supplier.supports(getCloudProvider(stage), stage))
+      .findFirst();
+
+    if (healthProviderNamesSupplierOptional.isPresent()) {
+      List<String> interestingHealthProviderNames = healthProviderNamesSupplierOptional.get().process(getCloudProvider(stage), stage);
+      Map<String, List<String>> results = new HashMap<>();
+
+      if (interestingHealthProviderNames != null) {
+        // avoid a `null` value that may cause problems with ImmutableMap usage downstream
+        results.put("interestingHealthProviderNames", interestingHealthProviderNames);
+      }
+
+      return new TaskResult(ExecutionStatus.SUCCEEDED, results);
+    }
+
     if (stage.getContext().containsKey("interestingHealthProviderNames")) {
       // should not override any stage-specified health providers
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED);
+      return new TaskResult(ExecutionStatus.SUCCEEDED);
     }
 
     String platformSpecificHealthProviderName = healthProviderNamesByPlatform.get(getCloudProvider(stage));
     if (platformSpecificHealthProviderName == null) {
       log.warn("Unable to determine platform health provider for unknown cloud provider '{}'", getCloudProvider(stage));
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED);
+      return new TaskResult(ExecutionStatus.SUCCEEDED);
     }
 
     try {
@@ -82,11 +105,17 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
         applicationName = Names.parseName((String) stage.getContext().get("cluster")).getApp();
       }
 
+      if (front50Service == null) {
+        log.warn("Unable to determine health providers for an application without front50 enabled.");
+        return new TaskResult(ExecutionStatus.SUCCEEDED);
+      }
+
       Application application = front50Service.get(applicationName);
+
       if (application.platformHealthOnly == Boolean.TRUE && application.platformHealthOnlyShowOverride != Boolean.TRUE) {
         // if `platformHealthOnlyShowOverride` is true, the expectation is that `interestingHealthProviderNames` will
         // be included in the request if it's desired ... and that it should NOT be automatically added.
-        return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, Collections.singletonMap(
+        return new TaskResult(ExecutionStatus.SUCCEEDED, Collections.singletonMap(
           "interestingHealthProviderNames", Collections.singletonList(platformSpecificHealthProviderName)
         ));
       }
@@ -94,7 +123,7 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
       log.error("Unable to determine platform health provider (executionId: {}, stageId: {})", stage.getExecution().getId(), stage.getId(), e);
     }
 
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED);
+    return new TaskResult(ExecutionStatus.SUCCEEDED);
   }
 
   @Override

@@ -18,30 +18,34 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine;
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static java.lang.Boolean.parseBoolean;
 
 @Component
 public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
 
   private final Optional<PipelineStartTracker> startTracker;
 
+  private final Optional<PipelineValidator> pipelineValidator;
+
   @Autowired
   public PipelineLauncher(ObjectMapper objectMapper,
                           String currentInstanceId,
                           ExecutionRepository executionRepository,
-                          ExecutionRunner runner,
-                          Optional<PipelineStartTracker> startTracker) {
-    super(objectMapper, currentInstanceId, executionRepository, runner);
+                          Collection<ExecutionRunner> runners,
+                          Optional<PipelineStartTracker> startTracker,
+                          Optional<PipelineValidator> pipelineValidator) {
+    super(objectMapper, currentInstanceId, executionRepository, runners);
     this.startTracker = startTracker;
+    this.pipelineValidator = pipelineValidator;
   }
 
   @SuppressWarnings("unchecked")
@@ -60,9 +64,8 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
       .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
       .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
       .withExecutingInstance(currentInstanceId)
-      .withExecutionEngine(Execution.V2_EXECUTION_ENGINE)
       .withNotifications((List<Map<String, Object>>) config.get("notifications"))
-      .withId()
+      .withExecutionEngine(getEnum(config, "executionEngine", ExecutionEngine.class))
       .build();
   }
 
@@ -71,16 +74,8 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
     executionRepository.store(execution);
   }
 
-  private boolean getBoolean(Map<String, ?> map, String key) {
-    return parseBoolean(getString(map, key));
-  }
-
-  private String getString(Map<String, ?> map, String key) {
-    return map.containsKey(key) ? map.get(key).toString() : null;
-  }
-
   @Override protected boolean shouldQueue(Pipeline execution) {
-    if (execution.getPipelineConfigId() == null || !execution.getLimitConcurrent()) {
+    if (execution.getPipelineConfigId() == null || !execution.isLimitConcurrent()) {
       return false;
     }
     return startTracker
@@ -94,5 +89,21 @@ public class PipelineLauncher extends ExecutionLauncher<Pipeline> {
       .ifPresent(tracker -> {
         tracker.addToStarted(execution.getPipelineConfigId(), execution.getId());
       });
+  }
+
+  @Override protected void checkRunnable(Pipeline execution) {
+    pipelineValidator.ifPresent(it -> it.checkRunnable(execution));
+  }
+
+  @Override
+  protected Pipeline handleStartupFailure(Pipeline execution, Throwable failure) {
+    Pipeline failed = super.handleStartupFailure(execution, failure);
+    startTracker.ifPresent(tracker -> {
+      if (execution.getPipelineConfigId() != null) {
+        tracker.removeFromQueue(execution.getPipelineConfigId(), execution.getId());
+      }
+      tracker.markAsFinished(execution.getPipelineConfigId(), execution.getId());
+    });
+    return failed;
   }
 }

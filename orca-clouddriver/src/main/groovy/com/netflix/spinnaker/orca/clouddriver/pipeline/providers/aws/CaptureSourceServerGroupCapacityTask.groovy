@@ -18,7 +18,6 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -39,13 +38,13 @@ class CaptureSourceServerGroupCapacityTask implements Task {
   @Override
   TaskResult execute(Stage stage) {
     def stageOutputs = [:]
-    def stageData = stage.mapTo(StageData)
+    StageData stageData = stage.mapTo(StageData)
     if (stageData.useSourceCapacity) {
       def sourceServerGroup = oortHelper.getTargetServerGroup(
         stageData.source.account,
         stageData.source.asgName,
         stageData.source.region,
-        stageData.providerType
+        stageData.cloudProvider ?: stageData.providerType
       ).orElse(null)
 
       if (sourceServerGroup) {
@@ -66,6 +65,6 @@ class CaptureSourceServerGroupCapacityTask implements Task {
       }
     }
 
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, stageOutputs)
+    return new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs)
   }
 }

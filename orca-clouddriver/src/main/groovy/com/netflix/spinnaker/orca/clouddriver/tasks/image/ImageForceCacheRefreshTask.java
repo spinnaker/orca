@@ -16,41 +16,40 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.DefaultTaskResult;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 @Component
 public class ImageForceCacheRefreshTask extends AbstractCloudProviderAwareTask implements RetryableTask {
   static final String REFRESH_TYPE = "Image";
 
   @Autowired
-  OortService oort;
+  CloudDriverCacheService cacheService;
 
   @Autowired
   ObjectMapper objectMapper;
 
   @Override
   public TaskResult execute(Stage stage) {
-//    TODO-AJ Support force cache refresh for 'Image' (clouddriver)
+//    TODO-AJ Support force cache refresh for 'Image' (clouddriver-aws)
+//    TODO (duftler): Support force cache refresh for 'Image' (clouddriver-google)
 //    String cloudProvider = getCloudProvider(stage)
 //
 //    stage.context.targets.each { Map target ->
-//      oort.forceCacheUpdate(
+//      cacheService.forceCacheUpdate(
 //        cloudProvider, REFRESH_TYPE, [account: target.account, imageName: target.imageName, region: target.region]
 //      )
 //    }
 
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED);
+    return new TaskResult(ExecutionStatus.SUCCEEDED);
   }
 
   @Override

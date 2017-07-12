@@ -14,27 +14,32 @@
  * limitations under the License.
  */
 
-
 package com.netflix.spinnaker.orca.retrofit.exceptions
 
 import java.lang.annotation.Annotation
 import java.lang.reflect.Method
 import com.netflix.spinnaker.orca.batch.exceptions.ExceptionHandler
+import org.springframework.core.annotation.Order
 import retrofit.RetrofitError
 import retrofit.http.RestMethod
 import retrofit.mime.TypedByteArray
+import static java.net.HttpURLConnection.*
+import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE
+import static retrofit.RetrofitError.Kind.HTTP
 import static retrofit.RetrofitError.Kind.NETWORK
 
-class RetrofitExceptionHandler implements ExceptionHandler<RetrofitError> {
+@Order(HIGHEST_PRECEDENCE)
+class RetrofitExceptionHandler implements ExceptionHandler {
   @Override
   boolean handles(Exception e) {
     return e.class == RetrofitError
   }
 
   @Override
-  ExceptionHandler.Response handle(String stepName, RetrofitError e) {
+  ExceptionHandler.Response handle(String stepName, Exception ex) {
+    RetrofitError e = (RetrofitError) ex
     e.getResponse().with {
-      def response = new ExceptionHandler.Response(exceptionType: e.class.simpleName, operation: stepName)
+      Map<String, Object> responseDetails
 
       try {
         def body = e.getBodyAs(Map) as Map
@@ -43,26 +48,40 @@ class RetrofitExceptionHandler implements ExceptionHandler<RetrofitError> {
         def errors = body.errors ?: (body.messages ?: []) as List<String>
         errors = errors ?: (body.message ? [body.message] : [])
 
-        response.details = new ExceptionHandler.ResponseDetails(error, errors as List<String>)
+        responseDetails = ExceptionHandler.responseDetails(error, errors as List<String>)
 
         if (body.exception) {
-          response.details.rootException = body.exception
+          responseDetails.rootException = body.exception
         }
       } catch (ignored) {
-        response.details = new ExceptionHandler.ResponseDetails(properties.reason ?: e.message)
+        responseDetails = ExceptionHandler.responseDetails(properties.reason ?: e.message)
       }
 
       try {
-        response.details.responseBody = new String(((TypedByteArray) e.getResponse().getBody()).getBytes())
+        responseDetails.responseBody = new String(((TypedByteArray) e.getResponse().getBody()).getBytes())
       } catch (ignored) {
-        response.details.responseBody = null
+        responseDetails.responseBody = null
       }
-      response.details.kind = e.kind
-      response.details.status = properties.status ?: null
-      response.details.url = properties.url ?: null
-      response.shouldRetry = (e.kind == NETWORK && isIdempotentRequest(e))
-      return response
+      responseDetails.kind = e.kind
+      responseDetails.status = properties.status ?: null
+      responseDetails.url = properties.url ?: null
+      boolean shouldRetry = ((isNetworkError(e) || isGatewayTimeout(e) || isThrottle(e)) && isIdempotentRequest(e))
+      return new ExceptionHandler.Response(e.class.simpleName, stepName, responseDetails, shouldRetry)
     }
+  }
+
+  boolean isGatewayTimeout(RetrofitError e) {
+    e.kind == HTTP && e.response.status in [HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT]
+  }
+
+  private static final int HTTP_TOO_MANY_REQUESTS = 429
+
+  boolean isThrottle(RetrofitError e) {
+    e.kind == HTTP && e.response.status == HTTP_TOO_MANY_REQUESTS
+  }
+
+  private boolean isNetworkError(RetrofitError e) {
+    e.kind == NETWORK
   }
 
   private static boolean isIdempotentRequest(RetrofitError e) {

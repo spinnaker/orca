@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Client
 import retrofit.client.Response
@@ -43,10 +43,10 @@ class MonitorQuipTaskSpec extends Specification {
   @Unroll
   def "check different success statuses, servers return #status expect #executionStatus"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'monitorQuip', [:])
+    def stage = new Stage<>(pipe, 'monitorQuip', [:])
     stage.context.instances = instances
     stage.context.taskIds = taskIds
 
@@ -80,10 +80,10 @@ class MonitorQuipTaskSpec extends Specification {
   @Unroll
   def "check different failure statuses, servers return #status, expect exception"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'monitorQuip', [:])
+    def stage = new Stage<>(pipe, 'monitorQuip', [:])
     stage.context.instances = instances
     stage.context.taskIds = taskIds
 
@@ -112,10 +112,10 @@ class MonitorQuipTaskSpec extends Specification {
   @Unroll
   def "servers return non-200 responses"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'monitorQuip', [:])
+    def stage = new Stage<>(pipe, 'monitorQuip', [:])
     stage.context.instances = instances
     stage.context.taskIds = taskIds
 
@@ -138,10 +138,10 @@ class MonitorQuipTaskSpec extends Specification {
 
   def "servers return bad data"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'monitorQuip', [:])
+    def stage = new Stage<>(pipe, 'monitorQuip', [:])
     stage.context.instances = instances
     stage.context.taskIds = taskIds
 
@@ -165,10 +165,10 @@ class MonitorQuipTaskSpec extends Specification {
   @Unroll
   def "missing configuration"() {
     given:
-    def pipe = new Pipeline.Builder()
+    def pipe = Pipeline.builder()
       .withApplication("foo")
       .build()
-    def stage = new PipelineStage(pipe, 'monitorQuip', [:])
+    def stage = new Stage<>(pipe, 'monitorQuip', [:])
     stage.context.instances = instances
     stage.context.taskIds = taskIds
 

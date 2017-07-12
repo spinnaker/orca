@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location.Type
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
@@ -47,6 +47,8 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     false
   }
 
+  protected void validateClusterStatus(Map operation) {}
+
   abstract String getServerGroupAction()
 
   Map getAdditionalStageOutputs(Stage stage, Map operation) {
@@ -58,9 +60,10 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     String account = getCredentials(stage)
 
     def operation = convert(stage)
+    validateClusterStatus(operation)
     if (!operation) {
       // nothing to do but succeed
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+      return new TaskResult(ExecutionStatus.SUCCEEDED)
     }
 
     def taskId = kato.requestOperations(cloudProvider, [[(serverGroupAction): operation]])
@@ -82,7 +85,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
       ]
     }
 
-    new DefaultTaskResult(ExecutionStatus.SUCCEEDED, stageOutputs + getAdditionalStageOutputs(stage, operation))
+    new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs + getAdditionalStageOutputs(stage, operation))
   }
 
   Map convert(Stage stage) {
@@ -127,6 +130,13 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     return collection.collectEntries {
       [(it): [operation.serverGroupName]]
     }
+  }
+
+  protected Location getLocation(Map operation) {
+    operation.region ? new Location(Type.REGION, operation.region) :
+      operation.zone ? new Location(Type.ZONE, operation.zone) :
+        operation.namespace ? new Location(Type.NAMESPACE, operation.namespace) :
+          null
   }
 
 }

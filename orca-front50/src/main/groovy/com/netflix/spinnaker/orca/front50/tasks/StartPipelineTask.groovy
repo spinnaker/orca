@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -31,7 +30,7 @@ import org.springframework.stereotype.Component
 @Slf4j
 class StartPipelineTask implements Task {
 
-  @Autowired
+  @Autowired(required = false)
   Front50Service front50Service
 
   @Autowired
@@ -39,6 +38,9 @@ class StartPipelineTask implements Task {
 
   @Override
   TaskResult execute(Stage stage) {
+    if (!front50Service) {
+      throw new UnsupportedOperationException("Cannot start a stored pipeline, front50 is not enabled. Fix this by setting front50.enabled: true")
+    }
 
     String application = stage.context.pipelineApplication ?: stage.context.application
     String pipelineId = stage.context.pipelineId ?: stage.context.pipeline
@@ -46,6 +48,10 @@ class StartPipelineTask implements Task {
 
     List pipelines = isStrategy ? front50Service.getStrategies(application) : front50Service.getPipelines(application)
     Map pipelineConfig = pipelines.find { it.id == pipelineId }
+
+    if (!pipelineConfig) {
+      throw new IllegalArgumentException("Unable to locate referenced pipeline $pipelineId.")
+    }
 
     def parameters = stage.context.pipelineParameters ?: [:]
 
@@ -75,7 +81,7 @@ class StartPipelineTask implements Task {
 
     def pipeline = dependentPipelineStarter.trigger(pipelineConfig, stage.context.user, stage.execution, parameters, stage.id)
 
-    new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [executionId: pipeline.id, executionName: pipelineConfig.name])
+    new TaskResult(ExecutionStatus.SUCCEEDED, [executionId: pipeline.id, executionName: pipelineConfig.name])
 
   }
 

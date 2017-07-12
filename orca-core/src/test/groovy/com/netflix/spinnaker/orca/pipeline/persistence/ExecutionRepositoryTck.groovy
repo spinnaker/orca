@@ -16,11 +16,13 @@
 
 package com.netflix.spinnaker.orca.pipeline.persistence
 
+import java.util.concurrent.CountDownLatch
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
 import redis.clients.jedis.Jedis
@@ -28,6 +30,10 @@ import redis.clients.util.Pool
 import rx.schedulers.Schedulers
 import spock.lang.*
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
+import static java.util.concurrent.TimeUnit.SECONDS
 
 @Subject(ExecutionRepository)
 @Unroll
@@ -96,7 +102,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(runningExecution)
     repository.store(succeededExecution)
     def pipelines = repository.retrievePipelinesForPipelineConfigId(
-      "pipeline-1", new ExecutionRepository.ExecutionCriteria(limit: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
+      "pipeline-1", new ExecutionCriteria(limit: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
     then:
@@ -104,7 +110,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     when:
     pipelines = repository.retrievePipelinesForPipelineConfigId(
-      "pipeline-1", new ExecutionRepository.ExecutionCriteria(limit: 5, statuses: ["RUNNING"])
+      "pipeline-1", new ExecutionCriteria(limit: 5, statuses: ["RUNNING"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
     then:
@@ -112,7 +118,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     when:
     pipelines = repository.retrievePipelinesForPipelineConfigId(
-      "pipeline-1", new ExecutionRepository.ExecutionCriteria(limit: 5, statuses: ["TERMINAL"])
+      "pipeline-1", new ExecutionCriteria(limit: 5, statuses: ["TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
     then:
@@ -128,7 +134,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(runningExecution)
     repository.store(succeededExecution)
     def orchestrations = repository.retrieveOrchestrationsForApplication(
-      "application", new ExecutionRepository.ExecutionCriteria(limit: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
+      "application", new ExecutionCriteria(limit: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
     then:
@@ -136,7 +142,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     when:
     orchestrations = repository.retrieveOrchestrationsForApplication(
-      "application", new ExecutionRepository.ExecutionCriteria(limit: 5, statuses: ["RUNNING"])
+      "application", new ExecutionCriteria(limit: 5, statuses: ["RUNNING"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
     then:
@@ -144,7 +150,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     when:
     orchestrations = repository.retrieveOrchestrationsForApplication(
-      "application", new ExecutionRepository.ExecutionCriteria(limit: 5, statuses: ["TERMINAL"])
+      "application", new ExecutionCriteria(limit: 5, statuses: ["TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
     then:
@@ -183,35 +189,6 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
       .withStage("two", "two", [bar: "bar"])
       .withStage("three", "three", [baz: "baz"])
       .build()
-  }
-
-  @Ignore("I don't think this is really necessary with updated Redis schema")
-  def "a pipeline has correctly ordered stages after load"() {
-    given:
-    def pipeline = Pipeline
-      .builder()
-      .withStage("one", "one", [:])
-      .withStage("two", "two", [:])
-      .withStage("one-a", "one-1", [:])
-      .withStage("one-b", "one-1", [:])
-      .withStage("one-a-a", "three", [:])
-      .build()
-
-    def one = pipeline.stages.find { it.type == "one" }
-    def oneA = pipeline.stages.find { it.type == "one-a" }
-    def oneAA = pipeline.stages.find { it.type == "one-a-a" }
-    def oneB = pipeline.stages.find { it.type == "one-b" }
-    oneA.parentStageId = one.id
-    oneAA.parentStageId = oneA.id
-    oneB.parentStageId = one.id
-
-    and:
-    repository.store(pipeline)
-
-    expect:
-    with(repository.retrievePipeline(pipeline.id)) {
-      stages*.type == ["one", "one-a", "one-a-a", "one-b", "two"]
-    }
   }
 
   def "trying to retrieve an invalid #type.simpleName id throws an exception"() {
@@ -356,7 +333,8 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
   }
 
-  def "cancelling a running execution with a user adds a 'canceledBy' field"() {
+  @Unroll
+  def "cancelling a running execution with a user adds a 'canceledBy' field, and an optional 'cancellationReason' field"() {
     given:
     def execution = new Pipeline(buildTime: 0)
     def user = "user@netflix.com"
@@ -369,7 +347,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     when:
-    repository.cancel(execution.id, user)
+    repository.cancel(execution.id, user, reason)
 
 
     then:
@@ -377,7 +355,14 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
       canceled
       canceledBy == user
       status == RUNNING
+      cancellationReason == expectedCancellationReason
     }
+
+    where:
+    reason             || expectedCancellationReason
+    "some good reason" || "some good reason"
+    ""                 || null
+    null               || null
   }
 
   def "pausing/resuming a running execution will set appropriate 'paused' details"() {
@@ -694,6 +679,129 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     then:
     fetchedPipeline.stages[0].startTime == null
     fetchedPipeline.stages[0].endTime == null
+  }
 
+  def "can remove a stage leaving other stages unaffected"() {
+    given:
+    def pipeline = Pipeline
+      .builder()
+      .withApplication("orca")
+      .withName("dummy-pipeline")
+      .withStage("one")
+      .withStage("two")
+      .withStage("three")
+      .build()
+
+    repository.store(pipeline)
+
+    expect:
+    repository.retrievePipeline(pipeline.id).stages.size() == 3
+
+    when:
+    repository.removeStage(pipeline, pipeline.namedStage("two").id)
+
+    then:
+    with(repository.retrievePipeline(pipeline.id)) {
+      stages.size() == 2
+      stages.type == ["one", "three"]
+    }
+  }
+
+  @Unroll
+  def "can add a synthetic stage #position"() {
+    given:
+    def pipeline = Pipeline
+      .builder()
+      .withApplication("orca")
+      .withName("dummy-pipeline")
+      .withStage("one")
+      .withStage("two")
+      .withStage("three")
+      .build()
+
+    repository.store(pipeline)
+
+    expect:
+    repository.retrievePipeline(pipeline.id).stages.size() == 3
+
+    when:
+    def stage = newStage(pipeline, "whatever", "two-whatever", [:], pipeline.namedStage("two"), position)
+    repository.addStage(stage)
+
+    then:
+    with(repository.retrievePipeline(pipeline.id)) {
+      stages.size() == 4
+      stages.name == expectedStageNames
+    }
+
+    where:
+    position     | expectedStageNames
+    STAGE_BEFORE | ["one", "two-whatever", "two", "three"]
+    STAGE_AFTER  | ["one", "two", "two-whatever", "three"]
+  }
+
+  def "can concurrently add stages without overwriting"() {
+    given:
+    def pipeline = Pipeline
+      .builder()
+      .withApplication("orca")
+      .withName("dummy-pipeline")
+      .withStage("one")
+      .withStage("two")
+      .withStage("three")
+      .build()
+
+    repository.store(pipeline)
+
+    expect:
+    repository.retrievePipeline(pipeline.id).stages.size() == 3
+
+    when:
+    def stage1 = newStage(pipeline, "whatever", "one-whatever", [:], pipeline.namedStage("one"), STAGE_BEFORE)
+    def stage2 = newStage(pipeline, "whatever", "two-whatever", [:], pipeline.namedStage("two"), STAGE_BEFORE)
+    def stage3 = newStage(pipeline, "whatever", "three-whatever", [:], pipeline.namedStage("three"), STAGE_BEFORE)
+    def startLatch = new CountDownLatch(1)
+    def doneLatch = new CountDownLatch(3)
+    [stage1, stage2, stage3].each { stage ->
+      Thread.start {
+        startLatch.await(1, SECONDS)
+        repository.addStage(stage)
+        doneLatch.countDown()
+      }
+    }
+    startLatch.countDown()
+
+    then:
+    doneLatch.await(1, SECONDS)
+
+    and:
+    with(repository.retrievePipeline(pipeline.id)) {
+      stages.size() == 6
+      stages.name == ["one-whatever", "one", "two-whatever", "two", "three-whatever", "three"]
+    }
+  }
+
+  def "can save a stage with all data"() {
+    given:
+    def pipeline = Pipeline
+      .builder()
+      .withApplication("orca")
+      .withName("dummy-pipeline")
+      .withStage("one")
+      .build()
+
+    repository.store(pipeline)
+
+    def stage = newStage(pipeline, "whatever", "one-whatever", [:], pipeline.namedStage("one"), STAGE_BEFORE)
+    stage.lastModified = new Stage.LastModifiedDetails(user: "rfletcher@netflix.com", allowedAccounts: ["whatever"], lastModifiedTime: System.currentTimeMillis())
+    stage.startTime = System.currentTimeMillis()
+    stage.endTime = System.currentTimeMillis()
+    stage.refId = "1<1"
+
+    when:
+    repository.storeStage(stage)
+
+    then:
+    notThrown(Exception)
   }
 }

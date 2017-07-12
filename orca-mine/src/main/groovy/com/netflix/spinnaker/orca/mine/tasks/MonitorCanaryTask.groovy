@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.mine.tasks
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -28,8 +28,6 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
-
-import java.util.concurrent.TimeUnit
 
 @Component
 @Slf4j
@@ -55,19 +53,19 @@ class MonitorCanaryTask extends AbstractCloudProviderAwareTask implements Retrya
       ]
     } catch (RetrofitError e) {
       log.error("Exception occurred while getting canary with id ${context.canary.id} from mine service", e)
-      return new DefaultTaskResult(ExecutionStatus.RUNNING, outputs)
+      return new TaskResult(ExecutionStatus.RUNNING, outputs)
     }
 
     if (outputs.canary.status?.complete) {
       log.info("Canary $stage.id complete")
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs, outputs)
+      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs, outputs)
     }
 
     if (outputs.canary.health?.health == 'UNHEALTHY' && !context.disableRequested) {
       log.info("Canary $stage.id unhealthy, disabling")
-      def operations = DeployedClustersUtil.toKatoAsgOperations('disableAsgDescription', stage.context)
+      def operations = DeployedClustersUtil.toKatoAsgOperations('disableServerGroup', stage.context)
       log.info "Disabling canary $stage.id with ${operations}"
-      katoService.requestOperations(operations).toBlocking().first()
+      katoService.requestOperations(getCloudProvider(operations, stage), operations).toBlocking().first()
       outputs.disableRequested = true
     } else {
       outputs.disableRequested = false
@@ -78,15 +76,19 @@ class MonitorCanaryTask extends AbstractCloudProviderAwareTask implements Retrya
       int capacity = scaleUp.capacity as Integer
       if (System.currentTimeMillis() - outputs.canary.launchedDate > TimeUnit.MINUTES.toMillis(scaleUp.delay as Long)) {
         def resizeCapacity = [min: capacity, max: capacity, desired: capacity]
-        def resizeOps = DeployedClustersUtil.toKatoAsgOperations('resizeAsgDescription', stage.context).collect { it.resizeAsgDescription.capacity = resizeCapacity; it  }
+        def resizeOps = DeployedClustersUtil.toKatoAsgOperations('resizeServerGroup', stage.context).collect { it.resizeServerGroup.capacity = resizeCapacity; it  }
         outputs.scaleUp = scaleUp
-        outputs.scaleUp.katoId = katoService.requestOperations(resizeOps).toBlocking().first().id
+        outputs.scaleUp.katoId = katoService.requestOperations(getCloudProvider(resizeOps, stage), resizeOps).toBlocking().first().id
         outputs.scaleUp.complete = true
         log.info("Canary $stage.id scale up requested")
       }
     }
 
     log.info("Canary in progress: ${outputs.canary}")
-    return new DefaultTaskResult(ExecutionStatus.RUNNING, outputs)
+    return new TaskResult(ExecutionStatus.RUNNING, outputs)
+  }
+
+  String getCloudProvider(List<Map> operations, Stage stage){
+    return operations && !operations.empty ? operations.first()?.values().first()?.cloudProvider : getCloudProvider(stage) ?: 'aws'
   }
 }

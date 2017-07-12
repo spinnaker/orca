@@ -18,16 +18,19 @@ package com.netflix.spinnaker.orca.front50
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
-import com.netflix.spinnaker.orca.pipeline.PipelineStarter
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.security.AuthenticatedRequest
+import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
 import org.springframework.beans.BeansException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
+
+import java.util.concurrent.Callable
 
 @Component
 @Slf4j
@@ -38,15 +41,17 @@ class DependentPipelineStarter implements ApplicationContextAware {
   ObjectMapper objectMapper
 
   @Autowired
-  PipelineStarter pipelineStarter
+  ContextParameterProcessor contextParameterProcessor
 
   Pipeline trigger(Map pipelineConfig, String user, Execution parentPipeline, Map suppliedParameters, String parentPipelineStageId) {
     def json = objectMapper.writeValueAsString(pipelineConfig)
     log.info('triggering dependent pipeline {}:{}', pipelineConfig.id, json)
 
+    User principal = getUser(parentPipeline)
+
     pipelineConfig.trigger = [
       type                     : "pipeline",
-      user                     : user ?: '[anonymous]',
+      user                     : principal?.username ?: user ?: '[anonymous]',
       parentPipelineId         : parentPipeline.id,
       parentPipelineApplication: parentPipeline.application,
       parentStatus             : parentPipeline.status,
@@ -77,7 +82,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
     }
 
     def augmentedContext = [trigger: pipelineConfig.trigger]
-    def processedPipeline = ContextParameterProcessor.process(pipelineConfig, augmentedContext, false)
+    def processedPipeline = contextParameterProcessor.process(pipelineConfig, augmentedContext, false)
 
     json = objectMapper.writeValueAsString(processedPipeline)
 
@@ -85,18 +90,18 @@ class DependentPipelineStarter implements ApplicationContextAware {
 
     def pipeline
 
-    def t1 = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        if (parentPipeline.executionEngine == Execution.V2_EXECUTION_ENGINE) {
-          pipeline = pipelineLauncher().start(json)
-        } else {
-          pipeline = pipelineStarter.start(json)
-        }
-      }
-    })
+    log.debug("Source thread: MDC user: " + AuthenticatedRequest.getAuthenticationHeaders() +
+                  ", principal: " + principal?.toString())
+    def callable = AuthenticatedRequest.propagate({
+      log.debug("Destination thread user: " + AuthenticatedRequest.getAuthenticationHeaders())
+      pipeline = pipelineLauncher().start(json)
+    } as Callable<Void>, true, principal)
 
-    t1.start()
+    //This needs to run in a separate thread to not bork the batch TransactionManager
+    //TODO(rfletcher) - should be safe to kill this off once nu-orca merges down
+    def t1 = Thread.start {
+      callable.call()
+    }
 
     try {
       t1.join()
@@ -105,9 +110,27 @@ class DependentPipelineStarter implements ApplicationContextAware {
     }
 
     log.info('executing dependent pipeline {}', pipeline.id)
+    return pipeline
+  }
 
-    pipeline
+  // There are currently two sources-of-truth for the user:
+  // 1. The MDC context, which are the values that get propagated to downstream services like Front50.
+  // 2. The Execution.AuthenticationDetails object.
+  //
+  // In the case of the implicit pipeline invocation, the MDC is empty, which is why we fall back
+  // to Execution.AuthenticationDetails of the parent pipeline.
+  User getUser(Execution parentPipeline) {
+    def korkUsername = AuthenticatedRequest.getSpinnakerUser()
+    if (korkUsername.isPresent()) {
+      def korkAccounts = AuthenticatedRequest.getSpinnakerAccounts().orElse("")
+      return new User(email: korkUsername.get(), allowedAccounts: korkAccounts?.split(",")?.toList() ?: []).asImmutable()
+    }
 
+    if (parentPipeline.authentication.user) {
+      return parentPipeline.authentication.toKorkUser().get()
+    }
+
+    return null
   }
 
   /**

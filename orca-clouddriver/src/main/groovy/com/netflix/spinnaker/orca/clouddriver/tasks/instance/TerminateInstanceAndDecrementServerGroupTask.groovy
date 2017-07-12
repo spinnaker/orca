@@ -16,14 +16,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstance
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstanceSupport
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -38,6 +39,9 @@ class TerminateInstanceAndDecrementServerGroupTask extends AbstractCloudProvider
   @Autowired
   TerminatingInstanceSupport instanceSupport
 
+  @Autowired
+  TrafficGuard trafficGuard
+
   @Override
   TaskResult execute(Stage stage) {
     String cloudProvider = getCloudProvider(stage)
@@ -45,10 +49,17 @@ class TerminateInstanceAndDecrementServerGroupTask extends AbstractCloudProvider
 
     List<TerminatingInstance> remainingInstances = instanceSupport.remainingInstances(stage)
 
+    trafficGuard.verifyInstanceTermination(
+      [stage.context.instance] as List<String>,
+      account,
+      Location.region(stage.context.region as String),
+      cloudProvider,
+      "Terminating the requested instance in ")
+
     def taskId = kato.requestOperations(cloudProvider, [[(CLOUD_OPERATION_TYPE): stage.context]])
         .toBlocking()
         .first()
-    new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [
+    new TaskResult(ExecutionStatus.SUCCEEDED, [
         "notification.type"                                       : "terminateinstanceanddecrementservergroup",
         "terminate.account.name"                                  : account,
         "terminate.region"                                        : stage.context.region,

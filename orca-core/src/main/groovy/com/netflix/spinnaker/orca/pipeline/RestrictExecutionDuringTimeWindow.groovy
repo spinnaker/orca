@@ -16,18 +16,16 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import groovy.transform.Canonical
-import groovy.util.logging.Slf4j
-
 import java.util.concurrent.TimeUnit
-import groovy.transform.CompileStatic
 import com.google.common.annotations.VisibleForTesting
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.Canonical
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import static java.util.Calendar.*
@@ -51,8 +49,8 @@ class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder {
   @Component
   @VisibleForTesting
   private static class SuspendExecutionDuringTimeWindowTask implements RetryableTask {
-    long backoffPeriod = TimeUnit.MINUTES.toMillis(2)
-    long timeout = TimeUnit.DAYS.toMillis(2)
+    long backoffPeriod = TimeUnit.SECONDS.toMillis(30)
+    long timeout = TimeUnit.DAYS.toMillis(7)
 
     private static final int DAY_START_HOUR = 0
     private static final int DAY_START_MIN = 0
@@ -69,15 +67,15 @@ class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder {
       try {
         scheduledTime = getTimeInWindow(stage, now)
       } catch (Exception e) {
-        return new DefaultTaskResult(ExecutionStatus.TERMINAL, [failureReason: 'Exception occurred while calculating time window: ' + e.message])
+        return new TaskResult(ExecutionStatus.TERMINAL, [failureReason: 'Exception occurred while calculating time window: ' + e.message])
       }
       if (now >= scheduledTime) {
-        return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+        return new TaskResult(ExecutionStatus.SUCCEEDED)
       } else if (stage.context.skipRemainingWait) {
-        return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+        return new TaskResult(ExecutionStatus.SUCCEEDED)
       } else {
         stage.scheduledTime = scheduledTime.time
-        return new DefaultTaskResult(ExecutionStatus.RUNNING)
+        return new TaskResult(ExecutionStatus.RUNNING)
       }
     }
 
@@ -142,6 +140,10 @@ class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder {
     }
 
     private Date calculateScheduledTime(Date scheduledTime, List<TimeWindow> whitelistWindows, List<Integer> whitelistDays, boolean dayIncremented) throws IncorrectTimeWindowsException {
+
+      if ((!whitelistWindows || whitelistWindows.empty) && whitelistDays && !whitelistDays.empty) {
+        whitelistWindows = [ new TimeWindow(new HourMinute(0, 0), new HourMinute(23, 59))]
+      }
 
       boolean inWindow = false
       Collections.sort(whitelistWindows)

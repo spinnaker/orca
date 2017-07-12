@@ -16,10 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
-import groovy.util.logging.Slf4j
+import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -29,10 +28,9 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import retrofit.RetrofitError
-
-import java.util.concurrent.TimeUnit
 
 @Slf4j
 abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -62,6 +60,10 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
 
   abstract protected boolean hasSucceeded(Stage stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames)
 
+  protected Map getAdditionalRunningStageContext(Stage stage, Map serverGroup) {
+    [:]
+  }
+
   // When waiting for up instances during a "Deploy" stage, it is OK for the server group to not exist coming into this
   // task. Instead of failing on a missing server group, we retry the stage until it either succeeds, fails, or times out.
   // For the other uses of this task, we will fail if the server group doesn't exist.
@@ -75,18 +77,18 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
     Map<String, List<String>> serverGroups = getServerGroups(stage)
 
     if (!serverGroups || !serverGroups?.values()?.flatten()) {
-      return new DefaultTaskResult(ExecutionStatus.TERMINAL)
+      return new TaskResult(ExecutionStatus.TERMINAL)
     }
     Names names = Names.parseName(serverGroups.values().flatten()[0])
     try {
       def response = oortService.getCluster(names.app, account, names.cluster, getCloudProvider(stage))
 
       if (response.status != 200) {
-        return new DefaultTaskResult(ExecutionStatus.RUNNING)
+        return new TaskResult(ExecutionStatus.RUNNING)
       }
       def cluster = objectMapper.readValue(response.body.in().text, Map)
       if (!cluster || !cluster.serverGroups) {
-        return new DefaultTaskResult(ExecutionStatus.RUNNING)
+        return new TaskResult(ExecutionStatus.RUNNING)
       }
       Map<String, Boolean> seenServerGroup = serverGroups.values().flatten().collectEntries { [(it): false] }
       for (Map serverGroup in cluster.serverGroups) {
@@ -104,15 +106,13 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
         Collection<String> interestingHealthProviderNames = stage.context.interestingHealthProviderNames as Collection
         def isComplete = hasSucceeded(stage, serverGroup, serverGroup.instances ?: [], interestingHealthProviderNames)
         if (!isComplete) {
-          Map newContext = [:]
+          Map newContext = getAdditionalRunningStageContext(stage, serverGroup)
           if (seenServerGroup && !stage.context.capacitySnapshot) {
-            newContext = [
-              zeroDesiredCapacityCount: 0,
-              capacitySnapshot        : [
+            newContext.zeroDesiredCapacityCount = 0
+            newContext.capacitySnapshot = [
                 minSize        : serverGroup.capacity.min,
                 desiredCapacity: serverGroup.capacity.desired,
                 maxSize        : serverGroup.capacity.max
-              ]
             ]
           }
           if (seenServerGroup) {
@@ -122,7 +122,8 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
               newContext.zeroDesiredCapacityCount = 0
             }
           }
-          return new DefaultTaskResult(ExecutionStatus.RUNNING, newContext)
+
+          return new TaskResult(ExecutionStatus.RUNNING, newContext)
         }
       }
 
@@ -139,24 +140,24 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
             throw e
           }
           log.info "Waiting for server group to show up, ignoring error: $e.message"
-          return new DefaultTaskResult(ExecutionStatus.RUNNING)
+          return new TaskResult(ExecutionStatus.RUNNING)
         } else {
           throw e
         }
       }
 
       if (seenServerGroup.values().contains(false)) {
-        new DefaultTaskResult(ExecutionStatus.RUNNING)
+        new TaskResult(ExecutionStatus.RUNNING)
       } else {
-        new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+        new TaskResult(ExecutionStatus.SUCCEEDED)
       }
     } catch (RetrofitError e) {
       def retrofitErrorResponse = new RetrofitExceptionHandler().handle(stage.name, e)
       if (e.response?.status == 404) {
-        return new DefaultTaskResult(ExecutionStatus.RUNNING)
+        return new TaskResult(ExecutionStatus.RUNNING)
       } else if (e.response?.status >= 500) {
         log.error("Unexpected retrofit error (${retrofitErrorResponse})")
-        return new DefaultTaskResult(ExecutionStatus.RUNNING, [lastRetrofitException: retrofitErrorResponse])
+        return new TaskResult(ExecutionStatus.RUNNING, [lastRetrofitException: retrofitErrorResponse])
       }
 
       throw e

@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer
 
-import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.PipelineStage
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
 
 class UpsertLoadBalancerForceRefreshTaskSpec extends Specification {
   @Subject
   def task = new UpsertLoadBalancerForceRefreshTask()
-  def stage = new PipelineStage(type: "whatever")
+  def stage = new Stage<>(type: "whatever")
 
   def config = [
     targets: [
@@ -38,13 +38,13 @@ class UpsertLoadBalancerForceRefreshTaskSpec extends Specification {
 
   void "should force cache refresh server groups via oort when name provided"() {
     setup:
-    task.oort = Mock(OortService)
+    task.cacheService = Mock(CloudDriverCacheService)
 
     when:
     task.execute(stage)
 
     then:
-    1 * task.oort.forceCacheUpdate('aws', UpsertLoadBalancerForceRefreshTask.REFRESH_TYPE, _) >> { String cloudProvider, String type, Map<String, ? extends Object> body ->
+    1 * task.cacheService.forceCacheUpdate('aws', UpsertLoadBalancerForceRefreshTask.REFRESH_TYPE, _) >> { String cloudProvider, String type, Map<String, ? extends Object> body ->
       assert cloudProvider == "aws"
       assert body.loadBalancerName == "flapjack-frontend"
       assert body.account == "fzlem"

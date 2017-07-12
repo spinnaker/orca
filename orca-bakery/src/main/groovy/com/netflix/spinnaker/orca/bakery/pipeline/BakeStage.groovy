@@ -16,10 +16,6 @@
 
 package com.netflix.spinnaker.orca.bakery.pipeline
 
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -31,6 +27,9 @@ import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
 @Slf4j
@@ -49,14 +48,9 @@ class BakeStage implements BranchingStageDefinitionBuilder, RestartableStage {
   }
 
   @Override
-  <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+  void postBranchGraph(Stage<?> stage, TaskNode.Builder builder) {
     builder
       .withTask("completeParallel", CompleteParallelBakeTask)
-  }
-
-  @Override
-  Task completeParallelTask() {
-    return new CompleteParallelBakeTask()
   }
 
   @Override
@@ -107,7 +101,7 @@ class BakeStage implements BranchingStageDefinitionBuilder, RestartableStage {
   }
 
   @Override
-  <T extends Execution<T>> String parallelStageName(Stage<T> stage, boolean hasParallelFlows) {
+  String parallelStageName(Stage<?> stage, boolean hasParallelFlows) {
     return hasParallelFlows ? "Multi-region Bake" : stage.name
   }
 
@@ -124,15 +118,16 @@ class BakeStage implements BranchingStageDefinitionBuilder, RestartableStage {
           it.type == PIPELINE_CONFIG_TYPE && bakeInitializationStages*.id.contains(it.parentStageId) && (it.context.ami || it.context.imageId)
         }.collect { Stage bakeStage ->
           def deploymentDetails = [:]
-          ["ami", "imageId", "amiSuffix", "baseLabel", "baseOs", "storeType", "vmType", "region", "package", "cloudProviderType", "cloudProvider"].each {
+          ["ami", "imageId", "amiSuffix", "baseLabel", "baseOs", "refId", "storeType", "vmType", "region", "package", "cloudProviderType", "cloudProvider"].each {
             if (bakeStage.context.containsKey(it)) {
               deploymentDetails.put(it, bakeStage.context.get(it))
             }
           }
+
           return deploymentDetails
         }
       ]
-      new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [:], globalContext)
+      new TaskResult(ExecutionStatus.SUCCEEDED, [:], globalContext)
     }
   }
 

@@ -16,60 +16,38 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.entitytags;
 
-import com.netflix.spinnaker.orca.DefaultTaskResult;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.netflix.spinnaker.orca.clouddriver.OortService.EntityTags;
-import retrofit.RetrofitError;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 @Component
 public class DeleteEntityTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
   private final KatoService kato;
-  private final OortService oort;
 
   @Autowired
-  public DeleteEntityTagsTask(KatoService kato, OortService oort) {
+  public DeleteEntityTagsTask(KatoService kato) {
     this.kato = kato;
-    this.oort = oort;
   }
 
   @Override
   public TaskResult execute(Stage stage) {
-    EntityTags entityTags = null;
-
-    try {
-      entityTags = oort.getEntityTags((String) stage.getContext().get("id"));
-    } catch (RetrofitError e) {
-      if (e.getResponse() != null && e.getResponse().getStatus() == 404) {
-        // tag doesn't exist, nothing to delete
-        return new DefaultTaskResult(ExecutionStatus.SUCCEEDED);
-      }
-    }
-
-    Map operationContext = new HashMap(stage.getContext());
-    operationContext.put("account", entityTags.getEntityRef().attributes().get("account"));
-
     TaskId taskId = kato.requestOperations(Collections.singletonList(
       new HashMap<String, Map>() {{
-        put("deleteEntityTags", operationContext);
+        put("deleteEntityTags", stage.getContext());
       }})
     ).toBlocking().first();
 
-    return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, new HashMap<String, Object>() {{
+    return new TaskResult(ExecutionStatus.SUCCEEDED, new HashMap<String, Object>() {{
       put("notification.type", "deleteentitytags");
       put("kato.last.task.id", taskId);
     }});

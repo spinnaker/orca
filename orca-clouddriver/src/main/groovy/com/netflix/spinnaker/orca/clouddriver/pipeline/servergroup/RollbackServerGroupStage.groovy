@@ -18,12 +18,13 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ApplySourceServerGroupCapacityStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.CaptureSourceServerGroupCapacityStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
-import org.springframework.batch.core.Step
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
 import org.springframework.stereotype.Component
@@ -36,16 +37,16 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
   AutowireCapableBeanFactory autowireCapableBeanFactory
 
   @Override
-  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
-    def stageData = parentStage.mapTo(StageData)
+  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> stage) {
+    def stageData = stage.mapTo(StageData)
 
     if (!stageData.rollbackType) {
       throw new IllegalStateException("Missing `rollbackType` (execution: ${stage.execution.id})")
     }
 
-    def explicitRollback = parentStage.mapTo("/rollbackContext", stageData.rollbackType.implementationClass) as Rollback
+    def explicitRollback = stage.mapTo("/rollbackContext", stageData.rollbackType.implementationClass) as Rollback
     autowireCapableBeanFactory.autowireBean(explicitRollback)
-    return explicitRollback.buildStages(parentStage)
+    return explicitRollback.buildStages(stage)
   }
 
   static enum RollbackType {
@@ -63,7 +64,7 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
   }
 
   static interface Rollback {
-    List<Stage> buildStages(Stage parentStage)
+    def <T extends Execution<T>> List<Stage<T>> buildStages(Stage<T> parentStage)
   }
 
   static class ExplicitRollback implements Rollback {
@@ -82,8 +83,16 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
     @JsonIgnore
     ResizeServerGroupStage resizeServerGroupStage
 
+    @Autowired
     @JsonIgnore
-    List<Step> buildStages(Stage parentStage) {
+    CaptureSourceServerGroupCapacityStage captureSourceServerGroupCapacityStage
+
+    @Autowired
+    @JsonIgnore
+    ApplySourceServerGroupCapacityStage applySourceServerGroupCapacityStage
+
+    @JsonIgnore
+    def <T extends Execution<T>> List<Stage<T>> buildStages(Stage<T> parentStage) {
       def stages = []
 
       Map enableServerGroupContext = new HashMap(parentStage.context)
@@ -92,14 +101,17 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
         parentStage.execution, enableServerGroupStage.type, "enable", enableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
       )
 
+      stages << buildCaptureSourceServerGroupCapacityStage(parentStage, parentStage.mapTo(ResizeStrategy.Source))
+
       Map resizeServerGroupContext = new HashMap(parentStage.context) + [
-        action : ResizeStrategy.ResizeAction.scale_to_server_group.toString(),
-        source : {
+        action            : ResizeStrategy.ResizeAction.scale_to_server_group.toString(),
+        source            : {
           def source = parentStage.mapTo(ResizeStrategy.Source)
           source.serverGroupName = rollbackServerGroupName
           return source
         }.call(),
-        asgName: restoreServerGroupName
+        asgName           : restoreServerGroupName,
+        pinMinimumCapacity: true
       ]
       stages << StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
         parentStage.execution, resizeServerGroupStage.type, "resize", resizeServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
@@ -111,7 +123,53 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
         parentStage.execution, disableServerGroupStage.type, "disable", disableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
       )
 
+      stages << buildApplySourceServerGroupCapacityStage(parentStage, parentStage.mapTo(ResizeStrategy.Source))
       return stages
     }
+
+    Stage buildCaptureSourceServerGroupCapacityStage(Stage parentStage,
+                                                     ResizeStrategy.Source source) {
+      Map captureSourceServerGroupCapacityContext = [
+        useSourceCapacity: true,
+        source           : [
+          asgName        : rollbackServerGroupName,
+          serverGroupName: rollbackServerGroupName,
+          region         : source.region,
+          account        : source.credentials,
+          cloudProvider  : source.cloudProvider
+        ]
+      ]
+      return StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
+        parentStage.execution,
+        captureSourceServerGroupCapacityStage.type,
+        "snapshot",
+        captureSourceServerGroupCapacityContext,
+        parentStage,
+        SyntheticStageOwner.STAGE_AFTER
+      )
+    }
+
+    Stage buildApplySourceServerGroupCapacityStage(Stage parentStage,
+                                                   ResizeStrategy.Source source) {
+      Map applySourceServerGroupCapacityContext = [
+        credentials: source.credentials,
+        target     : [
+          asgName        : restoreServerGroupName,
+          serverGroupName: restoreServerGroupName,
+          region         : source.region,
+          account        : source.credentials,
+          cloudProvider  : source.cloudProvider
+        ]
+      ]
+      return StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage(
+        parentStage.execution,
+        applySourceServerGroupCapacityStage.type,
+        "apply",
+        applySourceServerGroupCapacityContext,
+        parentStage,
+        SyntheticStageOwner.STAGE_AFTER
+      )
+    }
   }
+
 }

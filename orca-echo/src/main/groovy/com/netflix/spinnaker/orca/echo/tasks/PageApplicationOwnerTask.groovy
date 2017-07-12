@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.echo.tasks
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.echo.EchoService
@@ -27,9 +27,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 
 @Slf4j
@@ -42,11 +39,14 @@ class PageApplicationOwnerTask implements RetryableTask {
   @Autowired
   EchoService echoService
 
-  @Autowired
+  @Autowired(required = false)
   Front50Service front50Service
 
   @Override
   TaskResult execute(Stage stage) {
+    if (!front50Service) {
+      throw new UnsupportedOperationException("Front50 is not enabled, no way to fetch pager duty. Fix this by setting front50.enabled: true");
+    }
     def application = stage.context.application as String
     def applicationPagerDutyKey = fetchApplicationPagerDutyKey(application)
     if (!applicationPagerDutyKey) {
@@ -68,7 +68,7 @@ class PageApplicationOwnerTask implements RetryableTask {
 
     log.info("Sent page (application: ${application}, message: '${stage.context.message}')")
 
-    return new DefaultTaskResult(SUCCEEDED)
+    return new TaskResult(SUCCEEDED)
   }
 
   private String fetchApplicationPagerDutyKey(String applicationName) {

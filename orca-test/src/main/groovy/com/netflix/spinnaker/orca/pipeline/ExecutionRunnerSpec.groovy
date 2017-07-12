@@ -16,17 +16,23 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+
 import java.util.function.BiFunction
 import java.util.function.Consumer
-import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.StageListener
-import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionStage
 import com.netflix.spinnaker.orca.pipeline.parallel.WaitForRequisiteCompletionTask
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
+import groovy.transform.CompileStatic
 import org.spockframework.spring.xml.SpockMockFactoryBean
 import org.springframework.beans.factory.FactoryBean
 import org.springframework.beans.factory.annotation.Autowired
@@ -40,6 +46,7 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.getType
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
@@ -68,6 +75,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   @Autowired EndLoopTask endLoopTask
   @Autowired PostLoopTask postLoopTask
   @Autowired @Qualifier("stageListener") StageListener stageListener
+  @Autowired @Qualifier("executionListener") ExecutionListener executionListener
 
   def "throws an exception if there's no builder for a stage type"() {
     given:
@@ -137,8 +145,8 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   def "builds each pre-stage"() {
     given:
     def stageDefBuilders = stageTypes.collect { stageType ->
-      def preStage1 = before(new PipelineStage(execution, "${stageType}_pre1"))
-      def preStage2 = before(new PipelineStage(execution, "${stageType}_pre2"))
+      def preStage1 = before(new Stage<>(execution, "${stageType}_pre1"))
+      def preStage2 = before(new Stage<>(execution, "${stageType}_pre2"))
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
@@ -161,7 +169,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
     then:
     execution.stages.type == stageTypes.collect { stageType ->
-      ["${stageType}_pre2", "${stageType}_pre1", stageType]
+      ["${stageType}_pre1", "${stageType}_pre2", stageType]
     }.flatten()
 
     where:
@@ -172,16 +180,13 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   def "builds each post-stage"() {
     given:
     def stageDefBuilders = stageTypes.collect { stageType ->
-      def postStage1 = after(new PipelineStage(execution, "${stageType}_post1"))
-      def postStage2 = after(new PipelineStage(execution, "${stageType}_post2"))
+      def postStage1 = after(new Stage<>(execution, "${stageType}_post1"))
+      def postStage2 = after(new Stage<>(execution, "${stageType}_post2"))
       [
         Stub(StageDefinitionBuilder) {
           getType() >> stageType
           buildTaskGraph() >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
-          // TODO: stages are inserted directly after parent but need to be done
-          // in forward order as batch job is built at the same time, being in
-          // wrong order in json is better than running in wrong order
-          aroundStages(_) >> [postStage2, postStage1]
+          aroundStages(_) >> [postStage1, postStage2]
         },
         Stub(StageDefinitionBuilder) {
           getType() >> "${stageType}_post1"
@@ -209,8 +214,8 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
   def "builds tasks for pre and post-stages"() {
     given:
-    def preStage = before(new PipelineStage(execution, "${stageType}_pre"))
-    def postStage = after(new PipelineStage(execution, "${stageType}_post"))
+    def preStage = before(new Stage<>(execution, "${stageType}_pre"))
+    def postStage = after(new Stage<>(execution, "${stageType}_post"))
     def stageDefBuilder = Stub(StageDefinitionBuilder) {
       getType() >> stageType
       buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("${stageType}_1", Task)])
@@ -256,7 +261,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     runner.start(execution)
 
     then:
-    1 * testTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    1 * testTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     where:
     parallel | description
@@ -278,9 +283,10 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
         buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
         aroundStages(_) >> { Stage<Pipeline> parentStage ->
           [
-            newStage(execution, "before_${stageType}_2", "before", [:], parentStage, STAGE_BEFORE),
             newStage(execution, "before_${stageType}_1", "before", [:], parentStage, STAGE_BEFORE),
-            newStage(execution, "after_$stageType", "after", [:], parentStage, STAGE_AFTER)
+            newStage(execution, "before_${stageType}_2", "before", [:], parentStage, STAGE_BEFORE),
+            newStage(execution, "after_${stageType}_1", "after", [:], parentStage, STAGE_AFTER),
+            newStage(execution, "after_${stageType}_2", "after", [:], parentStage, STAGE_AFTER)
           ]
         }
       },
@@ -293,8 +299,12 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
         buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("before_test_2", TestTask)])
       },
       Stub(StageDefinitionBuilder) {
-        getType() >> "after_$stageType"
-        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_test", TestTask)])
+        getType() >> "after_${stageType}_1"
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_test_1", TestTask)])
+      },
+      Stub(StageDefinitionBuilder) {
+        getType() >> "after_${stageType}_2"
+        buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("after_test_2", TestTask)])
       }
     ]
     @Subject runner = create(*stageDefinitionBuilders)
@@ -303,14 +313,14 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def executedStageTypes = []
     testTask.execute(_) >> { Stage stage ->
       executedStageTypes << stage.type
-      new DefaultTaskResult(SUCCEEDED)
+      new TaskResult(SUCCEEDED)
     }
 
     when:
     runner.start(execution)
 
     then:
-    executedStageTypes == ["before_${stageType}_1", "before_${stageType}_2", stageType, "after_$stageType"]
+    executedStageTypes == ["before_${stageType}_1", "before_${stageType}_2", stageType, "after_${stageType}_1", "after_${stageType}_2"]
 
     where:
     stageType = "foo"
@@ -358,7 +368,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def executedStageTypes = []
     testTask.execute(_) >> { Stage stage ->
       executedStageTypes << stage.type
-      new DefaultTaskResult(SUCCEEDED)
+      new TaskResult(SUCCEEDED)
     }
 
     when:
@@ -374,10 +384,10 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
   def "executes stage graph in the correct order"() {
     given:
-    def startStage = new PipelineStage(execution, "start")
-    def branchAStage = new PipelineStage(execution, "branchA")
-    def branchBStage = new PipelineStage(execution, "branchB")
-    def endStage = new PipelineStage(execution, "end")
+    def startStage = new Stage<>(execution, "start")
+    def branchAStage = new Stage<>(execution, "branchA")
+    def branchBStage = new Stage<>(execution, "branchB")
+    def endStage = new Stage<>(execution, "end")
 
     startStage.refId = "1"
     branchAStage.refId = "2"
@@ -410,13 +420,14 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       getType() >> endStage.type
       buildTaskGraph(_) >> new TaskNode.TaskGraph(FULL, [new TaskDefinition("test", TestTask)])
     }
-    @Subject runner = create(startStageDefinitionBuilder, branchAStageDefinitionBuilder, branchBStageDefinitionBuilder, endStageDefinitionBuilder)
+    @Subject
+      runner = create(startStageDefinitionBuilder, branchAStageDefinitionBuilder, branchBStageDefinitionBuilder, endStageDefinitionBuilder)
 
     and:
     def executedStageTypes = []
     testTask.execute(_) >> { Stage stage ->
       executedStageTypes << stage.type
-      new DefaultTaskResult(SUCCEEDED)
+      new TaskResult(SUCCEEDED)
     }
 
     when:
@@ -434,9 +445,9 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   @Issue("SPIN-2165")
   def "executes pipelines with multiple 'root' stages"() {
     given:
-    def branchAStage = new PipelineStage(execution, "branchA")
-    def branchBStage = new PipelineStage(execution, "branchB")
-    def endStage = new PipelineStage(execution, "end")
+    def branchAStage = new Stage<>(execution, "branchA")
+    def branchBStage = new Stage<>(execution, "branchB")
+    def endStage = new Stage<>(execution, "end")
 
     branchAStage.refId = "1"
     branchBStage.refId = "2"
@@ -471,7 +482,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     def executedStageTypes = []
     testTask.execute(_) >> { Stage stage ->
       executedStageTypes << stage.type
-      new DefaultTaskResult(SUCCEEDED)
+      new TaskResult(SUCCEEDED)
     }
 
     when:
@@ -487,7 +498,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
   def "executes loops"() {
     given:
-    def stage = new PipelineStage(execution, "looping")
+    def stage = new Stage<>(execution, "looping")
     execution.stages << stage
 
     executionRepository.retrievePipeline(execution.id) >> execution
@@ -509,10 +520,10 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     runner.start(execution)
 
     then:
-    1 * preLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
-    3 * startLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
-    3 * endLoopTask.execute(_) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(SUCCEEDED)
-    1 * postLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    1 * preLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
+    3 * startLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
+    3 * endLoopTask.execute(_) >> new TaskResult(REDIRECT) >> new TaskResult(REDIRECT) >> new TaskResult(SUCCEEDED)
+    1 * postLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     where:
     execution = Pipeline.builder().withId("1").withParallel(true).build()
@@ -520,7 +531,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
   def "looping stages can update context"() {
     given:
-    def stage = new PipelineStage(execution, "looping")
+    def stage = new Stage<>(execution, "looping")
     execution.stages << stage
 
     executionRepository.retrievePipeline(execution.id) >> execution
@@ -540,16 +551,16 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
     and:
     def next = 1
-    preLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    preLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
     startLoopTask.execute(_) >> { Stage<?> s ->
       def values = s.context.values
       if (values == null) values = []
       values += next
       next++
-      new DefaultTaskResult(SUCCEEDED, [values: values])
+      new TaskResult(SUCCEEDED, [values: values])
     }
-    endLoopTask.execute(_) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(SUCCEEDED)
-    postLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    endLoopTask.execute(_) >> new TaskResult(REDIRECT) >> new TaskResult(REDIRECT) >> new TaskResult(SUCCEEDED)
+    postLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     when:
     runner.start(execution)
@@ -563,7 +574,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
   def "loop tasks are left in SUCCEEDED state on completion of the loop"() {
     given:
-    def stage = new PipelineStage(execution, "looping")
+    def stage = new Stage<>(execution, "looping")
     execution.stages << stage
 
     executionRepository.retrievePipeline(execution.id) >> execution
@@ -582,10 +593,10 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     @Subject runner = create(stageDefinitionBuilder)
 
     and:
-    preLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
-    startLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
-    endLoopTask.execute(_) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(REDIRECT) >> new DefaultTaskResult(SUCCEEDED)
-    postLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    preLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
+    startLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
+    endLoopTask.execute(_) >> new TaskResult(REDIRECT) >> new TaskResult(REDIRECT) >> new TaskResult(SUCCEEDED)
+    postLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     when:
     runner.start(execution)
@@ -604,7 +615,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
   def "executes stages with internal parallel branches"() {
     given:
-    def stage = new PipelineStage(execution, "branching")
+    def stage = new Stage<>(execution, "branching")
     execution.stages << stage
 
     executionRepository.retrievePipeline(execution.id) >> execution
@@ -624,13 +635,13 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     runner.start(execution)
 
     then:
-    1 * startLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    1 * startLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     then:
-    2 * testTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    2 * testTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     then:
-    1 * endLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    1 * endLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     where:
     execution = Pipeline.builder().withId("1").withParallel(true).build()
@@ -639,7 +650,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
 
   def "does not consider before tasks of an internal parallel stage to complete the stage"() {
     given:
-    def stage = new PipelineStage(execution, "branching")
+    def stage = new Stage<>(execution, "branching")
     execution.stages << stage
 
     executionRepository.retrievePipeline(execution.id) >> execution
@@ -672,9 +683,52 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     contexts = [[region: "a"], [region: "b"]]
   }
 
+  def "applies execution windows correctly to internal parallel stages"() {
+    given:
+    def stage = new Stage<>(execution, "branching")
+    stage.initializationStage = true
+    stage.context.restrictExecutionDuringTimeWindow = true
+    stage.context.restrictedExecutionWindow = [
+      whitelist        : [[startHour: 0, startMin: 0, endHour: 23, endMin: 59]],
+      days             : [1, 2, 3, 4, 5, 6, 7],
+      skipRemainingWait: true
+    ]
+    execution.stages << stage
+
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def stageDefinitionBuilder = stageDefinition("branching", contexts, { builder ->
+      builder.withTask("start", StartLoopTask)
+    }, { builder ->
+      builder.withTask("branch", TestTask)
+    }, { builder ->
+      builder.withTask("end", EndLoopTask)
+    })
+
+    @Subject runner = create(stageDefinitionBuilder)
+
+    and:
+    startLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
+    testTask.execute(_) >> new TaskResult(SUCCEEDED)
+    endLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
+
+    when:
+    runner.start(execution)
+
+    then:
+    execution.stages.findAll {
+      it.type == RestrictExecutionDuringTimeWindow.TYPE
+    }.size() == 1
+
+    where:
+    execution = Pipeline.builder().withId("1").withParallel(true).build()
+    contexts = [[region: "a"], [region: "b"]]
+  }
+
   def "if a stage is allowed to fail it is marked as FAILED_CONTINUE"() {
     given:
-    def stage = new PipelineStage(execution, stageType, [continuePipeline: true])
+    def stage = new Stage<>(execution, stageType, [continuePipeline: true])
     execution.stages << stage
 
     and:
@@ -687,7 +741,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     @Subject runner = create(stageDefinitionBuilder)
 
     and:
-    testTask.execute(_) >> new DefaultTaskResult(TERMINAL)
+    testTask.execute(_) >> new TaskResult(TERMINAL)
 
     when:
     runner.start(execution)
@@ -706,7 +760,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   @Issue("SPIN-2122")
   def "a stage is still considered FAILED_CONTINUE if a task downstream of the failed one succeeds"() {
     given:
-    def stage = new PipelineStage(execution, stageType, [continuePipeline: true])
+    def stage = new Stage<>(execution, stageType, [continuePipeline: true])
     execution.stages << stage
 
     and:
@@ -720,8 +774,8 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     @Subject runner = create(stageDefinitionBuilder)
 
     and:
-    startLoopTask.execute(_) >> new DefaultTaskResult(TERMINAL)
-    endLoopTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    startLoopTask.execute(_) >> new TaskResult(TERMINAL)
+    endLoopTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     when:
     runner.start(execution)
@@ -740,13 +794,13 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
   @Unroll
   def "parallel stages can optionally rename the base stage"() {
     given:
-    def stage = new PipelineStage(execution, "branching", "branching", [:])
+    def stage = new Stage<>(execution, "branching", "branching", [:])
     execution.stages << stage
 
     executionRepository.retrievePipeline(execution.id) >> execution
 
     and:
-    testTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    testTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     and:
     def stageDefinitionBuilder = stageDefinition("branching", contexts, noOp(), { builder ->
@@ -787,7 +841,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     @Subject runner = create(stageDefinitionBuilder)
 
     and:
-    testTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    testTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     when:
     runner.start(execution)
@@ -822,7 +876,7 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     @Subject runner = create(stageDefinitionBuilder)
 
     and:
-    testTask.execute(_) >> new DefaultTaskResult(SUCCEEDED)
+    testTask.execute(_) >> new TaskResult(SUCCEEDED)
 
     when:
     runner.start(execution)
@@ -840,12 +894,109 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       .withParallel(true).build()
   }
 
-  static PipelineStage before(PipelineStage stage) {
+  @Issue("SPIN-2238")
+  // Stages such as Canary with no tasks of their own (only synthetic stages)
+  // failed to join correctly as they remain NOT_STARTED
+  def "handles joins for parallel no-op stages"() {
+    given:
+    execution.with {
+      stages[0].refId = "1"
+      stages[0].requisiteStageRefIds = []
+
+      stages[1].refId = "2"
+      stages[1].requisiteStageRefIds = []
+
+      stages[2].refId = "3"
+      stages[2].requisiteStageRefIds = stages[0..1].refId
+    }
+
+    and:
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def noOpStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> stageType
+      buildTaskGraph(_) >> TaskNode.emptyGraph(FULL)
+    }
+    def joinStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> "join"
+      buildTaskGraph(_) >> TaskNode.singleton(FULL, "test", TestTask)
+    }
+    @Subject runner = create(noOpStageDefinitionBuilder, joinStageDefinitionBuilder)
+
+    when:
+    runner.start(execution)
+
+    then:
+    1 * testTask.execute(_) >> new TaskResult(SUCCEEDED)
+
+    where:
+    stageType = "noop"
+    execution = Pipeline
+      .builder()
+      .withId("1")
+      .withStages(stageType, stageType, "join")
+      .withParallel(true)
+      .build()
+  }
+
+  @Issue("SPIN-2129")
+  // Stages such as Canary with no tasks of their own (only synthetic stages)
+  // failed to join correctly as they remain NOT_STARTED
+  def "should support pipelines where a parent and child stage share requisiteRefIds"() {
+    given:
+    execution.with {
+      stages[0].refId = "1"
+      stages[0].requisiteStageRefIds = []
+
+      stages[1].refId = "2"
+      stages[1].requisiteStageRefIds = ["1"]
+
+      stages[2].refId = "3"
+      stages[2].requisiteStageRefIds = ["1"]
+
+      stages[3].refId = "4"
+      stages[3].requisiteStageRefIds = ["1", "2"]
+    }
+
+    and:
+    executionRepository.retrievePipeline(execution.id) >> execution
+
+    and:
+    def noOpStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> stageType
+      buildTaskGraph(_) >> TaskNode.emptyGraph(FULL)
+    }
+    def joinStageDefinitionBuilder = Stub(StageDefinitionBuilder) {
+      getType() >> "join"
+      buildTaskGraph(_) >> TaskNode.singleton(FULL, "test", TestTask)
+    }
+
+    def runner = create(noOpStageDefinitionBuilder, joinStageDefinitionBuilder)
+
+    when:
+    runner.start(execution)
+
+    then:
+    1 * testTask.execute(_) >> new TaskResult(SUCCEEDED)
+    1 * executionListener.afterExecution(_, execution, SUCCEEDED, true)
+
+    where:
+    stageType = "noop"
+    execution = Pipeline
+      .builder()
+      .withId("1")
+      .withStages(stageType, stageType, stageType, "join")
+      .withParallel(true)
+      .build()
+  }
+
+  static Stage<Pipeline> before(Stage<Pipeline> stage) {
     stage.syntheticStageOwner = SyntheticStageOwner.STAGE_BEFORE
     return stage
   }
 
-  static PipelineStage after(PipelineStage stage) {
+  static Stage<Pipeline> after(Stage<Pipeline> stage) {
     stage.syntheticStageOwner = SyntheticStageOwner.STAGE_AFTER
     return stage
   }
@@ -909,12 +1060,6 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
       }
 
       @Override
-      Task completeParallelTask() {
-        // unnecessary as `postBranchGraph` is explicitly overridden to not call `completeParallelTask`
-        return null
-      }
-
-      @Override
       String parallelStageName(Stage stage, boolean hasParallelFlows) {
         parallelStageName.apply(stage, hasParallelFlows)
       }
@@ -960,6 +1105,17 @@ abstract class ExecutionRunnerSpec<R extends ExecutionRunner> extends Specificat
     @Qualifier("stageListener")
     FactoryBean<StageListener> stageListener() {
       new SpockMockFactoryBean(StageListener)
+    }
+
+    @Bean
+    @Qualifier("executionListener")
+    FactoryBean<ExecutionListener> executionListener() {
+      new SpockMockFactoryBean(ExecutionListener)
+    }
+
+    @Bean
+    ContextParameterProcessor contextParameterProcessor() {
+      new ContextParameterProcessor()
     }
   }
 

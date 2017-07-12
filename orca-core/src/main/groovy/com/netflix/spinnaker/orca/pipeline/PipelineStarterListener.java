@@ -78,14 +78,10 @@ public class PipelineStarterListener implements ExecutionListener {
           if (Objects.equals(id, nextPipelineId)) {
             Pipeline queuedExecution = executionRepository.retrievePipeline(id);
             log.info("starting pipeline {} due to {} ending", nextPipelineId, execution.getId());
-            if (Objects.equals(queuedExecution.getExecutionEngine(), "v2")) {
-              try {
-                getPipelineLauncher().start(queuedExecution);
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            } else {
-              getPipelineStarter().startExecution(queuedExecution);
+            try {
+              getPipelineLauncher().start(queuedExecution);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
             }
             startTracker.removeFromQueue(execution.getPipelineConfigId(), id);
           } else if (!execution.isKeepWaitingPipelines()) {
@@ -102,10 +98,5 @@ public class PipelineStarterListener implements ExecutionListener {
 
   protected ExecutionLauncher<Pipeline> getPipelineLauncher() {
     return applicationContext.getBean(PipelineLauncher.class);
-  }
-
-  @Deprecated
-  protected PipelineStarter getPipelineStarter() {
-    return applicationContext.getBean(PipelineStarter.class);
   }
 }

@@ -49,13 +49,39 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
 
   @Override
   CancellableStage.Result cancel(Stage stage) {
-    def cancelCanaryResults = mineService.cancelCanary(stage.context.canary.id as String, "Pipeline execution (${stage.execution?.id}) canceled")
-    log.info("Canceled canary in mine (canaryId: ${stage.context.canary.id}, stageId: ${stage.id}, executionId: ${stage.execution.id})")
+    def cancelCanaryResults = [:]
+    def canaryId = stage.context.canary?.id as String
 
-    def canary = stage.ancestors { Stage s, StageDefinitionBuilder stageBuilder ->
+    if (canaryId && !stage.execution.canceled) {
+      /*
+       * If the canary was registered and pipeline not explicitly canceled, do not automatically cleanup the canary.
+       *
+       * Normally, the `CleanupCanaryTask` will cleanup a canary if it was successfully registered and `TERMINATE` is an
+       * allowed `actionsForUnhealthyCanary` action.
+       */
+      return null
+    }
+
+    try {
+      if (canaryId) {
+        // will not have a `canaryId` if the failure occurred prior to registration
+        cancelCanaryResults = mineService.cancelCanary(canaryId, "Pipeline execution (${stage.execution?.id}) canceled")
+        log.info("Canceled canary in mine (canaryId: ${canaryId}, stageId: ${stage.id}, executionId: ${stage.execution.id})")
+      }
+    } catch (Exception e) {
+      log.error("Unable to cancel canary '${canaryId}' in mine", e)
+    }
+
+    def canaryStages = stage.ancestors { Stage s, StageDefinitionBuilder stageBuilder ->
       stageBuilder instanceof CanaryStage
-    } first()
-    def cancelResult = ((CancellableStage) canary.stageBuilder).cancel(canary.stage)
+    }
+
+    if (!canaryStages) {
+      throw new IllegalStateException("No upstream canary stage found (stageId: ${stage.id}, executionId: ${stage.execution.id})")
+    }
+
+    def canary = canaryStages.first()
+    def cancelResult = ((CancellableStage) canary.stageBuilder)?.cancel(canary.stage)
     cancelResult.details.put("canary", cancelCanaryResults)
 
     return cancelResult

@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -44,7 +43,7 @@ class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
   long instanceVersionSleep = DEFAULT_INSTANCE_VERSION_SLEEP
 
   long backoffPeriod = 10000
-  long timeout = 120000 // 2min
+  long timeout = 600000 // 10min
 
   @Override
   TaskResult execute(Stage stage) {
@@ -55,8 +54,8 @@ class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
     String packageName = stage.context?.package
     String version = stage.ancestors { Stage ancestorStage, StageDefinitionBuilder ancestorStageBuilder ->
       ancestorStage.id == stage.parentStageId
-    }.getAt(0)?.stage?.context?.version
-    Map<String, Map> skippedInstances = stage.context.skippedInstances ?: [:]
+    }.getAt(0)?.stage?.context?.version ?: stage.context.version
+   Map<String, Map> skippedInstances = stage.context.skippedInstances ?: [:]
     Set<String> patchedInstanceIds = []
     // verify instance list, package, and version are in the context
     if (version && packageName && remainingInstances) {
@@ -94,7 +93,7 @@ class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
       remainingInstances: remainingInstances,
       version: version
     ]
-    return new DefaultTaskResult(remainingInstances ? ExecutionStatus.RUNNING : ExecutionStatus.SUCCEEDED, stageOutputs)
+    return new TaskResult(remainingInstances ? ExecutionStatus.RUNNING : ExecutionStatus.SUCCEEDED, stageOutputs)
   }
 
   String getAppVersion(InstanceService instanceService, String packageName) {

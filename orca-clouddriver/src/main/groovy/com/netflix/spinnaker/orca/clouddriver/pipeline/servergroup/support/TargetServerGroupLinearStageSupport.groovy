@@ -16,11 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
-import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.kato.pipeline.Nameable
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.Memoized
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
@@ -38,10 +39,11 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
   String name = this.type
 
   @Override
-  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
+  def <T extends Execution<T>> List<Stage<T>> aroundStages(Stage<T> parentStage) {
     return composeTargets(parentStage)
   }
 
+  @Memoized
   List<Stage> composeTargets(Stage stage) {
     stage.resolveStrategyParams()
     def params = TargetServerGroup.Params.fromStage(stage)
@@ -162,8 +164,14 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
       }
     }
 
-    // For silly reasons, this must be added after the pre/post-DynamicInject to get the execution order right.
-    stages << newStage(stage.execution, determineTargetServerGroupStage.type, DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE, dtsgContext, stage, STAGE_BEFORE)
+    stages.add(0, newStage(
+      stage.execution,
+      determineTargetServerGroupStage.type,
+      DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE,
+      dtsgContext,
+      stage,
+      STAGE_BEFORE
+    ))
     return stages
   }
 

@@ -16,20 +16,18 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.job
 
+import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.clouddriver.KatoRestService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
 
 @Component
 public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -37,7 +35,7 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
   long timeout = TimeUnit.DAYS.toMillis(1)
 
   @Autowired
-  OortService oortService
+  KatoRestService katoRestService
 
   @Autowired
   ObjectMapper objectMapper
@@ -72,13 +70,23 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
       def name = names[0]
       def parsedName = Names.parseName(name)
 
-      Map job = objectMapper.readValue(oortService.collectJob(parsedName.app, account, location, name, "delete").body.in(), new TypeReference<Map>() {})
+      Map job = objectMapper.readValue(katoRestService.collectJob(parsedName.app, account, location, name, "delete").body.in(), new TypeReference<Map>() {})
       outputs.jobStatus = job
 
-      switch ((String)job.jobState) {
+      switch ((String) job.jobState) {
         case "Succeeded":
           status = ExecutionStatus.SUCCEEDED
           outputs.completionDetails = job.completionDetails
+
+          if (stage.context.propertyFile) {
+            Map<String, Object> properties = [:]
+            properties = katoRestService.getFileContents(parsedName.app, account, location, name, stage.context.propertyFile)
+            if (properties.size() == 0) {
+              throw new IllegalStateException("expected properties file ${stage.context.propertyFile} but one was not found or was empty")
+            }
+            outputs << properties
+          }
+
           return
 
         case "Failed":
@@ -88,6 +96,6 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
       }
     }
 
-    new DefaultTaskResult(status, outputs)
+    new TaskResult(status, outputs, outputs)
   }
 }

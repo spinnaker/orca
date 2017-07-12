@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.batch.RestartableStage
@@ -29,6 +28,7 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -65,10 +65,13 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage, Restarta
       stage.context.canary.remove("canaryResult")
       stage.context.canary.remove("status")
       stage.context.canary.remove("health")
+
+      //Canceling the canary marks the stage as CANCELED preventing it from restarting.
+      stage.setStatus(ExecutionStatus.NOT_STARTED)
     }
 
 
-    stage.tasks.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
+    stage.tasks.each { task ->
       task.startTime = null
       task.endTime = null
       task.status = ExecutionStatus.NOT_STARTED
@@ -81,6 +84,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage, Restarta
   CancellableStage.Result cancel(Stage stage) {
     log.info("Cancelling stage (stageId: ${stage.id}, executionId: ${stage.execution.id}, context: ${stage.context as Map})")
     def cancelCanaryResults = cancelCanary(stage, "Pipeline execution (${stage.execution?.id}) canceled");
+    log.info("Canceled AcaTaskStage for pipeline: ${stage.execution?.id} with results: ${cancelCanaryResults}")
     return new CancellableStage.Result(stage, ["canary": cancelCanaryResults])
   }
 

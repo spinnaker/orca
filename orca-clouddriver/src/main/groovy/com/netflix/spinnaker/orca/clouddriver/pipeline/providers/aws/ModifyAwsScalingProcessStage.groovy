@@ -16,9 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
-import groovy.transform.CompileDynamic
-import groovy.transform.CompileStatic
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -32,6 +29,8 @@ import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -40,11 +39,6 @@ import org.springframework.stereotype.Component
 class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
   ModifyAwsScalingProcessStage() {
     name = "Modify Scaling Process"
-  }
-
-  @Override
-  def <T extends Execution> List<Stage<T>> aroundStages(Stage<T> parentStage) {
-    return composeTargets(parentStage);
   }
 
   @Override
@@ -104,7 +98,7 @@ class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
         isComplete = suspendedProcesses?.intersect(stageData.processes) == stageData.processes
       }
 
-      return isComplete ? new DefaultTaskResult(ExecutionStatus.SUCCEEDED) : new DefaultTaskResult(ExecutionStatus.RUNNING)
+      return isComplete ? new TaskResult(ExecutionStatus.SUCCEEDED) : new TaskResult(ExecutionStatus.RUNNING)
     }
 
     @CompileDynamic
