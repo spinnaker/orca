@@ -74,10 +74,7 @@ class PriorityCapacityQueueInterceptor(
       return null
     }
 
-    val callback = when (message) {
-      !is ApplicationAware -> handleUnknownMessage(message)
-      else -> handleApplicationMessage(message)
-    }
+    val callback = handleMessage(message)
 
     if (callback != null) {
       if (isLearning(cap.learning)) {
@@ -90,12 +87,7 @@ class PriorityCapacityQueueInterceptor(
     return callback
   }
 
-  private fun handleUnknownMessage(message: Message): TrafficShapingInterceptorCallback? {
-    log.info("Global capacity at maximum limit: Throttling unknown message: $message")
-    return defaultThrottleCallback()
-  }
-
-  private fun handleApplicationMessage(message: ApplicationAware): TrafficShapingInterceptorCallback? {
+  private fun handleMessage(message: Message): TrafficShapingInterceptorCallback? {
     val priority: Priority
     try {
       priority = prioritizationStrategy.getPriority(message)
@@ -104,14 +96,17 @@ class PriorityCapacityQueueInterceptor(
       return null
     }
 
-    // TODO rz - configuration of throttle chances
-    return when (priority) {
+    return getCallbackFromPriority(priority)
+  }
+
+  // TODO rz - configuration of throttle chances
+  private fun getCallbackFromPriority(priority: Priority): TrafficShapingInterceptorCallback?
+    = when (priority) {
       Priority.CRITICAL -> null
       Priority.HIGH -> if (r.nextInt(4) == 0) defaultThrottleCallback() else null
       Priority.MEDIUM -> if (r.nextInt(1) == 0) defaultThrottleCallback() else null
       Priority.LOW -> defaultThrottleCallback()
     }
-  }
 
   private fun defaultThrottleCallback(): TrafficShapingInterceptorCallback = { queue, msg, ack ->
     queue.push(msg, Duration.of(properties.durationMs, ChronoUnit.MILLIS))
