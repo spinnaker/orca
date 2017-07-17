@@ -13,65 +13,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.pipelinetemplate.tasks;
+package com.netflix.spinnaker.orca.front50.tasks;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.front50.PipelineModelMutator;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-public class CreatePipelineTemplateTask implements RetryableTask, SavePipelineTemplateTask {
+public class SavePipelineTask implements RetryableTask {
 
   @Autowired(required = false)
   private Front50Service front50Service;
 
-  @Autowired
-  private ObjectMapper pipelineTemplateObjectMapper;
+  @Autowired(required = false)
+  private List<PipelineModelMutator> pipelineModelMutators = new ArrayList<>();
 
   @SuppressWarnings("unchecked")
   @Override
   public TaskResult execute(Stage stage) {
     if (front50Service == null) {
-      throw new UnsupportedOperationException("Front50 is not enabled, no way to fetch pager duty. Fix this by setting front50.enabled: true");
+      throw new UnsupportedOperationException("Front50 is not enabled, no way to save pipeline. Fix this by setting front50.enabled: true");
     }
 
-    if (!stage.getContext().containsKey("pipelineTemplate")) {
-      throw new IllegalArgumentException("Missing required task parameter (pipelineTemplate)");
+    if (!stage.getContext().containsKey("pipeline")) {
+      throw new IllegalArgumentException("pipeline context must be provided");
     }
 
-    PipelineTemplate pipelineTemplate;
-    try {
-      pipelineTemplate = pipelineTemplateObjectMapper.convertValue(stage.getContext().get("pipelineTemplate"), PipelineTemplate.class);
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Pipeline template task parameter is not valid", e);
-    }
+    Map<String, Object> pipeline = (Map<String, Object>) stage.getContext().get("pipeline");
+    pipelineModelMutators.stream().filter(m -> m.supports(pipeline)).forEach(m -> m.mutate(pipeline));
 
-    validate(pipelineTemplate);
+    Response response = front50Service.savePipeline(pipeline);
 
-    Response response = front50Service.savePipelineTemplate((Map<String, Object>) stage.getContext().get("pipelineTemplate"));
-
-    // TODO rz - app & account context?
     Map<String, Object> outputs = new HashMap<>();
-    outputs.put("notification.type", "createpipelinetemplate");
-    outputs.put("pipelineTemplate.id", pipelineTemplate.getId());
+    outputs.put("notification.type", "savepipeline");
+    outputs.put("application", pipeline.get("application"));
+    outputs.put("pipeline.name", pipeline.get("name"));
 
-    if (response.getStatus() == HttpStatus.OK.value()) {
-      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs);
-    }
-
-    return new TaskResult(ExecutionStatus.TERMINAL, outputs);
+    return new TaskResult(
+      (response.getStatus() == HttpStatus.OK.value()) ? ExecutionStatus.SUCCEEDED : ExecutionStatus.TERMINAL,
+      outputs
+    );
   }
 
   @Override

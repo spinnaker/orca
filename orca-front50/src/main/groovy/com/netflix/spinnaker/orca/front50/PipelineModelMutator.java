@@ -13,21 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.pipelinetemplate.exceptions;
+package com.netflix.spinnaker.orca.front50;
 
-import java.util.List;
 import java.util.Map;
 
-public class InvalidPipelineTemplateException extends RuntimeException {
+/**
+ * Allows mutating a pipeline model during a create or update pipeline task operation.
+ */
+public interface PipelineModelMutator {
 
-  private List<Map<String, Object>> errors;
+  boolean supports(Map<String, Object> pipeline);
 
-  public InvalidPipelineTemplateException(String message, List<Map<String, Object>> errors) {
-    super(message);
-    this.errors = errors;
-  }
-
-  public List<Map<String, Object>> getErrors() {
-    return errors;
-  }
+  void mutate(Map<String, Object> pipeline);
 }

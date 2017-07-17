@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.config
+package com.netflix.spinnaker.orca.q
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import java.util.concurrent.Executor
 
-@ConfigurationProperties("queue.redis")
-class RedisQueueProperties {
-  var queueName: String = "orca.task.queue"
-  var deadLetterQueueName: String = "orca.task.deadLetterQueue"
-  var ackTimeoutSeconds: Int = 60
+interface QueueExecutor {
+  val executor: Executor
+  fun hasCapacity(): Boolean
 }

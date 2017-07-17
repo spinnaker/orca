@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.zombie.ZombiePipelineCleanupAgent
@@ -44,6 +43,8 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.access.prepost.PreFilter
 import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
+
+import static com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v2
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3
 import static java.time.ZoneOffset.UTC
@@ -149,6 +150,7 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancelTask(@PathVariable String id) {
     executionRepository.cancel(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"), null)
+    executionRepository.updateStatus(id, ExecutionStatus.CANCELED)
   }
 
   @PreFilter("hasPermission(this.getOrchestration(filterObject)?.application, 'APPLICATION', 'WRITE')")
@@ -157,6 +159,7 @@ class TaskController {
   void cancelTasks(@RequestBody List<String> taskIds) {
     taskIds.each {
       executionRepository.cancel(it, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"), null)
+      executionRepository.updateStatus(it, ExecutionStatus.CANCELED)
     }
   }
 
@@ -219,6 +222,7 @@ class TaskController {
         })
       }
     }
+    executionRepository.updateStatus(id, ExecutionStatus.CANCELED)
   }
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
@@ -420,14 +424,7 @@ class TaskController {
     )
   }
 
-  @ResponseStatus(HttpStatus.NOT_FOUND)
-  @ExceptionHandler(ExecutionNotFoundException)
-  void notFound() {}
-
   @InheritConstructors
-  private static class FeatureNotEnabledException extends RuntimeException {}
-
   @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
-  @ExceptionHandler(FeatureNotEnabledException)
-  void featureNotEnabled() {}
+  private static class FeatureNotEnabledException extends RuntimeException {}
 }

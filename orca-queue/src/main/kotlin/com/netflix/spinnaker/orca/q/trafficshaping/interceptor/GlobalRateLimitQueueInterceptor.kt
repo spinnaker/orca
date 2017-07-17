@@ -56,7 +56,8 @@ class GlobalRateLimitQueueInterceptor(
         RateLimitContext(
           getName(),
           properties.capacity,
-          !properties.learning
+          !properties.learning,
+          properties.durationMs
         )
       )
     } catch (e: Exception) {
@@ -79,7 +80,6 @@ class GlobalRateLimitQueueInterceptor(
         }
       }
       registry.counter(throttledMessagesId.withTag("learning", "true")).increment()
-      log.info("Would have throttled message, but learning-mode enabled: $message")
     }
 
     return null

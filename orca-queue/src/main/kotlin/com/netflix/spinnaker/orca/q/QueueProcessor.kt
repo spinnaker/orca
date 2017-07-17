@@ -21,10 +21,9 @@ import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.util.concurrent.Executor
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.PostConstruct
 
@@ -32,7 +31,7 @@ import javax.annotation.PostConstruct
 open class QueueProcessor
 @Autowired constructor(
   private val queue: Queue,
-  @Qualifier("messageHandlerPool") private val executor: Executor,
+  private val queueExecutor: QueueExecutor,
   private val registry: Registry,
   private val handlers: Collection<MessageHandler<*>>
 ) : DiscoveryActivated {
@@ -42,25 +41,36 @@ open class QueueProcessor
 
   private val pollOpsRateId = registry.createId("orca.nu.worker.pollOpsRate")
   private val pollErrorRateId = registry.createId("orca.nu.worker.pollErrorRate")
+  private val pollSkippedNoCapacity = registry.createId("orca.nu.worker.pollSkippedNoCapacity")
+  private val pollRejectedMessage = registry.createId("orca.nu.worker.pollRejectedMessage")
 
   @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:10}")
   fun pollOnce() =
     ifEnabled {
-      registry.counter(pollOpsRateId).increment()
+      if (!queueExecutor.hasCapacity()) {
+        registry.counter(pollSkippedNoCapacity).increment()
+      } else {
+        registry.counter(pollOpsRateId).increment()
+        queue.poll { message, ack ->
+          log.info("Received message $message")
+          val handler = handlerFor(message)
+          if (handler != null) {
+            try {
+              queueExecutor.executor.execute {
+                handler.invoke(message)
+                ack.invoke()
+              }
+            } catch (e: RejectedExecutionException) {
+              log.warn("Executor at capacity, immediately re-queuing message", e)
+              queue.push(message)
+              registry.counter(pollRejectedMessage).increment()
+            }
+          } else {
+            registry.counter(pollErrorRateId).increment()
 
-      queue.poll { message, ack ->
-        log.info("Received message $message")
-        val handler = handlerFor(message)
-        if (handler != null) {
-          executor.execute {
-            handler.invoke(message)
-            ack.invoke()
+            // TODO: DLQ
+            throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}: $message")
           }
-        } else {
-          registry.counter(pollErrorRateId).increment()
-
-          // TODO: DLQ
-          throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}")
         }
       }
     }

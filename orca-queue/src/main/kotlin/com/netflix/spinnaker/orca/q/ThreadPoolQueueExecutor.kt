@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.config
+package com.netflix.spinnaker.orca.q
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import org.springframework.stereotype.Component
 
-@ConfigurationProperties("queue.redis")
-class RedisQueueProperties {
-  var queueName: String = "orca.task.queue"
-  var deadLetterQueueName: String = "orca.task.deadLetterQueue"
-  var ackTimeoutSeconds: Int = 60
+@Component
+open class ThreadPoolQueueExecutor
+@Autowired constructor(
+  @Qualifier("messageHandlerPool") override val executor: ThreadPoolTaskExecutor) : QueueExecutor {
+  override fun hasCapacity(): Boolean = executor.threadPoolExecutor.activeCount < executor.threadPoolExecutor.maximumPoolSize
 }
+

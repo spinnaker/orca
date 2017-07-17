@@ -34,7 +34,7 @@ import org.springframework.context.event.SimpleApplicationEventMulticaster
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Clock
-import java.util.concurrent.Executor
+import java.util.concurrent.ThreadPoolExecutor
 
 @Configuration
 @ComponentScan(basePackages = arrayOf("com.netflix.spinnaker.orca.q", "com.netflix.spinnaker.orca.log", "com.netflix.spinnaker.orca.q.trafficshaping"))
@@ -55,12 +55,13 @@ open class QueueConfiguration {
   open fun executionLogRepository(): ExecutionLogRepository = BlackholeExecutionLogRepository()
 
   @Bean
-  open fun messageHandlerPool(registry: Registry): Executor =
+  open fun messageHandlerPool(registry: Registry): ThreadPoolTaskExecutor =
     applyThreadPoolMetrics(
       registry,
       ThreadPoolTaskExecutor().apply {
         corePoolSize = 20
-        maxPoolSize = 150
+        maxPoolSize = 20
+        setQueueCapacity(0)
       },
       "messageHandler"
     )
