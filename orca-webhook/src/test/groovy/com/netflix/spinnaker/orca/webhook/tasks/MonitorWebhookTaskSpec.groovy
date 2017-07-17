@@ -90,7 +90,7 @@ class MonitorWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.RUNNING
-    result.stageOutputs == [buildInfo: [status:"RUNNING"]]
+    result.stageOutputs == [buildInfo: [responseBody: [status:"RUNNING"]]]
   }
 
   def "should find correct element using statusJsonPath parameter"() {
@@ -112,7 +112,7 @@ class MonitorWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.TERMINAL
-    result.stageOutputs == [buildInfo: [status: "TERMINAL"]]
+    result.stageOutputs == [buildInfo: [responseBody: [status: "TERMINAL"]]]
   }
 
   def "should return percentComplete if supported by endpoint"() {
@@ -135,7 +135,7 @@ class MonitorWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.RUNNING
-    result.stageOutputs == [percentComplete: 42, buildInfo: [status: 42]]
+    result.stageOutputs == [percentComplete: 42, buildInfo: [responseBody: [status: 42]]]
   }
 
   def "100 percent complete should result in SUCCEEDED status"() {
@@ -157,7 +157,7 @@ class MonitorWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.stageOutputs == [percentComplete: 100, buildInfo: [status: 100]]
+    result.stageOutputs == [percentComplete: 100, buildInfo: [responseBody: [status: 100]]]
   }
 
   def "should return TERMINAL status if jsonPath can not be found"() {

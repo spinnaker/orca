@@ -130,7 +130,7 @@ class CreateWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.TERMINAL
-    result.stageOutputs as Map == [statusCode: HttpStatus.BAD_REQUEST, buildInfo: [error: "Oh noes, you can't do this"], error: "The request did not return a 2xx/3xx status"]
+    result.stageOutputs as Map == [statusCode: HttpStatus.BAD_REQUEST, buildInfo: [responseBody: [error: "Oh noes, you can't do this"]], error: "The request did not return a 2xx/3xx status"]
   }
 
   def "if statusUrlResolution is getMethod, should return SUCCEEDED status"() {
@@ -150,7 +150,7 @@ class CreateWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.stageOutputs as Map == [statusCode: HttpStatus.CREATED, buildInfo: [success: true], statusEndpoint: "https://my-service.io/api/"]
+    result.stageOutputs as Map == [statusCode: HttpStatus.CREATED, buildInfo: [responseBody: [success: true]], statusEndpoint: "https://my-service.io/api/"]
     stage.context.statusEndpoint == "https://my-service.io/api/"
   }
 
@@ -173,7 +173,7 @@ class CreateWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.stageOutputs as Map == [statusCode: HttpStatus.CREATED, buildInfo: [success: true], statusEndpoint: "https://my-service.io/api/status/123"]
+    result.stageOutputs as Map == [statusCode: HttpStatus.CREATED, buildInfo: [responseBody: [success: true]], statusEndpoint: "https://my-service.io/api/status/123"]
     stage.context.statusEndpoint == "https://my-service.io/api/status/123"
   }
 
@@ -197,7 +197,7 @@ class CreateWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.stageOutputs as Map == [statusCode: HttpStatus.CREATED, buildInfo: body, statusEndpoint: "https://my-service.io/api/status/123"]
+    result.stageOutputs as Map == [statusCode: HttpStatus.CREATED, buildInfo: [responseBody: body], statusEndpoint: "https://my-service.io/api/status/123"]
     stage.context.statusEndpoint == "https://my-service.io/api/status/123"
   }
 
@@ -229,7 +229,7 @@ class CreateWebhookTaskSpec extends Specification {
     result.status == ExecutionStatus.TERMINAL
     result.stageOutputs as Map == [
       statusCode: HttpStatus.CREATED,
-      buildInfo: body,
+      buildInfo: [responseBody: body],
       error: "The status URL couldn't be resolved, but 'Wait for completion' was checked",
       statusUrlValue: ["this", "is", "a", "list"]
     ]

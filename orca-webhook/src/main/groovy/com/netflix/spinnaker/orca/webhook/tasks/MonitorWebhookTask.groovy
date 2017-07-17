@@ -77,7 +77,7 @@ class MonitorWebhookTask implements Task {
         [error: [reason: "The json path '${statusJsonPath}' did not resolve to a single value", value: result]])
     }
 
-    def responsePayload = [buildInfo: response.body]
+    def responsePayload = [buildInfo: [responseBody: response.body]]
 
     if (progressJsonPath) {
       def progress
