@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.pipeline.BranchingStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph
@@ -171,7 +171,6 @@ private fun StageDefinitionBuilder.buildParallelStages(stage: Stage<out Executio
         }
       }
     stage.setName(parallelStageName(stage, parallelContexts.size > 1))
-    stage.setInitializationStage(true)
   }
 }
 

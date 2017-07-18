@@ -3,7 +3,6 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -94,11 +93,6 @@ public class Stage<T extends Execution<T>> implements Serializable {
   private Map<String, Object> context = new HashMap<>();
 
   /**
-   * Returns a flag indicating if the stage is a parallel initialization stage
-   */
-  private boolean initializationStage = false;
-
-  /**
    * Returns the tasks that are associated with this stage. Tasks are the most granular unit of work in a stage.
    * Because tasks can be dynamically composed, this list is open updated during a stage's execution.
    *
@@ -143,9 +137,6 @@ public class Stage<T extends Execution<T>> implements Serializable {
     result = 31 * result + id.hashCode();
     return result;
   }
-
-  @JsonIgnore
-  private final AtomicInteger stageCounter = new AtomicInteger(0);
 
   public Task taskById(String taskId) {
     return tasks
