@@ -28,6 +28,8 @@ import org.springframework.batch.core.scope.context.ChunkContext
 @Slf4j
 @Canonical
 class ExecutionContextManager {
+  static Map<String, DelegatingHashMap> prevContext = [:]
+
   static <T extends Execution> Stage<T> retrieve(Stage<T> stage, ChunkContext chunkContext, ContextParameterProcessor contextParameterProcessor) {
     Map<String, Object> processed = processEntries(stage.context, stage, chunkContext, contextParameterProcessor)
     stage.context = new DelegatingHashMap(processed ?: [:], chunkContext, stage, contextParameterProcessor)

@@ -63,6 +63,15 @@ class KubernetesContainerFinder {
 
     containers.forEach { container ->
       if (container.imageDescription.fromContext) {
+	//  If there are parallel Find images stages , then deploymentDetails would be fetched from it. 
+	// e.g.  parallelContext = [stageid:[deployDetails],stageId2:[deployDetails]]
+	def paraContext = (stage.parallelContext ? stage.parallelContext.find {it.key == container.imageDescription.stageId}?.value : null)
+
+	if (paraContext) {
+           stage.context.deploymentDetails = paraContext.deploymentDetails
+           deploymentDetails = (paraContext.deploymentDetails ?: []) as List<Map>
+        }
+
         def image = deploymentDetails.find {
           // stageId is used here to match the source of the image to the find image stage specified by the user.
           // Previously, this was done by matching the pattern used to the pattern selected in the deploy stage, but

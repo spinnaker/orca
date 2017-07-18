@@ -47,6 +47,15 @@ public class Stage<T extends Execution<T>> implements Serializable {
     this(execution, type, null, context);
   }
 
+  @SuppressWarnings("unchecked")
+  public Stage(T execution, String type, String name, Map<String, Object> context, Map<String,  Map<String, Object>> parallelContext) {
+    this.execution = execution;
+    this.type = type;
+    this.name = name;
+    this.parallelContext = parallelContext;
+    this.context = context;
+  }
+
   public Stage(T execution, String type) {
     this(execution, type, emptyMap());
   }
@@ -92,6 +101,11 @@ public class Stage<T extends Execution<T>> implements Serializable {
    * The context driving this stage. Provides inputs necessary to component steps
    */
   private Map<String, Object> context = new HashMap<>();
+ 
+  /**
+   *  The context used for parallel executon of Find images and Delpoy stage
+   */
+  private Map<String , Map<String, Object>> parallelContext= new HashMap<>();
 
   /**
    * Returns a flag indicating if the stage is a parallel initialization stage

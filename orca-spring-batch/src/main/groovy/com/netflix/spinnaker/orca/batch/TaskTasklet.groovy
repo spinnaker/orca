@@ -93,6 +93,11 @@ class TaskTasklet implements Tasklet {
         // fetch the current stage (w/ global context merged in)
         stage = currentStage(chunkContext, true)
 
+        if (stage.type == "deploy" && ExecutionContextManager.prevContext) {
+            //Copy the previous context saved in Findimages into this stage i.e deploy
+            ExecutionContextManager.prevContext.each { stage.parallelContext.putAt(it.key , it.value) }
+        }
+
         def result = executeTask(stage, chunkContext)
         result = applyStageStatusOverrides(stage, result)
 
@@ -120,6 +125,13 @@ class TaskTasklet implements Tasklet {
         }
 
         storeExecutionResults(new TaskResult(result.status, stageOutputs, result.globalOutputs), stage, chunkContext)
+        
+	// Save the parallel context into stage parallelContext when stage is findImage 
+         if (stage.type == "findImage") {
+           ExecutionContextManager.prevContext[stage.refId] =  new ExecutionContextManager.DelegatingHashMap(chunkContext.stepContext.jobExecutionContext , chunkContext,                                        						                                                  stage , contextParameterProcessor) 
+           ExecutionContextManager.prevContext.each { stage.parallelContext.putAt(it.key , it.value) }
+        }
+
 
         return taskToBatchStatus(contribution, chunkContext, result.status)
       }
