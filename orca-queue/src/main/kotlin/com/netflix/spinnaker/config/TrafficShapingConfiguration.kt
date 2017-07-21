@@ -19,10 +19,7 @@ import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.trafficshaping.NoopTrafficShapingInterceptor
 import com.netflix.spinnaker.orca.q.trafficshaping.TrafficShapingInterceptor
-import com.netflix.spinnaker.orca.q.trafficshaping.capacity.ConstantPrioritizationStrategy
-import com.netflix.spinnaker.orca.q.trafficshaping.capacity.PrioritizationStrategy
-import com.netflix.spinnaker.orca.q.trafficshaping.capacity.PriorityCapacityListener
-import com.netflix.spinnaker.orca.q.trafficshaping.capacity.PriorityCapacityRepository
+import com.netflix.spinnaker.orca.q.trafficshaping.capacity.*
 import com.netflix.spinnaker.orca.q.trafficshaping.interceptor.ApplicationRateLimitQueueInterceptor
 import com.netflix.spinnaker.orca.q.trafficshaping.interceptor.GlobalRateLimitQueueInterceptor
 import com.netflix.spinnaker.orca.q.trafficshaping.interceptor.PriorityCapacityQueueInterceptor
@@ -71,7 +68,7 @@ open class TrafficShapingConfiguration {
   @Bean
   @ConditionalOnMissingBean(PrioritizationStrategy::class)
   @ConditionalOnProperty("queue.trafficShaping.priorityCapacity.enabled")
-  open fun constantPrioritizationStrategy() = ConstantPrioritizationStrategy()
+  open fun defaultPrioritizationStrategy() = TransitionalPrioritizationStrategy()
 
   @Bean @ConditionalOnProperty("queue.trafficShaping.priorityCapacity.enabled")
   open fun priorityCapacityListener(priorityCapacityRepository: PriorityCapacityRepository,

@@ -17,13 +17,14 @@ package com.netflix.spinnaker.orca.q.trafficshaping.capacity
 
 import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.q.ApplicationAware
+import com.netflix.spinnaker.orca.q.Message
 
 interface PrioritizationStrategy {
   fun getPriority(execution: ExecutionEvent): Priority
-  fun getPriority(message: ApplicationAware): Priority
+  fun getPriority(message: Message): Priority
 }
 
 class ConstantPrioritizationStrategy : PrioritizationStrategy {
   override fun getPriority(execution: ExecutionEvent) = Priority.MEDIUM
-  override fun getPriority(message: ApplicationAware) = Priority.MEDIUM
+  override fun getPriority(message: Message) = Priority.MEDIUM
 }
