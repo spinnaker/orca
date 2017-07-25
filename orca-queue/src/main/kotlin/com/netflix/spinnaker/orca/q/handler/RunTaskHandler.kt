@@ -66,6 +66,12 @@ open class RunTaskHandler
         if (stage.getContext()["markSuccessfulOnTimeout"] == true) {
           queue.push(CompleteTask(message, SUCCEEDED))
         } else {
+          when (task) {
+            is RetryableTask -> {
+              val totalDuration = task.totalDuration(stage, taskModel)
+              stage.getContext().put("exception", hashMapOf("details" to ExceptionHandler.responseDetails("Task timed out after ${totalDuration.seconds} seconds")))
+            }
+          }
           queue.push(CompleteTask(message, stage.failureStatus()))
         }
       } else {
@@ -149,10 +155,9 @@ open class RunTaskHandler
   private fun Task.isTimedOut(stage: Stage<*>, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task): Boolean =
     when (this) {
       is RetryableTask -> {
-        val startTime = taskModel.startTime.toInstant()
-        val pausedDuration = stage.getExecution().pausedDurationRelativeTo(startTime)
-        if (Duration.between(startTime, clock.instant()).minus(pausedDuration) > timeoutDuration(stage)) {
-          log.warn("${javaClass.simpleName} of stage ${stage.getName()} timed out after ${Duration.between(startTime, clock.instant())}")
+        val totalDuration = totalDuration(stage, taskModel)
+        if (totalDuration > timeoutDuration(stage)) {
+          log.warn("${javaClass.simpleName} of stage ${stage.getName()} timed out after ${totalDuration.seconds} seconds")
           true
         } else {
           false
@@ -160,6 +165,12 @@ open class RunTaskHandler
       }
       else -> false
     }
+
+  private fun RetryableTask.totalDuration(stage: Stage<*>, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task): Duration {
+    val startTime = taskModel.startTime.toInstant()
+    val pausedDuration = stage.getExecution().pausedDurationRelativeTo(startTime)
+    return Duration.between(startTime, clock.instant()).minus(pausedDuration)
+  }
 
   private fun RetryableTask.timeoutDuration(stage: Stage<*>): Duration {
     val durationOverride = (stage.getContext()["stageTimeoutMs"] as Number?)?.toInt()
