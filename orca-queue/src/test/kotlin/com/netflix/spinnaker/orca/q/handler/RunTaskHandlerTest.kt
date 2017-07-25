@@ -36,11 +36,12 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
+import org.junit.Assert
 import org.threeten.extra.Minutes
 import java.lang.RuntimeException
 import java.time.Duration
 
-object RunTaskHandlerSpec : SubjectSpek<RunTaskHandler>({
+object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
@@ -501,6 +502,10 @@ object RunTaskHandlerSpec : SubjectSpek<RunTaskHandler>({
 
         it("does not execute the task") {
           verify(task, never()).execute(any())
+        }
+
+        it("adds an error message to the context") {
+          Assert.assertEquals(pipeline.stages[0].context["exception"], hashMapOf("details" to ExceptionHandler.responseDetails("Task timed out after 300 seconds")))
         }
       }
 
