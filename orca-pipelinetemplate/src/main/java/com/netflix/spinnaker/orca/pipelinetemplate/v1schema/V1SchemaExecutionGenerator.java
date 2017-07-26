@@ -30,12 +30,15 @@ import java.util.stream.Collectors;
 public class V1SchemaExecutionGenerator implements ExecutionGenerator {
 
   @Override
-  public Map<String, Object> generate(PipelineTemplate template, TemplateConfiguration configuration) {
+  public Map<String, Object> generate(PipelineTemplate template, TemplateConfiguration configuration, String id) {
     Map<String, Object> pipeline = new HashMap<>();
-    pipeline.put("id", Optional.ofNullable(configuration.getPipeline().getPipelineConfigId()).orElse(configuration.getRuntimeId()));
+    pipeline.put("id", Optional.ofNullable(id).orElse(Optional.ofNullable(configuration.getPipeline().getPipelineConfigId()).orElse("unknown")));
     pipeline.put("application", configuration.getPipeline().getApplication());
     pipeline.put("name", Optional.ofNullable(configuration.getPipeline().getName()).orElse("Unnamed Execution"));
-    pipeline.put("executionEngine", configuration.getPipeline().getExecutionEngine());
+
+    if (configuration.getPipeline().getExecutionEngine() != null) {
+      pipeline.put("executionEngine", configuration.getPipeline().getExecutionEngine());
+    }
 
     // TODO rz - Ehhhh
     Configuration c = template.getConfiguration();

@@ -17,9 +17,10 @@
 package com.netflix.spinnaker.orca.controllers
 
 import java.time.Clock
-import com.netflix.spinnaker.orca.ActiveExecutionTracker
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.log.ExecutionLogEntry
+import com.netflix.spinnaker.orca.log.ExecutionLogRepository
 import com.netflix.spinnaker.orca.model.OrchestrationViewModel
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.PipelineStartTracker
@@ -27,10 +28,10 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.zombie.ZombiePipelineCleanupAgent
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
+import groovy.transform.InheritConstructors
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
@@ -59,11 +60,11 @@ class TaskController {
   @Autowired
   Collection<StageDefinitionBuilder> stageBuilders
 
-  @Autowired
-  Optional<ZombiePipelineCleanupAgent> zombiePipelineCleanupAgent
+  @Autowired(required = false)
+  ExecutionLogRepository executionLogRepository
 
   @Autowired
-  ActiveExecutionTracker activeExecutionTracker
+  ContextParameterProcessor contextParameterProcessor
 
   @Value('${tasks.daysOfExecutionHistory:14}')
   int daysOfExecutionHistory
@@ -137,6 +138,7 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancelTask(@PathVariable String id) {
     executionRepository.cancel(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"), null)
+    executionRepository.updateStatus(id, ExecutionStatus.CANCELED)
   }
 
   @PreFilter("hasPermission(this.getOrchestration(filterObject)?.application, 'APPLICATION', 'WRITE')")
@@ -145,16 +147,19 @@ class TaskController {
   void cancelTasks(@RequestBody List<String> taskIds) {
     taskIds.each {
       executionRepository.cancel(it, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"), null)
+      executionRepository.updateStatus(it, ExecutionStatus.CANCELED)
     }
   }
 
   @RequestMapping(value = "/pipelines", method = RequestMethod.GET)
   List<Pipeline> listLatestPipelines(
     @RequestParam(value = "pipelineConfigIds") String pipelineConfigIds,
+    @RequestParam(value = "limit", required = false) Integer limit,
     @RequestParam(value = "statuses", required = false) String statuses) {
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
+    limit = limit ?: 1
     def executionCriteria = new ExecutionRepository.ExecutionCriteria(
-      limit: 1,
+      limit: limit,
       statuses: (statuses.split(",") as Collection)
     )
 
@@ -179,13 +184,28 @@ class TaskController {
     executionRepository.deletePipeline(id)
   }
 
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'READ')")
+  @RequestMapping(value = "/pipelines/{id}/logs", method = RequestMethod.GET)
+  List<ExecutionLogEntry> logs(@PathVariable String id) {
+    if (executionLogRepository == null) {
+      throw new FeatureNotEnabledException("Execution log not enabled")
+    }
+    return executionLogRepository.getAllByExecutionId(id)
+  }
+
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/pipelines/{id}/cancel", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancel(@PathVariable String id, @RequestParam(required = false) String reason,
               @RequestParam(defaultValue = "false") boolean force) {
-    executionRepository.cancel(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"), reason)
-    zombiePipelineCleanupAgent.ifPresent({ it.slayIfZombie(executionRepository.retrievePipeline(id), force) })
+    executionRepository.retrievePipeline(id).with { pipeline ->
+      executionRunner.cancel(
+        pipeline,
+        AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
+        reason
+      )
+    }
+    executionRepository.updateStatus(id, ExecutionStatus.CANCELED)
   }
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
@@ -200,6 +220,8 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void resume(@PathVariable String id) {
     executionRepository.resume(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"))
+    def pipeline = executionRepository.retrievePipeline(id)
+    executionRunner.unpause(pipeline)
   }
 
   @PreAuthorize("@fiatPermissionEvaluator.storeWholePermission()")
@@ -245,14 +267,24 @@ class TaskController {
   Pipeline retryPipelineStage(
     @PathVariable String id, @PathVariable String stageId) {
     def pipeline = executionRepository.retrievePipeline(id)
-    def stage = pipeline.stages.find { it.id == stageId }
-    if (stage) {
-      def stageBuilder = stageBuilders.find { it.type == stage.type }
-      stage = stageBuilder.prepareStageForRestart(executionRepository, stage, stageBuilders)
-      executionRepository.storeStage(stage)
-      executionRunner.resume(pipeline)
+    executionRunner.restart(pipeline, stageId)
+    if (pipeline.pipelineConfigId) {
+      startTracker.addToStarted(pipeline.pipelineConfigId, pipeline.id)
     }
     pipeline
+  }
+
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'READ')")
+  @RequestMapping(value = "/pipelines/{id}/evaluateExpression", method = RequestMethod.GET)
+  Map evaluateExpressionForExecution(@PathVariable("id") String id,
+                                     @RequestParam("expression") String expression){
+    def execution = executionRepository.retrievePipeline(id)
+    def evaluated = contextParameterProcessor.process(
+      [expression: expression],
+      [execution: execution],
+      false
+    )
+    return [result: evaluated?.expression]
   }
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
@@ -291,19 +323,6 @@ class TaskController {
     }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
 
     return filterPipelinesByHistoryCutoff(allPipelines)
-  }
-
-  @RequestMapping(value = "/executions/activeByInstance", method = RequestMethod.GET)
-  Map<String, ActiveExecutionTracker.OrcaInstance> activeExecutionsByInstance() {
-    activeExecutionTracker
-      .activeExecutionsByInstance()
-      .sort { a, b ->
-        def result = b.value.overdue <=> a.value.overdue
-        if (result != 0) {
-          return result
-        }
-        b.value.count <=> a.value.count
-      }
   }
 
   private List<Pipeline> filterPipelinesByHistoryCutoff(List<Pipeline> pipelines) {
@@ -363,7 +382,7 @@ class TaskController {
     )
   }
 
-  @ResponseStatus(HttpStatus.NOT_FOUND)
-  @ExceptionHandler(ExecutionNotFoundException)
-  void notFound() {}
+  @InheritConstructors
+  @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
+  private static class FeatureNotEnabledException extends RuntimeException {}
 }

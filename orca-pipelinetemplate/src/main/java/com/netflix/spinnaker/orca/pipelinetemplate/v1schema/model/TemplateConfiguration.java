@@ -15,8 +15,10 @@
  */
 package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.netflix.spinnaker.orca.pipelinetemplate.validator.VersionedSchema;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,14 +26,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TemplateConfiguration implements VersionedSchema {
 
   private String schema;
-  private String id;
   private PipelineDefinition pipeline;
   private PipelineConfiguration configuration = new PipelineConfiguration();
   private List<StageDefinition> stages;
   private List<TemplateModule> modules;
+  private List<PartialDefinition> partials = new ArrayList<>();
 
   private final String runtimeId = UUID.randomUUID().toString();
 
@@ -39,7 +42,7 @@ public class TemplateConfiguration implements VersionedSchema {
 
     private String application;
     private String pipelineConfigId;
-    private String executionEngine = "v2";
+    private String executionEngine;
     private String name;
     private TemplateSource template;
     private Map<String, Object> variables = new HashMap<>();
@@ -104,11 +107,11 @@ public class TemplateConfiguration implements VersionedSchema {
 
   public static class PipelineConfiguration {
 
-    private List<String> inherit;
-    private Map<String, Object> concurrentExecutions;
-    private List<NamedHashMap> triggers;
-    private List<NamedHashMap> parameters;
-    private List<NamedHashMap> notifications;
+    private List<String> inherit = new ArrayList<>();
+    private Map<String, Object> concurrentExecutions = new HashMap<>();
+    private List<NamedHashMap> triggers = new ArrayList<>();
+    private List<NamedHashMap> parameters = new ArrayList<>();
+    private List<NamedHashMap> notifications = new ArrayList<>();
     private String description;
 
     public List<String> getInherit() {
@@ -177,14 +180,6 @@ public class TemplateConfiguration implements VersionedSchema {
     this.schema = schema;
   }
 
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
   public PipelineDefinition getPipeline() {
     return pipeline;
   }
@@ -215,5 +210,13 @@ public class TemplateConfiguration implements VersionedSchema {
 
   public void setModules(List<TemplateModule> modules) {
     this.modules = modules;
+  }
+
+  public List<PartialDefinition> getPartials() {
+    return partials;
+  }
+
+  public void setPartials(List<PartialDefinition> partials) {
+    this.partials = partials;
   }
 }

@@ -3,8 +3,8 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import javax.annotation.Nonnull;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,8 +17,6 @@ import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.codehaus.groovy.runtime.ReverseListIterator;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static java.lang.String.format;
@@ -27,6 +25,7 @@ import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
+@Data
 public class Stage<T extends Execution<T>> implements Serializable {
 
   public Stage() {}
@@ -39,7 +38,9 @@ public class Stage<T extends Execution<T>> implements Serializable {
     this.context.putAll(context);
 
     this.refId = (String) context.remove("refId");
-    this.requisiteStageRefIds = (Collection<String>) context.remove("requisiteStageRefIds");
+    this.requisiteStageRefIds = Optional
+      .ofNullable((Collection<String>) context.remove("requisiteStageRefIds"))
+      .orElse(emptySet());
   }
 
   public Stage(T execution, String type, Map<String, Object> context) {
@@ -53,59 +54,49 @@ public class Stage<T extends Execution<T>> implements Serializable {
   /**
    * A stage's unique identifier
    */
-  @Getter @Setter
   private String id = UUID.randomUUID().toString();
 
-  @Getter @Setter
   private String refId;
 
   /**
    * The type as it corresponds to the Mayo configuration
    */
-  @Getter @Setter
   private  String type;
 
   /**
    * The name of the stage. Can be different from type, but often will be the same.
    */
-  @Getter @Setter
   private String name;
+
+  @Nonnull
+  public String getName() {
+    return name != null ? name : type;
+  }
 
   /**
    * Gets the execution object for this stage
    */
-  @Getter @Setter
   @JsonBackReference private T execution;
 
   /**
    * Gets the start time for this stage. May return null if the stage has not been started.
    */
-  @Getter @Setter
   private Long startTime;
 
   /**
    * Gets the end time for this stage. May return null if the stage has not yet finished.
    */
-  @Getter @Setter
   private Long endTime;
 
   /**
    * The execution status for this stage
    */
-  @Getter @Setter
   private ExecutionStatus status = NOT_STARTED;
 
   /**
    * The context driving this stage. Provides inputs necessary to component steps
    */
-  @Getter @Setter
   private Map<String, Object> context = new HashMap<>();
-
-  /**
-   * Returns a flag indicating if the stage is a parallel initialization stage
-   */
-  @Getter @Setter
-  private boolean initializationStage = false;
 
   /**
    * Returns the tasks that are associated with this stage. Tasks are the most granular unit of work in a stage.
@@ -113,7 +104,6 @@ public class Stage<T extends Execution<T>> implements Serializable {
    *
    * @see StageTaskPropagationListener
    */
-  @Getter @Setter
   private List<Task> tasks = new ArrayList<>();
 
   /**
@@ -122,35 +112,50 @@ public class Stage<T extends Execution<T>> implements Serializable {
    * traverse the graph until the first non-synthetic stage is found. If this property is null, the stage is not
    * synthetic.
    */
-  @Getter @Setter
   private SyntheticStageOwner syntheticStageOwner;
 
   /**
    * This stage's parent stage.
    */
-  @Getter @Setter
   private String parentStageId;
 
-  @Getter @Setter
   private Collection<String> requisiteStageRefIds = new HashSet<>();
 
   /**
    * A date when this stage is scheduled to execute.
    */
-  @Getter @Setter
   private long scheduledTime;
 
-  @Getter @Setter
   private LastModifiedDetails lastModified;
 
-  @JsonIgnore
-  @Getter
-  private AtomicInteger stageCounter = new AtomicInteger(0);
+  @Override public final boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+
+    Stage<?> stage = (Stage<?>) o;
+
+    return id.equals(stage.id);
+  }
+
+  @Override public final int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + id.hashCode();
+    return result;
+  }
+
+  public Task taskById(String taskId) {
+    return tasks
+      .stream()
+      .filter(it -> it.getId().equals(taskId))
+      .findFirst()
+      .orElse(null);
+  }
 
   /**
    * Gets the last stage preceding this stage that has the specified type.
    */
-  public Stage preceding(String type) {
+  public Stage<T> preceding(String type) {
     int i = getExecution()
       .getStages()
       .indexOf(this);
@@ -164,8 +169,15 @@ public class Stage<T extends Execution<T>> implements Serializable {
       .orElse(null);
   }
 
+  public Collection<Stage<T>> children() {
+    return getExecution()
+      .getStages()
+      .stream()
+      .filter(it -> getId().equals(it.getParentStageId()))
+      .collect(toList());
+  }
+
   @JsonIgnore
-  @Setter
   private StageNavigator stageNavigator = null;
 
   /**
@@ -197,7 +209,7 @@ public class Stage<T extends Execution<T>> implements Serializable {
    * Maps the stage's context to a typed object at a provided pointer. Uses
    * <a href="https://tools.ietf.org/html/rfc6901">JSON Pointer</a> notation for determining the pointer's position
    */
-  <O> O mapTo(String pointer, Class<O> type) {
+  public <O> O mapTo(String pointer, Class<O> type) {
     try {
       return objectMapper.readValue(new TreeTraversingParser(getPointer(pointer != null ? pointer : "", contextToNode()), objectMapper), type);
     } catch (IOException e) {
@@ -310,11 +322,11 @@ public class Stage<T extends Execution<T>> implements Serializable {
    * @return `true` if this stage does not depend on any others to execute, i.e. it has no #requisiteStageRefIds or #parentStageId.
    */
   @JsonIgnore public boolean isInitialStage() {
-    return (getRequisiteStageRefIds() == null || getRequisiteStageRefIds().isEmpty()) && getParentStageId() == null;
+    return getRequisiteStageRefIds().isEmpty() && getParentStageId() == null;
   }
 
   @JsonIgnore public boolean isJoin() {
-    return getRequisiteStageRefIds() != null && getRequisiteStageRefIds().size() > 1;
+    return getRequisiteStageRefIds().size() > 1;
   }
 
   @JsonIgnore public List<Stage<T>> downstreamStages() {

@@ -16,6 +16,13 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.orca.webhook.config.PreconfiguredWebhookProperties
+import com.netflix.spinnaker.orca.webhook.service.WebhookService
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+
 import javax.servlet.http.HttpServletResponse
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
@@ -24,7 +31,6 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.InvalidPipelineTemplateException
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.json.JsonSlurper
 import org.apache.log4j.MDC
@@ -46,6 +52,7 @@ class OperationsControllerSpec extends Specification {
   def buildService = Stub(BuildService)
   def mapper = OrcaObjectMapper.newInstance()
   def executionRepository = Mock(ExecutionRepository)
+  def webhookService = Mock(WebhookService)
 
   def env = new MockEnvironment()
   def buildArtifactFilter = new BuildArtifactFilter(environment: env)
@@ -56,7 +63,9 @@ class OperationsControllerSpec extends Specification {
       buildService: buildService,
       buildArtifactFilter: buildArtifactFilter,
       executionRepository: executionRepository,
-      pipelineLauncher: pipelineLauncher
+      pipelineLauncher: pipelineLauncher,
+      contextParameterProcessor: new ContextParameterProcessor(),
+      webhookService: webhookService
     )
 
   @Unroll
@@ -506,7 +515,49 @@ class OperationsControllerSpec extends Specification {
     controller.orchestrate(pipelineConfig, response)
 
     then:
-    thrown(InvalidPipelineTemplateException)
+    thrown(InvalidRequestException)
     0 * pipelineLauncher.start(_)
+  }
+
+  def "should return empty list if webhook stage is not enabled"() {
+    given:
+    controller.webhookService = null
+
+    when:
+    def preconfiguredWebhooks = controller.preconfiguredWebhooks()
+
+    then:
+    0 * webhookService.preconfiguredWebhooks
+    preconfiguredWebhooks == []
+  }
+
+  def "should call webhookService and return correct information"() {
+    given:
+    def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "waitForCompletion", "statusUrlResolution",
+      "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+
+    when:
+    def preconfiguredWebhooks = controller.preconfiguredWebhooks()
+
+    then:
+    1 * webhookService.preconfiguredWebhooks >> [
+      createPreconfiguredWebhook("Webhook #1", "Description #1", "webhook_1"),
+      createPreconfiguredWebhook("Webhook #2", "Description #2", "webhook_2")
+    ]
+    preconfiguredWebhooks == [
+      [label: "Webhook #1", description: "Description #1", type: "webhook_1", waitForCompletion: true, preconfiguredProperties: preconfiguredProperties, noUserConfigurableFields: true],
+      [label: "Webhook #2", description: "Description #2", type: "webhook_2", waitForCompletion: true, preconfiguredProperties: preconfiguredProperties, noUserConfigurableFields: true]
+    ]
+  }
+
+  static PreconfiguredWebhookProperties.PreconfiguredWebhook createPreconfiguredWebhook(def label, def description, def type) {
+    def customHeaders = new HttpHeaders()
+    customHeaders.put("header", ["value1"])
+    return new PreconfiguredWebhookProperties.PreconfiguredWebhook(
+      label: label, description: description, type: type,
+      url: "a", customHeaders: customHeaders, method: HttpMethod.POST, payload: "b",
+      waitForCompletion: true, statusUrlResolution: PreconfiguredWebhookProperties.StatusUrlResolution.webhookResponse,
+      statusUrlJsonPath: "c", statusJsonPath: "d", progressJsonPath: "e", successStatuses: "f", canceledStatuses: "g", terminalStatuses: "h"
+    )
   }
 }

@@ -17,31 +17,36 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
-public class StageDefinition implements Identifiable, Conditional {
+public class StageDefinition implements Identifiable, Conditional, Cloneable {
 
   private String id;
   private String name;
   private InjectionRule inject;
-  private List<String> dependsOn;
+  private Set<String> dependsOn = new LinkedHashSet<>();
   private String type;
   private Map<String, Object> config;
-  private List<Map<String, Object>> notifications;
+  private List<Map<String, Object>> notifications = new ArrayList<>();
   private String comments;
-  private List<String> when;
+  private List<String> when = new ArrayList<>();
   private InheritanceControl inheritanceControl;
+  private Boolean removed = false;
 
-  private List<String> requisiteStageRefIds = new ArrayList<>();
+  private Set<String> requisiteStageRefIds = new LinkedHashSet<>();
 
-  public static class InjectionRule {
+  public static class InjectionRule implements Cloneable {
 
     private Boolean first = false;
     private Boolean last = false;
-    private String before;
-    private String after;
+    private List<String> before;
+    private List<String> after;
 
     public Boolean getFirst() {
       return first;
@@ -59,19 +64,19 @@ public class StageDefinition implements Identifiable, Conditional {
       this.last = last;
     }
 
-    public String getBefore() {
+    public List<String> getBefore() {
       return before;
     }
 
-    public void setBefore(String before) {
+    public void setBefore(List<String> before) {
       this.before = before;
     }
 
-    public String getAfter() {
+    public List<String> getAfter() {
       return after;
     }
 
-    public void setAfter(String after) {
+    public void setAfter(List<String> after) {
       this.after = after;
     }
 
@@ -95,9 +100,14 @@ public class StageDefinition implements Identifiable, Conditional {
       }
       return count > 1;
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      return super.clone();
+    }
   }
 
-  public static class InheritanceControl {
+  public static class InheritanceControl implements Cloneable {
 
     private Collection<Rule> merge;
     private Collection<Rule> replace;
@@ -147,6 +157,11 @@ public class StageDefinition implements Identifiable, Conditional {
     public void setRemove(Collection<Rule> remove) {
       this.remove = remove;
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      return super.clone();
+    }
   }
 
   @Override
@@ -174,11 +189,11 @@ public class StageDefinition implements Identifiable, Conditional {
     this.inject = inject;
   }
 
-  public List<String> getDependsOn() {
-    return Optional.ofNullable(dependsOn).orElse(new ArrayList<>());
+  public Set<String> getDependsOn() {
+    return dependsOn;
   }
 
-  public void setDependsOn(List<String> dependsOn) {
+  public void setDependsOn(Set<String> dependsOn) {
     this.dependsOn = dependsOn;
   }
 
@@ -218,6 +233,16 @@ public class StageDefinition implements Identifiable, Conditional {
     return when;
   }
 
+  @Override
+  public void setRemove() {
+    this.removed = true;
+  }
+
+  public Boolean getRemoved() {
+    return removed;
+  }
+
+
   public void setWhen(List<String> when) {
     this.when = when;
   }
@@ -230,12 +255,34 @@ public class StageDefinition implements Identifiable, Conditional {
     this.inheritanceControl = inheritanceControl;
   }
 
-  public List<String> getRequisiteStageRefIds() {
+  public Set<String> getRequisiteStageRefIds() {
     return requisiteStageRefIds;
   }
 
-  public void setRequisiteStageRefIds(List<String> requisiteStageRefIds) {
+  public void setRequisiteStageRefIds(Set<String> requisiteStageRefIds) {
     this.requisiteStageRefIds = requisiteStageRefIds;
+  }
+
+  public boolean isPartialType() {
+    return type != null && type.startsWith("partial.");
+  }
+
+  public String getPartialId() {
+    if (type == null) {
+      return null;
+    }
+    String[] bits = type.split("\\.");
+    return bits[bits.length - 1];
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    StageDefinition stage = (StageDefinition) super.clone();
+    stage.setDependsOn(new LinkedHashSet<>(getDependsOn()));
+    stage.setConfig(new HashMap<>(getConfig()));
+    Collections.copy(stage.getNotifications(), getNotifications());
+    Collections.copy(stage.getWhen(), getWhen());
+    return stage;
   }
 
   @Override

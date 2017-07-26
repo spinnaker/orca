@@ -27,21 +27,22 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3;
 import static java.lang.String.format;
 
 @Component
 public class OrchestrationLauncher extends ExecutionLauncher<Orchestration> {
 
-  private Clock clock;
+  private final Clock clock;
 
   @Autowired
   public OrchestrationLauncher(
     ObjectMapper objectMapper,
-    String currentInstanceId,
     ExecutionRepository executionRepository,
-    ExecutionRunner runner,
-    Clock clock) {
-    super(objectMapper, currentInstanceId, executionRepository, runner);
+    ExecutionRunner executionRunner,
+    Clock clock
+  ) {
+    super(objectMapper, executionRepository, executionRunner);
     this.clock = clock;
   }
 
@@ -58,10 +59,9 @@ public class OrchestrationLauncher extends ExecutionLauncher<Orchestration> {
     }
     if (config.containsKey("description")) {
       orchestration.setDescription(getString(config, "description"));
+      orchestration.setDescription(getString(config, "description"));
     }
-    if (config.containsKey("appConfig")) {
-      orchestration.getAppConfig().putAll(getMap(config, "appConfig"));
-    }
+    orchestration.setExecutionEngine(v3);
 
     for (Map<String, Object> context : getList(config, "stages")) {
       String type = context.remove("type").toString();
@@ -78,7 +78,6 @@ public class OrchestrationLauncher extends ExecutionLauncher<Orchestration> {
 
     orchestration.setBuildTime(clock.millis());
     orchestration.setAuthentication(AuthenticationDetails.build().orElse(new AuthenticationDetails()));
-    orchestration.setExecutingInstance(currentInstanceId);
 
     return orchestration;
   }

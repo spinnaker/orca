@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import groovy.transform.Immutable
-import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwareStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
@@ -29,8 +27,10 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
+import groovy.transform.Immutable
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.StageDefinitionBuilderSupport.newStage
+import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Slf4j
 abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareStage {
@@ -65,13 +65,13 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
       .withTask("determineSourceServerGroup", DetermineSourceServerGroupTask)
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
 
+    correctContext(stage)
     deployStagePreProcessors.findAll { it.supports(stage) }.each {
       it.additionalSteps().each {
         builder.withTask(it.name, it.taskClass)
       }
     }
 
-    correctContext(stage)
     Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
       it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
     })

@@ -16,10 +16,16 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.rollingpush;
 
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.frigga.Names;
+import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.DefaultTaskResult;
-import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
@@ -30,15 +36,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import retrofit.client.Response;
 
 @Slf4j
 @Component
@@ -52,14 +50,28 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
   @Autowired
   SourceResolver sourceResolver;
 
+  @Autowired
+  ObjectMapper objectMapper;
+
   @Override
   public TaskResult execute(Stage stage) {
     try {
       StageData.Source source = sourceResolver.getSource(stage);
-      String serverGroupName =  source.getServerGroupName() != null ? source.getServerGroupName() : source.getAsgName();
-      String imageId = (String) stage.getContext().getOrDefault("imageId", stage.getContext().get("amiName"));
-
+      String serverGroupName =  Optional.ofNullable(source.getServerGroupName()).orElse(source.getAsgName());
+      Names name = Names.parseName(serverGroupName);
       String cloudProvider = getCloudProvider(stage);
+
+      Response serverGroupResponse = oortService.getServerGroup(
+        name.getApp(),
+        source.getAccount(),
+        name.getCluster(),
+        serverGroupName,
+        source.getRegion(),
+        cloudProvider
+      );
+
+      Map serverGroup = objectMapper.readValue(serverGroupResponse.getBody().in(), Map.class);
+      String imageId = (String) ((Map) serverGroup.get("launchConfig")).get("imageId");
 
       List<Map> tags = oortService.getEntityTags(
         cloudProvider,
@@ -69,33 +81,34 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
         source.getRegion()
       );
 
-      List<String> tagsToDelete = new ArrayList<>();
-      tags.forEach( s -> tagsToDelete.addAll(
-        ((List<Map>) s.get("tags"))
-          .stream()
-          .filter(hasNonMatchingImageId(imageId))
-          .map(t -> (String) t.get("name"))
-          .collect(Collectors.toList())
-      ));
+      List<String> tagsToDelete = tags.stream()
+        .flatMap(entityTag -> ((List<Map>) entityTag.get("tags")).stream())
+        .filter(hasNonMatchingImageId(imageId))
+        .map(t -> (String) t.get("name"))
+        .collect(Collectors.toList());
+
 
       log.info("found tags to delete {}", tagsToDelete);
       if (tagsToDelete.isEmpty()) {
-        return new DefaultTaskResult(ExecutionStatus.SUCCEEDED);
+        return new TaskResult(ExecutionStatus.SUCCEEDED);
       }
+
+      // All IDs should be the same; use the first one
+      String entityId = (String) tags.get(0).get("id");
 
       TaskId taskId = katoService.requestOperations(
         cloudProvider,
-        operations(serverGroupName, tagsToDelete)
+        operations(entityId, tagsToDelete)
       ).toBlocking().first();
 
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, new HashMap<String, Object>() {{
+      return new TaskResult(ExecutionStatus.SUCCEEDED, new HashMap<String, Object>() {{
         put("notification.type", "deleteentitytags");
         put("kato.last.task.id", taskId);
       }});
 
     } catch (Exception e) {
       log.error("Failed to clean up tags for stage {} ",stage, e);
-      return new DefaultTaskResult(ExecutionStatus.FAILED_CONTINUE);
+      return new TaskResult(ExecutionStatus.FAILED_CONTINUE);
     }
 
   }
@@ -107,10 +120,10 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
     };
   }
 
-  private List<Map<String, Map>> operations(String serverGroupName, List<String> tags) {
+  private List<Map<String, Map>> operations(String entityId, List<String> tags) {
     return Collections.singletonList(Collections.singletonMap("deleteEntityTags", new HashMap<String, Object>() {
       {
-        put("id", serverGroupName);
+        put("id", entityId);
         put("tags", tags);
       }
     }));

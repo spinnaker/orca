@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-
-
 package com.netflix.spinnaker.orca.front50
 
 import com.netflix.spinnaker.orca.front50.model.Application
@@ -56,11 +52,29 @@ interface Front50Service {
   @POST("/pipelines")
   Response savePipeline(@Body Map pipeline)
 
+  @PUT("/pipelines/{pipelineId}")
+  Response updatePipeline(@Path("pipelineId") String pipelineId, @Body Map pipeline)
+
   @GET("/strategies/{applicationName}")
   List<Map<String, Object>> getStrategies(@Path("applicationName") String applicationName)
 
   @GET("/pipelines?restricted=false")
   List<Map<String, Object>> getAllPipelines()
+
+  @GET("/pipelineTemplates")
+  List<Map<String, Object>> getPipelineTemplates(@Query("scopes") List<String> scopes)
+
+  @POST("/pipelineTemplates")
+  Response savePipelineTemplate(@Body Map pipelineTemplate)
+
+  @GET("/pipelineTemplates/{pipelineTemplateId}")
+  Map<String, Object> getPipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId)
+
+  @PUT("/pipelineTemplates/{pipelineTemplateId}")
+  Response updatePipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId, @Body Map pipelineTemplate)
+
+  @DELETE("/pipelineTemplates/{pipelineTemplateId}")
+  Response deletePipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId)
 
   @GET("/strategies")
   List<Map<String, Object>> getAllStrategies()

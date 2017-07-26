@@ -16,12 +16,15 @@
 
 package com.netflix.spinnaker.orca.notifications.scheduling
 
+import redis.clients.jedis.ScanParams
+import redis.clients.jedis.ScanResult
+
 import java.util.concurrent.atomic.AtomicInteger
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
@@ -67,12 +70,11 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
     def pipelines = buildExecutions(startTime, 3, "P1") + buildExecutions(startTime, 5, "P2")
 
     def agent = new TopApplicationExecutionCleanupPollingNotificationAgent(threshold: 2)
-    agent.jedisPool = Mock(Pool) {
-      1 * getResource() >> {
-        return Mock(Jedis) {
-          1 * keys("orchestration:app:*") >> { ["orchestration:app:app1"] }
-          1 * scard("orchestration:app:app1") >> { return orchestrations.size() }
-          0 * _
+    agent.jedisPool = Stub(Pool) {
+      getResource() >> {
+        return Stub(Jedis) {
+          scan("0", _ as ScanParams) >> { new ScanResult<String>("0", ["orchestration:app:app1"]) }
+          scard("orchestration:app:app1") >> { return orchestrations.size() }
         }
       }
     }
@@ -94,7 +96,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
       def stage = new Stage<>(new Pipeline(), "")
       stage.startTime = startTime.incrementAndGet()
       stage.status = ExecutionStatus.SUCCEEDED
-      stage.tasks = [new DefaultTask()]
+      stage.tasks = [new Task()]
 
       def execution = new Pipeline(stages: [stage])
       execution.id = stage.startTime as String

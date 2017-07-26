@@ -16,12 +16,14 @@
 
 package com.netflix.spinnaker.orca.echo.spring
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications.Notification
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -30,9 +32,12 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   def echoService = Mock(EchoService)
   def front50Service = Mock(Front50Service)
+  def objectMapper = new ObjectMapper()
+
+  @Shared ContextParameterProcessor contextParameterProcessor = new ContextParameterProcessor()
 
   @Subject
-  def echoListener = new EchoNotifyingExecutionListener(echoService, front50Service)
+  def echoListener = new EchoNotifyingExecutionListener(echoService, front50Service, objectMapper, contextParameterProcessor)
 
   @Shared
   ApplicationNotifications notifications = new ApplicationNotifications()

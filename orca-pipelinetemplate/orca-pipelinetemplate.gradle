@@ -2,9 +2,8 @@ tasks.compileGroovy.enabled = false
 
 dependencies {
   compile project(":orca-extensionpoint")
-
-  compile('com.github.jknack:handlebars:4.0.6')
-  compile('com.github.jknack:handlebars-jackson2:1.0.0')
+  compile project(":orca-core")
+  compile project(":orca-front50")
 
   compile('com.hubspot.jinjava:jinjava:2.1.14')
 
@@ -16,13 +15,9 @@ dependencies {
   compile spinnaker.dependency("springContext")
   compile spinnaker.dependency("jacksonDatabind")
   compile spinnaker.dependency("spectatorApi")
+  compile spinnaker.dependency("frigga")
+  compile spinnaker.dependency('korkExceptions')
 
   testCompile spinnaker.dependency("slf4jSimple")
   testCompile 'org.spockframework:spock-unitils:1.1-groovy-2.4-rc-2'
-}
-
-test {
-  testLogging {
-    showStandardStreams = true
-  }
 }

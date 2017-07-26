@@ -1,7 +1,6 @@
 package com.netflix.spinnaker.orca.kato.pipeline;
 
 import java.util.Map;
-import com.netflix.spinnaker.orca.DefaultTaskResult;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
@@ -10,13 +9,9 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForDownInstance
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstanceHealthTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CaptureParentInterestingHealthProviderNamesTask;
 import com.netflix.spinnaker.orca.kato.tasks.DisableInstancesTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.CheckForRemainingTerminationsTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.EnsureInterestingHealthProviderNamesTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationCandidatesTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.DetermineTerminationPhaseInstancesTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.WaitForNewInstanceLaunchTask;
-import com.netflix.spinnaker.orca.kato.tasks.rollingpush.CleanUpTagsTask;
+import com.netflix.spinnaker.orca.kato.tasks.rollingpush.*;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
@@ -39,7 +34,7 @@ public class RollingPushStage implements StageDefinitionBuilder {
   public <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
     boolean taggingEnabled = featuresService.isStageAvailable("upsertEntityTags");
     builder
-      .withTask("ensureInterestingHealthProviderNames", EnsureInterestingHealthProviderNamesTask.class)
+      .withTask("captureParentInterestingHealthProviderNames", CaptureParentInterestingHealthProviderNamesTask.class)
       .withTask("determineTerminationCandidates", DetermineTerminationCandidatesTask.class)
       .withLoop(subGraph -> {
           subGraph
@@ -57,8 +52,7 @@ public class RollingPushStage implements StageDefinitionBuilder {
             .withTask("waitForTerminateOperation", MonitorKatoTask.class)
             .withTask("waitForTerminatedInstances", WaitForTerminatedInstancesTask.class)
             .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask.class)
-            .withTask("waitForNewInstances", WaitForNewInstanceLaunchTask.class)
-            .withTask("waitForUpInstances", WaitForUpInstanceHealthTask.class)
+            .withTask("waitForNewInstances", WaitForNewUpInstancesLaunchTask.class)
             .withTask("checkForRemainingTerminations", CheckForRemainingTerminationsTask.class);
         });
 
@@ -86,7 +80,7 @@ public class RollingPushStage implements StageDefinitionBuilder {
         stage.getContext().get("account"),
         stage.getContext().get("region")
       ));
-      return DefaultTaskResult.SUCCEEDED;
+      return TaskResult.SUCCEEDED;
     }
   }
 }

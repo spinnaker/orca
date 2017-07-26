@@ -24,6 +24,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.web.bind.annotation.ResponseStatus
+import retrofit.RetrofitError
 
 @Deprecated
 @Component
@@ -87,7 +89,7 @@ class TargetReferenceSupport {
     }
 
     def names = Names.parseName(config.cluster ?: config.asgName)
-    def existingServerGroups = getExistingServerGroups(names.app, config.credentials, names.cluster, config.providerType)
+    def existingServerGroups = getExistingServerGroups(names.app, config.credentials, names.cluster, config.cloudProvider ?: config.providerType)
     if (!existingServerGroups) {
       if (isDynamicallyBound(stage)) {
         return config.locations.collect {
@@ -171,8 +173,8 @@ class TargetReferenceSupport {
     return a.id == b.parentStageId
   }
 
-  Map<String, List<Map>> getServerGroupsByLocation(TargetReferenceConfiguration config, List<Map> existingServerGroups) {
-    if (config.providerType == "gce") {
+  private Map<String, List<Map>> getServerGroupsByLocation(TargetReferenceConfiguration config, List<Map> existingServerGroups) {
+    if (config.cloudProvider == "gce") {
       return existingServerGroups.groupBy { Map sg -> sg.zones[0] }
     }
     return existingServerGroups.groupBy { Map sg -> sg.region }
@@ -185,14 +187,17 @@ class TargetReferenceSupport {
       config.target == TargetReferenceConfiguration.Target.oldest_asg_dynamic
   }
 
-  List<Map> getExistingServerGroups(String app, String account, String cluster, String providerType) {
+  List<Map> getExistingServerGroups(String app, String account, String cluster, String cloudProvider) {
     try {
-      def response = oort.getCluster(app, account, cluster, providerType)
+      def response = oort.getCluster(app, account, cluster, cloudProvider)
       def json = response.body.in().text
       def map = mapper.readValue(json, Map)
       map.serverGroups as List<Map>
-    } catch (e) {
-      null
+    } catch (RetrofitError e) {
+      if (e.response.status == 404) {
+        return null
+      }
+      throw e
     }
   }
 }

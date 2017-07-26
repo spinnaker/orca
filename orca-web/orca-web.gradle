@@ -39,16 +39,17 @@ dependencies {
   compile project(":orca-applications")
   compile project(":orca-flex")
   compile project(":orca-echo")
+  compile project(":orca-kayenta")
   compile project(":orca-mine")
   compile project(":orca-mahe")
   compile project(":orca-igor")
+  compile project(":orca-webhook")
   compile project(":orca-eureka")
-  compile project(":orca-spring-batch")
+  compile project(":orca-queue-redis")
   compile project(":orca-pipelinetemplate")
 
 //  Replace below with this line when fiat becomes stable.
 //  spinnaker.group "fiat"
-  compile "com.netflix.spinnaker.fiat:fiat-api:0.22.0"
   compile "org.springframework.boot:spring-boot-starter-actuator:1.2.8.RELEASE"
   compile "org.springframework.boot:spring-boot-starter-web:1.2.8.RELEASE"
   compile "org.springframework.boot:spring-boot-starter-data-rest:1.2.8.RELEASE"
@@ -57,11 +58,11 @@ dependencies {
   compile "org.springframework.security:spring-security-web:3.2.9.RELEASE"
 
   runtime spinnaker.dependency("kork")
+  compile spinnaker.dependency('korkExceptions')
   compile spinnaker.dependency("korkStackdriver")
   compile spinnaker.dependency("korkWeb")
 
   spinnaker.group('test')
-  testCompile spinnaker.dependency('batchTest')
   testCompile project(":orca-test")
 
   //this brings in the jetty GzipFilter which boot will autoconfigure

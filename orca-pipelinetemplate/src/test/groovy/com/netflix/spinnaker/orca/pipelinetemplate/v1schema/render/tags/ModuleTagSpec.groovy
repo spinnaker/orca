@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.tags
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.NamedHashMap
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateModule
@@ -30,7 +31,7 @@ class ModuleTagSpec extends Specification {
 
   ObjectMapper objectMapper = new ObjectMapper()
 
-  Renderer renderer = new JinjaRenderer(objectMapper)
+  Renderer renderer = new JinjaRenderer(objectMapper, Mock(Front50Service), [])
 
   @Subject
   ModuleTag subject = new ModuleTag(renderer, objectMapper)
@@ -44,19 +45,20 @@ class ModuleTagSpec extends Specification {
           variables: [
             [name: 'myStringVar', defaultValue: 'hello'] as NamedHashMap,
             [name: 'myOtherVar'] as NamedHashMap,
-            [name: 'subject'] as NamedHashMap
+            [name: 'subject'] as NamedHashMap,
+            [name: 'job'] as NamedHashMap
           ],
-          definition: '{{myStringVar}} {{myOtherVar}}, {{subject}}')
+          definition: '{{myStringVar}} {{myOtherVar}}, {{subject}}. You triggered {{job}}')
       ]
     )
-    RenderContext context = new DefaultRenderContext('myApp', pipelineTemplate, [job: 'job', buildNumber: 1234])
+    RenderContext context = new DefaultRenderContext('myApp', pipelineTemplate, [job: 'myJob', buildNumber: 1234])
     context.variables.put("testerName", "Mr. Tester Testington")
 
     when:
-    def result = renderer.render('{% module myModule myOtherVar=world, subject=testerName %}', context)
+    def result = renderer.render('{% module myModule myOtherVar=world, subject=testerName, job=trigger.job %}', context)
 
     then:
     // The ModuleTag outputs JSON
-    result == '"hello world, Mr. Tester Testington"'
+    result == '"hello world, Mr. Tester Testington. You triggered myJob"'
   }
 }

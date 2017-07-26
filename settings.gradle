@@ -23,16 +23,23 @@ include "orca-extensionpoint",
   "orca-eureka",
   "orca-igor",
   "orca-clouddriver",
+  "orca-kayenta",
   "orca-mine",
   "orca-mahe",
   "orca-test",
   "orca-flex",
+  "orca-webhook",
   "orca-web",
-  "orca-smoke-test",
   "orca-applications",
-  "orca-spring-batch",
+  "orca-queue",
+  "orca-queue-redis",
+  "orca-queue-sqs",
   "orca-pipelinetemplate",
   "orca-validation"
+
+if (!Boolean.parseBoolean(System.getProperty('skip.loadtest'))) {
+  include "orca-loadtest"
+}
 
 rootProject.name = "orca"
 

@@ -16,19 +16,31 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import org.springframework.context.expression.MapAccessor
+
+import java.lang.reflect.Field
+import java.lang.reflect.Method
+import java.text.SimpleDateFormat
+import java.util.concurrent.atomic.AtomicReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.expression.AccessException
-import org.springframework.expression.EvaluationContext
-import org.springframework.expression.Expression
-import org.springframework.expression.ExpressionParser
-import org.springframework.expression.ParserContext
-import org.springframework.expression.TypedValue
+import groovy.transform.PackageScope
+import org.springframework.expression.*
+import org.springframework.expression.common.TemplateParserContext
+import org.springframework.expression.spel.SpelEvaluationException
+import org.springframework.expression.spel.SpelMessage
 import org.springframework.expression.spel.standard.SpelExpressionParser
+import org.springframework.expression.spel.support.ReflectiveMethodResolver
 import org.springframework.expression.spel.support.ReflectivePropertyAccessor
 import org.springframework.expression.spel.support.StandardEvaluationContext
+import org.springframework.expression.spel.support.StandardTypeLocator
 
 /**
  * Common methods for dealing with passing context parameters used by both Script and Jenkins stages
@@ -36,32 +48,34 @@ import org.springframework.expression.spel.support.StandardEvaluationContext
 class ContextParameterProcessor {
 
   // uses $ instead of  #
-  private static ParserContext parserContext = [
-    getExpressionPrefix: {
-      '${'
-    },
-    getExpressionSuffix: {
-      '}'
-    },
-    isTemplate         : {
-      true
-    }
-  ] as ParserContext
+  private static final ParserContext parserContext = new TemplateParserContext('${', '}')
 
-  private static final MapPropertyAccessor allowUnknownKeysAccessor = new MapPropertyAccessor(true)
-  private static final MapPropertyAccessor requireKeysAccessor = new MapPropertyAccessor(false)
+  private final MapPropertyAccessor allowUnknownKeysAccessor = new MapPropertyAccessor(true)
+  private final MapPropertyAccessor requireKeysAccessor = new MapPropertyAccessor(false)
 
-  private static ExpressionParser parser = new SpelExpressionParser()
+  private final ExpressionParser parser = new SpelExpressionParser()
 
-  static Map process(Map parameters, Map context, boolean allowUnknownKeys) {
+  private final ContextFunctionConfiguration contextFunctionConfiguration
+
+  ContextParameterProcessor() {
+    this(new ContextFunctionConfiguration(new UserConfiguredUrlRestrictions.Builder().build()))
+  }
+
+  ContextParameterProcessor(ContextFunctionConfiguration contextFunctionConfiguration) {
+    this.contextFunctionConfiguration = contextFunctionConfiguration
+    //this sucks so much:
+    ContextUtilities.contextFunctionConfiguration.set(contextFunctionConfiguration)
+  }
+
+  Map<String, Object> process(Map<String, Object> parameters, Map<String, Object> context, boolean allowUnknownKeys) {
     if (!parameters) {
-      return null
+      return [:]
     }
 
     transform(parameters, precomputeValues(context), allowUnknownKeys)
   }
 
-  static Map<String, Object> buildExecutionContext(Stage stage, boolean includeStageContext) {
+  Map<String, Object> buildExecutionContext(Stage stage, boolean includeStageContext) {
     def augmentedContext = [:] + (includeStageContext ? stage.context : [:])
     if (stage.execution instanceof Pipeline) {
       augmentedContext.put('trigger', ((Pipeline) stage.execution).trigger)
@@ -75,7 +89,7 @@ class ContextParameterProcessor {
     return value?.contains(parserContext.getExpressionPrefix())
   }
 
-  static Map precomputeValues(Map context) {
+  Map<String, Object> precomputeValues(Map<String, Object> context) {
 
     if (context.trigger?.parameters) {
       context.parameters = context.trigger.parameters
@@ -92,7 +106,7 @@ class ContextParameterProcessor {
     if (context.execution) {
       def deployedServerGroups = []
       context.execution.stages.findAll {
-        it.type in ['deploy', 'cloneServerGroup', 'rollingPush'] && it.status == ExecutionStatus.SUCCEEDED
+        it.type in ['deploy', 'createServerGroup', 'cloneServerGroup', 'rollingPush'] && it.status == ExecutionStatus.SUCCEEDED
       }.each { deployStage ->
         if (deployStage.context.'deploy.server.groups') {
           Map deployDetails = [
@@ -113,7 +127,7 @@ class ContextParameterProcessor {
     context
   }
 
-  static <T> T transform(T parameters, Map context, boolean allowUnknownKeys) {
+  protected <T> T transform(T parameters, Map<String, Object> context, boolean allowUnknownKeys) {
     if (parameters instanceof Map) {
       return parameters.collectEntries { k, v ->
         [transform(k, context, allowUnknownKeys), transform(v, context, allowUnknownKeys)]
@@ -124,8 +138,10 @@ class ContextParameterProcessor {
       }
     } else if (parameters instanceof String || parameters instanceof GString) {
       Object convertedValue = parameters.toString()
-      EvaluationContext evaluationContext = new StandardEvaluationContext(context)
-      evaluationContext.addPropertyAccessor(allowUnknownKeys ? allowUnknownKeysAccessor : requireKeysAccessor)
+      StandardEvaluationContext evaluationContext = new StandardEvaluationContext(context)
+      evaluationContext.setTypeLocator(new WhitelistTypeLocator())
+      evaluationContext.setMethodResolvers([new FilteredMethodResolver()])
+      evaluationContext.setPropertyAccessors([new FilteredPropertyAccessor(), allowUnknownKeys ? allowUnknownKeysAccessor : requireKeysAccessor])
 
       evaluationContext.registerFunction('alphanumerical', ContextUtilities.getDeclaredMethod("alphanumerical", String))
       evaluationContext.registerFunction('toJson', ContextUtilities.getDeclaredMethod("toJson", Object))
@@ -133,6 +149,8 @@ class ContextParameterProcessor {
       evaluationContext.registerFunction('toInt', ContextUtilities.getDeclaredMethod("toInt", String))
       evaluationContext.registerFunction('toFloat', ContextUtilities.getDeclaredMethod("toFloat", String))
       evaluationContext.registerFunction('toBoolean', ContextUtilities.getDeclaredMethod("toBoolean", String))
+      evaluationContext.registerFunction('toBase64', ContextUtilities.getDeclaredMethod("toBase64", String))
+      evaluationContext.registerFunction('fromBase64', ContextUtilities.getDeclaredMethod("fromBase64", String))
 
       // only add methods that are context sensitive at stage evaluation time
       if (allowUnknownKeys) {
@@ -141,8 +159,9 @@ class ContextParameterProcessor {
         evaluationContext.registerFunction('propertiesFromUrl', ContextUtilities.getDeclaredMethod("propertiesFromUrl", String))
         evaluationContext.registerFunction('stage', ContextUtilities.getDeclaredMethod("stage", Object, String))
         evaluationContext.registerFunction('judgment', ContextUtilities.getDeclaredMethod("judgment", Object, String))
+        evaluationContext.registerFunction('judgement', ContextUtilities.getDeclaredMethod("judgment", Object, String))
 
-        ["judgment", "stage"].each { contextAwareStageFunction ->
+        ["judgment", "judgement", "stage"].each { contextAwareStageFunction ->
           if (convertedValue.contains("#${contextAwareStageFunction}(") && !convertedValue.contains("#${contextAwareStageFunction}( #root.execution, ")) {
             convertedValue = convertedValue.replaceAll("#${contextAwareStageFunction}\\(", "#${contextAwareStageFunction}( #root.execution, ")
           }
@@ -166,16 +185,164 @@ class ContextParameterProcessor {
     }
   }
 
+  static class TypeWhitelist {
+    static final Set<Class<?>> allowedTypes = Collections.unmodifiableSet([
+        String,
+        Date,
+        Integer,
+        Long,
+        Double,
+        Byte,
+        SimpleDateFormat,
+        Math,
+        Random,
+        UUID,
+        Boolean,
+    ] as Set)
+
+    static final Set<Class<?>> allowedReturnTypes = Collections.unmodifiableSet([
+        Collection,
+        Map,
+        SortedMap,
+        List,
+        Set,
+        SortedSet,
+        ArrayList,
+        LinkedList,
+        HashSet,
+        LinkedHashSet,
+        HashMap,
+        LinkedHashMap,
+        TreeMap,
+        TreeSet,
+        // spinnaker model types
+        Execution,
+        Pipeline,
+        Orchestration,
+        Stage,
+        ExecutionStatus,
+        Execution.AuthenticationDetails,
+        Execution.PausedDetails
+    ] as Set)
+
+    static boolean isAllowedForInstantiation(Class<?> type) {
+      return allowedTypes.contains(type)
+    }
+
+    static boolean isAllowedForReturn(Class<?> type) {
+      final Class<?> returnType = type.isArray() ? type.componentType : type
+      return returnType.isPrimitive() || allowedTypes.contains(returnType) || allowedReturnTypes.contains(returnType)
+    }
+
+  }
+
+  static class WhitelistTypeLocator implements TypeLocator {
+
+    final TypeLocator delegate = new StandardTypeLocator()
+    @Override
+    Class<?> findType(String typeName) throws EvaluationException {
+      def type = delegate.findType(typeName)
+      if (TypeWhitelist.isAllowedForInstantiation(type)) {
+        return type
+      }
+
+      throw new SpelEvaluationException(SpelMessage.TYPE_NOT_FOUND, typeName)
+    }
+  }
+
+  static class FilteredMethodResolver extends ReflectiveMethodResolver {
+
+    private static final List<Method> rejectedMethods = buildRejectedMethods()
+
+    private static List<Method> buildRejectedMethods() {
+      def rejectedMethods = []
+      def allowedObjectMethods = [
+          Object.getMethod("equals", Object),
+          Object.getMethod("hashCode"),
+          Object.getMethod("toString")
+      ]
+      def objectMethods = new ArrayList<Method>(Arrays.asList(Object.getMethods()))
+      objectMethods.removeAll(allowedObjectMethods)
+      rejectedMethods.addAll(objectMethods)
+      rejectedMethods.addAll(Class.getMethods())
+      rejectedMethods.addAll(Boolean.getMethods().findAll { it.name == 'getBoolean' })
+      rejectedMethods.addAll(Integer.getMethods().findAll { it.name == 'getInteger' })
+      rejectedMethods.addAll(Long.getMethods().findAll { it.name == 'getLong' })
+
+      return Collections.unmodifiableList(rejectedMethods)
+    }
+
+    @Override
+    protected Method[] getMethods(Class<?> type) {
+      Method[] methods = super.getMethods(type)
+
+      def m = new ArrayList<Method>(Arrays.asList(methods))
+      m.removeAll(rejectedMethods)
+      m = m.findAll { TypeWhitelist.isAllowedForReturn(it.returnType) }
+
+      return m.toArray(new Method[m.size()])
+    }
+  }
+
+  @CompileStatic
+  @Slf4j
+  static class FilteredPropertyAccessor extends ReflectivePropertyAccessor {
+    @Override
+    protected Method findGetterForProperty(String propertyName, Class<?> clazz, boolean mustBeStatic) {
+      Method getter = super.findGetterForProperty(propertyName, clazz, mustBeStatic)
+      if (getter && TypeWhitelist.isAllowedForReturn(getter.returnType)) {
+        return getter
+      }
+
+      if (getter) {
+        log.info("found getter for requested $propertyName but rejected due to return type $getter.returnType")
+      }
+
+      return null
+    }
+
+    @Override
+    protected Field findField(String name, Class<?> clazz, boolean mustBeStatic) {
+      Field field = super.findField(name, clazz, mustBeStatic)
+      if (field && TypeWhitelist.isAllowedForReturn(field.type)) {
+        return field
+      }
+
+      if (field) {
+        log.info("found field for requested $name but rejected due to type $field.type")
+      }
+
+      return null
+    }
+  }
 }
 
+
+class ContextFunctionConfiguration {
+  final UserConfiguredUrlRestrictions urlRestrictions
+
+  ContextFunctionConfiguration(UserConfiguredUrlRestrictions urlRestrictions) {
+    this.urlRestrictions = urlRestrictions
+  }
+}
+
+@Slf4j
 abstract class ContextUtilities {
+
+  @PackageScope static final AtomicReference<ContextFunctionConfiguration> contextFunctionConfiguration = new AtomicReference<>(new ContextFunctionConfiguration())
+
+  private static final ObjectMapper mapper = new ObjectMapper()
 
   static String alphanumerical(String str) {
     str.replaceAll('[^A-Za-z0-9]', '')
   }
 
   static String toJson(Object o) {
-    new ObjectMapper().writeValueAsString(o)
+    String converted = mapper.writeValueAsString(o)
+    if (ContextParameterProcessor.containsExpression(converted)) {
+      return null
+    }
+    return converted
   }
 
   static Integer toInt(String str) {
@@ -191,11 +358,17 @@ abstract class ContextUtilities {
   }
 
   static String fromUrl(String url) {
-    new URL(url).text
+    try {
+      URL u = contextFunctionConfiguration.get().urlRestrictions.validateURI(url).toURL()
+      return HttpClientUtils.httpGetAsString(u.toString())
+    } catch (Exception e) {
+      log.error("Failed getting content from url {}", url, e)
+      throw e
+    }
   }
 
   static Object readJson(String text) {
-    new ObjectMapper().readValue(text, text.startsWith('[') ? List : Map)
+    return mapper.readValue(text, text.startsWith('[') ? List : Map)
   }
 
   static Map propertiesFromUrl(String url) {
@@ -206,7 +379,7 @@ abstract class ContextUtilities {
     Map map = [:]
     Properties properties = new Properties()
     properties.load(new ByteArrayInputStream(text.bytes))
-    map = map << properties
+    map.putAll(properties)
     map
   }
 
@@ -222,9 +395,17 @@ abstract class ContextUtilities {
     context.stages?.find { it.name == id && it.type == 'manualJudgment' }?.context?.judgmentInput
   }
 
+  static String toBase64(String text) {
+    Base64.getEncoder().encodeToString(text.getBytes())
+  }
+
+  static String fromBase64(String text) {
+    new String(Base64.getDecoder().decode(text), 'UTF-8')
+  }
+
 }
 
-class MapPropertyAccessor extends ReflectivePropertyAccessor {
+class MapPropertyAccessor extends MapAccessor {
   private final boolean allowUnknownKeys
 
   public MapPropertyAccessor(boolean allowUnknownKeys) {
@@ -233,30 +414,26 @@ class MapPropertyAccessor extends ReflectivePropertyAccessor {
   }
 
   @Override
-  Class<?>[] getSpecificTargetClasses() {
-    [Map]
-  }
-
-  @Override
   boolean canRead(final EvaluationContext context, final Object target, final String name)
     throws AccessException {
-    if (target instanceof Map) {
-      return allowUnknownKeys || target.containsKey(name)
+    if (allowUnknownKeys) {
+      return true
     }
-    return false
+    boolean canRead = super.canRead(context, target, name)
+    return canRead
   }
 
   @Override
   public TypedValue read(final EvaluationContext context, final Object target, final String name)
     throws AccessException {
-    if (target instanceof Map) {
-      if (target.containsKey(name)) {
-        return new TypedValue(target.get(name))
-      } else if (allowUnknownKeys) {
+    try {
+      TypedValue result = super.read(context, target, name)
+      return result
+    } catch (AccessException ae) {
+      if (allowUnknownKeys) {
         return TypedValue.NULL
       }
-      throw new AccessException("No property in map with key $name")
+      throw ae
     }
-    throw new AccessException("Cannot read target of class " + target.getClass().getName())
   }
 }

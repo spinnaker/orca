@@ -22,16 +22,19 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonSetter
+import com.netflix.spinnaker.fiat.model.Authorization
+import com.netflix.spinnaker.fiat.model.resources.Permissions
 import groovy.transform.Canonical
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
+import groovy.util.logging.Slf4j
 
+@Slf4j
 @Canonical
-public class Application {
+class Application {
   public String name
   public String description
   public String email
-  public String accounts
   public String updateTs
   public String createTs
   public Boolean platformHealthOnly
@@ -40,7 +43,7 @@ public class Application {
   @JsonIgnore
   String user
   @JsonIgnore
-  List<String> requiredGroupMembership = new ArrayList<>()
+  private Permissions permissions = Permissions.EMPTY
 
   private Map<String, Object> details = new HashMap<String, Object>()
 
@@ -51,7 +54,22 @@ public class Application {
 
   @JsonSetter
   void setRequiredGroupMembership(List<String> requiredGroupMembership) {
-    this.requiredGroupMembership = requiredGroupMembership
+    log.warn("Required group membership settings detected in application ${name}. " +
+                 "Please update to `permissions` format.")
+
+    if (!permissions.isRestricted()) { // Do not overwrite permissions if it contains values
+      Permissions.Builder b = new Permissions.Builder()
+      requiredGroupMembership.each {
+        b.add(Authorization.READ, it.trim().toLowerCase())
+        b.add(Authorization.WRITE, it.trim().toLowerCase())
+      }
+      permissions = b.build()
+    }
+  }
+
+  @JsonSetter
+  void setPermissions(Permissions permissions){
+    this.permissions = permissions
   }
 
   @JsonAnyGetter
@@ -65,19 +83,6 @@ public class Application {
   }
 
   @JsonIgnore
-  Set<String> listAccounts() {
-    if (!accounts?.trim()) {
-      return []
-    }
-    return accounts.split(",").collect { it.toLowerCase() } as Set<String>
-  }
-
-  @JsonIgnore
-  void updateAccounts(Set<String> accounts) {
-    this.accounts = accounts ? accounts.collect { it.trim().toLowerCase() }.join(",") : null
-  }
-
-  @JsonIgnore
   Permission getPermission() {
     return new Permission()
   }
@@ -88,6 +93,6 @@ public class Application {
     String name = Application.this.name
     Long lastModified = System.currentTimeMillis()
     String lastModifiedBy = Application.this.user ?: "unknown"
-    List<String> requiredGroupMembership = Application.this.requiredGroupMembership
+    Permissions permissions = Application.this.permissions
   }
 }

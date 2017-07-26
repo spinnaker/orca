@@ -17,17 +17,15 @@
 package com.netflix.spinnaker.orca.echo.pipeline
 
 import java.util.concurrent.TimeUnit
-import groovy.util.logging.Slf4j
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.*
-import com.netflix.spinnaker.orca.batch.RestartableStage
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.security.User
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -41,13 +39,9 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
   }
 
   @Override
-  Stage prepareStageForRestart(ExecutionRepository executionRepository, Stage stage, Collection<StageDefinitionBuilder> allStageBuilders) {
-    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport
-      .prepareStageForRestart(executionRepository, stage, this, allStageBuilders)
-
+  void prepareStageForRestart(Stage stage) {
     stage.context.remove("judgmentStatus")
     stage.context.remove("lastModifiedBy")
-    return stage
   }
 
   @Override
@@ -97,7 +91,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
 
       Map outputs = processNotifications(stage, stageData, notificationState)
 
-      return new DefaultTaskResult(executionStatus, outputs)
+      return new TaskResult(executionStatus, outputs)
     }
 
     Map processNotifications(Stage stage, StageData stageData, NotificationState notificationState) {

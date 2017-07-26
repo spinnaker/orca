@@ -29,11 +29,10 @@ import com.netflix.spinnaker.orca.eureka.DiscoveryPollingConfiguration
 import com.netflix.spinnaker.orca.flex.config.FlexConfiguration
 import com.netflix.spinnaker.orca.front50.config.Front50Configuration
 import com.netflix.spinnaker.orca.igor.config.IgorConfiguration
+import com.netflix.spinnaker.orca.kayenta.config.KayentaConfiguration
 import com.netflix.spinnaker.orca.mahe.config.MaheConfiguration
 import com.netflix.spinnaker.orca.mine.config.MineConfiguration
 import com.netflix.spinnaker.orca.web.config.WebConfiguration
-import com.netflix.spinnaker.orca.zombie.ZombiePipelineCleanupConfig
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
 import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration
@@ -47,7 +46,6 @@ import org.springframework.scheduling.annotation.EnableAsync
 @Configuration
 @EnableAsync
 @EnableAutoConfiguration(exclude = [BatchAutoConfiguration, GroovyTemplateAutoConfiguration])
-@EnableBatchProcessing(modular = true)
 @Import([
   PlatformComponents,
   WebConfiguration,
@@ -69,7 +67,7 @@ import org.springframework.scheduling.annotation.EnableAsync
   ApplicationConfig,
   StackdriverConfig,
   PipelineTemplateConfiguration,
-  ZombiePipelineCleanupConfig
+  KayentaConfiguration
 ])
 @ComponentScan([
   "com.netflix.spinnaker.config"

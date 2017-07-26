@@ -24,6 +24,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import lombok.Data;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3;
 import static java.util.Arrays.asList;
 
 @Data
@@ -31,7 +32,7 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
 
   String id;
   String application;
-  String executingInstance;
+  String name;
 
   Long buildTime;
 
@@ -42,7 +43,6 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
   boolean limitConcurrent = false;
   boolean keepWaitingPipelines = false;
 
-  final Map<String, Object> appConfig = new HashMap<>();
   final Map<String, Object> context = new HashMap<>();
   List<Stage<T>> stages = new ArrayList<>();
 
@@ -52,13 +52,38 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
 
   AuthenticationDetails authentication;
   PausedDetails paused;
+  ExecutionEngine executionEngine = DEFAULT_EXECUTION_ENGINE;
 
-  public Stage namedStage(String type) {
+  public Stage<T> namedStage(String type) {
     return stages
       .stream()
       .filter(it -> it.getType().equals(type))
       .findFirst()
       .orElse(null);
+  }
+
+  public Stage<T> stageById(String stageId) {
+    return stages
+      .stream()
+      .filter(it -> it.getId().equals(stageId))
+      .findFirst()
+      .orElse(null);
+  }
+
+  @Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+
+    Execution<?> execution = (Execution<?>) o;
+
+    return id.equals(execution.id);
+  }
+
+  @Override public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + id.hashCode();
+    return result;
   }
 
   @Data
@@ -116,5 +141,11 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
     public long getPausedMs() {
       return (pauseTime != null && resumeTime != null) ? resumeTime - pauseTime : 0;
     }
+  }
+
+  public static final ExecutionEngine DEFAULT_EXECUTION_ENGINE = v3;
+
+  public enum ExecutionEngine {
+    v1, v2, v3
   }
 }

@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.igor.tasks
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -27,8 +27,6 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
-
-import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Component
@@ -57,20 +55,23 @@ class MonitorJenkinsJobTask implements RetryableTask {
 
     if (!stage.context.buildNumber) {
       log.error("failed to get build number for job ${job} from master ${master}")
-      return new DefaultTaskResult(ExecutionStatus.TERMINAL)
+      return new TaskResult(ExecutionStatus.TERMINAL)
     }
 
     def buildNumber = (int) stage.context.buildNumber
     try {
       Map<String, Object> build = buildService.getBuild(buildNumber, master, job)
+      Map outputs = [:]
       String result = build.result
       if ((build.building && build.building != 'false') || (build.running && build.running != 'false')) {
-        return new DefaultTaskResult(ExecutionStatus.RUNNING, [buildInfo: build])
+        return new TaskResult(ExecutionStatus.RUNNING, [buildInfo: build])
       }
 
       if (build?.artifacts) {
         build.artifacts = buildArtifactFilter.filterArtifacts(build.artifacts as List<Map>)
       }
+
+      outputs.buildInfo = build
 
       if (statusMap.containsKey(result)) {
         ExecutionStatus status = statusMap[result]
@@ -80,18 +81,20 @@ class MonitorJenkinsJobTask implements RetryableTask {
           if (properties.size() == 0 && result == 'SUCCESS') {
             throw new IllegalStateException("expected properties file ${stage.context.propertyFile} but one was not found or was empty")
           }
+          outputs << properties
+          outputs.propertyFileContents = properties
         }
         if (result == 'UNSTABLE' && stage.context.markUnstableAsSuccessful) {
           status = ExecutionStatus.SUCCEEDED
         }
-        return new DefaultTaskResult(status, [buildInfo: build] + properties, [buildInfo: build] + properties)
+        return new TaskResult(status, outputs, outputs)
       } else {
-        return new DefaultTaskResult(ExecutionStatus.RUNNING, [buildInfo: build])
+        return new TaskResult(ExecutionStatus.RUNNING, [buildInfo: build])
       }
     } catch (RetrofitError e) {
       if ([503, 500, 404].contains(e.response?.status)) {
         log.warn("Http ${e.response.status} received from `igor`, retrying...")
-        return new DefaultTaskResult(ExecutionStatus.RUNNING)
+        return new TaskResult(ExecutionStatus.RUNNING)
       }
 
       throw e

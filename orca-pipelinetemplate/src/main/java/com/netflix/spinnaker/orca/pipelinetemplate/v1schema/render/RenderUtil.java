@@ -16,7 +16,10 @@
 package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render;
 
 import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.TemplateRenderException;
-import com.netflix.spinnaker.orca.pipelinetemplate.validator.Errors;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate.Variable;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
+import com.netflix.spinnaker.orca.pipelinetemplate.validator.Errors.Error;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,10 +39,11 @@ public class RenderUtil {
   @SuppressWarnings("unchecked")
   private static Object deepRender(Renderer renderer, Object obj, RenderContext context, int depth) {
     if (depth >= MAX_RENDER_DEPTH) {
-      throw new TemplateRenderException(new Errors.Error()
-        .withMessage(String.format("Cannot exceed %d levels of depth in handlebars rendering", MAX_RENDER_DEPTH))
-        .withSuggestion("Try breaking up your templates into smaller, more reusable chunks via modules")
-        .withLocation(context.getLocation())
+      throw TemplateRenderException.fromError(
+        new Error()
+          .withMessage(String.format("Cannot exceed %d levels of depth in handlebars rendering", MAX_RENDER_DEPTH))
+          .withSuggestion("Try breaking up your templates into smaller, more reusable chunks via modules")
+          .withLocation(context.getLocation())
       );
     }
 
@@ -73,15 +77,29 @@ public class RenderUtil {
       return objMap;
     }
 
-    throw new TemplateRenderException(new Errors.Error()
-      .withMessage("Unknown rendered type, cannot continue render of template")
-      .withCause("Unhandled type: " + obj.getClass().getSimpleName())
-      .withSuggestion("Expected types: primitives, collections and maps")
-      .withLocation(context.getLocation())
+    throw TemplateRenderException.fromError(
+      new Error()
+        .withMessage("Unknown rendered type, cannot continue")
+        .withCause("Unhandled type: " + obj.getClass().getSimpleName())
+        .withSuggestion("Expected types: primitives, collections and maps")
+        .withLocation(context.getLocation())
     );
   }
 
   private static boolean isPrimitive(Object o) {
     return CharSequence.class.isInstance(o) || Number.class.isInstance(o) || Boolean.class.isInstance(o);
+  }
+
+  public static RenderContext createDefaultRenderContext(PipelineTemplate template, TemplateConfiguration configuration, Map<String, Object> trigger) {
+    RenderContext context = new DefaultRenderContext(configuration.getPipeline().getApplication(), template, trigger);
+    if (template != null && template.getVariables() != null) {
+      template.getVariables().stream()
+        .filter(Variable::hasDefaultValue)
+        .forEach(v -> context.getVariables().put(v.getName(), v.getDefaultValue()));
+    }
+    if (configuration.getPipeline().getVariables() != null) {
+      context.getVariables().putAll(configuration.getPipeline().getVariables());
+    }
+    return context;
   }
 }

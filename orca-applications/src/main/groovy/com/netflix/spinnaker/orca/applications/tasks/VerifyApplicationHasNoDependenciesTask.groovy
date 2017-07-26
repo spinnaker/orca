@@ -16,16 +16,15 @@
 
 package com.netflix.spinnaker.orca.applications.tasks
 
-import groovy.util.logging.Slf4j
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -45,29 +44,22 @@ class VerifyApplicationHasNoDependenciesTask implements Task {
   @Override
   TaskResult execute(Stage stage) {
     def application = objectMapper.convertValue(stage.context.application, Application)
-    def account = (stage.context.account as String).toLowerCase()
 
     def existingDependencyTypes = []
     try {
       def oortResult = getOortResult(application.name as String)
-      if (oortResult && oortResult.clusters[account]) {
-        if (oortResult.clusters[account]*."loadBalancers".flatten()) {
-          existingDependencyTypes << "load balancers"
-        }
-
-        if (oortResult.clusters[account]*."serverGroups".flatten()) {
-          existingDependencyTypes << "server groups"
-        }
+      if (oortResult && oortResult.clusters) {
+        existingDependencyTypes << "clusters"
       }
 
       def mortResults = getMortResults(application.name as String, "securityGroups")
       if (mortResults.find {
-        it.application.equalsIgnoreCase(application.name) && it.account == account
+        it.application.equalsIgnoreCase(application.name)
       }) {
         existingDependencyTypes << "security groups"
       }
     } catch (RetrofitError e) {
-      if (e.response.status != 404) {
+      if (e.response?.status != 404) {
         def resp = e.response
         def exception = [statusCode: resp.status, operation: stage.tasks[-1].name, url: resp.url, reason: resp.reason]
         try {
@@ -75,15 +67,15 @@ class VerifyApplicationHasNoDependenciesTask implements Task {
         } catch (ignored) {
         }
 
-        return new DefaultTaskResult(ExecutionStatus.TERMINAL, [exception: exception])
+        return new TaskResult(ExecutionStatus.TERMINAL, [exception: exception])
       }
     }
 
     if (!existingDependencyTypes) {
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED)
+      return new TaskResult(ExecutionStatus.SUCCEEDED)
     }
 
-    return new DefaultTaskResult(ExecutionStatus.TERMINAL, [exception: [
+    return new TaskResult(ExecutionStatus.TERMINAL, [exception: [
         details: [
             error: "Application has outstanding dependencies",
             errors: existingDependencyTypes.collect {

@@ -18,7 +18,6 @@
 package com.netflix.spinnaker.orca.front50.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -35,7 +34,7 @@ abstract class AbstractFront50Task implements Task {
   @Autowired
   ObjectMapper mapper
 
-  abstract  Map<String, Object>  performRequest(String account, Application application)
+  abstract  Map<String, Object> performRequest(Application application)
   abstract String getNotificationType()
 
   @Override
@@ -48,12 +47,7 @@ abstract class AbstractFront50Task implements Task {
     if (stage.context.user){
       application.user = stage.context.user
     }
-    def account = (stage.context.account as String)?.toLowerCase()
-
     def missingInputs = []
-    if (!account) {
-      missingInputs << 'account'
-    }
 
     if (!application.name) {
       missingInputs << 'application.name'
@@ -66,13 +60,12 @@ abstract class AbstractFront50Task implements Task {
 
     def outputs = [
       "notification.type": getNotificationType(),
-      "application.name": application.name,
-      "account": account
+      "application.name": application.name
     ]
     def executionStatus = ExecutionStatus.SUCCEEDED
 
-    Map<String, Object> results = performRequest(account, application)
-    return new DefaultTaskResult(executionStatus, outputs + (results ?: [:]))
+    Map<String, Object> results = performRequest(application)
+    return new TaskResult(executionStatus, outputs + (results ?: [:]))
   }
 
   Application fetchApplication(String applicationName) {

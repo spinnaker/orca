@@ -5,6 +5,7 @@ import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -20,26 +21,25 @@ import static java.lang.System.currentTimeMillis
 class EchoNotifyingStageListener implements StageListener {
 
   private final EchoService echoService
+  private final ExecutionRepository repository
 
   @Autowired
-  EchoNotifyingStageListener(EchoService echoService) {
+  EchoNotifyingStageListener(EchoService echoService, ExecutionRepository repository) {
     this.echoService = echoService
+    this.repository = repository
   }
 
   @Override
   <T extends Execution<T>> void beforeTask(Persister persister,
                                            Stage<T> stage,
                                            Task task) {
-    if (task.status == NOT_STARTED) {
       recordEvent('task', 'starting', stage, task)
-    }
   }
 
   @Override
   @CompileDynamic
   <T extends Execution<T>> void beforeStage(Persister persister,
                                             Stage<T> stage) {
-    if (stage.status == NOT_STARTED) {
       def details = [
         name       : stage.name,
         type       : stage.type,
@@ -49,11 +49,9 @@ class EchoNotifyingStageListener implements StageListener {
         isSynthetic: stage.syntheticStageOwner != null
       ]
       stage.context.stageDetails = details
-      persister.save(stage)
+      repository.updateStageContext(stage)
 
-      log.debug("***** $stage.execution.id Echo stage $stage.name starting v2")
       recordEvent("stage", "starting", stage)
-    }
   }
 
   @Override
@@ -77,7 +75,7 @@ class EchoNotifyingStageListener implements StageListener {
       if (stage.endTime) {
         stage.context.stageDetails.endTime = stage.endTime
       }
-      persister.save(stage)
+      repository.updateStageContext(stage)
 
       // STOPPED stages are "successful" because they allow the pipeline to
       // proceed but they are still failures in terms of the stage and should

@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -50,7 +49,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @Override
-  <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+  void postBranchGraph(Stage<?> stage, TaskNode.Builder builder) {
     builder.withTask("completeParallelDeploy", CompleteParallelDeployTask)
   }
 
@@ -147,7 +146,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   }
 
   @Override
-  <T extends Execution<T>> String parallelStageName(Stage<T> stage, boolean hasParallelFlows) {
+  String parallelStageName(Stage<?> stage, boolean hasParallelFlows) {
     return isClone(stage) ? "Clone" : stage.name
   }
 
@@ -170,7 +169,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   public static class CompleteParallelDeployTask implements Task {
     TaskResult execute(Stage stage) {
       log.info("Completed Parallel Deploy")
-      new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
+      new TaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
     }
   }
 }

@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfig
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration.PipelineDefinition
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Unroll
 
 class V1SchemaExecutionGeneratorSpec extends Specification {
 
@@ -34,7 +35,57 @@ class V1SchemaExecutionGeneratorSpec extends Specification {
   def 'should create a basic execution json'() {
     given:
     // At this point, the template has already been rendered / merged into this state.
-    PipelineTemplate template = new PipelineTemplate(
+    PipelineTemplate template = getPipelineTemplate()
+    TemplateConfiguration configuration = new TemplateConfiguration(
+      pipeline: new PipelineDefinition(
+        application: 'orca',
+        name: 'My Template'
+      )
+    )
+
+    when:
+    def result = subject.generate(template, configuration, "124")
+
+    then:
+    noExceptionThrown()
+    result.id != null
+    result.application == 'orca'
+    result.name == 'My Template'
+    result.parallel == true
+    result.limitConcurrent == true
+    result.keepWaitingPipelines == false
+    result.stages*.type == ['bake', 'tagImage']
+    result.stages*.requisiteStageRefIds == [[] as Set, ['bake'] as Set]
+    result.stages.find { it.type == 'bake' }.baseOs == 'trusty'
+  }
+
+  @Unroll
+  def "should fallback to pipelineConfigId if id is not set"() {
+    given:
+    PipelineTemplate template = getPipelineTemplate()
+    TemplateConfiguration configuration = new TemplateConfiguration(
+      pipeline: new PipelineDefinition(
+        pipelineDefinitionData
+      )
+    )
+
+    when:
+    def result = subject.generate(template, configuration, pipelineId)
+
+    then:
+    result.id == expectedId
+
+    where:
+    pipelineId | pipelineDefinitionData             || expectedId
+    "124"  | [application: 'orca',
+              pipelineConfigId: 'pipelineConfigId'] || "124"
+    null   | [application: 'orca',
+              pipelineConfigId: 'pipelineConfigId'] || "pipelineConfigId"
+    "124"  | [application: 'orca']                  || "124"
+  }
+
+  private PipelineTemplate getPipelineTemplate() {
+    new PipelineTemplate(
       id: 'simpleTemplate',
       variables: [
         new Variable(name: 'regions', type: 'list')
@@ -54,12 +105,12 @@ class V1SchemaExecutionGeneratorSpec extends Specification {
         new StageDefinition(
           id: 'bake',
           type: 'bake',
-          requisiteStageRefIds: [],
+          requisiteStageRefIds: [] as Set,
           config: [
-            regions: ['us-west-2', 'us-east-1'],
-            package: 'orca-package',
-            baseOs: 'trusty',
-            vmType: 'hvm',
+            regions  : ['us-west-2', 'us-east-1'],
+            package  : 'orca-package',
+            baseOs   : 'trusty',
+            vmType   : 'hvm',
             storeType: 'ebs',
             baseLabel: 'release',
           ],
@@ -68,31 +119,10 @@ class V1SchemaExecutionGeneratorSpec extends Specification {
           id: 'tagImage',
           type: 'tagImage',
           dependsOn: ['bake'],
-          requisiteStageRefIds: ['bake'],
+          requisiteStageRefIds: ['bake'] as Set,
           config: [tags: [stack: 'test']]
         )
       ]
     )
-    TemplateConfiguration configuration = new TemplateConfiguration(
-      pipeline: new PipelineDefinition(
-        application: 'orca',
-        name: 'My Template'
-      )
-    )
-
-    when:
-    def result = subject.generate(template, configuration)
-
-    then:
-    noExceptionThrown()
-    result.id != null
-    result.application == 'orca'
-    result.name == 'My Template'
-    result.parallel == true
-    result.limitConcurrent == true
-    result.keepWaitingPipelines == false
-    result.stages*.type == ['bake', 'tagImage']
-    result.stages*.requisiteStageRefIds == [[], ['bake']]
-    result.stages.find { it.type == 'bake' }.baseOs == 'trusty'
   }
 }

@@ -18,7 +18,6 @@
 package com.netflix.spinnaker.orca.applications.pipelines
 
 import com.google.common.annotations.VisibleForTesting
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -33,7 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-@CompileStatic
 class UpsertProjectStage implements StageDefinitionBuilder {
   @Override
   <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
@@ -69,7 +67,7 @@ class UpsertProjectStage implements StageDefinitionBuilder {
         "notification.type": "upsertproject"
       ]
 
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, outputs)
+      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs)
     }
   }
 }

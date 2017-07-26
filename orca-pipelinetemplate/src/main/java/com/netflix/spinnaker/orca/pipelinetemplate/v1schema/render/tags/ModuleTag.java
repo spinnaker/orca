@@ -18,7 +18,9 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.tags;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hubspot.jinjava.interpret.Context;
+import com.hubspot.jinjava.interpret.InterpretException;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
+import com.hubspot.jinjava.interpret.TemplateStateException;
 import com.hubspot.jinjava.interpret.TemplateSyntaxException;
 import com.hubspot.jinjava.lib.tag.Tag;
 import com.hubspot.jinjava.tree.TagNode;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public class ModuleTag implements Tag {
@@ -68,11 +71,7 @@ public class ModuleTag implements Tag {
 
     PipelineTemplate template = (PipelineTemplate) context.get("pipelineTemplate");
     if (template == null) {
-      throw new TemplateRenderException(new Error()
-        .withMessage("Pipeline template missing from jinja context")
-        .withCause("Internal error")
-        .withLocation(String.format("module:%s", moduleId))
-      );
+      throw new TemplateStateException("Pipeline template missing from jinja context");
     }
 
     TemplateModule module = template.getModules().stream()
@@ -88,7 +87,7 @@ public class ModuleTag implements Tag {
     moduleContext.setLocation("module:" + moduleId);
 
     // Assign parameters into the context
-    Map<String, Object> paramPairs = new HashMap<>();
+    Map<String, String> paramPairs = new HashMap<>();
     helper.subList(1, helper.size()).forEach(p -> {
       String[] parts = p.split("=");
       if (parts.length != 2) {
@@ -100,11 +99,13 @@ public class ModuleTag implements Tag {
     List<String> missing = new ArrayList<>();
     for (NamedHashMap var : module.getVariables()) {
       // First try to assign the variable from the context directly
-      Object val = context.get(var.getName());
+      Object val = interpreter.resolveELExpression(var.getName(), tagNode.getLineNumber());
       if (val == null) {
         // Try to assign from a parameter (using the param value as a context key first, then as a literal)
         if (paramPairs.containsKey(var.getName())) {
-          val = context.get(paramPairs.get(var.getName()), paramPairs.get(var.getName()));
+          val = Optional.ofNullable(
+            interpreter.resolveELExpression(paramPairs.get(var.getName()), tagNode.getLineNumber())
+          ).orElse(paramPairs.get(var.getName()));
         }
 
         // If the val is still null, try to assign from a default value
@@ -121,22 +122,37 @@ public class ModuleTag implements Tag {
     }
 
     if (missing.size() > 0) {
-      throw new TemplateRenderException(new Error()
-        .withMessage("Missing required variables in module")
-        .withCause("'" + StringUtils.join(missing, "', '") + "' must be defined")
-        .withLocation(moduleContext.getLocation())
+      throw TemplateRenderException.fromError(
+        new Error()
+          .withMessage("Missing required variables in module")
+          .withCause("'" + StringUtils.join(missing, "', '") + "' must be defined")
+          .withLocation(moduleContext.getLocation())
+          .withDetail("source", tagNode.getMaster().getImage())
       );
     }
 
-    Object rendered = RenderUtil.deepRender(renderer, module.getDefinition(), moduleContext);
+    Object rendered;
+    try {
+      rendered = RenderUtil.deepRender(renderer, module.getDefinition(), moduleContext);
+    } catch (InterpretException e) {
+      throw TemplateRenderException.fromError(
+        new Error()
+          .withMessage("Failed rendering module")
+          .withLocation(moduleContext.getLocation())
+          .withDetail("source", tagNode.getMaster().getImage()),
+        e
+      );
+    }
 
     try {
       return new String(objectMapper.writeValueAsBytes(rendered));
     } catch (JsonProcessingException e) {
-      throw new TemplateRenderException(new Error()
-        .withMessage("Failed rendering module as JSON")
-        .withCause(e.getMessage())
-        .withLocation(moduleContext.getLocation())
+      throw TemplateRenderException.fromError(
+        new Error()
+          .withMessage("Failed rendering module as JSON")
+          .withLocation(moduleContext.getLocation())
+          .withDetail("source", tagNode.getMaster().getImage()),
+        e
       );
     }
   }

@@ -19,16 +19,33 @@ package com.netflix.spinnaker.orca.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.hubspot.jinjava.lib.tag.Tag;
+import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.front50.PipelineModelMutator;
 import com.netflix.spinnaker.orca.pipelinetemplate.PipelineTemplateModule;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.*;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import com.netflix.spinnaker.orca.pipelinetemplate.loader.TemplateLoader;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.TemplatedPipelineModelMutator;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.JinjaRenderer;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.RenderedValueConverter;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.Renderer;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.YamlRenderedValueConverter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.yaml.snakeyaml.Yaml;
+
+import java.util.List;
 
 @ConditionalOnProperty("pipelineTemplate.enabled")
-@ComponentScan(basePackageClasses = PipelineTemplateModule.class)
+@ComponentScan(
+  basePackageClasses = PipelineTemplateModule.class,
+  basePackages = {"com.netflix.spinnaker.orca.pipelinetemplate.tasks", "com.netflix.spinnaker.orca.pipelinetemplate.pipeline"}
+)
 public class PipelineTemplateConfiguration {
+
+  @Autowired(required = false)
+  private List<Tag> additionalJinjaTags;
 
   @Bean
   ObjectMapper pipelineTemplateObjectMapper() {
@@ -38,19 +55,21 @@ public class PipelineTemplateConfiguration {
   }
 
   @Bean
-  RenderedValueConverter jsonRenderedValueConverter(ObjectMapper pipelineTemplateObjectMapper) {
-    return new JsonRenderedValueConverter(pipelineTemplateObjectMapper);
+  RenderedValueConverter yamlRenderedValueConverter() {
+    return new YamlRenderedValueConverter(new Yaml());
   }
 
   @Bean
-  @ConditionalOnExpression("!${pipelineTemplate.jinja.enabled:false}")
-  Renderer handlebarsRenderer(RenderedValueConverter renderedValueConverter, ObjectMapper pipelineTemplateObjectMapper) {
-    return new HandlebarsRenderer(renderedValueConverter, pipelineTemplateObjectMapper);
+  Renderer jinjaRenderer(RenderedValueConverter renderedValueConverter,
+                         ObjectMapper pipelineTemplateObjectMapper,
+                         Front50Service front50Service) {
+    return new JinjaRenderer(renderedValueConverter, pipelineTemplateObjectMapper, front50Service, additionalJinjaTags);
   }
 
   @Bean
-  @ConditionalOnExpression("${pipelineTemplate.jinja.enabled:false}")
-  Renderer jinjaRenderer(RenderedValueConverter renderedValueConverter, ObjectMapper pipelineTemplateObjectMapper) {
-    return new JinjaRenderer(renderedValueConverter, pipelineTemplateObjectMapper);
+  PipelineModelMutator schemaV1TemplatedPipelineModelMutator(ObjectMapper pipelineTemplateObjectMapper,
+                                                             TemplateLoader templateLoader,
+                                                             Renderer renderer) {
+    return new TemplatedPipelineModelMutator(pipelineTemplateObjectMapper, templateLoader, renderer);
   }
 }

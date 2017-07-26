@@ -95,8 +95,15 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
           if (trigger && trigger.repository && trigger.tag) {
             operation.imageId = "${trigger.repository}:${trigger.tag}".toString()
           }
+          if (!operation.imageId && trigger.properties && trigger.properties.imageName) {
+            operation.imageId = trigger.properties.imageName
+          }
         }
       }
+    }
+
+    if (context.cloudProvider == 'titus' && stage.execution.authentication?.user) {
+      operation.user = stage.execution.authentication?.user
     }
 
     log.info("Deploying ${operation.amiName ?: operation.imageId} to ${targetRegion}")

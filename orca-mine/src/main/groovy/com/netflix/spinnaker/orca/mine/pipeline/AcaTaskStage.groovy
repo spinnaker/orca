@@ -16,10 +16,9 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.batch.RestartableStage
+import com.netflix.spinnaker.orca.RestartableStage
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorAcaTaskTask
@@ -28,7 +27,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -47,14 +46,13 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage, Restarta
   }
 
   @Override
-  Stage prepareStageForRestart(ExecutionRepository executionRepository, Stage stage, Collection<StageDefinitionBuilder> allStageBuilders) {
-    stage = StageDefinitionBuilder.StageDefinitionBuilderSupport
-      .prepareStageForRestart(executionRepository, stage, this, allStageBuilders)
+  void prepareStageForRestart(Stage stage) {
     stage.startTime = null
     stage.endTime = null
 
     if (stage.context.canary) {
       def previousCanary = stage.context.canary.clone()
+      if (!stage.context.restartDetails) stage.context.restartDetails = [:]
       stage.context.restartDetails << [previousCanary: previousCanary]
       cancelCanary(stage, "Restarting AcaTaskStage for execution (${stage.execution?.id}) ")
 
@@ -71,13 +69,11 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage, Restarta
     }
 
 
-    stage.tasks.each { com.netflix.spinnaker.orca.pipeline.model.Task task ->
+    stage.tasks.each { task ->
       task.startTime = null
       task.endTime = null
       task.status = ExecutionStatus.NOT_STARTED
     }
-
-    return stage
   }
 
   @Override

@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.mine.pipeline
 import com.netflix.frigga.NameBuilder
 import com.netflix.frigga.ami.AppVersion
 import com.netflix.spinnaker.orca.CancellableStage
-import com.netflix.spinnaker.orca.DefaultTaskResult
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
@@ -65,7 +64,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @Override
-  <T extends Execution<T>> void postBranchGraph(Stage<T> stage, TaskNode.Builder builder) {
+  void postBranchGraph(Stage<?> stage, TaskNode.Builder builder) {
     builder.withTask("completeDeployCanary", CompleteDeployCanaryTask)
   }
 
@@ -153,7 +152,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
       def context = stage.context
       def allStages = stage.execution.stages
       def deployStages = allStages.findAll {
-        it.parentStageId == stage.id && it.type == ParallelDeployStage.PIPELINE_CONFIG_TYPE
+        it.parentStageId == stage.id
       }
       def deployedClusterPairs = []
       for (Map pair in context.clusterPairs) {
@@ -208,7 +207,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
       log.info("Completed Canary Deploys")
       Map canary = stage.context.canary
       canary.canaryDeployments = deployedClusterPairs
-      new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [canary: canary, deployedClusterPairs: deployedClusterPairs])
+      new TaskResult(ExecutionStatus.SUCCEEDED, [canary: canary, deployedClusterPairs: deployedClusterPairs])
     }
   }
 

@@ -29,6 +29,8 @@ import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.V1SchemaExecutionGen
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.GraphMutator;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.DefaultRenderContext;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.RenderContext;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.Renderer;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.validator.V1TemplateConfigurationSchemaValidator;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.validator.V1TemplateSchemaValidator;
@@ -70,19 +72,22 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
 
   @Override
   public Map<String, Object> process(Map<String, Object> pipeline) {
+    Errors errors;
     try {
       return processInternal(pipeline);
     } catch (TemplateLoaderException e) {
-      return new Errors().addError(new Error().withMessage("failed loading template").withCause(e.getMessage())).toResponse();
+      errors = new Errors().add(new Error().withMessage("failed loading template").withCause(e.getMessage()));
     } catch (TemplateRenderException e) {
-      return new Errors().addError(
-        e.getError() != null ? e.getError() : new Error().withMessage("failed rendering handlebars template").withCause(e.getMessage())
-      ).toResponse();
+      errors = e.getErrors();
+      if (!errors.hasErrors(true)) {
+        errors.add(new Error().withMessage("failed rendering template expression").withCause(e.getMessage()));
+      }
     } catch (IllegalTemplateConfigurationException e) {
-      return new Errors().addError(
+      errors = new Errors().add(
         e.getError() != null ? e.getError() : new Error().withMessage("malformed template configuration").withCause(e.getMessage())
-      ).toResponse();
+      );
     }
+    return errors.toResponse();
   }
 
   private Map<String, Object> processInternal(Map<String, Object> pipeline) {
@@ -99,8 +104,7 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
       return validationErrors.toResponse();
     }
 
-    List<PipelineTemplate> templates = templateLoader.load(templateConfiguration.getPipeline().getTemplate());
-    PipelineTemplate template = TemplateMerge.merge(templates);
+    PipelineTemplate template = getPipelineTemplate(request, templateConfiguration);
 
     new V1TemplateSchemaValidator().validate(template, validationErrors, new SchemaValidatorContext(!templateConfiguration.getStages().isEmpty()));
     if (validationErrors.hasErrors(request.plan)) {
@@ -112,16 +116,37 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
     graphMutator.mutate(template);
 
     ExecutionGenerator executionGenerator = new V1SchemaExecutionGenerator();
-
-    Map<String, Object> generatedPipeline = executionGenerator.generate(template, templateConfiguration);
+    Map<String, Object> generatedPipeline = executionGenerator.generate(template, templateConfiguration, (String) pipeline.get("id"));
 
     return generatedPipeline;
+  }
+
+  private PipelineTemplate getPipelineTemplate(TemplatedPipelineRequest request, TemplateConfiguration templateConfiguration) {
+    if (request.plan && request.template != null) {
+      // Allow template inlining to perform plans without first publishing the template somewhere.
+      return request.template;
+    }
+
+    if (request.getConfig().getPipeline().getTemplate() == null) {
+      throw new IllegalTemplateConfigurationException(new Error().withMessage("configuration is missing a template"));
+    }
+
+    setTemplateSourceWithJinja(request);
+    List<PipelineTemplate> templates = templateLoader.load(templateConfiguration.getPipeline().getTemplate());
+
+    return TemplateMerge.merge(templates);
+  }
+
+  private void setTemplateSourceWithJinja(TemplatedPipelineRequest request) {
+    RenderContext context = new DefaultRenderContext(request.getConfig().getPipeline().getApplication(), null, request.getTrigger());
+    request.getConfig().getPipeline().getTemplate().setSource(renderer.render(request.getConfig().getPipeline().getTemplate().getSource(), context ));
   }
 
   private static class TemplatedPipelineRequest {
     String type;
     Map<String, Object> trigger;
     TemplateConfiguration config;
+    PipelineTemplate template;
     Boolean plan = false;
 
     public boolean isTemplatedPipelineRequest() {
@@ -150,6 +175,14 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
 
     public void setTrigger(Map<String, Object> trigger) {
       this.trigger = trigger;
+    }
+
+    public PipelineTemplate getTemplate() {
+      return template;
+    }
+
+    public void setTemplate(PipelineTemplate template) {
+      this.template = template;
     }
 
     public Boolean getPlan() {

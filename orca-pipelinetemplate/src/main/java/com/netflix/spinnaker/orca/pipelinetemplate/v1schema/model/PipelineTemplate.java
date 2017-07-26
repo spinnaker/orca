@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.validator.VersionedSchema;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,11 +36,13 @@ public class PipelineTemplate implements VersionedSchema {
   private Configuration configuration;
   private List<StageDefinition> stages;
   private List<TemplateModule> modules;
+  private List<PartialDefinition> partials = new ArrayList<>();
 
   public static class Metadata {
     private String name;
     private String description;
     private String owner;
+    private List<String> scopes = new ArrayList<>();
 
     public String getName() {
       return name;
@@ -64,13 +67,23 @@ public class PipelineTemplate implements VersionedSchema {
     public void setOwner(String owner) {
       this.owner = owner;
     }
+
+    public List<String> getScopes() {
+      return scopes;
+    }
+
+    public void setScopes(List<String> scopes) {
+      this.scopes = scopes;
+    }
   }
 
   public static class Variable implements NamedContent {
     private String name;
+    private String group = "General";
     private String description;
-    private String type;
+    private String type = "string";
     private Object defaultValue;
+    private String example;
 
     @Override
     public String getName() {
@@ -79,6 +92,14 @@ public class PipelineTemplate implements VersionedSchema {
 
     public void setName(String name) {
       this.name = name;
+    }
+
+    public String getGroup() {
+      return group;
+    }
+
+    public void setGroup(String group) {
+      this.group = group;
     }
 
     public String getDescription() {
@@ -107,6 +128,14 @@ public class PipelineTemplate implements VersionedSchema {
 
     public boolean hasDefaultValue() {
       return defaultValue != null;
+    }
+
+    public String getExample() {
+      return example;
+    }
+
+    public void setExample(String example) {
+      this.example = example;
     }
   }
 
@@ -227,6 +256,14 @@ public class PipelineTemplate implements VersionedSchema {
 
   public void setModules(List<TemplateModule> modules) {
     this.modules = modules;
+  }
+
+  public List<PartialDefinition> getPartials() {
+    return partials;
+  }
+
+  public void setPartials(List<PartialDefinition> partials) {
+    this.partials = partials;
   }
 
   public void accept(PipelineTemplateVisitor visitor) {

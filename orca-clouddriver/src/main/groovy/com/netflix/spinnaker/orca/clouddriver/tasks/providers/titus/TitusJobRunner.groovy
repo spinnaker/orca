@@ -31,12 +31,14 @@ class TitusJobRunner implements JobRunner {
   @Override
   List<Map> getOperations(Stage stage) {
     def operation = [:]
-
+    operation.putAll(stage.context)
     if (stage.context.containsKey("cluster")) {
       operation.putAll(stage.context.cluster as Map)
-      operation.put('credentials', stage.context.credentials)
-    } else {
-      operation.putAll(stage.context)
+    }
+    operation.put('cloudProvider', cloudProvider)
+
+    if (stage.execution.authentication?.user) {
+      operation.put('user', stage.execution.authentication?.user)
     }
 
     return [[(OPERATION): operation]]

@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
-import com.netflix.spinnaker.orca.DefaultTaskResult
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -26,8 +26,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Component
@@ -45,14 +43,40 @@ class MonitorPipelineTask implements RetryableTask {
     Execution childPipeline = executionRepository.retrievePipeline(pipelineId)
 
     if (childPipeline.status == ExecutionStatus.SUCCEEDED) {
-      return new DefaultTaskResult(ExecutionStatus.SUCCEEDED, [status: childPipeline.status])
+      return new TaskResult(ExecutionStatus.SUCCEEDED, [status: childPipeline.status])
     }
 
     if (childPipeline.status.halt) {
       // indicates a failure of some sort
-      return new DefaultTaskResult(ExecutionStatus.TERMINAL, [status: childPipeline.status])
+      List<String> errors = childPipeline.stages
+        .findAll { s -> s.status == ExecutionStatus.TERMINAL }
+        .findResults { s ->
+          if (s.context["exception"]?.details) {
+            return [(s.context["exception"].details.errors ?: s.context["exception"].details.error)]
+              .flatten()
+              .collect {e -> buildExceptionMessage(childPipeline.name, e, s)}
+          }
+          if (s.context["kato.tasks"]) {
+            return s.context["kato.tasks"]
+              .findAll { k -> k.status?.failed }
+              .findResults { k ->
+                String message = k.exception?.message ?: k.history ? ((List<String>) k.history).last() : null
+                return message ? buildExceptionMessage(childPipeline.name, message, s) : null
+              }
+          }
+        }
+        .flatten()
+      Map context = [status: childPipeline.status]
+      if (errors) {
+        context.exception = [details: [errors: errors]]
+      }
+      return new TaskResult(ExecutionStatus.TERMINAL, context)
     }
 
-    return new DefaultTaskResult(ExecutionStatus.RUNNING, [status: childPipeline.status])
+    return new TaskResult(ExecutionStatus.RUNNING, [status: childPipeline.status])
+  }
+
+  private static String buildExceptionMessage(String pipelineName, String message, Stage stage) {
+    "Exception in child pipeline stage (${pipelineName}: ${stage.name ?: stage.type}): ${message}"
   }
 }

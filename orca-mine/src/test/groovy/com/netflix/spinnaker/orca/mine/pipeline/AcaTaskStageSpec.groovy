@@ -2,11 +2,13 @@ package com.netflix.spinnaker.orca.mine.pipeline
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.mine.MineService
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTask
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v2
+
 /*
  * Copyright 2016 Netflix, Inc.
  *
@@ -25,11 +27,10 @@ import spock.lang.Specification
 
 class AcaTaskStageSpec extends Specification {
 
-
   def "restart aca task should cancel off the original canary and clean up the stage context"() {
     given:
     def executionRepository = Mock(ExecutionRepository)
-    def pipeline = new Pipeline().builder().build()
+    def pipeline = new Pipeline().builder().withExecutionEngine(v2).build()
 
     def canary = createCanary('123');
     def context = [canary: canary.clone()]
@@ -39,23 +40,23 @@ class AcaTaskStageSpec extends Specification {
     acaTaskStage.mineService = mineService
 
     when:
-    Stage result = acaTaskStage.prepareStageForRestart(executionRepository, stage, [])
+    acaTaskStage.prepareStageForRestart(stage)
 
     then: "canary should be copied to the restart details"
-    result.context.restartDetails.previousCanary == canary
+    stage.context.restartDetails.previousCanary == canary
 
     and: "preserve the canary config"
-    result.context.canary.canaryConfig == canary.canaryConfig
+    stage.context.canary.canaryConfig == canary.canaryConfig
 
     and: "clean up the canary"
-    result.context.canary.id == null
-    result.context.canary.launchDate == null
-    result.context.canary.endDate == null
-    result.context.canary.canaryDeployments == null
-    result.context.canary.canaryResult == null
-    result.context.canary.status == null
-    result.context.canary.health == null
-    result.status == ExecutionStatus.NOT_STARTED
+    stage.context.canary.id == null
+    stage.context.canary.launchDate == null
+    stage.context.canary.endDate == null
+    stage.context.canary.canaryDeployments == null
+    stage.context.canary.canaryResult == null
+    stage.context.canary.status == null
+    stage.context.canary.health == null
+    stage.status == ExecutionStatus.NOT_STARTED
 
     and: "reset the tasks"
     stage.tasks.each { task ->
@@ -72,7 +73,7 @@ class AcaTaskStageSpec extends Specification {
   def "restart aca task should not cancel off the original canary if there is no canary id and clean up the stage context"() {
     given:
     def executionRepository = Mock(ExecutionRepository)
-    def pipeline = new Pipeline().builder().build()
+    def pipeline = new Pipeline().builder().withExecutionEngine(v2).build()
 
     def canary = createCanary()
     def context = [canary: canary.clone()]
@@ -82,23 +83,23 @@ class AcaTaskStageSpec extends Specification {
     acaTaskStage.mineService = mineService
 
     when:
-    Stage result = acaTaskStage.prepareStageForRestart(executionRepository, stage, [])
+    acaTaskStage.prepareStageForRestart(stage)
 
     then: "canary should be copied to the restart details"
-    result.context.restartDetails.previousCanary == canary
+    stage.context.restartDetails.previousCanary == canary
 
     and: "preserve the canary config"
-    result.context.canary.canaryConfig == canary.canaryConfig
+    stage.context.canary.canaryConfig == canary.canaryConfig
 
     and: "clean up the canary"
-    result.context.canary.id == null
-    result.context.canary.launchDate == null
-    result.context.canary.endDate == null
-    result.context.canary.canaryDeployments == null
-    result.context.canary.canaryResult == null
-    result.context.canary.status == null
-    result.context.canary.health == null
-    result.status == ExecutionStatus.NOT_STARTED
+    stage.context.canary.id == null
+    stage.context.canary.launchDate == null
+    stage.context.canary.endDate == null
+    stage.context.canary.canaryDeployments == null
+    stage.context.canary.canaryResult == null
+    stage.context.canary.status == null
+    stage.context.canary.health == null
+    stage.status == ExecutionStatus.NOT_STARTED
 
     and: "reset the tasks"
     stage.tasks.each { task ->
@@ -112,19 +113,18 @@ class AcaTaskStageSpec extends Specification {
 
   }
 
-
   def createCanary(String id) {
     def canary = [
-      launchDate: 1470062664495,
-      endDate: 1470070824033,
-      canaryConfig: [id: 1, application: "cadmium"],
-      canaryDeployments: [[id:2], [id:3]],
-      canaryResult: [overallResult: 20, overallScore: 89],
-      status: [status: "COMPLETED"],
-      health: [health: "UNKNOWN"]
+      launchDate       : 1470062664495,
+      endDate          : 1470070824033,
+      canaryConfig     : [id: 1, application: "cadmium"],
+      canaryDeployments: [[id: 2], [id: 3]],
+      canaryResult     : [overallResult: 20, overallScore: 89],
+      status           : [status: "COMPLETED"],
+      health           : [health: "UNKNOWN"]
     ]
 
-    if(id) {
+    if (id) {
       canary.id = id
     }
     canary
@@ -133,21 +133,21 @@ class AcaTaskStageSpec extends Specification {
   def createStage(pipeline, context) {
     Stage stage = new Stage<>(pipeline, "acaTask", "ACA Task", context)
     stage.tasks = [
-      new DefaultTask(
+      new Task(
         id: "1",
         name: "stageStart",
         startTime: 1470062659330,
         endTime: 1470062660513,
         status: "SUCCEEDED"
       ),
-      new DefaultTask(
+      new Task(
         id: "2",
         name: "registerGenericCanary",
         startTime: 1470062663868,
         endTime: 1470062664805,
         status: "SUCCEEDED"
       ),
-      new DefaultTask(
+      new Task(
         id: "3",
         name: "monitorGenericCanary",
         startTime: 1470062668621,
