@@ -31,6 +31,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.toDuration
 import com.netflix.spinnaker.orca.time.toInstant
+import org.apache.commons.lang.time.DurationFormatUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Autowired
@@ -64,7 +65,7 @@ open class RunTaskHandler
         } else if (execution.getStatus() == PAUSED) {
           queue.push(PauseTask(message))
         } else {
-          task.checkForTimeout(stage, taskModel)
+          task.checkForTimeout(stage, taskModel, message)
 
           task.execute(stage.withMergedContext()).let { result: TaskResult ->
             // TODO: rather send this data with CompleteTask message
@@ -144,14 +145,25 @@ open class RunTaskHandler
       else -> Duration.ofSeconds(1)
     }
 
-  private fun Task.checkForTimeout(stage: Stage<*>, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task) {
+  private fun Task.formatTimeout(timeout: Long): String {
+    return DurationFormatUtils.formatDurationWords(timeout, true, true)
+  }
+
+  private fun Task.checkForTimeout(stage: Stage<*>, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, message: Message) {
     if (this is RetryableTask) {
       val startTime = taskModel.startTime.toInstant()
       val pausedDuration = stage.getExecution().pausedDurationRelativeTo(startTime)
+      val throttleTime = message.getAttribute<TotalThrottleTimeAttribute>()?.totalThrottleTimeMs ?: 0
       val elapsedTime = Duration.between(startTime, clock.instant())
-      if (elapsedTime.minus(pausedDuration) > timeoutDuration(stage)) {
-        log.warn("${javaClass.simpleName} of stage ${stage.getName()} timed out after $elapsedTime")
-        throw TimeoutException("${javaClass.simpleName} of stage ${stage.getName()} timed out after $elapsedTime")
+      if (elapsedTime.minus(pausedDuration).minusMillis(throttleTime) > timeoutDuration(stage)) {
+        val durationString = formatTimeout(elapsedTime.toMillis())
+        val msg = StringBuilder("${javaClass.simpleName} of stage ${stage.getName()} timed out after $durationString. ")
+        msg.append("pausedDuration: ${formatTimeout(pausedDuration.toMillis())}, ")
+        msg.append("throttleTime: ${formatTimeout(throttleTime)}, ")
+        msg.append("elapsedTime: ${formatTimeout(elapsedTime.toMillis())}")
+
+        log.warn(msg.toString())
+        throw TimeoutException(msg.toString())
       }
     }
   }
