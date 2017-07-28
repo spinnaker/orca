@@ -21,6 +21,7 @@ import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
@@ -34,9 +35,10 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
+  val stageNavigator: StageNavigator = mock()
 
   subject(GROUP) {
-    PauseStageHandler(queue, repository)
+    PauseStageHandler(queue, repository, stageNavigator)
   }
 
   fun resetMocks() = reset(queue, repository)

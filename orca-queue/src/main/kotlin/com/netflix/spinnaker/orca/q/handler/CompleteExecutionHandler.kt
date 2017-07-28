@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -35,6 +36,7 @@ open class CompleteExecutionHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
+  override val stageNavigator: StageNavigator,
   private val publisher: ApplicationEventPublisher,
   @Value("\${queue.retry.delay.ms:5000}") retryDelayMs: Long
 ) : MessageHandler<CompleteExecution> {

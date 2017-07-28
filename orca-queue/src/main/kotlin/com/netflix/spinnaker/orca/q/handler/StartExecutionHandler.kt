@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -29,6 +30,7 @@ open class StartExecutionHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
+  override val stageNavigator: StageNavigator,
   private val publisher: ApplicationEventPublisher
 ) : MessageHandler<StartExecution> {
 

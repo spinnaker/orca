@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
@@ -34,9 +35,10 @@ object ConfigurationErrorHandlerTest : SubjectSpek<ConfigurationErrorHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
+  val stageNavigator: StageNavigator = mock()
 
   subject(GROUP) {
-    ConfigurationErrorHandler(queue, repository)
+    ConfigurationErrorHandler(queue, repository, stageNavigator)
   }
 
   fun resetMocks() = reset(queue, repository)

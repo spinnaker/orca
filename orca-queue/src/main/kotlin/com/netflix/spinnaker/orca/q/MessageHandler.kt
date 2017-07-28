@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import com.netflix.spinnaker.security.User
 
@@ -32,6 +33,7 @@ interface MessageHandler<M : Message> : (Message) -> Unit {
   val messageType: Class<M>
   val queue: Queue
   val repository: ExecutionRepository
+  val stageNavigator: StageNavigator
 
   override fun invoke(message: Message): Unit =
     if (messageType.isAssignableFrom(message.javaClass)) {
@@ -69,8 +71,8 @@ interface MessageHandler<M : Message> : (Message) -> Unit {
           if (stage == null) {
             queue.push(InvalidStageId(this))
           } else {
-            val authenticatedUser = stage
-              .ancestors()
+            val authenticatedUser = stageNavigator
+              .ancestors(stage)
               .filter { it.stageBuilder is AuthenticatedStage }
               .firstOrNull()
               ?.let { (it.stageBuilder as AuthenticatedStage).authenticatedUser(it.stage).orElse(null) }
