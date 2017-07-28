@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
@@ -35,11 +34,10 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
   val publisher: ApplicationEventPublisher = mock()
 
   subject(GROUP) {
-    StartExecutionHandler(queue, repository, stageNavigator, publisher)
+    StartExecutionHandler(queue, repository, publisher)
   }
 
   fun resetMocks() = reset(queue, repository, publisher)

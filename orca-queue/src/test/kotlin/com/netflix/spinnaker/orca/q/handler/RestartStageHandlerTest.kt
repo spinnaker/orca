@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
@@ -44,14 +43,12 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
   val clock = fixed(now(), systemDefault())
 
   subject(GROUP) {
     RestartStageHandler(
       queue,
       repository,
-      stageNavigator,
       listOf(
         singleTaskStage,
         stageWithSyntheticBefore,

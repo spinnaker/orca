@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.context
@@ -34,7 +33,6 @@ import org.jetbrains.spek.subject.SubjectSpek
 object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
   val executor = MoreExecutors.directExecutor()
   val cancellableStage: CancelableStageDefinitionBuilder = mock()
 
@@ -42,7 +40,6 @@ object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
     CancelStageHandler(
       queue,
       repository,
-      stageNavigator,
       listOf(singleTaskStage, cancellableStage),
       executor
     )

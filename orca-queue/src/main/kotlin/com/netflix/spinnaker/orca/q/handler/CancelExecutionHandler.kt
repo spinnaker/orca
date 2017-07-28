@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.PAUSED
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
@@ -30,8 +29,7 @@ import org.springframework.stereotype.Component
 open class CancelExecutionHandler
 @Autowired constructor(
   override val queue: Queue,
-  override val repository: ExecutionRepository,
-  override val stageNavigator: StageNavigator
+  override val repository: ExecutionRepository
 ) : MessageHandler<CancelExecution> {
   override val messageType = CancelExecution::class.java
 

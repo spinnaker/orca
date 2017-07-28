@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.PAUSED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.describe
@@ -33,10 +32,9 @@ object CancelExecutionHandlerTest : SubjectSpek<CancelExecutionHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
 
   subject(CachingMode.GROUP) {
-    CancelExecutionHandler(queue, repository, stageNavigator)
+    CancelExecutionHandler(queue, repository)
   }
 
   fun resetMocks() = reset(queue, repository)

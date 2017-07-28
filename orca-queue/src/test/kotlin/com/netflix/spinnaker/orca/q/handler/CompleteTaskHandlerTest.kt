@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.events.TaskComplete
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.spek.and
@@ -41,12 +40,11 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
   subject(GROUP) {
-    CompleteTaskHandler(queue, repository, stageNavigator, publisher, clock)
+    CompleteTaskHandler(queue, repository, publisher, clock)
   }
 
   fun resetMocks() = reset(queue, repository, publisher)

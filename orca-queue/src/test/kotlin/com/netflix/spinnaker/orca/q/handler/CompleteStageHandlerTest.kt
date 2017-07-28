@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.spek.and
@@ -37,12 +36,11 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
   subject(GROUP) {
-    CompleteStageHandler(queue, repository, stageNavigator, publisher, clock)
+    CompleteStageHandler(queue, repository, publisher, clock)
   }
 
   fun resetMocks() = reset(queue, repository, publisher)

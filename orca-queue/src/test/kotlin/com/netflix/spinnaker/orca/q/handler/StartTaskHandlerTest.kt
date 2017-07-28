@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.spek.shouldEqual
@@ -36,12 +35,11 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
   subject(GROUP) {
-    StartTaskHandler(queue, repository, stageNavigator, publisher, clock)
+    StartTaskHandler(queue, repository, publisher, clock)
   }
 
   fun resetMocks() = reset(queue, repository, publisher)

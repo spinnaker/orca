@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -34,7 +33,6 @@ open class CompleteStageHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  override val stageNavigator: StageNavigator,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
 ) : MessageHandler<CompleteStage> {

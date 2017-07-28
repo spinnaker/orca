@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.*
@@ -34,11 +33,10 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
   val retryDelay = Duration.ofSeconds(5)
 
   subject(CachingMode.GROUP) {
-    ContinueParentStageHandler(queue, repository, stageNavigator, retryDelay.toMillis())
+    ContinueParentStageHandler(queue, repository, retryDelay.toMillis())
   }
 
   fun resetMocks() = reset(queue, repository)

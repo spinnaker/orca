@@ -21,7 +21,6 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.RestartStage
@@ -35,7 +34,6 @@ open class RestartStageHandler
 @Autowired constructor(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  override val stageNavigator: StageNavigator,
   override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
   private val clock: Clock
 ) : MessageHandler<RestartStage>, StageBuilderAware {

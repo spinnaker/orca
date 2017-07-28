@@ -20,7 +20,6 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.throws
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
@@ -43,9 +42,6 @@ object MessageHandlerTest : SubjectSpek<MessageHandler<*>>({
 
       override val repository
         get() = repository
-
-      override val stageNavigator: StageNavigator
-        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 
       override val messageType = ConfigurationError::class.java
 
