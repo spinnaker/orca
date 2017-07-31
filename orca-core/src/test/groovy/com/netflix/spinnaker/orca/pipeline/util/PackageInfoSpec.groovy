@@ -413,7 +413,6 @@ class PackageInfoSpec extends Specification {
     quipStage.execution = pipeline
     quipStage.context = ['package': "api"]
 
-    PackageType packageType = PackageType.DEB
     ObjectMapper objectMapper = new ObjectMapper()
     PackageInfo packageInfo = new PackageInfo(quipStage, packageType.packageType, packageType.versionDelimiter, true, true, objectMapper)
 
@@ -424,16 +423,26 @@ class PackageInfoSpec extends Specification {
     targetPkg.packageVersion == packageVersion
 
     where:
-    trigger                                                ||  packageVersion
+    trigger                                                ||  packageType      || packageVersion
     [parentExecution: [
       trigger: [
         buildInfo: [
           artifacts: [
             [fileName: "api_1.1.1-h01.sha123_all.deb"]
-          ]]]]]                                            ||  "1.1.1-h01.sha123"
+          ]]]]]                                            ||  PackageType.DEB  ||  "1.1.1-h01.sha123"
     [buildInfo: [
       artifacts: [
         [fileName: "api_1.1.1-h01.sha123_all.deb"]
-      ]]]                                                  ||  "1.1.1-h01.sha123"
+      ]]]                                                  ||  PackageType.DEB  ||  "1.1.1-h01.sha123"
+    [buildInfo: [
+      artifacts: [
+        [fileName: "api-4.11.4h-1.x86_64.rpm"]
+      ]]]                                                  ||  PackageType.RPM  || "4.11.4h"
+    [parentExecution: [
+      trigger: [
+        buildInfo: [
+          artifacts: [
+            [fileName: "api-4.11.4h-1.x86_64.rpm"]
+          ]]]]]                                            ||  PackageType.RPM  || "4.11.4h"
   }
 }
