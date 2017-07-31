@@ -16,8 +16,17 @@
 package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class NamedHashMap extends HashMap<String, Object> implements NamedContent {
+
+  public NamedHashMap() {
+    super();
+  }
+
+  public NamedHashMap(Map<String, Object> content) {
+    super(content);
+  }
 
   public String getName() {
     return String.valueOf(get("name"));

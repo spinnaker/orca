@@ -1,0 +1,150 @@
+#document netflix-conventions
+clusters:
+  netflix-conventions:
+    requires:
+      membership:
+        - nf-datacenter
+        - nf-infrastructure
+
+accounts:
+  awsdefault:
+    cloudProvider: aws
+    regions:
+      us-east-1:
+        name: us-east-1 #baerf
+        zones:
+          - us-east-1c
+          - us-east-1d
+          - us-east-1e
+      us-west-2:
+        name: us-west-2  #backrefs?
+        zones:
+          - us-west-2a
+          - us-west-2b
+          - us-west-2c
+
+  mgmttest:
+    extends: awsdefault
+    accountId: 123456789012
+
+  mgmt:
+    extends: awsdefault
+    accountId: 234567890123
+
+
+---
+
+#document spinnaker-conventions
+
+environments:
+  spinBase:
+    regions:
+      us-west-2: {}
+
+  test:
+    extends: spinBase
+    account: mgmttest
+    stack: test
+
+  spinProd:
+    extends: spinBase
+    account: mgmt
+
+  prestaging:
+    extends: spinProd
+    stack: prestaging
+
+  main:
+    extends: spinProd
+    stack: main
+
+  failover:
+    extends: main
+    regions:
+      us-west-2: null
+      us-east-1: {}
+
+loadBalancers:
+  spinnaker-elb:
+    type: internal
+#  listeners:
+#    - port: 80
+#      instancePort: 7001
+#      externalProtocol: HTTP
+#    - port: 443
+#      instancePort: 7002
+#      externalProtocol: TCP
+#  health:
+#    - instancePort: 7001
+#    - type: HTTP #implied
+#  ingress:
+#    - type: security-group #or CIDR or self
+#      from: spinnaker-internal-service
+#      ports:
+#        - 443
+
+clusters:
+  spinnaker-service:
+    extends: netflix-conventions
+    requires:
+      membership: #this doesn't merge it overwrites..
+                  # could also make it name: {} but bleh
+        - spinnaker-internal-service
+
+---
+
+loadBalancers:
+  gate-elb:
+    extends: spinnaker-elb
+#  listeners:
+#    - port: 7103
+#      instancePort: 7103
+#      externalProtocol: TCP
+
+clusters:
+  gateBase:
+    extends: spinnaker-service
+    application: gate
+    requires:
+      resources:
+        disk: 20gb
+        network: 1mbit
+        cpu: 2
+        ram: 4gb
+
+  gatePrestaging:
+    extends: gateBase
+    environment: prestaging
+    loadBalancers:
+      - extends: gate-elb
+        name: gate-prestaging-frontend
+
+  gateMain:
+    extends: gateBase
+    environment: main
+    requires:
+      resources:
+        network: 10mbit
+        ram: 16gb
+    loadBalancers:
+      - extends: gate-elb
+        name: gate-main-internal
+      - extends: gate-elb
+        type: external
+        name: gate-main-external
+
+  gateFailover:
+    extends: gateMain
+    environment: failover
+
+#---
+#
+#wat: >
+#  given serverGroup gate-main we can produce:
+#    upsertSecurityGroup operations: gate and gate-elb with appropriate ingress on gate for gate-elb
+#      - convention creates an application (stack?) specific security group, and for each ELB sets up ingress perms for
+#        all listeners instancePort settings
+#      - for elb adds ingress perms from config
+#    upsertLoadBalancer operations: gate-main-frontend and gate-main-external
+#    createServerGroup operation: gate-main in aws mgmt us-west-2
+#
