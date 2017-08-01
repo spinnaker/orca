@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import java.io.Serializable;
+import java.util.*;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
@@ -62,6 +66,7 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
   ExecutionEngine executionEngine = DEFAULT_EXECUTION_ENGINE;
   String origin;
 
+  @Nullable
   public Stage<T> namedStage(String type) {
     return stages
       .stream()
@@ -70,12 +75,22 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
       .orElse(null);
   }
 
+  @Nonnull
   public Stage<T> stageById(String stageId) {
     return stages
       .stream()
       .filter(it -> it.getId().equals(stageId))
       .findFirst()
-      .orElse(null);
+      .orElseThrow(() -> new IllegalArgumentException(String.format("No stage with id %s exists", stageId)));
+  }
+
+  @Nonnull
+  public Stage<T> stageByRef(String refId) {
+    return stages
+      .stream()
+      .filter(it -> it.getRefId().equals(refId))
+      .findFirst()
+      .orElseThrow(() -> new IllegalArgumentException(String.format("No stage with refId %s exists", refId)));
   }
 
   @Override public boolean equals(Object o) {

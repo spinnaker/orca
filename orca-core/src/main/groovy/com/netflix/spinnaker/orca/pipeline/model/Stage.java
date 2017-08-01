@@ -91,7 +91,7 @@ public class Stage<T extends Execution<T>> implements Serializable {
   /**
    * The context driving this stage. Provides inputs necessary to component steps
    */
-  private Map<String, Object> context = new HashMap<>();
+  private Map<String, Object> context = new StageContext(this);
 
   /**
    * Returns the tasks that are associated with this stage. Tasks are the most granular unit of work in a stage.
