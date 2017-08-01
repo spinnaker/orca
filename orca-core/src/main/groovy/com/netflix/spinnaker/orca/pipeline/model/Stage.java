@@ -15,12 +15,10 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener;
 import lombok.Data;
-import org.codehaus.groovy.runtime.ReverseListIterator;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static java.lang.String.format;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
 
 @Data
 public class Stage<T extends Execution<T>> implements Serializable {
@@ -145,23 +143,6 @@ public class Stage<T extends Execution<T>> implements Serializable {
     return tasks
       .stream()
       .filter(it -> it.getId().equals(taskId))
-      .findFirst()
-      .orElse(null);
-  }
-
-  /**
-   * Gets the last stage preceding this stage that has the specified type.
-   */
-  public Stage<T> preceding(String type) {
-    int i = getExecution()
-      .getStages()
-      .indexOf(this);
-    Iterable<Stage<T>> precedingStages = () ->
-      new ReverseListIterator<>(getExecution()
-        .getStages()
-        .subList(0, i + 1));
-    return stream(precedingStages.spliterator(), false)
-      .filter(it -> it.getType().equals(type))
       .findFirst()
       .orElse(null);
   }
