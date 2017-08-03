@@ -17,10 +17,14 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
@@ -54,7 +58,7 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
   boolean limitConcurrent = false;
   boolean keepWaitingPipelines = false;
 
-  final Map<String, Object> context = new HashMap<>();
+  @JsonManagedReference
   List<Stage<T>> stages = new ArrayList<>();
 
   Long startTime;

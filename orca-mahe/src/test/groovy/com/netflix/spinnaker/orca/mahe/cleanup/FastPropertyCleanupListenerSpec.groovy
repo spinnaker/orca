@@ -87,8 +87,6 @@ class FastPropertyCleanupListenerSpec extends Specification {
       new Response("http://mahe", 500, "OK", [], null)
     }
 
-    pipeline.context.rollbackActions == null
-
     IllegalStateException ex = thrown()
     assert ex.message.contains("Unable to rollback DELETE")
 
@@ -165,8 +163,6 @@ class FastPropertyCleanupListenerSpec extends Specification {
     1 * mahe.deleteProperty(propertyId, 'spinnaker rollback', propertyEnv) >> { def res ->
       new Response("http://mahe", 500, "OK", [] , null)
     }
-
-    pipeline.context.rollbackActions == null
 
     IllegalStateException ex = thrown()
     assert ex.message.contains("Unable to rollback CREATE")

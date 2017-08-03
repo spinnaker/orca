@@ -547,7 +547,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         val pipeline = pipeline {
           stage {
             type = "whatever"
-            context = hashMapOf("markSuccessfulOnTimeout" to true) as Map<String, Any>?
+            context.put("markSuccessfulOnTimeout", true)
             task {
               id = "1"
               implementingClass = DummyTask::class.qualifiedName
@@ -816,7 +816,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         stage {
           refId = "1"
           type = "createServerGroup"
-          context = mapOf(
+          context.putAll(mapOf(
             "deploy.server.groups" to mapOf(
               "us-west-1" to listOf(
                 "spindemo-test-v008"
@@ -824,7 +824,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
             ),
             "account" to "mgmttest",
             "region" to "us-west-1"
-          )
+          ))
           status = SUCCEEDED
         }
         stage {

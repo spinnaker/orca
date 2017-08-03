@@ -17,22 +17,31 @@
 package com.netflix.spinnaker.orca.pipeline.util
 
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.StageContext
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
 class ContextParameterProcessorSpec extends Specification {
 
-  @Subject ContextParameterProcessor contextParameterProcessor = new ContextParameterProcessor()
+  @Subject
+  ContextParameterProcessor contextParameterProcessor = new ContextParameterProcessor()
 
   @Unroll
   def "should #processAttributes"() {
     given:
     def source = ['test': sourceValue]
-    def context = ['testArray': ['good', ['arrayVal': 'bad'], [['one': 'two']]], replaceMe: 'newValue', 'h1': [h1: 'h1Val'], hierarchy: [h2: 'hierarchyValue', h3: [h4: 'h4Val']],
-                   replaceTest: 'stack-with-hyphens', withUpperCase: 'baconBacon']
+    def context = [
+      h1           : [h1: 'h1Val'],
+      hierarchy    : [h2: 'hierarchyValue', h3: [h4: 'h4Val']],
+      replaceMe    : 'newValue',
+      replaceTest  : 'stack-with-hyphens',
+      testArray    : ['good', [arrayVal: 'bad'], [[one: 'two']]],
+      withUpperCase: 'baconBacon'
+    ]
 
     when:
     def result = contextParameterProcessor.process(source, context, true)
@@ -101,7 +110,6 @@ class ContextParameterProcessorSpec extends Specification {
     '${T(java.lang.System).exit(1)}'          | 'System.exit'
     '${T(java.lang.Runtime).runtime.exit(1)}' | 'Runtime.getRuntime.exit'
 
-
   }
 
   @Unroll
@@ -135,9 +143,9 @@ class ContextParameterProcessorSpec extends Specification {
     result.test == source.test
 
     where:
-    testCase                                                            | desc
-    '${ new java.lang.Integer(1).wait(100000) }'                        | 'wait'
-    '${ new java.lang.Integer(1).getClass().getSimpleName() }'          | 'getClass'
+    testCase                                                   | desc
+    '${ new java.lang.Integer(1).wait(100000) }'               | 'wait'
+    '${ new java.lang.Integer(1).getClass().getSimpleName() }' | 'getClass'
   }
 
   def "should deny access to groovy metaclass methods via #desc"() {
@@ -151,13 +159,12 @@ class ContextParameterProcessorSpec extends Specification {
     result.test == source.test
 
     where:
-    testCase  | desc
+    testCase                          | desc
     '${status.getMetaClass()}'        | 'method'
     '${status.metaClass}'             | 'propertyAccessor'
     '${nested.status.metaClass}'      | 'nested accessor'
     '${nested.status.getMetaClass()}' | 'nested method'
   }
-
 
   @Unroll
   def "when allowUnknownKeys is #allowUnknownKeys it #desc"() {
@@ -305,10 +312,9 @@ class ContextParameterProcessorSpec extends Specification {
   }
 
   def "is able to parse deployment details correctly from execution"() {
-
     given:
-    def source = ['deployed': '${deployedServerGroups}']
-    def context = [execution: execution]
+    def source = [deployed: '${deployedServerGroups}']
+    def context = new StageContext(execution.stageByRef("2"), [execution: execution])
 
     when:
     def result = contextParameterProcessor.process(source, context, true)
@@ -320,37 +326,44 @@ class ContextParameterProcessorSpec extends Specification {
     result.deployed[0].ami == 'ami-06362b6e'
 
     where:
-    execution = [
-      "context": [
-        "deploymentDetails": [
-          [
-            "ami"      : "ami-06362b6e",
-            "amiSuffix": "201505150627",
-            "baseLabel": "candidate",
-            "baseOs"   : "ubuntu",
-            "package"  : "flex",
-            "region"   : "us-east-1",
-            "storeType": "ebs",
-            "vmType"   : "pv"
-          ],
-          [
-            "ami"      : "ami-f759b7b3",
-            "amiSuffix": "201505150627",
-            "baseLabel": "candidate",
-            "baseOs"   : "ubuntu",
-            "package"  : "flex",
-            "region"   : "us-west-1",
-            "storeType": "ebs",
-            "vmType"   : "pv"
-          ]
-        ]
-      ],
-      "stages" : [
+    json = [
+      "stages": [
         [
-          "status"       : ExecutionStatus.SUCCEEDED,
-          "type"         : "deploy",
-          "name"         : "Deploy in us-east-1",
-          "context"      : [
+          "refId"  : "1",
+          "type"   : "bake",
+          "status" : ExecutionStatus.SUCCEEDED,
+          "context": [
+            "deploymentDetails": [
+              [
+                "ami"      : "ami-06362b6e",
+                "amiSuffix": "201505150627",
+                "baseLabel": "candidate",
+                "baseOs"   : "ubuntu",
+                "package"  : "flex",
+                "region"   : "us-east-1",
+                "storeType": "ebs",
+                "vmType"   : "pv"
+              ],
+              [
+                "ami"      : "ami-f759b7b3",
+                "amiSuffix": "201505150627",
+                "baseLabel": "candidate",
+                "baseOs"   : "ubuntu",
+                "package"  : "flex",
+                "region"   : "us-west-1",
+                "storeType": "ebs",
+                "vmType"   : "pv"
+              ]
+            ]
+          ]
+        ],
+        [
+          "refId"               : "2",
+          "requisiteStageRefIds": ["1"],
+          "status"              : ExecutionStatus.SUCCEEDED,
+          "type"                : "deploy",
+          "name"                : "Deploy in us-east-1",
+          "context"             : [
             "account"             : "test",
             "application"         : "flex",
             "availabilityZones"   : [
@@ -380,23 +393,26 @@ class ContextParameterProcessorSpec extends Specification {
             ],
             "type"                : "linearDeploy"
           ],
-          "parentStageId": "dca27ddd-ce7d-42a0-a1db-5b43c6b2f0c7",
+          "parentStageId"       : "dca27ddd-ce7d-42a0-a1db-5b43c6b2f0c7",
         ],
         [
-          "id"     : "dca27ddd-ce7d-42a0-a1db-5b43c6b2f0c7-2-destroyAsg",
-          "type"   : "destroyAsg",
-          "name"   : "destroyAsg",
-          "context": [
-          ]
+          "id"                  : "dca27ddd-ce7d-42a0-a1db-5b43c6b2f0c7-2-destroyAsg",
+          "refId"               : "3",
+          "requisiteStageRefIds": ["2"],
+          "type"                : "destroyAsg",
+          "name"                : "destroyAsg",
+          "context"             : [:]
         ],
         [
-          "id"           : "68ad3566-4857-4c76-839e-f4afc14410c5-1-Deployinuswest1",
-          "type"         : "deploy",
-          "name"         : "Deploy in us-west-1",
-          "startTime"    : 1431672074613,
-          "endTime"      : 1431672487124,
-          "status"       : ExecutionStatus.SUCCEEDED,
-          "context"      : [
+          "id"                  : "68ad3566-4857-4c76-839e-f4afc14410c5-1-Deployinuswest1",
+          "refId"               : "4",
+          "requisiteStageRefIds": ["1"],
+          "type"                : "deploy",
+          "name"                : "Deploy in us-west-1",
+          "startTime"           : 1431672074613,
+          "endTime"             : 1431672487124,
+          "status"              : ExecutionStatus.SUCCEEDED,
+          "context"             : [
             "account"             : "prod",
             "application"         : "flex",
             "availabilityZones"   : [
@@ -435,15 +451,17 @@ class ContextParameterProcessorSpec extends Specification {
             ],
             "type"                : "linearDeploy"
           ],
-          "parentStageId": "68ad3566-4857-4c76-839e-f4afc14410c5",
-          "scheduledTime": 0
+          "parentStageId"       : "68ad3566-4857-4c76-839e-f4afc14410c5",
+          "scheduledTime"       : 0
         ]
       ]
     ]
+    execution = OrcaObjectMapper.newInstance().with {
+      it.readValue(it.writeValueAsString(json), Pipeline)
+    }
   }
 
   def 'helper method to convert objects into json'() {
-
     given:
     def source = ['json': '${#toJson( map )}']
     def context = [map: [["v1": "k1"], ["v2": "k2"]]]
@@ -458,7 +476,7 @@ class ContextParameterProcessorSpec extends Specification {
   def 'can operate on List from json'() {
     given:
     def source = [
-        'expression': '${#toJson(parameters["regions"].split(",")).contains("us-west-2")}',
+      expression: '${#toJson(parameters["regions"].split(",")).contains("us-west-2")}',
     ]
     def context = [parameters: [regions: regions]]
 
@@ -513,7 +531,6 @@ class ContextParameterProcessorSpec extends Specification {
     '7'   | 7f
     '7.5' | 7.5f
   }
-
 
   @Unroll
   def 'helper method to convert Strings into Booleans'() {
@@ -572,9 +589,9 @@ class ContextParameterProcessorSpec extends Specification {
   def "can find a stage in an execution"() {
     given:
     def pipe = Pipeline.builder()
-        .withStage("wait", "Wait1", [waitTime: 1, refId: "1", requisiteStageRefIds:[]])
-        .withStage("wait", "Wait2", [waitTime: 1, refId: "2", requisiteStageRefIds: ["1"], comments: '${#stage("Wait1")["status"].toString()}'])
-        .build()
+      .withStage("wait", "Wait1", [waitTime: 1, refId: "1", requisiteStageRefIds: []])
+      .withStage("wait", "Wait2", [waitTime: 1, refId: "2", requisiteStageRefIds: ["1"], comments: '${#stage("Wait1")["status"].toString()}'])
+      .build()
 
     def stage = pipe.stages.find { it.name == "Wait2" }
     def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
@@ -589,8 +606,8 @@ class ContextParameterProcessorSpec extends Specification {
   def "can not toJson an execution with expressions in the context"() {
     given:
     def pipe = Pipeline.builder()
-        .withStage("wait", "Wait1", [comments: '${#toJson(execution)}', waitTime: 1, refId: "1", requisiteStageRefIds:[]])
-        .build()
+      .withStage("wait", "Wait1", [comments: '${#toJson(execution)}', waitTime: 1, refId: "1", requisiteStageRefIds: []])
+      .build()
 
     def stage = pipe.stages.find { it.name == "Wait1" }
     def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
@@ -605,8 +622,8 @@ class ContextParameterProcessorSpec extends Specification {
   def "can read authenticated user in an execution"() {
     given:
     def pipe = Pipeline.builder()
-        .withStage("wait", "Wait1", [comments: '${execution["authentication"]["user"].split("@")[0]}', waitTime: 1, refId: "1", requisiteStageRefIds:[]])
-        .build()
+      .withStage("wait", "Wait1", [comments: '${execution["authentication"]["user"].split("@")[0]}', waitTime: 1, refId: "1", requisiteStageRefIds: []])
+      .build()
 
     pipe.setAuthentication(new Execution.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
 
