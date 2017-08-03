@@ -136,23 +136,6 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  void storeExecutionContext(String id, Map<String, Object> context) {
-    String key = fetchKey(id)
-    withJedis(getJedisPoolForId(key)) { Jedis jedis ->
-      jedis.watch(key)
-      def committed = false
-      while (!committed) {
-        Map<String, Object> ctx = mapper.readValue(jedis.hget(key, "context") ?: "{}", Map)
-        ctx.putAll(context)
-        jedis.multi().withCloseable { tx ->
-          tx.hset(key, "context", mapper.writeValueAsString(ctx))
-          committed = tx.exec() != null
-        }
-      }
-    }
-  }
-
-  @Override
   void cancel(String id) {
     cancel(id, null, null)
   }

@@ -2,7 +2,6 @@ package com.netflix.spinnaker.orca.pipeline.persistence;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -16,10 +15,6 @@ public interface ExecutionRepository {
   void store(@Nonnull Orchestration orchestration);
 
   void store(@Nonnull Pipeline pipeline);
-
-  @Deprecated
-  void storeExecutionContext(
-    @Nonnull String id, @Nonnull Map<String, Object> context);
 
   void storeStage(@Nonnull Stage<? extends Execution> stage);
 
