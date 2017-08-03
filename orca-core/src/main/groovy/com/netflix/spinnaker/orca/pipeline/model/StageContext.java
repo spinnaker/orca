@@ -30,6 +30,11 @@ public class StageContext extends ForwardingMap<String, Object> {
     this.stage = stage;
   }
 
+  public StageContext(Stage<?> stage, Map<String, Object> content) {
+    this.stage = stage;
+    delegate.putAll(content);
+  }
+
   @Override protected Map<String, Object> delegate() {
     return delegate;
   }

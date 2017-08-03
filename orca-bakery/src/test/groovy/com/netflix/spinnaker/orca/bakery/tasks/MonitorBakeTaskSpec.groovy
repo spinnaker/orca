@@ -77,7 +77,9 @@ class MonitorBakeTaskSpec extends Specification {
       )
     }
     task.createBakeTask = Mock(CreateBakeTask) {
-      1 * execute(_) >> { return new TaskResult(ExecutionStatus.SUCCEEDED, [stage: 1], [global: 2]) }
+      1 * execute(_) >> {
+        return new TaskResult(ExecutionStatus.SUCCEEDED, [stage: 1])
+      }
     }
 
     when:
@@ -86,7 +88,6 @@ class MonitorBakeTaskSpec extends Specification {
     then:
     result.status == ExecutionStatus.RUNNING
     (result.stageOutputs as Map) == [stage: 1]
-    (result.globalOutputs as Map) == [global: 2]
 
     where:
     state << [BakeStatus.State.CANCELED, BakeStatus.State.CANCELLED]

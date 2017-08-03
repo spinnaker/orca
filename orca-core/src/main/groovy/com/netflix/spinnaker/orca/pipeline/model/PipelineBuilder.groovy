@@ -115,12 +115,6 @@ class PipelineBuilder {
     return this
   }
 
-  PipelineBuilder withGlobalContext(Map<String, Object> context) {
-    pipeline.context.clear()
-    pipeline.context.putAll(context)
-    return this
-  }
-
   PipelineBuilder withStatus(ExecutionStatus executionStatus) {
     pipeline.status = executionStatus
     return this

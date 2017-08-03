@@ -106,7 +106,6 @@ class MonitorKatoTaskSpec extends Specification {
     then:
     result.status
     result.stageOutputs.isEmpty()
-    result.globalOutputs.isEmpty()
 
     where:
     context                     | _

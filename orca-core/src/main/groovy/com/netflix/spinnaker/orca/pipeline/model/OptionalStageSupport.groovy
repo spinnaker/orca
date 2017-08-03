@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.netflix.spinnaker.orca.pipeline.model
 
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -23,7 +22,8 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 class OptionalStageSupport {
-  public static Map<String, Class<? extends OptionalStageEvaluator>> OPTIONAL_STAGE_TYPES = [
+  public
+  static Map<String, Class<? extends OptionalStageEvaluator>> OPTIONAL_STAGE_TYPES = [
     "expression": ExpressionOptionalStageEvaluator
   ]
 
@@ -31,10 +31,12 @@ class OptionalStageSupport {
    * A Stage is optional if it has an {@link OptionalStageEvaluator} in its context that evaluates {@code false}.
    */
   static boolean isOptional(Stage stage, ContextParameterProcessor contextParameterProcessor) {
-    def optionalType = (stage.context.stageEnabled?.type as String)?.toLowerCase()
+    def optionalType = stage.context.containsKey("stageEnabled") ? (stage.context.stageEnabled?.type as String)?.toLowerCase() : null
     if (!optionalType || !OPTIONAL_STAGE_TYPES[optionalType]) {
       if (stage.syntheticStageOwner || stage.parentStageId) {
-        def parentStage = stage.execution.stages.find { it.id == stage.parentStageId }
+        def parentStage = stage.execution.stages.find {
+          it.id == stage.parentStageId
+        }
         return isOptional(parentStage, contextParameterProcessor)
       }
 
@@ -59,7 +61,8 @@ class OptionalStageSupport {
   /**
    * An {@link OptionalStageEvaluator} that will evaluate an expression against the current execution.
    */
-  private static class ExpressionOptionalStageEvaluator implements OptionalStageEvaluator {
+  private
+  static class ExpressionOptionalStageEvaluator implements OptionalStageEvaluator {
     String expression
 
     @Override

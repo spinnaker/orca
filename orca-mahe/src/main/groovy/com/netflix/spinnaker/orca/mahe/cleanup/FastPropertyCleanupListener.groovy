@@ -47,41 +47,43 @@ class FastPropertyCleanupListener implements ExecutionListener {
                       ExecutionStatus executionStatus,
                       boolean wasSuccessful) {
 
-
-    if (executionStatus in [ExecutionStatus.TERMINAL, ExecutionStatus.CANCELED] || execution.context.rollback) {
-      execution.stages.each { stage ->
-        switch (stage.context.propertyAction) {
-          case PropertyAction.CREATE.toString():
-            stage.context.propertyIdList.each { prop ->
-              log.info("Rolling back the creation of: ${prop.propertyId} on execution ${execution.id} by deleting")
-              Response response = mahe.deleteProperty(prop.propertyId, "spinnaker rollback", extractEnvironment(prop.propertyId))
-              resolveRollbackResponse(response, stage.context.propertyAction.toString(), prop)
-            }
-            break
-          case PropertyAction.UPDATE.toString():
-            stage.context.originalProperties.each { prop ->
-              log.info("Rolling back the ${stage.context.propertyAction} of: ${prop.property.propertyId} on execution ${execution.id} by upserting")
-              Response response = mahe.upsertProperty(prop)
-              resolveRollbackResponse(response, stage.context.propertyAction.toString(), prop.property)
-            }
-            break;
-          case PropertyAction.DELETE.toString():
-            stage.context.originalProperties.each { prop ->
-              if(prop.property.propertyId) {
-                prop.property.remove('propertyId')
+    execution.stages.each { stage ->
+      if (stage.context.containsKey("propertyAction")) {
+        if (executionStatus in [ExecutionStatus.TERMINAL, ExecutionStatus.CANCELED] || stage.context.rollback) {
+          switch (stage.context.propertyAction) {
+            case PropertyAction.CREATE.toString():
+              stage.context.propertyIdList.each { prop ->
+                log.info("Rolling back the creation of: ${prop.propertyId} on execution ${execution.id} by deleting")
+                Response response = mahe.deleteProperty(prop.propertyId, "spinnaker rollback", extractEnvironment(prop.propertyId))
+                resolveRollbackResponse(response, stage.context.propertyAction.toString(), prop)
               }
-              log.info("Rolling back the ${stage.context.propertyAction} of: ${prop.property.key}|${prop.property.value} on execution ${execution.id} by re-creating")
+              break
+            case PropertyAction.UPDATE.toString():
+              stage.context.originalProperties.each { prop ->
+                log.info("Rolling back the ${stage.context.propertyAction} of: ${prop.property.propertyId} on execution ${execution.id} by upserting")
+                Response response = mahe.upsertProperty(prop)
+                resolveRollbackResponse(response, stage.context.propertyAction.toString(), prop.property)
+              }
+              break
+            case PropertyAction.DELETE.toString():
+              stage.context.originalProperties.each { prop ->
+                if (prop.property.propertyId) {
+                  prop.property.remove('propertyId')
+                }
+                log.info("Rolling back the ${stage.context.propertyAction} of: ${prop.property.key}|${prop.property.value} on execution ${execution.id} by re-creating")
 
-              Response response = mahe.upsertProperty(prop)
-              resolveRollbackResponse(response, stage.context.propertyAction.toString(), prop.property)
-            }
+                Response response = mahe.upsertProperty(prop)
+                resolveRollbackResponse(response, stage.context.propertyAction.toString(), prop.property)
+              }
+          }
         }
       }
     }
   }
 
-  private void resolveRollbackResponse(Response response, String initialPropertyAction, def property) {
-    if(response.status == 200) {
+  private void resolveRollbackResponse(Response response, String initialPropertyAction,
+                                       def property) {
+    if (response.status == 200) {
       log.info("Successful Fast Property rollback for $initialPropertyAction")
       if (response.body?.mimeType()?.startsWith('application/')) {
         def json = mapper.readValue(response.body.in().text, Map)

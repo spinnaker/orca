@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageContext
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 
 /**
@@ -43,10 +43,10 @@ interface ExpressionAware {
           }
         }
 
-        val result = processed[key] ?: execution.getContext()[key]
+        val result = processed[key]
 
         if (result is String && ContextParameterProcessor.containsExpression(result)) {
-          val augmentedContext = processed.augmentContext(execution)
+          val augmentedContext = processed.augmentContext(this@withMergedContext)
           return contextParameterProcessor.process(mapOf(key to result), augmentedContext, true)[key]
         }
 
@@ -59,14 +59,17 @@ interface ExpressionAware {
   private fun processEntries(stage: Stage<*>) =
     contextParameterProcessor.process(
       stage.getContext(),
-      stage.getContext().augmentContext(stage.getExecution()),
+      stage.getContext().augmentContext(stage),
       true
     )
 
-  private fun Map<String, Any?>.augmentContext(execution: Execution<*>) =
-    if (execution is Pipeline) {
-      this + execution.context + mapOf("trigger" to execution.trigger, "execution" to execution)
-    } else {
-      this
+  // TODO: this should really be an extension on StageContext not Map
+  private fun Map<String, Any?>.augmentContext(stage: Stage<*>) =
+    StageContext(stage, this).apply {
+      val execution = stage.getExecution()
+      if (execution is Pipeline) {
+        put("trigger", execution.trigger)
+        put("execution", execution)
+      }
     }
 }

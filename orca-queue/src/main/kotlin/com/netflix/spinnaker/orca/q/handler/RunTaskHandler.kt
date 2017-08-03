@@ -213,12 +213,6 @@ open class RunTaskHandler
       getContext().putAll(result.stageOutputs)
       repository.storeStage(this)
     }
-    if (result.globalOutputs.isNotEmpty()) {
-      repository.storeExecutionContext(
-        getExecution().getId(),
-        result.globalOutputs
-      )
-    }
   }
 
   private fun Stage<*>.failureStatus(default: ExecutionStatus = TERMINAL) =

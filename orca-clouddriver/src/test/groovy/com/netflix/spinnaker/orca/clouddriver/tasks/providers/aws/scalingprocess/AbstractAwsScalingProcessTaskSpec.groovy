@@ -49,12 +49,11 @@ class AbstractAwsScalingProcessTaskSpec extends Specification {
     when:
       def result = task.execute(stage)
       def outputs = result.stageOutputs
-      def globalOutputs = result.globalOutputs
 
     then:
       outputs.processes == expectedScalingProcesses
       outputs.containsKey("kato.last.task.id") == !expectedScalingProcesses.isEmpty()
-      globalOutputs["scalingProcesses.${context.asgName}" as String] == expectedScalingProcesses
+    outputs["scalingProcesses.${context.asgName}" as String] == expectedScalingProcesses
 
     where:
       isResume | context                         | targetServerGroups             || expectedScalingProcesses

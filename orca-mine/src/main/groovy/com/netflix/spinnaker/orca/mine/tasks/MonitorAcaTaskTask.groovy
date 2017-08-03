@@ -55,7 +55,7 @@ class MonitorAcaTaskTask extends AbstractCloudProviderAwareTask implements Retry
 
     if (outputs.canary.status?.complete) {
       log.info("Canary $stage.id complete")
-      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs, outputs)
+      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs)
     }
 
     log.info("Canary in progress: ${outputs.canary}")

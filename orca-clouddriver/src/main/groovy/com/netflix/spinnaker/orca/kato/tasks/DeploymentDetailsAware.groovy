@@ -151,7 +151,9 @@ trait DeploymentDetailsAware {
       // If no deployment details were found in the stage context, check the global context of each pipeline up the tree.
       List<Execution> pipelineExecutions = getPipelineExecutions(stage.execution)
 
-      deploymentDetails = pipelineExecutions?.findResult { it?.context?.deploymentDetails }
+      deploymentDetails = pipelineExecutions?.stages?.flatten()?.findResult {
+        it.context.deploymentDetails
+      }
     }
 
     if (deploymentDetails) {

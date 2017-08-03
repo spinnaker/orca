@@ -72,11 +72,8 @@ class CreatePropertiesTask implements Task {
       propertyAction: propertyAction,
     ]
 
-    return new TaskResult(SUCCEEDED, outputs, outputs)
-
+    return new TaskResult(SUCCEEDED, outputs)
   }
-
-
 
   List assemblePersistedPropertyListFromContext(Map<String, Object> context, List propertyList) {
     Map scope = context.scope

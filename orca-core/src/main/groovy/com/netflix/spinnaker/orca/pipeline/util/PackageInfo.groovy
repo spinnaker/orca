@@ -55,7 +55,6 @@ class PackageInfo {
   public Map findTargetPackage(boolean allowMissingPackageInstallation) {
     Map requestMap = [:]
     // copy the context since we may modify it in createAugmentedRequest
-    requestMap.putAll(stage.execution.context)
     requestMap.putAll(stage.context)
 
     if (stage.execution instanceof Pipeline) {

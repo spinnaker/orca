@@ -217,7 +217,6 @@ class MonitorJenkinsJobTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    taskResult.globalOutputs.buildInfo.artifacts*.fileName == expectedArtifacts
     taskResult.stageOutputs.buildInfo.artifacts*.fileName == expectedArtifacts
 
     where:

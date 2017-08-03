@@ -625,7 +625,6 @@ class JedisExecutionRepository implements ExecutionRepository {
       def execution = type.newInstance()
       execution.id = id
       execution.application = map.application
-      execution.context.putAll(map.context ? mapper.readValue(map.context, Map) : [:])
       execution.canceled = Boolean.parseBoolean(map.canceled)
       execution.canceledBy = map.canceledBy
       execution.cancellationReason = map.cancellationReason
@@ -658,7 +657,7 @@ class JedisExecutionRepository implements ExecutionRepository {
         stage.parentStageId = map["stage.${stageId}.parentStageId".toString()]
         stage.requisiteStageRefIds = map["stage.${stageId}.requisiteStageRefIds".toString()]?.tokenize(",")
         stage.scheduledTime = map["stage.${stageId}.scheduledTime".toString()]?.toLong()
-        stage.context = map["stage.${stageId}.context".toString()] ? mapper.readValue(map["stage.${stageId}.context".toString()], MAP_STRING_TO_OBJECT) : emptyMap()
+        stage.context.putAll(map["stage.${stageId}.context".toString()] ? mapper.readValue(map["stage.${stageId}.context".toString()], MAP_STRING_TO_OBJECT) : emptyMap())
         stage.tasks = map["stage.${stageId}.tasks".toString()] ? mapper.readValue(map["stage.${stageId}.tasks".toString()], LIST_OF_TASKS) : emptyList()
         if (map["stage.${stageId}.lastModified".toString()]) {
           stage.lastModified = map["stage.${stageId}.lastModified".toString()] ? mapper.readValue(map["stage.${stageId}.lastModified".toString()], MAP_STRING_TO_OBJECT) : emptyMap()

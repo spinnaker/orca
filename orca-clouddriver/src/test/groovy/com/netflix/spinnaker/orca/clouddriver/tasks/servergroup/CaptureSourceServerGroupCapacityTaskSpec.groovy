@@ -42,7 +42,6 @@ class CaptureSourceServerGroupCapacityTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.globalOutputs.isEmpty()
     result.stageOutputs.isEmpty()
     stage.context == stageContext
 
@@ -101,8 +100,6 @@ class CaptureSourceServerGroupCapacityTaskSpec extends Specification {
       min    : 0,
       desired: 5,
       max    : 10
-
     ]
-    result.globalOutputs.isEmpty()
   }
 }

@@ -65,7 +65,7 @@ class MonitorPropertiesTask implements Task{
 
 
     if(outputs.persistedProperties.size() == propertyIds.size()) {
-      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs, outputs)
+      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs)
     }
 
     log.info("create persited properties in progress: ${outputs}")

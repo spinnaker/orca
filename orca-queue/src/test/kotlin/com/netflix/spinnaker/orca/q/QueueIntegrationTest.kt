@@ -392,7 +392,7 @@ open class QueueIntegrationTest {
       stage {
         refId = "1"
         type = "dummy"
-        context = mapOf(
+        context.putAll(mapOf(
           "restrictExecutionDuringTimeWindow" to true,
           "restrictedExecutionWindow" to mapOf(
             "days" to (1..7).toList(),
@@ -403,7 +403,7 @@ open class QueueIntegrationTest {
               "endMin" to 0
             ))
           )
-        )
+        ))
       }
     }
     repository.store(pipeline)
@@ -501,38 +501,38 @@ open class QueueIntegrationTest {
     }
   }
 
-  @Test fun `conditional stages can depend on global context values`() {
+  @Test fun `conditional stages can depend on ancestor stage context values`() {
     val pipeline = pipeline {
       application = "spinnaker"
       stage {
         refId = "1"
         type = "dummy"
+        context.put("foo", false)
       }
       stage {
         refId = "2a"
         requisiteStageRefIds = setOf("1")
         type = "dummy"
-        context = mapOf(
+        context.putAll(mapOf(
           "stageEnabled" to mapOf(
             "type" to "expression",
             "expression" to "\${foo == true}"
           )
-        )
+        ))
       }
       stage {
         refId = "2b"
         requisiteStageRefIds = setOf("1")
         type = "dummy"
-        context = mapOf(
+        context.putAll(mapOf(
           "stageEnabled" to mapOf(
             "type" to "expression",
             "expression" to "\${foo == false}"
           )
-        )
+        ))
       }
     }
     repository.store(pipeline)
-    repository.storeExecutionContext(pipeline.id, mapOf("foo" to false))
 
     whenever(dummyTask.timeout) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED
@@ -547,42 +547,42 @@ open class QueueIntegrationTest {
     }
   }
 
-  @Test fun `conditional stages can depend on global context values after restart`() {
+  @Test fun `conditional stages can depend on ancestor stage context values after restart`() {
     val pipeline = pipeline {
       application = "spinnaker"
       stage {
         refId = "1"
         type = "dummy"
         status = SUCCEEDED
+        context.put("foo", false)
       }
       stage {
         refId = "2a"
         requisiteStageRefIds = setOf("1")
         type = "dummy"
         status = SKIPPED
-        context = mapOf(
+        context.putAll(mapOf(
           "stageEnabled" to mapOf(
             "type" to "expression",
             "expression" to "\${foo == true}"
           )
-        )
+        ))
       }
       stage {
         refId = "2b"
         requisiteStageRefIds = setOf("1")
         type = "dummy"
         status = TERMINAL
-        context = mapOf(
+        context.putAll(mapOf(
           "stageEnabled" to mapOf(
             "type" to "expression",
             "expression" to "\${foo == false}"
           )
-        )
+        ))
       }
       status = TERMINAL
     }
     repository.store(pipeline)
-    repository.storeExecutionContext(pipeline.id, mapOf("foo" to false))
 
     whenever(dummyTask.timeout) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED

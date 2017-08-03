@@ -169,7 +169,7 @@ class ParallelDeployStage implements BranchingStageDefinitionBuilder {
   public static class CompleteParallelDeployTask implements Task {
     TaskResult execute(Stage stage) {
       log.info("Completed Parallel Deploy")
-      new TaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
+      new TaskResult(ExecutionStatus.SUCCEEDED)
     }
   }
 }
