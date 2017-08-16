@@ -58,7 +58,7 @@ class MonitorCanaryTask extends AbstractCloudProviderAwareTask implements Retrya
 
     if (outputs.canary.status?.complete) {
       log.info("Canary $stage.id complete")
-      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs, outputs)
+      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs)
     }
 
     if (outputs.canary.health?.health == 'UNHEALTHY' && !context.disableRequested) {

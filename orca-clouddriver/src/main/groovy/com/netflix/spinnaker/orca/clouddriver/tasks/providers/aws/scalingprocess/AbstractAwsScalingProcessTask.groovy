@@ -76,22 +76,21 @@ abstract class AbstractAwsScalingProcessTask extends AbstractCloudProviderAwareT
     stageData.asgName = asgName
 
     def stageOutputs = [
-      "notification.type"   : getType().toLowerCase(),
-      "deploy.server.groups": stageData.affectedServerGroupMap,
-      "processes"           : stageContext.processes,
-      "asgName"             : asgName
+      "notification.type"                      : getType().toLowerCase(),
+      "deploy.server.groups"                   : stageData.affectedServerGroupMap,
+      "processes"                              : stageContext.processes,
+      ("scalingProcesses.${asgName}" as String): stageContext.processes,
+      "asgName"                                : asgName
     ]
     if (stageContext.processes) {
       def taskId = katoService.requestOperations(getCloudProvider(stage), [[(getType()): stageContext]])
-                              .toBlocking()
-                              .first()
+        .toBlocking()
+        .first()
 
       stageOutputs."kato.last.task.id" = taskId
     }
 
-    return new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs, [
-      ("scalingProcesses.${asgName}" as String): stageContext.processes
-    ])
+    return new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs)
   }
 
   static class StageData {

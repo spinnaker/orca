@@ -87,7 +87,7 @@ class MonitorJenkinsJobTask implements RetryableTask {
         if (result == 'UNSTABLE' && stage.context.markUnstableAsSuccessful) {
           status = ExecutionStatus.SUCCEEDED
         }
-        return new TaskResult(status, outputs, outputs)
+        return new TaskResult(status, outputs)
       } else {
         return new TaskResult(ExecutionStatus.RUNNING, [buildInfo: build])
       }

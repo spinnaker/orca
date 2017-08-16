@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2017 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.mahe.tasks
+package com.netflix.spinnaker.orca.mahe.cleanup
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.mahe.MaheService
 import com.netflix.spinnaker.orca.mahe.PropertyAction
-import com.netflix.spinnaker.orca.mahe.cleanup.FastPropertyCleanupListener
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import retrofit.client.Response
@@ -28,10 +27,9 @@ import retrofit.mime.TypedByteArray
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.mahe.pipeline.CreatePropertyStage.PIPELINE_CONFIG_TYPE
 
-class PropertyChangeCleanupSpec extends Specification {
+class FastPropertyCleanupListenerSpec extends Specification {
 
   ObjectMapper mapper = new ObjectMapper()
   def repository = Stub(ExecutionRepository)
@@ -42,15 +40,13 @@ class PropertyChangeCleanupSpec extends Specification {
     listener.mapper = mapper
   }
 
-  @Unroll()
+  @Unroll
   def "a deleted property is restored to its original stage if the pipeline is #executionStatus and has matching original property"() {
     given:
-
     def context = [propertyAction: PropertyAction.DELETE.toString(), originalProperties: [[property: originalProperty]]]
     def pipeline = Pipeline
       .builder()
       .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE, context)
-      .withGlobalContext( context )
       .build()
 
     repository.retrievePipeline(pipeline.id) >> pipeline
@@ -79,7 +75,6 @@ class PropertyChangeCleanupSpec extends Specification {
     def pipeline = Pipeline
       .builder()
       .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE, context)
-      .withGlobalContext(context)
       .build()
 
     repository.retrievePipeline(pipeline.id) >> pipeline
@@ -91,8 +86,6 @@ class PropertyChangeCleanupSpec extends Specification {
     1 * mahe.upsertProperty(_) >> { Map res ->
       new Response("http://mahe", 500, "OK", [], null)
     }
-
-    pipeline.context.rollbackActions == null
 
     IllegalStateException ex = thrown()
     assert ex.message.contains("Unable to rollback DELETE")
@@ -110,7 +103,6 @@ class PropertyChangeCleanupSpec extends Specification {
     def pipeline = Pipeline
       .builder()
       .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE)
-      .withGlobalContext(propertyIdList: [[propertyId: propertyId]], propertyAction: PropertyAction.UPDATE.toString())
       .build()
 
     repository.retrievePipeline(pipeline.id) >> pipeline
@@ -135,7 +127,6 @@ class PropertyChangeCleanupSpec extends Specification {
     def pipeline = Pipeline
       .builder()
       .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE, context)
-      .withGlobalContext(context)
       .build()
 
     repository.retrievePipeline(pipeline.id) >> pipeline
@@ -161,7 +152,6 @@ class PropertyChangeCleanupSpec extends Specification {
     def pipeline = Pipeline
       .builder()
       .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE, context)
-      .withGlobalContext(context)
       .build()
 
     repository.retrievePipeline(pipeline.id) >> pipeline
@@ -173,8 +163,6 @@ class PropertyChangeCleanupSpec extends Specification {
     1 * mahe.deleteProperty(propertyId, 'spinnaker rollback', propertyEnv) >> { def res ->
       new Response("http://mahe", 500, "OK", [] , null)
     }
-
-    pipeline.context.rollbackActions == null
 
     IllegalStateException ex = thrown()
     assert ex.message.contains("Unable to rollback CREATE")
@@ -193,7 +181,6 @@ class PropertyChangeCleanupSpec extends Specification {
     def pipeline = Pipeline
       .builder()
       .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE, context)
-      .withGlobalContext(context)
       .build()
     repository.retrievePipeline(pipeline.id) >> pipeline
 
@@ -217,7 +204,6 @@ class PropertyChangeCleanupSpec extends Specification {
     def pipeline = Pipeline
       .builder()
       .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE, context)
-      .withGlobalContext(context)
       .build()
     repository.retrievePipeline(pipeline.id) >> pipeline
 
@@ -239,10 +225,10 @@ class PropertyChangeCleanupSpec extends Specification {
 
   def "a property not marked for 'rollback' and is deleted by pipeline stage and is not reverted"() {
     given:
+    def context = [propertyIdList: [propertyId], originalProperties: [previous], rollback: false, propertyAction: PropertyAction.DELETE]
     def pipeline = Pipeline
       .builder()
-      .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE)
-      .withGlobalContext(propertyIdList: [propertyId], originalProperties: [previous], rollbackProperties: false, propertyAction: PropertyAction.DELETE )
+      .withStage(PIPELINE_CONFIG_TYPE, PIPELINE_CONFIG_TYPE, context)
       .build()
     repository.retrievePipeline(pipeline.id) >> pipeline
 
@@ -257,7 +243,6 @@ class PropertyChangeCleanupSpec extends Specification {
     propertyId = "test_rfletcher|mahe|test|us-west-1||||asg=mahe-test-v010|cluster=mahe-test"
     propertyEnv = "test"
     previous =  createPropertyWithId(propertyId)
-
   }
 
   def "rollback a pipeline with multiple create stages"() {
@@ -284,7 +269,6 @@ class PropertyChangeCleanupSpec extends Specification {
     propertyId = "test_rfletcher|mahe|test|us-west-1||||asg=mahe-test-v010|cluster=mahe-test"
     propertyEnv = "test"
     previous =  createPropertyWithId(propertyId)
-
   }
 
   def "rollback a pipeline with a create and a delete stages that are created for a scope update"() {
@@ -317,9 +301,7 @@ class PropertyChangeCleanupSpec extends Specification {
     propertyId = "test_rfletcher|mahe|test|us-west-1||||asg=mahe-test-v010|cluster=mahe-test"
     propertyEnv = "test"
     previous =  createPropertyWithId(propertyId)
-
   }
-
 
   def createPropertyWithId(propertyId) {
     [
@@ -338,5 +320,4 @@ class PropertyChangeCleanupSpec extends Specification {
       "ts"             : "2016-03-16T18:20:29.554Z[GMT]",
       "createdAsCanary": false ]
   }
-
 }

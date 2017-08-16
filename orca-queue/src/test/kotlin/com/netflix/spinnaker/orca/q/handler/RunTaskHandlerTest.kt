@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -548,7 +547,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         val pipeline = pipeline {
           stage {
             type = "whatever"
-            context = hashMapOf("markSuccessfulOnTimeout" to true) as Map<String, Any>?
+            context.put("markSuccessfulOnTimeout", true)
             task {
               id = "1"
               implementingClass = DummyTask::class.qualifiedName
@@ -817,7 +816,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         stage {
           refId = "1"
           type = "createServerGroup"
-          context = mapOf(
+          context.putAll(mapOf(
             "deploy.server.groups" to mapOf(
               "us-west-1" to listOf(
                 "spindemo-test-v008"
@@ -825,7 +824,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
             ),
             "account" to "mgmttest",
             "region" to "us-west-1"
-          )
+          ))
           status = SUCCEEDED
         }
         stage {
@@ -898,11 +897,16 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
     }
 
-    given("an expression in the context that refers to a global context value") {
+    given("an expression in the context that refers to a value in a previous stage") {
       val pipeline = pipeline {
-        context["foo"] = "bar"
         stage {
           refId = "1"
+          context["foo"] = "bar"
+          status = SUCCEEDED
+        }
+        stage {
+          refId = "2"
+          requisiteStageRefIds = setOf("1")
           context["expression"] = "\${foo}"
           type = "whatever"
           task {
@@ -912,7 +916,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           }
         }
       }
-      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id, "1", DummyTask::class.java)
+      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("2").id, "1", DummyTask::class.java)
 
       beforeGroup {
         whenever(task.execute(any())) doReturn TaskResult.SUCCEEDED

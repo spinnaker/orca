@@ -17,18 +17,18 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
 
 @Component
 public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -54,12 +54,13 @@ public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implem
     }
 
     return new TaskResult(
-      ExecutionStatus.SUCCEEDED,
-      Collections.singletonMap("amiDetails", imageDetails),
-      Collections.singletonMap("deploymentDetails", imageDetails)
+      SUCCEEDED,
+      ImmutableMap
+        .<String, Object>builder()
+        .put("amiDetails", imageDetails)
+        .put("deploymentDetails", imageDetails)
+        .build()
     );
-
-
   }
 
   @Override

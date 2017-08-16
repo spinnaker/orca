@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.context.ApplicationListener
 import org.springframework.context.ConfigurableApplicationContext
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.SECONDS
 
 /**
  * An [ApplicationListener] implementation you can use to wait for an execution
@@ -46,7 +46,7 @@ class ExecutionLatch(matcher: Matcher<ExecutionComplete>)
     }
   }
 
-  fun await() = latch.await(1, TimeUnit.SECONDS)
+  fun await() = latch.await(1, SECONDS)
 }
 
 fun <E : Execution<E>> ConfigurableApplicationContext.runToCompletion(execution: E, launcher: (E) -> Unit, repository: ExecutionRepository) {
@@ -73,16 +73,26 @@ fun <E : Execution<E>> ConfigurableApplicationContext.restartAndRunToCompletion(
 }
 
 private fun <E : Execution<E>> ExecutionRepository.waitForAllStagesToComplete(execution: E) {
-  var complete = false
-  while (!complete) {
-    Thread.sleep(100)
-    complete = when (execution) {
-      is Pipeline -> retrievePipeline(execution.id)
-      else -> retrieveOrchestration(execution.id)
-    }.run {
-      getStatus().isComplete && getStages()
-        .map(Stage<*>::getStatus)
-        .all { it.isComplete || it == NOT_STARTED }
+  val latch = CountDownLatch(1)
+
+  Thread().run {
+    var complete = false
+    while (!complete) {
+      when (execution) {
+        is Pipeline -> retrievePipeline(execution.id)
+        else -> retrieveOrchestration(execution.id)
+      }.run {
+        complete = getStatus().isComplete && getStages()
+          .map(Stage<*>::getStatus)
+          .all { it.isComplete || it == NOT_STARTED }
+      }
+
+      if (complete) {
+        latch.countDown()
+      } else {
+        Thread.sleep(100)
+      }
     }
   }
+  latch.await(1, SECONDS)
 }

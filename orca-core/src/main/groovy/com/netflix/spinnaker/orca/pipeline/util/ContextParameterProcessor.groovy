@@ -16,12 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Orchestration
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import org.springframework.context.expression.MapAccessor
-
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.text.SimpleDateFormat
@@ -29,9 +23,14 @@ import java.util.concurrent.atomic.AtomicReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import groovy.util.logging.Slf4j
+import org.springframework.context.expression.MapAccessor
 import org.springframework.expression.*
 import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.SpelEvaluationException
@@ -108,14 +107,16 @@ class ContextParameterProcessor {
       context.execution.stages.findAll {
         it.type in ['deploy', 'createServerGroup', 'cloneServerGroup', 'rollingPush'] && it.status == ExecutionStatus.SUCCEEDED
       }.each { deployStage ->
-        if (deployStage.context.'deploy.server.groups') {
+        if (deployStage.context.containsKey('deploy.server.groups')) {
           Map deployDetails = [
             account    : deployStage.context.account,
             capacity   : deployStage.context.capacity,
             parentStage: deployStage.parentStageId,
             region     : deployStage.context.region ?: deployStage.context.availabilityZones.keySet().first(),
           ]
-          deployDetails.putAll(context.execution?.context?.deploymentDetails?.find { it.region == deployDetails.region } ?: [:])
+          deployDetails.putAll(context.deploymentDetails?.find {
+            it.region == deployDetails.region
+          } ?: [:])
           deployDetails.serverGroup = deployStage.context.'deploy.server.groups'."${deployDetails.region}".first()
           deployedServerGroups << deployDetails
         }

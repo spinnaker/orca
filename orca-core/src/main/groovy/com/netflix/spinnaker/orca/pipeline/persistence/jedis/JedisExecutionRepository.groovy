@@ -136,23 +136,6 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  void storeExecutionContext(String id, Map<String, Object> context) {
-    String key = fetchKey(id)
-    withJedis(getJedisPoolForId(key)) { Jedis jedis ->
-      jedis.watch(key)
-      def committed = false
-      while (!committed) {
-        Map<String, Object> ctx = mapper.readValue(jedis.hget(key, "context") ?: "{}", Map)
-        ctx.putAll(context)
-        jedis.multi().withCloseable { tx ->
-          tx.hset(key, "context", mapper.writeValueAsString(ctx))
-          committed = tx.exec() != null
-        }
-      }
-    }
-  }
-
-  @Override
   void cancel(String id) {
     cancel(id, null, null)
   }
@@ -625,7 +608,6 @@ class JedisExecutionRepository implements ExecutionRepository {
       def execution = type.newInstance()
       execution.id = id
       execution.application = map.application
-      execution.context.putAll(map.context ? mapper.readValue(map.context, Map) : [:])
       execution.canceled = Boolean.parseBoolean(map.canceled)
       execution.canceledBy = map.canceledBy
       execution.cancellationReason = map.cancellationReason
@@ -658,7 +640,7 @@ class JedisExecutionRepository implements ExecutionRepository {
         stage.parentStageId = map["stage.${stageId}.parentStageId".toString()]
         stage.requisiteStageRefIds = map["stage.${stageId}.requisiteStageRefIds".toString()]?.tokenize(",")
         stage.scheduledTime = map["stage.${stageId}.scheduledTime".toString()]?.toLong()
-        stage.context = map["stage.${stageId}.context".toString()] ? mapper.readValue(map["stage.${stageId}.context".toString()], MAP_STRING_TO_OBJECT) : emptyMap()
+        stage.context.putAll(map["stage.${stageId}.context".toString()] ? mapper.readValue(map["stage.${stageId}.context".toString()], MAP_STRING_TO_OBJECT) : emptyMap())
         stage.tasks = map["stage.${stageId}.tasks".toString()] ? mapper.readValue(map["stage.${stageId}.tasks".toString()], LIST_OF_TASKS) : emptyList()
         if (map["stage.${stageId}.lastModified".toString()]) {
           stage.lastModified = map["stage.${stageId}.lastModified".toString()] ? mapper.readValue(map["stage.${stageId}.lastModified".toString()], MAP_STRING_TO_OBJECT) : emptyMap()

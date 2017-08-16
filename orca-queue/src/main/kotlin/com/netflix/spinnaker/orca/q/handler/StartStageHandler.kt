@@ -139,8 +139,8 @@ open class StartStageHandler
       return false
     }
 
-    val clonedContext = objectMapper.convertValue(this.getContext(), Map::class.java) as Map<String, Any>
-    val clonedStage = Stage<Pipeline>(this.getExecution() as Pipeline, this.getType(), clonedContext)
-    return OptionalStageSupport.isOptional(clonedStage.withMergedContext(), contextParameterProcessor)
+//    val clonedContext = StageContext(this).also { it.putAll(this.getContext()) }
+//    val clonedStage = Stage<Pipeline>(this.getExecution() as Pipeline, this.getType(), clonedContext)
+    return OptionalStageSupport.isOptional(this.withMergedContext(), contextParameterProcessor)
   }
 }

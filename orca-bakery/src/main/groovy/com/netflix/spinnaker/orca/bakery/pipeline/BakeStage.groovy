@@ -113,7 +113,7 @@ class BakeStage implements BranchingStageDefinitionBuilder, RestartableStage {
         it.parentStageId == stage.parentStageId && it.status == ExecutionStatus.RUNNING
       }
 
-      def globalContext = [
+      new TaskResult(ExecutionStatus.SUCCEEDED, [
         deploymentDetails: stage.execution.stages.findAll {
           it.type == PIPELINE_CONFIG_TYPE && bakeInitializationStages*.id.contains(it.parentStageId) && (it.context.ami || it.context.imageId)
         }.collect { Stage bakeStage ->
@@ -126,8 +126,7 @@ class BakeStage implements BranchingStageDefinitionBuilder, RestartableStage {
 
           return deploymentDetails
         }
-      ]
-      new TaskResult(ExecutionStatus.SUCCEEDED, [:], globalContext)
+      ])
     }
   }
 

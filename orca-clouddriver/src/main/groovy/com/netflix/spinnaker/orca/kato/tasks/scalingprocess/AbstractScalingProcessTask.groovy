@@ -65,17 +65,18 @@ abstract class AbstractScalingProcessTask implements Task {
     )
     def stageContext = new HashMap(stage.context) + [
       processes: processes,
-      asgName: asgName
+      asgName  : asgName
     ]
 
     def stageData = stage.mapTo(StageData)
     stageData.asgName = asgName
 
     def stageOutputs = [
-      "notification.type"   : getType().toLowerCase(),
-      "deploy.server.groups": stageData.affectedServerGroupMap,
-      "processes"           : stageContext.processes,
-      "asgName"             : asgName
+      "notification.type"                      : getType().toLowerCase(),
+      "deploy.server.groups"                   : stageData.affectedServerGroupMap,
+      "processes"                              : stageContext.processes,
+      ("scalingProcesses.${asgName}" as String): stageContext.processes,
+      "asgName"                                : asgName
     ]
     if (stageContext.processes) {
       def taskId = katoService.requestOperations([[(getType()): stageContext]])
@@ -84,9 +85,7 @@ abstract class AbstractScalingProcessTask implements Task {
       stageOutputs."kato.last.task.id" = taskId
     }
 
-    return new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs, [
-      ("scalingProcesses.${asgName}" as String): stageContext.processes
-    ])
+    return new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs)
   }
 
   static class StageData {

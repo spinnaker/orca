@@ -228,8 +228,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
     }.flatten()
 
     return new TaskResult(ExecutionStatus.SUCCEEDED, [
-      amiDetails: deploymentDetails
-    ], [
+      amiDetails       : deploymentDetails,
       deploymentDetails: deploymentDetails
     ])
   }

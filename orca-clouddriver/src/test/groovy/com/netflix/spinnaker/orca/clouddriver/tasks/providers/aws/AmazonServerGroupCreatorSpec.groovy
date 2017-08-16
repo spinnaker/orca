@@ -194,14 +194,10 @@ class AmazonServerGroupCreatorSpec extends Specification {
   }
 
   @Unroll
-  def "prefers the deployment details from an upstream stage to one from global context"() {
+  def "gets deployment details from an upstream stage"() {
     given:
     def deployRegion = "us-east-1"
     stage.context.amiName = null
-    stage.execution.context.deploymentDetails = [
-        ["ami": "not-my-ami", "region": deployRegion, cloudProvider: "aws"],
-        ["ami": "also-not-my-ami", "region": deployRegion, cloudProvider: "aws"]
-    ]
 
     and:
     def findImageStage =

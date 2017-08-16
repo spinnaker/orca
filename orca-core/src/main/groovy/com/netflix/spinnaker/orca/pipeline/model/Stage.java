@@ -91,7 +91,7 @@ public class Stage<T extends Execution<T>> implements Serializable {
   /**
    * The context driving this stage. Provides inputs necessary to component steps
    */
-  private Map<String, Object> context = new HashMap<>();
+  private Map<String, Object> context = new StageContext(this);
 
   /**
    * Returns the tasks that are associated with this stage. Tasks are the most granular unit of work in a stage.
@@ -173,12 +173,19 @@ public class Stage<T extends Execution<T>> implements Serializable {
         .addAll(previousStages.stream().flatMap(it -> it.ancestorsOnly().stream()).collect(toList()))
         .build();
     } else if (parentStageId != null) {
-      Stage<T> parent = execution.stages.stream().filter(it -> it.id.equals(parentStageId)).findFirst().orElseThrow(IllegalStateException::new);
-      return ImmutableList
-        .<Stage<T>>builder()
-        .add(parent)
-        .addAll(parent.ancestorsOnly())
-        .build();
+      return execution
+        .stages
+        .stream()
+        .filter(it -> it.id.equals(parentStageId))
+        .findFirst()
+        .map(parent ->
+          ImmutableList
+            .<Stage<T>>builder()
+            .add(parent)
+            .addAll(parent.ancestorsOnly())
+            .build()
+        )
+        .orElse(ImmutableList.of());
     } else {
       return emptyList();
     }

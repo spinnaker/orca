@@ -14,20 +14,14 @@ public final class TaskResult {
 
   ExecutionStatus status;
   ImmutableMap<String, ?> stageOutputs;
-  ImmutableMap<String, ?> globalOutputs;
 
   public TaskResult(ExecutionStatus status) {
-    this(status, emptyMap(), emptyMap());
-  }
-
-  public TaskResult(ExecutionStatus status, Map<String, ?> stageOutputs, Map<String, ?> globalOutputs) {
-    this.status = status;
-    this.stageOutputs = ImmutableMap.copyOf(stageOutputs);
-    this.globalOutputs = ImmutableMap.copyOf(globalOutputs);
+    this(status, emptyMap());
   }
 
   public TaskResult(ExecutionStatus status, Map<String, ?> stageOutputs) {
-    this(status, stageOutputs, emptyMap());
+    this.status = status;
+    this.stageOutputs = ImmutableMap.copyOf(stageOutputs);
   }
 
   @Deprecated
