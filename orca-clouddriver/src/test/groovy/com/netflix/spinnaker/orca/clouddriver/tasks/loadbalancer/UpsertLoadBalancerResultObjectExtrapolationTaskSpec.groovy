@@ -53,7 +53,7 @@ class UpsertLoadBalancerResultObjectExtrapolationTaskSpec extends Specification 
     def result = task.execute(stage)
 
     then:
-    result.stageOutputs.dnsName == dnsName
+    result.context.dnsName == dnsName
   }
 
 }

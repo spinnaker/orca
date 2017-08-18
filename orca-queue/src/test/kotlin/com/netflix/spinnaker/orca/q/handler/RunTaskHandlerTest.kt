@@ -82,7 +82,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
       val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
 
-      and("has no outputs") {
+      and("has no context updates outputs") {
         val taskResult = TaskResult(SUCCEEDED)
 
         beforeGroup {
@@ -106,13 +106,13 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           })
         }
 
-        it("does not update the stage or global contexts") {
+        it("does not update the stage or global context") {
           verify(repository, never()).storeStage(any())
           verify(repository, never()).storeExecutionContext(any(), any())
         }
       }
 
-      and("has stage level outputs") {
+      and("has context updates") {
         val stageOutputs = mapOf("foo" to "covfefe")
         val taskResult = TaskResult(SUCCEEDED, stageOutputs, emptyMap<String, Any>())
 
@@ -138,7 +138,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         }
       }
 
-      and("has global outputs") {
+      and("has outputs") {
         val globalOutputs = mapOf("foo" to "covfefe")
         val taskResult = TaskResult(SUCCEEDED, emptyMap<String, Any>(), globalOutputs)
 
@@ -153,7 +153,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           subject.handle(message)
         }
 
-        it("update the stage outputs and global context") {
+        it("updates the stage outputs and global context") {
           verify(repository).storeStage(check {
             it.getOutputs() shouldEqual globalOutputs
           })

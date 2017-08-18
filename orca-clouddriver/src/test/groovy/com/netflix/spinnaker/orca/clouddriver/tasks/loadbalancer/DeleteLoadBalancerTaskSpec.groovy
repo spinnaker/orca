@@ -75,7 +75,7 @@ class DeleteLoadBalancerTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.stageOutputs."kato.last.task.id" == taskId
-    result.stageOutputs."delete.account.name" == deleteLoadBalancerConfig.credentials
+    result.context."kato.last.task.id" == taskId
+    result.context."delete.account.name" == deleteLoadBalancerConfig.credentials
   }
 }

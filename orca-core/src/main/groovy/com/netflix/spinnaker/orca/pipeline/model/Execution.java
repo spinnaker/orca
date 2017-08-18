@@ -136,6 +136,7 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
 
   private final Map<String, Object> context = new HashMap<>();
 
+  @Deprecated
   public Map<String, Object> getContext() {
     return context;
   }

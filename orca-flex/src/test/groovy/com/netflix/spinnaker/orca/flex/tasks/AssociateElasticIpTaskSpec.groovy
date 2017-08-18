@@ -50,8 +50,8 @@ class AssociateElasticIpTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.stageOutputs."notification.type" == task.getNotificationType()
-    result.stageOutputs."elastic.ip.assignment" == elasticIpResult
+    result.context."notification.type" == task.getNotificationType()
+    result.context."elastic.ip.assignment" == elasticIpResult
 
     where:
     account | region      | cluster      | elasticIpType | elasticIpAddress || application || elasticIpResult
