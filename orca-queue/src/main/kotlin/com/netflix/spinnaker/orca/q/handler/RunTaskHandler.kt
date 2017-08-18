@@ -207,8 +207,9 @@ open class RunTaskHandler
   }
 
   private fun Stage<*>.processTaskOutput(result: TaskResult) {
-    if (result.stageOutputs.isNotEmpty()) {
+    if (result.stageOutputs.isNotEmpty() || result.globalOutputs.isNotEmpty()) {
       getContext().putAll(result.stageOutputs)
+      getOutputs().putAll(result.globalOutputs)
       repository.storeStage(this)
     }
     if (result.globalOutputs.isNotEmpty()) {
