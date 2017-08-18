@@ -231,20 +231,20 @@ class GetCommitsTaskSpec extends Specification {
 
   boolean assertResults(def result, def taskStatus) {
     assert result.status == taskStatus
-    assert result.outputs.commits.size == 2
-    assert result.outputs.commits[0].displayId == "abcdab"
-    assert result.outputs.commits[0].id == "abcdabcdabcdabcd"
-    assert result.outputs.commits[0].authorDisplayName == "Joe Coder"
-    assert result.outputs.commits[0].timestamp == 1432081865000
-    assert result.outputs.commits[0].commitUrl == "http://stash.com/abcdabcdabcdabcd"
-    assert result.outputs.commits[0].message == "my commit"
+    assert result.stageOutputs.commits.size == 2
+    assert result.stageOutputs.commits[0].displayId == "abcdab"
+    assert result.stageOutputs.commits[0].id == "abcdabcdabcdabcd"
+    assert result.stageOutputs.commits[0].authorDisplayName == "Joe Coder"
+    assert result.stageOutputs.commits[0].timestamp == 1432081865000
+    assert result.stageOutputs.commits[0].commitUrl == "http://stash.com/abcdabcdabcdabcd"
+    assert result.stageOutputs.commits[0].message == "my commit"
 
-    assert result.outputs.commits[1].displayId == "efghefgh"
-    assert result.outputs.commits[1].id == "efghefghefghefghefgh"
-    assert result.outputs.commits[1].authorDisplayName == "Jane Coder"
-    assert result.outputs.commits[1].timestamp == 1432081256000
-    assert result.outputs.commits[1].commitUrl == "http://stash.com/efghefghefghefghefgh"
-    assert result.outputs.commits[1].message == "bug fix"
+    assert result.stageOutputs.commits[1].displayId == "efghefgh"
+    assert result.stageOutputs.commits[1].id == "efghefghefghefghefgh"
+    assert result.stageOutputs.commits[1].authorDisplayName == "Jane Coder"
+    assert result.stageOutputs.commits[1].timestamp == 1432081256000
+    assert result.stageOutputs.commits[1].commitUrl == "http://stash.com/efghefghefghefghefgh"
+    assert result.stageOutputs.commits[1].message == "bug fix"
     return true
   }
 
@@ -450,7 +450,7 @@ class GetCommitsTaskSpec extends Specification {
 
     then:
     result.status == taskStatus
-    result.outputs.commits.size == 0
+    result.stageOutputs.commits.size == 0
 
     where:
     app = "myapp"
@@ -503,7 +503,7 @@ class GetCommitsTaskSpec extends Specification {
 
     then:
     result.status == taskStatus
-    result.outputs.commits.size == 0
+    result.stageOutputs.commits.size == 0
 
     where:
     app = "myapp"
@@ -544,7 +544,7 @@ class GetCommitsTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.outputs.commits.size == 0
+    result.stageOutputs.commits.size == 0
 
     where:
     app = "myapp"
@@ -611,8 +611,8 @@ class GetCommitsTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result?.outputs?.buildInfo?.ancestor == ancestorBuild
-    result?.outputs?.buildInfo?.target == targetBuild
+    result?.stageOutputs?.buildInfo?.ancestor == ancestorBuild
+    result?.stageOutputs?.buildInfo?.target == targetBuild
 
     where:
     app = "myapp"

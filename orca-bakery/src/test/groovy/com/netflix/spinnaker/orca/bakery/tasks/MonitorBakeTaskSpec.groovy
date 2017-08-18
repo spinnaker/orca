@@ -106,7 +106,7 @@ class MonitorBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    with(result.outputs.status) {
+    with(result.stageOutputs.status) {
       id == previousStatus.id
       state == BakeStatus.State.COMPLETED
     }

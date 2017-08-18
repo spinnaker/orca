@@ -257,7 +257,7 @@ class CreateBakeTaskSpec extends Specification {
 
     then:
     bake.packageName == 'hodor_1.1_all'
-    result.outputs.bakePackageName == 'hodor_1.1_all'
+    result.stageOutputs.bakePackageName == 'hodor_1.1_all'
 
     where:
     triggerInfo      | contextInfo
@@ -324,7 +324,7 @@ class CreateBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    with(result.outputs.status) {
+    with(result.stageOutputs.status) {
       id == runningStatus.id
       state == runningStatus.state
     }
@@ -340,7 +340,7 @@ class CreateBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.outputs.bakePackageName == bakeConfig.package
+    result.stageOutputs.bakePackageName == bakeConfig.package
   }
 
   @Unroll
@@ -359,11 +359,11 @@ class CreateBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.outputs.bakePackageName == "hodor_1.1_all"
-    result.outputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
-    result.outputs.job == jobName
-    result.outputs.buildNumber == "69"
-    !result.outputs.commitHash
+    result.stageOutputs.bakePackageName == "hodor_1.1_all"
+    result.stageOutputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
+    result.stageOutputs.job == jobName
+    result.stageOutputs.buildNumber == "69"
+    !result.stageOutputs.commitHash
 
     where:
     triggerInfo             | contextInfo             | jobName
@@ -389,11 +389,11 @@ class CreateBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.outputs.bakePackageName == "hodor_1.1_all"
-    result.outputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
-    result.outputs.job == "SPINNAKER-package-echo"
-    result.outputs.buildNumber == "69"
-    result.outputs.commitHash == "f83a447f8d02a40fa84ec9d4d0dccd263d51782d"
+    result.stageOutputs.bakePackageName == "hodor_1.1_all"
+    result.stageOutputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
+    result.stageOutputs.job == "SPINNAKER-package-echo"
+    result.stageOutputs.buildNumber == "69"
+    result.stageOutputs.commitHash == "f83a447f8d02a40fa84ec9d4d0dccd263d51782d"
 
     where:
     triggerInfo            | contextInfo
@@ -417,11 +417,11 @@ class CreateBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.outputs.bakePackageName == "hodor_1.1_all"
-    result.outputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
-    result.outputs.job == "SPINNAKER-package-echo"
-    result.outputs.buildNumber == "69"
-    result.outputs.commitHash == "1234567f8d02a40fa84ec9d4d0dccd263d51782d"
+    result.stageOutputs.bakePackageName == "hodor_1.1_all"
+    result.stageOutputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
+    result.stageOutputs.job == "SPINNAKER-package-echo"
+    result.stageOutputs.buildNumber == "69"
+    result.stageOutputs.commitHash == "1234567f8d02a40fa84ec9d4d0dccd263d51782d"
 
     where:
     triggerInfo                | contextInfo
@@ -445,11 +445,11 @@ class CreateBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.outputs.bakePackageName == "hodor_1.1_all"
-    result.outputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
-    result.outputs.job == "SPINNAKER-package-echo"
-    result.outputs.buildNumber == "69"
-    result.outputs.commitHash == "f83a447f8d02a40fa84ec9d4d0dccd263d51782d"
+    result.stageOutputs.bakePackageName == "hodor_1.1_all"
+    result.stageOutputs.buildHost == "http://spinnaker.builds.test.netflix.net/"
+    result.stageOutputs.job == "SPINNAKER-package-echo"
+    result.stageOutputs.buildNumber == "69"
+    result.stageOutputs.commitHash == "f83a447f8d02a40fa84ec9d4d0dccd263d51782d"
 
     where:
     triggerInfo                             | contextInfo
@@ -473,11 +473,11 @@ class CreateBakeTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.outputs.bakePackageName == "hodor_1.1_all"
-    !result.outputs.buildHost
-    !result.outputs.job
-    !result.outputs.buildNumber
-    !result.outputs.commitHash
+    result.stageOutputs.bakePackageName == "hodor_1.1_all"
+    !result.stageOutputs.buildHost
+    !result.stageOutputs.job
+    !result.stageOutputs.buildNumber
+    !result.stageOutputs.commitHash
 
     where:
     triggerInfo | contextInfo | extractBuildDetails

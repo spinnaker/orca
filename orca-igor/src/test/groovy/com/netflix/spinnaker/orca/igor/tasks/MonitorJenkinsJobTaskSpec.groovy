@@ -155,8 +155,8 @@ class MonitorJenkinsJobTaskSpec extends Specification {
     TaskResult result = task.execute(stage)
 
     then:
-    result.outputs.val1 == 'one'
-    result.outputs.val2 == 'two'
+    result.stageOutputs.val1 == 'one'
+    result.stageOutputs.val2 == 'two'
 
   }
 
