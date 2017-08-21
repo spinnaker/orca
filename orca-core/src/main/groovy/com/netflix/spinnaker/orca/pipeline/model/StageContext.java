@@ -44,7 +44,7 @@ public class StageContext extends ForwardingMap<String, Object> {
         .filter(it -> it.getOutputs().containsKey(key))
         .findFirst()
         .map(it -> it.getOutputs().get(key))
-        .orElse(null);
+        .orElseGet(() -> stage.getExecution().getContext().get(key));
     }
   }
 }

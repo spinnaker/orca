@@ -24,6 +24,11 @@ import static java.lang.System.currentTimeMillis
 class StageContextSpec extends Specification {
 
   def pipeline = pipeline {
+    context.foo = "global-foo"
+    context.bar = "global-bar"
+    context.baz = "global-baz"
+    context.qux = "global-qux"
+    context.fnord = "global-fnord"
   }
   .stage {
     refId = "1"
@@ -89,15 +94,20 @@ class StageContextSpec extends Specification {
     pipeline.stageByRef("3>1").context.covfefe == null
   }
 
+  def "if all else fails will read from global context"() {
+    expect:
+    pipeline.stageByRef("3>1").context.fnord == "global-fnord"
+  }
+
   private static PipelineInit pipeline(
-    @DelegatesTo(PipelineInit) Closure init = {}) {
+    @DelegatesTo(Pipeline) Closure init = {}) {
     def pipeline = new Pipeline()
     pipeline.id = UUID.randomUUID().toString()
     pipeline.executionEngine = v3
     pipeline.buildTime = currentTimeMillis()
 
     def builder = new PipelineInit(pipeline)
-    init.delegate = builder
+    init.delegate = pipeline
     init()
 
     return builder
