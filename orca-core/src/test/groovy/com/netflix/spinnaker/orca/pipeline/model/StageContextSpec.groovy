@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline.model
 
 import spock.lang.Specification
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static java.lang.System.currentTimeMillis
 
@@ -103,7 +102,6 @@ class StageContextSpec extends Specification {
     @DelegatesTo(Pipeline) Closure init = {}) {
     def pipeline = new Pipeline()
     pipeline.id = UUID.randomUUID().toString()
-    pipeline.executionEngine = v3
     pipeline.buildTime = currentTimeMillis()
 
     def builder = new PipelineInit(pipeline)
