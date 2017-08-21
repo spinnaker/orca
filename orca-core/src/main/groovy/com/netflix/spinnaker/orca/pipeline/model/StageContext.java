@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import com.google.common.collect.ForwardingMap;
 
@@ -44,7 +45,12 @@ public class StageContext extends ForwardingMap<String, Object> {
         .filter(it -> it.getOutputs().containsKey(key))
         .findFirst()
         .map(it -> it.getOutputs().get(key))
-        .orElseGet(() -> stage.getExecution().getContext().get(key));
+        .orElseGet(() ->
+          Optional
+            .ofNullable(stage.getExecution())
+            .map(execution -> execution.getContext().get(key))
+            .orElse(null)
+        );
     }
   }
 }
