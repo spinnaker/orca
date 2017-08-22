@@ -65,7 +65,7 @@ class CreateWebhookTask implements RetryableTask {
     def outputs = [:]
     outputs << [statusCode: statusCode]
     if (response.body) {
-      outputs << [buildInfo: response.body]
+      outputs << [buildInfo: [responseBody: response.body]]
     }
     if (statusCode.is2xxSuccessful() || statusCode.is3xxRedirection()) {
       if (waitForCompletion) {
