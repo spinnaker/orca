@@ -33,6 +33,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import java.util.stream.Collectors
+
 @Component
 @Slf4j
 class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -142,10 +144,19 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
           try {
             reason = objectMapper.readValue(e.response.body.in(), new TypeReference<Map<String, Object>>() {})
           } catch (Exception ignored) {
-            throw new IllegalStateException("Unexpected response from API")
+            if (!e.response.body?.length()) {
+              throw new IllegalStateException("Internal error: empty response received trying to get cluster '$config.cluster' for '$account' in '$location.value'.")
+            }
+            String body
+            try {
+              body = new BufferedReader(new InputStreamReader(e.response.body.in())).lines().collect(Collectors.joining("\n"))
+            } catch (Exception IGNORED) {
+              body = "[error writing from response body string]"
+            }
+            throw new IllegalStateException("Internal error: could not parse response for cluster '$config.cluster' for '$account' in '$location.value'. Response body: ${body}")
           }
           if (reason.error?.contains("target.fail.strategy")){
-            throw new IllegalStateException("Multiple possible server groups present in ${location.value}")
+            throw new IllegalStateException("Multiple possible server groups present in $location.value")
           }
           if (config.resolveMissingLocations) {
             missingLocations << location

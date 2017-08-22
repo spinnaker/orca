@@ -381,4 +381,57 @@ class FindImageFromClusterTaskSpec extends Specification {
       }
       """.stripIndent()
   }
+
+  @Unroll
+  def "should provide useful (to developers) error on empty response"() {
+    given:
+    def stage = new Stage<>(new Pipeline(), "whatever", [
+      cloudProvider    : "cloudProvider",
+      cluster          : "foo-test",
+      account          : "test",
+      selectionStrategy: "FAIL",
+      onlyEnabled      : "false",
+      zones            : ["location"]
+    ])
+
+    Response response = new Response("http://oort", 404, "NOT_FOUND", [], body)
+
+    when:
+    task.execute(stage)
+
+    then:
+    1 * oortService.getServerGroupSummary("foo", "test", "foo-test", "cloudProvider", "location",
+      "FAIL", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
+      throw new RetrofitError(null, null, response, null, null, null, null)
+    }
+    IllegalStateException ise = thrown()
+    ise.message == "Internal error: empty response received trying to get cluster 'foo-test' for 'test' in 'location'."
+
+    where:
+    body << [null, new TypedString("")]
+  }
+
+  def "should provide useful (to developers) non-map response"() {
+    def stage = new Stage<>(new Pipeline(), "whatever", [
+      cloudProvider    : "cloudProvider",
+      cluster          : "foo-test",
+      account          : "test",
+      selectionStrategy: "FAIL",
+      onlyEnabled      : "false",
+      zones            : ["location"]
+    ])
+
+    Response response = new Response("http://oort", 404, "NOT_FOUND", [], new TypedString("abc"))
+
+    when:
+    task.execute(stage)
+
+    then:
+    1 * oortService.getServerGroupSummary("foo", "test", "foo-test", "cloudProvider", "location",
+      "FAIL", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
+      throw new RetrofitError(null, null, response, null, null, null, null)
+    }
+    IllegalStateException ise = thrown()
+    ise.message == "Internal error: could not parse response for cluster 'foo-test' for 'test' in 'location'. Response body: abc"
+  }
 }
