@@ -134,11 +134,15 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
     this.keepWaitingPipelines = keepWaitingPipelines;
   }
 
-  private final Map<String, Object> context = new HashMap<>();
+  private Map<String, Object> context = new HashMap<>();
 
   @Deprecated
-  public Map<String, Object> getContext() {
+  public @Nonnull Map<String, Object> getContext() {
     return context;
+  }
+
+  public void setContext(@Nonnull Map<String, Object> context) {
+    this.context = context;
   }
 
   private List<Stage<T>> stages = new ArrayList<>();

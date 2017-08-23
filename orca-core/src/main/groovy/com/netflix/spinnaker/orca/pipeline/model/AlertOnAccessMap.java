@@ -34,9 +34,9 @@ class AlertOnAccessMap<E extends Execution<E>> extends ForwardingMap<String, Obj
     this.delegate = delegate;
     counterId = registry
       .createId("global.context.access")
-      .withTag("execution", execution.id)
-      .withTag("application", execution.application)
-      .withTag("name", execution.name);
+      .withTag("execution", execution.getId())
+      .withTag("application", execution.getApplication())
+      .withTag("name", execution.getName());
   }
 
   AlertOnAccessMap(Execution<E> execution, Registry registry) {
