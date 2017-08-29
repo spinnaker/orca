@@ -525,18 +525,14 @@ class JedisExecutionRepository implements ExecutionRepository {
   private void storeExecutionInternal(Transaction tx, Execution execution) {
     def prefix = execution.getClass().simpleName.toLowerCase()
 
-    if (!execution.id) {
-      execution.id = UUID.randomUUID().toString()
-      tx.sadd(alljobsKey(execution.getClass()), execution.id)
-      tx.sadd(appKey(execution.getClass(), execution.application), execution.id)
-    }
+    tx.sadd(alljobsKey(execution.getClass()), execution.id)
+    tx.sadd(appKey(execution.getClass(), execution.application), execution.id)
 
     String key = "${prefix}:$execution.id"
 
     Map<String, String> map = [
       application         : execution.application,
       canceled            : String.valueOf(execution.canceled),
-      parallel            : String.valueOf(execution.parallel),
       limitConcurrent     : String.valueOf(execution.limitConcurrent),
       buildTime           : Long.toString(execution.buildTime ?: 0L),
       startTime           : execution.startTime?.toString(),
@@ -623,14 +619,11 @@ class JedisExecutionRepository implements ExecutionRepository {
         stageIds = results[1] ?: (map.stageIndex ?: "").tokenize(",")
       }
 
-      def execution = type.newInstance()
-      execution.id = id
-      execution.application = map.application
+      def execution = type.newInstance(id, map.application)
       execution.context.putAll(map.context ? mapper.readValue(map.context, Map) : [:])
       execution.canceled = Boolean.parseBoolean(map.canceled)
       execution.canceledBy = map.canceledBy
       execution.cancellationReason = map.cancellationReason
-      execution.parallel = Boolean.parseBoolean(map.parallel)
       execution.limitConcurrent = Boolean.parseBoolean(map.limitConcurrent)
       execution.buildTime = map.buildTime?.toLong()
       execution.startTime = map.startTime?.toLong()

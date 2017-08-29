@@ -23,27 +23,21 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spectator.api.Registry;
 
 public class Pipeline extends Execution<Pipeline> {
-  private String application;
 
-  public @Nonnull String getApplication() {
-    return application;
+  public Pipeline(String application) {
+    super(application);
   }
 
-  public void setApplication(@Nonnull String application) {
-    this.application = application;
-  }
-
-  private String name;
-
-  public @Nullable String getName() {
-    return name;
-  }
-
-  public void setName(@Nullable String name) {
-    this.name = name;
+  @JsonCreator
+  public Pipeline(
+    @JsonProperty("id") String id,
+    @JsonProperty("application") String application) {
+    super(id, application);
   }
 
   private String pipelineConfigId;
@@ -74,19 +68,11 @@ public class Pipeline extends Execution<Pipeline> {
     return initialConfig;
   }
 
-  @Override public final boolean equals(Object o) {
-    return super.equals(o);
+  public static PipelineBuilder builder(String application, Registry registry) {
+    return new PipelineBuilder(application, registry);
   }
 
-  @Override public final int hashCode() {
-    return super.hashCode();
-  }
-
-  public static PipelineBuilder builder(Registry registry) {
-    return new PipelineBuilder(registry);
-  }
-
-  public static PipelineBuilder builder() {
-    return new PipelineBuilder();
+  public static PipelineBuilder builder(String application) {
+    return new PipelineBuilder(application);
   }
 }

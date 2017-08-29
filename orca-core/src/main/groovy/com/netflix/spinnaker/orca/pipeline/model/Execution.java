@@ -32,6 +32,15 @@ import static java.util.Collections.emptySet;
 
 public abstract class Execution<T extends Execution<T>> implements Serializable {
 
+  protected Execution(String application) {
+    this(UUID.randomUUID().toString(), application);
+  }
+
+  protected Execution(String id, String application) {
+    this.id = id;
+    this.application = application;
+  }
+
   private String id;
 
   public @Nonnull String getId() {
@@ -58,7 +67,7 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
     return name;
   }
 
-  public void setName(@Nonnull String name) {
+  public void setName(@Nullable String name) {
     this.name = name;
   }
 
@@ -102,18 +111,6 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
     this.cancellationReason = cancellationReason;
   }
 
-  private boolean parallel = true;
-
-  @Deprecated
-  public boolean isParallel() {
-    return parallel;
-  }
-
-  @Deprecated
-  public void setParallel(boolean parallel) {
-    this.parallel = parallel;
-  }
-
   private boolean limitConcurrent = false;
 
   public boolean isLimitConcurrent() {
@@ -145,14 +142,10 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
     this.context = context;
   }
 
-  private List<Stage<T>> stages = new ArrayList<>();
+  private final List<Stage<T>> stages = new ArrayList<>();
 
   public @Nonnull List<Stage<T>> getStages() {
     return stages;
-  }
-
-  public void setStages(@Nonnull List<Stage<T>> stages) {
-    this.stages = stages;
   }
 
   private Long startTime;
@@ -253,7 +246,7 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
       .orElseThrow(() -> new IllegalArgumentException(String.format("No stage with refId %s exists", refId)));
   }
 
-  @Override public boolean equals(Object o) {
+  @Override public final boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
@@ -263,7 +256,7 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
     return id.equals(execution.id);
   }
 
-  @Override public int hashCode() {
+  @Override public final int hashCode() {
     int result = super.hashCode();
     result = 31 * result + id.hashCode();
     return result;
