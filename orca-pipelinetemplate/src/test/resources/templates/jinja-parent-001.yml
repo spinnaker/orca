@@ -1,0 +1,8 @@
+schema: "1"
+id: jinjaParent
+stages:
+ - id: manualJudgment
+   type: manualJudgment
+   name: Manual Judgement
+   config:
+     instructions: '{{instructions}}'

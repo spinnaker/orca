@@ -133,7 +133,7 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
     }
 
     setTemplateSourceWithJinja(request);
-    List<PipelineTemplate> templates = templateLoader.load(templateConfiguration.getPipeline().getTemplate());
+    List<PipelineTemplate> templates = templateLoader.load(templateConfiguration.getPipeline().getTemplate(), getRenderContext(request));
 
     PipelineTemplate pipelineTemplate = TemplateMerge.merge(templates);
 
@@ -160,8 +160,14 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
   }
 
   private void setTemplateSourceWithJinja(TemplatedPipelineRequest request) {
-    RenderContext context = new DefaultRenderContext(request.getConfig().getPipeline().getApplication(), null, request.getTrigger());
-    request.getConfig().getPipeline().getTemplate().setSource(renderer.render(request.getConfig().getPipeline().getTemplate().getSource(), context ));
+    TemplateConfiguration.TemplateSource template = request.getConfig().getPipeline().getTemplate();
+    template.setSource(renderer.render(template.getSource(), getRenderContext(request)));
+  }
+
+  private DefaultRenderContext getRenderContext(TemplatedPipelineRequest request) {
+    DefaultRenderContext renderContext = new DefaultRenderContext(request.getConfig().getPipeline().getApplication(), request.getTemplate(), request.getTrigger());
+    request.getConfig().getPipeline().getVariables().forEach((key, value) -> renderContext.getVariables().putIfAbsent(key, value));
+    return renderContext;
   }
 
   private static class TemplatedPipelineRequest {
