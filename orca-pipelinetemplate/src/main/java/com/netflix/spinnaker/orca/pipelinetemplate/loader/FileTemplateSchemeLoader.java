@@ -46,7 +46,7 @@ public class FileTemplateSchemeLoader implements TemplateSchemeLoader {
   @Override
   public boolean supports(URI uri) {
     String scheme = uri.getScheme();
-    return scheme.equalsIgnoreCase("file") && (isJson(uri) || isYaml(uri));
+    return scheme != null && scheme.equalsIgnoreCase("file") && (isJson(uri) || isYaml(uri));
   }
 
   @Override

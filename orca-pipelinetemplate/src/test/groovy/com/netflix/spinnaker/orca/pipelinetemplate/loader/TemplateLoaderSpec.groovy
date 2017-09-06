@@ -16,17 +16,29 @@
 
 package com.netflix.spinnaker.orca.pipelinetemplate.loader
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.TemplateLoaderException
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.JinjaRenderer
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.Renderer
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.YamlRenderedValueConverter
+import org.yaml.snakeyaml.Yaml
 import spock.lang.Specification
 import spock.lang.Subject;
 
 class TemplateLoaderSpec extends Specification {
   def schemeLoader = Mock(TemplateSchemeLoader)
 
+  ObjectMapper objectMapper = new ObjectMapper()
+
+  Renderer renderer = new JinjaRenderer(
+    new YamlRenderedValueConverter(new Yaml()), objectMapper, Mock(Front50Service), []
+  )
+
   @Subject
-  def templateLoader = new TemplateLoader([schemeLoader])
+  def templateLoader = new TemplateLoader([schemeLoader], renderer)
 
   void "should return a LIFO list of pipeline templates"() {
     when:

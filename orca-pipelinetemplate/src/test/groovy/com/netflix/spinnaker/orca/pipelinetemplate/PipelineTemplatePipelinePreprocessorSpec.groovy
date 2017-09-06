@@ -41,11 +41,11 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
 
   ObjectMapper objectMapper = new ObjectMapper()
 
-  TemplateLoader templateLoader = new TemplateLoader([new FileTemplateSchemeLoader(objectMapper)])
-
   Renderer renderer = new JinjaRenderer(
     new YamlRenderedValueConverter(new Yaml()), objectMapper, Mock(Front50Service), []
   )
+
+  TemplateLoader templateLoader = new TemplateLoader([new FileTemplateSchemeLoader(objectMapper)], renderer)
 
   Registry registry = Mock() {
     clock() >> Mock(Clock) {
@@ -319,6 +319,16 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
     result.stages*.group == ['my group of stages: wowow waiting', 'my group of stages: wowow waiting']
   }
 
+  def "should transitively render jinja expressions in source"() {
+    when:
+    def result = subject.process(createInheritedInjectedTemplateRequest('jinja-child-001.yml', 'jinja-parent-001.yml'))
+
+    then:
+    result.stages*.name == ['Manual Judgement', 'Wait']
+    result.stages.find {it.name == 'Manual Judgement'}.instructions == 'Is it done yet?'
+    result.stages.find {it.name == 'Wait'}.waitTime == 10
+  }
+
   Map<String, Object> createTemplateRequest(String templatePath, Map<String, Object> variables = [:], List<Map<String, Object>> stages = [], boolean plan = false) {
     return [
       type: 'templatedPipeline',
@@ -359,6 +369,31 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
             source: '{{trigger.parameters.template}}'
           ],
         ],
+      ],
+      plan: false
+    ]
+  }
+
+  Map<String, Object> createInheritedInjectedTemplateRequest(String templatePath, String parentPath) {
+    return [
+      type: 'templatedPipeline',
+      trigger: [
+        parameters: [
+          template: getClass().getResource("/templates/${templatePath}").toURI()
+        ]
+      ],
+      config: [
+        schema: '1',
+        pipeline: [
+          application: 'myapp',
+          template: [
+            source: '{{trigger.parameters.template}}'
+          ],
+          variables: [
+            waitTime: 10,
+            parent: getClass().getResource("/templates/${parentPath}").toURI()
+          ]
+        ]
       ],
       plan: false
     ]

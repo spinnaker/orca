@@ -1,0 +1,16 @@
+schema: "1"
+id: jinjaChild
+source: '{{parent}}'
+
+variables:
+  - name: instructions
+    defaultValue: Is it done yet?
+
+stages:
+ - id: wait
+   type: wait
+   name: Wait
+   dependsOn:
+     - manualJudgment
+   config:
+     waitTime: '{{waitTime}}'
