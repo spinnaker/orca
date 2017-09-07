@@ -199,7 +199,7 @@ public class StageDefinition implements Identifiable, Conditional, Cloneable {
   }
 
   public String getName() {
-    return Optional.ofNullable(name).orElse(id);
+    return Optional.ofNullable(name).orElse(camelCaseToTitleCaseWords(id));
   }
 
   public void setName(String name) {
@@ -308,6 +308,17 @@ public class StageDefinition implements Identifiable, Conditional, Cloneable {
 
   public void setPartialDefinitionContext(PartialDefinitionContext partialDefinitionContext) {
     this.partialDefinitionContext = partialDefinitionContext;
+  }
+
+  private static String camelCaseToTitleCaseWords(String s) {
+    return (s.substring(0, 1).toUpperCase() + s.substring(1)).replaceAll(
+      String.format("%s|%s|%s",
+        "(?<=[A-Z])(?=[A-Z][a-z])",
+        "(?<=[^A-Z])(?=[A-Z])",
+        "(?<=[A-Za-z])(?=[^A-Za-z])"
+      ),
+      " "
+    );
   }
 
   @Override
