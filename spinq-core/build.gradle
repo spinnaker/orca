@@ -1,0 +1,22 @@
+repositories {
+  jcenter()
+}
+
+dependencies {
+  compile "org.threeten:threeten-extra:1.0"
+  compile "org.funktionale:funktionale-partials:1.1"
+}
+
+// export tests so the Queue TCK is available to other modules
+configurations {
+  testOutput.extendsFrom(testCompile)
+}
+
+task jarTest(type: Jar, dependsOn: testClasses) {
+  from sourceSets.test.output
+  classifier = "test"
+}
+
+artifacts {
+  testOutput jarTest
+}

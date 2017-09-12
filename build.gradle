@@ -1,0 +1,25 @@
+buildscript {
+  repositories {
+    jcenter()
+    maven { url "http://spinnaker.bintray.com/gradle" }
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+  dependencies {
+    classpath "com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.16.0"
+    classpath "org.springframework.boot:spring-boot-gradle-plugin:1.5.4.RELEASE"
+    classpath "org.junit.platform:junit-platform-gradle-plugin:$junitVersion"
+    classpath "com.netflix.nebula:nebula-kotlin-plugin:$kotlinVersion"
+  }
+}
+
+subprojects {
+  apply from: "$rootDir/gradle/kotlin.gradle"
+  apply from: "$rootDir/gradle/spek.gradle"
+  apply from: "$rootDir/gradle/spring.gradle"
+
+  dependencies {
+    compile "org.slf4j:slf4j-api:1.7.25"
+  }
+}
+
+defaultTasks "build"
