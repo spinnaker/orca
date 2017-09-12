@@ -182,7 +182,7 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
               callback.invoke(message, ackFunction)
             }
 
-            whenever(simpleMessageHandler.invoke(any())) doThrow NullPointerException()
+            whenever(simpleMessageHandler.invoke(any())) doThrow DummyException()
           }
 
           afterGroup(::resetMocks)
@@ -208,7 +208,7 @@ data class ChildMessage(val payload: String) : ParentMessage()
 
 data class UnsupportedMessage(val payload: String) : Message()
 
-private class BlockingThreadExecutor : Executor {
+class BlockingThreadExecutor : Executor {
 
   private val delegate = Executors.newSingleThreadExecutor()
 
@@ -229,3 +229,5 @@ class BlockingQueueExecutor : QueueExecutor {
   override val executor: Executor = BlockingThreadExecutor()
   override fun hasCapacity(): Boolean = true
 }
+
+class DummyException : RuntimeException("deliberate exception for test")
