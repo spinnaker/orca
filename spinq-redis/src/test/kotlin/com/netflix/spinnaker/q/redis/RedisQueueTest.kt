@@ -16,20 +16,11 @@
 
 package com.netflix.spinnaker.q.redis
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.q.DeadMessageCallback
-import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.QueueTest
-import com.netflix.spinnaker.q.TestMessage
 import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
-import com.netflix.spinnaker.spek.shouldEqual
 import org.funktionale.partials.invoke
-import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.describe
-import org.jetbrains.spek.api.dsl.it
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher
 import java.time.Clock
@@ -63,23 +54,3 @@ private val createQueue = { clock: Clock,
 private fun shutdownCallback() {
   redis?.destroy()
 }
-
-class ConvertToMessageSpec : Spek({
-  describe("should support deserializing a nested message") {
-    val objectMapper = ObjectMapper().apply {
-      registerModule(KotlinModule())
-    }
-
-    val message = TestMessage("a")
-
-    it("is not nested") {
-      message shouldEqual objectMapper.readValue(objectMapper.writeValueAsString(message))
-    }
-
-    it("is nested") {
-      message shouldEqual objectMapper.readValue(objectMapper.writeValueAsString(Envelope(message)))
-    }
-  }
-})
-
-private data class Envelope(val payload: Message)

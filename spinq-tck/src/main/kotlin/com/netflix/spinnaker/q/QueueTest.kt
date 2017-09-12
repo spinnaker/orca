@@ -304,7 +304,7 @@ abstract class QueueTest<out Q : Queue>(
       val message = TestMessage("a")
 
       and("a different message is pushed before acknowledging the first") {
-        val newMessage = message.copy(value = "b")
+        val newMessage = message.copy(payload = "b")
 
         beforeGroup {
           queue = createQueue(clock, deadLetterCallback).apply {

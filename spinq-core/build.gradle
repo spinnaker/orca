@@ -1,4 +1,9 @@
+apply from: "$rootDir/gradle/spek.gradle"
+
 dependencies {
   compile "org.springframework:spring-context:$springVersion"
   compile "com.fasterxml.jackson.core:jackson-annotations:2.8.7"
+  compile("com.netflix.spinnaker.kork:kork-core:1.98.2") {
+    exclude(module: "logback-classic")
+  }
 }
