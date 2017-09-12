@@ -21,6 +21,9 @@ repositories {
 }
 
 dependencies {
+  // only needed to run tests in IntelliJ
+  testCompile "org.junit.platform:junit-platform-runner:$junitVersion"
+
   testRuntime "org.junit.platform:junit-platform-launcher:$junitVersion"
   testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
 }

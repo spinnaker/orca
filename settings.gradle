@@ -1,1 +1,1 @@
-include "spinq-core", "spinq-tck", "spinq-mem"
+include "spinq-core", "spinq-tck", "spinq-mem", "spinq-redis"

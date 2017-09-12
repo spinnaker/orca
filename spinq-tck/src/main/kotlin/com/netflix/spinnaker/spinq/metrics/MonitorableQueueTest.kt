@@ -253,7 +253,7 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
       }
     }
 
-    given("a message needs to be redelivered but another copy was already pushed") {
+    given("a message needs to be redelivered but another withAttribute was already pushed") {
       beforeGroup(::startQueue)
       afterGroup(::stopQueue)
       afterGroup(::resetMocks)
