@@ -1,9 +1,9 @@
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
-  compile project(":spinq-core")
+  compile project(":keiko-core")
   compile "org.threeten:threeten-extra:1.0"
 
-  testCompile project(":spinq-tck")
+  testCompile project(":keiko-tck")
   testCompile "org.funktionale:funktionale-partials:1.1"
 }

@@ -1,1 +1,3 @@
-include "spinq-core", "spinq-tck", "spinq-mem", "spinq-redis", "spinq-test-common"
+include "keiko-core", "keiko-tck", "keiko-mem", "keiko-redis", "keiko-test-common"
+
+rootProject.name = "keiko"

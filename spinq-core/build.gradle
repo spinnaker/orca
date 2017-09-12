@@ -7,5 +7,5 @@ dependencies {
     exclude(module: "logback-classic")
   }
 
-  testCompile project(":spinq-test-common")
+  testCompile project(":keiko-test-common")
 }

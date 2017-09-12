@@ -3,6 +3,6 @@ repositories {
 }
 
 dependencies {
-  compile project(":spinq-core")
-  compile project(":spinq-test-common")
+  compile project(":keiko-core")
+  compile project(":keiko-test-common")
 }

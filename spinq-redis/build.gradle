@@ -1,13 +1,13 @@
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
-  compile project(":spinq-core")
+  compile project(":keiko-core")
   compile "redis.clients:jedis:2.8.1"
   compile "com.fasterxml.jackson.core:jackson-databind:2.8.7"
   compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.7"
   compile "org.funktionale:funktionale-partials:1.1"
   compile "com.google.guava:guava:20.0"
 
-  testCompile project(":spinq-tck")
+  testCompile project(":keiko-tck")
   testCompile "com.netflix.spinnaker.kork:kork-jedis-test:1.98.2"
 }
