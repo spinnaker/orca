@@ -1,0 +1,11 @@
+repositories {
+  maven { url "http://dl.bintray.com/jetbrains/spek" }
+}
+
+dependencies {
+  compile project(":spinq-core")
+  compile "org.jetbrains.spek:spek-api:$spekVersion"
+  compile "org.jetbrains.spek:spek-subject-extension:$spekVersion"
+  compile "com.nhaarman:mockito-kotlin:1.4.0"
+  compile "com.natpryce:hamkrest:1.4.0.0"
+}

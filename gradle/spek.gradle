@@ -17,21 +17,11 @@
 apply plugin: "org.junit.platform.gradle.plugin"
 
 repositories {
-  jcenter()
   maven { url "http://dl.bintray.com/jetbrains/spek" }
 }
 
 dependencies {
-  testCompile "org.junit.platform:junit-platform-runner:$junitVersion"
-  testCompile "org.jetbrains.spek:spek-api:$spekVersion"
-  testCompile "org.jetbrains.spek:spek-subject-extension:$spekVersion"
-  testCompile "com.nhaarman:mockito-kotlin:1.4.0"
-  testCompile "com.natpryce:hamkrest:1.4.0.0"
-  testCompile "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
-
   testRuntime "org.junit.platform:junit-platform-launcher:$junitVersion"
-  testRuntime "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
-  testRuntime "org.junit.vintage:junit-vintage-engine:$junitLegacyVersion"
   testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
 }
 
@@ -39,38 +29,7 @@ junitPlatform {
   platformVersion junitVersion
   filters {
     engines {
-      include "spek", "junit-vintage", "junit-jupiter"
+      include "spek"
     }
   }
-}
-
-// JUnit5 needs all this extra crap to generate HTML reports
-configurations {
-  junitXmlToHtml
-}
-
-dependencies {
-  junitXmlToHtml "org.apache.ant:ant-junit:1.9.7"
-}
-
-task(generateHtmlTestReports).doLast {
-  def reportsDir = new File(buildDir, "test-reports")
-  reportsDir.mkdirs()
-
-  ant.taskdef(
-    name: "junitReport",
-    classname: "org.apache.tools.ant.taskdefs.optional.junit.XMLResultAggregator",
-    classpath: configurations.junitXmlToHtml.asPath
-  )
-
-  ant.junitReport(todir: "$buildDir/test-results/junit-platform", tofile: "aggregated-test-results.xml") {
-    fileset dir: "$buildDir/test-results/junit-platform"
-    report format: "frames", todir: reportsDir
-  }
-}
-
-afterEvaluate {
-  def junitPlatformTestTask = tasks.getByName("junitPlatformTest")
-  generateHtmlTestReports.dependsOn(junitPlatformTestTask)
-  check.dependsOn(generateHtmlTestReports)
 }

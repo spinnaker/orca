@@ -1,7 +1,0 @@
-repositories {
-  jcenter()
-}
-
-dependencies {
-  compile "org.springframework:spring-context:$springVersion"
-}
