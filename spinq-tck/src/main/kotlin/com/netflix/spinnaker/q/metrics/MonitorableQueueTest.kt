@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq.metrics
+package com.netflix.spinnaker.q.metrics
 
+import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.TestMessage
 import com.netflix.spinnaker.spek.shouldEqual
-import com.netflix.spinnaker.spinq.DeadMessageCallback
-import com.netflix.spinnaker.spinq.Queue
-import com.netflix.spinnaker.spinq.TestMessage
 import com.netflix.spinnaker.time.MutableClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq.memory
+package com.netflix.spinnaker.q.memory
 
-import com.netflix.spinnaker.spinq.DeadMessageCallback
-import com.netflix.spinnaker.spinq.Message
-import com.netflix.spinnaker.spinq.Queue
-import com.netflix.spinnaker.spinq.metrics.*
+import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.Message
+import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.metrics.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.context.ApplicationEventPublisher

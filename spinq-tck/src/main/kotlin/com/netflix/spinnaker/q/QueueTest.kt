@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq
+package com.netflix.spinnaker.q
 
+import com.netflix.spinnaker.q.Queue.Companion.maxRetries
 import com.netflix.spinnaker.spek.and
-import com.netflix.spinnaker.spinq.Queue.Companion.maxRetries
 import com.netflix.spinnaker.time.MutableClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek

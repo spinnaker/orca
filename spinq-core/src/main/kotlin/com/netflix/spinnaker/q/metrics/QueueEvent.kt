@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq.metrics
+package com.netflix.spinnaker.q.metrics
 
-import com.netflix.spinnaker.spinq.Message
-import com.netflix.spinnaker.spinq.Queue
+import com.netflix.spinnaker.q.Message
+import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.time.toInstant
 import org.springframework.context.ApplicationEvent
 

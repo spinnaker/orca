@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq.redis
+package com.netflix.spinnaker.q.redis
 
 import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.hash.Hashing
-import com.netflix.spinnaker.spinq.AttemptsAttribute
-import com.netflix.spinnaker.spinq.MaxAttemptsAttribute
-import com.netflix.spinnaker.spinq.Message
-import com.netflix.spinnaker.spinq.Queue
-import com.netflix.spinnaker.spinq.metrics.*
+import com.netflix.spinnaker.q.AttemptsAttribute
+import com.netflix.spinnaker.q.MaxAttemptsAttribute
+import com.netflix.spinnaker.q.Message
+import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.metrics.*
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

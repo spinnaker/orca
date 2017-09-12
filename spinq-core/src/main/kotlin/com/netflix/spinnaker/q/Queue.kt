@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq
+package com.netflix.spinnaker.q
 
 import java.time.Duration.ZERO
 import java.time.temporal.TemporalAmount

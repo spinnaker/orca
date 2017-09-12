@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq.memory
+package com.netflix.spinnaker.q.memory
 
-import com.netflix.spinnaker.spinq.DeadMessageCallback
-import com.netflix.spinnaker.spinq.QueueTest
-import com.netflix.spinnaker.spinq.metrics.MonitorableQueueTest
+import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.QueueTest
+import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
 import org.funktionale.partials.invoke
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationEventPublisher

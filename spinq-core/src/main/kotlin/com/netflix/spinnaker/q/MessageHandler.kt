@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq
+package com.netflix.spinnaker.q
 
 /**
  * Implementations handle a single message type from the queue.

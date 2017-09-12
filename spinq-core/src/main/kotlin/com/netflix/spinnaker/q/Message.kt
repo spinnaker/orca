@@ -1,4 +1,4 @@
-package com.netflix.spinnaker.spinq
+package com.netflix.spinnaker.q
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY

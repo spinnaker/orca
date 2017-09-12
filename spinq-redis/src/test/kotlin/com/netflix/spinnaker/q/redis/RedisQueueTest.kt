@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.spinq.redis
+package com.netflix.spinnaker.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
+import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.Message
+import com.netflix.spinnaker.q.QueueTest
+import com.netflix.spinnaker.q.TestMessage
+import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
 import com.netflix.spinnaker.spek.shouldEqual
-import com.netflix.spinnaker.spinq.DeadMessageCallback
-import com.netflix.spinnaker.spinq.Message
-import com.netflix.spinnaker.spinq.QueueTest
-import com.netflix.spinnaker.spinq.TestMessage
-import com.netflix.spinnaker.spinq.metrics.MonitorableQueueTest
 import org.funktionale.partials.invoke
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
