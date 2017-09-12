@@ -18,6 +18,7 @@ package com.netflix.spinnaker.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
@@ -72,11 +73,11 @@ class ConvertToMessageSpec : Spek({
     val message = TestMessage("a")
 
     it("is not nested") {
-      message shouldEqual RedisQueue.convertToMessage(objectMapper.writeValueAsString(message), objectMapper)
+      message shouldEqual objectMapper.readValue(objectMapper.writeValueAsString(message))
     }
 
     it("is nested") {
-      message shouldEqual RedisQueue.convertToMessage(objectMapper.writeValueAsString(Envelope(message)), objectMapper)
+      message shouldEqual objectMapper.readValue(objectMapper.writeValueAsString(Envelope(message)))
     }
   }
 })

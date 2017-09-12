@@ -67,18 +67,6 @@ class RedisQueue(
   private val hashKey = "$queueName.hash"
   private val hashesKey = "$queueName.hashes"
 
-  companion object {
-    fun convertToMessage(json: String, mapper: ObjectMapper): Message {
-      val messageMap = mapper.readValue<Map<String, Any>>(json)
-
-      return if (messageMap.containsKey("payload")) {
-        mapper.convertValue(messageMap["payload"], Message::class.java)
-      } else {
-        mapper.readValue(json)
-      }
-    }
-  }
-
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
       redis.zrangeByScore(queueKey, 0.0, score(), 0, 1)
@@ -253,7 +241,7 @@ class RedisQueue(
         removeMessage(id)
       } else {
         try {
-          val message = convertToMessage(json, mapper)
+          val message = mapper.readValue<Message>(json)
             .apply {
               // TODO: AttemptsAttribute could replace `attemptsKey`
               val currentAttempts = (getAttribute() ?: AttemptsAttribute())
