@@ -24,11 +24,6 @@ dependencies {
   // only needed to run tests in IntelliJ
   testCompile "org.junit.platform:junit-platform-runner:$junitVersion"
 
-  testCompile "org.jetbrains.spek:spek-api:$spekVersion"
-  testCompile "org.jetbrains.spek:spek-subject-extension:$spekVersion"
-  testCompile "com.nhaarman:mockito-kotlin:1.5.0"
-  testCompile "com.natpryce:hamkrest:1.4.2.0"
-
   testRuntime "org.junit.platform:junit-platform-launcher:$junitVersion"
   testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
 }
