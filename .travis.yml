@@ -3,9 +3,9 @@ jdk:
 - oraclejdk8
 sudo: required
 dist: trusty
-install: ./gradlew assemble
-script: ./gradlew build
-before_cache: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+install: gradle/installViaTravis.sh
+script: gradle/buildViaTravis.sh
+before_cache: gradle/prepCaches.sh
 cache:
   directories:
   - $HOME/.gradle
