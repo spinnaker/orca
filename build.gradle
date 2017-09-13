@@ -14,11 +14,10 @@ buildscript {
 allprojects {
   apply plugin: "spinnaker.project"
 
-  group = "com.netflix.spinnaker"
+  group = "com.netflix.spinnaker.keiko"
 }
 
 subprojects {
-  apply plugin: "nebula.netflixoss"
   apply from: "$rootDir/gradle/kotlin.gradle"
 
   repositories {
