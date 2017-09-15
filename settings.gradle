@@ -1,3 +1,9 @@
-include "keiko-core", "keiko-tck", "keiko-mem", "keiko-redis", "keiko-test-common"
+include "keiko-core",
+    "keiko-mem",
+    "keiko-redis",
+    "keiko-redis-spring",
+    "keiko-spring",
+    "keiko-tck",
+    "keiko-test-common"
 
 rootProject.name = "keiko"
