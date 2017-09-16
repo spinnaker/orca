@@ -110,7 +110,7 @@ abstract class QueueTest<out Q : Queue>(
       afterGroup(::resetMocks)
 
       on("polling the queue twice") {
-        queue!!.apply {
+        with(queue!!) {
           poll(callback)
           poll(callback)
         }
@@ -174,7 +174,7 @@ abstract class QueueTest<out Q : Queue>(
 
       beforeGroup {
         queue = createQueue(clock, deadLetterCallback)
-        queue!!.apply {
+        with(queue!!) {
           push(message)
           poll { _, ack ->
             ack()
@@ -186,7 +186,7 @@ abstract class QueueTest<out Q : Queue>(
       afterGroup(::resetMocks)
 
       on("polling the queue after the message acknowledgment has timed out") {
-        queue!!.apply {
+        with(queue!!) {
           clock.incrementBy(ackTimeout)
           retry()
           poll(callback)
@@ -203,7 +203,7 @@ abstract class QueueTest<out Q : Queue>(
 
       beforeGroup {
         queue = createQueue(clock, deadLetterCallback)
-        queue!!.apply {
+        with(queue!!) {
           push(message)
           poll { _, _ -> }
         }
@@ -213,7 +213,7 @@ abstract class QueueTest<out Q : Queue>(
       afterGroup(::resetMocks)
 
       on("polling the queue after the message acknowledgment has timed out") {
-        queue!!.apply {
+        with(queue!!) {
           clock.incrementBy(ackTimeout)
           retry()
           poll(callback)
@@ -230,7 +230,7 @@ abstract class QueueTest<out Q : Queue>(
 
       beforeGroup {
         queue = createQueue(clock, deadLetterCallback)
-        queue!!.apply {
+        with(queue!!) {
           push(message)
           repeat(2) {
             poll { _, _ -> }
@@ -244,7 +244,7 @@ abstract class QueueTest<out Q : Queue>(
       afterGroup(::resetMocks)
 
       on("polling the queue again") {
-        queue!!.apply {
+        with(queue!!) {
           poll(callback)
         }
       }
@@ -259,7 +259,7 @@ abstract class QueueTest<out Q : Queue>(
 
       beforeGroup {
         queue = createQueue(clock, deadLetterCallback)
-        queue!!.apply {
+        with(queue!!) {
           push(message)
           repeat(maxRetries) {
             poll { _, _ -> }
@@ -273,7 +273,7 @@ abstract class QueueTest<out Q : Queue>(
       afterGroup(::resetMocks)
 
       on("polling the queue again") {
-        queue!!.apply {
+        with(queue!!) {
           poll(callback)
         }
       }
@@ -288,7 +288,7 @@ abstract class QueueTest<out Q : Queue>(
 
       and("the message has been dead-lettered") {
         on("the next time retry checks happen") {
-          queue!!.apply {
+          with(queue!!) {
             retry()
             poll(callback)
           }
@@ -308,6 +308,34 @@ abstract class QueueTest<out Q : Queue>(
   describe("message hashing") {
     given("a message was pushed") {
       val message = TestMessage("a")
+
+      and("a duplicate is pushed with a newer delivery time") {
+        val delay = Duration.ofHours(1)
+
+        beforeGroup {
+          queue = createQueue(clock, deadLetterCallback).apply {
+            push(message, delay)
+            push(message.copy())
+          }
+        }
+
+        afterGroup(::stopQueue)
+        afterGroup(::resetMocks)
+
+        on("polling the queue") {
+          queue!!.poll(callback)
+        }
+
+        it("delivers the message immediately and only once") {
+          verify(callback).invoke(eq(message), any())
+        }
+
+        it("does not hold on to the first message") {
+          clock.incrementBy(delay)
+          queue!!.poll(callback)
+          verifyNoMoreInteractions(callback)
+        }
+      }
 
       and("a different message is pushed before acknowledging the first") {
         val newMessage = message.copy(payload = "b")
@@ -376,6 +404,40 @@ abstract class QueueTest<out Q : Queue>(
 
         it("enqueued the second message") {
           verify(callback).invoke(eq(message), any())
+        }
+      }
+
+      and("another identical message is pushed with a delay and the first is never acknowledged") {
+        val delay = Duration.ofHours(1)
+
+        beforeGroup {
+          queue = createQueue(clock, deadLetterCallback).apply {
+            push(message)
+            poll { _, ack ->
+              push(message.copy(), delay)
+            }
+          }
+        }
+
+        afterGroup(::stopQueue)
+        afterGroup(::resetMocks)
+
+        on("polling the queue again after the first message times out") {
+          with(queue!!) {
+            clock.incrementBy(ackTimeout)
+            retry()
+            poll(callback)
+          }
+        }
+
+        it("re-queued the message for immediate delivery") {
+          verify(callback).invoke(eq(message), any())
+        }
+
+        it("discarded the delayed message") {
+          clock.incrementBy(delay)
+          queue!!.poll(callback)
+          verifyNoMoreInteractions(callback)
         }
       }
 
