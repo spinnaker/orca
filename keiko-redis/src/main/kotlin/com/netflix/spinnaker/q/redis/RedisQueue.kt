@@ -65,10 +65,6 @@ class RedisQueue(
   // TODO: use AttemptsAttribute instead
   private val attemptsKey = "$queueName.attempts"
 
-  // TODO: legacy id support
-  private val hashKey = "$queueName.hash"
-  private val hashesKey = "$queueName.hashes"
-
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
       redis.zrangeByScore(queueKey, 0.0, score(), 0, 1)
@@ -208,23 +204,13 @@ class RedisQueue(
     multi {
       hset(messagesKey, fingerprint, mapper.writeValueAsString(message))
       zadd(queueKey, score(delay), fingerprint)
-
-      // TODO: legacy id compatibility
-      hset(hashKey, fingerprint, fingerprint)
-      sadd(hashesKey, fingerprint)
     }
   }
 
   private fun Jedis.requeueMessage(fingerprint: String) {
-    val hash = hget(hashKey, fingerprint)
     multi {
       zrem(unackedKey, fingerprint)
       zadd(queueKey, score(), fingerprint)
-
-      // TODO: legacy id compatibility
-      if (hash != null) {
-        sadd(hashesKey, hash)
-      }
     }
   }
 
@@ -237,9 +223,6 @@ class RedisQueue(
 
       // TODO: use AttemptAttribute instead
       hdel(attemptsKey, fingerprint)
-
-      // TODO: legacy id compatibility
-      hdel(hashKey, fingerprint)
     }
   }
 
@@ -249,17 +232,10 @@ class RedisQueue(
    * cleaned up.
    */
   private fun Jedis.readMessage(fingerprint: String, block: (Message) -> Unit) {
-    val hash = hget(hashKey, fingerprint)
     multi {
       hget(messagesKey, fingerprint)
       zrem(queueKey, fingerprint)
       zadd(unackedKey, score(ackTimeout), fingerprint)
-
-      // TODO: legacy id compatibility
-      srem(hashesKey, fingerprint)
-      if (hash != null) {
-        srem(hashesKey, hash)
-      }
 
       // TODO: use AttemptsAttribute instead
       hincrBy(attemptsKey, fingerprint, 1)
