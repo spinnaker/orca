@@ -413,7 +413,7 @@ abstract class QueueTest<out Q : Queue>(
         beforeGroup {
           queue = createQueue(clock, deadLetterCallback).apply {
             push(message)
-            poll { _, ack ->
+            poll { _, _ ->
               push(message.copy(), delay)
             }
           }
