@@ -37,6 +37,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
+/**
+ * An in-memory, non-clustered implementation of [Queue] mostly useful for
+ * testing.
+ */
 class InMemoryQueue(
   private val clock: Clock,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),

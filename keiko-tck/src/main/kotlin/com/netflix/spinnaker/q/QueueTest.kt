@@ -29,6 +29,12 @@ import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
 
+/**
+ * A compatibility test for [Queue] implementations. Extend this class,
+ * supplying a factory function to the constructor. Optionally implementations
+ * can also supply a function to clean up resources associated with the [Queue]
+ * when it is shut down after each test group.
+ */
 abstract class QueueTest<out Q : Queue>(
   createQueue: (Clock, DeadMessageCallback) -> Q,
   shutdownCallback: (() -> Unit)? = null

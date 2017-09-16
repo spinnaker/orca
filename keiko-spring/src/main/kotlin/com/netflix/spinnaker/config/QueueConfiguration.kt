@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.config
 
+import com.netflix.spinnaker.q.MessageHandler
+import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.QueueExecutor
+import com.netflix.spinnaker.q.QueueProcessor
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -42,4 +46,11 @@ open class QueueConfiguration {
       maxPoolSize = queueProperties.handlerMaxPoolSize
       setQueueCapacity(0)
     }
+
+  @Bean
+  open fun queueProcessor(
+    queue: Queue,
+    queueExecutor: QueueExecutor,
+    handlers: Collection<MessageHandler<*>>
+  ) = QueueProcessor(queue, queueExecutor, handlers)
 }

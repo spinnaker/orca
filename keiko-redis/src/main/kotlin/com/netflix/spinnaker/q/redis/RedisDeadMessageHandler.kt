@@ -17,17 +17,22 @@ package com.netflix.spinnaker.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
 import java.time.Clock
 
+/**
+ * A dead message handler that writes messages to a sorted set with a score
+ * representing the time the message was abandoned.
+ */
 class RedisDeadMessageHandler(
   deadLetterQueueName: String,
   private val pool: Pool<Jedis>,
   private val clock: Clock
-) {
+) : DeadMessageCallback {
 
   private val dlqKey = "$deadLetterQueueName.messages"
 
@@ -35,7 +40,7 @@ class RedisDeadMessageHandler(
     registerModule(KotlinModule())
   }
 
-  fun handle(queue: Queue, message: Message) {
+  override fun invoke(queue: Queue, message: Message) {
     pool.resource.use { redis ->
       redis.zadd(dlqKey, clock.instant().toEpochMilli().toDouble(), mapper.writeValueAsString(message))
     }

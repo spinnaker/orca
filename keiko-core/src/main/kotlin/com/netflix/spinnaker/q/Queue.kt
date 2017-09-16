@@ -19,6 +19,13 @@ package com.netflix.spinnaker.q
 import java.time.Duration.ZERO
 import java.time.temporal.TemporalAmount
 
+/**
+ * A queue that handles various [Message] types. Messages may be pushed for
+ * immediate delivery or with a delivery time in the future. Polling will fetch
+ * a single ready message from the queue and dispatch it to a [MessageHandler]
+ * depending on its type. If a message is not acknowledged within [ackTimeout]
+ * it is re-queued for immediate delivery.
+ */
 interface Queue {
   /**
    * Polls the queue for ready messages.

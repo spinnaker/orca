@@ -20,12 +20,14 @@ import com.netflix.spinnaker.q.discovery.DiscoveryActivated
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.PostConstruct
 
-@Component
+/**
+ * The processor that fetches messages from the [Queue] and hands them off to
+ * the appropriate [MessageHandler].
+ */
 class QueueProcessor(
   private val queue: Queue,
   private val queueExecutor: QueueExecutor,
@@ -35,6 +37,10 @@ class QueueProcessor(
   override val log: Logger = getLogger(javaClass)
   override val enabled = AtomicBoolean(false)
 
+  /**
+   * Polls the [Queue] once to attempt to read a single message so long as
+   * [queueExecutor] has capacity.
+   */
   @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:10}")
   fun pollOnce() =
     ifEnabled {

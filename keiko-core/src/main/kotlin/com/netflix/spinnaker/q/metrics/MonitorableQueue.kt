@@ -28,6 +28,9 @@ interface MonitorableQueue : Queue {
 
   val publisher: ApplicationEventPublisher
 
+  /**
+   * @return the current state of the queue.
+   */
   fun readState(): QueueState
 }
 

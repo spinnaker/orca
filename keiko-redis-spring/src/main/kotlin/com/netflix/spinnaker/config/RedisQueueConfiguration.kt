@@ -53,7 +53,7 @@ open class RedisQueueConfiguration {
       queueName = redisQueueProperties.queueName,
       pool = redisPool,
       clock = clock,
-      deadMessageHandler = deadMessageHandler::handle,
+      deadMessageHandler = deadMessageHandler,
       publisher = publisher,
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong())
     )

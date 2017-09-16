@@ -17,13 +17,19 @@
 package com.netflix.spinnaker.q
 
 /**
- * Implementations handle a single message type from the queue.
+ * Implementations handle a single [Message] type from the [Queue].
  */
 interface MessageHandler<M : Message> : (Message) -> Unit {
 
   val messageType: Class<M>
   val queue: Queue
 
+  /**
+   * Passes [message] to [handle] if it is an instance of [messageType].
+   *
+   * @throws IllegalArgumentException if [message] is not an instance of
+   * [messageType].
+   */
   override fun invoke(message: Message): Unit =
     if (messageType.isAssignableFrom(message.javaClass)) {
       @Suppress("UNCHECKED_CAST")
@@ -32,5 +38,8 @@ interface MessageHandler<M : Message> : (Message) -> Unit {
       throw IllegalArgumentException("Unsupported message type ${message.javaClass.simpleName}")
     }
 
+  /**
+   * Process [message].
+   */
   fun handle(message: M): Unit
 }

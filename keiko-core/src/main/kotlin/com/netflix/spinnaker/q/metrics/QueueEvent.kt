@@ -21,11 +21,17 @@ import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.time.toInstant
 import org.springframework.context.ApplicationEvent
 
+/**
+ * Events that may be emitted by a [Queue].
+ */
 sealed class QueueEvent(source: Queue) : ApplicationEvent(source) {
   val instant
     get() = timestamp.toInstant()
 }
 
+/**
+ * A sub-type of [QueueEvent] that includes a message.
+ */
 sealed class PayloadQueueEvent(
   source: Queue,
   val payload: Message

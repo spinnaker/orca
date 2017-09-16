@@ -18,6 +18,10 @@ package com.netflix.spinnaker.q
 
 import java.util.concurrent.Executor
 
+/**
+ * An executor that can have a limited capacity so queue traffic can be backed
+ * off under heavy load.
+ */
 interface QueueExecutor {
   val executor: Executor
   fun hasCapacity(): Boolean

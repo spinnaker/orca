@@ -3,6 +3,7 @@ apply(plugin: "org.jetbrains.dokka")
 dokka {
   outputFormat = "html"
   outputDirectory = "$buildDir/javadoc"
+  jdkVersion = 8
 }
 
 task(dokkaJar, type: Jar) {

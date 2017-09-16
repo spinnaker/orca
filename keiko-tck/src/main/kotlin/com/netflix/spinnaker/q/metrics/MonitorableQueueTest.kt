@@ -32,6 +32,9 @@ import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
 
+/**
+ * An compatibility test for implementations of [MonitorableQueue].
+ */
 abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
   createQueue: (Clock, DeadMessageCallback, ApplicationEventPublisher?) -> Q,
   triggerRedeliveryCheck: Q.() -> Unit,
