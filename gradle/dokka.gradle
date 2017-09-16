@@ -1,0 +1,13 @@
+apply(plugin: "org.jetbrains.dokka")
+
+dokka {
+  outputFormat = "html"
+  outputDirectory = "$buildDir/javadoc"
+}
+
+task(dokkaJar, type: Jar) {
+  group = JavaBasePlugin.DOCUMENTATION_GROUP
+  description = "Assembles Kotlin docs with Dokka"
+  classifier = "javadoc"
+  from(dokka)
+}

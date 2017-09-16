@@ -8,6 +8,7 @@ buildscript {
     classpath "org.junit.platform:junit-platform-gradle-plugin:$junitVersion"
     classpath "com.netflix.nebula:nebula-kotlin-plugin:$kotlinVersion"
     classpath "com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.16.0"
+    classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.15"
   }
 }
 
@@ -19,6 +20,7 @@ allprojects {
 
 subprojects {
   apply from: "$rootDir/gradle/kotlin.gradle"
+  apply from: "$rootDir/gradle/dokka.gradle"
 
   repositories {
     jcenter()
