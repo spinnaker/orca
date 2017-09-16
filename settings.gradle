@@ -1,5 +1,6 @@
 include "keiko-core",
     "keiko-mem",
+    "keiko-mem-spring",
     "keiko-redis",
     "keiko-redis-spring",
     "keiko-spring",
