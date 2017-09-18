@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.config
 
+import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import redis.clients.jedis.Jedis
@@ -47,7 +47,7 @@ open class RedisQueueConfiguration {
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
-    publisher: ApplicationEventPublisher
+    publisher: EventPublisher
   ) =
     RedisQueue(
       queueName = redisQueueProperties.queueName,

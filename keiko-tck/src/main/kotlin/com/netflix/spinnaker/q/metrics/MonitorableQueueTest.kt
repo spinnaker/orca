@@ -27,7 +27,6 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import org.springframework.context.ApplicationEventPublisher
 import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
@@ -36,7 +35,7 @@ import java.time.Duration
  * An compatibility test for implementations of [MonitorableQueue].
  */
 abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
-  createQueue: (Clock, DeadMessageCallback, ApplicationEventPublisher?) -> Q,
+  createQueue: (Clock, DeadMessageCallback, EventPublisher?) -> Q,
   triggerRedeliveryCheck: Q.() -> Unit,
   shutdownCallback: (() -> Unit)? = null
 ) : Spek({
@@ -44,7 +43,7 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
   var queue: Q? = null
   val clock = MutableClock()
   val deadMessageHandler: DeadMessageCallback = mock()
-  val publisher: ApplicationEventPublisher = mock()
+  val publisher: EventPublisher = mock()
 
   fun startQueue() {
     queue = createQueue(clock, deadMessageHandler, publisher)

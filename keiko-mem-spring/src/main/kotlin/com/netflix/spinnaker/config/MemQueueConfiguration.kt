@@ -18,7 +18,7 @@ package com.netflix.spinnaker.config
 
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.memory.InMemoryQueue
-import org.springframework.context.ApplicationEventPublisher
+import com.netflix.spinnaker.q.metrics.EventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.time.Clock
@@ -30,7 +30,7 @@ open class MemQueueConfiguration {
   open fun queue(
     clock: Clock,
     deadMessageHandler: DeadMessageCallback,
-    publisher: ApplicationEventPublisher
+    publisher: EventPublisher
   ) =
     InMemoryQueue(
       clock = clock,

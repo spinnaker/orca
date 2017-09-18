@@ -18,10 +18,10 @@ package com.netflix.spinnaker.q.memory
 
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.QueueTest
+import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
+import com.netflix.spinnaker.q.metrics.QueueEvent
 import org.funktionale.partials.invoke
-import org.springframework.context.ApplicationEvent
-import org.springframework.context.ApplicationEventPublisher
 import java.time.Clock
 
 object InMemoryQueueTest : QueueTest<InMemoryQueue>(createQueue(p3 = null))
@@ -33,13 +33,12 @@ object InMemoryMonitorableQueueTest : MonitorableQueueTest<InMemoryQueue>(
 
 private val createQueue = { clock: Clock,
                             deadLetterCallback: DeadMessageCallback,
-                            publisher: ApplicationEventPublisher? ->
+                            publisher: EventPublisher? ->
   InMemoryQueue(
     clock = clock,
     deadMessageHandler = deadLetterCallback,
-    publisher = publisher ?: (object : ApplicationEventPublisher {
-      override fun publishEvent(event: ApplicationEvent?) {}
-      override fun publishEvent(event: Any?) {}
+    publisher = publisher ?: (object : EventPublisher {
+      override fun publishEvent(event: QueueEvent) {}
     })
   )
 }

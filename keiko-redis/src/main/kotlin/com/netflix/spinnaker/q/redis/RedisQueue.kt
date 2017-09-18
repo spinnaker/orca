@@ -28,7 +28,6 @@ import com.netflix.spinnaker.q.metrics.*
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisCommands
@@ -48,7 +47,7 @@ class RedisQueue(
   private val lockTtlSeconds: Int = 10,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandler: (Queue, Message) -> Unit,
-  override val publisher: ApplicationEventPublisher
+  override val publisher: EventPublisher
 ) : MonitorableQueue {
 
   private val mapper = ObjectMapper()

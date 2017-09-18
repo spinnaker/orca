@@ -22,7 +22,6 @@ import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.metrics.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.threeten.extra.Temporals.chronoUnit
 import java.time.Clock
@@ -45,7 +44,7 @@ class InMemoryQueue(
   private val clock: Clock,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandler: DeadMessageCallback,
-  override val publisher: ApplicationEventPublisher
+  override val publisher: EventPublisher
 ) : MonitorableQueue {
 
   private val log: Logger = getLogger(javaClass)

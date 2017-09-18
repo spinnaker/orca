@@ -18,31 +18,23 @@ package com.netflix.spinnaker.q.metrics
 
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.time.toInstant
-import org.springframework.context.ApplicationEvent
 
 /**
  * Events that may be emitted by a [Queue].
  */
-sealed class QueueEvent(source: Queue) : ApplicationEvent(source) {
-  val instant
-    get() = timestamp.toInstant()
-}
+sealed class QueueEvent
 
 /**
  * A sub-type of [QueueEvent] that includes a message.
  */
-sealed class PayloadQueueEvent(
-  source: Queue,
-  val payload: Message
-) : QueueEvent(source)
+sealed class PayloadQueueEvent(val payload: Message) : QueueEvent()
 
-class QueuePolled(source: Queue) : QueueEvent(source)
-class RetryPolled(source: Queue) : QueueEvent(source)
-class MessagePushed(source: Queue, payload: Message) : PayloadQueueEvent(source, payload)
-class MessageAcknowledged(source: Queue) : QueueEvent(source)
-class MessageRetried(source: Queue) : QueueEvent(source)
-class MessageDead(source: Queue) : QueueEvent(source)
-class MessageDuplicate(source: Queue, payload: Message) : PayloadQueueEvent(source, payload)
-class LockFailed(source: Queue) : QueueEvent(source)
+class QueuePolled : QueueEvent()
+class RetryPolled : QueueEvent()
+class MessagePushed(payload: Message) : PayloadQueueEvent(payload)
+class MessageAcknowledged : QueueEvent()
+class MessageRetried : QueueEvent()
+class MessageDead : QueueEvent()
+class MessageDuplicate(payload: Message) : PayloadQueueEvent(payload)
+class LockFailed : QueueEvent()
 

@@ -18,7 +18,6 @@ package com.netflix.spinnaker.q.metrics
 
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import org.springframework.context.ApplicationEventPublisher
 
 /**
  * Optional interface [Queue] implementations may support in order to provide
@@ -26,7 +25,7 @@ import org.springframework.context.ApplicationEventPublisher
  */
 interface MonitorableQueue : Queue {
 
-  val publisher: ApplicationEventPublisher
+  val publisher: EventPublisher
 
   /**
    * @return the current state of the queue.
@@ -39,14 +38,14 @@ interface MonitorableQueue : Queue {
  */
 inline fun <reified E : QueueEvent> MonitorableQueue.fire(message: Message? = null) {
   val event = when (E::class) {
-    QueuePolled::class -> QueuePolled(this)
-    RetryPolled::class -> RetryPolled(this)
-    MessageAcknowledged::class -> MessageAcknowledged(this)
-    MessageRetried::class -> MessageRetried(this)
-    MessageDead::class -> MessageDead(this)
-    LockFailed::class -> LockFailed(this)
-    MessagePushed::class -> MessagePushed(this, message!!)
-    MessageDuplicate::class -> MessageDuplicate(this, message!!)
+    QueuePolled::class -> QueuePolled()
+    RetryPolled::class -> RetryPolled()
+    MessageAcknowledged::class -> MessageAcknowledged()
+    MessageRetried::class -> MessageRetried()
+    MessageDead::class -> MessageDead()
+    LockFailed::class -> LockFailed()
+    MessagePushed::class -> MessagePushed(message!!)
+    MessageDuplicate::class -> MessageDuplicate(message!!)
     else -> throw IllegalArgumentException("Unknown event type ${E::class}")
   }
   publisher.publishEvent(event)
