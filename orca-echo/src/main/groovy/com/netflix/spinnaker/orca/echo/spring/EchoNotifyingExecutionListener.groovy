@@ -1,18 +1,32 @@
+/*
+ * Copyright 2017 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.spinnaker.orca.echo.spring
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.front50.Front50Service
-
-import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
-import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
-import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
+import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 
 @Slf4j
 @CompileStatic
@@ -35,25 +49,25 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
 
   @Override
   void beforeExecution(Persister persister, Execution execution) {
-    if (execution instanceof Pipeline) {
-      try {
-        if (execution.status != ExecutionStatus.SUSPENDED) {
-          addApplicationNotifications(execution)
-          echoService.recordEvent(
-            details: [
-              source     : "orca",
-              type       : "orca:pipeline:starting",
-              application: execution.application,
-            ],
-            content: [
-              execution  : execution,
-              executionId: execution.id
-            ]
-          )
+    try {
+      if (execution.status != ExecutionStatus.SUSPENDED) {
+        if (execution instanceof Pipeline) {
+          addApplicationNotifications(execution as Pipeline)
         }
-      } catch (Exception e) {
-        log.error("Failed to send pipeline start event: ${execution?.id}")
+        echoService.recordEvent(
+          details: [
+            source     : "orca",
+            type       : "orca:${execution.getClass().simpleName.toLowerCase()}:starting".toString(),
+            application: execution.application,
+          ],
+          content: [
+            execution  : execution,
+            executionId: execution.id
+          ]
+        )
       }
+    } catch (Exception e) {
+      log.error("Failed to send pipeline start event: ${execution?.id}")
     }
   }
 
@@ -62,25 +76,25 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
                       Execution execution,
                       ExecutionStatus executionStatus,
                       boolean wasSuccessful) {
-    if (execution instanceof Pipeline) {
-      try {
-        if (execution.status != ExecutionStatus.SUSPENDED) {
-          addApplicationNotifications(execution)
-          echoService.recordEvent(
-            details: [
-              source     : "orca",
-              type       : "orca:pipeline:${wasSuccessful ? "complete" : "failed"}".toString(),
-              application: execution.application,
-            ],
-            content: [
-              execution  : execution,
-              executionId: execution.id
-            ]
-          )
+    try {
+      if (execution.status != ExecutionStatus.SUSPENDED) {
+        if (execution instanceof Pipeline) {
+          addApplicationNotifications(execution as Pipeline)
         }
-      } catch (Exception e) {
-        log.error("Failed to send pipeline end event: ${execution?.id}")
+        echoService.recordEvent(
+          details: [
+            source     : "orca",
+            type       : "orca:${execution.getClass().simpleName.toLowerCase()}:${wasSuccessful ? "complete" : "failed"}".toString(),
+            application: execution.application,
+          ],
+          content: [
+            execution  : execution,
+            executionId: execution.id
+          ]
+        )
       }
+    } catch (Exception e) {
+      log.error("Failed to send pipeline end event: ${execution?.id}")
     }
   }
 
