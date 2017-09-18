@@ -16,10 +16,7 @@
 
 package com.netflix.spinnaker.config
 
-import com.netflix.spinnaker.q.MessageHandler
-import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.q.QueueExecutor
-import com.netflix.spinnaker.q.QueueProcessor
+import com.netflix.spinnaker.q.*
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.QueueEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -54,8 +51,9 @@ open class QueueConfiguration {
   open fun queueProcessor(
     queue: Queue,
     queueExecutor: QueueExecutor,
-    handlers: Collection<MessageHandler<*>>
-  ) = QueueProcessor(queue, queueExecutor, handlers)
+    handlers: Collection<MessageHandler<*>>,
+    activator: Activator
+  ) = QueueProcessor(queue, queueExecutor, handlers, activator)
 
   @Bean
   open fun queueEventPublisher(

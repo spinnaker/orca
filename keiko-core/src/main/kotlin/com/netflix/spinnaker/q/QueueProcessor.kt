@@ -16,12 +16,10 @@
 
 package com.netflix.spinnaker.q
 
-import com.netflix.spinnaker.q.discovery.DiscoveryActivated
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.PostConstruct
 
 /**
@@ -31,11 +29,10 @@ import javax.annotation.PostConstruct
 class QueueProcessor(
   private val queue: Queue,
   private val queueExecutor: QueueExecutor,
-  private val handlers: Collection<MessageHandler<*>>
-) : DiscoveryActivated {
-
-  override val log: Logger = getLogger(javaClass)
-  override val enabled = AtomicBoolean(false)
+  private val handlers: Collection<MessageHandler<*>>,
+  private val activator: Activator
+) {
+  private val log: Logger = getLogger(javaClass)
 
   /**
    * Polls the [Queue] once to attempt to read a single message so long as
@@ -43,7 +40,7 @@ class QueueProcessor(
    */
   @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:10}")
   fun pollOnce() =
-    ifEnabled {
+    activator.ifEnabled {
       if (queueExecutor.hasCapacity()) {
         queue.poll { message, ack ->
           log.info("Received message $message")

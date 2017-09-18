@@ -18,10 +18,6 @@ package com.netflix.spinnaker.q
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.throws
-import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
-import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
-import com.netflix.discovery.StatusChangeEvent
-import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
@@ -38,6 +34,20 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
     val simpleMessageHandler: MessageHandler<SimpleMessage> = mock()
     val parentMessageHandler: MessageHandler<ParentMessage> = mock()
     val ackFunction: () -> Unit = mock()
+    val activator = object : Activator() {
+      private var _enabled = false
+
+      override val enabled
+        get() = _enabled
+
+      fun enable() {
+        _enabled = true
+      }
+
+      fun disable() {
+        _enabled = false
+      }
+    }
 
     fun resetMocks() = reset(queue, simpleMessageHandler, parentMessageHandler, ackFunction)
 
@@ -45,13 +55,14 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
       QueueProcessor(
         queue,
         BlockingQueueExecutor(),
-        listOf(simpleMessageHandler, parentMessageHandler)
+        listOf(simpleMessageHandler, parentMessageHandler),
+        activator
       )
     }
 
-    describe("when disabled in discovery") {
+    describe("when disabled") {
       beforeEachTest {
-        subject.onApplicationEvent(RemoteStatusChangedEvent(StatusChangeEvent(UP, OUT_OF_SERVICE)))
+        activator.disable()
       }
 
       afterGroup(::resetMocks)
@@ -65,11 +76,9 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
       }
     }
 
-    describe("when enabled in discovery") {
-      val instanceUpEvent = RemoteStatusChangedEvent(StatusChangeEvent(OUT_OF_SERVICE, UP))
-
+    describe("when enabled") {
       beforeEachTest {
-        subject.onApplicationEvent(instanceUpEvent)
+        activator.enable()
       }
 
       describe("when a message is on the queue") {
