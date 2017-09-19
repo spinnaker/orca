@@ -59,7 +59,6 @@ public class ConfigStageInjectionTransform implements PipelineTemplateVisitor {
     expandStagePartials(pipelineTemplate);
     replaceStages(pipelineTemplate);
     injectStages(pipelineTemplate);
-    trimConditionals(pipelineTemplate);
   }
 
   private void replaceStages(PipelineTemplate pipelineTemplate) {
@@ -139,24 +138,6 @@ public class ConfigStageInjectionTransform implements PipelineTemplateVisitor {
     injectStages(templateConfiguration.getStages(), pipelineTemplate.getStages());
   }
 
-  private void trimConditionals(PipelineTemplate pipelineTemplate) {
-    // if stage is conditional, ensure children get linked to parents of conditional stage accordingly
-    pipelineTemplate.getStages()
-      .stream()
-      .filter(StageDefinition::getRemoved)
-      .forEach(conditionalStage -> pipelineTemplate.getStages()
-        .stream()
-        .filter(childStage -> childStage.getDependsOn().removeIf(conditionalStage.getId()::equals))
-        .forEach(childStage -> childStage.getDependsOn().addAll(conditionalStage.getDependsOn())));
-
-    pipelineTemplate.setStages(
-      pipelineTemplate.getStages()
-        .stream()
-        .filter(stage -> !stage.getRemoved())
-        .collect(Collectors.toList())
-    );
-  }
-
   private enum Status {
     VISITING,
     VISITED
@@ -212,7 +193,7 @@ public class ConfigStageInjectionTransform implements PipelineTemplateVisitor {
 
   private static void injectStages(List<StageDefinition> stages, List<StageDefinition> templateStages) {
     // Using a stream here can cause a ConcurrentModificationException.
-    for (StageDefinition s : stages) {
+    for (StageDefinition s : new ArrayList<>(stages)) {
       if (s.getInject() == null) {
         continue;
       }
@@ -224,22 +205,22 @@ public class ConfigStageInjectionTransform implements PipelineTemplateVisitor {
 
       if (rule.getFirst() != null && rule.getFirst()) {
         injectFirst(s, templateStages);
-        return;
+        continue;
       }
 
       if (rule.getLast() != null && rule.getLast()) {
         injectLast(s, templateStages);
-        return;
+        continue;
       }
 
       if (rule.getBefore() != null) {
         injectBefore(s, rule.getBefore(), templateStages);
-        return;
+        continue;
       }
 
       if (rule.getAfter() != null) {
         injectAfter(s, rule.getAfter(), templateStages);
-        return;
+        continue;
       }
 
       throw new IllegalTemplateConfigurationException(String.format("stage did not have any valid injections defined (id: %s)", s.getId()));
@@ -292,7 +273,7 @@ public class ConfigStageInjectionTransform implements PipelineTemplateVisitor {
     }
 
     stage.getRequisiteStageRefIds().addAll(targetEdges);
-    allStages.add(targetIndexes.last() + 1, stage);
+    allStages.add(targetIndexes.last(), stage);
 
     Map<String, StageDefinition> graph = allStages
       .stream()

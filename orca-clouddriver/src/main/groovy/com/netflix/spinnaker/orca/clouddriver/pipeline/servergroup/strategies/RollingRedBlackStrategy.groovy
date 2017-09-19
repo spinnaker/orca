@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
@@ -6,6 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Deter
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
+import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
@@ -26,6 +42,9 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
 
   @Autowired
   ResizeServerGroupStage resizeServerGroupStage
+
+  @Autowired
+  WaitStage waitStage
 
   @Autowired
   DetermineTargetServerGroupStage determineTargetServerGroupStage
@@ -115,6 +134,18 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
           remainingEnabledServerGroups: 1,
           preferLargerOverNewer       : false
       ]
+
+      if(stageData?.delayBeforeDisableSec) {
+        def waitContext = [waitTime: stageData?.delayBeforeDisableSec]
+        stages << newStage(
+          stage.execution,
+          waitStage.type,
+          "wait",
+          waitContext,
+          stage,
+          SyntheticStageOwner.STAGE_AFTER
+        )
+      }
 
       stages << newStage(
           stage.execution,

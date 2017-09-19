@@ -49,6 +49,9 @@ interface Front50Service {
   @GET("/pipelines/{applicationName}")
   List<Map<String, Object>> getPipelines(@Path("applicationName") String applicationName)
 
+  @GET("/pipelines/{applicationName}")
+  List<Map<String, Object>> getPipelines(@Path("applicationName") String applicationName, @Query("refresh") boolean refresh)
+
   @POST("/pipelines")
   Response savePipeline(@Body Map pipeline)
 
@@ -75,6 +78,9 @@ interface Front50Service {
 
   @DELETE("/pipelineTemplates/{pipelineTemplateId}")
   Response deletePipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId)
+
+  @GET("/pipelineTemplates/{pipelineTemplateId}/dependentPipelines")
+  List<Map<String, Object>> getPipelineTemplateDependents(@Path("pipelineTemplateId") String pipelineTemplateId, @Query("recursive") boolean recursive)
 
   @GET("/strategies")
   List<Map<String, Object>> getAllStrategies()

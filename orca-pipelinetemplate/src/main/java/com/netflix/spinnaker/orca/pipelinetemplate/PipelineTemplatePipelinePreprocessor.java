@@ -31,6 +31,7 @@ import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTempla
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.DefaultRenderContext;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.RenderContext;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.RenderUtil;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.Renderer;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.validator.V1TemplateConfigurationSchemaValidator;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.validator.V1TemplateSchemaValidator;
@@ -116,29 +117,29 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
     graphMutator.mutate(template);
 
     ExecutionGenerator executionGenerator = new V1SchemaExecutionGenerator();
-    Map<String, Object> generatedPipeline = executionGenerator.generate(template, templateConfiguration, (String) pipeline.get("id"));
+    Map<String, Object> generatedPipeline = executionGenerator.generate(template, templateConfiguration, request);
 
     return generatedPipeline;
   }
 
   private PipelineTemplate getPipelineTemplate(TemplatedPipelineRequest request, TemplateConfiguration templateConfiguration) {
+    List<PipelineTemplate> templates;
     if (request.plan && request.template != null) {
       // Allow template inlining to perform plans without first publishing the template somewhere.
-      return request.template;
-    }
-
-    if (request.getConfig().getPipeline().getTemplate() == null) {
+      PipelineTemplate template = pipelineTemplateObjectMapper.convertValue(request.template, PipelineTemplate.class);
+      templates = templateLoader.load(template);
+    } else if (request.getConfig().getPipeline().getTemplate() != null) {
+      setTemplateSourceWithJinja(request);
+      templates = templateLoader.load(templateConfiguration.getPipeline().getTemplate());
+    } else {
       throw new IllegalTemplateConfigurationException(new Error().withMessage("configuration is missing a template"));
     }
-
-    setTemplateSourceWithJinja(request);
-    List<PipelineTemplate> templates = templateLoader.load(templateConfiguration.getPipeline().getTemplate());
 
     PipelineTemplate pipelineTemplate = TemplateMerge.merge(templates);
 
     // ensure that any expressions contained with template variables are rendered
-    RenderContext context = new DefaultRenderContext(
-      templateConfiguration.getPipeline().getApplication(), pipelineTemplate, request.getTrigger()
+    RenderContext context = RenderUtil.createDefaultRenderContext(
+      pipelineTemplate, templateConfiguration, request.getTrigger()
     );
     renderTemplateVariables(context, pipelineTemplate);
 
@@ -161,57 +162,5 @@ public class PipelineTemplatePipelinePreprocessor implements PipelinePreprocesso
   private void setTemplateSourceWithJinja(TemplatedPipelineRequest request) {
     RenderContext context = new DefaultRenderContext(request.getConfig().getPipeline().getApplication(), null, request.getTrigger());
     request.getConfig().getPipeline().getTemplate().setSource(renderer.render(request.getConfig().getPipeline().getTemplate().getSource(), context ));
-  }
-
-  private static class TemplatedPipelineRequest {
-    String type;
-    Map<String, Object> trigger;
-    TemplateConfiguration config;
-    PipelineTemplate template;
-    Boolean plan = false;
-
-    public boolean isTemplatedPipelineRequest() {
-      return "templatedPipeline".equals(type);
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public void setType(String type) {
-      this.type = type;
-    }
-
-    public TemplateConfiguration getConfig() {
-      return config;
-    }
-
-    public void setConfig(TemplateConfiguration config) {
-      this.config = config;
-    }
-
-    public Map<String, Object> getTrigger() {
-      return trigger;
-    }
-
-    public void setTrigger(Map<String, Object> trigger) {
-      this.trigger = trigger;
-    }
-
-    public PipelineTemplate getTemplate() {
-      return template;
-    }
-
-    public void setTemplate(PipelineTemplate template) {
-      this.template = template;
-    }
-
-    public Boolean getPlan() {
-      return plan;
-    }
-
-    public void setPlan(Boolean plan) {
-      this.plan = plan;
-    }
   }
 }

@@ -1,13 +1,24 @@
+/*
+ * Copyright 2017 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.spinnaker.orca.config;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.events.ExecutionEvent;
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter;
@@ -39,10 +50,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
-import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.MINUTES;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -51,7 +60,8 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
   "com.netflix.spinnaker.orca.pipeline",
   "com.netflix.spinnaker.orca.notifications.scheduling",
   "com.netflix.spinnaker.orca.deprecation",
-  "com.netflix.spinnaker.orca.pipeline.util"
+  "com.netflix.spinnaker.orca.pipeline.util",
+  "com.netflix.spinnaker.orca.telemetry"
 })
 @EnableConfigurationProperties
 public class OrcaConfiguration {
@@ -136,27 +146,5 @@ public class OrcaConfiguration {
   @Bean
   public ApplicationListener<ExecutionEvent> onCompleteMetricExecutionListenerAdapter(Registry registry, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(new MetricsExecutionListener(registry), repository);
-  }
-
-  // TODO: this is a weird place to have this, feels like it should be a bean configurer or something
-  public static ThreadPoolTaskExecutor applyThreadPoolMetrics(Registry registry,
-                                                              ThreadPoolTaskExecutor executor,
-                                                              String threadPoolName) {
-    BiConsumer<String, Function<ThreadPoolExecutor, Integer>> createGauge =
-      (name, valueCallback) -> {
-        Id id = registry
-          .createId(format("threadpool.%s", name))
-          .withTag("id", threadPoolName);
-
-        registry.gauge(id, executor, ref -> valueCallback.apply(ref.getThreadPoolExecutor()));
-      };
-
-    createGauge.accept("activeCount", ThreadPoolExecutor::getActiveCount);
-    createGauge.accept("maximumPoolSize", ThreadPoolExecutor::getMaximumPoolSize);
-    createGauge.accept("corePoolSize", ThreadPoolExecutor::getCorePoolSize);
-    createGauge.accept("poolSize", ThreadPoolExecutor::getPoolSize);
-    createGauge.accept("blockingQueueSize", e -> e.getQueue().size());
-
-    return executor;
   }
 }

@@ -24,8 +24,9 @@ import com.netflix.spinnaker.orca.pipelinetemplate.loader.FileTemplateSchemeLoad
 import com.netflix.spinnaker.orca.pipelinetemplate.loader.TemplateLoader
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.StageDefinition
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.DefaultRenderContext
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.JinjaRenderer
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.RenderUtil
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.Renderer
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.YamlRenderedValueConverter
 import org.unitils.reflectionassert.ReflectionComparatorMode
@@ -33,6 +34,7 @@ import org.yaml.snakeyaml.Yaml
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
+
 import static org.unitils.reflectionassert.ReflectionAssert.assertReflectionEquals
 
 class PipelineTemplatePipelinePreprocessorSpec extends Specification {
@@ -150,7 +152,8 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
           requisiteStageRefIds: ['tagImage'],
           waitTime: 5
         ]
-      ]
+      ],
+      parameterConfig: []
     ]
     assertReflectionEquals(expected, result, ReflectionComparatorMode.IGNORE_DEFAULTS)
   }
@@ -216,7 +219,6 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
 
     then:
     noExceptionThrown()
-    0 * templateLoader.load(_)
     result.stages*.name == ['wait']
 
     when:
@@ -226,14 +228,34 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
     result.errors != null
   }
 
+  def 'should load parent templates of inlined template during plan'() {
+    when:
+    def result = subject.process(createInlinedTemplateRequestWithParent(true, 'jinja-001.yml'))
+
+    then:
+    noExceptionThrown()
+    result.stages*.name == ['jinja1', 'childTemplateWait']
+
+    when:
+    result = subject.process(createInlinedTemplateRequestWithParent(false, 'jinja-001.yml'))
+
+    then:
+    result.errors != null
+  }
+
   @Unroll
   def 'should render jinja expressions contained within template variables'() {
     given:
-    def pipelineTemplate = new PipelineTemplate(variables: variables.collect {
-      new PipelineTemplate.Variable(defaultValue: it)
+    def pipelineTemplate = new PipelineTemplate(variables: templateVariables.collect {
+      new PipelineTemplate.Variable(name: it.key, defaultValue: it.value)
     })
 
-    def renderContext = new DefaultRenderContext("spinnaker", pipelineTemplate, [
+    def templateConfig = new TemplateConfiguration(
+      pipeline: new TemplateConfiguration.PipelineDefinition(variables: configVariables)
+    )
+
+    def renderContext = RenderUtil.createDefaultRenderContext(
+      pipelineTemplate, templateConfig, [
       parameters: [
         "list"   : "us-west-2,us-east-1",
         "boolean": "true",
@@ -248,10 +270,12 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
     pipelineTemplate.variables*.defaultValue == expectedDefaultValues
 
     where:
-    variables                                                 || expectedDefaultValues
-    ["string1", "string2"]                                    || ["string1", "string2"]
-    ["{{ trigger.parameters.string }}", "string2"]            || ["this is a string", "string2"]
-    ["{{ trigger.parameters.list | split(',') }}", "string2"] || [["us-west-2", "us-east-1"], "string2"]
+    templateVariables                                                     | configVariables       || expectedDefaultValues
+    [key1: "string1", key2: "string2"]                                    | [:]                   || ["string1", "string2"]
+    [key1: "{{ trigger.parameters.string }}", key2: "string2"]            | [:]                   || ["this is a string", "string2"]
+    [key1: "{{ trigger.parameters.list | split(',') }}", key2: "string2"] | [:]                   || [["us-west-2", "us-east-1"], "string2"]
+    [key1: "string1", key2: "{{ key1 }}"]                                 | [:]                   || ["string1", "string1"]
+    [key2: "{{ key1 }}"]                                                  | [key1: "string1"]     || ["string1"]
   }
 
   def "should include group for partials-generated stages"() {
@@ -308,6 +332,48 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
 
     then:
     result.stages*.group == ['my group of stages: wowow waiting', 'my group of stages: wowow waiting']
+  }
+
+  @Unroll
+  def 'should not render falsy conditional stages inside partials'() {
+    when:
+    def template =  createTemplateRequest('conditional-partials.yml', [includeWait: includeWait])
+    def result = subject.process(template)
+
+    then:
+    result.stages*.name == expectedStageNames
+
+    where:
+    includeWait || expectedStageNames
+    true        || ['stageWithPartialsAndConditional.wait', 'stageWithPartialsAndConditional.conditionalWaitOnPartial']
+    false       || ['stageWithPartialsAndConditional.wait']
+  }
+
+  def "should respect request-defined concurrency options if configuration does not define them"() {
+    given:
+    def pipeline = [
+      type: 'templatedPipeline',
+      config: [
+        schema: '1',
+        pipeline: [
+          application: 'myapp'
+        ]
+      ],
+      template: [
+        schema: '1',
+        id: 'myTemplate',
+        configuration: [:],
+        stages: []
+      ],
+      plan: true,
+      limitConcurrent: false
+    ]
+
+    when:
+    def result = subject.process(pipeline)
+
+    then:
+    result.limitConcurrent == false
   }
 
   Map<String, Object> createTemplateRequest(String templatePath, Map<String, Object> variables = [:], List<Map<String, Object>> stages = [], boolean plan = false) {
@@ -378,6 +444,36 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
         ]
       ],
       plan: plan
+    ]
+  }
+
+  Map<String, Object> createInlinedTemplateRequestWithParent(boolean plan, String templatePath) {
+    return [
+      type: 'templatedPipeline',
+      config: [
+        schema: '1',
+        pipeline: [
+          application: 'myapp'
+        ]
+      ],
+      template: [
+        schema: '1',
+        id: 'myTemplate',
+        stages: [
+          [
+            id: 'childTemplateWait',
+            type: 'wait',
+            config: [
+              waitTime: 5
+            ],
+            inject: [
+              last: true
+            ]
+          ]
+        ],
+        source: getClass().getResource("/templates/${templatePath}").toURI()
+      ],
+      plan: plan,
     ]
   }
 }
