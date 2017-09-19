@@ -33,7 +33,7 @@ public class PipelineTemplate implements VersionedSchema {
   private String source;
   private Metadata metadata = new Metadata();
   private Boolean protect = false;
-  private List<Variable> variables;
+  private List<Variable> variables = new ArrayList<>();
   private Configuration configuration;
   private List<StageDefinition> stages;
   private List<TemplateModule> modules;
@@ -82,7 +82,7 @@ public class PipelineTemplate implements VersionedSchema {
     private String name;
     private String group = "General";
     private String description;
-    private String type = "string";
+    private String type = "object";
     private Object defaultValue;
     private String example;
 
