@@ -18,6 +18,7 @@ package com.netflix.spinnaker.q
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.throws
+import com.netflix.spinnaker.spek.doStub
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
@@ -34,20 +35,7 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
     val simpleMessageHandler: MessageHandler<SimpleMessage> = mock()
     val parentMessageHandler: MessageHandler<ParentMessage> = mock()
     val ackFunction: () -> Unit = mock()
-    val activator = object : Activator() {
-      private var _enabled = false
-
-      override val enabled
-        get() = _enabled
-
-      fun enable() {
-        _enabled = true
-      }
-
-      fun disable() {
-        _enabled = false
-      }
-    }
+    val activator: Activator = mock()
 
     fun resetMocks() = reset(queue, simpleMessageHandler, parentMessageHandler, ackFunction)
 
@@ -61,10 +49,6 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
     }
 
     describe("when disabled") {
-      beforeEachTest {
-        activator.disable()
-      }
-
       afterGroup(::resetMocks)
 
       action("the worker runs") {
@@ -78,7 +62,9 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
 
     describe("when enabled") {
       beforeEachTest {
-        activator.enable()
+        whenever(activator.ifEnabled(any())) doStub { callback: () -> Unit ->
+          callback.invoke()
+        }
       }
 
       describe("when a message is on the queue") {
@@ -89,9 +75,7 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
             whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
             whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
 
-            whenever(queue.poll(any())).then {
-              @Suppress("UNCHECKED_CAST")
-              val callback = it.arguments.first() as QueueCallback
+            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
               callback.invoke(message, ackFunction)
             }
           }
@@ -122,9 +106,7 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
             whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
             whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
 
-            whenever(queue.poll(any())).then {
-              @Suppress("UNCHECKED_CAST")
-              val callback = it.arguments.first() as QueueCallback
+            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
               callback.invoke(message, ackFunction)
             }
           }
@@ -155,9 +137,7 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
             whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
             whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
 
-            whenever(queue.poll(any())).then {
-              @Suppress("UNCHECKED_CAST")
-              val callback = it.arguments.first() as QueueCallback
+            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
               callback.invoke(message, ackFunction)
             }
           }
@@ -185,9 +165,7 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
             whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
             whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
 
-            whenever(queue.poll(any())).then {
-              @Suppress("UNCHECKED_CAST")
-              val callback = it.arguments.first() as QueueCallback
+            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
               callback.invoke(message, ackFunction)
             }
 

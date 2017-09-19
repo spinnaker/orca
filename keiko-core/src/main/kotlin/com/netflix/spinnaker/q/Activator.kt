@@ -3,9 +3,9 @@ package com.netflix.spinnaker.q
 /**
  * Strategy that enables the [Queue] to be enabled and disabled.
  */
-abstract class Activator {
+interface Activator {
 
-  protected abstract val enabled: Boolean
+  val enabled: Boolean
 
   /**
    * Execute [block] if enabled otherwise no-op.

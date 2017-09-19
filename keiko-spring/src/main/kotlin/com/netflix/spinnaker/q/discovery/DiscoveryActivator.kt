@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * An [Activator] implementation that responds to status change events from Eureka.
  */
 @Component
-class DiscoveryActivator : Activator(), ApplicationListener<RemoteStatusChangedEvent> {
+class DiscoveryActivator : Activator, ApplicationListener<RemoteStatusChangedEvent> {
 
   private val _enabled = AtomicBoolean()
 
