@@ -1,3 +1,7 @@
+repositories {
+  maven { url "http://dl.bintray.com/jetbrains/spek" }
+}
+
 dependencies {
   compile "org.jetbrains.spek:spek-api:$spekVersion"
   compile "org.jetbrains.spek:spek-subject-extension:$spekVersion"
