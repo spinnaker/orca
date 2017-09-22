@@ -1,4 +1,4 @@
-package com.netflix.spinnaker.spek
+package com.netflix.spinnaker.mockito
 
 import org.mockito.stubbing.OngoingStubbing
 

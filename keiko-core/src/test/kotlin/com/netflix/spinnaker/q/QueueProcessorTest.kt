@@ -18,7 +18,7 @@ package com.netflix.spinnaker.q
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.throws
-import com.netflix.spinnaker.spek.doStub
+import com.netflix.spinnaker.mockito.doStub
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
