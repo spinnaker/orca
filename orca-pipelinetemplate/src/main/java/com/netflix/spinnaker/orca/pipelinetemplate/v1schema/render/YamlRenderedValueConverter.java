@@ -39,7 +39,7 @@ public class YamlRenderedValueConverter implements RenderedValueConverter {
 
   @Override
   public Object convertRenderedValue(String renderedValue) {
-    if (containsEL(renderedValue) || isYamlKeyword(renderedValue)) {
+    if (containsEL(renderedValue) || isYamlKeyword(renderedValue) || containsYamlParsingExceptions(renderedValue)) {
       return renderedValue;
     }
 
@@ -66,5 +66,10 @@ public class YamlRenderedValueConverter implements RenderedValueConverter {
 
   private static boolean isYamlKeyword(String renderedValue) {
     return YAML_KEYWORDS.contains(renderedValue.toLowerCase());
+  }
+
+  private static boolean containsYamlParsingExceptions(String renderedValue) {
+    return renderedValue != null &&
+      renderedValue.startsWith("* "); // A markdown list: YAML will parse this as an alias and fail.
   }
 }
