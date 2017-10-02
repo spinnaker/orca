@@ -57,9 +57,7 @@ class RunTaskHandler(
       try {
         if (execution.isCanceled() || execution.getStatus().isComplete) {
           queue.push(CompleteTask(message, CANCELED))
-        } else if (execution.getStatus() == PAUSED) {
-          queue.push(PauseTask(message))
-        } else {
+        } else if (execution.getStatus() != PAUSED) {
           task.checkForTimeout(stage, taskModel, message)
 
           stage.withAuth {

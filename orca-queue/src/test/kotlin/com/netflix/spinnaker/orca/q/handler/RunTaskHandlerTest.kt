@@ -491,39 +491,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
     }
 
-    describe("when the execution has been paused") {
-      val pipeline = pipeline {
-        status = PAUSED
-        stage {
-          type = "whatever"
-          status = RUNNING
-          task {
-            id = "1"
-            startTime = clock.instant().toEpochMilli()
-          }
-        }
-      }
-      val message = RunTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
-
-      beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
-      }
-
-      afterGroup(::resetMocks)
-
-      action("the handler receives a message") {
-        subject.handle(message)
-      }
-
-      it("marks the task as paused") {
-        verify(queue).push(PauseTask(message))
-      }
-
-      it("does not execute the task") {
-        verifyZeroInteractions(task)
-      }
-    }
-
     describe("when the task has exceeded its timeout") {
       given("the execution was never paused") {
         val timeout = Duration.ofMinutes(5)

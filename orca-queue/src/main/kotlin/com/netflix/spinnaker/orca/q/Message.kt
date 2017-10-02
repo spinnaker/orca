@@ -137,6 +137,9 @@ data class PauseTask(
 ) : Message(), TaskLevel {
   constructor(message: TaskLevel) :
     this(message.executionType, message.executionId, message.application, message.stageId, message.taskId)
+
+  constructor(message: StageLevel, taskId: String) :
+    this(message.executionType, message.executionId, message.application, message.stageId, taskId)
 }
 
 data class ResumeTask(
@@ -275,6 +278,15 @@ data class CompleteExecution(
   constructor(source: ExecutionLevel) :
     this(source.executionType, source.executionId, source.application)
 
+  constructor(source: Execution<*>) :
+    this(source.javaClass, source.getId(), source.getApplication())
+}
+
+data class PauseExecution(
+  override val executionType: Class<out Execution<*>>,
+  override val executionId: String,
+  override val application: String
+) : Message(), ExecutionLevel {
   constructor(source: Execution<*>) :
     this(source.javaClass, source.getId(), source.getApplication())
 }

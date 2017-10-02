@@ -33,6 +33,10 @@ class QueueExecutionRunner(
     queue.push(RestartStage(execution, stageId, AuthenticatedRequest.getSpinnakerUser().orElse(null)))
   }
 
+  override fun <T : Execution<T>> pause(execution: T) {
+    queue.push(PauseExecution(execution))
+  }
+
   override fun <T : Execution<T>> unpause(execution: T) {
     queue.push(ResumeExecution(execution))
   }

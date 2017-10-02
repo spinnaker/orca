@@ -16,42 +16,55 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.natpryce.hamkrest.absent
-import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
+import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.subject.SubjectSpek
 
-object PauseTaskHandlerTest : SubjectSpek<PauseTaskHandler>({
+object PauseExecutionHandlerTest : SubjectSpek<PauseExecutionHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
 
-  subject(GROUP) {
-    PauseTaskHandler(queue, repository)
+  subject(CachingMode.GROUP) {
+    PauseExecutionHandler(queue, repository)
   }
 
   fun resetMocks() = reset(queue, repository)
 
-  describe("when a task is paused") {
+  describe("pausing a running execution") {
     val pipeline = pipeline {
-      application = "foo"
+      application = "spinnaker"
+      status = ExecutionStatus.RUNNING
       stage {
-        type = multiTaskStage.type
-        multiTaskStage.buildTasks(this)
+        refId = "1"
+        status = ExecutionStatus.SUCCEEDED
+      }
+      stage {
+        refId = "2a"
+        requisiteStageRefIds = listOf("1")
+        status = ExecutionStatus.RUNNING
+      }
+      stage {
+        refId = "2b"
+        requisiteStageRefIds = listOf("1")
+        status = ExecutionStatus.RUNNING
+      }
+      stage {
+        refId = "3"
+        requisiteStageRefIds = listOf("2a", "2b")
+        status = ExecutionStatus.NOT_STARTED
       }
     }
-    val message = PauseTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
+    val message = PauseExecution(Pipeline::class.java, pipeline.id, pipeline.application)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -60,13 +73,10 @@ object PauseTaskHandlerTest : SubjectSpek<PauseTaskHandler>({
       subject.handle(message)
     }
 
-    it("updates the task state in the stage") {
-      verify(repository).storeStage(check {
-        it.getTasks().first().apply {
-          status shouldEqual ExecutionStatus.PAUSED
-          endTime shouldMatch absent()
-        }
-      })
+    it("pauses all running stages") {
+      verify(queue).push(PauseStage(message, pipeline.stageByRef("2a").id))
+      verify(queue).push(PauseStage(message, pipeline.stageByRef("2b").id))
+      verifyNoMoreInteractions(queue)
     }
   }
 })
