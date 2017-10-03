@@ -398,4 +398,23 @@ class FindImageFromClusterTaskSpec extends Specification {
       }
       """.stripIndent()
   }
+
+  def 'find image from cluster should use moniker if available or else fallback on frigga'() {
+    given:
+    def stage = new Stage<>(new Pipeline("orca"), 'findImageFromCluster', [
+      cluster    : cluster,
+      moniker    : moniker,
+    ])
+    when:
+    FindImageFromClusterTask.FindImageConfiguration config = stage.mapTo(FindImageFromClusterTask.FindImageConfiguration)
+
+    then:
+    config.getApplication() == expected
+
+    where:
+    cluster | moniker | expected
+    'clustername' | [ 'app': 'appname' ] | 'appname'
+    'app-stack' | null | 'app'
+
+  }
 }

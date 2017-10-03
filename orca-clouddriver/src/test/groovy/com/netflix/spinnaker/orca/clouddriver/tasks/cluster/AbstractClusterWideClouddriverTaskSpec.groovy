@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask.ClusterSelection
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -139,6 +140,25 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
     then:
     1 * oortHelper.getCluster(_, _, _, _) >> Optional.of([ serverGroups: [] ])
     result == TaskResult.SUCCEEDED
+
+  }
+
+  def 'cluster wide task should use moniker if available or else fallback on frigga'() {
+    given:
+    def stage = new Stage<>(new Pipeline("orca"), 'clusterSelection', [
+      cluster    : cluster,
+      moniker    : moniker,
+    ])
+    when:
+    ClusterSelection selection = stage.mapTo(ClusterSelection)
+
+    then:
+    selection.getApplication() == expected
+
+    where:
+    cluster | moniker | expected
+    'clustername' | [ 'app': 'appname' ] | 'appname'
+    'app-stack' | null | 'app'
 
   }
 
