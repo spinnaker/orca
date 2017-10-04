@@ -16,11 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import com.google.common.collect.ForwardingMap;
+
+import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Nullable;
-import com.google.common.collect.ForwardingMap;
+import java.util.stream.Collectors;
 
 public class StageContext extends ForwardingMap<String, Object> {
 
@@ -33,6 +37,15 @@ public class StageContext extends ForwardingMap<String, Object> {
 
   @Override protected Map<String, Object> delegate() {
     return delegate;
+  }
+
+  private Map<String, Object> getTrigger() {
+    Execution execution = stage.getExecution();
+    if (execution instanceof Pipeline) {
+      return ((Pipeline) execution).getTrigger();
+    } else {
+      return Collections.emptyMap();
+    }
   }
 
   @Override public Object get(@Nullable Object key) {
@@ -49,8 +62,32 @@ public class StageContext extends ForwardingMap<String, Object> {
           Optional
             .ofNullable(stage.getExecution())
             .map(execution -> execution.getContext().get(key))
-            .orElse(null)
+            .orElse(getTrigger().get(key))
         );
     }
+  }
+
+  /*
+   * Gets all objects matching 'key', sorted by proximity to the current stage.
+   * If the key exists in the current context, it will be the first element returned
+   */
+  public List<Object> getAll(Object key) {
+    List<Object> result = stage
+        .ancestors()
+        .stream()
+        .filter(it -> it.getOutputs().containsKey(key))
+        .map(it -> it.getOutputs().get(key))
+        .collect(Collectors.toList());
+
+    if (delegate.containsKey(key)) {
+      result.add(0, delegate.get(key));
+    }
+
+    Map<String, Object> trigger = getTrigger();
+    if (trigger.containsKey(key)) {
+      result.add(key);
+    }
+
+    return result;
   }
 }
