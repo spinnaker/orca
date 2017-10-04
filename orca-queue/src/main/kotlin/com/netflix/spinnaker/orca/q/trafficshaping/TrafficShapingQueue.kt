@@ -17,9 +17,9 @@ package com.netflix.spinnaker.orca.q.trafficshaping
 
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.orca.q.Message
-import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.QueueCallback
+import com.netflix.spinnaker.q.Message
+import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.QueueCallback
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

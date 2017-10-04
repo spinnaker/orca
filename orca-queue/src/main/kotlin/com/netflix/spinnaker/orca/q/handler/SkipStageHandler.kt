@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.MessageHandler
-import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.q.MessageHandler
+import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.orca.q.SkipStage
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -32,7 +32,7 @@ class SkipStageHandler(
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<SkipStage> {
+) : OrcaMessageHandler<SkipStage> {
   override fun handle(message: SkipStage) {
     message.withStage { stage ->
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {

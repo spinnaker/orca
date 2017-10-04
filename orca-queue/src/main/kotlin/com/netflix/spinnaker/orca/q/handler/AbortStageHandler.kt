@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.q.*
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -30,7 +31,7 @@ class AbortStageHandler(
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<AbortStage> {
+) : OrcaMessageHandler<AbortStage> {
 
   override fun handle(message: AbortStage) {
     message.withStage { stage ->

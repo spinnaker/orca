@@ -19,7 +19,10 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.StartExecution
+import com.netflix.spinnaker.orca.q.StartStage
+import com.netflix.spinnaker.orca.q.initialStages
+import com.netflix.spinnaker.q.Queue
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
@@ -28,7 +31,7 @@ class StartExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher
-) : MessageHandler<StartExecution> {
+) : OrcaMessageHandler<StartExecution> {
 
   override val messageType = StartExecution::class.java
 

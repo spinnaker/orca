@@ -20,10 +20,9 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.MessageHandler
-import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.RunTask
 import com.netflix.spinnaker.orca.q.StartTask
+import com.netflix.spinnaker.q.Queue
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -34,7 +33,7 @@ class StartTaskHandler(
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<StartTask> {
+) : OrcaMessageHandler<StartTask> {
 
   override fun handle(message: StartTask) {
     message.withTask { stage, task ->

@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.events.TaskComplete
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.q.Queue
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -31,7 +32,7 @@ class CompleteTaskHandler(
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<CompleteTask> {
+) : OrcaMessageHandler<CompleteTask> {
 
   override fun handle(message: CompleteTask) {
     message.withTask { stage, task ->

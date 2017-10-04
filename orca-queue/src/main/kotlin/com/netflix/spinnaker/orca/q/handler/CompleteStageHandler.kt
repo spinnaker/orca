@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.q.Queue
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -32,7 +33,7 @@ class CompleteStageHandler(
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock,
   override val contextParameterProcessor: ContextParameterProcessor
-) : MessageHandler<CompleteStage>, ExpressionAware {
+) : OrcaMessageHandler<CompleteStage>, ExpressionAware {
 
   override fun handle(message: CompleteStage) {
     message.withStage { stage ->
