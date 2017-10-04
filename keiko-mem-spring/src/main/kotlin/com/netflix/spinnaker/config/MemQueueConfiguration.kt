@@ -34,7 +34,7 @@ open class MemQueueConfiguration {
   ) =
     InMemoryQueue(
       clock = clock,
-      deadMessageHandler = deadMessageHandler::invoke,
+      deadMessageHandler = deadMessageHandler,
       publisher = publisher
     )
 }
