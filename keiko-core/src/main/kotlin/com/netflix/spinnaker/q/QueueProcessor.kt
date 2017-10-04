@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.q
 
+import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
@@ -30,7 +32,8 @@ class QueueProcessor(
   private val queue: Queue,
   private val queueExecutor: QueueExecutor,
   private val handlers: Collection<MessageHandler<*>>,
-  private val activator: Activator
+  private val activator: Activator,
+  private val publisher: EventPublisher
 ) {
   private val log: Logger = getLogger(javaClass)
 
@@ -60,6 +63,8 @@ class QueueProcessor(
             throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}: $message")
           }
         }
+      } else {
+        publisher.publishEvent(NoHandlerCapacity())
       }
     }
 

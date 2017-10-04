@@ -37,4 +37,4 @@ class MessageRetried : QueueEvent()
 class MessageDead : QueueEvent()
 class MessageDuplicate(payload: Message) : PayloadQueueEvent(payload)
 class LockFailed : QueueEvent()
-
+class NoHandlerCapacity : QueueEvent()

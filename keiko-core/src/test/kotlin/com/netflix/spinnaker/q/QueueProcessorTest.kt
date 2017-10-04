@@ -19,10 +19,14 @@ package com.netflix.spinnaker.q
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.throws
 import com.netflix.spinnaker.mockito.doStub
+import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
+import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.SCOPE
 import org.jetbrains.spek.subject.SubjectSpek
 import java.util.concurrent.CountDownLatch
@@ -30,28 +34,38 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 object QueueProcessorTest : SubjectSpek<QueueProcessor>({
-  describe("execution workers") {
+  describe("the queue processor") {
     val queue: Queue = mock()
+    val executor: QueueExecutor = mock()
     val simpleMessageHandler: MessageHandler<SimpleMessage> = mock()
     val parentMessageHandler: MessageHandler<ParentMessage> = mock()
     val ackFunction: () -> Unit = mock()
     val activator: Activator = mock()
+    val publisher: EventPublisher = mock()
 
-    fun resetMocks() = reset(queue, simpleMessageHandler, parentMessageHandler, ackFunction)
+    fun resetMocks() = reset(
+      queue,
+      executor,
+      simpleMessageHandler,
+      parentMessageHandler,
+      ackFunction,
+      publisher
+    )
 
     subject(SCOPE) {
       QueueProcessor(
         queue,
-        BlockingQueueExecutor(),
+        executor,
         listOf(simpleMessageHandler, parentMessageHandler),
-        activator
+        activator,
+        publisher
       )
     }
 
     describe("when disabled") {
       afterGroup(::resetMocks)
 
-      action("the worker runs") {
+      on("the next polling cycle") {
         subject.pollOnce()
       }
 
@@ -67,119 +81,148 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
         }
       }
 
-      describe("when a message is on the queue") {
-        context("it is a supported message type") {
-          val message = SimpleMessage("foo")
-
-          beforeGroup {
-            whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
-            whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
-
-            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
-              callback.invoke(message, ackFunction)
-            }
-          }
-
-          afterGroup(::resetMocks)
-
-          action("the worker polls the queue") {
-            subject.pollOnce()
-          }
-
-          it("passes the message to the correct handler") {
-            verify(simpleMessageHandler).invoke(eq(message))
-          }
-
-          it("does not invoke other handlers") {
-            verify(parentMessageHandler, never()).invoke(any())
-          }
-
-          it("acknowledges the message") {
-            verify(ackFunction).invoke()
-          }
+      and("there is no capacity in the thread pool") {
+        beforeGroup {
+          whenever(executor.hasCapacity()) doReturn false
         }
 
-        context("it is a subclass of a supported message type") {
-          val message = ChildMessage("foo")
+        afterGroup(::resetMocks)
 
-          beforeGroup {
-            whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
-            whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
-
-            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
-              callback.invoke(message, ackFunction)
-            }
-          }
-
-          afterGroup(::resetMocks)
-
-          action("the worker polls the queue") {
-            subject.pollOnce()
-          }
-
-          it("passes the message to the correct handler") {
-            verify(parentMessageHandler).invoke(eq(message))
-          }
-
-          it("does not invoke other handlers") {
-            verify(simpleMessageHandler, never()).invoke(any())
-          }
-
-          it("acknowledges the message") {
-            verify(ackFunction).invoke()
-          }
+        action("the worker runs") {
+          subject.pollOnce()
         }
 
-        context("it is an unsupported message type") {
-          val message = UnsupportedMessage("foo")
-
-          beforeGroup {
-            whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
-            whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
-
-            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
-              callback.invoke(message, ackFunction)
-            }
-          }
-
-          afterGroup(::resetMocks)
-
-          action("the worker polls the queue") {
-            assertThat({ subject.pollOnce() }, throws<IllegalStateException>())
-          }
-
-          it("does not invoke any handlers") {
-            verify(simpleMessageHandler, never()).invoke(any())
-            verify(parentMessageHandler, never()).invoke(any())
-          }
-
-          it("does not acknowledge the message") {
-            verify(ackFunction, never()).invoke()
-          }
+        it("does not poll the queue") {
+          verifyZeroInteractions(queue)
         }
 
-        context("the handler throws an exception") {
-          val message = SimpleMessage("foo")
+        it("fires an event") {
+          verify(publisher).publishEvent(isA<NoHandlerCapacity>())
+        }
+      }
 
-          beforeGroup {
-            whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
-            whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
+      and("there is capacity in the thread pool") {
+        val blockingExecutor = BlockingThreadExecutor()
 
-            whenever(queue.poll(any())) doStub { callback: QueueCallback ->
-              callback.invoke(message, ackFunction)
+        beforeEachTest {
+          whenever(executor.hasCapacity()) doReturn true
+          whenever(executor.executor) doReturn blockingExecutor
+        }
+
+        describe("when a message is on the queue") {
+          and("it is a supported message type") {
+            val message = SimpleMessage("foo")
+
+            beforeGroup {
+              whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
+              whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
+
+              whenever(queue.poll(any())) doStub { callback: QueueCallback ->
+                callback.invoke(message, ackFunction)
+              }
             }
 
-            whenever(simpleMessageHandler.invoke(any())) doThrow DummyException()
+            afterGroup(::resetMocks)
+
+            on("the next polling cycle") {
+              subject.pollOnce()
+            }
+
+            it("passes the message to the correct handler") {
+              verify(simpleMessageHandler).invoke(eq(message))
+            }
+
+            it("does not invoke other handlers") {
+              verify(parentMessageHandler, never()).invoke(any())
+            }
+
+            it("acknowledges the message") {
+              verify(ackFunction).invoke()
+            }
           }
 
-          afterGroup(::resetMocks)
+          and("it is a subclass of a supported message type") {
+            val message = ChildMessage("foo")
 
-          action("the worker polls the queue") {
-            subject.pollOnce()
+            beforeGroup {
+              whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
+              whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
+
+              whenever(queue.poll(any())) doStub { callback: QueueCallback ->
+                callback.invoke(message, ackFunction)
+              }
+            }
+
+            afterGroup(::resetMocks)
+
+            on("the next polling cycle") {
+              subject.pollOnce()
+            }
+
+            it("passes the message to the correct handler") {
+              verify(parentMessageHandler).invoke(eq(message))
+            }
+
+            it("does not invoke other handlers") {
+              verify(simpleMessageHandler, never()).invoke(any())
+            }
+
+            it("acknowledges the message") {
+              verify(ackFunction).invoke()
+            }
           }
 
-          it("does not acknowledge the message") {
-            verify(ackFunction, never()).invoke()
+          and("it is an unsupported message type") {
+            val message = UnsupportedMessage("foo")
+
+            beforeGroup {
+              whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
+              whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
+
+              whenever(queue.poll(any())) doStub { callback: QueueCallback ->
+                callback.invoke(message, ackFunction)
+              }
+            }
+
+            afterGroup(::resetMocks)
+
+            on("the next polling cycle") {
+              assertThat({ subject.pollOnce() }, throws<IllegalStateException>())
+            }
+
+            it("does not invoke any handlers") {
+              verify(simpleMessageHandler, never()).invoke(any())
+              verify(parentMessageHandler, never()).invoke(any())
+            }
+
+            it("does not acknowledge the message") {
+              verify(ackFunction, never()).invoke()
+            }
+          }
+
+          context("the handler throws an exception") {
+            val message = SimpleMessage("foo")
+
+            beforeGroup {
+              whenever(simpleMessageHandler.messageType) doReturn SimpleMessage::class.java
+              whenever(parentMessageHandler.messageType) doReturn ParentMessage::class.java
+
+              whenever(queue.poll(any())) doStub { callback: QueueCallback ->
+                callback.invoke(message, ackFunction)
+              }
+
+              whenever(simpleMessageHandler.invoke(any())) doThrow DummyException()
+            }
+
+            afterGroup(::resetMocks)
+
+            on("the next polling cycle") {
+              subject.pollOnce()
+            }
+
+            it("does not acknowledge the message") {
+              verify(ackFunction, never()).invoke()
+            }
           }
         }
       }
@@ -210,11 +253,6 @@ class BlockingThreadExecutor : Executor {
     }
     latch.await()
   }
-}
-
-class BlockingQueueExecutor : QueueExecutor {
-  override val executor: Executor = BlockingThreadExecutor()
-  override fun hasCapacity(): Boolean = true
 }
 
 class DummyException : RuntimeException("deliberate exception for test")

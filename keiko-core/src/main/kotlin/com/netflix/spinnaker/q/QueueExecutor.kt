@@ -23,6 +23,6 @@ import java.util.concurrent.Executor
  * off under heavy load.
  */
 interface QueueExecutor {
-  val executor: Executor
+  open val executor: Executor
   fun hasCapacity(): Boolean
 }
