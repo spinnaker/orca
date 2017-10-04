@@ -22,6 +22,10 @@ import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import org.springframework.context.ApplicationEventPublisher
+import com.netflix.spinnaker.orca.q.CancelExecution
+import com.netflix.spinnaker.orca.q.RescheduleExecution
+import com.netflix.spinnaker.orca.q.ResumeStage
+import com.netflix.spinnaker.q.Queue
 import org.springframework.stereotype.Component
 
 @Component
@@ -29,7 +33,7 @@ class CancelExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   private val publisher: ApplicationEventPublisher
-) : MessageHandler<CancelExecution> {
+) : OrcaMessageHandler<CancelExecution> {
   override val messageType = CancelExecution::class.java
 
   override fun handle(message: CancelExecution) {

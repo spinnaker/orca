@@ -17,17 +17,15 @@
 apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spek.gradle"
 
-repositories {
-  jcenter()
-}
-
 dependencies {
   compile project(":orca-core")
   compile "org.threeten:threeten-extra:1.0"
   compile "org.funktionale:funktionale-partials:1.1"
   compile spinnaker.dependency("logstashEncoder")
+  compile "com.netflix.spinnaker.keiko:keiko-spring:1.2.0"
 
   testCompile "org.springframework.boot:spring-boot-test:${spinnaker.version('springBoot')}"
+  testCompile "com.netflix.spinnaker.keiko:keiko-mem:1.2.0"
   testCompile project(":orca-test")
 }
 

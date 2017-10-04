@@ -30,11 +30,10 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.CancelStage
 import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.CompleteStage
-import com.netflix.spinnaker.orca.q.MessageHandler
-import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.buildAfterStages
 import com.netflix.spinnaker.orca.q.firstAfterStages
+import com.netflix.spinnaker.q.Queue
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -49,7 +48,7 @@ class CompleteStageHandler(
   override val contextParameterProcessor: ContextParameterProcessor,
   private val registry: Registry,
   override val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory
-) : MessageHandler<CompleteStage>, StageBuilderAware, ExpressionAware {
+) : OrcaMessageHandler<CompleteStage>, StageBuilderAware, ExpressionAware {
 
   override fun handle(message: CompleteStage) {
     message.withStage { stage ->

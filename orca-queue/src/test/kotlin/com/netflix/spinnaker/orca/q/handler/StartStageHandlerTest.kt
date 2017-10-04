@@ -65,6 +65,7 @@ import com.netflix.spinnaker.orca.q.stageWithSyntheticBefore
 import com.netflix.spinnaker.orca.q.webhookStage
 import com.netflix.spinnaker.orca.q.zeroTaskStage
 import com.netflix.spinnaker.orca.time.fixedClock
+import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.spek.shouldAllEqual
 import com.netflix.spinnaker.spek.shouldEqual

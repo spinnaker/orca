@@ -16,24 +16,14 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.MINIMAL_CLASS
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-
-/**
- * Messages used internally by the queueing system.
- */
-
-@JsonTypeInfo(use = MINIMAL_CLASS, include = PROPERTY, property = "@class")
-interface Attribute
-
-data class MaxAttemptsAttribute(val maxAttempts: Int = -1) : Attribute
+import com.netflix.spinnaker.q.Attribute
+import com.netflix.spinnaker.q.Message
 
 data class TotalThrottleTimeAttribute(var totalThrottleTimeMs: Long = 0) : Attribute {
   fun add(throttleTimeMs: Long) {
@@ -41,45 +31,9 @@ data class TotalThrottleTimeAttribute(var totalThrottleTimeMs: Long = 0) : Attri
   }
 }
 
-data class AttemptsAttribute(var attempts: Int = 0) : Attribute {
-  fun increment() {
-    this.attempts = attempts + 1
-  }
-}
-
-@JsonTypeInfo(use = MINIMAL_CLASS, include = PROPERTY, property = "@class")
-sealed class Message {
-  val attributes: MutableList<Attribute> = mutableListOf()
-
-  fun <A : Attribute> setAttribute(attribute: A): A {
-    removeAttribute(attribute)
-    attributes.add(attribute)
-
-    return attribute
-  }
-
-  fun <A : Attribute> removeAttribute(attribute: A) {
-    attributes.removeIf { it.javaClass == attribute.javaClass }
-  }
-
-  inline fun <reified A : Attribute> getAttribute(): A? {
-    val attribute = attributes.find { it is A }
-
-    return if (attribute != null) {
-      attribute as A
-    } else {
-      null
-    }
-  }
-
-  inline fun <reified A : Attribute> hasAttribute() =
-    attributes.any { it is A }
-
-  inline fun <reified A : Attribute> getAttribute(defaultValue: A): A {
-    return getAttribute<A>() ?: defaultValue
-  }
-}
-
+/**
+ * Messages used internally by the queueing system.
+ */
 interface ApplicationAware {
   val application: String
 }
@@ -405,5 +359,3 @@ data class NoDownstreamTasks(
   constructor(source: TaskLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId, source.taskId)
 }
-
-data class TestMessage(val message: String) : Message()

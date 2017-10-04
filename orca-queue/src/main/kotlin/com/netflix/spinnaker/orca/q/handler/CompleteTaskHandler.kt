@@ -16,12 +16,22 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.ExecutionStatus.REDIRECT
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.events.TaskComplete
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.CompleteStage
+import com.netflix.spinnaker.orca.q.CompleteTask
+import com.netflix.spinnaker.orca.q.NoDownstreamTasks
+import com.netflix.spinnaker.orca.q.StartStage
+import com.netflix.spinnaker.orca.q.StartTask
+import com.netflix.spinnaker.orca.q.firstAfterStages
+import com.netflix.spinnaker.orca.q.get
+import com.netflix.spinnaker.orca.q.nextTask
+import com.netflix.spinnaker.q.Queue
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -33,7 +43,7 @@ class CompleteTaskHandler(
   override val contextParameterProcessor: ContextParameterProcessor,
   private val publisher: ApplicationEventPublisher,
   private val clock: Clock
-) : MessageHandler<CompleteTask>, ExpressionAware {
+) : OrcaMessageHandler<CompleteTask>, ExpressionAware {
 
   override fun handle(message: CompleteTask) {
     message.withTask { stage, task ->
