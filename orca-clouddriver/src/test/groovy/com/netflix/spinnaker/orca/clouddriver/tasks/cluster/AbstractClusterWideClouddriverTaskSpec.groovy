@@ -23,10 +23,10 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerG
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
+import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask.ClusterSelection
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask.ClusterSelection
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -99,7 +99,7 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
     given:
     def pipeline = new Pipeline("orca")
     def stage = new Stage<>(pipeline, DisableServerGroupStage.PIPELINE_CONFIG_TYPE, [
-        continueIfClusterNotFound: true
+      continueIfClusterNotFound: true
     ])
     def task = new AbstractClusterWideClouddriverTask() {
       @Override
@@ -123,7 +123,7 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
     given:
     def pipeline = new Pipeline("orca")
     def stage = new Stage<>(pipeline, DisableServerGroupStage.PIPELINE_CONFIG_TYPE, [
-        continueIfClusterNotFound: true
+      continueIfClusterNotFound: true
     ])
     def task = new AbstractClusterWideClouddriverTask() {
       @Override
@@ -138,16 +138,17 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    1 * oortHelper.getCluster(_, _, _, _) >> Optional.of([ serverGroups: [] ])
+    1 * oortHelper.getCluster(_, _, _, _) >> Optional.of([serverGroups: []])
     result == TaskResult.SUCCEEDED
 
   }
 
-  def 'cluster wide task should use moniker if available or else fallback on frigga'() {
+  @Unroll
+  'cluster with name "#cluster" and moniker "#moniker" should have application name "#expected"'() {
     given:
     def stage = new Stage<>(new Pipeline("orca"), 'clusterSelection', [
-      cluster    : cluster,
-      moniker    : moniker,
+      cluster: cluster,
+      moniker: moniker,
     ])
     when:
     ClusterSelection selection = stage.mapTo(ClusterSelection)
@@ -156,9 +157,9 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
     selection.getApplication() == expected
 
     where:
-    cluster | moniker | expected
-    'clustername' | [ 'app': 'appname' ] | 'appname'
-    'app-stack' | null | 'app'
+    cluster       | moniker            | expected
+    'clustername' | ['app': 'appname'] | 'appname'
+    'app-stack'   | null               | 'app'
 
   }
 

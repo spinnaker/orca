@@ -120,12 +120,13 @@ class ClusterSizePreconditionTaskSpec extends Specification {
   }
 
 
-  def 'cluster precondition should use moniker if available or else fallback on frigga'() {
+  @Unroll
+  'cluster with name "#cluster" and moniker "#moniker" should have application name "#expected"'() {
     given:
     def stage = new Stage<>(new Pipeline("orca"), 'checkCluster', [
       context: [
-        cluster    : cluster,
-        moniker    : moniker,
+        cluster: cluster,
+        moniker: moniker,
       ]
     ])
     when:
@@ -135,12 +136,11 @@ class ClusterSizePreconditionTaskSpec extends Specification {
     config.getApplication() == expected
 
     where:
-    cluster | moniker | expected
-    'clustername' | [ 'app': 'appname' ] | 'appname'
-    'app-stack' | null | 'app'
+    cluster       | moniker            | expected
+    'clustername' | ['app': 'appname'] | 'appname'
+    'app-stack'   | null               | 'app'
 
   }
-
 
 
   Map mkSg(String region) {
