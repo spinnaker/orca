@@ -17,16 +17,14 @@
 package com.netflix.spinnaker.q
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.MINIMAL_CLASS
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.CLASS
 
 /**
  * Implemented by all messages used with the [Queue]. Sub-types should be simple
  * immutable value types such as Kotlin data classes or _Lombok_ `@Value`
  * classes.
  */
-@JsonTypeInfo(use = MINIMAL_CLASS, include = PROPERTY, property = "@class")
-abstract class Message {
+@JsonTypeInfo(use = CLASS) abstract class Message {
   // TODO: this type should be immutable
   private val _attributes: MutableList<Attribute> = mutableListOf()
   val attributes: List<Attribute>
@@ -51,7 +49,7 @@ abstract class Message {
 /**
  * The base type for message metadata attributes.
  */
-@JsonTypeInfo(use = MINIMAL_CLASS, include = PROPERTY, property = "@class")
+@JsonTypeInfo(use = CLASS)
 interface Attribute
 
 /**
