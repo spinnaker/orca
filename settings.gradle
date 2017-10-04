@@ -35,7 +35,8 @@ include "orca-extensionpoint",
   "orca-queue-redis",
   "orca-queue-sqs",
   "orca-pipelinetemplate",
-  "orca-validation"
+  "orca-validation",
+  "orca-declarative"
 
 if (!Boolean.parseBoolean(System.getProperty('skip.loadtest'))) {
   include "orca-loadtest"
