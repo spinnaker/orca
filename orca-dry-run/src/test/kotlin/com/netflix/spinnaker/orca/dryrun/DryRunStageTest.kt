@@ -17,23 +17,22 @@
 package com.netflix.spinnaker.orca.dryrun
 
 import com.natpryce.hamkrest.greaterThan
-import com.natpryce.hamkrest.should.shouldMatch
-import com.netflix.spinnaker.orca.q.handler.plan
-import com.netflix.spinnaker.orca.q.multiTaskStage
-import com.netflix.spinnaker.orca.q.pipeline
-import com.netflix.spinnaker.orca.q.singleTaskStage
-import com.netflix.spinnaker.orca.q.stage
-import com.netflix.spinnaker.orca.q.stageWithParallelBranches
-import com.netflix.spinnaker.orca.q.stageWithSyntheticBefore
-import com.netflix.spinnaker.orca.q.stageWithSyntheticBeforeAndNoTasks
-import com.netflix.spinnaker.orca.q.zeroTaskStage
-import com.netflix.spinnaker.spek.shouldEqual
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.q.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 
 object DryRunStageTest : Spek({
+
+  fun <T : Execution<T>> StageDefinitionBuilder.plan(stage: Stage<T>) {
+    stage.type = type
+    buildTasks(stage)
+    buildSyntheticStages(stage)
+  }
 
   setOf(zeroTaskStage, singleTaskStage, multiTaskStage, stageWithSyntheticBefore, stageWithSyntheticBeforeAndNoTasks).forEach { proxiedStage ->
     describe("building tasks for a ${proxiedStage.type}") {
