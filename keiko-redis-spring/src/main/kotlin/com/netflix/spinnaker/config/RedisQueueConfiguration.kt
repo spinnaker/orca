@@ -22,6 +22,7 @@ import com.netflix.spinnaker.q.redis.RedisQueue
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -37,16 +38,19 @@ import java.time.Duration
 @EnableConfigurationProperties(RedisQueueProperties::class)
 open class RedisQueueConfiguration {
 
+  @Bean @ConditionalOnMissingBean(GenericObjectPoolConfig::class)
+  open fun redisPoolConfig() = GenericObjectPoolConfig()
+
   @Bean open fun queueRedisPool(
     @Value("\${redis.connection:redis://localhost:6379}") connection: String,
     @Value("\${redis.timeout:2000}") timeout: Int,
-    redisPoolConfig: GenericObjectPoolConfig?
+    redisPoolConfig: GenericObjectPoolConfig
   ) =
     URI.create(connection).let { cx ->
       val port = if (cx.port == -1) Protocol.DEFAULT_PORT else cx.port
-      val db = cx.path?.substringAfter("/")?.toInt() ?: Protocol.DEFAULT_DATABASE
+      val db = if (cx.path.isNullOrEmpty()) Protocol.DEFAULT_DATABASE else cx.path.substringAfter("/").toInt()
       val password = cx.userInfo?.substringAfter(":")
-      JedisPool(redisPoolConfig ?: GenericObjectPoolConfig(), cx.host, port, timeout, password, db)
+      JedisPool(redisPoolConfig, cx.host, port, timeout, password, db)
     }
 
   @Bean open fun queue(
