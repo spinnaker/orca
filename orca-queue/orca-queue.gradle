@@ -19,25 +19,11 @@ apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
   compile project(":orca-core")
+  compile "com.netflix.spinnaker.keiko:keiko-spring:1.1.2"
   compile "org.threeten:threeten-extra:1.0"
   compile "org.funktionale:funktionale-partials:1.1"
   compile "com.netflix.spinnaker.keiko:keiko-spring:1.2.0"
 
-  testCompile "org.springframework.boot:spring-boot-test:${spinnaker.version('springBoot')}"
-  testCompile "com.netflix.spinnaker.keiko:keiko-mem:1.2.0"
   testCompile project(":orca-test")
-}
-
-// export tests so the Queue TCK is available to other modules
-configurations {
-  testArtifacts.extendsFrom testRuntime
-}
-
-task testJar(type: Jar) {
-  classifier = "test"
-  from sourceSets.test.output
-}
-
-artifacts {
-  testArtifacts testJar
+  testCompile project(":orca-queue-tck")
 }

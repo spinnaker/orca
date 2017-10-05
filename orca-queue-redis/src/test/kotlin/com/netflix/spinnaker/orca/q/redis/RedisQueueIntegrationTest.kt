@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.q.redis
 
 import com.netflix.spinnaker.config.RedisQueueConfiguration
+import com.netflix.spinnaker.orca.config.RedisConfiguration
 import com.netflix.spinnaker.orca.q.QueueIntegrationTest
 import com.netflix.spinnaker.orca.q.TestConfig
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
