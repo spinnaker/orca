@@ -19,11 +19,17 @@ package com.netflix.spinnaker.config
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPool
+import redis.clients.jedis.Protocol
 import redis.clients.util.Pool
+import java.net.URI
 import java.time.Clock
 import java.time.Duration
 
@@ -31,19 +37,20 @@ import java.time.Duration
 @EnableConfigurationProperties(RedisQueueProperties::class)
 open class RedisQueueConfiguration {
 
-  @Bean() open fun redisDeadMessageHandler(
-    redisPool: Pool<Jedis>,
-    redisQueueProperties: RedisQueueProperties,
-    clock: Clock
+  @Bean open fun queueRedisPool(
+    @Value("\${redis.connection:redis://localhost:6379}") connection: String,
+    @Value("\${redis.timeout:2000}") timeout: Int,
+    redisPoolConfig: GenericObjectPoolConfig?
   ) =
-    RedisDeadMessageHandler(
-      deadLetterQueueName = redisQueueProperties.deadLetterQueueName,
-      pool = redisPool,
-      clock = clock
-    )
+    URI.create(connection).let { cx ->
+      val port = if (cx.port == -1) Protocol.DEFAULT_PORT else cx.port
+      val db = cx.path?.substringAfter("/")?.toInt() ?: Protocol.DEFAULT_DATABASE
+      val password = cx.userInfo?.substringAfter(":")
+      JedisPool(redisPoolConfig ?: GenericObjectPoolConfig(), cx.host, port, timeout, password, db)
+    }
 
   @Bean open fun queue(
-    redisPool: Pool<Jedis>,
+    @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
@@ -58,4 +65,14 @@ open class RedisQueueConfiguration {
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong())
     )
 
+  @Bean open fun redisDeadMessageHandler(
+    @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
+    redisQueueProperties: RedisQueueProperties,
+    clock: Clock
+  ) =
+    RedisDeadMessageHandler(
+      deadLetterQueueName = redisQueueProperties.deadLetterQueueName,
+      pool = redisPool,
+      clock = clock
+    )
 }
