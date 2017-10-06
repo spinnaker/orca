@@ -41,8 +41,8 @@ public class DelegatingOortService
   }
 
   @Override
-  public Response getServerGroups(String app) {
-    return getService().getServerGroups(app);
+  public Response getServerGroups(String app, boolean expand) {
+    return getService().getServerGroups(app, expand);
   }
 
   @Override

@@ -38,6 +38,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Provides utility support for SPEL integration
@@ -97,6 +98,23 @@ public class ExpressionsSupport {
         registerFunction(evaluationContext, "stage", Object.class, String.class);
         registerFunction(evaluationContext, "judgment", Object.class, String.class);
         registerFunction(evaluationContext, "judgement", Object.class, String.class);
+
+        ContextFunctionConfiguration contextFunctionConfiguration = helperFunctionConfigurationAtomicReference.get();
+        for (ExpressionFunctionProvider p : contextFunctionConfiguration.getExpressionFunctionProviders()) {
+          for (ExpressionFunctionProvider.FunctionDefinition function: p.getFunctions()) {
+            String namespacedFunctionName = p.getNamespace() + "_" + function.getName();
+            Class[] functionTypes = function.getParameters()
+              .stream()
+              .map(ExpressionFunctionProvider.FunctionParameter::getType)
+              .collect(Collectors.toList())
+              .toArray(new Class[0]);
+            LOGGER.info("Registering Expression Function: {}({})", namespacedFunctionName, functionTypes);
+
+            evaluationContext.registerFunction(
+              namespacedFunctionName, p.getClass().getDeclaredMethod(function.getName(), functionTypes)
+            );
+          }
+        }
       }
     } catch (NoSuchMethodException e) {
       // Indicates a function was not properly registered. This should not happen. Please fix the faulty function

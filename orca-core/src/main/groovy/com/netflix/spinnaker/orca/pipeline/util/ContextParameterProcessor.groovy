@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline.util
 
 import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluator
+import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvider
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Orchestration
@@ -355,13 +356,16 @@ class ContextParameterProcessor {
   }
 }
 
-
 class ContextFunctionConfiguration {
   final UserConfiguredUrlRestrictions urlRestrictions
+  final Collection<ExpressionFunctionProvider> expressionFunctionProviders;
   final String spelEvaluator
 
-  ContextFunctionConfiguration(UserConfiguredUrlRestrictions urlRestrictions, String spelEvaluator = V1) {
+  ContextFunctionConfiguration(UserConfiguredUrlRestrictions urlRestrictions,
+                               Collection<ExpressionFunctionProvider> expressionFunctionProviders = [],
+                               String spelEvaluator = V1) {
     this.urlRestrictions = urlRestrictions
+    this.expressionFunctionProviders = expressionFunctionProviders;
     this.spelEvaluator = spelEvaluator
   }
 
