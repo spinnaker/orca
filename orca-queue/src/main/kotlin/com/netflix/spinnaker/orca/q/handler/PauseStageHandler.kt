@@ -17,9 +17,11 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.PAUSED
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.MessageHandler
 import com.netflix.spinnaker.orca.q.PauseStage
+import com.netflix.spinnaker.orca.q.PauseTask
 import com.netflix.spinnaker.orca.q.Queue
 import org.springframework.stereotype.Component
 
@@ -38,6 +40,11 @@ class PauseStageHandler(
       stage.getParentStageId()?.let { parentStageId ->
         queue.push(PauseStage(message, parentStageId))
       }
+
+      stage
+        .getTasks()
+        .filter { it.status == RUNNING }
+        .forEach { queue.push(PauseTask(message, it.id))}
     }
   }
 }

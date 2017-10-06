@@ -16,26 +16,25 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.ExecutionStatus.PAUSED
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.MessageHandler
-import com.netflix.spinnaker.orca.q.PauseStage
-import com.netflix.spinnaker.orca.q.PauseTask
-import com.netflix.spinnaker.orca.q.Queue
+import com.netflix.spinnaker.orca.q.*
 import org.springframework.stereotype.Component
 
 @Component
-class PauseTaskHandler(
+class PauseExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository
-) : MessageHandler<PauseTask> {
+) : MessageHandler<PauseExecution> {
 
-  override val messageType = PauseTask::class.java
+  override val messageType = PauseExecution::class.java
 
-  override fun handle(message: PauseTask) {
-    message.withTask { stage, task ->
-      task.status = PAUSED
-      repository.storeStage(stage)
+  override fun handle(message: PauseExecution) {
+    message.withExecution { execution ->
+      execution
+        .getStages()
+        .filter { it.getStatus() == ExecutionStatus.RUNNING }
+        .forEach { queue.push(PauseStage(message, it.getId())) }
     }
   }
 }

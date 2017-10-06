@@ -47,6 +47,14 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
       stage {
         refId = "1"
         type = singleTaskStage.type
+        task {
+          id = "t1"
+          status = ExecutionStatus.RUNNING
+        }
+        task {
+          id = "t2"
+          status = ExecutionStatus.RUNNING
+        }
       }
       stage {
         refId = "2"
@@ -71,6 +79,11 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
         it.getStatus() shouldEqual ExecutionStatus.PAUSED
         it.getEndTime() shouldMatch absent()
       })
+    }
+
+    it("pushes messages to pause all running tasks") {
+      verify(queue).push(PauseTask(message, "t1"))
+      verify(queue).push(PauseTask(message, "t2"))
     }
 
     it("does not take any further action") {
