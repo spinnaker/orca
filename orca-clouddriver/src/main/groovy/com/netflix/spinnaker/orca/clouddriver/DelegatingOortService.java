@@ -51,6 +51,11 @@ public class DelegatingOortService
   }
 
   @Override
+  public Response getServerGroupFromName(String account, String serverGroup, String region) {
+    return getService().getServerGroupFromName(account, serverGroup, region);
+  }
+
+  @Override
   public Response getTargetServerGroup(String app, String account, String cluster, String cloudProvider, String scope, String target) {
     return getService().getTargetServerGroup(app, account, cluster, cloudProvider, scope, target);
   }
