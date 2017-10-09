@@ -48,9 +48,9 @@ interface OortService {
                           @Path("serverGroup") String serverGroup)
 
   @GET("/serverGroups/{account}/{region}/{serverGroup}")
-  Response getServerGroupFromName(@Path("account") String account,
-                                  @Path("region") String region,
-                                  @Path("serverGroup") String serverGroup)
+  Response getServerGroupByName(@Path("account") String account,
+                                @Path("region") String region,
+                                @Path("serverGroup") String serverGroup)
 
   @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}/{scope}/serverGroups/target/{target}")
   Response getTargetServerGroup(@Path("app") String app,

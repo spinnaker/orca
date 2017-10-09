@@ -51,8 +51,8 @@ public class DelegatingOortService
   }
 
   @Override
-  public Response getServerGroupFromName(String account, String serverGroup, String region) {
-    return getService().getServerGroupFromName(account, serverGroup, region);
+  public Response getServerGroupByName(String account, String serverGroup, String region) {
+    return getService().getServerGroupByName(account, serverGroup, region);
   }
 
   @Override
