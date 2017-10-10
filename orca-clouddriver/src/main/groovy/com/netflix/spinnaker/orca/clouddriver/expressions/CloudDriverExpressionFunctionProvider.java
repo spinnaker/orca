@@ -23,15 +23,20 @@ import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import retrofit.RetrofitError;
 import retrofit.client.Response;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Component
 public class CloudDriverExpressionFunctionProvider implements ExpressionFunctionProvider {
@@ -84,13 +89,41 @@ public class CloudDriverExpressionFunctionProvider implements ExpressionFunction
                                         String cloudProvider,
                                         String scope,
                                         String target) {
-    try {
-      Response response = oortService.get().getTargetServerGroup(application, account, cluster, cloudProvider, scope, target);
-      Map targetServerGroup = objectMapper.get().readValue(response.getBody().in(), new TypeReference<Map>() {
-      });
-      return Collections.singletonList(targetServerGroup);
-    } catch (Exception e) {
-      return Collections.emptyList();
+    return retry(() -> {
+      try {
+        Response response = oortService.get().getTargetServerGroup(
+          application,
+          account,
+          cluster,
+          cloudProvider,
+          scope,
+          target
+        );
+        Map targetServerGroup = objectMapper.get().readValue(response.getBody().in(), new TypeReference<Map>() {});
+        return Collections.singletonList(targetServerGroup);
+      } catch (Exception e) {
+        return Collections.emptyList();
+      }
+    }, 500, 5);
+  }
+
+  static <T> T retry(Supplier<T> fn, long backOff, int maxRetries) {
+    int retries = 0;
+    while (true) {
+      try {
+        return fn.get();
+      } catch (Exception e) {
+        if (retries >= maxRetries) {
+          throw e;
+        }
+        retries++;
+
+        long timeout = (long) Math.pow(2, retries) * backOff;
+
+        try {
+          Thread.sleep(timeout);
+        } catch (InterruptedException ignored) {}
+      }
     }
   }
 }
