@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
+import com.netflix.spinnaker.moniker.Moniker
+
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -95,7 +97,7 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
     }
 
     try {
-      def serverGroups = fetchServerGroups(account, getCloudProvider(stage), serverGroupsByRegion)
+      def serverGroups = fetchServerGroups(account, getCloudProvider(stage), serverGroupsByRegion, stage.context?.moniker)
       if (!serverGroups) {
         return new TaskResult(ExecutionStatus.RUNNING)
       }
@@ -195,16 +197,18 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
     }
   }
 
-  private List<Map> fetchServerGroups(String account, String cloudProvider, Map<String, List<String>> serverGroupsByRegion) {
+  private List<Map> fetchServerGroups(String account, String cloudProvider, Map<String, List<String>> serverGroupsByRegion, Map<String, String> moniker) {
     Names names = Names.parseName(serverGroupsByRegion.values().flatten()[0])
-
+    def appName = moniker?.app ?: names.app
     if (serverGroupsByRegion.values().flatten().size() > 1) {
-      def response = oortService.getCluster(names.app, account, names.cluster, cloudProvider)
+      def clusterName = moniker?.cluster ?: names.cluster
+      def response = oortService.getCluster(appName, account, clusterName, cloudProvider)
       def cluster = objectMapper.readValue(response.body.in().text, Map)
       return cluster.serverGroups ?: []
     } else {
       def region = serverGroupsByRegion.keySet()[0]
-      def response = oortService.getServerGroup(names.app, account, region, names.group)
+      def serverGroupName = serverGroupsByRegion[region][0]
+      def response = oortService.getServerGroup(appName, account, region, serverGroupName)
       def serverGroup = objectMapper.readValue(response.body.in().text, Map)
       return [serverGroup]
     }
