@@ -20,13 +20,19 @@ package com.netflix.spinnaker.orca.controllers
 import com.netflix.config.validation.ValidationException
 import com.netflix.spinnaker.kork.web.exceptions.HasAdditionalAttributes
 import com.netflix.spinnaker.orca.eureka.NoDiscoveryApplicationStatusPublisher
+import com.netflix.spinnaker.orca.q.admin.DeadLetterRedriveCommand
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/admin")
@@ -35,6 +41,9 @@ class AdminController {
   @Autowired(required = false)
   @Qualifier("discoveryStatusPoller")
   ApplicationListener<ContextRefreshedEvent> discoveryStatusPoller
+
+  @Autowired(required = false)
+  DeadLetterRedriveCommand deadLetterRedriveCommand
 
   @RequestMapping(value = "/instance/enabled", method = RequestMethod.POST)
   void setInstanceStatus(@RequestBody Map<String, Boolean> enabledWrapper) {
@@ -55,6 +64,15 @@ class AdminController {
     }
 
     noDiscoveryApplicationStatusPublisher.setInstanceEnabled(enabled)
+  }
+
+  @RequestMapping(value = "/queue/redrive", method = RequestMethod.POST)
+  void redriveQueue(@RequestParam(value = "after", required = false) Long after,
+                    @RequestParam(value = "before", required = false) Long before) {
+    if (deadLetterRedriveCommand == null) {
+      throw new UnsupportedOperationException("DLQ redrive command is not configured!")
+    }
+    deadLetterRedriveCommand.redrive(after, before)
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
