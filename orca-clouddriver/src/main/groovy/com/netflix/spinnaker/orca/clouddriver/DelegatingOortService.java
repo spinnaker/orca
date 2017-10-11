@@ -45,6 +45,7 @@ public class DelegatingOortService
     return getService().getServerGroups(app);
   }
 
+  @Deprecated
   @Override
   public Response getServerGroup(String app, String account, String region, String serverGroup) {
     return getService().getServerGroup(app, account, region, serverGroup);
