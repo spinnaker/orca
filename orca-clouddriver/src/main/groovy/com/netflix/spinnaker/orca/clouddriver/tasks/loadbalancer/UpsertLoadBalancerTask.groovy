@@ -63,6 +63,7 @@ class UpsertLoadBalancerTask extends AbstractCloudProviderAwareTask implements R
       }
     }
 
+    context.application = context.getOrDefault("application", stage.getExecution().getApplication())
     context.availabilityZones = context.availabilityZones ?: [(context.region): context.regionZones]
 
     def operations = [
