@@ -17,7 +17,12 @@ package com.netflix.spinnaker.orca.config;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.events.ExecutionEvent;
@@ -32,6 +37,7 @@ import com.netflix.spinnaker.orca.listeners.MetricsExecutionListener;
 import com.netflix.spinnaker.orca.notifications.scheduling.SuspendedPipelinesNotificationHandler;
 import com.netflix.spinnaker.orca.pipeline.PipelineStartTracker;
 import com.netflix.spinnaker.orca.pipeline.PipelineStarterListener;
+import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineStack;
 import com.netflix.spinnaker.orca.pipeline.persistence.memory.InMemoryPipelineStack;
@@ -134,8 +140,13 @@ public class OrcaConfiguration {
 
   @Bean
   public ContextFunctionConfiguration contextFunctionConfiguration(UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
+                                                                   Optional<List<ExpressionFunctionProvider>> expressionFunctionProviders,
                                                                    @Value("${spelEvaluator:v1}") String spelEvaluator) {
-    return new ContextFunctionConfiguration(userConfiguredUrlRestrictions, spelEvaluator);
+    return new ContextFunctionConfiguration(
+      userConfiguredUrlRestrictions,
+      expressionFunctionProviders.orElse(Collections.emptyList()),
+      spelEvaluator
+    );
   }
 
   @Bean
