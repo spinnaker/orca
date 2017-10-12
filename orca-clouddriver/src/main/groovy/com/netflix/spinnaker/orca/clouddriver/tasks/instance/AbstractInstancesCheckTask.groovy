@@ -198,9 +198,9 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
   }
 
   private List<Map> fetchServerGroups(String account, String cloudProvider, Map<String, List<String>> serverGroupsByRegion, Map<String, String> moniker) {
-    Names names = Names.parseName(serverGroupsByRegion.values().flatten()[0])
-    def appName = moniker?.app ?: names.app
     if (serverGroupsByRegion.values().flatten().size() > 1) {
+      Names names = Names.parseName(serverGroupsByRegion.values().flatten()[0])
+      def appName = moniker?.app ?: names.app
       def clusterName = moniker?.cluster ?: names.cluster
       def response = oortService.getCluster(appName, account, clusterName, cloudProvider)
       def cluster = objectMapper.readValue(response.body.in().text, Map)
@@ -208,7 +208,7 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
     } else {
       def region = serverGroupsByRegion.keySet()[0]
       def serverGroupName = serverGroupsByRegion[region][0]
-      def response = oortService.getServerGroup(appName, account, region, serverGroupName)
+      def response = oortService.getServerGroup(account, region, serverGroupName)
       def serverGroup = objectMapper.readValue(response.body.in().text, Map)
       return [serverGroup]
     }
