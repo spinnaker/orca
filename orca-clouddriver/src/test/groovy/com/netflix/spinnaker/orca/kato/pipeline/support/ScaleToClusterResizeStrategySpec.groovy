@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.Capacity
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -77,7 +76,7 @@ class ScaleToClusterResizeStrategySpec extends Specification {
   def 'desired capacity is increased by scalePct or scaleNum for scale_to_cluster within the min/max bounds'() {
     given:
     Stage stage = new Stage(null, "stage", [moniker: [app: application, cluster: clusterName]])
-    
+
     when:
     def cap = strategy.capacityForOperation(stage, account, serverGroupName, cloudProvider, location, resizeConfig)
 
