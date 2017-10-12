@@ -22,7 +22,8 @@ import java.util.concurrent.Executor
  * An executor that can have a limited capacity so queue traffic can be backed
  * off under heavy load.
  */
-interface QueueExecutor {
-  open val executor: Executor
-  fun hasCapacity(): Boolean
+abstract class QueueExecutor<out T : Executor>(
+  protected val executor: T
+) : Executor by executor {
+  abstract fun hasCapacity(): Boolean
 }

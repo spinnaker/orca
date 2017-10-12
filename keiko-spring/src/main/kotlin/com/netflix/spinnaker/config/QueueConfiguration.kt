@@ -50,11 +50,11 @@ open class QueueConfiguration {
   @Bean
   open fun queueProcessor(
     queue: Queue,
-    queueExecutor: QueueExecutor,
+    executor: QueueExecutor<*>,
     handlers: Collection<MessageHandler<*>>,
     activator: Activator,
     publisher: EventPublisher
-  ) = QueueProcessor(queue, queueExecutor, handlers, activator, publisher)
+  ) = QueueProcessor(queue, executor, handlers, activator, publisher)
 
   @Bean
   open fun queueEventPublisher(

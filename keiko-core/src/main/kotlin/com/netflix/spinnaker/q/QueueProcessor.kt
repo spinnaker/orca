@@ -30,7 +30,7 @@ import javax.annotation.PostConstruct
  */
 class QueueProcessor(
   private val queue: Queue,
-  private val queueExecutor: QueueExecutor,
+  private val executor: QueueExecutor<*>,
   private val handlers: Collection<MessageHandler<*>>,
   private val activator: Activator,
   private val publisher: EventPublisher
@@ -39,18 +39,18 @@ class QueueProcessor(
 
   /**
    * Polls the [Queue] once to attempt to read a single message so long as
-   * [queueExecutor] has capacity.
+   * [executor] has capacity.
    */
   @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:10}")
   fun pollOnce() =
     activator.ifEnabled {
-      if (queueExecutor.hasCapacity()) {
+      if (executor.hasCapacity()) {
         queue.poll { message, ack ->
           log.info("Received message $message")
           val handler = handlerFor(message)
           if (handler != null) {
             try {
-              queueExecutor.executor.execute {
+              executor.execute {
                 handler.invoke(message)
                 ack.invoke()
               }

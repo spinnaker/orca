@@ -23,20 +23,18 @@ import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.*
+import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import org.jetbrains.spek.api.lifecycle.CachingMode.SCOPE
-import org.jetbrains.spek.subject.SubjectSpek
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-object QueueProcessorTest : SubjectSpek<QueueProcessor>({
+object QueueProcessorTest : Spek({
   describe("the queue processor") {
     val queue: Queue = mock()
-    val executor: QueueExecutor = mock()
     val simpleMessageHandler: MessageHandler<SimpleMessage> = mock()
     val parentMessageHandler: MessageHandler<ParentMessage> = mock()
     val ackFunction: () -> Unit = mock()
@@ -45,24 +43,21 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
 
     fun resetMocks() = reset(
       queue,
-      executor,
       simpleMessageHandler,
       parentMessageHandler,
       ackFunction,
       publisher
     )
 
-    subject(SCOPE) {
-      QueueProcessor(
+    describe("when disabled") {
+      val subject = QueueProcessor(
         queue,
-        executor,
-        listOf(simpleMessageHandler, parentMessageHandler),
+        BlockingQueueExecutor(),
+        emptyList(),
         activator,
         publisher
       )
-    }
 
-    describe("when disabled") {
       afterGroup(::resetMocks)
 
       on("the next polling cycle") {
@@ -82,11 +77,24 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
       }
 
       and("there is no capacity in the thread pool") {
+        val executor: QueueExecutor<*> = mock()
+
+        val subject = QueueProcessor(
+          queue,
+          executor,
+          emptyList(),
+          activator,
+          publisher
+        )
+
         beforeGroup {
           whenever(executor.hasCapacity()) doReturn false
         }
 
-        afterGroup(::resetMocks)
+        afterGroup {
+          resetMocks()
+          reset(executor)
+        }
 
         action("the worker runs") {
           subject.pollOnce()
@@ -102,12 +110,13 @@ object QueueProcessorTest : SubjectSpek<QueueProcessor>({
       }
 
       and("there is capacity in the thread pool") {
-        val blockingExecutor = BlockingThreadExecutor()
-
-        beforeEachTest {
-          whenever(executor.hasCapacity()) doReturn true
-          whenever(executor.executor) doReturn blockingExecutor
-        }
+        val subject = QueueProcessor(
+          queue,
+          BlockingQueueExecutor(),
+          listOf(simpleMessageHandler, parentMessageHandler),
+          activator,
+          publisher
+        )
 
         describe("when a message is on the queue") {
           and("it is a supported message type") {
@@ -253,6 +262,10 @@ class BlockingThreadExecutor : Executor {
     }
     latch.await()
   }
+}
+
+class BlockingQueueExecutor : QueueExecutor<Executor>(BlockingThreadExecutor()) {
+  override fun hasCapacity() = true
 }
 
 class DummyException : RuntimeException("deliberate exception for test")
