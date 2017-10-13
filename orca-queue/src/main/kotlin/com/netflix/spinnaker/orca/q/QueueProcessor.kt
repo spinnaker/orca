@@ -31,7 +31,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest.SPINNAKER_EXECUTION_I
 @Component
 class QueueProcessor(
   private val queue: Queue,
-  private val queueExecutor: QueueExecutor,
+  private val queueExecutor: QueueExecutor<*>,
   private val registry: Registry,
   private val handlers: Collection<MessageHandler<*>>
 ) : DiscoveryActivated {
@@ -56,7 +56,7 @@ class QueueProcessor(
           val handler = handlerFor(message)
           if (handler != null) {
             try {
-              queueExecutor.executor.execute {
+              queueExecutor.execute {
                 if (message is ExecutionLevel) {
                   MDC.put(SPINNAKER_EXECUTION_ID, message.executionId)
                 }
@@ -67,6 +67,8 @@ class QueueProcessor(
               log.warn("Executor at capacity, immediately re-queuing message", e)
               queue.push(message)
               registry.counter(pollRejectedMessage).increment()
+            } finally {
+              MDC.remove(SPINNAKER_EXECUTION_ID)
             }
           } else {
             registry.counter(pollErrorRateId).increment()
