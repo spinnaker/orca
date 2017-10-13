@@ -20,16 +20,18 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.discovery.DiscoveryActivated
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
+import org.slf4j.MDC
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.PostConstruct
+import com.netflix.spinnaker.security.AuthenticatedRequest.SPINNAKER_EXECUTION_ID
 
 @Component
 class QueueProcessor(
   private val queue: Queue,
-  private val queueExecutor: QueueExecutor,
+  private val queueExecutor: QueueExecutor<*>,
   private val registry: Registry,
   private val handlers: Collection<MessageHandler<*>>
 ) : DiscoveryActivated {
@@ -54,9 +56,16 @@ class QueueProcessor(
           val handler = handlerFor(message)
           if (handler != null) {
             try {
-              queueExecutor.executor.execute {
-                handler.invoke(message)
-                ack.invoke()
+              queueExecutor.execute {
+                try {
+                  if (message is ExecutionLevel) {
+                    MDC.put(SPINNAKER_EXECUTION_ID, message.executionId)
+                  }
+                  handler.invoke(message)
+                  ack.invoke()
+                } finally {
+                  MDC.remove(SPINNAKER_EXECUTION_ID)
+                }
               }
             } catch (e: RejectedExecutionException) {
               log.warn("Executor at capacity, immediately re-queuing message", e)

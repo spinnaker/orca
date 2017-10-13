@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 
 @Component("pipelineTemplatePreprocessor")
-class PipelineTemplatePreprocessor
+open class PipelineTemplatePreprocessor
 @Autowired constructor(
   private val pipelineTemplateObjectMapper: ObjectMapper,
   private val schemaVersionHandler: SchemaVersionHandler,
@@ -67,7 +67,7 @@ class PipelineTemplatePreprocessor
         }
 
         log.error("Unexpected error occurred while processing template: ", context.getRequest().getId(), t)
-        errorHandler.recordThrowable(t)
+        context.getCaughtThrowables().add(t)
         chain.clear()
       }
 

@@ -25,5 +25,5 @@ dependencies {
   compile project(":orca-queue")
   compile "com.fasterxml.jackson.module:jackson-module-kotlin:${spinnaker.version("jackson")}"
 
-  testCompile project(path: ":orca-queue", configuration: "testOutput")
+  testCompile project(path: ":orca-queue", configuration: "testArtifacts")
 }

@@ -24,28 +24,28 @@ import org.springframework.stereotype.Component
 @Component
 class PipelineTemplateErrorHandler : Handler {
 
-  private val caughtThrowables = mutableListOf<Throwable>()
-
   override fun handle(chain: HandlerChain, context: PipelineTemplateContext) {
-    caughtThrowables.map { generateErrors(it) }.forEach { context.getErrors().addAll(it) }
+    context.getCaughtThrowables().map { generateErrors(it) }.forEach { context.getErrors().addAll(it) }
 
     if (context.getErrors().hasErrors(context.getRequest().plan)) {
       context.getProcessedOutput().putAll(context.getErrors().toResponse())
     }
   }
 
-  fun recordThrowable(t: Throwable) {
-    caughtThrowables.add(t)
-  }
-
   // Gross backwards compat with old error handler logic
   private fun generateErrors(t: Throwable): Errors {
     val e = Errors()
     if (t is TemplateLoaderException) {
-      e.add(Errors.Error().withMessage("failed loading template").withCause(t.message))
+      if (t.errors.hasErrors(true)) {
+        e.addAll(t.errors)
+      } else {
+        e.add(Errors.Error().withMessage("failed loading template").withCause(t.message))
+      }
     } else if (t is TemplateRenderException) {
-      if (!e.hasErrors(true)) {
+      if (!t.errors.hasErrors(true)) {
         e.add(Errors.Error().withMessage("failed rendering template expression").withCause(t.message))
+      } else {
+        e.addAll(t.errors)
       }
     } else if (t is IllegalTemplateConfigurationException) {
       e.add(

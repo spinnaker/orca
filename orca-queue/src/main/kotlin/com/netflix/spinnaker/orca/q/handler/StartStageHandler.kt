@@ -17,10 +17,11 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
@@ -41,7 +42,7 @@ class StartStageHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   override val stageNavigator: StageNavigator,
-  override val stageDefinitionBuilders: Collection<StageDefinitionBuilder>,
+  override val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory,
   override val contextParameterProcessor: ContextParameterProcessor,
   private val publisher: ApplicationEventPublisher,
   private val exceptionHandlers: List<ExceptionHandler>,
@@ -62,7 +63,7 @@ class StartStageHandler(
         if (stage.getStatus() != NOT_STARTED) {
           log.warn("Ignoring $message as stage is already ${stage.getStatus()}")
         } else if (stage.shouldSkip()) {
-          queue.push(CompleteStage(message, SKIPPED))
+          queue.push(SkipStage(message))
         } else {
           try {
             stage.withAuth {
@@ -88,7 +89,7 @@ class StartStageHandler(
               log.error("Error running ${stage.getType()} stage for ${message.executionType.simpleName}[${message.executionId}]", e)
               stage.getContext()["exception"] = exceptionDetails
               repository.storeStage(stage)
-              queue.push(CompleteStage(message, stage.failureStatus()))
+              queue.push(CompleteStage(message))
             }
           }
         }
@@ -117,7 +118,7 @@ class StartStageHandler(
       if (task == null) {
         val afterStages = firstAfterStages()
         if (afterStages.isEmpty()) {
-          queue.push(CompleteStage(this, SUCCEEDED))
+          queue.push(CompleteStage(this))
         } else {
           afterStages.forEach {
             queue.push(StartStage(it))

@@ -42,6 +42,9 @@ public class YamlRenderedValueConverter implements RenderedValueConverter {
     if (containsEL(renderedValue) || isYamlKeyword(renderedValue) || containsYamlParsingExceptions(renderedValue)) {
       return renderedValue;
     }
+    if (containsNoExpandMarker(renderedValue)) {
+      return trimNoExpandMarker(renderedValue);
+    }
 
     try {
       Object converted = yaml.load(renderedValue);
@@ -71,5 +74,13 @@ public class YamlRenderedValueConverter implements RenderedValueConverter {
   private static boolean containsYamlParsingExceptions(String renderedValue) {
     return renderedValue != null &&
       renderedValue.startsWith("* "); // A markdown list: YAML will parse this as an alias and fail.
+  }
+  
+  private static boolean containsNoExpandMarker(String renderedValue) {
+    return renderedValue.startsWith("noexpand:");
+  }
+
+  private static String trimNoExpandMarker(String renderedValue) {
+    return renderedValue.substring("noexpand:".length(), renderedValue.length());
   }
 }

@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.Message.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -26,11 +27,28 @@ import org.springframework.stereotype.Component
 
   open fun handle(queue: Queue, message: Message) {
     log.error("Dead message: $message")
-    when (message) {
-      is TaskLevel -> queue.push(CompleteTask(message, TERMINAL))
-      is StageLevel -> queue.push(CompleteStage(message, TERMINAL))
-      is ExecutionLevel -> queue.push(CompleteExecution(message))
-      else -> log.error("Unhandled message type ${message.javaClass}")
+    terminationMessageFor(message)
+      ?.let {
+        it.setAttribute(DeadMessageAttribute)
+        queue.push(it)
+      }
+  }
+
+  private fun terminationMessageFor(message: Message): Message? {
+    if (message.hasAttribute<DeadMessageAttribute>()) {
+      log.warn("Already sent $message to DLQ")
+      return null
+    }
+    return when (message) {
+      is TaskLevel -> CompleteTask(message, TERMINAL)
+      is StageLevel -> AbortStage(message)
+      is ExecutionLevel -> CompleteExecution(message)
+      else -> {
+        log.error("Unhandled message type ${message.javaClass}")
+        null
+      }
     }
   }
 }
+
+internal object DeadMessageAttribute : Attribute

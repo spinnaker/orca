@@ -18,9 +18,6 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
@@ -40,12 +37,13 @@ class CompleteStageHandler(
   override fun handle(message: CompleteStage) {
     message.withStage { stage ->
       if (stage.getStatus() in setOf(RUNNING, NOT_STARTED)) {
-        stage.setStatus(message.status)
+        val status = stage.determineStatus()
+        stage.setStatus(status)
         stage.setEndTime(clock.millis())
         stage.includeExpressionEvaluationSummary()
         repository.storeStage(stage)
 
-        if (message.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED)) {
+        if (status in listOf(SUCCEEDED, FAILED_CONTINUE)) {
           stage.startNext()
         } else {
           queue.push(CancelStage(message))
@@ -63,24 +61,4 @@ class CompleteStageHandler(
   }
 
   override val messageType = CompleteStage::class.java
-
-  private fun Stage<*>.startNext() {
-    getExecution().let { execution ->
-      val downstreamStages = downstreamStages()
-      if (downstreamStages.isNotEmpty()) {
-        downstreamStages.forEach {
-          queue.push(StartStage(it))
-        }
-      } else if (getSyntheticStageOwner() == STAGE_BEFORE) {
-        queue.push(ContinueParentStage(parent()))
-      } else if (getSyntheticStageOwner() == STAGE_AFTER) {
-        parent().let { parent ->
-          queue.push(CompleteStage(parent, SUCCEEDED))
-        }
-      } else {
-        log.debug("No stages waiting to start, completing execution (executionId: ${getExecution().getId()}, stageId: ${getId()})")
-        queue.push(CompleteExecution(execution))
-      }
-    }
-  }
 }
