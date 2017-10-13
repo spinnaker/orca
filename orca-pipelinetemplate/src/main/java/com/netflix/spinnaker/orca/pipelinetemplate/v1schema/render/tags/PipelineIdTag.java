@@ -66,6 +66,10 @@ public class PipelineIdTag implements Tag {
     String name = paramPairs.get(NAME).replaceAll("^[\"\']|[\"\']$", "");
     name = checkContext(name, context);
 
+    if (name == null || application == null) {
+      throw new TemplateSyntaxException(tagNode.getMaster().getImage(), "Tag 'pipelineId' is missing required fields: " + helper, tagNode.getLineNumber());
+    }
+
     List<Map<String, Object>> pipelines = Optional.ofNullable(front50Service.getPipelines(application, false)).orElse(Collections.emptyList());
     Map<String, Object> result = findPipeline(pipelines, application, name);
     return (String) result.get("id");
