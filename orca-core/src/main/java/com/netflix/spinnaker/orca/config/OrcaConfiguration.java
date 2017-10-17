@@ -54,6 +54,7 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Configuration
 @ComponentScan({
+  "com.netflix.spinnaker.orca.locks",
   "com.netflix.spinnaker.orca.pipeline",
   "com.netflix.spinnaker.orca.notifications.scheduling",
   "com.netflix.spinnaker.orca.deprecation",

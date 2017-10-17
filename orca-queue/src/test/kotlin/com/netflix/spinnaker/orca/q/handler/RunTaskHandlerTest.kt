@@ -45,6 +45,7 @@ import org.jetbrains.spek.subject.SubjectSpek
 import org.threeten.extra.Minutes
 import java.lang.RuntimeException
 import java.time.Duration
+import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.jvm.jvmName
 
@@ -68,6 +69,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       listOf(task, timeoutOverrideTask),
       clock,
       listOf(exceptionHandler),
+      Collections.emptyList(),
       NoopRegistry()
     )
   }

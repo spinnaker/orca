@@ -57,6 +57,9 @@ class CompleteExecutionHandler(
     message.withExecution { execution ->
       if (execution.status.isComplete) {
         log.info("Execution ${execution.id} already completed with ${execution.status} status")
+        publisher.publishEvent(
+          ExecutionComplete(this, message.executionType, message.executionId, execution.status)
+        )
       } else {
         message.determineFinalStatus(execution) { status ->
           repository.updateStatus(message.executionId, status)

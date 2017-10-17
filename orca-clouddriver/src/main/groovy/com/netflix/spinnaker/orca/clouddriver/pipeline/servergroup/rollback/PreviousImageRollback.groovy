@@ -49,6 +49,12 @@ class PreviousImageRollback implements Rollback {
   @JsonIgnore
   RetrySupport retrySupport
 
+  RollbackCluster getRollbackCluster(Stage parentStage) {
+    def parentStageContext = parentStage.context
+    Names names = Names.parseName(rollbackServerGroupName)
+    return new RollbackCluster(parentStageContext.cloudProvider, parentStageContext.credentials, names.cluster, parentStageContext.region)
+  }
+
   @Override
   List<Stage> buildStages(Stage parentStage) {
     def previousImageRollbackSupport = new PreviousImageRollbackSupport(objectMapper, oortService, retrySupport)

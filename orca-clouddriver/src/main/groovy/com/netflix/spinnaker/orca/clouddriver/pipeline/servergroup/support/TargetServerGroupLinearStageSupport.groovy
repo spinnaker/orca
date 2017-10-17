@@ -16,7 +16,11 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
+import com.netflix.frigga.Names
+import com.netflix.spinnaker.orca.clouddriver.utils.LockNameHelper
 import com.netflix.spinnaker.orca.kato.pipeline.Nameable
+import com.netflix.spinnaker.orca.locks.LockContext
+import com.netflix.spinnaker.orca.locks.LockableStageSupport
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.Memoized
@@ -36,6 +40,10 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
   DetermineTargetServerGroupStage determineTargetServerGroupStage
 
   String name = this.type
+
+  protected boolean lockTargetServerGroup() {
+    return true
+  }
 
   @Override
   def List<Stage> aroundStages(Stage parentStage) {
@@ -64,6 +72,12 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
 
     def targets = resolver.resolveByParams(params)
     def descriptionList = buildStaticTargetDescriptions(stage, targets)
+    def releaseLockStages = []
+    for (description in descriptionList) {
+      LockContext thisLock = buildLockContext(stage, description)
+      stages << LockableStageSupport.buildAcquireLockStage(stage, thisLock)
+      releaseLockStages << LockableStageSupport.buildReleaseLockStage(stage, thisLock)
+    }
     def first = descriptionList.remove(0)
     stage.context.putAll(first)
 
@@ -85,6 +99,7 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
         stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_AFTER)
       }
     }
+    stages.addAll(releaseLockStages)
 
     return stages
   }
@@ -108,6 +123,12 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
       descriptions << description
     }
     descriptions
+  }
+
+  private LockContext buildLockContext(Stage stage, Map<String, Object> staticTarget) {
+    String cluster = Names.parseName(staticTarget.serverGroupName).cluster
+    String lockName = LockNameHelper.buildClusterLockName(staticTarget.cloudProvider, staticTarget.credentials, cluster, staticTarget.targetLocation.value)
+    return LockableStageSupport.buildLockContext(stage, lockName)
   }
 
   private List<Stage> composeDynamicTargets(Stage stage, TargetServerGroup.Params params) {
