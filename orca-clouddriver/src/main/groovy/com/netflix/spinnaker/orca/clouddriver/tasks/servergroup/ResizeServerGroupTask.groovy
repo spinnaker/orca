@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
+import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
@@ -66,6 +67,7 @@ class ResizeServerGroupTask extends AbstractServerGroupTask {
   void validateClusterStatus(Map operation) {
     if (operation.capacity.desired == 0) {
       trafficGuard.verifyTrafficRemoval(operation.serverGroupName as String,
+        operation.moniker as Moniker,
         getCredentials(operation),
         getLocation(operation),
         getCloudProvider(operation), "Removal of all instances in ")

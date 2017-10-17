@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class MonikerHelper {
+
   public String getAppNameFromStage(Stage stage, String fallbackFriggaName) {
     Names names = Names.parseName(fallbackFriggaName);
     Moniker moniker = monikerFromStage(stage);
@@ -58,4 +59,20 @@ public class MonikerHelper {
       return null;
     }
   }
+
+  static public Moniker monikerFromStage(Stage stage, String fallbackFriggaName) {
+    Moniker moniker = monikerFromStage(stage);
+    if (moniker == null) {
+      Names names = Names.parseName(fallbackFriggaName);
+      return Moniker.builder()
+        .app(names.getApp())
+        .stack(names.getStack())
+        .detail(names.getDetail())
+        .cluster(names.getCluster())
+        .sequence(names.getSequence())
+        .build();
+    }
+    return moniker;
+  }
+
 }

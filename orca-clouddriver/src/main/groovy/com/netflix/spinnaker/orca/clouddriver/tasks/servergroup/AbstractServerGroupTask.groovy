@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
+import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -96,6 +97,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
       def tsg = TargetServerGroupResolver.fromPreviousStage(stage)
       operation.asgName = tsg.name
       operation.serverGroupName = tsg.name
+      operation.moniker = tsg.getMoniker()
 
       def location = tsg.getLocation()
       operation.deployServerGroupsRegion = tsg.region
@@ -138,5 +140,4 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
         operation.namespace ? new Location(Type.NAMESPACE, operation.namespace) :
           null
   }
-
 }
