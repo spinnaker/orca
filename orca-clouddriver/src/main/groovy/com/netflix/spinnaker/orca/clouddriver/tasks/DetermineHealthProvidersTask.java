@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -49,10 +51,13 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
   private final Map<String, String> healthProviderNamesByPlatform;
   private final Collection<InterestingHealthProviderNamesSupplier> interestingHealthProviderNamesSuppliers;
 
+  private final ObjectMapper objectMapper;
+
   @Autowired
   public DetermineHealthProvidersTask(Optional<Front50Service> front50Service,
                                       Collection<InterestingHealthProviderNamesSupplier> interestingHealthProviderNamesSuppliers,
-                                      Collection<ServerGroupCreator> serverGroupCreators) {
+                                      Collection<ServerGroupCreator> serverGroupCreators,
+                                      ObjectMapper objectMapper) {
     this.front50Service = front50Service.orElse(null);
     this.interestingHealthProviderNamesSuppliers = interestingHealthProviderNamesSuppliers;
     this.healthProviderNamesByPlatform = serverGroupCreators
@@ -64,6 +69,8 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
           serverGroupCreator -> serverGroupCreator.getHealthProviderName().orElse(null)
         )
       );
+
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -98,7 +105,11 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
 
     try {
       String applicationName = (String) stage.getContext().get("application");
-      Moniker moniker = (Moniker) stage.getContext().get("moniker");
+      Moniker moniker = null;
+      if (stage.getContext().containsKey("moniker")) {
+        moniker = objectMapper.convertValue(stage.getContext().get("moniker"), Moniker.class);
+      }
+
       if (applicationName == null && moniker != null && moniker.getApp() != null) {
         applicationName = moniker.getApp();
       } else if (applicationName == null && stage.getContext().containsKey("serverGroupName")) {
