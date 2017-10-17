@@ -1,0 +1,18 @@
+[Unit]
+Description=Spinnaker Orca
+After=network.target
+
+[Service]
+Type=simple
+GuessMainPID=yes
+Environment=logfile=/var/log/spinnaker/orca/orca.log
+ExecStartPre=/usr/bin/touch /etc/default/spinnaker
+ExecStartPre=/bin/bash -c '. /etc/default/spinnaker'
+ExecStart=/opt/orca/bin/orca 2>&1 ${logfile} &
+ExecStop=/bin/kill $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+StandardOutput=journal+console
+WorkingDirectory=/opt/orca
+
+[Install]
+WantedBy=multi-user.target
