@@ -21,6 +21,6 @@ dependencies {
   compile "com.natpryce:hamkrest:1.4.2.0"
 
   compile "org.springframework.boot:spring-boot-test:${spinnaker.version('springBoot')}"
-  compile "com.netflix.spinnaker.keiko:keiko-mem:1.1.2"
+  compile "com.netflix.spinnaker.keiko:keiko-mem:$keikoVersion"
   compile project(":orca-test")
 }
