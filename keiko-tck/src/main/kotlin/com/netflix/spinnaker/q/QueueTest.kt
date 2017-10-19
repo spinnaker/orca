@@ -28,13 +28,8 @@ import org.jetbrains.spek.api.dsl.on
 import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
+import java.time.Duration.ZERO
 
-/**
- * A compatibility test for [Queue] implementations. Extend this class,
- * supplying a factory function to the constructor. Optionally implementations
- * can also supply a function to clean up resources associated with the [Queue]
- * when it is shut down after each test group.
- */
 abstract class QueueTest<out Q : Queue>(
   createQueue: (Clock, DeadMessageCallback) -> Q,
   shutdownCallback: (() -> Unit)? = null
@@ -333,6 +328,53 @@ abstract class QueueTest<out Q : Queue>(
         it("does not hold on to the first message") {
           clock.incrementBy(delay)
           queue!!.poll(callback)
+          verifyNoMoreInteractions(callback)
+        }
+      }
+
+      and("the message delivery time is updated") {
+        val delay = Duration.ofHours(1)
+
+        beforeGroup {
+          queue = createQueue(clock, deadLetterCallback).apply {
+            push(message, delay)
+            reschedule(message, ZERO)
+          }
+        }
+
+        afterGroup(::stopQueue)
+        afterGroup(::resetMocks)
+
+        on("polling the queue") {
+          queue!!.poll(callback)
+        }
+
+        it("delivers the message immediately and only once") {
+          verify(callback).invoke(eq(message), any())
+        }
+
+        it("does not deliver again") {
+          verifyNoMoreInteractions(callback)
+        }
+      }
+
+      and("the delivery time for a message that isn't on the queue isn't updated") {
+        val message2 = message.copy(payload = "b")
+
+        beforeGroup {
+          queue = createQueue(clock, deadLetterCallback).apply {
+            reschedule(message2, ZERO)
+          }
+        }
+
+        afterGroup(::stopQueue)
+        afterGroup(::resetMocks)
+
+        on("polling the queue") {
+          queue!!.poll(callback)
+        }
+
+        it("there are no messages on the queue") {
           verifyNoMoreInteractions(callback)
         }
       }

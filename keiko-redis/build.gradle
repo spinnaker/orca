@@ -2,12 +2,12 @@ apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
   compile project(":keiko-core")
-  compile "redis.clients:jedis:2.8.1"
-  compile "com.fasterxml.jackson.core:jackson-databind:2.8.7"
-  compile "com.fasterxml.jackson.module:jackson-module-kotlin:2.8.7"
+  compile "redis.clients:jedis:${spinnaker.version("jedis")}"
+  compile "com.fasterxml.jackson.core:jackson-databind:${spinnaker.version("jackson")}"
+  compile "com.fasterxml.jackson.module:jackson-module-kotlin:${spinnaker.version("jackson")}"
   compile "org.funktionale:funktionale-partials:1.1"
-  compile "com.google.guava:guava:20.0"
+  compile "com.google.guava:guava:${spinnaker.version("guava")}"
 
   testCompile project(":keiko-tck")
-  testCompile "com.netflix.spinnaker.kork:kork-jedis-test:1.98.2"
+  testCompile "com.netflix.spinnaker.kork:kork-jedis-test:${spinnaker.version("kork")}"
 }

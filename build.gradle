@@ -41,7 +41,7 @@ subprojects {
   }
 
   spinnaker {
-    dependenciesVersion = "0.109.2"
+    dependenciesVersion = "0.117.0"
   }
 
   sourceCompatibility = 1.8

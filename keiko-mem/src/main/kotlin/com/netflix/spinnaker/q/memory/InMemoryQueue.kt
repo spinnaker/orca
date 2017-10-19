@@ -36,10 +36,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-/**
- * An in-memory, non-clustered implementation of [Queue] mostly useful for
- * testing.
- */
 class InMemoryQueue(
   private val clock: Clock,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
@@ -66,11 +62,18 @@ class InMemoryQueue(
 
   override fun push(message: Message, delay: TemporalAmount) {
     val existed = queue.removeIf { it.payload == message }
-      queue.put(Envelope(message, clock.instant().plus(delay), clock))
+    queue.put(Envelope(message, clock.instant().plus(delay), clock))
     if (existed) {
       fire<MessageDuplicate>(message)
     } else {
       fire<MessagePushed>(message)
+    }
+  }
+
+  override fun reschedule(message: Message, delay: TemporalAmount) {
+    val existed = queue.removeIf { it.payload == message }
+    if (existed) {
+      queue.put(Envelope(message, clock.instant().plus(delay), clock))
     }
   }
 
@@ -84,8 +87,8 @@ class InMemoryQueue(
         fire<MessageDead>()
       } else {
         val existed = queue.removeIf { it.payload == message.payload }
-          log.warn("redelivering unacked message ${message.payload}")
-          queue.put(message.copy(scheduledTime = now, count = message.count + 1))
+        log.warn("redelivering unacked message ${message.payload}")
+        queue.put(message.copy(scheduledTime = now, count = message.count + 1))
         if (existed) {
           fire<MessageDuplicate>(message.payload)
         } else {

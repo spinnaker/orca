@@ -2,8 +2,8 @@ apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
   compile project(":keiko-core")
-  compile "org.springframework.boot:spring-boot-autoconfigure:$bootVersion"
-  compile("com.netflix.spinnaker.kork:kork-core:1.98.2") {
+  compile "org.springframework.boot:spring-boot-autoconfigure:${spinnaker.version("springBoot")}"
+  compile("com.netflix.spinnaker.kork:kork-core:${spinnaker.version("kork")}") {
     exclude(module: "logback-classic")
   }
 

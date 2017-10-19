@@ -46,6 +46,8 @@ inline fun <reified E : QueueEvent> MonitorableQueue.fire(message: Message? = nu
     LockFailed::class -> LockFailed()
     MessagePushed::class -> MessagePushed(message!!)
     MessageDuplicate::class -> MessageDuplicate(message!!)
+    MessageRescheduled::class -> MessageRescheduled(message!!)
+    MessageNotFound::class -> MessageNotFound(message!!)
     else -> throw IllegalArgumentException("Unknown event type ${E::class}")
   }
   publisher.publishEvent(event)

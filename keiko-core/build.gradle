@@ -1,8 +1,8 @@
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
-  compile "com.fasterxml.jackson.core:jackson-annotations:2.8.7"
-  compile "org.springframework:spring-context:$springVersion"
+  compile "com.fasterxml.jackson.core:jackson-annotations:${spinnaker.version("jackson")}"
+  compile "org.springframework:spring-context:${spinnaker.version("spring")}"
 
   testCompile project(":keiko-test-common")
 }
