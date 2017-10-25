@@ -76,7 +76,6 @@ public class MonikerHelper {
     }
   }
 
-
   static public Moniker friggaToMoniker(String friggaName) {
     Names names = Names.parseName(friggaName);
     return Moniker.builder()
@@ -87,5 +86,4 @@ public class MonikerHelper {
       .sequence(names.getSequence())
       .build();
   }
-
 }
