@@ -28,8 +28,8 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 @Component
 @CompileStatic
 class WaitTask implements RetryableTask {
-  long backoffPeriod = 15000
-  long timeout = Integer.MAX_VALUE
+  final long backoffPeriod = 15000
+  final long timeout = Integer.MAX_VALUE
 
   TimeProvider timeProvider = new TimeProvider()
 

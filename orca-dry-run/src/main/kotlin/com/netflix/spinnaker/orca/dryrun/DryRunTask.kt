@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.dryrun
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
@@ -31,6 +32,15 @@ import org.springframework.stereotype.Component
 
 @Component
 class DryRunTask : Task {
+  private val blacklistKeyPatterns =
+    setOf(
+      "amiSuffix",
+      "kato\\..*",
+      "stageDetails",
+      "useSourceCapacity"
+    )
+      .map(String::toRegex)
+
   override fun execute(stage: Stage<out Execution<*>>): TaskResult =
     stage
       .getExecution()
@@ -53,13 +63,10 @@ class DryRunTask : Task {
     val dryRunResult = mutableMapOf<String, Any>()
     var status: ExecutionStatus? = null
 
-    val mismatchedKeys = getContext()
-      .filter { (key, value) ->
-        value != realStage.context[key]
-      }
+    val diff = getContext().removeNulls().diffKeys(realStage.context.removeNulls())
 
-    if (mismatchedKeys.isNotEmpty()) {
-      dryRunResult["context"] = mismatchedKeys
+    if (diff.isNotEmpty()) {
+      dryRunResult["context"] = diff
         .mapValues { (key, value) ->
           "Expected \"${realStage.context[key]}\" but found \"$value\"."
         }
@@ -73,10 +80,26 @@ class DryRunTask : Task {
 
     return TaskResult(
       status ?: realStage.status,
-      realStage.context + mismatchedKeys,
+      realStage.context + diff,
       realStage.outputs + if (dryRunResult.isNotEmpty()) mapOf("dryRunResult" to dryRunResult) else emptyMap()
     )
   }
+
+  private fun Map<String, *>.removeNulls() =
+    // this is a quick way to remove nested null values
+    mapper.writeValueAsString(this).let { json ->
+      mapper.readValue<Map<String, *>>(json)
+    }
+
+  private inline fun <reified T> ObjectMapper.readValue(src: String): T = readValue(src, T::class.java)
+
+  private fun Map<String, *>.diffKeys(other: Map<String, *>): Map<String, Any?> =
+    filterKeys { key ->
+      blacklistKeyPatterns.none(key::matches)
+    }
+      .filter { (key, value) ->
+        value != other[key]
+      }
 
   private fun realStage(execution: Pipeline, stage: Stage<out Execution<*>>): Stage<Pipeline> {
     return execution
@@ -91,7 +114,15 @@ class DryRunTask : Task {
       .stageByRef(stage.getRefId())
   }
 
-  private val mapper = OrcaObjectMapper.newInstance()
+  private val mapper = OrcaObjectMapper
+    .newInstance()
+    .apply {
+      SimpleModule()
+        .addSerializer(RoundingFloatSerializer())
+        .addSerializer(RoundingDoubleSerializer())
+        .let(this::registerModule)
+    }
+
   private val log = LoggerFactory.getLogger(javaClass)
 
   private inline fun <reified T> ObjectMapper.convertValue(fromValue: Any): T =
