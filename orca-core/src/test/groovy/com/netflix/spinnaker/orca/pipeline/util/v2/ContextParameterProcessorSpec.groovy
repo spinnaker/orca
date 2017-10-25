@@ -31,10 +31,6 @@ import static com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluati
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
-/**
- * TODO: Used to ensure feature parity between expression evaluation in v1 and v2
- * Eventually remove/consolidate with v1
- */
 class ContextParameterProcessorSpec extends Specification {
 
   @Subject ContextParameterProcessor contextParameterProcessor = new ContextParameterProcessor()
@@ -47,7 +43,7 @@ class ContextParameterProcessorSpec extends Specification {
                    replaceTest: 'stack-with-hyphens', withUpperCase: 'baconBacon']
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.test == expectedValue
@@ -79,7 +75,7 @@ class ContextParameterProcessorSpec extends Specification {
     def escapedExpression = escapeExpression(source.test)
 
     when:
-    def result = contextParameterProcessor.processV2(source, [:], true)
+    def result = contextParameterProcessor.process(source, [:], true)
     def summary = result.expressionEvaluationSummary as Map<String, List>
 
     then:
@@ -99,14 +95,14 @@ class ContextParameterProcessorSpec extends Specification {
 
   def "base64 encode and decode"() {
     expect:
-    contextParameterProcessor.processV2([test: '${#toBase64("Yo Dawg")}'], [:], true).test == 'WW8gRGF3Zw=='
-    contextParameterProcessor.processV2([test: '${#fromBase64("WW8gRGF3Zw==")}'], [:], true).test == 'Yo Dawg'
+    contextParameterProcessor.process([test: '${#toBase64("Yo Dawg")}'], [:], true).test == 'WW8gRGF3Zw=='
+    contextParameterProcessor.process([test: '${#fromBase64("WW8gRGF3Zw==")}'], [:], true).test == 'Yo Dawg'
   }
 
   @Unroll
   def "should not System.exit"() {
     when:
-    Map<String, Object> result = contextParameterProcessor.processV2([test: testCase], [:], true)
+    Map<String, Object> result = contextParameterProcessor.process([test: testCase], [:], true)
     def escapedExpression = escapeExpression(testCase)
     def summary = result.expressionEvaluationSummary as Map<String, List>
 
@@ -128,7 +124,7 @@ class ContextParameterProcessorSpec extends Specification {
     def escapedExpression = escapeExpression(source.test)
 
     when:
-    def result = contextParameterProcessor.processV2(source, [:], true)
+    def result = contextParameterProcessor.process(source, [:], true)
     def summary = result.expressionEvaluationSummary as Map<String, List>
 
     then:
@@ -151,7 +147,7 @@ class ContextParameterProcessorSpec extends Specification {
     def escapedExpression = escapeExpression(source.test)
 
     when:
-    def result = contextParameterProcessor.processV2(source, [:], true)
+    def result = contextParameterProcessor.process(source, [:], true)
     def summary = result.expressionEvaluationSummary as Map<String, List>
 
     then:
@@ -173,7 +169,7 @@ class ContextParameterProcessorSpec extends Specification {
     def escapedExpression = escapeExpression(source.test)
 
     when:
-    def result = contextParameterProcessor.processV2(source, [status: ExecutionStatus.PAUSED, nested: [status: ExecutionStatus.RUNNING]], true)
+    def result = contextParameterProcessor.process(source, [status: ExecutionStatus.PAUSED, nested: [status: ExecutionStatus.RUNNING]], true)
     def summary = result.expressionEvaluationSummary as Map<String, List>
 
     then:
@@ -197,7 +193,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [exists: 'yay', isempty: '', isnull: null]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, allowUnknownKeys)
+    def result = contextParameterProcessor.process(source, context, allowUnknownKeys)
 
     then:
     result.test == expectedValue
@@ -222,7 +218,7 @@ class ContextParameterProcessorSpec extends Specification {
     def escapedExpression = escapeExpression(source.test)
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
     def summary = result.expressionEvaluationSummary as Map<String, List>
 
     then:
@@ -239,7 +235,7 @@ class ContextParameterProcessorSpec extends Specification {
     def source = ['${replaceMe}': 'somevalue', '${replaceMe}again': ['cats': 'dogs']]
 
     when:
-    def result = contextParameterProcessor.processV2(source, [replaceMe: 'newVal'], true)
+    def result = contextParameterProcessor.process(source, [replaceMe: 'newVal'], true)
 
     then:
     result.newVal == 'somevalue'
@@ -252,7 +248,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [var1: 17, map1: [map1key: 'map1val']]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.test.k1 instanceof Integer
@@ -269,7 +265,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = ['h1': 'h1val', 'h2': 'h2val']
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.test == 'h1val'
@@ -285,7 +281,7 @@ class ContextParameterProcessorSpec extends Specification {
     def source = ['branch': '${scmInfo.branch}']
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.branch == expectedBranch
@@ -306,7 +302,7 @@ class ContextParameterProcessorSpec extends Specification {
     def escapedExpression = escapeExpression(source.deployed)
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
     def summary = result.expressionEvaluationSummary as Map<String, List>
 
     then:
@@ -351,7 +347,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [execution: execution]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.deployed.size == 2
@@ -489,7 +485,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [map: [["v1": "k1"], ["v2": "k2"]]]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.json == '[{"v1":"k1"},{"v2":"k2"}]'
@@ -503,7 +499,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [parameters: [regions: regions]]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.expression == expected
@@ -523,7 +519,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [str: str]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.intParam instanceof Integer
@@ -542,7 +538,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [str: str]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.floatParam instanceof Float
@@ -562,7 +558,7 @@ class ContextParameterProcessorSpec extends Specification {
     def context = [str: str]
 
     when:
-    def result = contextParameterProcessor.processV2(source, context, true)
+    def result = contextParameterProcessor.process(source, context, true)
 
     then:
     result.booleanParam instanceof Boolean
@@ -610,7 +606,7 @@ class ContextParameterProcessorSpec extends Specification {
     def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
 
     when:
-    def result = contextParameterProcessor.processV2(stage.context, ctx, true)
+    def result = contextParameterProcessor.process(stage.context, ctx, true)
 
     then:
     result.comments == "NOT_STARTED"
@@ -631,7 +627,7 @@ class ContextParameterProcessorSpec extends Specification {
     def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
 
     when:
-    def result = contextParameterProcessor.processV2(stage.context, ctx, true)
+    def result = contextParameterProcessor.process(stage.context, ctx, true)
     def summary = result.expressionEvaluationSummary as Map<String, List>
     def escapedExpression = escapeExpression('${#toJson(execution)}')
 
@@ -659,7 +655,7 @@ class ContextParameterProcessorSpec extends Specification {
     def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
 
     when:
-    def result = contextParameterProcessor.processV2(stage.context, ctx, true)
+    def result = contextParameterProcessor.process(stage.context, ctx, true)
 
     then:
     result.comments == "joeyjoejoejuniorshabadoo"
@@ -686,7 +682,7 @@ class ContextParameterProcessorSpec extends Specification {
     def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
 
     when:
-    def result = contextParameterProcessor.processV2(stage.context, ctx, true)
+    def result = contextParameterProcessor.process(stage.context, ctx, true)
 
     then:
     result.judgment == expectedJudmentInput
