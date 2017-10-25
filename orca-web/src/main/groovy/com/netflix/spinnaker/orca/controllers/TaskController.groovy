@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import com.netflix.spinnaker.orca.pipeline.OrchestrationLauncher
+import com.netflix.spinnaker.orca.pipeline.model.Task
+
 import java.time.Clock
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -215,6 +218,8 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void pause(@PathVariable String id) {
     executionRepository.pause(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"))
+    def pipeline = executionRepository.retrievePipeline(id)
+    executionRunner.reschedule(pipeline)
   }
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
@@ -260,6 +265,8 @@ class TaskController {
       stage.context["lastModifiedBy"] = AuthenticatedRequest.getSpinnakerUser().orElse("anonymous")
 
       executionRepository.storeStage(stage)
+
+      executionRunner.reschedule(pipeline)
     }
     pipeline
   }

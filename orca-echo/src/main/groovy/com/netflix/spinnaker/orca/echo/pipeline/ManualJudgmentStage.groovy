@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.echo.pipeline
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.*
@@ -62,8 +63,8 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
   @Component
   @VisibleForTesting
   public static class WaitForManualJudgmentTask implements RetryableTask {
-    long backoffPeriod = 15000
-    long timeout = TimeUnit.DAYS.toMillis(3)
+    final long backoffPeriod = 15000
+    final long timeout = TimeUnit.DAYS.toMillis(3)
 
     @Autowired(required = false)
     EchoService echoService

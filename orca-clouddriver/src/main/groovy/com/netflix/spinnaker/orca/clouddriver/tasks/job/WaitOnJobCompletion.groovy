@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.job
 
+import com.netflix.spinnaker.orca.RetrySupport
+
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -39,6 +41,9 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
 
   @Autowired
   ObjectMapper objectMapper
+
+  @Autowired
+  RetrySupport retrySupport
 
   static final String REFRESH_TYPE = "Job"
 
@@ -69,8 +74,9 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
 
       def name = names[0]
       def parsedName = Names.parseName(name)
+      String appName = stage.context.moniker?.app ?: stage.context.applicaton ?: parsedName.app
 
-      Map job = objectMapper.readValue(katoRestService.collectJob(parsedName.app, account, location, name, "delete").body.in(), new TypeReference<Map>() {})
+      Map job = objectMapper.readValue(katoRestService.collectJob(appName, account, location, name, "delete").body.in(), new TypeReference<Map>() {})
       outputs.jobStatus = job
 
       switch ((String) job.jobState) {
@@ -80,10 +86,12 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
 
           if (stage.context.propertyFile) {
             Map<String, Object> properties = [:]
-            properties = katoRestService.getFileContents(parsedName.app, account, location, name, stage.context.propertyFile)
-            if (properties.size() == 0) {
-              throw new IllegalStateException("expected properties file ${stage.context.propertyFile} but one was not found or was empty")
-            }
+            retrySupport.retry({
+              properties = katoRestService.getFileContents(appName, account, location, name, stage.context.propertyFile)
+              if (properties.size() == 0) {
+                throw new IllegalStateException("Expected properties file ${stage.context.propertyFile} but it was either missing, empty or contained invalid syntax")
+              }
+            }, 6, 5000, false) // retry for 30 seconds
             outputs << properties
             outputs.propertyFileContents = properties
           }
