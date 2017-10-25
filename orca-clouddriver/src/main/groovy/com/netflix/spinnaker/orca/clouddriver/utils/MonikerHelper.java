@@ -63,16 +63,29 @@ public class MonikerHelper {
   static public Moniker monikerFromStage(Stage stage, String fallbackFriggaName) {
     Moniker moniker = monikerFromStage(stage);
     if (moniker == null) {
-      Names names = Names.parseName(fallbackFriggaName);
-      return Moniker.builder()
-        .app(names.getApp())
-        .stack(names.getStack())
-        .detail(names.getDetail())
-        .cluster(names.getCluster())
-        .sequence(names.getSequence())
-        .build();
+      moniker = friggaToMoniker(fallbackFriggaName);
     }
     return moniker;
+  }
+
+  static public Moniker monikerOrFrigga(Moniker moniker, String friggaName) {
+    if (moniker == null) {
+      return friggaToMoniker(friggaName);
+    } else {
+      return moniker;
+    }
+  }
+
+
+  static public Moniker friggaToMoniker(String friggaName) {
+    Names names = Names.parseName(friggaName);
+    return Moniker.builder()
+      .app(names.getApp())
+      .stack(names.getStack())
+      .detail(names.getDetail())
+      .cluster(names.getCluster())
+      .sequence(names.getSequence())
+      .build();
   }
 
 }
