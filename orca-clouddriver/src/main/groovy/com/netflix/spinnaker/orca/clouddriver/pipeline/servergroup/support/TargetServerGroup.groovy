@@ -82,7 +82,7 @@ class TargetServerGroup {
     // serverGroup.moniker is a Map type, but Groovy is able to convert it to a Moniker type.
     return serverGroup.moniker
   }
-  
+
   Map toClouddriverOperationPayload(String account) {
     //TODO(cfieber) - add an endpoint on Clouddriver to do provider appropriate conversion of a TargetServerGroup
     def op = [

@@ -62,10 +62,7 @@ public class MonikerHelper {
 
   static public Moniker monikerFromStage(Stage stage, String fallbackFriggaName) {
     Moniker moniker = monikerFromStage(stage);
-    if (moniker == null) {
-      moniker = friggaToMoniker(fallbackFriggaName);
-    }
-    return moniker;
+    return monikerOrFrigga(moniker, fallbackFriggaName);
   }
 
   static public Moniker monikerOrFrigga(Moniker moniker, String friggaName) {
