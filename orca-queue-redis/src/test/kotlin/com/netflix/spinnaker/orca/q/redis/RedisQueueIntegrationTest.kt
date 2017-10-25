@@ -32,7 +32,6 @@ import org.springframework.test.context.junit4.SpringRunner
 @SpringBootTest(
   classes = arrayOf(
     EmbeddedRedisConfiguration::class,
-    RedisConfiguration::class,
     RedisQueueConfiguration::class,
     TestConfig::class
   ),
