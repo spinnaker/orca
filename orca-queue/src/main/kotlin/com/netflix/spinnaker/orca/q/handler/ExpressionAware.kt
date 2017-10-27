@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
+import com.netflix.spinnaker.orca.pipeline.expressions.RuntimeExpressionUpdater
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -53,13 +54,28 @@ interface ExpressionAware {
 
         if (result is String && ContextParameterProcessor.containsExpression(result)) {
           val augmentedContext = processed.augmentContext(execution)
-          return contextParameterProcessor.process(mapOf(key to result), augmentedContext, true)[key]
+          return contextParameterProcessor.process(mapOf(key to result), augmentedContext, true, listOf(ParametersExpressionUpdater()))[key]
         }
 
         return result
       }
     })
     return this
+  }
+
+  /**
+   * updates a parameter accessing expression by routing it to trigger
+   * All parameters have been processed by now and should all live in trigger
+   * ${parameters.amiName} -> ${trigger.parameters.amiName}
+   */
+  class ParametersExpressionUpdater: RuntimeExpressionUpdater {
+    override fun process(expression: String): String {
+      if (expression.contains("parameters.") && !expression.contains("trigger.parameters")) {
+        return expression.replace("parameters", "trigger.parameters")
+      }
+
+      return expression
+    }
   }
 
   fun Stage<*>.includeExpressionEvaluationSummary() {
@@ -88,7 +104,8 @@ interface ExpressionAware {
     contextParameterProcessor.process(
       stage.getContext(),
       stage.getContext().augmentContext(stage.getExecution()),
-      true
+      true,
+      listOf(ParametersExpressionUpdater())
     )
 
   private fun Map<String, Any?>.augmentContext(execution: Execution<*>) =

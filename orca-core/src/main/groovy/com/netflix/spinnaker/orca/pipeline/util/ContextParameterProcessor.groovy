@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
+import com.netflix.spinnaker.orca.pipeline.expressions.RuntimeExpressionUpdater
+
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.text.SimpleDateFormat
@@ -75,7 +77,10 @@ class ContextParameterProcessor {
     ContextUtilities.contextFunctionConfiguration.set(contextFunctionConfiguration)
   }
 
-  Map<String, Object> processV2(Map<String, Object> source, Map<String, Object> context, boolean allowUnknownKeys) {
+  Map<String, Object> processV2(Map<String, Object> source,
+                                Map<String, Object> context,
+                                boolean allowUnknownKeys,
+                                List<RuntimeExpressionUpdater> runtimeExpressionUpdaters = []) {
     if (!source) {
       return [:]
     }
@@ -86,6 +91,7 @@ class ContextParameterProcessor {
       precomputeValues(context),
       summary,
       allowUnknownKeys,
+      new ArrayList<>(runtimeExpressionUpdaters) + new ExecutionAwareExpressionUpdater()
     )
 
     if (summary.totalEvaluated > 0 && context.execution) {
@@ -99,9 +105,12 @@ class ContextParameterProcessor {
     return result
   }
 
-  Map<String, Object> process(Map<String, Object> parameters, Map<String, Object> context, boolean allowUnknownKeys) {
+  Map<String, Object> process(Map<String, Object> parameters,
+                              Map<String, Object> context,
+                              boolean allowUnknownKeys,
+                              List<RuntimeExpressionUpdater> runtimeExpressionUpdaters = []) {
     if (PipelineExpressionEvaluator.shouldUseV2Evaluator(parameters) || PipelineExpressionEvaluator.shouldUseV2Evaluator(context)) {
-      return processV2(parameters, context, allowUnknownKeys)
+      return processV2(parameters, context, allowUnknownKeys, runtimeExpressionUpdaters)
     }
 
     if (!parameters) {
@@ -447,6 +456,25 @@ abstract class ContextUtilities {
     new String(Base64.getDecoder().decode(text), 'UTF-8')
   }
 
+}
+
+/**
+ * Include the execution object (#root.execution) for Stage locating functions at runtime
+ * @param expression #stage('property') becomes #stage(#root.execution, 'property')
+ * @return an execution aware helper function (only limited to judg(e?)ment & stage)
+ */
+class ExecutionAwareExpressionUpdater implements RuntimeExpressionUpdater {
+  private static final List<String> EXECUTION_AWARE_FUNCTIONS = ["judgment", "judgement", "stage"]
+  @Override
+  String process(String expression) {
+    EXECUTION_AWARE_FUNCTIONS.each { fn ->
+      if (expression.contains("#${fn}(") && !expression.contains("#${fn}( #root.execution, ")) {
+        expression = expression.replaceAll("#${fn}\\(", "#${fn}( #root.execution, ")
+      }
+    }
+
+    return expression
+  }
 }
 
 class MapPropertyAccessor extends MapAccessor {

@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextFunctionConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.expression.*;
-import org.springframework.expression.spel.standard.SpelExpressionParser;;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.util.*;
@@ -49,9 +49,17 @@ public class PipelineExpressionEvaluator extends ExpressionsSupport implements E
   }
 
   @Override
-  public Map<String, Object> evaluate(Map<String, Object> source, Object rootObject, ExpressionEvaluationSummary summary, boolean ignoreUnknownProperties) {
+  public Map<String, Object> evaluate(Map<String, Object> source,
+                                      Object rootObject,
+                                      ExpressionEvaluationSummary summary,
+                                      boolean ignoreUnknownProperties,
+                                      List<RuntimeExpressionUpdater> runtimeExpressionUpdaters) {
     StandardEvaluationContext evaluationContext = newEvaluationContext(rootObject, ignoreUnknownProperties);
-    return new ExpressionTransform(parserContext, parser).transform(source, evaluationContext, summary);
+    return new ExpressionTransform(
+      parserContext,
+      parser,
+      runtimeExpressionUpdaters
+    ).transform(source, evaluationContext, summary);
   }
 
   public static boolean shouldUseV2Evaluator(Object obj) {
