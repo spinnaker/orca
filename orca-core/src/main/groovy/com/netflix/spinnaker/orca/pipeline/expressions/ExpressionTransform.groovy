@@ -28,13 +28,16 @@ import java.util.stream.Stream
 
 @Slf4j
 class ExpressionTransform {
-  private static final List<String> EXECUTION_AWARE_FUNCTIONS = ["judgment", "judgement", "stage"]
   private final ParserContext parserContext
   private final ExpressionParser parser
+  private final List<RuntimeExpressionUpdater> runtimeExpressionUpdaters
 
-  ExpressionTransform(ParserContext parserContext, ExpressionParser parser) {
+  ExpressionTransform(ParserContext parserContext,
+                      ExpressionParser parser,
+                      final List<RuntimeExpressionUpdater> runtimeExpressionUpdaters) {
     this.parserContext = parserContext
     this.parser = parser
+    this.runtimeExpressionUpdaters = runtimeExpressionUpdaters
   }
 
   /**
@@ -45,7 +48,10 @@ class ExpressionTransform {
    * @param summary
    * @return the transformed source object
    */
-  def <T> T transform(T source, EvaluationContext evaluationContext, ExpressionEvaluationSummary summary, Map<String, ?> additionalContext = [:]) {
+  def <T> T transform(T source,
+                      EvaluationContext evaluationContext,
+                      ExpressionEvaluationSummary summary,
+                      Map<String, ?> additionalContext = [:]) {
     if (source == null) {
       return null
     }
@@ -61,7 +67,9 @@ class ExpressionTransform {
       } as T
     } else if ((source instanceof String || source instanceof GString) && source.toString().contains(parserContext.getExpressionPrefix())) {
       String literalExpression = source.toString()
-      literalExpression = includeExecutionObjectForStageFunctions(literalExpression)
+      for (RuntimeExpressionUpdater runtimeExpressionUpdater : runtimeExpressionUpdaters) {
+        literalExpression = runtimeExpressionUpdater.process(literalExpression)
+      }
 
       T result
       Expression exp
@@ -175,21 +183,6 @@ class ExpressionTransform {
     }
 
     return escaped?: expression.replaceAll("\\\$", "")
-  }
-
-  /**
-   * Lazily include the execution object (#root.execution) for Stage locating functions
-   * @param expression #stage('property') becomes #stage(#root.execution, 'property')
-   * @return an execution aware helper function (only limited to judg(e?)ment & stage)
-   */
-  private static String includeExecutionObjectForStageFunctions(String expression) {
-    EXECUTION_AWARE_FUNCTIONS.each { fn ->
-      if (expression.contains("#${fn}(") && !expression.contains("#${fn}( #root.execution, ")) {
-        expression = expression.replaceAll("#${fn}\\(", "#${fn}( #root.execution, ")
-      }
-    }
-
-    return expression
   }
 }
 
