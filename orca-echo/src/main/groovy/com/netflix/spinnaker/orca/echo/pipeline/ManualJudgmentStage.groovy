@@ -63,42 +63,29 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
   @Component
   @VisibleForTesting
   public static class WaitForManualJudgmentTask implements RetryableTask {
-    long backoffPeriod = 15000
-    long timeout = TimeUnit.DAYS.toMillis(3)
-
-    @Override
-    long getDynamicBackoffPeriod(Duration taskDuration) {
-      if (taskDuration < Duration.ofMillis(timeout)) {
-        // task needs to run again right after it should be complete, so add half a second
-        return Duration.ofMillis(timeout).minus(taskDuration).plus(Duration.ofMillis(500)).toMillis()
-      } else {
-        // start polling normally after timeout to account for delays like throttling
-        return backoffPeriod
-      }
-    }
+    final long backoffPeriod = 15000
+    final long timeout = TimeUnit.DAYS.toMillis(3)
 
     @Autowired(required = false)
     EchoService echoService
 
     @Override
     TaskResult execute(Stage stage) {
-      stage.getTopLevelTimeout().ifPresent({ timeout = it })
-
       StageData stageData = stage.mapTo(StageData)
-      NotificationState notificationState
+      String notificationState
       ExecutionStatus executionStatus
 
       switch (stageData.state) {
         case StageData.State.CONTINUE:
-          notificationState = NotificationState.manualJudgmentContinue
+          notificationState = "manualJudgmentContinue"
           executionStatus = ExecutionStatus.SUCCEEDED
           break
         case StageData.State.STOP:
-          notificationState = NotificationState.manualJudgmentStop
+          notificationState = "manualJudgmentStop"
           executionStatus = ExecutionStatus.TERMINAL
           break
         default:
-          notificationState = NotificationState.manualJudgment
+          notificationState = "manualJudgment"
           executionStatus = ExecutionStatus.RUNNING
           break
       }
@@ -108,12 +95,12 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
       return new TaskResult(executionStatus, outputs)
     }
 
-    Map processNotifications(Stage stage, StageData stageData, NotificationState notificationState) {
+    Map processNotifications(Stage stage, StageData stageData, String notificationState) {
       if (echoService) {
         // sendNotifications will be true if using the new scheme for configuration notifications.
         // The new scheme matches the scheme used by the other stages.
         // If the deprecated scheme is in use, only the original 'awaiting judgment' notification is supported.
-        if (notificationState != NotificationState.manualJudgment && !stage.context.sendNotifications) {
+        if (notificationState != "manualJudgment" && !stage.context.sendNotifications) {
           return [:]
         }
 
@@ -130,12 +117,6 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
         return [:]
       }
     }
-  }
-
-  static enum NotificationState {
-    manualJudgment,
-    manualJudgmentContinue,
-    manualJudgmentStop
   }
 
   static class StageData {
@@ -165,13 +146,13 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
     String address
     String cc
     String type
-    List<NotificationState> when
-    Map<NotificationState, Map> message
+    List<String> when
+    Map<String, Map> message
 
-    Map<NotificationState, Date> lastNotifiedByNotificationState = [:]
+    Map<String, Date> lastNotifiedByNotificationState = [:]
     Long notifyEveryMs = -1
 
-    boolean shouldNotify(NotificationState notificationState, Date now = new Date()) {
+    boolean shouldNotify(String notificationState, Date now = new Date()) {
       // The new scheme for configuring notifications requires the use of the when list (just like the other stages).
       // If this list is present, but does not contain an entry for this particular notification state, do not notify.
       if (when && !when.contains(notificationState)) {
@@ -191,7 +172,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
       return new Date(lastNotified.time + notifyEveryMs) <= now
     }
 
-    void notify(EchoService echoService, Stage stage, NotificationState notificationState) {
+    void notify(EchoService echoService, Stage stage, String notificationState) {
       echoService.create(new EchoService.Notification(
         notificationType: EchoService.Notification.Type.valueOf(type.toUpperCase()),
         to: address ? [address] : null,
