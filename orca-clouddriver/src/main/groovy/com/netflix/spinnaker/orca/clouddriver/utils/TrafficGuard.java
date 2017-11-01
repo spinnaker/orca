@@ -95,7 +95,7 @@ public class TrafficGuard {
       return;
     }
 
-    verifyOtherServerGroupsAreTakingTraffic(serverGroupName, serverGroupMoniker,location, account, cloudProvider, operationDescriptor);
+    verifyOtherServerGroupsAreTakingTraffic(serverGroupName, serverGroupMoniker, location, account, cloudProvider, operationDescriptor);
   }
 
   private void verifyOtherServerGroupsAreTakingTraffic(String serverGroupName, Moniker serverGroupMoniker, Location location, String account, String cloudProvider, String operationDescriptor) {

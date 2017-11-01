@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.utils;
 
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.moniker.Moniker;
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.stereotype.Component;
 
@@ -62,15 +64,7 @@ public class MonikerHelper {
 
   static public Moniker monikerFromStage(Stage stage, String fallbackFriggaName) {
     Moniker moniker = monikerFromStage(stage);
-    return monikerOrFrigga(moniker, fallbackFriggaName);
-  }
-
-  static public Moniker monikerOrFrigga(Moniker moniker, String friggaName) {
-    if (moniker == null) {
-      return friggaToMoniker(friggaName);
-    } else {
-      return moniker;
-    }
+    return moniker == null ? friggaToMoniker(fallbackFriggaName) : moniker;
   }
 
   static public Moniker friggaToMoniker(String friggaName) {
@@ -83,4 +77,5 @@ public class MonikerHelper {
       .sequence(names.getSequence())
       .build();
   }
+
 }

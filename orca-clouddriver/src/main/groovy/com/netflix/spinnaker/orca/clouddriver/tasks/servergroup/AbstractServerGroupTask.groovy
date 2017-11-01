@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Locat
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -48,7 +49,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     false
   }
 
-  protected void validateClusterStatus(Map operation) {}
+  protected void validateClusterStatus(Map operation, Moniker moniker) {}
 
   abstract String getServerGroupAction()
 
@@ -59,9 +60,9 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
   TaskResult execute(Stage stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
-
     def operation = convert(stage)
-    validateClusterStatus(operation)
+    Moniker moniker = convertMoniker(stage)
+    validateClusterStatus(operation, moniker)
     if (!operation) {
       // nothing to do but succeed
       return new TaskResult(ExecutionStatus.SUCCEEDED)
@@ -97,7 +98,6 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
       def tsg = TargetServerGroupResolver.fromPreviousStage(stage)
       operation.asgName = tsg.name
       operation.serverGroupName = tsg.name
-      operation.moniker = tsg.getMoniker()
 
       def location = tsg.getLocation()
       operation.deployServerGroupsRegion = tsg.region
@@ -108,6 +108,17 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     }
 
     operation
+  }
+
+  Moniker convertMoniker(Stage stage) {
+    if (TargetServerGroup.isDynamicallyBound(stage)) {
+      TargetServerGroup tsg = TargetServerGroupResolver.fromPreviousStage(stage);
+      return  tsg.getMoniker() == null ?  MonikerHelper.friggaToMoniker(tsg.getName()) : tsg.getMoniker();
+    } else {
+      String serverGroupName = (String) stage.context.serverGroupName;
+      String asgName = (String) stage.context.asgName;
+      return MonikerHelper.monikerFromStage(stage, serverGroupName == null ? asgName : serverGroupName);
+    }
   }
 
   /**

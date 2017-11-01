@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import groovy.transform.InheritConstructors
 import groovy.transform.ToString
@@ -79,8 +80,8 @@ class TargetServerGroup {
    * Used in TrafficGuard, which is Java, which doesn't play nice with @Delegate
    */
   Moniker getMoniker() {
-    // serverGroup.moniker is a Map type, but Groovy is able to convert it to a Moniker type.
-    return serverGroup.moniker
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.convertValue(serverGroup.moniker, Moniker);
   }
 
   Map toClouddriverOperationPayload(String account) {
@@ -89,7 +90,6 @@ class TargetServerGroup {
       credentials    : account,
       accountName    : account,
       serverGroupName: serverGroup.name,
-      moniker        : serverGroup.moniker,
       asgName        : serverGroup.name,
       cloudProvider  : serverGroup.cloudProvider ?: serverGroup.type
     ]

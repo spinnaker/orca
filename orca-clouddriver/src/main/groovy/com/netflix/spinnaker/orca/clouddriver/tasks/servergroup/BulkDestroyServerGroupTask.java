@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,9 +37,9 @@ public class BulkDestroyServerGroupTask extends AbstractBulkServerGroupTask impl
   }
 
   @Override
-  void validateClusterStatus(Map<String, Object> operation) {
+  void validateClusterStatus(Map<String, Object> operation, Moniker moniker) {
     trafficGuard.verifyTrafficRemoval((String) operation.get("serverGroupName"),
-      MonikerHelper.monikerOrFrigga((Moniker) operation.get("moniker"), (String) operation.get("serverGroupName")),
+      moniker,
       getCredentials(operation),
       getLocation(operation),
       getCloudProvider(operation), "Destroying");
