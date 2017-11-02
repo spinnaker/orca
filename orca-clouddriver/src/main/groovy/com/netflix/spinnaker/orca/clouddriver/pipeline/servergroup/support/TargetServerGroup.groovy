@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import groovy.transform.InheritConstructors
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
@@ -30,6 +29,9 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
  * A TargetServerGroup is a ServerGroup that is dynamically resolved using a target like "current" or "oldest".
  */
 class TargetServerGroup {
+
+  final static ObjectMapper objectMapper = new ObjectMapper()
+
   // Delegates all Map interface calls to this object.
   @Delegate
   private final Map<String, Object> serverGroup
@@ -80,8 +82,7 @@ class TargetServerGroup {
    * Used in TrafficGuard, which is Java, which doesn't play nice with @Delegate
    */
   Moniker getMoniker() {
-    ObjectMapper objectMapper = new ObjectMapper();
-    return objectMapper.convertValue(serverGroup.moniker, Moniker);
+    return serverGroup?.moniker ? objectMapper.convertValue(serverGroup?.moniker, Moniker) : null
   }
 
   Map toClouddriverOperationPayload(String account) {

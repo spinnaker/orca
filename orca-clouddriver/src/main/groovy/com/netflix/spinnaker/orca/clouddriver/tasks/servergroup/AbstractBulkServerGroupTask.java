@@ -104,8 +104,10 @@ public abstract class AbstractBulkServerGroupTask extends AbstractCloudProviderA
     targetServerGroups.forEach( targetServerGroup -> {
       Map<String , Map> tmp = new HashMap<>();
       Map operation = targetServerGroup.toClouddriverOperationPayload(request.getCredentials());
-      Moniker moniker = targetServerGroup.getMoniker() == null ?
-        MonikerHelper.friggaToMoniker(targetServerGroup.getName()) : targetServerGroup.getMoniker();
+      Moniker moniker = targetServerGroup.getMoniker();
+      if (moniker == null) {
+        moniker = MonikerHelper.friggaToMoniker(targetServerGroup.getName());
+      }
       validateClusterStatus(operation, moniker);
       tmp.put(getClouddriverOperation(), operation);
       operations.add(tmp);
