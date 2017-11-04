@@ -16,9 +16,7 @@
 
 package com.netflix.spinnaker.q.redis
 
-import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.common.hash.Hashing
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
@@ -46,14 +44,11 @@ class RedisQueue(
   private val pool: Pool<Jedis>,
   private val clock: Clock,
   private val lockTtlSeconds: Int = 10,
+  private val mapper: ObjectMapper,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandler: (Queue, Message) -> Unit,
   override val publisher: EventPublisher
 ) : MonitorableQueue {
-
-  private val mapper = ObjectMapper()
-    .registerModule(KotlinModule())
-    .disable(FAIL_ON_UNKNOWN_PROPERTIES)
 
   private val log: Logger = LoggerFactory.getLogger(javaClass)
 

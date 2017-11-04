@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.q.redis
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.QueueTest
@@ -46,7 +49,10 @@ private val createQueue = { clock: Clock,
     deadMessageHandler = deadLetterCallback,
     publisher = publisher ?: (object : EventPublisher {
       override fun publishEvent(event: QueueEvent) {}
-    })
+    }),
+    mapper = ObjectMapper()
+      .registerModule(KotlinModule())
+      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
   )
 }
 

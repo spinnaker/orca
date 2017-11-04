@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.config
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
@@ -58,12 +61,14 @@ open class RedisQueueConfiguration {
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
-    publisher: EventPublisher
+    publisher: EventPublisher,
+    redisQueueObjectMapper: ObjectMapper
   ) =
     RedisQueue(
       queueName = redisQueueProperties.queueName,
       pool = redisPool,
       clock = clock,
+      mapper = redisQueueObjectMapper,
       deadMessageHandler = deadMessageHandler,
       publisher = publisher,
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong())
@@ -79,4 +84,11 @@ open class RedisQueueConfiguration {
       pool = redisPool,
       clock = clock
     )
+
+  @Bean
+  @ConditionalOnMissingBean
+  open fun redisQueueObjectMapper(): ObjectMapper =
+    ObjectMapper()
+      .registerModule(KotlinModule())
+      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 }
