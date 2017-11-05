@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.mahe
 
 import retrofit.client.Response
 import retrofit.http.*
+import retrofit.mime.TypedFile
 
 interface MaheService {
   @POST('/properties/create')
@@ -37,5 +38,16 @@ interface MaheService {
     @Query('propId') String propId,
     @Query('cmcTicket') String cmcTicket,
     @Query('env') String env
+  )
+
+  @POST('/gutenberg/publish')
+  Response gutenbergPublish(@Query('env') String env, @Body Map request)
+
+  @Multipart
+  @POST("/gutenberg/topics/{topic}/upload")
+  Response gutenbergFileUpload(
+    @Query("env") String env,
+    @Path("topic") String topic,
+    @Part("file") TypedFile file
   )
 }
