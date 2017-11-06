@@ -62,7 +62,6 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage, Restarta
       stage.context.canary.remove("id")
       stage.context.canary.remove("launchDate")
       stage.context.canary.remove("endDate")
-      stage.context.canary.remove("canaryDeployments")
       stage.context.canary.remove("canaryResult")
       stage.context.canary.remove("status")
       stage.context.canary.remove("health")
