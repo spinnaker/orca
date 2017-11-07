@@ -20,14 +20,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spectator.api.Registry;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class Pipeline extends Execution<Pipeline> {
 
   public Pipeline(String application) {
@@ -39,28 +31,6 @@ public class Pipeline extends Execution<Pipeline> {
     @JsonProperty("id") String id,
     @JsonProperty("application") String application) {
     super(id, application);
-  }
-
-  private String pipelineConfigId;
-
-  public @Nullable String getPipelineConfigId() {
-    return pipelineConfigId;
-  }
-
-  public void setPipelineConfigId(@Nullable String pipelineConfigId) {
-    this.pipelineConfigId = pipelineConfigId;
-  }
-
-  private final List<Map<String, Object>> notifications = new ArrayList<>();
-
-  public @Nonnull List<Map<String, Object>> getNotifications() {
-    return notifications;
-  }
-
-  private final Map<String, Serializable> initialConfig = new HashMap<>();
-
-  public @Nonnull Map<String, Serializable> getInitialConfig() {
-    return initialConfig;
   }
 
   public static PipelineBuilder builder(String application, Registry registry) {

@@ -20,8 +20,10 @@ import java.io.Serializable;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
@@ -37,7 +39,10 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
     this(UUID.randomUUID().toString(), application);
   }
 
-  protected Execution(String id, String application) {
+  @JsonCreator
+  protected Execution(
+    @JsonProperty("id") String id,
+    @JsonProperty("application") String application) {
     this.id = id;
     this.application = application;
   }
@@ -225,6 +230,38 @@ public abstract class Execution<T extends Execution<T>> implements Serializable 
 
   public @Nonnull Map<String, Object> getTrigger() {
     return trigger;
+  }
+
+  private String description;
+
+  public @Nullable String getDescription() {
+    return description;
+  }
+
+  public void setDescription(@Nullable String description) {
+    this.description = description;
+  }
+
+  private String pipelineConfigId;
+
+  public @Nullable String getPipelineConfigId() {
+    return pipelineConfigId;
+  }
+
+  public void setPipelineConfigId(@Nullable String pipelineConfigId) {
+    this.pipelineConfigId = pipelineConfigId;
+  }
+
+  private final List<Map<String, Object>> notifications = new ArrayList<>();
+
+  public @Nonnull List<Map<String, Object>> getNotifications() {
+    return notifications;
+  }
+
+  private final Map<String, Serializable> initialConfig = new HashMap<>();
+
+  public @Nonnull Map<String, Serializable> getInitialConfig() {
+    return initialConfig;
   }
 
   @Nullable

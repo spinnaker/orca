@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import javax.annotation.Nullable;
-
 public class Orchestration extends Execution<Orchestration> {
 
   public Orchestration(String application) {
@@ -26,15 +24,5 @@ public class Orchestration extends Execution<Orchestration> {
 
   public Orchestration(String id, String application) {
     super(id, application);
-  }
-
-  private String description;
-
-  public @Nullable String getDescription() {
-    return description;
-  }
-
-  public void setDescription(@Nullable String description) {
-    this.description = description;
   }
 }
