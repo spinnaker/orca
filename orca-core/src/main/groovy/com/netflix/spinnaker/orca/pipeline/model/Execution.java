@@ -33,14 +33,14 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngin
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 
-public abstract class Execution<T extends Execution<T>> implements Serializable {
+public class Execution<T extends Execution<T>> implements Serializable {
 
-  protected Execution(String application) {
+  public Execution(String application) {
     this(UUID.randomUUID().toString(), application);
   }
 
   @JsonCreator
-  protected Execution(
+  public Execution(
     @JsonProperty("id") String id,
     @JsonProperty("application") String application) {
     this.id = id;
