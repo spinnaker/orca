@@ -32,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Component
 import rx.Observable
 import rx.functions.Func1
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 
 @Slf4j
 @Component
@@ -73,7 +74,7 @@ class SuspendedPipelinesPollingNotificationAgent extends AbstractPollingNotifica
   @Override
   protected Observable<Execution> getEvents() {
     log.info("Starting Suspended Pipelines Polling Cycle")
-    return executionRepository.retrievePipelines().doOnCompleted({
+    return executionRepository.retrieve(ExecutionType.pipeline).doOnCompleted({
       log.info("Finished Suspended Pipelines Polling Cycle")
     })
   }

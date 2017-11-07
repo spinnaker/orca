@@ -67,15 +67,13 @@ public interface ExecutionRepository {
     @Nonnull String id
   );
 
-  @Nonnull Observable<Pipeline> retrievePipelines();
+  @Nonnull Observable<Execution<?>> retrieve(ExecutionType type);
 
   @Nonnull Observable<Pipeline> retrievePipelinesForApplication(
     @Nonnull String application);
 
   @Nonnull Observable<Pipeline> retrievePipelinesForPipelineConfigId(
     @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
-
-  @Nonnull Observable<Orchestration> retrieveOrchestrations();
 
   @Nonnull Observable<Orchestration> retrieveOrchestrationsForApplication(
     @Nonnull String application, @Nonnull ExecutionCriteria criteria);

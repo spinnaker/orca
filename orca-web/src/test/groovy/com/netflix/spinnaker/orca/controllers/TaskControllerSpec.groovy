@@ -32,6 +32,7 @@ import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.orchestration
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static java.time.ZoneOffset.UTC
@@ -73,7 +74,7 @@ class TaskControllerSpec extends Specification {
     mockMvc.perform(get('/tasks')).andReturn().response
 
     then:
-    1 * executionRepository.retrieveOrchestrations() >> {
+    1 * executionRepository.retrieve(ExecutionType.orchestration) >> {
       return rx.Observable.empty()
     }
   }
@@ -92,7 +93,7 @@ class TaskControllerSpec extends Specification {
 
   void 'step names are properly translated'() {
     given:
-    executionRepository.retrieveOrchestrations() >> rx.Observable.from([orchestration {
+    executionRepository.retrieve(ExecutionType.orchestration) >> rx.Observable.from([orchestration {
       id = "1"
       application = "covfefe"
       stages << new Stage<>(delegate, "test")
@@ -133,7 +134,7 @@ class TaskControllerSpec extends Specification {
     MockHttpServletResponse response = mockMvc.perform(get('/tasks')).andReturn().response
 
     then:
-    1 * executionRepository.retrieveOrchestrations() >> rx.Observable.from([])
+    1 * executionRepository.retrieve(ExecutionType.orchestration) >> rx.Observable.from([])
     response.status == 200
     response.contentAsString == '[]'
   }

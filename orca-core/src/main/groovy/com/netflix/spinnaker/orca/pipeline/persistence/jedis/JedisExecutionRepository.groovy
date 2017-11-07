@@ -312,14 +312,14 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  Observable<Pipeline> retrievePipelines() {
-    return Observable.merge(allJedis().collect { all(pipeline, it) })
+  Observable<Pipeline> retrieve(ExecutionType type) {
+    return Observable.merge(allJedis().collect { all(type, it) })
   }
 
   @Override
   Observable<Pipeline> retrievePipelinesForApplication(String application) {
     return Observable.merge(allJedis().collect {
-      allForApplication(Pipeline, application, it)
+      allForApplication(pipeline, application, it)
     })
   }
 
@@ -400,11 +400,6 @@ class JedisExecutionRepository implements ExecutionRepository {
     }
 
     return currentObservable
-  }
-
-  @Override
-  Observable<Orchestration> retrieveOrchestrations() {
-    return Observable.merge(allJedis().collect { all(Orchestration, it) })
   }
 
   @Override
