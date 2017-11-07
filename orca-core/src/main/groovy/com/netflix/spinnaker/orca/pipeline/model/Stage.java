@@ -32,6 +32,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
 import static java.lang.String.format;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
@@ -393,7 +394,7 @@ public class Stage<T extends Execution<T>> implements Serializable {
    */
   @SuppressWarnings("unchecked")
   public void resolveStrategyParams() {
-    if (execution instanceof Pipeline) {
+    if (execution.getType() == pipeline) {
       Pipeline pipeline = (Pipeline) execution;
       Map<String, Object> parameters = (Map<String, Object>) pipeline.getTrigger().get("parameters");
       boolean strategy = false;

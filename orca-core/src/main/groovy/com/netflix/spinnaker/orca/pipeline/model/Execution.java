@@ -35,16 +35,24 @@ import static java.util.Collections.emptySet;
 
 public class Execution<T extends Execution<T>> implements Serializable {
 
-  public Execution(String application) {
-    this(UUID.randomUUID().toString(), application);
+  public Execution(ExecutionType type, String application) {
+    this(type, UUID.randomUUID().toString(), application);
   }
 
   @JsonCreator
   public Execution(
+    @JsonProperty("type") ExecutionType type,
     @JsonProperty("id") String id,
     @JsonProperty("application") String application) {
+    this.type = type;
     this.id = id;
     this.application = application;
+  }
+
+  private final ExecutionType type;
+
+  public @Nonnull ExecutionType getType() {
+    return type;
   }
 
   private String id;
@@ -412,6 +420,8 @@ public class Execution<T extends Execution<T>> implements Serializable {
       return (pauseTime != null && resumeTime != null) ? resumeTime - pauseTime : 0;
     }
   }
+
+  public enum ExecutionType {pipeline, orchestration}
 
   public static final ExecutionEngine DEFAULT_EXECUTION_ENGINE = v3;
 

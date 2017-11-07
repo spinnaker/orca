@@ -19,18 +19,19 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spectator.api.Registry;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
 
 public class Pipeline extends Execution<Pipeline> {
 
   public Pipeline(String application) {
-    super(application);
+    super(pipeline, application);
   }
 
   @JsonCreator
   public Pipeline(
     @JsonProperty("id") String id,
     @JsonProperty("application") String application) {
-    super(id, application);
+    super(pipeline, id, application);
   }
 
   public static PipelineBuilder builder(String application, Registry registry) {

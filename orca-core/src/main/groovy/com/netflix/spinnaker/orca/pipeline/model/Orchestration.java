@@ -16,13 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration;
+
 public class Orchestration extends Execution<Orchestration> {
 
   public Orchestration(String application) {
-    super(application);
+    super(orchestration, application);
   }
 
   public Orchestration(String id, String application) {
-    super(id, application);
+    super(orchestration, id, application);
   }
 }
