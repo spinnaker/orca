@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.PipelineStartTracker
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -96,7 +96,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieve(ExecutionType.orchestration) >> rx.Observable.from([orchestration {
       id = "1"
       application = "covfefe"
-      stages << new Stage<>(delegate, "test")
+      stages << new Stage(delegate, "test")
       stages.first().tasks = [new Task(name: 'jobOne'), new Task(name: 'jobTwo')]
     }])
 
@@ -114,7 +114,7 @@ class TaskControllerSpec extends Specification {
     def orchestration = orchestration {
       id = "1"
       application = "covfefe"
-      stages << new Stage<>(delegate, "OrchestratedType")
+      stages << new Stage(delegate, "OrchestratedType")
       stages.first().context = [customOutput: "variable"]
     }
 
@@ -277,8 +277,8 @@ class TaskControllerSpec extends Specification {
 
   void 'should update existing stage context'() {
     given:
-    def pipeline = new Pipeline("1", "covfefe")
-    def pipelineStage = new Stage<>(pipeline, "test", [value: "1"])
+    def pipeline = Execution.newPipeline("covfefe")
+    def pipelineStage = new Stage(pipeline, "test", [value: "1"])
     pipelineStage.id = "s1"
     pipeline.stages.add(pipelineStage)
 

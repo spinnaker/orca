@@ -26,14 +26,14 @@ import com.netflix.spinnaker.orca.pipeline.model.Task
 /**
  * @return the initial stages of the execution.
  */
-fun Execution<*>.initialStages() =
+fun Execution.initialStages() =
   getStages()
     .filter { it.isInitial() }
 
 /**
  * @return the stage's first before stage or `null` if there are none.
  */
-fun Stage<out Execution<*>>.firstBeforeStages() =
+fun Stage.firstBeforeStages() =
   getExecution()
     .getStages()
     .filter {
@@ -43,26 +43,26 @@ fun Stage<out Execution<*>>.firstBeforeStages() =
 /**
  * @return the stage's first after stage or `null` if there are none.
  */
-fun Stage<out Execution<*>>.firstAfterStages() =
+fun Stage.firstAfterStages() =
   getExecution()
     .getStages()
     .filter {
       it.getParentStageId() == getId() && it.getSyntheticStageOwner() == STAGE_AFTER && it.getRequisiteStageRefIds().isEmpty()
     }
 
-fun Stage<*>.isInitial() =
+fun Stage.isInitial() =
   getRequisiteStageRefIds() == null || getRequisiteStageRefIds().isEmpty()
 
 /**
  * @return the stage's first task or `null` if there are none.
  */
-fun Stage<out Execution<*>>.firstTask() = getTasks().firstOrNull()
+fun Stage.firstTask() = getTasks().firstOrNull()
 
 /**
  * @return the stage's parent stage.
  * @throws IllegalStateException if the stage is not synthetic.
  */
-fun Stage<out Execution<*>>.parent() =
+fun Stage.parent() =
   getExecution()
     .getStages()
     .find { it.getId() == getParentStageId() } ?: throw IllegalStateException("Not a synthetic stage")
@@ -71,7 +71,7 @@ fun Stage<out Execution<*>>.parent() =
  * @return the task that follows [task] or `null` if [task] is the end of the
  * stage.
  */
-fun Stage<out Execution<*>>.nextTask(task: Task) =
+fun Stage.nextTask(task: Task) =
   if (task.isStageEnd) {
     null
   } else {
@@ -82,32 +82,32 @@ fun Stage<out Execution<*>>.nextTask(task: Task) =
 /**
  * @return all upstream stages of this stage.
  */
-fun Stage<*>.upstreamStages(): List<Stage<*>> =
+fun Stage.upstreamStages(): List<Stage> =
   getExecution().getStages().filter { it.getRefId() in getRequisiteStageRefIds() }
 
 /**
  * @return `true` if all upstream stages of this stage were run successfully.
  */
-fun Stage<*>.allUpstreamStagesComplete(): Boolean =
+fun Stage.allUpstreamStagesComplete(): Boolean =
   upstreamStages().all { it.getStatus() in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED) }
 
-fun Stage<*>.anyUpstreamStagesFailed(): Boolean =
+fun Stage.anyUpstreamStagesFailed(): Boolean =
   upstreamStages().any { it.getStatus() in listOf(TERMINAL, STOPPED, CANCELED) || it.getStatus() == NOT_STARTED && it.anyUpstreamStagesFailed() }
 
-fun Stage<*>.syntheticStages(): List<Stage<*>> =
+fun Stage.syntheticStages(): List<Stage> =
   getExecution().getStages().filter { it.getParentStageId() == getId() }
 
-fun Stage<*>.beforeStages(): List<Stage<*>> =
+fun Stage.beforeStages(): List<Stage> =
   syntheticStages().filter { it.getSyntheticStageOwner() == STAGE_BEFORE }
 
-fun Stage<*>.allBeforeStagesComplete(): Boolean =
+fun Stage.allBeforeStagesComplete(): Boolean =
   beforeStages().all { it.getStatus() in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED) }
 
-fun Stage<*>.anyBeforeStagesFailed(): Boolean =
+fun Stage.anyBeforeStagesFailed(): Boolean =
   beforeStages().any { it.getStatus() in listOf(TERMINAL, STOPPED, CANCELED) }
 
-fun Stage<*>.hasTasks(): Boolean =
+fun Stage.hasTasks(): Boolean =
   getTasks().isNotEmpty()
 
-fun Stage<*>.hasAfterStages(): Boolean =
+fun Stage.hasAfterStages(): Boolean =
   firstAfterStages().isNotEmpty()

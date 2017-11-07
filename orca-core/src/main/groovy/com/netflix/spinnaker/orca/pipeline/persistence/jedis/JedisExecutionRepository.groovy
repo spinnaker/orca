@@ -226,7 +226,7 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  void storeStage(Stage<? extends Execution> stage) {
+  void storeStage(Stage stage) {
     def type = stage.execution.type
     withJedis(getJedisPoolForId("${type}:${stage.execution.id}")) { Jedis jedis ->
       jedis.multi().withCloseable { tx ->
@@ -237,7 +237,7 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  void updateStageContext(Stage<? extends Execution> stage) {
+  void updateStageContext(Stage stage) {
     def execution = stage.execution
     def type = execution.type
     def key = "${type}:${execution.id}"
@@ -312,12 +312,12 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  Observable<Pipeline> retrieve(ExecutionType type) {
+  Observable<Execution> retrieve(ExecutionType type) {
     return Observable.merge(allJedis().collect { all(type, it) })
   }
 
   @Override
-  Observable<Pipeline> retrievePipelinesForApplication(String application) {
+  Observable<Execution> retrievePipelinesForApplication(String application) {
     return Observable.merge(allJedis().collect {
       allForApplication(pipeline, application, it)
     })
@@ -325,7 +325,7 @@ class JedisExecutionRepository implements ExecutionRepository {
 
   @Override
   @CompileDynamic
-  Observable<Pipeline> retrievePipelinesForPipelineConfigId(String pipelineConfigId,
+  Observable<Execution> retrievePipelinesForPipelineConfigId(String pipelineConfigId,
                                                             ExecutionCriteria criteria) {
     /**
      * Fetch pipeline ids from the primary redis (and secondary if configured)
@@ -404,7 +404,7 @@ class JedisExecutionRepository implements ExecutionRepository {
 
   @Override
   @CompileDynamic
-  Observable<Orchestration> retrieveOrchestrationsForApplication(String application, ExecutionCriteria criteria) {
+  Observable<Execution> retrieveOrchestrationsForApplication(String application, ExecutionCriteria criteria) {
     def allOrchestrationsKey = appKey(orchestration, application)
 
     /**
@@ -487,7 +487,7 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  Orchestration retrieveOrchestrationForCorrelationId(
+  Execution retrieveOrchestrationForCorrelationId(
     @Nonnull String correlationId) throws ExecutionNotFoundException {
     String key = "correlation:$correlationId"
     withJedis(getJedisPoolForId(key)) { Jedis correlationJedis ->
@@ -503,7 +503,7 @@ class JedisExecutionRepository implements ExecutionRepository {
         correlationJedis.del(key)
       }
       throw new ExecutionNotFoundException("No Orchestration found for correlation ID $correlationId")
-    } as Orchestration
+    }
   }
 
   private void storeExecutionInternal(Transaction tx, Execution execution) {
@@ -536,12 +536,12 @@ class JedisExecutionRepository implements ExecutionRepository {
     execution.stages.each { stage ->
       map.putAll(serializeStage(stage))
     }
-    if (execution instanceof Pipeline) {
+    if (execution.type == pipeline) {
       map.name = execution.name
       map.pipelineConfigId = execution.pipelineConfigId
       map.notifications = mapper.writeValueAsString(execution.notifications)
       map.initialConfig = mapper.writeValueAsString(execution.initialConfig)
-    } else if (execution instanceof Orchestration) {
+    } else if (execution.type == orchestration) {
       map.description = execution.description
     }
     if (execution.trigger.containsKey("correlationId")) {
@@ -571,7 +571,7 @@ class JedisExecutionRepository implements ExecutionRepository {
     return map
   }
 
-  private <T extends Execution> void storeStageInternal(Transaction tx, ExecutionType type, Stage<T> stage) {
+  private void storeStageInternal(Transaction tx, ExecutionType type, Stage stage) {
     def key = "$type:$stage.execution.id"
 
     def serializedStage = serializeStage(stage)
@@ -586,7 +586,7 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @CompileDynamic
-  private <T extends Execution> T retrieveInternal(Jedis jedis, ExecutionType type, String id) throws ExecutionNotFoundException {
+  private Execution retrieveInternal(Jedis jedis, ExecutionType type, String id) throws ExecutionNotFoundException {
     def key = "$type:$id"
     if (jedis.exists(key)) {
 
@@ -602,7 +602,7 @@ class JedisExecutionRepository implements ExecutionRepository {
         stageIds = results[1] ?: (map.stageIndex ?: "").tokenize(",")
       }
 
-      def execution = type == pipeline ? new Pipeline(id, map.application) : new Orchestration(id, map.application)
+      def execution = new Execution(type, id, map.application)
       execution.context = new AlertOnAccessMap<>(execution, registry, map.context ? mapper.readValue(map.context, Map) : [:])
       execution.canceled = Boolean.parseBoolean(map.canceled)
       execution.canceledBy = map.canceledBy
@@ -625,7 +625,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       }
 
       stageIds.each { stageId ->
-        def stage = new Stage<>()
+        def stage = new Stage()
         stage.id = stageId
         stage.refId = map["stage.${stageId}.refId".toString()]
         stage.type = map["stage.${stageId}.type".toString()]
@@ -646,12 +646,12 @@ class JedisExecutionRepository implements ExecutionRepository {
         stage.execution = execution
         execution.stages << stage
       }
-      if (execution instanceof Pipeline) {
+      if (execution.type == pipeline) {
         execution.name = map.name
         execution.pipelineConfigId = map.pipelineConfigId
         execution.notifications.addAll(mapper.readValue(map.notifications, List))
         execution.initialConfig.putAll(mapper.readValue(map.initialConfig, Map))
-      } else if (execution instanceof Orchestration) {
+      } else if (execution.type == orchestration) {
         execution.description = map.description
       }
       return execution
@@ -660,7 +660,7 @@ class JedisExecutionRepository implements ExecutionRepository {
     }
   }
 
-  private <T extends Execution> void deleteInternal(Jedis jedis, ExecutionType type, String id) {
+  private void deleteInternal(Jedis jedis, ExecutionType type, String id) {
     def key = "$type:$id"
     try {
       def application = jedis.hget(key, "application")
@@ -679,16 +679,16 @@ class JedisExecutionRepository implements ExecutionRepository {
     }
   }
 
-  private <T extends Execution> Observable<T> all(ExecutionType type, Pool<Jedis> jedisPool) {
+  private Observable<Execution> all(ExecutionType type, Pool<Jedis> jedisPool) {
     retrieveObservable(type, alljobsKey(type), queryAllScheduler, jedisPool)
   }
 
-  private <T extends Execution> Observable<T> allForApplication(ExecutionType type, String application, Pool<Jedis> jedisPool) {
+  private Observable<Execution> allForApplication(ExecutionType type, String application, Pool<Jedis> jedisPool) {
     retrieveObservable(type, appKey(type, application), queryByAppScheduler, jedisPool)
   }
 
   @CompileDynamic
-  private <T extends Execution> Observable<T> retrieveObservable(ExecutionType type,
+  private Observable<Execution> retrieveObservable(ExecutionType type,
                                                                  String lookupKey,
                                                                  Scheduler scheduler,
                                                                  Pool<Jedis> jedisPool) {
@@ -703,7 +703,7 @@ class JedisExecutionRepository implements ExecutionRepository {
   }
 
   @CompileDynamic
-  private <T extends Execution> Observable<T> retrieveObservable(ExecutionType type,
+  private Observable<Execution> retrieveObservable(ExecutionType type,
                                                                  String lookupKey,
                                                                  Func1<String, Iterable<String>> lookupKeyFetcher,
                                                                  Scheduler scheduler,

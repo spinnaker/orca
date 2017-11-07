@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.nhaarman.mockito_kotlin.*
@@ -88,7 +87,7 @@ object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
       "2c" to "a cancellable stage that failed"
     ).forEach { refId, description ->
       context(description) {
-        val message = CancelStage(Pipeline::class.java, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
+        val message = CancelStage(ExecutionType.pipeline, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
 
         beforeGroup {
           whenever(cancellableStage.type) doReturn "cancellable"
@@ -117,11 +116,11 @@ object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
       "3" to "a cancellable stage that did not start yet"
     ).forEach { refId, description ->
       context(description) {
-        val message = CancelStage(Pipeline::class.java, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
+        val message = CancelStage(ExecutionType.pipeline, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
 
         beforeGroup {
           whenever(cancellableStage.type) doReturn "cancellable"
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(pipeline.type, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)

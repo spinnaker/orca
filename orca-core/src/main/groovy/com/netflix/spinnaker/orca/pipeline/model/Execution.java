@@ -33,7 +33,7 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngin
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 
-public class Execution<T extends Execution<T>> implements Serializable {
+public class Execution implements Serializable {
 
   public Execution(ExecutionType type, String application) {
     this(type, UUID.randomUUID().toString(), application);
@@ -156,10 +156,10 @@ public class Execution<T extends Execution<T>> implements Serializable {
     this.context = context;
   }
 
-  private final List<Stage<T>> stages = new ArrayList<>();
+  private final List<Stage> stages = new ArrayList<>();
 
   @JsonManagedReference
-  public @Nonnull List<Stage<T>> getStages() {
+  public @Nonnull List<Stage> getStages() {
     return stages;
   }
 
@@ -273,7 +273,7 @@ public class Execution<T extends Execution<T>> implements Serializable {
   }
 
   @Nullable
-  public Stage<T> namedStage(String type) {
+  public Stage namedStage(String type) {
     return stages
       .stream()
       .filter(it -> it.getType().equals(type))
@@ -282,7 +282,7 @@ public class Execution<T extends Execution<T>> implements Serializable {
   }
 
   @Nonnull
-  public Stage<T> stageById(String stageId) {
+  public Stage stageById(String stageId) {
     return stages
       .stream()
       .filter(it -> it.getId().equals(stageId))
@@ -291,7 +291,7 @@ public class Execution<T extends Execution<T>> implements Serializable {
   }
 
   @Nonnull
-  public Stage<T> stageByRef(String refId) {
+  public Stage stageByRef(String refId) {
     return stages
       .stream()
       .filter(it -> it.getRefId().equals(refId))
@@ -304,7 +304,7 @@ public class Execution<T extends Execution<T>> implements Serializable {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
 
-    Execution<?> execution = (Execution<?>) o;
+    Execution execution = (Execution) o;
 
     return id.equals(execution.id);
   }
@@ -313,6 +313,14 @@ public class Execution<T extends Execution<T>> implements Serializable {
     int result = super.hashCode();
     result = 31 * result + id.hashCode();
     return result;
+  }
+
+  public static Execution newOrchestration(String application) {
+    return new Execution(ExecutionType.orchestration, application);
+  }
+
+  public static Execution newPipeline(String application) {
+    return new Execution(ExecutionType.pipeline, application);
   }
 
   public static class AuthenticationDetails implements Serializable {

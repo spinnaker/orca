@@ -18,8 +18,6 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.events.ExecutionStarted
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
@@ -50,10 +48,10 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           type = singleTaskStage.type
         }
       }
-      val message = StartExecution(Pipeline::class.java, pipeline.id, "foo")
+      val message = StartExecution(pipeline.type, pipeline.id, "foo")
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -92,10 +90,10 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           type = singleTaskStage.type
         }
       }
-      val message = StartExecution(Pipeline::class.java, pipeline.id, "foo")
+      val message = StartExecution(pipeline.type, pipeline.id, "foo")
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

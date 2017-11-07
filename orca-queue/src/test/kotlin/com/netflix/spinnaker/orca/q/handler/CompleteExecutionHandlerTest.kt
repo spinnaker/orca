@@ -71,7 +71,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(check<ExecutionComplete> {
-          it.executionType shouldEqual pipeline.javaClass
+          it.executionType shouldEqual pipeline.type
           it.executionId shouldEqual pipeline.id
           it.status shouldEqual stageStatus
         })
@@ -158,7 +158,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(check<ExecutionComplete> {
-          it.executionType shouldEqual pipeline.javaClass
+          it.executionType shouldEqual pipeline.type
           it.executionId shouldEqual pipeline.id
           it.status shouldEqual stageStatus
         })
@@ -208,7 +208,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
     it("publishes an event") {
       verify(publisher).publishEvent(check<ExecutionComplete> {
-        it.executionType shouldEqual pipeline.javaClass
+        it.executionType shouldEqual pipeline.type
         it.executionId shouldEqual pipeline.id
         it.status shouldEqual TERMINAL
       })
@@ -255,7 +255,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
     it("publishes an event") {
       verify(publisher).publishEvent(check<ExecutionComplete> {
-        it.executionType shouldEqual pipeline.javaClass
+        it.executionType shouldEqual pipeline.type
         it.executionId shouldEqual pipeline.id
         it.status shouldEqual SUCCEEDED
       })

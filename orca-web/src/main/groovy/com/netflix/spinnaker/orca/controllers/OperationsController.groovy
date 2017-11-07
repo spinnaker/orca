@@ -23,10 +23,8 @@ import com.netflix.spinnaker.kork.web.exceptions.ValidationException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor
 import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.OrchestrationLauncher
-import com.netflix.spinnaker.orca.pipeline.PipelineLauncher
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
+import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -42,16 +40,11 @@ import org.springframework.web.bind.annotation.RestController
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static net.logstash.logback.argument.StructuredArguments.value
 
-import javax.servlet.http.HttpServletResponse
-
 @RestController
 @Slf4j
 class OperationsController {
   @Autowired
-  PipelineLauncher pipelineLauncher
-
-  @Autowired
-  OrchestrationLauncher orchestrationLauncher
+  ExecutionLauncher executionLauncher
 
   @Autowired(required = false)
   BuildService buildService
@@ -148,7 +141,7 @@ class OperationsController {
     }
 
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
-      Pipeline parentExecution = executionRepository.retrieve(ExecutionType.pipeline, pipeline.trigger.parentPipelineId)
+      def parentExecution = executionRepository.retrieve(ExecutionType.pipeline, pipeline.trigger.parentPipelineId)
       if (parentExecution) {
         pipeline.trigger.isPipeline         = true
         pipeline.trigger.parentStatus       = parentExecution.status
@@ -245,7 +238,7 @@ class OperationsController {
     def json = objectMapper.writeValueAsString(config)
     log.info('requested pipeline: {}', json)
 
-    def pipeline = pipelineLauncher.start(json)
+    def pipeline = executionLauncher.start(ExecutionType.pipeline, json)
 
     [ref: "/pipelines/${pipeline.id}".toString()]
   }
@@ -255,7 +248,7 @@ class OperationsController {
     injectPipelineOrigin(config)
     def json = objectMapper.writeValueAsString(config)
     log.info('requested task:{}', json)
-    def pipeline = orchestrationLauncher.start(json)
+    def pipeline = orchestrationLauncher.start(ExecutionType.orchestration, json)
     [ref: "/tasks/${pipeline.id}".toString()]
   }
 

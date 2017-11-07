@@ -61,7 +61,7 @@ class CompleteExecutionHandler(
   }
 
   private fun CompleteExecution.determineFinalStatus(
-    execution: Execution<*>,
+    execution: Execution,
     block: (ExecutionStatus) -> Unit
   ) {
     execution.topLevelStages.let { stages ->
@@ -88,15 +88,15 @@ class CompleteExecutionHandler(
     }
   }
 
-  private val Execution<*>.topLevelStages
-    get(): List<Stage<*>> = getStages().filter { it.getParentStageId() == null }
+  private val Execution.topLevelStages
+    get(): List<Stage> = getStages().filter { it.getParentStageId() == null }
 
-  private fun Execution<*>.shouldOverrideSuccess(): Boolean =
+  private fun Execution.shouldOverrideSuccess(): Boolean =
     getStages()
       .filter { it.getStatus() == STOPPED }
       .any { it.getContext()["completeOtherBranchesThenFail"] == true }
 
-  private fun List<Stage<*>>.otherBranchesIncomplete() =
+  private fun List<Stage>.otherBranchesIncomplete() =
     any { it.getStatus() == RUNNING } ||
       any { it.getStatus() == NOT_STARTED && it.allUpstreamStagesComplete() }
 

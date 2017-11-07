@@ -32,7 +32,7 @@ class MonitorPipelineTaskSpec extends Specification {
   @Subject
   MonitorPipelineTask task = new MonitorPipelineTask()
   ExecutionRepository repo = Mock(ExecutionRepository)
-  Stage stage = new Stage<>(type: "whatever")
+  Stage stage = new Stage(type: "whatever")
 
   def setup() {
     task.executionRepository = repo

@@ -27,7 +27,6 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +68,7 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     }
   };
 
-  private Func1<Pipeline, PipelineExecutionDetails> mapper = execution -> new PipelineExecutionDetails(
+  private Func1<Execution, PipelineExecutionDetails> mapper = execution -> new PipelineExecutionDetails(
     execution.getId(),
     execution.getApplication(),
     execution.getPipelineConfigId() == null ? "ungrouped" : execution.getPipelineConfigId(),
@@ -158,7 +157,7 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     }
   }
 
-  private void cleanupApp(Observable<Pipeline> observable) {
+  private void cleanupApp(Observable<Execution> observable) {
     List<PipelineExecutionDetails> allPipelines = observable.filter(filter).map(mapper).toList().toBlocking().single();
 
     Map<String, List<PipelineExecutionDetails>> groupedPipelines = new HashMap<>();

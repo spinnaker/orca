@@ -33,7 +33,6 @@ import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
@@ -657,7 +656,7 @@ open class TestConfig {
   }
 
   @Bean open fun dummyStage() = object : StageDefinitionBuilder {
-    override fun <T : Execution<T>> taskGraph(stage: Stage<T>, builder: Builder) {
+    override fun  taskGraph(stage: Stage, builder: Builder) {
       builder.withTask("dummy", DummyTask::class.java)
     }
 
@@ -665,7 +664,7 @@ open class TestConfig {
   }
 
   @Bean open fun parallelStage() = object : StageDefinitionBuilder {
-    override fun <T : Execution<T>> parallelStages(stage: Stage<T>) =
+    override fun  parallelStages(stage: Stage) =
       listOf("us-east-1", "us-west-2", "eu-west-1").map { region ->
         newStage(stage.execution, "dummy", "dummy $region", stage.context + mapOf("region" to region), stage, STAGE_BEFORE)
       }

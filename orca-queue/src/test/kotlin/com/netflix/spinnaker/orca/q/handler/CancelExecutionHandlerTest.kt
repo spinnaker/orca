@@ -75,7 +75,7 @@ object CancelExecutionHandlerTest : SubjectSpek<CancelExecutionHandler>({
 
       it("publishes an execution complete event") {
         verify(publisher).publishEvent(check<ExecutionComplete> {
-          it.executionType shouldEqual pipeline.javaClass
+          it.executionType shouldEqual pipeline.type
           it.executionId shouldEqual pipeline.id
           it.status shouldEqual CANCELED
         })

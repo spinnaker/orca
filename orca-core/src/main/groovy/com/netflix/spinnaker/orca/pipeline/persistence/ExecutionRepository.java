@@ -23,8 +23,6 @@ import javax.annotation.Nullable;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
-import com.netflix.spinnaker.orca.pipeline.model.Orchestration;
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import rx.Observable;
 
@@ -34,9 +32,9 @@ public interface ExecutionRepository {
   void storeExecutionContext(
     @Nonnull String id, @Nonnull Map<String, Object> context);
 
-  void storeStage(@Nonnull Stage<? extends Execution> stage);
+  void storeStage(@Nonnull Stage stage);
 
-  void updateStageContext(@Nonnull Stage<? extends Execution> stage);
+  void updateStageContext(@Nonnull Stage stage);
 
   void removeStage(@Nonnull Execution execution, @Nonnull String stageId);
 
@@ -58,7 +56,7 @@ public interface ExecutionRepository {
 
   void updateStatus(@Nonnull String id, @Nonnull ExecutionStatus status);
 
-  @Nonnull Execution<?> retrieve(
+  @Nonnull Execution retrieve(
     @Nonnull ExecutionType type,
     @Nonnull String id) throws ExecutionNotFoundException;
 
@@ -67,18 +65,18 @@ public interface ExecutionRepository {
     @Nonnull String id
   );
 
-  @Nonnull Observable<Execution<?>> retrieve(ExecutionType type);
+  @Nonnull Observable<Execution> retrieve(ExecutionType type);
 
-  @Nonnull Observable<Pipeline> retrievePipelinesForApplication(
+  @Nonnull Observable<Execution> retrievePipelinesForApplication(
     @Nonnull String application);
 
-  @Nonnull Observable<Pipeline> retrievePipelinesForPipelineConfigId(
+  @Nonnull Observable<Execution> retrievePipelinesForPipelineConfigId(
     @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
-  @Nonnull Observable<Orchestration> retrieveOrchestrationsForApplication(
+  @Nonnull Observable<Execution> retrieveOrchestrationsForApplication(
     @Nonnull String application, @Nonnull ExecutionCriteria criteria);
 
-  @Nonnull Orchestration retrieveOrchestrationForCorrelationId(
+  @Nonnull Execution retrieveOrchestrationForCorrelationId(
     @Nonnull String correlationId) throws ExecutionNotFoundException;
 
   class ExecutionCriteria {

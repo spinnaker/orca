@@ -89,13 +89,13 @@ class RunTaskHandler(
       } catch (e: Exception) {
         val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
         if (exceptionDetails?.shouldRetry ?: false) {
-          log.warn("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]")
+          log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
           queue.push(message, task.backoffPeriod(taskModel))
           trackResult(stage, taskModel, RUNNING)
         } else if (e is TimeoutException && stage.getContext()["markSuccessfulOnTimeout"] == true) {
           queue.push(CompleteTask(message, SUCCEEDED))
         } else {
-          log.error("Error running ${message.taskType.simpleName} for ${message.executionType.simpleName}[${message.executionId}]", e)
+          log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
           stage.getContext()["exception"] = exceptionDetails
           repository.storeStage(stage)
           queue.push(CompleteTask(message, stage.failureStatus()))
@@ -105,7 +105,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun trackResult(stage: Stage<*>, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
+  private fun trackResult(stage: Stage, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
     val id = registry.createId("task.invocations")
       .withTag("status", status.toString())
       .withTag("executionType", stage.getExecution().javaClass.simpleName)
@@ -140,7 +140,7 @@ class RunTaskHandler(
 
   override val messageType = RunTask::class.java
 
-  private fun RunTask.withTask(block: (Stage<*>, com.netflix.spinnaker.orca.pipeline.model.Task, Task) -> Unit) =
+  private fun RunTask.withTask(block: (Stage, com.netflix.spinnaker.orca.pipeline.model.Task, Task) -> Unit) =
     withTask { stage, taskModel ->
       tasks
         .find { taskType.isAssignableFrom(it.javaClass) }
@@ -165,12 +165,12 @@ class RunTaskHandler(
     return DurationFormatUtils.formatDurationWords(timeout, true, true)
   }
 
-  private fun Task.checkForTimeout(stage: Stage<*>, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, message: Message) {
+  private fun Task.checkForTimeout(stage: Stage, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, message: Message) {
     checkForStageTimeout(stage)
     checkForTaskTimeout(taskModel, stage, message)
   }
 
-  private fun Task.checkForTaskTimeout(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: Stage<*>, message: Message) {
+  private fun Task.checkForTaskTimeout(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: Stage, message: Message) {
     if (this is RetryableTask) {
       val startTime = taskModel.startTime.toInstant()
       val pausedDuration = stage.getExecution().pausedDurationRelativeTo(startTime)
@@ -196,7 +196,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun checkForStageTimeout(stage: Stage<*>) {
+  private fun checkForStageTimeout(stage: Stage) {
     stage.getTopLevelTimeout().map(Duration::ofMillis).ifPresent({
       val startTime = stage.getTopLevelStage().getStartTime().toInstant()
       val elapsedTime = Duration.between(startTime, clock.instant())
@@ -208,7 +208,7 @@ class RunTaskHandler(
   }
 
 
-  private fun Execution<*>.pausedDurationRelativeTo(instant: Instant?): Duration {
+  private fun Execution.pausedDurationRelativeTo(instant: Instant?): Duration {
     val pausedDetails = getPaused()
     if (pausedDetails != null) {
       return if (pausedDetails.pauseTime.toInstant()?.isAfter(instant) ?: false) {
@@ -217,7 +217,7 @@ class RunTaskHandler(
     } else return ZERO
   }
 
-  private fun Stage<*>.processTaskOutput(result: TaskResult) {
+  private fun Stage.processTaskOutput(result: TaskResult) {
     if (result.context.isNotEmpty() || result.outputs.isNotEmpty()) {
       getContext().putAll(result.context)
       getOutputs().putAll(result.outputs)

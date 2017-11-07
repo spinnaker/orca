@@ -49,7 +49,7 @@ class RestartStageHandler(
     }
   }
 
-  private fun Stage<*>.addRestartDetails(user: String?) {
+  private fun Stage.addRestartDetails(user: String?) {
     getContext()["restartDetails"] = mapOf(
       "restartedBy" to (user ?: "anonymous"),
       "restartTime" to clock.millis(),
@@ -57,7 +57,7 @@ class RestartStageHandler(
     )
   }
 
-  private fun Stage<*>.reset() {
+  private fun Stage.reset() {
     if (getStatus().isComplete) {
       setStatus(NOT_STARTED)
       setStartTime(null)
@@ -72,7 +72,7 @@ class RestartStageHandler(
     downstreamStages().forEach { it.reset() }
   }
 
-  private fun Stage<*>.removeSynthetics() {
+  private fun Stage.removeSynthetics() {
     getExecution()
       .getStages()
       .filter { it.getParentStageId() == getId() }

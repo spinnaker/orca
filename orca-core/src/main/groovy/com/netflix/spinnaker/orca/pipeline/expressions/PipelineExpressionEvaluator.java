@@ -89,7 +89,7 @@ public class PipelineExpressionEvaluator extends ExpressionsSupport implements E
 
       return (stage != null) ? (String) stage.get(SPEL_EVALUATOR) : null;
     } else if (obj instanceof Execution) {
-      Execution<?> pipeline = (Execution) obj;
+      Execution pipeline = (Execution) obj;
       Stage stage = pipeline.getStages()
         .stream()
         .filter(PipelineExpressionEvaluator::hasVersionInContext)

@@ -125,7 +125,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("publishes an event") {
             verify(publisher).publishEvent(check<StageComplete> {
-              it.executionType shouldEqual pipeline.javaClass
+              it.executionType shouldEqual pipeline.type
               it.executionId shouldEqual pipeline.id
               it.stageId shouldEqual message.stageId
               it.status shouldEqual taskStatus
@@ -349,7 +349,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
         it("publishes an event") {
           verify(publisher).publishEvent(check<StageComplete> {
-            it.executionType shouldEqual pipeline.javaClass
+            it.executionType shouldEqual pipeline.type
             it.executionId shouldEqual pipeline.id
             it.stageId shouldEqual message.stageId
             it.status shouldEqual taskStatus
@@ -679,7 +679,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   }
 
   describe("surfacing expression evaluation errors") {
-    fun exceptionErrors(stages: List<Stage<*>>): List<*> =
+    fun exceptionErrors(stages: List<Stage>): List<*> =
       stages.flatMap {
         ((it.getContext()["exception"] as Map<*, *>)["details"] as Map<*, *>)["errors"] as List<*>
       }

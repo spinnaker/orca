@@ -19,19 +19,18 @@ package com.netflix.spinnaker.orca.dryrun
 import com.netflix.spinnaker.orca.pipeline.CheckPreconditionsStage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 
 class DryRunStageDefinitionBuilderFactory(
   stageDefinitionBuilders: Collection<StageDefinitionBuilder>
 ) : DefaultStageDefinitionBuilderFactory(stageDefinitionBuilders) {
 
-  override fun builderFor(stage: Stage<*>): StageDefinitionBuilder =
+  override fun builderFor(stage: Stage): StageDefinitionBuilder =
     stage.getExecution().let { execution ->
       super.builderFor(stage).let {
         if (stage.isExpressionPreconditionStage()) {
           it
-        } else if (execution is Pipeline && execution.trigger["type"] == "dryrun") {
+        } else if (execution.trigger["type"] == "dryrun") {
           DryRunStage(it)
         } else {
           it
@@ -39,17 +38,17 @@ class DryRunStageDefinitionBuilderFactory(
       }
     }
 
-  private fun Stage<*>.isExpressionPreconditionStage() =
+  private fun Stage.isExpressionPreconditionStage() =
     isPreconditionStage() && (isExpressionChild() || isExpressionParent())
 
-  private fun Stage<*>.isPreconditionStage() =
+  private fun Stage.isPreconditionStage() =
     getType() == CheckPreconditionsStage.PIPELINE_CONFIG_TYPE
 
-  private fun Stage<*>.isExpressionChild() =
+  private fun Stage.isExpressionChild() =
     getContext()["preconditionType"] == "expression"
 
   @Suppress("UNCHECKED_CAST")
-  private fun Stage<*>.isExpressionParent() =
+  private fun Stage.isExpressionParent() =
     (getContext()["preconditions"] as Iterable<Map<String, Any>>?)?.run {
       all { it["type"] == "expression" }
     } == true

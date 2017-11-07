@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import org.slf4j.Logger
@@ -34,12 +34,12 @@ interface ExpressionAware {
   val log: Logger
     get() = LoggerFactory.getLogger(javaClass)
 
-  fun Stage<*>.withMergedContext(): Stage<*> {
+  fun Stage.withMergedContext(): Stage {
     val processed = processEntries(this)
     val execution = getExecution()
     this.setContext(object : MutableMap<String, Any?> by processed {
       override fun get(key: String): Any? {
-        if (execution is Pipeline) {
+        if (execution.type == ExecutionType.pipeline) {
           if (key == "trigger") {
             return execution.trigger
           }
@@ -62,7 +62,7 @@ interface ExpressionAware {
     return this
   }
 
-  fun Stage<*>.includeExpressionEvaluationSummary() {
+  fun Stage.includeExpressionEvaluationSummary() {
     when {
       PipelineExpressionEvaluator.SUMMARY in this.getContext() ->
         try {
@@ -84,15 +84,15 @@ interface ExpressionAware {
       mapOf("details" to mapOf("errors" to mergedErrors))
     }
 
-  private fun processEntries(stage: Stage<*>) =
+  private fun processEntries(stage: Stage) =
     contextParameterProcessor.process(
       stage.getContext(),
       stage.getContext().augmentContext(stage.getExecution()),
       true
     )
 
-  private fun Map<String, Any?>.augmentContext(execution: Execution<*>) =
-    if (execution is Pipeline) {
+  private fun Map<String, Any?>.augmentContext(execution: Execution) =
+    if (execution.type == ExecutionType.pipeline) {
       this + execution.context + mapOf("trigger" to execution.trigger, "execution" to execution)
     } else {
       this

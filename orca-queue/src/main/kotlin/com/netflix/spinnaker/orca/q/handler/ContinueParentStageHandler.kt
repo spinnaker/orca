@@ -51,7 +51,7 @@ class ContinueParentStageHandler(
     }
   }
 
-  private fun Stage<*>.runFirstTask() {
+  private fun Stage.runFirstTask() {
     val firstTask = getTasks().first()
     if (firstTask.status == NOT_STARTED) {
       queue.push(StartTask(this, firstTask))
@@ -60,7 +60,7 @@ class ContinueParentStageHandler(
     }
   }
 
-  private fun Stage<*>.runAfterStages() {
+  private fun Stage.runAfterStages() {
     val afterStages = firstAfterStages()
     if (afterStages.all { it.getStatus() == NOT_STARTED }) {
       afterStages.forEach {

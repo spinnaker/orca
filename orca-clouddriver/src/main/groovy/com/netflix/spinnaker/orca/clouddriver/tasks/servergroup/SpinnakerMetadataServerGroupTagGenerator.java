@@ -55,7 +55,7 @@ public class SpinnakerMetadataServerGroupTagGenerator implements ServerGroupEnti
     Map<String, Object> value = new HashMap<>();
     value.put("stageId", stage.getId());
     value.put("executionId", execution.getId());
-    value.put("executionType", execution.getClass().getSimpleName().toLowerCase());
+    value.put("executionType", execution.getType().name());
     value.put("application", execution.getApplication());
 
     if (execution.getAuthentication() != null) {

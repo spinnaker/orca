@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
@@ -52,7 +51,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
         singleTaskStage.buildTasks(this)
       }
     }
-    val message = StartTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
+    val message = StartTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
       whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
@@ -88,7 +87,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
       argumentCaptor<TaskStarted>().apply {
         verify(publisher).publishEvent(capture())
         firstValue.apply {
-          executionType shouldEqual pipeline.javaClass
+          executionType shouldEqual pipeline.type
           executionId shouldEqual pipeline.id
           stageId shouldEqual message.stageId
           taskId shouldEqual message.taskId
@@ -104,7 +103,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
         singleTaskStage.buildTasks(this)
       }
     }
-    val message = StartTask(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id, "1")
+    val message = StartTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
       whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doThrow NullPointerException()

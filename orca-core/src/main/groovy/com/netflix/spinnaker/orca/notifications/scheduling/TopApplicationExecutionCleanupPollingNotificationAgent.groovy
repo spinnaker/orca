@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.transform.PackageScope
 import groovy.transform.stc.ClosureParams
@@ -56,8 +55,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgent implements Applicat
     execution.status.complete || execution.buildTime < (new Date() - 31).time
   }
   private Func1<Execution, Map> mapper = { Execution execution ->
-    def pipelineConfigId = execution instanceof Pipeline ? ((Pipeline) execution).pipelineConfigId : null
-    [id: execution.id, startTime: execution.startTime, pipelineConfigId: pipelineConfigId, status: execution.status]
+    [id: execution.id, startTime: execution.startTime, pipelineConfigId: execution.pipelineConfigId, status: execution.status]
   }
 
   @Autowired

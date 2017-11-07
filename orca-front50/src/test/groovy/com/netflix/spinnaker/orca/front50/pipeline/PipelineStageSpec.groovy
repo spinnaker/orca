@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.front50.pipeline
 
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
@@ -35,7 +35,7 @@ class PipelineStageSpec extends Specification {
     def childPipeline = new Pipeline("childPipeline")
     childPipeline.canceled = childPipelineIsCanceled
 
-    def stage = new Stage<>(new Pipeline("orca"), "pipeline", stageContext)
+    def stage = new Stage(Execution.newPipeline("orca"), "pipeline", stageContext)
 
     when:
     pipelineStage.cancel(stage)

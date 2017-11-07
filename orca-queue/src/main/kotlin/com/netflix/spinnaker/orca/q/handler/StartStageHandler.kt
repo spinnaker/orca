@@ -23,8 +23,8 @@ import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -81,12 +81,12 @@ class StartStageHandler(
             val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.getName())
             if (exceptionDetails?.shouldRetry ?: false) {
               val attempts = message.getAttribute<AttemptsAttribute>()?.attempts ?: 0
-              log.warn("Error planning ${stage.getType()} stage for ${message.executionType.simpleName}[${message.executionId}] (attempts: $attempts)")
+              log.warn("Error planning ${stage.getType()} stage for ${message.executionType}[${message.executionId}] (attempts: $attempts)")
 
               message.setAttribute(MaxAttemptsAttribute(40))
               queue.push(message, retryDelay)
             } else {
-              log.error("Error running ${stage.getType()} stage for ${message.executionType.simpleName}[${message.executionId}]", e)
+              log.error("Error running ${stage.getType()} stage for ${message.executionType}[${message.executionId}]", e)
               stage.getContext()["exception"] = exceptionDetails
               repository.storeStage(stage)
               queue.push(CompleteStage(message))
@@ -102,16 +102,16 @@ class StartStageHandler(
 
   override val messageType = StartStage::class.java
 
-  private fun Stage<*>.plan() {
+  private fun Stage.plan() {
     builder().let { builder ->
       builder.buildTasks(this)
-      builder.buildSyntheticStages(this) { it: Stage<*> ->
+      builder.buildSyntheticStages(this) { it: Stage ->
         repository.addStage(it)
       }
     }
   }
 
-  private fun Stage<*>.start() {
+  private fun Stage.start() {
     val beforeStages = firstBeforeStages()
     if (beforeStages.isEmpty()) {
       val task = firstTask()
@@ -134,13 +134,13 @@ class StartStageHandler(
     }
   }
 
-  private fun Stage<*>.shouldSkip(): Boolean {
-    if (this.getExecution() !is Pipeline) {
+  private fun Stage.shouldSkip(): Boolean {
+    if (this.getExecution().type != ExecutionType.pipeline) {
       return false
     }
 
     val clonedContext = objectMapper.convertValue(this.getContext(), Map::class.java) as Map<String, Any>
-    val clonedStage = Stage<Pipeline>(this.getExecution() as Pipeline, this.getType(), clonedContext)
+    val clonedStage = Stage(this.getExecution(), this.getType(), clonedContext)
     if (clonedStage.context.containsKey(PipelineExpressionEvaluator.SUMMARY)) {
       this.getContext().put(PipelineExpressionEvaluator.SUMMARY, clonedStage.context[PipelineExpressionEvaluator.SUMMARY])
     }

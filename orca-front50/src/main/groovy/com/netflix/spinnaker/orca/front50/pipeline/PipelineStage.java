@@ -15,14 +15,13 @@
  */
 package com.netflix.spinnaker.orca.front50.pipeline;
 
+import java.util.List;
 import com.netflix.spinnaker.orca.CancellableStage;
 import com.netflix.spinnaker.orca.RestartableStage;
 import com.netflix.spinnaker.orca.front50.tasks.MonitorPipelineTask;
 import com.netflix.spinnaker.orca.front50.tasks.StartPipelineTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.Task;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -30,9 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
@@ -48,7 +44,7 @@ public class PipelineStage implements StageDefinitionBuilder, RestartableStage, 
   ExecutionRepository executionRepository;
 
   @Override
-  public <T extends Execution<T>> void taskGraph(Stage<T> stage, TaskNode.Builder builder) {
+  public void taskGraph(Stage stage, TaskNode.Builder builder) {
     builder
       .withTask("startPipeline", StartPipelineTask.class);
 

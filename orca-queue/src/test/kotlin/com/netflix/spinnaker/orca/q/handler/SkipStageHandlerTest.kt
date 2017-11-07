@@ -113,7 +113,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(check<StageComplete> {
-          it.executionType shouldEqual pipeline.javaClass
+          it.executionType shouldEqual pipeline.type
           it.executionId shouldEqual pipeline.id
           it.stageId shouldEqual message.stageId
           it.status shouldEqual SKIPPED

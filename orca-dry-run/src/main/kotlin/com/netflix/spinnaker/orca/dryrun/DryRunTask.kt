@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -43,25 +42,22 @@ class DryRunTask : Task {
     )
       .map(String::toRegex)
 
-  override fun execute(stage: Stage<out Execution<*>>): TaskResult =
+  override fun execute(stage: Stage): TaskResult =
     stage
       .getExecution()
       .let { execution ->
-        when (execution) {
-          is Pipeline -> {
-            realStage(execution, stage)
-              .let { realStage ->
-                stage.evaluateStage(realStage)
-              }
-          }
-          else -> {
-            log.error("Dry run is only supported for pipelines")
-            TaskResult(TERMINAL)
-          }
+        if (execution.type == Execution.ExecutionType.pipeline) {
+          realStage(execution, stage)
+            .let { realStage ->
+              stage.evaluateStage(realStage)
+            }
+        } else {
+          log.error("Dry run is only supported for pipelines")
+          TaskResult(TERMINAL)
         }
       }
 
-  private fun Stage<out Execution<*>>.evaluateStage(realStage: Stage<Pipeline>): TaskResult {
+  private fun Stage.evaluateStage(realStage: Stage): TaskResult {
     val dryRunResult = mutableMapOf<String, Any>()
     var status: ExecutionStatus? = null
 
@@ -103,12 +99,12 @@ class DryRunTask : Task {
         value != other[key]
       }
 
-  private fun realStage(execution: Pipeline, stage: Stage<out Execution<*>>): Stage<Pipeline> {
+  private fun realStage(execution: Execution, stage: Stage): Stage {
     return execution
       .trigger["lastSuccessfulExecution"]
       .let { realPipeline ->
         when (realPipeline) {
-          is Pipeline -> realPipeline
+          is Execution -> realPipeline
           is Map<*, *> -> mapper.convertValue(realPipeline)
           else -> throw IllegalStateException("No triggering pipeline execution found")
         }

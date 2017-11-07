@@ -20,7 +20,6 @@ import com.natpryce.hamkrest.absent
 import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
@@ -55,7 +54,7 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
         type = singleTaskStage.type
       }
     }
-    val message = PauseStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
+    val message = PauseStage(ExecutionType.pipeline, pipeline.id, "foo", pipeline.stages.first().id)
 
     beforeGroup {
       whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
@@ -88,10 +87,10 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
         stageWithSyntheticBefore.buildSyntheticStages(this)
       }
     }
-    val message = PauseStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1<1").id)
+    val message = PauseStage(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1<1").id)
 
     beforeGroup {
-      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(pipeline.type, message.executionId)) doReturn pipeline
     }
 
     action("the handler receives a message") {
