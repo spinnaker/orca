@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import javax.servlet.http.HttpServletResponse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
@@ -38,9 +39,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
-
-import javax.servlet.http.HttpServletResponse
-
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static net.logstash.logback.argument.StructuredArguments.value
 
 import javax.servlet.http.HttpServletResponse
@@ -149,7 +148,7 @@ class OperationsController {
     }
 
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
-      Pipeline parentExecution = executionRepository.retrievePipeline(pipeline.trigger.parentPipelineId)
+      Pipeline parentExecution = executionRepository.retrieve(ExecutionType.pipeline, pipeline.trigger.parentPipelineId)
       if (parentExecution) {
         pipeline.trigger.isPipeline         = true
         pipeline.trigger.parentStatus       = parentExecution.status

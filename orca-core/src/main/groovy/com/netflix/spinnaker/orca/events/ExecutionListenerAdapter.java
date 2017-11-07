@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.events;
 
-import javax.annotation.Nonnull;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.listeners.DefaultPersister;
 import com.netflix.spinnaker.orca.listeners.ExecutionListener;
@@ -25,6 +24,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.context.ApplicationListener;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
 
 /**
  * Adapts events emitted by the nu-orca queue to an old-style listener.
@@ -60,9 +61,9 @@ public final class ExecutionListenerAdapter implements ApplicationListener<Execu
 
   private Execution<?> executionFor(ExecutionEvent event) {
     if (event.getExecutionType().equals(Pipeline.class)) {
-      return repository.retrievePipeline(event.getExecutionId());
+      return repository.retrieve(pipeline, event.getExecutionId());
     } else {
-      return repository.retrieveOrchestration(event.getExecutionId());
+      return repository.retrieve(orchestration, event.getExecutionId());
     }
   }
 }

@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -62,7 +63,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -91,7 +92,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -141,7 +142,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1<1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

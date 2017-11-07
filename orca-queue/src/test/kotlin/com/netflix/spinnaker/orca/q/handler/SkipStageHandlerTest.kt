@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
@@ -58,7 +59,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -86,7 +87,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -137,7 +138,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -189,7 +190,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -223,7 +224,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

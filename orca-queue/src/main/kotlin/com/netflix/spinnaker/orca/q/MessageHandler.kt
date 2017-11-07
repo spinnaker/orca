@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.*
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 
@@ -73,9 +75,9 @@ interface MessageHandler<M : Message> : (Message) -> Unit {
     try {
       val execution = when (executionType) {
         Pipeline::class.java ->
-          repository.retrievePipeline(executionId)
+          repository.retrieve(pipeline, executionId)
         Orchestration::class.java ->
-          repository.retrieveOrchestration(executionId)
+          repository.retrieve(orchestration, executionId)
         else ->
           throw IllegalArgumentException("Unknown execution type $executionType")
       }

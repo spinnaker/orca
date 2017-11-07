@@ -22,6 +22,9 @@ import com.natpryce.hamkrest.has
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Orchestration
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -77,8 +80,8 @@ private fun <E : Execution<E>> ExecutionRepository.waitForAllStagesToComplete(ex
   while (!complete) {
     Thread.sleep(100)
     complete = when (execution) {
-      is Pipeline -> retrievePipeline(execution.id)
-      else -> retrieveOrchestration(execution.id)
+      is Pipeline -> retrieve(pipeline, execution.id) as Pipeline
+      else -> retrieve(orchestration, execution.id) as Orchestration
     }.run {
       getStatus().isComplete && getStages()
         .map(Stage<*>::getStatus)

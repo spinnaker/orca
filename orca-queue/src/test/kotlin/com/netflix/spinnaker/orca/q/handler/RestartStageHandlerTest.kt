@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -80,7 +81,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
         val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id, "fzlem@netflix.com")
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -130,7 +131,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
       beforeGroup {
         stageWithSyntheticBefore.plan(pipeline.stageByRef("2>1"))
 
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -248,7 +249,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
     val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id, "fzlem@netflix.com")
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -321,7 +322,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
     val message = RestartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id, "fzlem@netflix.com")
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

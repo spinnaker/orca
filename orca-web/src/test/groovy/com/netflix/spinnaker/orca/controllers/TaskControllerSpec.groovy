@@ -16,12 +16,11 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
-
 import java.time.Clock
 import java.time.Instant
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.PipelineStartTracker
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -122,7 +121,7 @@ class TaskControllerSpec extends Specification {
     def response = mockMvc.perform(get('/tasks/1')).andReturn().response
 
     then:
-    executionRepository.retrieveOrchestration(orchestration.id) >> orchestration
+    executionRepository.retrieve(orchestration.type, orchestration.id) >> orchestration
 
     new JsonSlurper().parseText(response.contentAsString).variables == [
       [key: "customOutput", value: "variable"]
@@ -288,7 +287,7 @@ class TaskControllerSpec extends Specification {
     ).contentType(MediaType.APPLICATION_JSON)).andReturn().response
 
     then:
-    1 * executionRepository.retrievePipeline(pipeline.id) >> pipeline
+    1 * executionRepository.retrieve(pipeline.type, pipeline.id) >> pipeline
     1 * executionRepository.storeStage({ stage ->
       stage.id == "s1" &&
         stage.lastModified.allowedAccounts.isEmpty() &&

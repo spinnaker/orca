@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.notifications.scheduling
 
+import java.util.concurrent.TimeUnit
+import javax.annotation.PreDestroy
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
@@ -39,11 +41,8 @@ import rx.Scheduler
 import rx.Subscription
 import rx.functions.Func1
 import rx.schedulers.Schedulers
-
-import javax.annotation.PreDestroy
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 
 @Slf4j
 @Component
@@ -153,7 +152,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgent implements Applicat
         log.info("Deleting ${type} execution ${it.id} (startTime: ${new Date(startTime)}, application: ${application}, pipelineConfigId: ${it.pipelineConfigId}, status: ${it.status})")
         switch (type) {
           case "orchestration":
-            executionRepository.deleteOrchestration(it.id as String)
+            executionRepository.delete(ExecutionType.orchestration, it.id as String)
             break
           default:
             throw new IllegalArgumentException("Unsupported type '${type}'")

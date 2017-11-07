@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
 
 /**
  * Reacts to pipelines finishing and schedules the next job waiting
@@ -57,7 +58,7 @@ public class PipelineStarterListener implements ExecutionListener {
                              boolean wasSuccessful) {
     startTracker.getAllStartedExecutions().forEach(startedExecutionId -> {
       try {
-        Pipeline e = executionRepository.retrievePipeline(startedExecutionId);
+        Pipeline e = (Pipeline) executionRepository.retrieve(pipeline, startedExecutionId);
         if (e.getStatus().isComplete()) {
           processPipelines(e);
         }
@@ -81,7 +82,7 @@ public class PipelineStarterListener implements ExecutionListener {
         String nextPipelineId = queuedPipelines.get(nextIndex);
         queuedPipelines.forEach(id -> {
           if (Objects.equals(id, nextPipelineId)) {
-            Pipeline queuedExecution = executionRepository.retrievePipeline(id);
+            Pipeline queuedExecution = (Pipeline) executionRepository.retrieve(pipeline, id);
             log.info("starting pipeline {} due to {} ending", nextPipelineId, execution.getId());
             try {
               getPipelineLauncher().start(queuedExecution);

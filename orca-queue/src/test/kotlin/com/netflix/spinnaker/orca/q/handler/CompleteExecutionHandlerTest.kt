@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.ExecutionComplete
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
@@ -55,7 +56,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       val message = CompleteExecution(pipeline)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -98,7 +99,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       val message = CompleteExecution(pipeline)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -142,7 +143,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       val message = CompleteExecution(pipeline)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -192,7 +193,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     val message = CompleteExecution(pipeline)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -239,7 +240,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     val message = CompleteExecution(pipeline)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -292,7 +293,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     val message = CompleteExecution(pipeline)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

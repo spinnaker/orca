@@ -51,7 +51,7 @@ class MonitorPipelineTaskSpec extends Specification {
       status = providedStatus
     }
 
-    repo.retrievePipeline(_) >> pipeline
+    repo.retrieve(*_) >> pipeline
 
     when:
     def result = task.execute(stage)
@@ -104,7 +104,7 @@ class MonitorPipelineTaskSpec extends Specification {
       status = ExecutionStatus.TERMINAL
     }
 
-    repo.retrievePipeline(_) >> pipeline
+    repo.retrieve(*_) >> pipeline
 
     when:
     def result = task.execute(stage)

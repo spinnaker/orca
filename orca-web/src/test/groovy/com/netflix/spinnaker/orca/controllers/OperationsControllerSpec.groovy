@@ -39,11 +39,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import javax.servlet.http.HttpServletResponse
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 
@@ -184,7 +183,7 @@ class OperationsControllerSpec extends Specification {
     controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
-    1 * executionRepository.retrievePipeline("12345") >> parentPipeline
+    1 * executionRepository.retrieve(ExecutionType.pipeline, "12345") >> parentPipeline
 
     and:
     with(startedPipeline.trigger) {

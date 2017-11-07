@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -91,7 +92,7 @@ object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
 
         beforeGroup {
           whenever(cancellableStage.type) doReturn "cancellable"
-          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -120,7 +121,7 @@ object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
 
         beforeGroup {
           whenever(cancellableStage.type) doReturn "cancellable"
-          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)

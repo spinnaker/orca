@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
@@ -99,7 +100,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -153,7 +154,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         val message = StartStage(pipeline.stageByRef("1"))
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -194,7 +195,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         val message = StartStage(pipeline.stageByRef("1"))
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -235,7 +236,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       on("receiving a message") {
@@ -293,7 +294,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         on("receiving a message") {
@@ -329,7 +330,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -380,7 +381,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         beforeGroup {
           pipeline.stageByRef("1").status = SUCCEEDED
           pipeline.stageByRef("2").status = RUNNING
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -410,7 +411,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         beforeGroup {
           pipeline.stageByRef("1").status = SUCCEEDED
           pipeline.stageByRef("2").status = SUCCEEDED
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -432,7 +433,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         beforeGroup {
           pipeline.stageByRef("1").status = SUCCEEDED
           pipeline.stageByRef("2").status = TERMINAL
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -456,7 +457,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
           pipeline.stageByRef("1").status = SUCCEEDED
           pipeline.stageByRef("2").status = SUCCEEDED
           pipeline.stageByRef("3").status = RUNNING
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -488,7 +489,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -527,7 +528,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -569,7 +570,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -620,7 +621,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         and("the pipeline should fail") {
           beforeGroup {
-            whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+            whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
             whenever(exceptionHandler.handles(any())) doReturn true
             whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
           }
@@ -649,7 +650,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
               context["continuePipeline"] = false
             }
 
-            whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+            whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
             whenever(exceptionHandler.handles(any())) doReturn true
             whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
           }
@@ -678,7 +679,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
               context["continuePipeline"] = true
             }
 
-            whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+            whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
             whenever(exceptionHandler.handles(any())) doReturn true
             whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
           }
@@ -710,7 +711,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         )
 
         beforeGroup {
-          whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
           whenever(exceptionHandler.handles(any())) doReturn true
           whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
         }
@@ -741,7 +742,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -797,7 +798,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages[0].id)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -832,7 +833,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1").id)
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -881,7 +882,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(pipeline.stages.first())
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -910,7 +911,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       val message = StartStage(pipeline.stages.first())
 
       beforeGroup {
-        whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -953,7 +954,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       and("the stage should be run") {
         beforeGroup {
-          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -987,7 +988,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         val message = StartStage(pipeline.stageByRef("2"))
 
         beforeGroup {
-          whenever(repository.retrievePipeline(pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -1009,7 +1010,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
     given("no such execution") {
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doThrow ExecutionNotFoundException("No Pipeline found for ${message.executionId}")
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doThrow ExecutionNotFoundException("No Pipeline found for ${message.executionId}")
       }
 
       afterGroup(::resetMocks)
@@ -1030,7 +1031,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       }
 
       beforeGroup {
-        whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

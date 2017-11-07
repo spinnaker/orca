@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.natpryce.hamkrest.absent
 import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -57,7 +58,7 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
     val message = PauseStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stages.first().id)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -90,7 +91,7 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
     val message = PauseStage(Pipeline::class.java, pipeline.id, "foo", pipeline.stageByRef("1<1").id)
 
     beforeGroup {
-      whenever(repository.retrievePipeline(message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
     }
 
     action("the handler receives a message") {

@@ -27,6 +27,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
 
 /**
  * This listener translates events coming from the nu-orca queueing system to
@@ -118,9 +120,9 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
 
   private Execution retrieve(ExecutionEvent event) {
     if (Pipeline.class.equals(event.getExecutionType())) {
-      return repository.retrievePipeline(event.getExecutionId());
+      return repository.retrieve(pipeline, event.getExecutionId());
     } else {
-      return repository.retrieveOrchestration(event.getExecutionId());
+      return repository.retrieve(orchestration, event.getExecutionId());
     }
   }
 }

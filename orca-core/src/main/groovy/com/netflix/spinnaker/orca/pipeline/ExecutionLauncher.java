@@ -19,15 +19,12 @@ package com.netflix.spinnaker.orca.pipeline;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -94,32 +91,11 @@ public abstract class ExecutionLauncher<T extends Execution<T>> {
     final String canceledBy = "system";
     final String reason = "Failed on startup: " + failure.getMessage();
     final ExecutionStatus status = ExecutionStatus.TERMINAL;
-    final Function<Execution, Execution> reloader;
-    final String executionType;
-    if (execution.getType() == pipeline) {
-      executionType = "pipeline";
-      reloader = (e) -> executionRepository.retrievePipeline(e.getId());
-    } else if (execution.getType() == orchestration) {
-      executionType = "orchestration";
-      reloader = (e) -> executionRepository.retrieveOrchestration(e.getId());
-    } else {
-      //This should really never happen. If it does, git-blame whoever added the third
-      // type of Execution and yell at them...
-      log.error("Unknown execution type: " + execution.getClass().getSimpleName());
-      executionType = "unknown";
-      reloader = (e) -> {
-        e.setCancellationReason(reason);
-        e.setCanceled(true);
-        e.setCanceledBy(canceledBy);
-        e.setStatus(status);
-        return e;
-      };
-    }
 
-    log.error("Failed to start " + executionType + " " + execution.getId(), failure);
+    log.error("Failed to start {} {}", execution.getType(), execution.getId(), failure);
     executionRepository.updateStatus(execution.getId(), status);
     executionRepository.cancel(execution.getId(), canceledBy, reason);
-    return (T) reloader.apply(execution);
+    return (T) executionRepository.retrieve(execution.getType(), execution.getId());
   }
 
   protected void onExecutionStarted(T execution) {
