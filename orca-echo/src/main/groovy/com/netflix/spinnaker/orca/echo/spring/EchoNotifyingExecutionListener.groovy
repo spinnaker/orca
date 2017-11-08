@@ -56,7 +56,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
   void beforeExecution(Persister persister, Execution execution) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
-        if (execution.type == ExecutionType.pipeline) {
+        if (execution.type == ExecutionType.PIPELINE) {
           addApplicationNotifications(execution)
         }
         echoService.recordEvent(
@@ -83,7 +83,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
                       boolean wasSuccessful) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
-        if (execution.type == ExecutionType.pipeline) {
+        if (execution.type == ExecutionType.PIPELINE) {
           addApplicationNotifications(execution)
           addDryRunNotifications(execution)
         }

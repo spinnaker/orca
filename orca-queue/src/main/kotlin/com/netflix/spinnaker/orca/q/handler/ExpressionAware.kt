@@ -39,7 +39,7 @@ interface ExpressionAware {
     val execution = execution
     this.context = object : MutableMap<String, Any?> by processed {
       override fun get(key: String): Any? {
-        if (execution.type == ExecutionType.pipeline) {
+        if (execution.type == ExecutionType.PIPELINE) {
           if (key == "trigger") {
             return execution.trigger
           }
@@ -92,7 +92,7 @@ interface ExpressionAware {
     )
 
   private fun Map<String, Any?>.augmentContext(execution: Execution) =
-    if (execution.type == ExecutionType.pipeline) {
+    if (execution.type == ExecutionType.PIPELINE) {
       this + execution.context + mapOf("trigger" to execution.trigger, "execution" to execution)
     } else {
       this

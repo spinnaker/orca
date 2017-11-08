@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 class PipelineStageSpec extends Specification {
   def executionRepository = Mock(ExecutionRepository)
@@ -39,7 +39,7 @@ class PipelineStageSpec extends Specification {
     def stage = new Stage(Execution.newPipeline("orca"), "pipeline", stageContext)
 
     and:
-    executionRepository.retrieve(pipeline, stageContext.executionId) >> childPipeline
+    executionRepository.retrieve(PIPELINE, stageContext.executionId) >> childPipeline
 
     when:
     pipelineStage.cancel(stage)

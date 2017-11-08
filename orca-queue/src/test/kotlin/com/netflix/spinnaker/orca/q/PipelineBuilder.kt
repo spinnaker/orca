@@ -28,7 +28,7 @@ import kotlin.reflect.jvm.jvmName
  * Build a pipeline.
  */
 fun pipeline(init: Execution.() -> Unit = {}): Execution {
-  val pipeline = Execution(ExecutionType.pipeline, "covfefe")
+  val pipeline = Execution(ExecutionType.PIPELINE, "covfefe")
   pipeline.buildTime = currentTimeMillis()
   pipeline.init()
   return pipeline

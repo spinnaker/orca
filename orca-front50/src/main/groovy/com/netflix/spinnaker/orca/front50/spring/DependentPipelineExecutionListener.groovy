@@ -40,7 +40,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
 
   @Override
   void afterExecution(Persister persister, Execution execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
-    if (!execution || !(execution.type == ExecutionType.pipeline)) {
+    if (!execution || !(execution.type == ExecutionType.PIPELINE)) {
       return
     }
 

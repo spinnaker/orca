@@ -112,8 +112,8 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     agent.tick()
 
     then:
-    1 * executionRepository.delete(ExecutionType.pipeline, '1')
-    1 * executionRepository.delete(ExecutionType.pipeline, '2')
+    1 * executionRepository.delete(ExecutionType.PIPELINE, '1')
+    1 * executionRepository.delete(ExecutionType.PIPELINE, '2')
   }
 
   private

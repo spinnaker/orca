@@ -109,7 +109,7 @@ class TaskController {
   @PostFilter("hasPermission(filterObject.application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/tasks", method = RequestMethod.GET)
   List<OrchestrationViewModel> list() {
-    executionRepository.retrieve(ExecutionType.orchestration).toBlocking().iterator.collect {
+    executionRepository.retrieve(ExecutionType.ORCHESTRATION).toBlocking().iterator.collect {
       convert it
     }
   }
@@ -122,17 +122,17 @@ class TaskController {
   // GUID, it's unlikely than an attacker would be able to guess the identifier for any task.
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.GET)
   OrchestrationViewModel getTask(@PathVariable String id) {
-    convert executionRepository.retrieve(ExecutionType.orchestration, id)
+    convert executionRepository.retrieve(ExecutionType.ORCHESTRATION, id)
   }
 
   Execution getOrchestration(String id) {
-    executionRepository.retrieve(ExecutionType.orchestration, id)
+    executionRepository.retrieve(ExecutionType.ORCHESTRATION, id)
   }
 
   @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.DELETE)
   void deleteTask(@PathVariable String id) {
-    executionRepository.delete(ExecutionType.orchestration, id)
+    executionRepository.delete(ExecutionType.ORCHESTRATION, id)
   }
 
   @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
@@ -177,13 +177,13 @@ class TaskController {
   @PostAuthorize("hasPermission(returnObject.application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/pipelines/{id}", method = RequestMethod.GET)
   Execution getPipeline(@PathVariable String id) {
-    executionRepository.retrieve(ExecutionType.pipeline, id)
+    executionRepository.retrieve(ExecutionType.PIPELINE, id)
   }
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/pipelines/{id}", method = RequestMethod.DELETE)
   void deletePipeline(@PathVariable String id) {
-    executionRepository.delete(ExecutionType.pipeline, id)
+    executionRepository.delete(ExecutionType.PIPELINE, id)
   }
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'READ')")
@@ -200,7 +200,7 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancel(@PathVariable String id, @RequestParam(required = false) String reason,
               @RequestParam(defaultValue = "false") boolean force) {
-    executionRepository.retrieve(ExecutionType.pipeline, id).with { pipeline ->
+    executionRepository.retrieve(ExecutionType.PIPELINE, id).with { pipeline ->
       executionRunner.cancel(
         pipeline,
         AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
@@ -215,7 +215,7 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void pause(@PathVariable String id) {
     executionRepository.pause(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"))
-    def pipeline = executionRepository.retrieve(ExecutionType.pipeline, id)
+    def pipeline = executionRepository.retrieve(ExecutionType.PIPELINE, id)
     executionRunner.reschedule(pipeline)
   }
 
@@ -224,7 +224,7 @@ class TaskController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void resume(@PathVariable String id) {
     executionRepository.resume(id, AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"))
-    def pipeline = executionRepository.retrieve(ExecutionType.pipeline, id)
+    def pipeline = executionRepository.retrieve(ExecutionType.PIPELINE, id)
     executionRunner.unpause(pipeline)
   }
 
@@ -247,7 +247,7 @@ class TaskController {
   Execution updatePipelineStage(
     @PathVariable String id,
     @PathVariable String stageId, @RequestBody Map context) {
-    def pipeline = executionRepository.retrieve(ExecutionType.pipeline, id)
+    def pipeline = executionRepository.retrieve(ExecutionType.PIPELINE, id)
     def stage = pipeline.stages.find { it.id == stageId }
     if (stage) {
       stage.context.putAll(context)
@@ -272,7 +272,7 @@ class TaskController {
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}/restart", method = RequestMethod.PUT)
   Execution retryPipelineStage(
     @PathVariable String id, @PathVariable String stageId) {
-    def pipeline = executionRepository.retrieve(ExecutionType.pipeline, id)
+    def pipeline = executionRepository.retrieve(ExecutionType.PIPELINE, id)
     executionRunner.restart(pipeline, stageId)
     if (pipeline.pipelineConfigId) {
       startTracker.addToStarted(pipeline.pipelineConfigId, pipeline.id)
@@ -284,7 +284,7 @@ class TaskController {
   @RequestMapping(value = "/pipelines/{id}/evaluateExpression", method = RequestMethod.GET)
   Map evaluateExpressionForExecution(@PathVariable("id") String id,
                                      @RequestParam("expression") String expression){
-    def execution = executionRepository.retrieve(ExecutionType.pipeline, id)
+    def execution = executionRepository.retrieve(ExecutionType.PIPELINE, id)
     def evaluated = contextParameterProcessor.process(
       [expression: expression],
       [execution: execution],

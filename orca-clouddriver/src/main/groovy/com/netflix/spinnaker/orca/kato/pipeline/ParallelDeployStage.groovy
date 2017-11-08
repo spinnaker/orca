@@ -79,7 +79,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
 
   @CompileDynamic
   protected Collection<Map<String, Object>> parallelContexts(Stage stage) {
-    if (stage.execution.type == ExecutionType.pipeline) {
+    if (stage.execution.type == ExecutionType.PIPELINE) {
       Map trigger = stage.execution.trigger
       if (trigger.parameters?.strategy == true) {
         Map parentStage = trigger.parentExecution.stages.find {
@@ -146,7 +146,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
 
   @CompileDynamic
   private boolean isClone(Stage stage) {
-    if (stage.execution.type == ExecutionType.pipeline) {
+    if (stage.execution.type == ExecutionType.PIPELINE) {
       Map trigger = stage.execution.trigger
 
       if (trigger.parameters?.clone == true) {

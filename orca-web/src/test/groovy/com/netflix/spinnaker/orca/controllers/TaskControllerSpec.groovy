@@ -74,7 +74,7 @@ class TaskControllerSpec extends Specification {
     mockMvc.perform(get('/tasks')).andReturn().response
 
     then:
-    1 * executionRepository.retrieve(ExecutionType.orchestration) >> {
+    1 * executionRepository.retrieve(ExecutionType.ORCHESTRATION) >> {
       return rx.Observable.empty()
     }
   }
@@ -93,7 +93,7 @@ class TaskControllerSpec extends Specification {
 
   void 'step names are properly translated'() {
     given:
-    executionRepository.retrieve(ExecutionType.orchestration) >> rx.Observable.from([orchestration {
+    executionRepository.retrieve(ExecutionType.ORCHESTRATION) >> rx.Observable.from([orchestration {
       id = "1"
       application = "covfefe"
       stages << new Stage(delegate, "test")
@@ -134,7 +134,7 @@ class TaskControllerSpec extends Specification {
     MockHttpServletResponse response = mockMvc.perform(get('/tasks')).andReturn().response
 
     then:
-    1 * executionRepository.retrieve(ExecutionType.orchestration) >> rx.Observable.from([])
+    1 * executionRepository.retrieve(ExecutionType.ORCHESTRATION) >> rx.Observable.from([])
     response.status == 200
     response.contentAsString == '[]'
   }

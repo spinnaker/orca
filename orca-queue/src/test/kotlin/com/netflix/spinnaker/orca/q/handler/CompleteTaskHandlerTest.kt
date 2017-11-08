@@ -61,7 +61,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -112,7 +112,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -153,7 +153,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -202,7 +202,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
             tasks[2].status = SUCCEEDED
           }
 
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -243,7 +243,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", status)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

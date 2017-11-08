@@ -87,11 +87,11 @@ object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
       "2c" to "a cancellable stage that failed"
     ).forEach { refId, description ->
       context(description) {
-        val message = CancelStage(ExecutionType.pipeline, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
+        val message = CancelStage(ExecutionType.PIPELINE, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
 
         beforeGroup {
           whenever(cancellableStage.type) doReturn "cancellable"
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -116,7 +116,7 @@ object CancelStageHandlerTest : SubjectSpek<CancelStageHandler>({
       "3" to "a cancellable stage that did not start yet"
     ).forEach { refId, description ->
       context(description) {
-        val message = CancelStage(ExecutionType.pipeline, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
+        val message = CancelStage(ExecutionType.PIPELINE, pipeline.id, pipeline.application, pipeline.stageByRef(refId).id)
 
         beforeGroup {
           whenever(cancellableStage.type) doReturn "cancellable"

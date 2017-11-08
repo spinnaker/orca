@@ -66,7 +66,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
       pipelineConfig.trigger.parentPipelineStageId = parentPipelineStageId
     }
 
-    if (parentPipeline?.type == ExecutionType.pipeline){
+    if (parentPipeline?.type == ExecutionType.PIPELINE){
       pipelineConfig.trigger.parentPipelineName = parentPipeline.name
       pipelineConfig.trigger.isPipeline = true
     }
@@ -103,7 +103,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
                   ", principal: " + principal?.toString())
     def callable = AuthenticatedRequest.propagate({
       log.debug("Destination thread user: " + AuthenticatedRequest.getAuthenticationHeaders())
-      pipeline = executionLauncher().start(ExecutionType.pipeline, json)
+      pipeline = executionLauncher().start(ExecutionType.PIPELINE, json)
     } as Callable<Void>, true, principal)
 
     //This needs to run in a separate thread to not bork the batch TransactionManager

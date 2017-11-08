@@ -163,7 +163,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(pipeline)
 
     expect:
-    repository.retrieve(ExecutionType.pipeline).toBlocking().first().id == pipeline.id
+    repository.retrieve(ExecutionType.PIPELINE).toBlocking().first().id == pipeline.id
 
     with(repository.retrieve(pipeline.type, pipeline.id)) {
       id == pipeline.id
@@ -223,16 +223,16 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     and:
     repository.store(pipeline)
-    repository.delete(ExecutionType.pipeline, pipeline.id)
+    repository.delete(ExecutionType.PIPELINE, pipeline.id)
 
     when:
-    repository.retrieve(ExecutionType.pipeline, pipeline.id)
+    repository.retrieve(ExecutionType.PIPELINE, pipeline.id)
 
     then:
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(ExecutionType.pipeline).toList().toBlocking().first() == []
+    repository.retrieve(ExecutionType.PIPELINE).toList().toBlocking().first() == []
   }
 
   def "updateStatus sets startTime to current time if new status is RUNNING"() {
@@ -498,7 +498,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     jedis.sadd("allJobs:pipeline", id)
 
     when:
-    def result = repository.retrieve(ExecutionType.pipeline).toList().toBlocking().first()
+    def result = repository.retrieve(ExecutionType.PIPELINE).toList().toBlocking().first()
 
     then:
     result.isEmpty()
@@ -535,7 +535,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(ExecutionType.pipeline).toList().toBlocking().first() == []
+    repository.retrieve(ExecutionType.PIPELINE).toList().toBlocking().first() == []
     jedis.zrange(JedisExecutionRepository.executionsByPipelineKey(pipeline.pipelineConfigId), 0, 1).isEmpty()
   }
 

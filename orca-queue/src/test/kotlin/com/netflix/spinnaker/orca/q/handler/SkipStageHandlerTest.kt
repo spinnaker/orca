@@ -59,7 +59,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -87,7 +87,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -138,7 +138,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -190,7 +190,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -224,7 +224,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       val message = SkipStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

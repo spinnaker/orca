@@ -22,7 +22,7 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 
 class AppEngineBranchFinder {
   static String findInStage(Map operation, Stage stage) {
-    if (operation.fromTrigger && operation.trigger && stage.execution.type == ExecutionType.pipeline) {
+    if (operation.fromTrigger && operation.trigger && stage.execution.type == ExecutionType.PIPELINE) {
       Map trigger = stage.execution.trigger
 
       if (trigger.type == "git") {

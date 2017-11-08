@@ -316,11 +316,11 @@ public class Execution implements Serializable {
   }
 
   public static Execution newOrchestration(String application) {
-    return new Execution(ExecutionType.orchestration, application);
+    return new Execution(ExecutionType.ORCHESTRATION, application);
   }
 
   public static Execution newPipeline(String application) {
-    return new Execution(ExecutionType.pipeline, application);
+    return new Execution(ExecutionType.PIPELINE, application);
   }
 
   public static class AuthenticationDetails implements Serializable {
@@ -429,7 +429,13 @@ public class Execution implements Serializable {
     }
   }
 
-  public enum ExecutionType {pipeline, orchestration}
+  public enum ExecutionType {
+    PIPELINE, ORCHESTRATION;
+
+    @Override public String toString() {
+      return name().toLowerCase();
+    }
+  }
 
   public static final ExecutionEngine DEFAULT_EXECUTION_ENGINE = v3;
 

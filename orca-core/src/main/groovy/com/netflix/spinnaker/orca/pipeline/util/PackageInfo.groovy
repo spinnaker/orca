@@ -22,7 +22,7 @@ import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileDynamic
 import groovy.util.logging.Slf4j
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Slf4j
 class PackageInfo {
@@ -58,7 +58,7 @@ class PackageInfo {
     requestMap.putAll(stage.execution.context)
     requestMap.putAll(stage.context)
 
-    if (stage.execution.type == pipeline) {
+    if (stage.execution.type == PIPELINE) {
       Map trigger = stage.execution.trigger
       Map buildInfo = null
       if (requestMap.buildInfo) { // package was built as part of the pipeline

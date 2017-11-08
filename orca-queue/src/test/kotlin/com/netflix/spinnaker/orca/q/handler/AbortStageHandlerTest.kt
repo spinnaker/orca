@@ -63,7 +63,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -92,7 +92,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -142,7 +142,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       val message = AbortStage(pipeline.stageByRef("1<1"))
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

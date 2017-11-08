@@ -60,7 +60,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         beforeGroup {
           pipeline.stageByRef("1<1").status = status
           pipeline.stageByRef("1<2").status = RUNNING
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -90,7 +90,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         beforeGroup {
           pipeline.stageByRef("1<1").status = status
           pipeline.stageByRef("1<2").status = TERMINAL
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -123,7 +123,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
 
         and("they have not started yet") {
           beforeGroup {
-            whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+            whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -140,7 +140,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         and("they have already started") {
           beforeGroup {
             pipeline.stageByRef("1").tasks.first().status = RUNNING
-            whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+            whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
           }
 
           afterGroup(::resetMocks)
@@ -170,7 +170,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
 
         beforeGroup {
           pipeline.stageByRef("1").beforeStages().forEach { it.status = status }
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -204,7 +204,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
 
       and("they didn't start yet") {
         beforeGroup {
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -221,7 +221,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
       and("they already started") {
         beforeGroup {
           pipeline.stageByRef("1>1").status = RUNNING
-          whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)

@@ -112,7 +112,7 @@ class ContextParameterProcessor {
 
   Map<String, Object> buildExecutionContext(Stage stage, boolean includeStageContext) {
     def augmentedContext = [:] + (includeStageContext ? stage.context : [:])
-    if (stage.execution.type == ExecutionType.pipeline) {
+    if (stage.execution.type == ExecutionType.PIPELINE) {
       augmentedContext.put('trigger', stage.execution.trigger)
       augmentedContext.put('execution', stage.execution)
     }

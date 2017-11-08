@@ -93,7 +93,7 @@ public class ExecutionLauncher {
   }
 
   private void checkRunnable(Execution execution) {
-    if (execution.getType() == ExecutionType.pipeline) {
+    if (execution.getType() == ExecutionType.PIPELINE) {
       pipelineValidator.ifPresent(it -> it.checkRunnable(execution));
     }
   }
@@ -109,7 +109,7 @@ public class ExecutionLauncher {
   }
 
   private Execution checkForCorrelatedExecution(Execution execution) {
-    if (execution.getType() != ExecutionType.orchestration) {
+    if (execution.getType() != ExecutionType.ORCHESTRATION) {
       return null;
     }
 
@@ -140,7 +140,7 @@ public class ExecutionLauncher {
     log.error("Failed to start {} {}", execution.getType(), execution.getId(), failure);
     executionRepository.updateStatus(execution.getId(), status);
     executionRepository.cancel(execution.getId(), canceledBy, reason);
-    if (execution.getType() == ExecutionType.pipeline) {
+    if (execution.getType() == ExecutionType.PIPELINE) {
       startTracker.ifPresent(tracker -> {
         if (execution.getPipelineConfigId() != null) {
           tracker.removeFromQueue(execution.getPipelineConfigId(), execution.getId());
@@ -161,7 +161,7 @@ public class ExecutionLauncher {
   }
 
   private Execution parse(ExecutionType type, String configJson) throws IOException {
-    if (type == ExecutionType.pipeline) {
+    if (type == ExecutionType.PIPELINE) {
       return parsePipeline(configJson);
     } else {
       return parseOrchestration(configJson);

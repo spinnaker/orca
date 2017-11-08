@@ -135,7 +135,7 @@ class StartStageHandler(
   }
 
   private fun Stage.shouldSkip(): Boolean {
-    if (this.execution.type != ExecutionType.pipeline) {
+    if (this.execution.type != ExecutionType.PIPELINE) {
       return false
     }
 

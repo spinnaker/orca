@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import com.google.common.collect.ForwardingMap;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
 public class StageContext extends ForwardingMap<String, Object> {
 
@@ -42,7 +42,7 @@ public class StageContext extends ForwardingMap<String, Object> {
 
   private Map<String, Object> getTrigger() {
     Execution execution = stage.getExecution();
-    if (execution.getType() == pipeline) {
+    if (execution.getType() == PIPELINE) {
       return execution.getTrigger();
     } else {
       return Collections.emptyMap();

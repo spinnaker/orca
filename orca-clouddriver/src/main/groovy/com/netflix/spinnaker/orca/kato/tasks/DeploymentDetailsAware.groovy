@@ -56,7 +56,7 @@ trait DeploymentDetailsAware {
   }
 
   Stage getPreviousStageWithImage(Stage stage, String targetRegion, String targetCloudProvider) {
-    if (stage.execution.type == ExecutionType.orchestration) {
+    if (stage.execution.type == ExecutionType.ORCHESTRATION) {
       return null
     }
 
@@ -72,7 +72,7 @@ trait DeploymentDetailsAware {
   }
 
   List<Execution> getPipelineExecutions(Execution execution) {
-    if (execution?.type == ExecutionType.pipeline) {
+    if (execution?.type == ExecutionType.PIPELINE) {
       return [execution] + getPipelineExecutions(getParentPipelineExecution(execution))
     } else {
       return []
@@ -91,7 +91,7 @@ trait DeploymentDetailsAware {
     } else if (stage?.parentStageId) {
       def parent = execution.stages.find { it.id == stage.parentStageId }
       return ([parent] + getAncestors(parent, execution)).flatten()
-    } else if (execution.type == ExecutionType.pipeline) {
+    } else if (execution.type == ExecutionType.PIPELINE) {
       def parentPipelineExecution = getParentPipelineExecution(execution)
 
       if (parentPipelineExecution) {
@@ -127,7 +127,7 @@ trait DeploymentDetailsAware {
 
   private Execution getParentPipelineExecution(Execution execution) {
     // The initial stage execution is a Pipeline, and the ancestor executions are Maps.
-    if (execution.type == ExecutionType.pipeline) {
+    if (execution.type == ExecutionType.PIPELINE) {
       if (execution.trigger.parentExecution instanceof Execution) {
         return execution.trigger.parentExecution
       } else if (execution.trigger?.isPipeline) {

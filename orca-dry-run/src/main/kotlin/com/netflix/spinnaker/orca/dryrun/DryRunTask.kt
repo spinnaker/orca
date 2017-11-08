@@ -46,7 +46,7 @@ class DryRunTask : Task {
     stage
       .execution
       .let { execution ->
-        if (execution.type == Execution.ExecutionType.pipeline) {
+        if (execution.type == Execution.ExecutionType.PIPELINE) {
           realStage(execution, stage)
             .let { realStage ->
               stage.evaluateStage(realStage)

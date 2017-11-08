@@ -54,7 +54,7 @@ class QueueDataMigrator(
 
   private fun String.update() =
     replace(regex) { match ->
-      match.destructured.component1().toLowerCase()
+      match.destructured.component1().toUpperCase()
     }
 
   private operator fun Tuple.component1() = element

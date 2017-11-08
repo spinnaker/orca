@@ -21,7 +21,7 @@ import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
 
 public class MetricsExecutionListener implements ExecutionListener {
   private final Registry registry;
@@ -49,7 +49,7 @@ public class MetricsExecutionListener implements ExecutionListener {
                              Execution execution,
                              ExecutionStatus executionStatus,
                              boolean wasSuccessful) {
-    if (execution.getType() != orchestration) {
+    if (execution.getType() != ORCHESTRATION) {
       // not concerned with pipelines right now (pipelines can have wait stages / manual judgments which skew execution time)
       return;
     }

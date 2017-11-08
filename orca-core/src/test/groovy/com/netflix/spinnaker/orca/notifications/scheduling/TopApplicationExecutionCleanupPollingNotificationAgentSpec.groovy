@@ -93,7 +93,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
     agent.tick()
 
     then:
-    1 * agent.executionRepository.delete(ExecutionType.orchestration, orchestrations[0].id)
+    1 * agent.executionRepository.delete(ExecutionType.ORCHESTRATION, orchestrations[0].id)
   }
 
   private

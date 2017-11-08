@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.q.*
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
@@ -40,7 +40,7 @@ object DeadMessageHandlerTest : SubjectSpek<DeadMessageHandler>({
   fun resetMocks() = reset(queue)
 
   describe("handling an execution level message") {
-    val message = StartExecution(pipeline, "1", "spinnaker")
+    val message = StartExecution(PIPELINE, "1", "spinnaker")
 
     afterGroup(::resetMocks)
 
@@ -54,7 +54,7 @@ object DeadMessageHandlerTest : SubjectSpek<DeadMessageHandler>({
   }
 
   describe("handling a stage level message") {
-    val message = StartStage(pipeline, "1", "spinnaker", "1")
+    val message = StartStage(PIPELINE, "1", "spinnaker", "1")
 
     afterGroup(::resetMocks)
 
@@ -68,7 +68,7 @@ object DeadMessageHandlerTest : SubjectSpek<DeadMessageHandler>({
   }
 
   describe("handling a task level message") {
-    val message = RunTask(pipeline, "1", "spinnaker", "1", "1", DummyTask::class.java)
+    val message = RunTask(PIPELINE, "1", "spinnaker", "1", "1", DummyTask::class.java)
 
     afterGroup(::resetMocks)
 
@@ -82,7 +82,7 @@ object DeadMessageHandlerTest : SubjectSpek<DeadMessageHandler>({
   }
 
   describe("handling a message that was previously dead-lettered") {
-    val message = CompleteExecution(pipeline, "1", "spinnaker").apply {
+    val message = CompleteExecution(PIPELINE, "1", "spinnaker").apply {
       setAttribute(DeadMessageAttribute)
     }
 

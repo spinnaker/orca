@@ -85,7 +85,7 @@ class OperationsControllerSpec extends Specification {
     ).andReturn().response
 
     then:
-    1 * executionLauncher.start(ExecutionType.pipeline, _) >> pipeline
+    1 * executionLauncher.start(ExecutionType.PIPELINE, _) >> pipeline
 
     and:
     resp.status == 200
@@ -183,7 +183,7 @@ class OperationsControllerSpec extends Specification {
     controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
-    1 * executionRepository.retrieve(ExecutionType.pipeline, "12345") >> parentPipeline
+    1 * executionRepository.retrieve(ExecutionType.PIPELINE, "12345") >> parentPipeline
 
     and:
     with(startedPipeline.trigger) {

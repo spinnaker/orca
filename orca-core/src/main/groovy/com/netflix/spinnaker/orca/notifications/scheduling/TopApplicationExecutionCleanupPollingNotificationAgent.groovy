@@ -150,7 +150,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgent implements Applicat
         log.info("Deleting ${type} execution ${it.id} (startTime: ${new Date(startTime)}, application: ${application}, pipelineConfigId: ${it.pipelineConfigId}, status: ${it.status})")
         switch (type) {
           case "orchestration":
-            executionRepository.delete(ExecutionType.orchestration, it.id as String)
+            executionRepository.delete(ExecutionType.ORCHESTRATION, it.id as String)
             break
           default:
             throw new IllegalArgumentException("Unsupported type '${type}'")

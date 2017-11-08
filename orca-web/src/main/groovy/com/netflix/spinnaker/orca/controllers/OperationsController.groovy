@@ -141,7 +141,7 @@ class OperationsController {
     }
 
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
-      def parentExecution = executionRepository.retrieve(ExecutionType.pipeline, pipeline.trigger.parentPipelineId)
+      def parentExecution = executionRepository.retrieve(ExecutionType.PIPELINE, pipeline.trigger.parentPipelineId)
       if (parentExecution) {
         pipeline.trigger.isPipeline         = true
         pipeline.trigger.parentStatus       = parentExecution.status
@@ -238,7 +238,7 @@ class OperationsController {
     def json = objectMapper.writeValueAsString(config)
     log.info('requested pipeline: {}', json)
 
-    def pipeline = executionLauncher.start(ExecutionType.pipeline, json)
+    def pipeline = executionLauncher.start(ExecutionType.PIPELINE, json)
 
     [ref: "/pipelines/${pipeline.id}".toString()]
   }
@@ -248,7 +248,7 @@ class OperationsController {
     injectPipelineOrigin(config)
     def json = objectMapper.writeValueAsString(config)
     log.info('requested task:{}', json)
-    def pipeline = orchestrationLauncher.start(ExecutionType.orchestration, json)
+    def pipeline = orchestrationLauncher.start(ExecutionType.ORCHESTRATION, json)
     [ref: "/tasks/${pipeline.id}".toString()]
   }
 

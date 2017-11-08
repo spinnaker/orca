@@ -41,7 +41,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
   @Override
   TaskResult execute(Stage stage) {
     String pipelineId = stage.context.executionId
-    Execution childPipeline = executionRepository.retrieve(ExecutionType.pipeline, pipelineId)
+    Execution childPipeline = executionRepository.retrieve(ExecutionType.PIPELINE, pipelineId)
 
     if (childPipeline.status == ExecutionStatus.SUCCEEDED) {
       return new TaskResult(ExecutionStatus.SUCCEEDED, [status: childPipeline.status])

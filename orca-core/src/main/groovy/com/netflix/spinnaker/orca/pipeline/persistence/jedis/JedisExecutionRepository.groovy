@@ -46,8 +46,8 @@ import rx.schedulers.Schedulers
 import static com.google.common.base.Predicates.notNull
 import static com.google.common.collect.Maps.filterValues
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.DEFAULT_EXECUTION_ENGINE
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static java.lang.System.currentTimeMillis
 import static java.util.Collections.*
@@ -110,7 +110,7 @@ class JedisExecutionRepository implements ExecutionRepository {
     withJedis(getJedisPoolForId(execution.id)) { Jedis jedis ->
       jedis.multi().withCloseable { tx ->
         storeExecutionInternal(tx, execution)
-        if (execution.type == pipeline) {
+        if (execution.type == PIPELINE) {
           tx.zadd(executionsByPipelineKey(execution.pipelineConfigId), execution.buildTime, execution.id)
         }
         tx.exec()
@@ -319,7 +319,7 @@ class JedisExecutionRepository implements ExecutionRepository {
   @Override
   Observable<Execution> retrievePipelinesForApplication(String application) {
     return Observable.merge(allJedis().collect {
-      allForApplication(pipeline, application, it)
+      allForApplication(PIPELINE, application, it)
     })
   }
 
@@ -372,7 +372,7 @@ class JedisExecutionRepository implements ExecutionRepository {
     currentPipelineIds = currentPipelineIds.subList(0, Math.min(criteria.limit, currentPipelineIds.size()))
 
     def currentObservable = retrieveObservable(
-      pipeline,
+      PIPELINE,
       executionsByPipelineKey(pipelineConfigId),
       fnBuilder.call(jedisPool, currentPipelineIds),
       queryByAppScheduler,
@@ -388,7 +388,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       previousPipelineIds = previousPipelineIds.subList(0, Math.min(criteria.limit, previousPipelineIds.size()))
 
       def previousObservable = retrieveObservable(
-        pipeline,
+        PIPELINE,
         executionsByPipelineKey(pipelineConfigId),
         fnBuilder.call(jedisPoolPrevious.get(), previousPipelineIds),
         queryByAppScheduler,
@@ -405,7 +405,7 @@ class JedisExecutionRepository implements ExecutionRepository {
   @Override
   @CompileDynamic
   Observable<Execution> retrieveOrchestrationsForApplication(String application, ExecutionCriteria criteria) {
-    def allOrchestrationsKey = appKey(orchestration, application)
+    def allOrchestrationsKey = appKey(ORCHESTRATION, application)
 
     /**
      * Fetch orchestration ids from the primary redis (and secondary if configured)
@@ -456,7 +456,7 @@ class JedisExecutionRepository implements ExecutionRepository {
     currentOrchestrationIds = currentOrchestrationIds.subList(0, Math.min(criteria.limit, currentOrchestrationIds.size()))
 
     def currentObservable = retrieveObservable(
-      orchestration,
+      ORCHESTRATION,
       allOrchestrationsKey,
       fnBuilder.call(jedisPool, currentOrchestrationIds),
       queryByAppScheduler,
@@ -472,7 +472,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       previousOrchestrationIds = previousOrchestrationIds.subList(0, Math.min(criteria.limit, previousOrchestrationIds.size()))
 
       def previousObservable = retrieveObservable(
-        orchestration,
+        ORCHESTRATION,
         allOrchestrationsKey,
         fnBuilder.call(jedisPoolPrevious.get(), previousOrchestrationIds),
         queryByAppScheduler,
@@ -495,7 +495,7 @@ class JedisExecutionRepository implements ExecutionRepository {
 
       if (orchestrationId != null) {
         def orchestration = withJedis(getJedisPoolForId(orchestrationId)) { Jedis jedis ->
-          retrieveInternal(jedis, orchestration, orchestrationId)
+          retrieveInternal(jedis, ORCHESTRATION, orchestrationId)
         }
         if (!orchestration.status.isComplete()) {
           return orchestration
@@ -536,12 +536,12 @@ class JedisExecutionRepository implements ExecutionRepository {
     execution.stages.each { stage ->
       map.putAll(serializeStage(stage))
     }
-    if (execution.type == pipeline) {
+    if (execution.type == PIPELINE) {
       map.name = execution.name
       map.pipelineConfigId = execution.pipelineConfigId
       map.notifications = mapper.writeValueAsString(execution.notifications)
       map.initialConfig = mapper.writeValueAsString(execution.initialConfig)
-    } else if (execution.type == orchestration) {
+    } else if (execution.type == ORCHESTRATION) {
       map.description = execution.description
     }
     if (execution.trigger.containsKey("correlationId")) {
@@ -646,12 +646,12 @@ class JedisExecutionRepository implements ExecutionRepository {
         stage.execution = execution
         execution.stages << stage
       }
-      if (execution.type == pipeline) {
+      if (execution.type == PIPELINE) {
         execution.name = map.name
         execution.pipelineConfigId = map.pipelineConfigId
         execution.notifications.addAll(mapper.readValue(map.notifications, List))
         execution.initialConfig.putAll(mapper.readValue(map.initialConfig, Map))
-      } else if (execution.type == orchestration) {
+      } else if (execution.type == ORCHESTRATION) {
         execution.description = map.description
       }
       return execution
@@ -667,7 +667,7 @@ class JedisExecutionRepository implements ExecutionRepository {
       def appKey = appKey(type, application)
       jedis.srem(appKey, id)
 
-      if (type == pipeline) {
+      if (type == PIPELINE) {
         def pipelineConfigId = jedis.hget(key, "pipelineConfigId")
         jedis.zrem(executionsByPipelineKey(pipelineConfigId), id)
       }

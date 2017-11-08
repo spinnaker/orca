@@ -44,7 +44,7 @@ import rx.Scheduler;
 import rx.Subscription;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
 @Component
 @ConditionalOnExpression("${pollers.oldPipelineCleanup.enabled:false}")
@@ -182,7 +182,7 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
       long days = ChronoUnit.DAYS.between(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(clock.millis()));
       if (days > thresholdDays && !hasEntityTags(p.id)) {
         log.info("Deleting pipeline execution " + p.id + ": " + p.toString());
-        executionRepository.delete(pipeline, p.id);
+        executionRepository.delete(PIPELINE, p.id);
       }
     });
   }

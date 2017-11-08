@@ -42,7 +42,7 @@ class CreatePropertiesTask implements Task {
   @Override
   TaskResult execute(Stage stage) {
     Map<String, Object> context = stage.context
-    if (stage.execution.type == ExecutionType.pipeline) {
+    if (stage.execution.type == ExecutionType.PIPELINE) {
       List<Map> overrides = stage.execution.trigger.stageOverrides ?: []
       context = overrides.find { it.refId == stage.refId } ?: context
       context = contextParameterProcessor.process(context, [execution: stage.execution], true)

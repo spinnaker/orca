@@ -83,7 +83,7 @@ public class PipelineStage implements StageDefinitionBuilder, RestartableStage, 
         if (executionRepository == null) {
           log.error(format("Stage %s could not be canceled w/o front50 enabled. Please set 'front50.enabled: true' in your orca config.", readableStageDetails));
         } else {
-          Execution childPipeline = executionRepository.retrieve(ExecutionType.pipeline, executionId);
+          Execution childPipeline = executionRepository.retrieve(ExecutionType.PIPELINE, executionId);
           if (!childPipeline.isCanceled()) {
             // flag the child pipeline as canceled (actual cancellation will happen asynchronously)
             executionRepository.cancel(executionId, "parent pipeline", null);

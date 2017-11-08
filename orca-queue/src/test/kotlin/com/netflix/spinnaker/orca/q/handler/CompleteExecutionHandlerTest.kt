@@ -56,7 +56,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       val message = CompleteExecution(pipeline)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -99,7 +99,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       val message = CompleteExecution(pipeline)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -143,7 +143,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       val message = CompleteExecution(pipeline)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -193,7 +193,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     val message = CompleteExecution(pipeline)
 
     beforeGroup {
-      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -240,7 +240,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     val message = CompleteExecution(pipeline)
 
     beforeGroup {
-      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -293,7 +293,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     val message = CompleteExecution(pipeline)
 
     beforeGroup {
-      whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

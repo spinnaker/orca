@@ -22,7 +22,7 @@ import com.natpryce.hamkrest.has
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.context.ApplicationListener
@@ -76,7 +76,7 @@ private fun ExecutionRepository.waitForAllStagesToComplete(execution: Execution)
   var complete = false
   while (!complete) {
     Thread.sleep(100)
-    complete = retrieve(pipeline, execution.id)
+    complete = retrieve(PIPELINE, execution.id)
     .run {
       status.isComplete && stages
         .map(Stage::getStatus)

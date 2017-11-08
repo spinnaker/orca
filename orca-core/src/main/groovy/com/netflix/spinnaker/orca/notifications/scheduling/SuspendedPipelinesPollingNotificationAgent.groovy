@@ -73,7 +73,7 @@ class SuspendedPipelinesPollingNotificationAgent extends AbstractPollingNotifica
   @Override
   protected Observable<Execution> getEvents() {
     log.info("Starting Suspended Pipelines Polling Cycle")
-    return executionRepository.retrieve(ExecutionType.pipeline).doOnCompleted({
+    return executionRepository.retrieve(ExecutionType.PIPELINE).doOnCompleted({
       log.info("Finished Suspended Pipelines Polling Cycle")
     })
   }

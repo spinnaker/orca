@@ -125,7 +125,7 @@ class EchoNotifyingStageListener implements StageListener {
           application: stage.execution.application
         ],
         content: [
-          standalone : stage.execution.type == ExecutionType.orchestration,
+          standalone : stage.execution.type == ExecutionType.ORCHESTRATION,
           canceled   : stage.execution.canceled,
           context    : stage.context,
           startTime  : stage.startTime,

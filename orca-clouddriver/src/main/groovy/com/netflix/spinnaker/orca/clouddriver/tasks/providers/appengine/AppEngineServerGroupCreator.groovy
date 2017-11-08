@@ -69,7 +69,7 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
 
     Map expectedArtifact = [:]
     Map<String, Object> trigger = [:]
-    if (execution.type == ExecutionType.pipeline) {
+    if (execution.type == ExecutionType.PIPELINE) {
       // TODO(jacobkiefer): Use stage context input/output lookup.
       trigger = execution.getTrigger()
       expectedArtifact = trigger.resolvedExpectedArtifacts.find { e -> e.id == expectedArtifactId } as Map

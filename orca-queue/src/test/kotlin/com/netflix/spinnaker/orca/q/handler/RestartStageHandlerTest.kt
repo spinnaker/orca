@@ -130,7 +130,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
       beforeGroup {
         stageWithSyntheticBefore.plan(pipeline.stageByRef("2>1"))
 
-        whenever(repository.retrieve(ExecutionType.pipeline, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

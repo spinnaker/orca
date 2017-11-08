@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.orchestration;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.pipeline;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
 @Component
 public class SpinnakerMetadataServerGroupTagGenerator implements ServerGroupEntityTagGenerator {
@@ -55,16 +55,16 @@ public class SpinnakerMetadataServerGroupTagGenerator implements ServerGroupEnti
     Map<String, Object> value = new HashMap<>();
     value.put("stageId", stage.getId());
     value.put("executionId", execution.getId());
-    value.put("executionType", execution.getType().name());
+    value.put("executionType", execution.getType().toString());
     value.put("application", execution.getApplication());
 
     if (execution.getAuthentication() != null) {
       value.put("user", execution.getAuthentication().getUser());
     }
 
-    if (execution.getType() == orchestration) {
+    if (execution.getType() == ORCHESTRATION) {
       value.put("description", execution.getDescription());
-    } else if (execution.getType() == pipeline) {
+    } else if (execution.getType() == PIPELINE) {
       value.put("description", execution.getName());
       value.put("pipelineConfigId", execution.getPipelineConfigId());
     }

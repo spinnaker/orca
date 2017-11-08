@@ -43,7 +43,7 @@ class DcosContainerFinder {
     }
 
     if (imageDescription.fromTrigger) {
-      if (stage.execution.type == ExecutionType.pipeline) {
+      if (stage.execution.type == ExecutionType.PIPELINE) {
         Map trigger = stage.execution.trigger
 
         if (trigger?.account == imageDescription.account && trigger?.repository == imageDescription.repository) {

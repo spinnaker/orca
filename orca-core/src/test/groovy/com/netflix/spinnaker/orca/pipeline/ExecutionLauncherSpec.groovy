@@ -112,7 +112,7 @@ class ExecutionLauncherSpec extends Specification {
     @Subject def launcher = create()
 
     when:
-    launcher.start(ExecutionType.pipeline, json)
+    launcher.start(ExecutionType.PIPELINE, json)
 
     then:
     1 * executionRepository.store(_)
@@ -131,7 +131,7 @@ class ExecutionLauncherSpec extends Specification {
     @Subject def launcher = create()
 
     when:
-    launcher.start(ExecutionType.pipeline, json)
+    launcher.start(ExecutionType.PIPELINE, json)
 
     then:
     1 * executionRunner.start(_)
@@ -148,7 +148,7 @@ class ExecutionLauncherSpec extends Specification {
     @Subject def launcher = create()
 
     when:
-    launcher.start(ExecutionType.pipeline, json)
+    launcher.start(ExecutionType.PIPELINE, json)
 
     then:
     1 * executionRepository.store({

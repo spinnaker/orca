@@ -178,7 +178,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, RestartableStage, A
         templateGroup: notificationState,
         severity: EchoService.Notification.Severity.HIGH,
         source: new EchoService.Notification.Source(
-          executionType: stage.execution.type.name(),
+          executionType: stage.execution.type.toString(),
           executionId: stage.execution.id,
           application: stage.execution.application
         ),

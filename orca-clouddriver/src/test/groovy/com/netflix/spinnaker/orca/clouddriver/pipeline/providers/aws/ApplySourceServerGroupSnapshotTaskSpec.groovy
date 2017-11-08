@@ -84,7 +84,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
     )
 
     then:
-    1 * executionRepository.retrieve(Execution.ExecutionType.pipeline, "execution-id") >> childPipeline
+    1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, "execution-id") >> childPipeline
 
     // should match the first childPipeline of type 'createServerGroup' w/ 'deploy.server.groups'
     ancestorDeployStage == childPipeline.stages[2]
