@@ -103,8 +103,8 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("marks the stage as TERMINAL") {
         verify(repository).storeStage(check {
-          it.getStatus() shouldEqual TERMINAL
-          it.getEndTime().toInstant() shouldEqual clock.instant()
+          it.status shouldEqual TERMINAL
+          it.endTime.toInstant() shouldEqual clock.instant()
         })
       }
 
@@ -153,8 +153,8 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("marks the stage as TERMINAL") {
         verify(repository).storeStage(check {
-          it.getStatus() shouldEqual TERMINAL
-          it.getEndTime().toInstant() shouldEqual clock.instant()
+          it.status shouldEqual TERMINAL
+          it.endTime.toInstant() shouldEqual clock.instant()
         })
       }
 

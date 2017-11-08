@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.q.syntheticStages
 
 fun Stage.determineStatus(): ExecutionStatus {
   val syntheticStatuses = syntheticStages().map(Stage::getStatus)
-  val taskStatuses = getTasks().map(Task::getStatus)
+  val taskStatuses = tasks.map(Task::getStatus)
   val allStatuses = syntheticStatuses + taskStatuses
   return when {
     allStatuses.contains(TERMINAL) -> TERMINAL
@@ -44,7 +44,7 @@ fun Stage.failureStatus(default: ExecutionStatus = TERMINAL) =
   }
 
 private fun Stage.shouldFailPipeline() =
-  getContext()["failPipeline"] in listOf(null, true)
+  context["failPipeline"] in listOf(null, true)
 
 private fun Stage.shouldContinueOnFailure() =
-  getContext()["continuePipeline"] == true
+  context["continuePipeline"] == true

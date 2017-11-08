@@ -72,7 +72,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
       it("updates the task state in the stage") {
         verify(repository).storeStage(check {
-          it.getTasks().first().apply {
+          it.tasks.first().apply {
             status shouldEqual SUCCEEDED
             endTime shouldEqual clock.millis()
           }
@@ -123,7 +123,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
       it("updates the task state in the stage") {
         verify(repository).storeStage(check {
-          it.getTasks().last().apply {
+          it.tasks.last().apply {
             status shouldEqual SUCCEEDED
             endTime shouldEqual clock.millis()
           }
@@ -164,7 +164,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
       it("updates the task state in the stage") {
         verify(repository).storeStage(check {
-          it.getTasks().last().apply {
+          it.tasks.last().apply {
             status shouldEqual SUCCEEDED
             endTime shouldEqual clock.millis()
           }
@@ -219,7 +219,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
         it("resets the status of the loop tasks") {
           verify(repository).storeStage(check {
-            it.getTasks()[1..3].map(Task::getStatus) shouldMatch allElements(equalTo(NOT_STARTED))
+            it.tasks[1..3].map(Task::getStatus) shouldMatch allElements(equalTo(NOT_STARTED))
           })
         }
 
@@ -254,7 +254,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
       it("updates the task state in the stage") {
         verify(repository).storeStage(check {
-          it.getTasks().first().apply {
+          it.tasks.first().apply {
             status shouldEqual status
             endTime shouldEqual clock.millis()
           }

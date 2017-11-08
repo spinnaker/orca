@@ -68,8 +68,8 @@ object PauseStageHandlerTest : SubjectSpek<PauseStageHandler>({
 
     it("updates the stage state") {
       verify(repository).storeStage(check {
-        it.getStatus() shouldEqual ExecutionStatus.PAUSED
-        it.getEndTime() shouldMatch absent()
+        it.status shouldEqual ExecutionStatus.PAUSED
+        it.endTime shouldMatch absent()
       })
     }
 

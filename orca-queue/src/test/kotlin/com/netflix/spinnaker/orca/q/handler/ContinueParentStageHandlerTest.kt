@@ -118,7 +118,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         val message = ContinueParentStage(pipeline.stageByRef("1"))
 
         beforeGroup {
-          pipeline.stageByRef("1").beforeStages().forEach { it.setStatus(status) }
+          pipeline.stageByRef("1").beforeStages().forEach { it.status = status }
         }
 
         and("they have not started yet") {
@@ -169,7 +169,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
         val message = ContinueParentStage(pipeline.stageByRef("1"))
 
         beforeGroup {
-          pipeline.stageByRef("1").beforeStages().forEach { it.setStatus(status) }
+          pipeline.stageByRef("1").beforeStages().forEach { it.status = status }
           whenever(repository.retrieve(ExecutionType.pipeline, pipeline.id)) doReturn pipeline
         }
 
@@ -199,7 +199,7 @@ object ContinueParentStageHandlerTest : SubjectSpek<ContinueParentStageHandler>(
       val message = ContinueParentStage(pipeline.stageByRef("1"))
 
       beforeGroup {
-        pipeline.stageByRef("1").beforeStages().forEach { it.setStatus(SUCCEEDED) }
+        pipeline.stageByRef("1").beforeStages().forEach { it.status = SUCCEEDED }
       }
 
       and("they didn't start yet") {

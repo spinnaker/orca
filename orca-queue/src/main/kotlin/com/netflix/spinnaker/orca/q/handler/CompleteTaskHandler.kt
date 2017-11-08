@@ -51,7 +51,7 @@ class CompleteTaskHandler(
               queue.push(CompleteStage(message))
             } else {
               afterStages.forEach {
-                queue.push(StartStage(message, it.getId()))
+                queue.push(StartStage(message, it.id))
               }
             }
           }
@@ -73,7 +73,7 @@ class CompleteTaskHandler(
   override val messageType = CompleteTask::class.java
 
   private fun Stage.handleRedirect() {
-    getTasks().let { tasks ->
+    tasks.let { tasks ->
       val start = tasks.indexOfFirst { it.isLoopStart }
       val end = tasks.indexOfLast { it.isLoopEnd }
       tasks[start..end].forEach {
@@ -81,7 +81,7 @@ class CompleteTaskHandler(
         it.status = NOT_STARTED
       }
       repository.storeStage(this)
-      queue.push(StartTask(getExecution().type, getExecution().getId(), getExecution().getApplication(), getId(), tasks[start].id))
+      queue.push(StartTask(execution.type, execution.id, execution.application, id, tasks[start].id))
     }
   }
 }

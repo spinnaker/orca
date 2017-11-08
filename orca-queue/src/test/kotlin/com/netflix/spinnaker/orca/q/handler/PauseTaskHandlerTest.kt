@@ -62,7 +62,7 @@ object PauseTaskHandlerTest : SubjectSpek<PauseTaskHandler>({
 
     it("updates the task state in the stage") {
       verify(repository).storeStage(check {
-        it.getTasks().first().apply {
+        it.tasks.first().apply {
           status shouldEqual ExecutionStatus.PAUSED
           endTime shouldMatch absent()
         }

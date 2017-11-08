@@ -110,15 +110,15 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("updates the stage status") {
         verify(repository).storeStage(check {
-          it.getStatus() shouldEqual RUNNING
-          it.getStartTime() shouldEqual clock.millis()
+          it.status shouldEqual RUNNING
+          it.startTime shouldEqual clock.millis()
         })
       }
 
       it("attaches tasks to the stage") {
         verify(repository).storeStage(check {
-          it.getTasks().size shouldEqual 1
-          it.getTasks().first().apply {
+          it.tasks.size shouldEqual 1
+          it.tasks.first().apply {
             id shouldEqual "1"
             name shouldEqual "dummy"
             implementingClass shouldEqual DummyTask::class.java.name
@@ -164,8 +164,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         it("updates the stage status") {
           verify(repository).storeStage(check {
-            it.getStatus() shouldEqual RUNNING
-            it.getStartTime() shouldEqual clock.millis()
+            it.status shouldEqual RUNNING
+            it.startTime shouldEqual clock.millis()
           })
         }
 
@@ -205,8 +205,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         it("updates the stage status") {
           verify(repository).storeStage(check {
-            it.getStatus() shouldEqual RUNNING
-            it.getStartTime() shouldEqual clock.millis()
+            it.status shouldEqual RUNNING
+            it.startTime shouldEqual clock.millis()
           })
         }
 
@@ -246,22 +246,22 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("attaches tasks to the stage") {
         verify(repository).storeStage(check {
-          it.getTasks().size shouldEqual 3
-          it.getTasks()[0].apply {
+          it.tasks.size shouldEqual 3
+          it.tasks[0].apply {
             id shouldEqual "1"
             name shouldEqual "dummy1"
             implementingClass shouldEqual DummyTask::class.java.name
             isStageStart shouldEqual true
             isStageEnd shouldEqual false
           }
-          it.getTasks()[1].apply {
+          it.tasks[1].apply {
             id shouldEqual "2"
             name shouldEqual "dummy2"
             implementingClass shouldEqual DummyTask::class.java.name
             isStageStart shouldEqual false
             isStageEnd shouldEqual false
           }
-          it.getTasks()[2].apply {
+          it.tasks[2].apply {
             id shouldEqual "3"
             name shouldEqual "dummy3"
             implementingClass shouldEqual DummyTask::class.java.name
@@ -304,8 +304,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         it("attaches the synthetic stage to the pipeline") {
           verify(repository, times(2)).addStage(check {
-            it.getParentStageId() shouldEqual message.stageId
-            it.getSyntheticStageOwner() shouldEqual STAGE_BEFORE
+            it.parentStageId shouldEqual message.stageId
+            it.syntheticStageOwner shouldEqual STAGE_BEFORE
           })
         }
 
@@ -340,8 +340,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         it("attaches the synthetic stage to the pipeline") {
           verify(repository, times(2)).addStage(check {
-            it.getParentStageId() shouldEqual message.stageId
-            it.getSyntheticStageOwner() shouldEqual STAGE_AFTER
+            it.parentStageId shouldEqual message.stageId
+            it.syntheticStageOwner shouldEqual STAGE_AFTER
           })
         }
 
@@ -580,16 +580,16 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("starts the stage") {
         verify(repository).storeStage(check {
-          it.getType() shouldEqual "bar"
-          it.getStatus() shouldEqual RUNNING
-          it.getStartTime() shouldEqual clock.millis()
+          it.type shouldEqual "bar"
+          it.status shouldEqual RUNNING
+          it.startTime shouldEqual clock.millis()
         })
       }
 
       it("attaches a task to the stage") {
         verify(repository).storeStage(check {
-          it.getTasks().size shouldEqual 1
-          it.getTasks().first().apply {
+          it.tasks.size shouldEqual 1
+          it.tasks.first().apply {
             id shouldEqual "1"
             name shouldEqual "createWebhook"
             implementingClass shouldEqual DummyTask::class.java.name
@@ -637,7 +637,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
           it("attaches the exception to the stage context") {
             verify(repository).storeStage(check {
-              it.getContext()["exception"] shouldEqual exceptionDetails
+              it.context["exception"] shouldEqual exceptionDetails
             })
           }
         }
@@ -666,7 +666,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
           it("attaches the exception to the stage context") {
             verify(repository).storeStage(check {
-              it.getContext()["exception"] shouldEqual exceptionDetails
+              it.context["exception"] shouldEqual exceptionDetails
             })
           }
         }
@@ -695,7 +695,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
           it("attaches the exception to the stage context") {
             verify(repository).storeStage(check {
-              it.getContext()["exception"] shouldEqual exceptionDetails
+              it.context["exception"] shouldEqual exceptionDetails
             })
           }
         }

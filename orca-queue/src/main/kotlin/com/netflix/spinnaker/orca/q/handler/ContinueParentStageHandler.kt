@@ -52,22 +52,22 @@ class ContinueParentStageHandler(
   }
 
   private fun Stage.runFirstTask() {
-    val firstTask = getTasks().first()
+    val firstTask = tasks.first()
     if (firstTask.status == NOT_STARTED) {
       queue.push(StartTask(this, firstTask))
     } else {
-      log.warn("Ignoring $messageType for ${getId()} as tasks are already running")
+      log.warn("Ignoring $messageType for ${id} as tasks are already running")
     }
   }
 
   private fun Stage.runAfterStages() {
     val afterStages = firstAfterStages()
-    if (afterStages.all { it.getStatus() == NOT_STARTED }) {
+    if (afterStages.all { it.status == NOT_STARTED }) {
       afterStages.forEach {
         queue.push(StartStage(it))
       }
     } else {
-      log.warn("Ignoring $messageType for ${getId()} as AFTER stages are already running")
+      log.warn("Ignoring $messageType for ${id} as AFTER stages are already running")
     }
   }
 

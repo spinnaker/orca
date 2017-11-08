@@ -111,10 +111,10 @@ data class StartTask(
     this(source, source.stageId, taskId)
 
   constructor(source: Stage, taskId: String) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId(), taskId)
+    this(source.execution.type, source.execution.id, source.execution.application, source.id, taskId)
 
   constructor(source: Stage, task: com.netflix.spinnaker.orca.pipeline.model.Task) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId(), task.id)
+    this(source.execution.type, source.execution.id, source.execution.application, source.id, task.id)
 }
 
 data class CompleteTask(
@@ -182,7 +182,7 @@ data class StartStage(
     this(source, source.stageId)
 
   constructor(source: Stage) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
+    this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
 data class ContinueParentStage(
@@ -192,7 +192,7 @@ data class ContinueParentStage(
   override val stageId: String
 ) : Message(), StageLevel {
   constructor(source: Stage) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
+    this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
 data class CompleteStage(
@@ -208,7 +208,7 @@ data class CompleteStage(
     this(source.executionType, source.executionId, source.application, source.stageId)
 
   constructor(source: Stage) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
+    this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
 data class SkipStage(
@@ -221,7 +221,7 @@ data class SkipStage(
     this(source.executionType, source.executionId, source.application, source.stageId)
 
   constructor(source: Stage) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
+    this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
 data class AbortStage(
@@ -234,7 +234,7 @@ data class AbortStage(
     this(source.executionType, source.executionId, source.application, source.stageId)
 
   constructor(source: Stage) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
+    this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
 data class PauseStage(
@@ -258,7 +258,7 @@ data class RestartStage(
   val user: String?
 ) : Message(), StageLevel {
   constructor(source: Execution, stageId: String, user: String?) :
-    this(source.type, source.getId(), source.getApplication(), stageId, user)
+    this(source.type, source.id, source.application, stageId, user)
 }
 
 data class ResumeStage(
@@ -271,7 +271,7 @@ data class ResumeStage(
     this(source.executionType, source.executionId, source.application, stageId)
 
   constructor(source: Stage) :
-    this(source.getExecution().type, source.getExecution().getId(), source.getExecution().getApplication(), source.getId())
+    this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
 data class CancelStage(
@@ -284,7 +284,7 @@ data class CancelStage(
     this(source.executionType, source.executionId, source.application, source.stageId)
 
   constructor(stage: Stage) :
-    this(stage.getExecution().type, stage.getExecution().getId(), stage.getExecution().getApplication(), stage.getId())
+    this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id)
 }
 
 data class StartExecution(
@@ -293,7 +293,7 @@ data class StartExecution(
   override val application: String
 ) : Message(), ExecutionLevel {
   constructor(source: Execution) :
-    this(source.type, source.getId(), source.getApplication())
+    this(source.type, source.id, source.application)
 }
 
 data class RescheduleExecution(
@@ -302,7 +302,7 @@ data class RescheduleExecution(
   override val application: String
 ) : Message(), ExecutionLevel {
   constructor(source: Execution) :
-    this(source.type, source.getId(), source.getApplication())
+    this(source.type, source.id, source.application)
 }
 
 data class CompleteExecution(
@@ -314,7 +314,7 @@ data class CompleteExecution(
     this(source.executionType, source.executionId, source.application)
 
   constructor(source: Execution) :
-    this(source.type, source.getId(), source.getApplication())
+    this(source.type, source.id, source.application)
 }
 
 data class ResumeExecution(
@@ -323,7 +323,7 @@ data class ResumeExecution(
   override val application: String
 ) : Message(), ExecutionLevel {
   constructor(source: Execution) :
-    this(source.type, source.getId(), source.getApplication())
+    this(source.type, source.id, source.application)
 }
 
 data class CancelExecution(
@@ -334,7 +334,7 @@ data class CancelExecution(
   val reason: String?
 ) : Message(), ExecutionLevel {
   constructor(source: Execution, user: String, reason: String?) :
-    this(source.type, source.getId(), source.getApplication(), user, reason)
+    this(source.type, source.id, source.application, user, reason)
 }
 
 /**

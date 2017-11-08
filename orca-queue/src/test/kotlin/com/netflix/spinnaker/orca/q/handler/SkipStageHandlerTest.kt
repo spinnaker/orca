@@ -98,8 +98,8 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
 
       it("updates the stage state") {
         verify(repository).storeStage(check {
-          it.getStatus() shouldEqual SKIPPED
-          it.getEndTime() shouldEqual clock.millis()
+          it.status shouldEqual SKIPPED
+          it.endTime shouldEqual clock.millis()
         })
       }
 
@@ -149,8 +149,8 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
 
       it("updates the stage state") {
         verify(repository).storeStage(check {
-          it.getStatus() shouldEqual SKIPPED
-          it.getEndTime() shouldEqual clock.millis()
+          it.status shouldEqual SKIPPED
+          it.endTime shouldEqual clock.millis()
         })
       }
 

@@ -65,7 +65,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
 
     it("marks the task as running") {
       verify(repository).storeStage(check {
-        it.getTasks().first().apply {
+        it.tasks.first().apply {
           status shouldEqual RUNNING
           startTime shouldEqual clock.millis()
         }

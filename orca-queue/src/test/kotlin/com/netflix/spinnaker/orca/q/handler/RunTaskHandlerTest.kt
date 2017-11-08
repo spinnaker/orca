@@ -130,7 +130,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
         it("updates the stage context") {
           verify(repository).storeStage(check {
-            stageOutputs shouldEqual it.getContext()
+            stageOutputs shouldEqual it.context
           })
         }
 
@@ -156,7 +156,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
         it("updates the stage outputs and global context") {
           verify(repository).storeStage(check {
-            it.getOutputs() shouldEqual globalOutputs
+            it.outputs shouldEqual globalOutputs
           })
           verify(repository).storeExecutionContext(pipeline.id, globalOutputs)
         }
@@ -323,7 +323,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
           it("attaches the exception to the stage context") {
             verify(repository).storeStage(check {
-              it.getContext()["exception"] shouldEqual exceptionDetails
+              it.context["exception"] shouldEqual exceptionDetails
             })
           }
         }
@@ -597,7 +597,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         val pipeline = pipeline {
           stage {
             type = "whatever"
-            context = hashMapOf("markSuccessfulOnTimeout" to true) as Map<String, Any>
+            context = hashMapOf<String, Any>("markSuccessfulOnTimeout" to true)
             task {
               id = "1"
               status = RUNNING
@@ -999,7 +999,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
         it("parses the expression") {
           verify(task).execute(check {
-            it.getContext()["expr"] shouldEqual expected
+            it.context["expr"] shouldEqual expected
           })
         }
       }
@@ -1047,7 +1047,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
       it("resolves deployed server groups") {
         verify(task).execute(check {
-          it.getContext()["command"] shouldEqual "serverGroupDetails.groovy mgmttest us-west-1 spindemo-test-v008"
+          it.context["command"] shouldEqual "serverGroupDetails.groovy mgmttest us-west-1 spindemo-test-v008"
         })
       }
     }
@@ -1084,7 +1084,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
       it("does not overwrite the stage's parameters with the pipeline's") {
         verify(task).execute(check {
-          it.getContext()["parameters"] shouldEqual mapOf("message" to "o hai")
+          it.context["parameters"] shouldEqual mapOf("message" to "o hai")
         })
       }
     }
@@ -1117,7 +1117,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
       it("passes the decoded expression to the task") {
         verify(task).execute(check {
-          it.getContext()["expression"] shouldEqual "bar"
+          it.context["expression"] shouldEqual "bar"
         })
       }
     }

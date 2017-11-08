@@ -110,8 +110,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("updates the stage state") {
             verify(repository).storeStage(check {
-              it.getStatus() shouldEqual taskStatus
-              it.getEndTime() shouldEqual clock.millis()
+              it.status shouldEqual taskStatus
+              it.endTime shouldEqual clock.millis()
             })
           }
 
@@ -163,8 +163,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("updates the stage state") {
             verify(repository).storeStage(check {
-              it.getStatus() shouldEqual taskStatus
-              it.getEndTime() shouldEqual clock.millis()
+              it.status shouldEqual taskStatus
+              it.endTime shouldEqual clock.millis()
             })
           }
 
@@ -326,8 +326,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
         it("updates the stage state") {
           verify(repository).storeStage(check {
-            it.getStatus() shouldEqual taskStatus
-            it.getEndTime() shouldEqual clock.millis()
+            it.status shouldEqual taskStatus
+            it.endTime shouldEqual clock.millis()
           })
         }
 
@@ -389,8 +389,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("updates the stage state") {
             verify(repository).storeStage(check {
-              it.getStatus() shouldEqual failureStatus
-              it.getEndTime() shouldEqual clock.millis()
+              it.status shouldEqual failureStatus
+              it.endTime shouldEqual clock.millis()
             })
           }
         }
@@ -426,8 +426,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
         it("updates the stage state") {
           verify(repository).storeStage(check {
-            it.getStatus() shouldEqual FAILED_CONTINUE
-            it.getEndTime() shouldEqual clock.millis()
+            it.status shouldEqual FAILED_CONTINUE
+            it.endTime shouldEqual clock.millis()
           })
         }
       }
@@ -681,7 +681,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   describe("surfacing expression evaluation errors") {
     fun exceptionErrors(stages: List<Stage>): List<*> =
       stages.flatMap {
-        ((it.getContext()["exception"] as Map<*, *>)["details"] as Map<*, *>)["errors"] as List<*>
+        ((it.context["exception"] as Map<*, *>)["details"] as Map<*, *>)["errors"] as List<*>
       }
 
     given("an exception in the stage context") {
@@ -730,9 +730,9 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
         stage {
           refId = "1"
           name = "wait"
-          context = mutableMapOf(
+          context = mutableMapOf<String, Any>(
             PipelineExpressionEvaluator.SUMMARY to mapOf("failedExpression" to listOf(mapOf("description" to expressionError, "level" to "ERROR")))
-          ) as Map<String, Any>
+          )
           status = RUNNING
           type = singleTaskStage.type
           singleTaskStage.plan(this)

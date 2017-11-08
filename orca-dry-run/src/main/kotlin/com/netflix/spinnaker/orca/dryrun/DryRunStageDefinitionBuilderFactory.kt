@@ -26,7 +26,7 @@ class DryRunStageDefinitionBuilderFactory(
 ) : DefaultStageDefinitionBuilderFactory(stageDefinitionBuilders) {
 
   override fun builderFor(stage: Stage): StageDefinitionBuilder =
-    stage.getExecution().let { execution ->
+    stage.execution.let { execution ->
       super.builderFor(stage).let {
         if (stage.isExpressionPreconditionStage()) {
           it
@@ -42,14 +42,14 @@ class DryRunStageDefinitionBuilderFactory(
     isPreconditionStage() && (isExpressionChild() || isExpressionParent())
 
   private fun Stage.isPreconditionStage() =
-    getType() == CheckPreconditionsStage.PIPELINE_CONFIG_TYPE
+    type == CheckPreconditionsStage.PIPELINE_CONFIG_TYPE
 
   private fun Stage.isExpressionChild() =
-    getContext()["preconditionType"] == "expression"
+    context["preconditionType"] == "expression"
 
   @Suppress("UNCHECKED_CAST")
   private fun Stage.isExpressionParent() =
-    (getContext()["preconditions"] as Iterable<Map<String, Any>>?)?.run {
+    (context["preconditions"] as Iterable<Map<String, Any>>?)?.run {
       all { it["type"] == "expression" }
     } == true
 }

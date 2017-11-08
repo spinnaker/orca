@@ -141,23 +141,23 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
 
       it("resets the stage's status") {
         verify(repository).storeStage(check {
-          it.getId() shouldEqual message.stageId
-          it.getStatus() shouldEqual NOT_STARTED
-          it.getStartTime() shouldMatch absent()
-          it.getEndTime() shouldMatch absent()
+          it.id shouldEqual message.stageId
+          it.status shouldEqual NOT_STARTED
+          it.startTime shouldMatch absent()
+          it.endTime shouldMatch absent()
         })
       }
 
       it("removes the stage's tasks") {
         verify(repository).storeStage(check {
-          it.getTasks() shouldMatch isEmpty
+          it.tasks shouldMatch isEmpty
         })
       }
 
       it("adds restart details to the stage context") {
         verify(repository).storeStage(check {
-          it.getContext().keys shouldNotMatch hasElement("exception")
-          it.getContext()["restartDetails"] shouldEqual mapOf(
+          it.context.keys shouldNotMatch hasElement("exception")
+          it.context["restartDetails"] shouldEqual mapOf(
             "restartedBy" to "fzlem@netflix.com",
             "restartTime" to clock.millis(),
             "previousException" to "o noes"

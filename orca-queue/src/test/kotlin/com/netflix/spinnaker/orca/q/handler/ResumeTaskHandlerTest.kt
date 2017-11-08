@@ -66,8 +66,8 @@ object ResumeTaskHandlerTest : SubjectSpek<ResumeTaskHandler>({
 
     it("sets the stage status to running") {
       verify(repository).storeStage(check {
-        it.getId() shouldEqual message.stageId
-        it.getTasks().first().status shouldEqual RUNNING
+        it.id shouldEqual message.stageId
+        it.tasks.first().status shouldEqual RUNNING
       })
     }
 

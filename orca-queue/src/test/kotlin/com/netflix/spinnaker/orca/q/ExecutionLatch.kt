@@ -78,7 +78,7 @@ private fun ExecutionRepository.waitForAllStagesToComplete(execution: Execution)
     Thread.sleep(100)
     complete = retrieve(pipeline, execution.id)
     .run {
-      getStatus().isComplete && getStages()
+      status.isComplete && stages
         .map(Stage::getStatus)
         .all { it.isComplete || it == NOT_STARTED }
     }

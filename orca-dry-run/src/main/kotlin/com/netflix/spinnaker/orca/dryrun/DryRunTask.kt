@@ -44,7 +44,7 @@ class DryRunTask : Task {
 
   override fun execute(stage: Stage): TaskResult =
     stage
-      .getExecution()
+      .execution
       .let { execution ->
         if (execution.type == Execution.ExecutionType.pipeline) {
           realStage(execution, stage)
@@ -61,7 +61,7 @@ class DryRunTask : Task {
     val dryRunResult = mutableMapOf<String, Any>()
     var status: ExecutionStatus? = null
 
-    val diff = getContext().removeNulls().diffKeys(realStage.context.removeNulls())
+    val diff = context.removeNulls().diffKeys(realStage.context.removeNulls())
 
     if (diff.isNotEmpty()) {
       dryRunResult["context"] = diff
@@ -109,7 +109,7 @@ class DryRunTask : Task {
           else -> throw IllegalStateException("No triggering pipeline execution found")
         }
       }
-      .stageByRef(stage.getRefId())
+      .stageByRef(stage.refId)
   }
 
   private val mapper = OrcaObjectMapper

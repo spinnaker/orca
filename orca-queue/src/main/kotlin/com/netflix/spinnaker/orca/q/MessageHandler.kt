@@ -81,15 +81,15 @@ interface MessageHandler<M : Message> : (Message) -> Unit {
     }
 
   fun Stage.startNext() {
-    getExecution().let { execution ->
+    execution.let { execution ->
       val downstreamStages = downstreamStages()
       if (downstreamStages.isNotEmpty()) {
         downstreamStages.forEach {
           queue.push(StartStage(it))
         }
-      } else if (getSyntheticStageOwner() == SyntheticStageOwner.STAGE_BEFORE) {
+      } else if (syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE) {
         queue.push(ContinueParentStage(parent()))
-      } else if (getSyntheticStageOwner() == SyntheticStageOwner.STAGE_AFTER) {
+      } else if (syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER) {
         parent().let { parent ->
           queue.push(CompleteStage(parent))
         }
