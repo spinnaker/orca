@@ -27,7 +27,6 @@ public class TemplatedPipelineRequest {
   Map<String, Object> trigger = new HashMap<>();
   Map<String, Object> config;
   Map<String, Object> template;
-  String executionId;
   Boolean plan = false;
   boolean limitConcurrent = true;
   boolean keepWaitingPipelines = false;
@@ -91,14 +90,6 @@ public class TemplatedPipelineRequest {
 
   public void setTemplate(Map<String, Object> template) {
     this.template = template;
-  }
-
-  public String getExecutionId() {
-    return executionId;
-  }
-
-  public void setExecutionId(String executionId) {
-    this.executionId = executionId;
   }
 
   public Boolean getPlan() {

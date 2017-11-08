@@ -84,7 +84,6 @@ class V1TemplateLoaderHandler(
       val value = v.defaultValue
       if (value != null && value is String) {
         v.defaultValue = renderer.renderGraph(value.toString(), renderContext)
-        renderContext.variables.putIfAbsent(v.name, v.defaultValue)
       }
     }
   }
