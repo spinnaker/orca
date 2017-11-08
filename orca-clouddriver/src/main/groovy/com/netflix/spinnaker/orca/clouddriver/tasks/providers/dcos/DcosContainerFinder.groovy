@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.dcos
 
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 class DcosContainerFinder {
   static void populateFromStage(Map operation, Stage stage) {
@@ -43,7 +43,7 @@ class DcosContainerFinder {
     }
 
     if (imageDescription.fromTrigger) {
-      if (stage.execution.type == ExecutionType.PIPELINE) {
+      if (stage.execution.type == PIPELINE) {
         Map trigger = stage.execution.trigger
 
         if (trigger?.account == imageDescription.account && trigger?.repository == imageDescription.repository) {

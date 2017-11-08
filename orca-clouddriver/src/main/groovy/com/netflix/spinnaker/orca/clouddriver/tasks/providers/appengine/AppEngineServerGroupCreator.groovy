@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Slf4j
 @Component
@@ -69,7 +69,7 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
 
     Map expectedArtifact = [:]
     Map<String, Object> trigger = [:]
-    if (execution.type == ExecutionType.PIPELINE) {
+    if (execution.type == PIPELINE) {
       // TODO(jacobkiefer): Use stage context input/output lookup.
       trigger = execution.getTrigger()
       expectedArtifact = trigger.resolvedExpectedArtifacts.find { e -> e.id == expectedArtifactId } as Map

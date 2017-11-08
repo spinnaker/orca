@@ -30,6 +30,7 @@ import spock.lang.*
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
@@ -163,7 +164,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(pipeline)
 
     expect:
-    repository.retrieve(ExecutionType.PIPELINE).toBlocking().first().id == pipeline.id
+    repository.retrieve(PIPELINE).toBlocking().first().id == pipeline.id
 
     with(repository.retrieve(pipeline.type, pipeline.id)) {
       id == pipeline.id
@@ -223,16 +224,16 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     and:
     repository.store(pipeline)
-    repository.delete(ExecutionType.PIPELINE, pipeline.id)
+    repository.delete(PIPELINE, pipeline.id)
 
     when:
-    repository.retrieve(ExecutionType.PIPELINE, pipeline.id)
+    repository.retrieve(PIPELINE, pipeline.id)
 
     then:
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(ExecutionType.PIPELINE).toList().toBlocking().first() == []
+    repository.retrieve(PIPELINE).toList().toBlocking().first() == []
   }
 
   def "updateStatus sets startTime to current time if new status is RUNNING"() {
@@ -498,7 +499,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     jedis.sadd("allJobs:pipeline", id)
 
     when:
-    def result = repository.retrieve(ExecutionType.PIPELINE).toList().toBlocking().first()
+    def result = repository.retrieve(PIPELINE).toList().toBlocking().first()
 
     then:
     result.isEmpty()
@@ -535,7 +536,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(ExecutionType.PIPELINE).toList().toBlocking().first() == []
+    repository.retrieve(PIPELINE).toList().toBlocking().first() == []
     jedis.zrange(JedisExecutionRepository.executionsByPipelineKey(pipeline.pipelineConfigId), 0, 1).isEmpty()
   }
 

@@ -27,7 +27,7 @@ import redis.clients.jedis.ScanParams
 import redis.clients.jedis.ScanResult
 import redis.clients.util.Pool
 import spock.lang.Specification
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -112,8 +112,8 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     agent.tick()
 
     then:
-    1 * executionRepository.delete(ExecutionType.PIPELINE, '1')
-    1 * executionRepository.delete(ExecutionType.PIPELINE, '2')
+    1 * executionRepository.delete(PIPELINE, '1')
+    1 * executionRepository.delete(PIPELINE, '2')
   }
 
   private

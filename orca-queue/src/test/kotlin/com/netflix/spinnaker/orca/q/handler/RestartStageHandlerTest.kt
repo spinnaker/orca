@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -130,7 +130,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
       beforeGroup {
         stageWithSyntheticBefore.plan(pipeline.stageByRef("2>1"))
 
-        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

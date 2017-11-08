@@ -30,6 +30,8 @@ import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 
@@ -316,11 +318,11 @@ public class Execution implements Serializable {
   }
 
   public static Execution newOrchestration(String application) {
-    return new Execution(ExecutionType.ORCHESTRATION, application);
+    return new Execution(ORCHESTRATION, application);
   }
 
   public static Execution newPipeline(String application) {
-    return new Execution(ExecutionType.PIPELINE, application);
+    return new Execution(PIPELINE, application);
   }
 
   public static class AuthenticationDetails implements Serializable {

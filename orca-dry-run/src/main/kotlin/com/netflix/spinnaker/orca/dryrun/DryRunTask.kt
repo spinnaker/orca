@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -46,7 +47,7 @@ class DryRunTask : Task {
     stage
       .execution
       .let { execution ->
-        if (execution.type == Execution.ExecutionType.PIPELINE) {
+        if (execution.type == PIPELINE) {
           realStage(execution, stage)
             .let { realStage ->
               stage.evaluateStage(realStage)

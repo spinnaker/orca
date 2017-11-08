@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
@@ -28,7 +28,7 @@ import kotlin.reflect.jvm.jvmName
  * Build a pipeline.
  */
 fun pipeline(init: Execution.() -> Unit = {}): Execution {
-  val pipeline = Execution(ExecutionType.PIPELINE, "covfefe")
+  val pipeline = Execution(PIPELINE, "covfefe")
   pipeline.buildTime = currentTimeMillis()
   pipeline.init()
   return pipeline

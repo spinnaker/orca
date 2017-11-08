@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletResponse
 import static com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 
@@ -85,7 +86,7 @@ class OperationsControllerSpec extends Specification {
     ).andReturn().response
 
     then:
-    1 * executionLauncher.start(ExecutionType.PIPELINE, _) >> pipeline
+    1 * executionLauncher.start(PIPELINE, _) >> pipeline
 
     and:
     resp.status == 200
@@ -183,7 +184,7 @@ class OperationsControllerSpec extends Specification {
     controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
 
     then:
-    1 * executionRepository.retrieve(ExecutionType.PIPELINE, "12345") >> parentPipeline
+    1 * executionRepository.retrieve(PIPELINE, "12345") >> parentPipeline
 
     and:
     with(startedPipeline.trigger) {

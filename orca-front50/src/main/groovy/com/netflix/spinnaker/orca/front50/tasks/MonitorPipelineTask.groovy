@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Slf4j
 @Component
@@ -41,7 +41,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
   @Override
   TaskResult execute(Stage stage) {
     String pipelineId = stage.context.executionId
-    Execution childPipeline = executionRepository.retrieve(ExecutionType.PIPELINE, pipelineId)
+    Execution childPipeline = executionRepository.retrieve(PIPELINE, pipelineId)
 
     if (childPipeline.status == ExecutionStatus.SUCCEEDED) {
       return new TaskResult(ExecutionStatus.SUCCEEDED, [status: childPipeline.status])

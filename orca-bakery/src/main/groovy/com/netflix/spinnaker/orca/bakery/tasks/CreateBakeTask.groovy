@@ -33,7 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Component
 @CompileStatic
@@ -114,7 +114,7 @@ class CreateBakeTask implements RetryableTask {
     if (stage.context.rebake == true) {
       return true
     }
-    if (stage.execution.type == ExecutionType.PIPELINE) {
+    if (stage.execution.type == PIPELINE) {
       Map trigger = stage.execution.trigger
       return trigger?.rebake == true
     }

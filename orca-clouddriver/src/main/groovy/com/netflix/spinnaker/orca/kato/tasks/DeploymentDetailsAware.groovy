@@ -20,7 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 /**
  * Tasks may implement this trait to get convention-based access to deployment details that should come from in order of preference:
@@ -56,7 +57,7 @@ trait DeploymentDetailsAware {
   }
 
   Stage getPreviousStageWithImage(Stage stage, String targetRegion, String targetCloudProvider) {
-    if (stage.execution.type == ExecutionType.ORCHESTRATION) {
+    if (stage.execution.type == ORCHESTRATION) {
       return null
     }
 
@@ -72,7 +73,7 @@ trait DeploymentDetailsAware {
   }
 
   List<Execution> getPipelineExecutions(Execution execution) {
-    if (execution?.type == ExecutionType.PIPELINE) {
+    if (execution?.type == PIPELINE) {
       return [execution] + getPipelineExecutions(getParentPipelineExecution(execution))
     } else {
       return []
@@ -91,7 +92,7 @@ trait DeploymentDetailsAware {
     } else if (stage?.parentStageId) {
       def parent = execution.stages.find { it.id == stage.parentStageId }
       return ([parent] + getAncestors(parent, execution)).flatten()
-    } else if (execution.type == ExecutionType.PIPELINE) {
+    } else if (execution.type == PIPELINE) {
       def parentPipelineExecution = getParentPipelineExecution(execution)
 
       if (parentPipelineExecution) {
@@ -127,7 +128,7 @@ trait DeploymentDetailsAware {
 
   private Execution getParentPipelineExecution(Execution execution) {
     // The initial stage execution is a Pipeline, and the ancestor executions are Maps.
-    if (execution.type == ExecutionType.PIPELINE) {
+    if (execution.type == PIPELINE) {
       if (execution.trigger.parentExecution instanceof Execution) {
         return execution.trigger.parentExecution
       } else if (execution.trigger?.isPipeline) {

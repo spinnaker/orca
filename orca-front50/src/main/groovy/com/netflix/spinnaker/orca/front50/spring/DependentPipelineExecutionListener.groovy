@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import groovy.transform.CompileDynamic
 import groovy.util.logging.Slf4j
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Slf4j
 @CompileDynamic
@@ -40,7 +40,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
 
   @Override
   void afterExecution(Persister persister, Execution execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
-    if (!execution || !(execution.type == ExecutionType.PIPELINE)) {
+    if (!execution || !(execution.type == PIPELINE)) {
       return
     }
 

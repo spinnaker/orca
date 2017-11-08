@@ -41,7 +41,7 @@ import rx.Subscription
 import rx.functions.Func1
 import rx.schedulers.Schedulers
 import static com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 
 @Slf4j
 @Component
@@ -150,7 +150,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgent implements Applicat
         log.info("Deleting ${type} execution ${it.id} (startTime: ${new Date(startTime)}, application: ${application}, pipelineConfigId: ${it.pipelineConfigId}, status: ${it.status})")
         switch (type) {
           case "orchestration":
-            executionRepository.delete(ExecutionType.ORCHESTRATION, it.id as String)
+            executionRepository.delete(ORCHESTRATION, it.id as String)
             break
           default:
             throw new IllegalArgumentException("Unsupported type '${type}'")

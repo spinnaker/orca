@@ -29,7 +29,7 @@ import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.DEFAULT_EXECUTION_ENGINE
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v2
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 class ExecutionLauncherSpec extends Specification {
 
@@ -112,7 +112,7 @@ class ExecutionLauncherSpec extends Specification {
     @Subject def launcher = create()
 
     when:
-    launcher.start(ExecutionType.PIPELINE, json)
+    launcher.start(PIPELINE, json)
 
     then:
     1 * executionRepository.store(_)
@@ -131,7 +131,7 @@ class ExecutionLauncherSpec extends Specification {
     @Subject def launcher = create()
 
     when:
-    launcher.start(ExecutionType.PIPELINE, json)
+    launcher.start(PIPELINE, json)
 
     then:
     1 * executionRunner.start(_)
@@ -148,7 +148,7 @@ class ExecutionLauncherSpec extends Specification {
     @Subject def launcher = create()
 
     when:
-    launcher.start(ExecutionType.PIPELINE, json)
+    launcher.start(PIPELINE, json)
 
     then:
     1 * executionRepository.store({

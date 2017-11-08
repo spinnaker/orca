@@ -29,7 +29,7 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 
 @Component
@@ -79,7 +79,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
 
   @CompileDynamic
   protected Collection<Map<String, Object>> parallelContexts(Stage stage) {
-    if (stage.execution.type == ExecutionType.PIPELINE) {
+    if (stage.execution.type == PIPELINE) {
       Map trigger = stage.execution.trigger
       if (trigger.parameters?.strategy == true) {
         Map parentStage = trigger.parentExecution.stages.find {
@@ -146,7 +146,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
 
   @CompileDynamic
   private boolean isClone(Stage stage) {
-    if (stage.execution.type == ExecutionType.PIPELINE) {
+    if (stage.execution.type == PIPELINE) {
       Map trigger = stage.execution.trigger
 
       if (trigger.parameters?.clone == true) {

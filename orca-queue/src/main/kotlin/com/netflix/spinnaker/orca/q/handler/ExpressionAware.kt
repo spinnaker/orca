@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import org.slf4j.Logger
@@ -39,7 +39,7 @@ interface ExpressionAware {
     val execution = execution
     this.context = object : MutableMap<String, Any?> by processed {
       override fun get(key: String): Any? {
-        if (execution.type == ExecutionType.PIPELINE) {
+        if (execution.type == PIPELINE) {
           if (key == "trigger") {
             return execution.trigger
           }
@@ -92,7 +92,7 @@ interface ExpressionAware {
     )
 
   private fun Map<String, Any?>.augmentContext(execution: Execution) =
-    if (execution.type == ExecutionType.PIPELINE) {
+    if (execution.type == PIPELINE) {
       this + execution.context + mapOf("trigger" to execution.trigger, "execution" to execution)
     } else {
       this

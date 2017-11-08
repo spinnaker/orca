@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -84,7 +85,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
     )
 
     then:
-    1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, "execution-id") >> childPipeline
+    1 * executionRepository.retrieve(PIPELINE, "execution-id") >> childPipeline
 
     // should match the first childPipeline of type 'createServerGroup' w/ 'deploy.server.groups'
     ancestorDeployStage == childPipeline.stages[2]

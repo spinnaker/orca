@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.natpryce.hamkrest.absent
 import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
@@ -51,7 +51,7 @@ object PauseTaskHandlerTest : SubjectSpek<PauseTaskHandler>({
     val message = PauseTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)

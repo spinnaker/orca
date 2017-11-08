@@ -18,11 +18,11 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine
 
 import java.util.regex.Pattern
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 class AppEngineBranchFinder {
   static String findInStage(Map operation, Stage stage) {
-    if (operation.fromTrigger && operation.trigger && stage.execution.type == ExecutionType.PIPELINE) {
+    if (operation.fromTrigger && operation.trigger && stage.execution.type == PIPELINE) {
       Map trigger = stage.execution.trigger
 
       if (trigger.type == "git") {

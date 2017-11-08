@@ -30,7 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Component
 @Slf4j
@@ -66,7 +66,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
       pipelineConfig.trigger.parentPipelineStageId = parentPipelineStageId
     }
 
-    if (parentPipeline?.type == ExecutionType.PIPELINE){
+    if (parentPipeline?.type == PIPELINE) {
       pipelineConfig.trigger.parentPipelineName = parentPipeline.name
       pipelineConfig.trigger.isPipeline = true
     }
@@ -103,7 +103,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
                   ", principal: " + principal?.toString())
     def callable = AuthenticatedRequest.propagate({
       log.debug("Destination thread user: " + AuthenticatedRequest.getAuthenticationHeaders())
-      pipeline = executionLauncher().start(ExecutionType.PIPELINE, json)
+      pipeline = executionLauncher().start(PIPELINE, json)
     } as Callable<Void>, true, principal)
 
     //This needs to run in a separate thread to not bork the batch TransactionManager

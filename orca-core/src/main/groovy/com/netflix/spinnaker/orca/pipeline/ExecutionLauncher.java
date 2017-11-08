@@ -36,6 +36,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.*;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionEngine.v3;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -93,7 +95,7 @@ public class ExecutionLauncher {
   }
 
   private void checkRunnable(Execution execution) {
-    if (execution.getType() == ExecutionType.PIPELINE) {
+    if (execution.getType() == PIPELINE) {
       pipelineValidator.ifPresent(it -> it.checkRunnable(execution));
     }
   }
@@ -109,7 +111,7 @@ public class ExecutionLauncher {
   }
 
   private Execution checkForCorrelatedExecution(Execution execution) {
-    if (execution.getType() != ExecutionType.ORCHESTRATION) {
+    if (execution.getType() != ORCHESTRATION) {
       return null;
     }
 
@@ -140,7 +142,7 @@ public class ExecutionLauncher {
     log.error("Failed to start {} {}", execution.getType(), execution.getId(), failure);
     executionRepository.updateStatus(execution.getId(), status);
     executionRepository.cancel(execution.getId(), canceledBy, reason);
-    if (execution.getType() == ExecutionType.PIPELINE) {
+    if (execution.getType() == PIPELINE) {
       startTracker.ifPresent(tracker -> {
         if (execution.getPipelineConfigId() != null) {
           tracker.removeFromQueue(execution.getPipelineConfigId(), execution.getId());
@@ -161,7 +163,7 @@ public class ExecutionLauncher {
   }
 
   private Execution parse(ExecutionType type, String configJson) throws IOException {
-    if (type == ExecutionType.PIPELINE) {
+    if (type == PIPELINE) {
       return parsePipeline(configJson);
     } else {
       return parseOrchestration(configJson);

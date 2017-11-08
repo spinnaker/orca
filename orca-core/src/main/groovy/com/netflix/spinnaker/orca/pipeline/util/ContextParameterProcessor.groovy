@@ -42,7 +42,9 @@ import org.springframework.expression.spel.support.ReflectivePropertyAccessor
 import org.springframework.expression.spel.support.StandardEvaluationContext
 import org.springframework.expression.spel.support.StandardTypeLocator
 import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ExpressionEvaluationVersion.V1
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.*
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.AuthenticationDetails
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
 
 /**
  * Common methods for dealing with passing context parameters used by both Script and Jenkins stages
@@ -112,7 +114,7 @@ class ContextParameterProcessor {
 
   Map<String, Object> buildExecutionContext(Stage stage, boolean includeStageContext) {
     def augmentedContext = [:] + (includeStageContext ? stage.context : [:])
-    if (stage.execution.type == ExecutionType.PIPELINE) {
+    if (stage.execution.type == PIPELINE) {
       augmentedContext.put('trigger', stage.execution.trigger)
       augmentedContext.put('execution', stage.execution)
     }

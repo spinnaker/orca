@@ -37,7 +37,8 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static net.logstash.logback.argument.StructuredArguments.value
 
 @RestController
@@ -141,7 +142,7 @@ class OperationsController {
     }
 
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
-      def parentExecution = executionRepository.retrieve(ExecutionType.PIPELINE, pipeline.trigger.parentPipelineId)
+      def parentExecution = executionRepository.retrieve(PIPELINE, pipeline.trigger.parentPipelineId)
       if (parentExecution) {
         pipeline.trigger.isPipeline         = true
         pipeline.trigger.parentStatus       = parentExecution.status
@@ -238,7 +239,7 @@ class OperationsController {
     def json = objectMapper.writeValueAsString(config)
     log.info('requested pipeline: {}', json)
 
-    def pipeline = executionLauncher.start(ExecutionType.PIPELINE, json)
+    def pipeline = executionLauncher.start(PIPELINE, json)
 
     [ref: "/pipelines/${pipeline.id}".toString()]
   }
@@ -248,7 +249,7 @@ class OperationsController {
     injectPipelineOrigin(config)
     def json = objectMapper.writeValueAsString(config)
     log.info('requested task:{}', json)
-    def pipeline = orchestrationLauncher.start(ExecutionType.ORCHESTRATION, json)
+    def pipeline = orchestrationLauncher.start(ORCHESTRATION, json)
     [ref: "/tasks/${pipeline.id}".toString()]
   }
 

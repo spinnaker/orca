@@ -21,7 +21,7 @@ import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.TaskComplete
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
@@ -61,7 +61,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -112,7 +112,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -153,7 +153,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", SUCCEEDED)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)
@@ -202,7 +202,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
             tasks[2].status = SUCCEEDED
           }
 
-          whenever(repository.retrieve(ExecutionType.PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -243,7 +243,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
       val message = CompleteTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", status)
 
       beforeGroup {
-        whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
       }
 
       afterGroup(::resetMocks)

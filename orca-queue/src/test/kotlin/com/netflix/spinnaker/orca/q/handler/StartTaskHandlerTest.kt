@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.TaskStarted
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
@@ -54,7 +54,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
     val message = StartTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doReturn pipeline
+      whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
     }
 
     afterGroup(::resetMocks)
@@ -106,7 +106,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
     val message = StartTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1")
 
     beforeGroup {
-      whenever(repository.retrieve(ExecutionType.PIPELINE, message.executionId)) doThrow NullPointerException()
+      whenever(repository.retrieve(PIPELINE, message.executionId)) doThrow NullPointerException()
     }
 
     afterGroup(::resetMocks)
