@@ -16,13 +16,14 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import javax.servlet.http.HttpServletResponse
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.PipelineTemplateService
@@ -39,7 +40,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import javax.servlet.http.HttpServletResponse
 import static com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
@@ -206,14 +206,14 @@ class OperationsControllerSpec extends Specification {
 
   def "should get pipeline execution context from a previous execution if not provided and attribute plan is truthy"() {
     given:
-    Pipeline startedPipeline = null
-    pipelineLauncher.start(_) >> { String json ->
-      startedPipeline = mapper.readValue(json, Pipeline)
+    Execution startedPipeline = null
+    executionLauncher.start(*_) >> { type, String json ->
+      startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
 
-    Pipeline previousExecution = pipeline {
+    def previousExecution = pipeline {
       name = "Last executed pipeline"
       status = SUCCEEDED
       id = "12345"
