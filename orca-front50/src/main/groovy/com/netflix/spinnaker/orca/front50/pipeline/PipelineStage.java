@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.front50.tasks.MonitorPipelineTask;
 import com.netflix.spinnaker.orca.front50.tasks.StartPipelineTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.Task;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 
@@ -81,7 +83,7 @@ public class PipelineStage implements StageDefinitionBuilder, RestartableStage, 
         if (executionRepository == null) {
           log.error(format("Stage %s could not be canceled w/o front50 enabled. Please set 'front50.enabled: true' in your orca config.", readableStageDetails));
         } else {
-          Pipeline childPipeline = executionRepository.retrievePipeline(executionId);
+          Execution childPipeline = executionRepository.retrieve(ExecutionType.pipeline, executionId);
           if (!childPipeline.isCanceled()) {
             // flag the child pipeline as canceled (actual cancellation will happen asynchronously)
             executionRepository.cancel(executionId, "parent pipeline", null);
