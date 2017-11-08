@@ -28,8 +28,6 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ExpressionEvaluationVersion.V1;
 import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ExpressionEvaluationVersion.V2;
 
-;
-
 public class PipelineExpressionEvaluator extends ExpressionsSupport implements ExpressionEvaluator {
   private static final Logger LOGGER = LoggerFactory.getLogger(PipelineExpressionEvaluator.class);
   public static final String SUMMARY = "expressionEvaluationSummary";
