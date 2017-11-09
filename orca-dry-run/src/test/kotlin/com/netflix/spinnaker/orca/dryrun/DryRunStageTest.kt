@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.dryrun
 import com.natpryce.hamkrest.greaterThan
 import com.natpryce.hamkrest.should.shouldMatch
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.spek.shouldEqual
@@ -30,7 +29,7 @@ import org.jetbrains.spek.api.dsl.on
 
 object DryRunStageTest : Spek({
 
-  fun <T : Execution<T>> StageDefinitionBuilder.plan(stage: Stage<T>) {
+  fun StageDefinitionBuilder.plan(stage: Stage) {
     stage.type = type
     buildTasks(stage)
     buildSyntheticStages(stage)
