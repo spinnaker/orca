@@ -49,7 +49,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
       oort = Stub(OortService)
       oort.getServerGroup("test", "us-east-1", "kato-main-v000") >> { new Response('kato', 200, 'ok', [], new TypedString(mapper.writeValueAsString(serverGroup))) }
       task.oortService = oort
-      def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]], capacity: [desired: 3]]
+      def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]]]
     def stage = new Stage(Execution.newOrchestration("orca"), "resizeAsg", context)
 
     when:
@@ -105,7 +105,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
 
     oort.getServerGroup("test", "us-east-1", "kato-main-v000") >> { new Response('kato', 200, 'ok', [], new TypedString(mapper.writeValueAsString(serverGroup))) }
     task.oortService = oort
-    def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]], capacity: [desired: 3]]
+    def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]]]
     def stage = new Stage(Execution.newOrchestration("orca"), "resizeAsg", context)
 
     when:
@@ -138,7 +138,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
     oort = Stub(OortService)
     oort.getServerGroup("test", "us-east-1", "kato-main-v000") >> { new Response('kato', 200, 'ok', [], new TypedString(mapper.writeValueAsString(serverGroup))) }
     task.oortService = oort
-    def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]], capacity: [desired: 1]]
+    def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]]]
     def stage = new Stage(Execution.newOrchestration("orca"), "resizeAsg", context)
 
     when:
