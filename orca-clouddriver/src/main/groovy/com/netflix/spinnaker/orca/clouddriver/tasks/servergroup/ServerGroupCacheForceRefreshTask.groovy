@@ -36,6 +36,7 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 @Slf4j
 class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask implements RetryableTask {
   static final String REFRESH_TYPE = "ServerGroup"
+  static final String REFRESH_CONTROLLERS_TYPE = "ControllerSet"
 
   long backoffPeriod = TimeUnit.SECONDS.toMillis(10)
   long timeout = TimeUnit.MINUTES.toMillis(15)
@@ -119,6 +120,12 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
           status = SUCCEEDED
         }
 
+        response = cacheService.forceCacheUpdate(cloudProvider, REFRESH_CONTROLLERS_TYPE, model)
+        if (response.status == HttpURLConnection.HTTP_OK) {
+           //cache update was applied immediately, no need to poll for completion
+           status = SUCCEEDED
+        }
+
         stageData.refreshedServerGroups << model
       } catch (e) {
         stageData.errors << e.message
@@ -141,7 +148,21 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
                                                   String cloudProvider,
                                                   StageData stageData,
                                                   Long startTime) {
-    def pendingForceCacheUpdates = cacheStatusService.pendingForceCacheUpdates(cloudProvider, REFRESH_TYPE)
+    boolean serverGroupRefreshStatus = processPendingForceCacheUpdates(account, cloudProvider, stageData, startTime, REFRESH_TYPE) ?: false
+    boolean controllerRefreshStatus = processPendingForceCacheUpdates(account, cloudProvider, stageData, startTime, REFRESH_CONTROLLERS_TYPE) ?: false
+
+    if (serverGroupRefreshStatus && controllerRefreshStatus) {
+      return true
+    } else {
+      return false
+    }
+  }
+  private boolean processPendingForceCacheUpdates(String account,
+                                                  String cloudProvider,
+                                                  StageData stageData,
+                                                  Long startTime,
+                                                  String refreshType) {
+    def pendingForceCacheUpdates = cacheStatusService.pendingForceCacheUpdates(cloudProvider, refreshType)
 
     boolean finishedProcessing = true
     stageData.deployServerGroups.each { String region, Set<String> serverGroups ->
