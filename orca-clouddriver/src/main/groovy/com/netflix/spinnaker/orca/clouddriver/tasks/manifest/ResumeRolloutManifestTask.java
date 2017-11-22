@@ -15,22 +15,16 @@
  *
  */
 
-package com.netflix.spinnaker.orca.clouddriver.model;
+package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
-import lombok.Data;
+import org.springframework.stereotype.Component;
 
-@Data
-public class Manifest {
-  private Status status;
+@Component
+public class ResumeRolloutManifestTask extends GenericUpdateManifestTask {
+  public static final String TASK_NAME = "resumeRolloutManifest";
 
-  @Data
-  public static class Status {
-    Condition stable;
-  }
-
-  @Data
-  public static class Condition {
-    boolean state;
-    String message;
+  @Override
+  protected String taskName() {
+    return TASK_NAME;
   }
 }
