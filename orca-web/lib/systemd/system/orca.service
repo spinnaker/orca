@@ -1,10 +1,11 @@
 [Unit]
 Description=Spinnaker Orca
-After=network.target
+PartOf=spinnaker.service
 
 [Service]
 ExecStart=/opt/orca/bin/orca 2>&1 /var/log/spinnaker/orca/orca.log
 WorkingDirectory=/opt/orca/bin
+SuccessExitStatus=143
 User=spinnaker
 Group=spinnaker
 Type=simple
