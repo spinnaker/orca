@@ -22,34 +22,21 @@ import java.util.function.Function;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import static java.lang.String.format;
 
 @Component
-public class ThreadPoolMetricsPostProcessor implements BeanPostProcessor {
-
-  private final Registry registry;
+public class ThreadPoolMetricsPostProcessor extends AbstractMetricsPostProcessor<ThreadPoolTaskExecutor> {
 
   @Autowired
-  public ThreadPoolMetricsPostProcessor(Registry registry) {this.registry = registry;}
-
-  @Override
-  public Object postProcessBeforeInitialization(Object bean, String beanName) {
-    if (bean instanceof ThreadPoolTaskExecutor) {
-      applyThreadPoolMetrics((ThreadPoolTaskExecutor) bean, beanName);
-    }
-    return bean;
+  public ThreadPoolMetricsPostProcessor(Registry registry) {
+    super(ThreadPoolTaskExecutor.class, registry);
   }
 
   @Override
-  public Object postProcessAfterInitialization(Object bean, String beanName) {
-    return bean;
-  }
-
-  private void applyThreadPoolMetrics(ThreadPoolTaskExecutor executor,
-                                      String threadPoolName) {
+  protected void applyMetrics(ThreadPoolTaskExecutor executor,
+                              String threadPoolName) {
     BiConsumer<String, Function<ThreadPoolExecutor, Integer>> createGauge =
       (name, fn) -> {
         Id id = registry

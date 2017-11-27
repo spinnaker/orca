@@ -23,6 +23,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.*
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.config.OrcaQueueConfiguration
 import com.netflix.spinnaker.config.QueueConfiguration
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.*
@@ -41,6 +42,10 @@ import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepos
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
+import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.memory.InMemoryQueue
+import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.spek.shouldAllEqual
 import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
@@ -50,6 +55,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ConfigurableApplicationContext
@@ -57,6 +63,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.junit4.SpringRunner
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant.now
 import java.time.ZoneId
@@ -639,6 +646,7 @@ open class QueueIntegrationTest {
 @Import(
   PropertyPlaceholderAutoConfiguration::class,
   QueueConfiguration::class,
+  OrcaQueueConfiguration::class,
   EmbeddedRedisConfiguration::class,
   JedisExecutionRepository::class,
   StageNavigator::class,
@@ -674,5 +682,21 @@ open class TestConfig {
   @Bean open fun contextParameterProcessor() = ContextParameterProcessor()
 
   @Bean open fun defaultExceptionHandler() = DefaultExceptionHandler()
+
+  @Bean
+  open fun deadMessageHandler(): DeadMessageCallback = { _, _ -> }
+
+  @Bean
+  @ConditionalOnMissingBean(Queue::class)
+  open fun queue(
+    clock: Clock,
+    deadMessageHandler: DeadMessageCallback,
+    publisher: EventPublisher
+  ) =
+    InMemoryQueue(
+      clock = clock,
+      deadMessageHandler = deadMessageHandler,
+      publisher = publisher
+    )
 }
 

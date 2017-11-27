@@ -17,9 +17,11 @@ package com.netflix.spinnaker.config
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.config.RedisConfiguration
-import com.netflix.spinnaker.orca.q.redis.RedisDeadMessageHandler
-import com.netflix.spinnaker.orca.q.redis.RedisQueue
+import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
+import com.netflix.spinnaker.q.redis.RedisQueue
 import com.netflix.spinnaker.orca.q.QueueShovel
+import com.netflix.spinnaker.q.Activator
+import com.netflix.spinnaker.q.metrics.EventPublisher
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.springframework.beans.factory.BeanInitializationException
 import org.springframework.beans.factory.annotation.Qualifier
@@ -51,7 +53,7 @@ open class RedisQueueShovelConfiguration {
       throw BeanInitializationException("previous Redis connection must not be the same as current connection")
     }
 
-    return RedisConfiguration.createPool(redisPoolConfig, previousConnection, timeout, registry, "previousQueueJedisPool")
+    return RedisConfiguration.createPool(redisPoolConfig, previousConnection, timeout)
   }
 
   @Bean(name = arrayOf("previousQueueImpl"))
@@ -60,13 +62,13 @@ open class RedisQueueShovelConfiguration {
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
-    publisher: ApplicationEventPublisher
+    publisher: EventPublisher
   ) =
     RedisQueue(
       queueName = redisQueueProperties.queueName,
       pool = redisPool,
       clock = clock,
-      deadMessageHandler = deadMessageHandler::handle,
+      deadMessageHandler = deadMessageHandler,
       publisher = publisher,
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong())
     )
@@ -76,11 +78,13 @@ open class RedisQueueShovelConfiguration {
   @ConditionalOnBean(name = arrayOf("previousQueueJedisPool")) open fun redisQueueShovel(
     @Qualifier("queueImpl") queueImpl: RedisQueue,
     @Qualifier("previousQueueImpl") previousQueueImpl: RedisQueue,
-    registry: Registry
+    registry: Registry,
+    activator: Activator
   ) =
     QueueShovel(
       queue = queueImpl,
       previousQueue = previousQueueImpl,
-      registry = registry
+      registry = registry,
+      activator = activator
     )
 }
