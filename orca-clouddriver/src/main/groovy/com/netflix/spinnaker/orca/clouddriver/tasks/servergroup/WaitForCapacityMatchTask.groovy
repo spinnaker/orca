@@ -43,6 +43,13 @@ class WaitForCapacityMatchTask extends AbstractInstancesCheckTask {
     if (!serverGroup.capacity || serverGroup.capacity.desired != instances.size()) {
       return false
     }
+
+    if (stage.context.get("capacity") && stage.context.get("capacity").get("desired")) {
+      if (stage.context.get("capacity")?.get("desired") != instances.size()) {
+        return false
+      }
+    }
+
     return !serverGroup.disabled ?
       WaitForUpInstancesTask.allInstancesMatch(stage, serverGroup, instances, interestingHealthProviderNames) :
       true

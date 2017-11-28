@@ -141,6 +141,7 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
                                                   String cloudProvider,
                                                   StageData stageData,
                                                   Long startTime) {
+
     def pendingForceCacheUpdates = cacheStatusService.pendingForceCacheUpdates(cloudProvider, REFRESH_TYPE)
 
     boolean finishedProcessing = true
@@ -158,7 +159,11 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
         }
 
         def forceCacheUpdate = pendingForceCacheUpdates.find {
-          (it.details as Map<String, String>).intersect(model) == model
+          if (it) {
+            (it.details as Map<String, String>).intersect(model) == model
+          } else {
+            return false
+          }
         }
 
         if (!forceCacheUpdate) {
