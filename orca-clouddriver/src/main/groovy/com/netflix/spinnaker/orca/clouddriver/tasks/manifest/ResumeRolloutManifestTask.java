@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2017 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -12,22 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.netflix.spinnaker.orca.mahe.tasks
+package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
-import groovy.util.logging.Slf4j
-import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-class RollbackPropertyTask implements Task{
+public class ResumeRolloutManifestTask extends GenericUpdateManifestTask {
+  public static final String TASK_NAME = "resumeRolloutManifest";
 
   @Override
-  TaskResult execute(Stage stage) {
-    return null
+  protected String taskName() {
+    return TASK_NAME;
   }
 }

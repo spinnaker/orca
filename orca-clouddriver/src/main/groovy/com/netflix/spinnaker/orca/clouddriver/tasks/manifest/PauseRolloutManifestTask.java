@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2017 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -12,9 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-dependencies {
-  compile project(':orca-retrofit')
-  testCompile project(":orca-test")
+package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class PauseRolloutManifestTask extends GenericUpdateManifestTask {
+  public static final String TASK_NAME = "pauseRolloutManifest";
+
+  @Override
+  protected String taskName() {
+    return TASK_NAME;
+  }
 }

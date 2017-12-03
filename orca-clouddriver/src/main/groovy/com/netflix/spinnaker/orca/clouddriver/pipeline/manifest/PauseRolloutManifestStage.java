@@ -18,23 +18,21 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.UndoRolloutManifestTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PauseRolloutManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.UpdateManifestForceCacheRefreshTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.UpdateManifestWaitForStableTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UndoRolloutManifestStage implements StageDefinitionBuilder {
-  public static final String PIPELINE_CONFIG_TYPE = "undoRolloutManifest";
+public class PauseRolloutManifestStage implements StageDefinitionBuilder {
+  public static final String PIPELINE_CONFIG_TYPE = "pauseRolloutManifest";
 
   @Override
   public void taskGraph(Stage stage, TaskNode.Builder builder) {
-    builder.withTask(UndoRolloutManifestTask.TASK_NAME, UndoRolloutManifestTask.class)
-        .withTask("monitorUndoRollout", MonitorKatoTask.class)
-        .withTask(UpdateManifestForceCacheRefreshTask.TASK_NAME, UpdateManifestForceCacheRefreshTask.class)
-        .withTask(UpdateManifestWaitForStableTask.TASK_NAME, UpdateManifestWaitForStableTask.class);
+    builder.withTask(PauseRolloutManifestTask.TASK_NAME, PauseRolloutManifestTask.class)
+        .withTask("monitorPauseRollout", MonitorKatoTask.class)
+        .withTask(UpdateManifestForceCacheRefreshTask.TASK_NAME, UpdateManifestForceCacheRefreshTask.class);
   }
 }

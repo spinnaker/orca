@@ -71,6 +71,9 @@ class OperationsController {
   @Autowired(required = false)
   WebhookService webhookService
 
+  @Autowired(required = false)
+  ArtifactResolver artifactResolver
+
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
     parsePipelineTrigger(executionRepository, buildService, pipeline)
@@ -123,8 +126,8 @@ class OperationsController {
           def previousExecution = pipelineTemplateService.retrievePipelineOrNewestExecution(pipeline.executionId, pipeline.id)
           pipeline.trigger = previousExecution.trigger
           pipeline.executionId = previousExecution.id
-        } catch (ExecutionNotFoundException ignore) {
-          // Do nothing
+        } catch (ExecutionNotFoundException | IllegalArgumentException _) {
+          log.info("Could not initialize pipeline template config from previous execution context.")
         }
       }
     }
@@ -161,7 +164,7 @@ class OperationsController {
       }
     }
 
-    ArtifactResolver.resolveArtifacts(pipeline)
+    artifactResolver?.resolveArtifacts(executionRepository, pipeline)
   }
 
   private void getBuildInfo(Map trigger) {
