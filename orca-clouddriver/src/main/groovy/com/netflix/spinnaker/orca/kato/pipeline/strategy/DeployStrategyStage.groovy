@@ -210,6 +210,10 @@ abstract class DeployStrategyStage extends AbstractCloudProviderAwareStage {
     return stages
   }
 
+  protected List<Stage> composeRecreateUpdateFlow(Stage stage) {
+    return []
+  }
+
   protected List<Stage> composeCustomFlow(Stage stage) {
     def stages = []
     def cleanupConfig = determineClusterForCleanup(stage)

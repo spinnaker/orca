@@ -25,6 +25,7 @@ public enum Strategy implements StrategyFlowComposer{
   RED_BLACK("redblack"),
   HIGHLANDER("highlander"),
   ROLLING_PUSH("rollingpush"),
+  RECREATE_UPDATE("recreateupdate"),
   CUSTOM("custom"),
   NONE("none");
 
@@ -49,7 +50,7 @@ public enum Strategy implements StrategyFlowComposer{
 
   @Override
   public boolean replacesBasicSteps() {
-    return this == ROLLING_PUSH || this == CUSTOM;
+    return this == ROLLING_PUSH || this == CUSTOM || this == RECREATE_UPDATE;
   }
 
   @Override
@@ -61,6 +62,8 @@ public enum Strategy implements StrategyFlowComposer{
         return builder.composeHighlanderFlow(stage);
       case ROLLING_PUSH:
         return builder.composeRollingPushFlow(stage);
+      case RECREATE_UPDATE:
+        return builder.composeRecreateUpdateFlow(stage);
       case CUSTOM:
         return builder.composeCustomFlow(stage);
     }
