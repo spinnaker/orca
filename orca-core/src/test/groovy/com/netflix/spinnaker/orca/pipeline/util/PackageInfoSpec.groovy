@@ -242,7 +242,6 @@ class PackageInfoSpec extends Specification {
     given:
     Stage bakeStage = new Stage()
     def pipeline = Execution.newPipeline("orca")
-    pipeline.context << [buildInfo: [artifacts: [[fileName: "api_1.1.1-h03.sha123_all.deb"]]]]
     bakeStage.execution = pipeline
     bakeStage.context = [package: '']
 
