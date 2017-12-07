@@ -30,7 +30,6 @@ class PipelineBuilder {
 
   PipelineBuilder(String application, Registry registry) {
     this(application)
-    pipeline.context = new AlertOnAccessMap(pipeline, registry)
   }
 
   PipelineBuilder(String application) {

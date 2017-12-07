@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -38,6 +39,26 @@ import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
 public class Stage implements Serializable {
+
+  /**
+   * Sorts stages into order according to their refIds / requisiteStageRefIds.
+   */
+  public static Stream<Stage> topologicalSort(Collection<Stage> stages) {
+    List<Stage> unsorted = new ArrayList<>(stages);
+    ImmutableList.Builder<Stage> sorted = ImmutableList.builder();
+    Set<String> refIds = new HashSet<>();
+    while (refIds.size() < stages.size()) {
+      unsorted.stream()
+        .filter(it -> refIds.containsAll(it.getRequisiteStageRefIds()))
+        .collect(toList())
+        .forEach(it -> {
+          unsorted.remove(it);
+          refIds.add(it.refId);
+          sorted.add(it);
+        });
+    }
+    return sorted.build().stream();
+  }
 
   public Stage() {}
 
@@ -328,9 +349,9 @@ public class Stage implements Serializable {
     } else if (parentStageId != null) {
       return execution.getStages().stream().filter(it -> it.id.equals(parentStageId)).findFirst()
         .<List<Stage>>map(parent -> ImmutableList
-        .<Stage>builder()
-        .add(parent)
-        .addAll(parent.ancestorsOnly())
+          .<Stage>builder()
+          .add(parent)
+          .addAll(parent.ancestorsOnly())
           .build())
         .orElse(emptyList());
     } else {
