@@ -35,6 +35,7 @@ import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.lang.String.format;
+import static java.lang.String.join;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
@@ -44,13 +45,22 @@ public class Stage implements Serializable {
    * Sorts stages into order according to their refIds / requisiteStageRefIds.
    */
   public static Stream<Stage> topologicalSort(Collection<Stage> stages) {
-    List<Stage> unsorted = new ArrayList<>(stages);
+    List<Stage> unsorted = stages.stream().filter(it -> it.parentStageId == null).collect(toList());
     ImmutableList.Builder<Stage> sorted = ImmutableList.builder();
     Set<String> refIds = new HashSet<>();
-    while (refIds.size() < stages.size()) {
-      unsorted.stream()
+    while (!unsorted.isEmpty()) {
+      List<Stage> sortable = unsorted.stream()
         .filter(it -> refIds.containsAll(it.getRequisiteStageRefIds()))
-        .collect(toList())
+        .collect(toList());
+      if (sortable.isEmpty()) {
+        throw new IllegalStateException(
+          format(
+            "Invalid stage relationships found %s",
+            join(", ", stages.stream().map(it -> format("%s->%s", it.requisiteStageRefIds, it.refId)).collect(toList()))
+          )
+        );
+      }
+      sortable
         .forEach(it -> {
           unsorted.remove(it);
           refIds.add(it.refId);

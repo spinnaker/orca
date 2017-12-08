@@ -17,13 +17,15 @@
 package com.netflix.spinnaker.orca.pipeline.model
 
 import spock.lang.Specification
+import static com.netflix.spinnaker.orca.pipeline.model.Stage.topologicalSort
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 import static java.util.stream.Collectors.toList
 
 class StageSpec extends Specification {
 
-  def "DAG_ORDER sorts stages with direct relationships"() {
+  def "topologicalSort sorts stages with direct relationships"() {
     given:
     def pipeline = pipeline {
       stage {
@@ -40,12 +42,12 @@ class StageSpec extends Specification {
     }
 
     expect:
-    with(Stage.topologicalSort(pipeline.stages).collect(toList())) {
+    with(topologicalSort(pipeline.stages).collect(toList())) {
       refId == ["1", "2", "3"]
     }
   }
 
-  def "DAG_ORDER sorts stages with fork join topology"() {
+  def "topologicalSort sorts stages with fork join topology"() {
     given:
     def pipeline = pipeline {
       stage {
@@ -66,13 +68,13 @@ class StageSpec extends Specification {
     }
 
     expect:
-    with(Stage.topologicalSort(pipeline.stages).collect(toList())) {
+    with(topologicalSort(pipeline.stages).collect(toList())) {
       refId.first() == "1"
       refId.last() == "4"
     }
   }
 
-  def "DAG_ORDER sorts stages with isolated branches"() {
+  def "topologicalSort sorts stages with isolated branches"() {
     given:
     def pipeline = pipeline {
       stage {
@@ -92,7 +94,7 @@ class StageSpec extends Specification {
     }
 
     expect:
-    with(Stage.topologicalSort(pipeline.stages).collect(toList())) {
+    with(topologicalSort(pipeline.stages).collect(toList())) {
       "1" in refId[0..1]
       "3" in refId[0..1]
       "2" in refId[2..3]
@@ -100,4 +102,53 @@ class StageSpec extends Specification {
     }
   }
 
+  def "topologicalSort only considers top-level stages"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        refId = "1"
+        stage {
+          refId = "1<1"
+        }
+        stage {
+          refId = "1<2"
+          requisiteStageRefIds = ["1<1"]
+        }
+        stage {
+          refId = "1>1"
+          syntheticStageOwner = STAGE_AFTER
+        }
+      }
+      stage {
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+      }
+    }
+
+    expect:
+    with(topologicalSort(pipeline.stages).collect(toList())) {
+      refId == ["1", "2"]
+    }
+  }
+
+  def "topologicalSort does not go into an infinite loop if given a bad set of stages"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        refId = "1"
+        requisiteStageRefIds = ["2"]
+      }
+      stage {
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+      }
+    }
+
+    when:
+    topologicalSort(pipeline.stages)
+
+    then:
+    def e = thrown(IllegalStateException)
+    println e.message
+  }
 }
