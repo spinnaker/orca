@@ -16,31 +16,29 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-@JsonTypeName("manual")
-public class ManualTrigger extends Trigger {
-
-  private final List<Map<String, Object>> notifications;
+@JsonTypeName("cron")
+public class CronTrigger extends Trigger {
+  private final UUID id;
+  private final String cronExpression;
+  private final boolean enabled;
 
   @JsonCreator
-  public ManualTrigger(
-    @Nullable @JsonProperty("user") String user,
-    @Nonnull @JsonProperty("parameters") Map<String, Object> parameters,
-    @Nonnull @JsonProperty("notifications")
-      List<Map<String, Object>> notifications
+  public CronTrigger(
+    @JsonProperty("id") UUID id,
+    @JsonProperty("cronExpression") String cronExpression,
+    @JsonProperty("enabled") boolean enabled,
+    @JsonProperty("user") String user,
+    @JsonProperty("parameters") Map<String, Object> parameters
   ) {
-    super(user, parameters, true);
-    this.notifications = notifications;
-  }
-
-  public @Nonnull List<Map<String, Object>> getNotifications() {
-    return notifications;
+    super(user, parameters, enabled);
+    this.id = id;
+    this.cronExpression = cronExpression;
+    this.enabled = enabled;
   }
 }

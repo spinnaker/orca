@@ -14,40 +14,30 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.echo.model;
+package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.util.Map;
-import java.util.UUID;
-import javax.annotation.Nonnull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.netflix.spinnaker.orca.pipeline.model.Trigger;
 
-@JsonTypeName("cron")
-public class CronTrigger implements Trigger {
-  private final UUID id;
-  private final String cronExpression;
-  private final boolean enabled;
-  private final String user;
-  private final Map<String, Object> parameters;
+@JsonTypeName("dryrun")
+public class DryRunTrigger extends Trigger {
+
+  private final Execution lastSuccessfulExecution;
 
   @JsonCreator
-  public CronTrigger(
-    @JsonProperty("id") UUID id,
-    @JsonProperty("cronExpression") String cronExpression,
-    @JsonProperty("enabled") boolean enabled,
+  public DryRunTrigger(
+    @JsonProperty("lastSuccessfulExecution") Execution lastSuccessfulExecution,
     @JsonProperty("user") String user,
-    @JsonProperty("parameters") Map<String, Object> parameters
+    @JsonProperty("parameters") Map<String, Object> parameters,
+    @JsonProperty("enabled") Boolean enabled
   ) {
-    this.id = id;
-    this.cronExpression = cronExpression;
-    this.enabled = enabled;
-    this.user = user;
-    this.parameters = parameters;
+    super(user, parameters, enabled);
+    this.lastSuccessfulExecution = lastSuccessfulExecution;
   }
 
-  @Nonnull @Override public String getType() {
-    return "cron";
+  public Execution getLastSuccessfulExecution() {
+    return lastSuccessfulExecution;
   }
 }

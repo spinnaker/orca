@@ -16,14 +16,41 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import java.util.Map;
 import javax.annotation.Nonnull;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeInfo(use = Id.NAME, include = As.EXISTING_PROPERTY, property = "type")
-public interface Trigger {
+public abstract class Trigger {
 
-  @Nonnull String getType();
+  private final String type;
+  private final String user;
+  private final Map<String, Object> parameters;
+  private final boolean enabled;
 
+  public Trigger(String user, Map<String, Object> parameters, boolean enabled) {
+    this.type = getClass().getAnnotation(JsonTypeName.class).value();
+    this.user = user;
+    this.parameters = parameters;
+    this.enabled = enabled;
+  }
+
+  public final @Nonnull String getType() {
+    return type;
+  }
+
+  public final @Nonnull String getUser() {
+    return user;
+  }
+
+  public final @Nonnull Map<String, Object> getParameters() {
+    return parameters;
+  }
+
+  public final boolean isEnabled() {
+    return enabled;
+  }
 }

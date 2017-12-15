@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.echo.model
-
-import com.netflix.spinnaker.orca.pipeline.model.AbstractTriggerSpec
+package com.netflix.spinnaker.orca.pipeline.model
 
 class CronTriggerSpec extends AbstractTriggerSpec<CronTrigger> {
   @Override

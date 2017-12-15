@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.igor.model;
+package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.netflix.spinnaker.orca.pipeline.model.Trigger;
 
 @JsonTypeName("jenkins")
-public class JenkinsTrigger implements Trigger {
+public class JenkinsTrigger extends Trigger {
 
   private final String master;
   private final String job;
   private final int buildNumber;
   private final String propertyFile;
   private final BuildInfo buildInfo;
-  private final String user;
-  private final Map<String, Object> parameters;
 
   @JsonCreator
   public JenkinsTrigger(
@@ -44,15 +40,15 @@ public class JenkinsTrigger implements Trigger {
     @JsonProperty("propertyFile") String propertyFile,
     @JsonProperty("buildInfo") BuildInfo buildInfo,
     @JsonProperty("user") String user,
-    @JsonProperty("parameters") Map<String, Object> parameters
+    @JsonProperty("parameters") Map<String, Object> parameters,
+    @JsonProperty("enabled") boolean enabled
   ) {
+    super(user, parameters, enabled);
     this.master = master;
     this.job = job;
     this.buildNumber = buildNumber;
     this.propertyFile = propertyFile;
     this.buildInfo = buildInfo;
-    this.user = user;
-    this.parameters = parameters;
   }
 
   public String getMaster() {
@@ -73,18 +69,6 @@ public class JenkinsTrigger implements Trigger {
 
   public BuildInfo getBuildInfo() {
     return buildInfo;
-  }
-
-  public String getUser() {
-    return user;
-  }
-
-  public Map<String, Object> getParameters() {
-    return parameters;
-  }
-
-  @Nonnull @Override public String getType() {
-    return "jenkins";
   }
 
   private static class BuildInfo {

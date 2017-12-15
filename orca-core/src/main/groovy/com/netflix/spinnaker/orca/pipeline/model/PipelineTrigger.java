@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
  * The trigger used when a pipeline is triggered by another pipeline completing.
  */
 @JsonTypeName("pipeline")
-public final class PipelineTrigger implements Trigger {
+public final class PipelineTrigger extends Trigger {
 
   @JsonCreator
   public PipelineTrigger(
@@ -42,8 +42,10 @@ public final class PipelineTrigger implements Trigger {
       String parentPipelineStageId,
     @Nullable @JsonProperty("parentStatus") ExecutionStatus parentStatus,
     @Nullable @JsonProperty("user") String user,
-    @Nullable @JsonProperty("parameters") Map<String, Object> parameters
+    @Nullable @JsonProperty("parameters") Map<String, Object> parameters,
+    @Nonnull @JsonProperty("enabled") boolean enabled
   ) {
+    super(user, parameters, enabled);
     this.parentExecution = parentExecution;
     this.isPipeline = isPipeline;
     this.parentPipelineId = parentPipelineId;
@@ -51,12 +53,6 @@ public final class PipelineTrigger implements Trigger {
     this.parentPipelineApplication = parentPipelineApplication;
     this.parentPipelineStageId = parentPipelineStageId;
     this.parentStatus = parentStatus;
-    this.user = user;
-    this.parameters = parameters;
-  }
-
-  @Override public @Nonnull String getType() {
-    return "pipeline";
   }
 
   private final Execution parentExecution;
@@ -66,8 +62,6 @@ public final class PipelineTrigger implements Trigger {
   private final String parentPipelineApplication;
   private final String parentPipelineStageId;
   private final ExecutionStatus parentStatus;
-  private final String user;
-  private final Map<String, Object> parameters;
 
   public @Nonnull Execution getParentExecution() {
     return parentExecution;
@@ -97,11 +91,4 @@ public final class PipelineTrigger implements Trigger {
     return parentStatus;
   }
 
-  public @Nonnull String getUser() {
-    return user;
-  }
-
-  public @Nonnull Map<String, Object> getParameters() {
-    return parameters;
-  }
 }

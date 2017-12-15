@@ -38,4 +38,12 @@ abstract class AbstractTriggerSpec<T extends Trigger> extends Specification {
     expect:
     type.isAssignableFrom(trigger.getClass())
   }
+
+  def "returns the correct value for the type property"() {
+    given:
+    def trigger = mapper.readValue(triggerJson, Trigger)
+
+    expect:
+    trigger.type == mapper.readValue(triggerJson, Map).type
+  }
 }

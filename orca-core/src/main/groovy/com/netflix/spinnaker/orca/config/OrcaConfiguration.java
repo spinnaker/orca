@@ -31,6 +31,8 @@ import com.netflix.spinnaker.orca.listeners.ExecutionCleanupListener;
 import com.netflix.spinnaker.orca.listeners.ExecutionListener;
 import com.netflix.spinnaker.orca.listeners.MetricsExecutionListener;
 import com.netflix.spinnaker.orca.pipeline.*;
+import com.netflix.spinnaker.orca.pipeline.model.ManualTrigger;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineStack;
 import com.netflix.spinnaker.orca.pipeline.persistence.memory.InMemoryPipelineStack;
@@ -53,7 +55,6 @@ import org.springframework.core.annotation.Order;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 import static java.time.temporal.ChronoUnit.MINUTES;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Configuration
 @ComponentScan({
