@@ -19,7 +19,13 @@ package com.netflix.spinnaker.q
 import com.netflix.spinnaker.q.Queue.Companion.maxRetries
 import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.time.MutableClock
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.eq
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.reset
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
+import com.nhaarman.mockito_kotlin.verifyZeroInteractions
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -558,6 +564,51 @@ abstract class QueueTest<out Q : Queue>(
         it("did not enqueue the new duplicate message") {
           verify(callback).invoke(eq(message), any())
           verifyNoMoreInteractions(callback)
+        }
+      }
+
+      and("an ensured message is not on the queue") {
+        beforeGroup {
+          queue = createQueue(clock, deadLetterCallback).apply {
+            ensure(message, ZERO)
+          }
+        }
+
+        afterGroup(::stopQueue)
+        afterGroup(::resetMocks)
+
+        on("queue poll") {
+          with(queue!!) {
+            poll(callback)
+          }
+        }
+
+        it("enqueues the message only once") {
+          verify(callback).invoke(eq(message), any())
+          verifyNoMoreInteractions(callback)
+        }
+      }
+
+      and("an ensured message is already on the queue and ensure is called again") {
+        beforeGroup {
+          queue = createQueue(clock, deadLetterCallback).apply {
+            ensure(message, ZERO)
+            ensure(message, ZERO)
+            poll(callback)
+          }
+
+          afterGroup(::stopQueue)
+          afterGroup(::resetMocks)
+
+          on("queue poll") {
+            with(queue!!) {
+              poll(callback)
+            }
+          }
+
+          it("the message was not duplicated into the queue") {
+            verifyNoMoreInteractions(callback)
+          }
         }
       }
     }

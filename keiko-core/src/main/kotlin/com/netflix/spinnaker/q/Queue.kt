@@ -62,9 +62,16 @@ interface Queue {
   fun reschedule(message: Message): Unit = reschedule(message, ZERO)
 
   /**
-   * Update [mesasge] if it exists for delivery after [delay].
+   * Update [message] if it exists for delivery after [delay].
    */
   fun reschedule(message: Message, delay: TemporalAmount): Unit
+
+  /**
+   * Ensure [message] is present within the queue or is currently being worked on.
+   * Add to the queue after [delay] if not present. No action is taken if
+   * [message] already exists.
+   */
+  fun ensure(message: Message, delay: TemporalAmount): Unit
 
   /**
    * Check for any un-acknowledged messages that are overdue and move them back

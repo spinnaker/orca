@@ -22,7 +22,20 @@ import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.q.metrics.*
+import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.metrics.LockFailed
+import com.netflix.spinnaker.q.metrics.MessageAcknowledged
+import com.netflix.spinnaker.q.metrics.MessageDead
+import com.netflix.spinnaker.q.metrics.MessageDuplicate
+import com.netflix.spinnaker.q.metrics.MessageNotFound
+import com.netflix.spinnaker.q.metrics.MessagePushed
+import com.netflix.spinnaker.q.metrics.MessageRescheduled
+import com.netflix.spinnaker.q.metrics.MessageRetried
+import com.netflix.spinnaker.q.metrics.MonitorableQueue
+import com.netflix.spinnaker.q.metrics.QueuePolled
+import com.netflix.spinnaker.q.metrics.QueueState
+import com.netflix.spinnaker.q.metrics.RetryPolled
+import com.netflix.spinnaker.q.metrics.fire
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -110,6 +123,16 @@ class RedisQueue(
         fire<MessageRescheduled>(message)
       } else {
         fire<MessageNotFound>(message)
+      }
+    }
+  }
+
+  override fun ensure(message: Message, delay: TemporalAmount) {
+    pool.resource.use { redis ->
+      val fingerprint = message.hash()
+      if (!redis.zismember(queueKey, fingerprint) && !redis.zismember(unackedKey, fingerprint)) {
+        log.debug("Pushing ensured message onto queue as it does not exist in queue or unacked sets")
+        push(message, delay)
       }
     }
   }
