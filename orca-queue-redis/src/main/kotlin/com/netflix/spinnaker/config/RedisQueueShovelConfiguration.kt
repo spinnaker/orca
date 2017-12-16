@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.config
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.config.RedisConfiguration
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
@@ -62,7 +63,8 @@ open class RedisQueueShovelConfiguration {
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
-    publisher: EventPublisher
+    publisher: EventPublisher,
+    redisQueueObjectMapper: ObjectMapper
   ) =
     RedisQueue(
       queueName = redisQueueProperties.queueName,
@@ -70,7 +72,8 @@ open class RedisQueueShovelConfiguration {
       clock = clock,
       deadMessageHandler = deadMessageHandler,
       publisher = publisher,
-      ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong())
+      ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong()),
+      mapper = redisQueueObjectMapper
     )
 
 

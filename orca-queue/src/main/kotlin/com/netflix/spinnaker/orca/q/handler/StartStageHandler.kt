@@ -45,6 +45,7 @@ import com.netflix.spinnaker.orca.q.firstTask
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Queue
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -61,7 +62,7 @@ class StartStageHandler(
   override val contextParameterProcessor: ContextParameterProcessor,
   private val publisher: ApplicationEventPublisher,
   private val exceptionHandlers: List<ExceptionHandler>,
-  private val objectMapper: ObjectMapper,
+  @Qualifier("redisQueueObjectMapper") private val objectMapper: ObjectMapper,
   private val clock: Clock,
   private val registry: Registry,
   @Value("\${queue.retry.delay.ms:15000}") retryDelayMs: Long

@@ -45,7 +45,6 @@ import com.netflix.spinnaker.orca.q.CompleteStage
 import com.netflix.spinnaker.orca.q.DummyTask
 import com.netflix.spinnaker.orca.q.InvalidExecutionId
 import com.netflix.spinnaker.orca.q.InvalidStageId
-import com.netflix.spinnaker.orca.q.Queue
 import com.netflix.spinnaker.orca.q.SkipStage
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.StartTask

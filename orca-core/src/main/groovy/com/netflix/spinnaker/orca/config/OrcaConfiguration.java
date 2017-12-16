@@ -46,6 +46,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -76,6 +77,7 @@ public class OrcaConfiguration {
     return Schedulers.io();
   }
 
+  @Primary
   @Bean @Scope(SCOPE_PROTOTYPE) public ObjectMapper mapper() {
     return OrcaObjectMapper.newInstance();
   }

@@ -97,6 +97,10 @@ class TrafficShapingQueue(
     queueImpl.retry()
   }
 
+  override fun ensure(message: Message, delay: TemporalAmount) {
+    queueImpl.ensure(message, delay)
+  }
+
   override fun close() {
     if (queueImpl is Closeable) {
       queueImpl.close()
