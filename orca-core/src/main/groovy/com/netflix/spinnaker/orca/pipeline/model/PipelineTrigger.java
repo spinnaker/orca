@@ -41,11 +41,10 @@ public final class PipelineTrigger extends Trigger {
     @Nullable @JsonProperty("parentPipelineStageId")
       String parentPipelineStageId,
     @Nullable @JsonProperty("parentStatus") ExecutionStatus parentStatus,
-    @Nullable @JsonProperty("user") String user,
-    @Nullable @JsonProperty("parameters") Map<String, Object> parameters,
-    @Nonnull @JsonProperty("enabled") boolean enabled
+    @JsonProperty("user") @Nullable String user,
+    @JsonProperty("parameters") @Nullable Map<String, Object> parameters
   ) {
-    super(user, parameters, enabled);
+    super(user, parameters);
     this.parentExecution = parentExecution;
     this.isPipeline = isPipeline;
     this.parentPipelineId = parentPipelineId;
@@ -90,5 +89,4 @@ public final class PipelineTrigger extends Trigger {
   public @Nullable ExecutionStatus getParentStatus() {
     return parentStatus;
   }
-
 }

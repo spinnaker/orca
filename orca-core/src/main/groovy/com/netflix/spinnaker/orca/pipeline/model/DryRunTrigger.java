@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -28,12 +27,9 @@ public class DryRunTrigger extends Trigger {
 
   @JsonCreator
   public DryRunTrigger(
-    @JsonProperty("lastSuccessfulExecution") Execution lastSuccessfulExecution,
-    @JsonProperty("user") String user,
-    @JsonProperty("parameters") Map<String, Object> parameters,
-    @JsonProperty("enabled") Boolean enabled
+    @JsonProperty("lastSuccessfulExecution") Execution lastSuccessfulExecution
   ) {
-    super(user, parameters, enabled);
+    super(null, null);
     this.lastSuccessfulExecution = lastSuccessfulExecution;
   }
 

@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -24,51 +26,33 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 @JsonTypeName("git")
 public class GitTrigger extends Trigger {
 
-  private final String project;
   private final String source;
-  private final String master;
-  private final String job;
+  private final String project;
   private final String branch;
   private final String slug;
-  private final String hash;
 
   @JsonCreator
   public GitTrigger(
-    @JsonProperty("user") String user,
-    @JsonProperty("parameters") Map<String, Object> parameters,
-    @JsonProperty("enabled") boolean enabled,
-    @JsonProperty("project") String project,
-    @JsonProperty("source") String source,
-    @JsonProperty("master") String master,
-    @JsonProperty("job") String job,
-    @JsonProperty("branch") String branch,
-    @JsonProperty("slug") String slug,
-    @JsonProperty("hash") String hash
+    @JsonProperty("source") @Nonnull String source,
+    @JsonProperty("project") @Nonnull String project,
+    @JsonProperty("branch") @Nonnull String branch,
+    @JsonProperty("slug") @Nonnull String slug,
+    @JsonProperty("user") @Nullable String user,
+    @JsonProperty("parameters") @Nullable Map<String, Object> parameters
   ) {
-    super(user, parameters, enabled);
-    this.project = project;
+    super(user, parameters);
     this.source = source;
-    this.master = master;
-    this.job = job;
+    this.project = project;
     this.branch = branch;
     this.slug = slug;
-    this.hash = hash;
-  }
-
-  public String getProject() {
-    return project;
   }
 
   public String getSource() {
     return source;
   }
 
-  public String getMaster() {
-    return master;
-  }
-
-  public String getJob() {
-    return job;
+  public String getProject() {
+    return project;
   }
 
   public String getBranch() {
@@ -77,9 +61,5 @@ public class GitTrigger extends Trigger {
 
   public String getSlug() {
     return slug;
-  }
-
-  public String getHash() {
-    return hash;
   }
 }

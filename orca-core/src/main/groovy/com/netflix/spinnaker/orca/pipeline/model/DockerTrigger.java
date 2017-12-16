@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -32,16 +34,15 @@ public class DockerTrigger extends Trigger {
 
   @JsonCreator
   public DockerTrigger(
-    @JsonProperty("account") String account,
-    @JsonProperty("organization") String organization,
-    @JsonProperty("registry") String registry,
-    @JsonProperty("repository") String repository,
-    @JsonProperty("tag") String tag,
-    @JsonProperty("user") String user,
-    @JsonProperty("parameters") Map<String, Object> parameters,
-    @JsonProperty("enabled") boolean enabled
+    @JsonProperty("account") @Nonnull String account,
+    @JsonProperty("organization") @Nonnull String organization,
+    @JsonProperty("registry") @Nonnull String registry,
+    @JsonProperty("repository") @Nonnull String repository,
+    @JsonProperty("tag") @Nonnull String tag,
+    @JsonProperty("user") @Nullable String user,
+    @JsonProperty("parameters") @Nullable Map<String, Object> parameters
   ) {
-    super(user, parameters, enabled);
+    super(user, parameters);
     this.account = account;
     this.organization = organization;
     this.registry = registry;
@@ -49,23 +50,23 @@ public class DockerTrigger extends Trigger {
     this.tag = tag;
   }
 
-  public String getAccount() {
+  public @Nonnull String getAccount() {
     return account;
   }
 
-  public String getOrganization() {
+  public @Nonnull String getOrganization() {
     return organization;
   }
 
-  public String getRegistry() {
+  public @Nonnull String getRegistry() {
     return registry;
   }
 
-  public String getRepository() {
+  public @Nonnull String getRepository() {
     return repository;
   }
 
-  public String getTag() {
+  public @Nonnull String getTag() {
     return tag;
   }
 }

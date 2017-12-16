@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -26,19 +28,24 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 public class CronTrigger extends Trigger {
   private final UUID id;
   private final String cronExpression;
-  private final boolean enabled;
 
   @JsonCreator
   public CronTrigger(
-    @JsonProperty("id") UUID id,
-    @JsonProperty("cronExpression") String cronExpression,
-    @JsonProperty("enabled") boolean enabled,
-    @JsonProperty("user") String user,
-    @JsonProperty("parameters") Map<String, Object> parameters
+    @JsonProperty("id") @Nonnull UUID id,
+    @JsonProperty("cronExpression") @Nonnull String cronExpression,
+    @JsonProperty("user") @Nullable String user,
+    @JsonProperty("parameters") @Nullable Map<String, Object> parameters
   ) {
-    super(user, parameters, enabled);
+    super(user, parameters);
     this.id = id;
     this.cronExpression = cronExpression;
-    this.enabled = enabled;
+  }
+
+  public UUID getId() {
+    return id;
+  }
+
+  public String getCronExpression() {
+    return cronExpression;
   }
 }

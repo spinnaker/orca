@@ -19,6 +19,8 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -34,16 +36,15 @@ public class JenkinsTrigger extends Trigger {
 
   @JsonCreator
   public JenkinsTrigger(
-    @JsonProperty("master") String master,
-    @JsonProperty("job") String job,
+    @JsonProperty("master") @Nonnull String master,
+    @JsonProperty("job") @Nonnull String job,
     @JsonProperty("buildNumber") int buildNumber,
-    @JsonProperty("propertyFile") String propertyFile,
-    @JsonProperty("buildInfo") BuildInfo buildInfo,
-    @JsonProperty("user") String user,
-    @JsonProperty("parameters") Map<String, Object> parameters,
-    @JsonProperty("enabled") boolean enabled
+    @JsonProperty("propertyFile") @Nullable String propertyFile,
+    @JsonProperty("buildInfo") @Nonnull BuildInfo buildInfo,
+    @JsonProperty("user") @Nullable String user,
+    @JsonProperty("parameters") @Nullable Map<String, Object> parameters
   ) {
-    super(user, parameters, enabled);
+    super(user, parameters);
     this.master = master;
     this.job = job;
     this.buildNumber = buildNumber;
@@ -51,11 +52,11 @@ public class JenkinsTrigger extends Trigger {
     this.buildInfo = buildInfo;
   }
 
-  public String getMaster() {
+  public @Nonnull String getMaster() {
     return master;
   }
 
-  public String getJob() {
+  public @Nonnull String getJob() {
     return job;
   }
 
@@ -63,11 +64,11 @@ public class JenkinsTrigger extends Trigger {
     return buildNumber;
   }
 
-  public String getPropertyFile() {
+  public @Nullable String getPropertyFile() {
     return propertyFile;
   }
 
-  public BuildInfo getBuildInfo() {
+  public @Nonnull BuildInfo getBuildInfo() {
     return buildInfo;
   }
 
@@ -83,14 +84,14 @@ public class JenkinsTrigger extends Trigger {
 
     @JsonCreator
     private BuildInfo(
-      @JsonProperty("name") String name,
+      @JsonProperty("name") @Nonnull String name,
       @JsonProperty("number") int number,
-      @JsonProperty("url") URI url,
-      @JsonProperty("artifacts") List<Artifact> artifacts,
-      @JsonProperty("scm") List<SourceControl> scm,
-      @JsonProperty("fullDisplayName") String fullDisplayName,
+      @JsonProperty("url") @Nonnull URI url,
+      @JsonProperty("artifacts") @Nonnull List<Artifact> artifacts,
+      @JsonProperty("scm") @Nonnull List<SourceControl> scm,
+      @JsonProperty("fullDisplayName") @Nonnull String fullDisplayName,
       @JsonProperty("building") boolean building,
-      @JsonProperty("result") String result
+      @JsonProperty("result") @Nullable String result
     ) {
       this.name = name;
       this.number = number;
@@ -102,7 +103,7 @@ public class JenkinsTrigger extends Trigger {
       this.result = result;
     }
 
-    public String getName() {
+    public @Nonnull String getName() {
       return name;
     }
 
@@ -110,19 +111,19 @@ public class JenkinsTrigger extends Trigger {
       return number;
     }
 
-    public URI getUrl() {
+    public @Nonnull URI getUrl() {
       return url;
     }
 
-    public List<Artifact> getArtifacts() {
+    public @Nonnull List<Artifact> getArtifacts() {
       return artifacts;
     }
 
-    public List<SourceControl> getScm() {
+    public @Nonnull List<SourceControl> getScm() {
       return scm;
     }
 
-    public String getFullDisplayName() {
+    public @Nonnull String getFullDisplayName() {
       return fullDisplayName;
     }
 
@@ -130,7 +131,7 @@ public class JenkinsTrigger extends Trigger {
       return building;
     }
 
-    public String getResult() {
+    public @Nullable String getResult() {
       return result;
     }
   }
@@ -142,24 +143,24 @@ public class JenkinsTrigger extends Trigger {
 
     @JsonCreator
     private SourceControl(
-      @JsonProperty("name") String name,
-      @JsonProperty("branch") String branch,
-      @JsonProperty("sha1") String sha1
+      @JsonProperty("name") @Nonnull String name,
+      @JsonProperty("branch") @Nonnull String branch,
+      @JsonProperty("sha1") @Nonnull String sha1
     ) {
       this.name = name;
       this.branch = branch;
       this.sha1 = sha1;
     }
 
-    public String getName() {
+    public @Nonnull String getName() {
       return name;
     }
 
-    public String getBranch() {
+    public @Nonnull String getBranch() {
       return branch;
     }
 
-    public String getSha1() {
+    public @Nonnull String getSha1() {
       return sha1;
     }
   }
@@ -170,18 +171,18 @@ public class JenkinsTrigger extends Trigger {
 
     @JsonCreator
     private Artifact(
-      @JsonProperty("fileName") String fileName,
-      @JsonProperty("relativePath") String relativePath
+      @JsonProperty("fileName") @Nonnull String fileName,
+      @JsonProperty("relativePath") @Nonnull String relativePath
     ) {
       this.fileName = fileName;
       this.relativePath = relativePath;
     }
 
-    public String getFileName() {
+    public @Nonnull String getFileName() {
       return fileName;
     }
 
-    public String getRelativePath() {
+    public @Nonnull String getRelativePath() {
       return relativePath;
     }
   }

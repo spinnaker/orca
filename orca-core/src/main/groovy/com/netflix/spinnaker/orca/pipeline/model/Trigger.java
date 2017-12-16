@@ -18,10 +18,12 @@ package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.util.Map;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import static java.util.Collections.emptyMap;
 
 @JsonTypeInfo(use = Id.NAME, include = As.EXISTING_PROPERTY, property = "type")
 public abstract class Trigger {
@@ -29,13 +31,14 @@ public abstract class Trigger {
   private final String type;
   private final String user;
   private final Map<String, Object> parameters;
-  private final boolean enabled;
 
-  public Trigger(String user, Map<String, Object> parameters, boolean enabled) {
+  protected Trigger(
+    @Nullable String user,
+    @Nullable Map<String, Object> parameters
+  ) {
     this.type = getClass().getAnnotation(JsonTypeName.class).value();
-    this.user = user;
-    this.parameters = parameters;
-    this.enabled = enabled;
+    this.user = user == null ? "[anonymous]" : user;
+    this.parameters = parameters == null ? emptyMap() : parameters;
   }
 
   public final @Nonnull String getType() {
@@ -48,9 +51,5 @@ public abstract class Trigger {
 
   public final @Nonnull Map<String, Object> getParameters() {
     return parameters;
-  }
-
-  public final boolean isEnabled() {
-    return enabled;
   }
 }

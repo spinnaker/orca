@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -31,12 +30,12 @@ public class ManualTrigger extends Trigger {
 
   @JsonCreator
   public ManualTrigger(
-    @Nullable @JsonProperty("user") String user,
+    @Nonnull @JsonProperty("user") String user,
     @Nonnull @JsonProperty("parameters") Map<String, Object> parameters,
     @Nonnull @JsonProperty("notifications")
       List<Map<String, Object>> notifications
   ) {
-    super(user, parameters, true);
+    super(user, parameters);
     this.notifications = notifications;
   }
 
