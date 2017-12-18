@@ -15,26 +15,18 @@
  *
  */
 
-package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
+package com.netflix.spinnaker.orca.clouddriver.pipeline.artifacts;
 
-import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeleteManifestTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestForceCacheRefreshTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PromoteManifestKatoOutputsTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.FindArtifactFromExecutionTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DeleteManifestStage implements StageDefinitionBuilder {
-  public static final String PIPELINE_CONFIG_TYPE = "deleteManifest";
-
+public class FindArtifactFromExecutionStage implements StageDefinitionBuilder {
   @Override
   public void taskGraph(Stage stage, TaskNode.Builder builder) {
-    builder.withTask(DeleteManifestTask.TASK_NAME, DeleteManifestTask.class)
-        .withTask("monitorDelete", MonitorKatoTask.class)
-        .withTask(PromoteManifestKatoOutputsTask.TASK_NAME, PromoteManifestKatoOutputsTask.class)
-        .withTask(ManifestForceCacheRefreshTask.TASK_NAME, ManifestForceCacheRefreshTask.class);
+    builder.withTask(FindArtifactFromExecutionTask.TASK_NAME, FindArtifactFromExecutionTask.class);
   }
 }

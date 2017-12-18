@@ -120,9 +120,6 @@ class MonitorKatoTask implements RetryableTask {
       if (!stage.context.containsKey("deploy.jobs") && deployed) {
         outputs["deploy.jobs"] = deployed
       }
-      if (!stage.context.containsKey("deploy.outputs") && deployed) {
-        outputs["deploy.outputs"] = deployed
-      }
     }
     if (status == ExecutionStatus.SUCCEEDED || status == ExecutionStatus.TERMINAL || status == ExecutionStatus.RUNNING) {
       List<Map<String, Object>> katoTasks = []

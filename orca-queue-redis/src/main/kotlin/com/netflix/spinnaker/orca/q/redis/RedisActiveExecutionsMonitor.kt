@@ -25,7 +25,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationListener
 import org.springframework.scheduling.annotation.Scheduled
@@ -58,40 +57,30 @@ class RedisActiveExecutionsMonitor(
 
   private val REDIS_KEY = "monitor.activeExecutions"
 
-  private var snapshot: MutableMap<Id, AtomicLong> = ConcurrentHashMap()
+  private val snapshot: MutableMap<Id, AtomicLong> = ConcurrentHashMap()
 
   @Scheduled(fixedRateString = "\${queue.monitor.activeExecutions.register.frequency.ms:60000}")
   fun registerGauges() {
-    snapshotActivity().also {
-      log.info("Registering new active execution gauges")
+    snapshotActivity().also { executions ->
+      log.info("Registering new active execution gauges (active: ${executions.size})")
 
-      getActiveExecutions().map { execution ->
-        val expectedId = execution.getMetricId()
-        registry.gauges()
-          .filter { it.id() == expectedId }
-          .findFirst()
-          .orElse(registry.gauge(expectedId, null, {
-            snapshot[expectedId]?.toDouble() ?: 0.0
-          }))
-      }
+      executions
+        .map { it.getMetricId() }
+        .filter { expectedId -> registry.gauges().noneMatch { it.id() == expectedId } }
+        .forEach { registry.gauge(it, snapshot[it]) }
     }
   }
 
   private fun snapshotActivity(): List<ActiveExecution> {
-    log.info("Snapshotting active executions")
-
     val activeExecutions = getActiveExecutions()
 
-    val working = mutableMapOf<Id, AtomicLong>()
-    activeExecutions.map { it.getMetricId() }.forEach {
-      if (working[it] == null) {
-        working[it] = AtomicLong()
-      }
-      working[it]?.incrementAndGet()
-    }
+    val working = mutableMapOf<Id, Long>()
+    activeExecutions
+      .map { it.getMetricId() }
+      .forEach { working.computeIfAbsent(it, { 0L }).inc() }
 
     // Update snapshot from working copy
-    working.forEach { snapshot[it.key] = it.value }
+    working.forEach { snapshot.computeIfAbsent(it.key, { AtomicLong() }).set(it.value) }
 
     // Remove keys that are not in the working copy
     snapshot.keys
