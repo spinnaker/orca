@@ -21,10 +21,10 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeDeserializer
-import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeSerializer
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -35,25 +35,26 @@ import java.time.Clock
 @Configuration
 open class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
 
-  @Bean open fun orcaRedisQueueObjectMapper(objectMapper: ObjectMapper) =
-    objectMapper.apply {
+  @Autowired open fun mapper(mapper: ObjectMapper) {
+    mapper.apply {
       registerModule(KotlinModule())
       registerModule(
         SimpleModule()
-          .addSerializer(ExecutionTypeSerializer())
           .addDeserializer(ExecutionType::class.java, ExecutionTypeDeserializer())
       )
       disable(FAIL_ON_UNKNOWN_PROPERTIES)
     }
+  }
+
 
   @Bean(name = arrayOf("queueImpl")) override fun queue(
-    redisPool: Pool<Jedis>,
+    @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
-    publisher: EventPublisher,
-    @Qualifier("orcaRedisQueueObjectMapper") redisQueueObjectMapper: ObjectMapper
+    @Qualifier("queueEventPublisher") publisher: EventPublisher,
+    mapper: ObjectMapper
   ): RedisQueue {
-    return super.queue(redisPool, redisQueueProperties, clock, deadMessageHandler, publisher, redisQueueObjectMapper)
+    return super.queue(redisPool, redisQueueProperties, clock, deadMessageHandler, publisher, mapper)
   }
 }

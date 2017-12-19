@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.q.initialStages
 import com.netflix.spinnaker.q.Queue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
@@ -35,7 +36,7 @@ import org.springframework.stereotype.Component
 class StartExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher
+  @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher
 ) : OrcaMessageHandler<StartExecution> {
 
   override val messageType = StartExecution::class.java

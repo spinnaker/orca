@@ -34,6 +34,7 @@ import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.buildAfterStages
 import com.netflix.spinnaker.orca.q.firstAfterStages
 import com.netflix.spinnaker.q.Queue
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeUnit
 class CompleteStageHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher,
+  @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher,
   private val clock: Clock,
   override val contextParameterProcessor: ContextParameterProcessor,
   private val registry: Registry,

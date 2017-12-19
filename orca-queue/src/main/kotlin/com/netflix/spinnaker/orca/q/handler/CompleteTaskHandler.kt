@@ -32,6 +32,7 @@ import com.netflix.spinnaker.orca.q.firstAfterStages
 import com.netflix.spinnaker.orca.q.get
 import com.netflix.spinnaker.orca.q.nextTask
 import com.netflix.spinnaker.q.Queue
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -41,7 +42,7 @@ class CompleteTaskHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   override val contextParameterProcessor: ContextParameterProcessor,
-  private val publisher: ApplicationEventPublisher,
+  @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher,
   private val clock: Clock
 ) : OrcaMessageHandler<CompleteTask>, ExpressionAware {
 

@@ -20,19 +20,19 @@ import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.ExecutionStatus.PAUSED
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.*
-import org.springframework.context.ApplicationEventPublisher
 import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.RescheduleExecution
 import com.netflix.spinnaker.orca.q.ResumeStage
 import com.netflix.spinnaker.q.Queue
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
 class CancelExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher
+  @Qualifier("queueEventPublisher")private val publisher: ApplicationEventPublisher
 ) : OrcaMessageHandler<CancelExecution> {
   override val messageType = CancelExecution::class.java
 

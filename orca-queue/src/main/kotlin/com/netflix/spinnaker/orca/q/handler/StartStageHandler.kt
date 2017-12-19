@@ -60,7 +60,7 @@ class StartStageHandler(
   override val stageNavigator: StageNavigator,
   override val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory,
   override val contextParameterProcessor: ContextParameterProcessor,
-  private val publisher: ApplicationEventPublisher,
+  @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher,
   private val exceptionHandlers: List<ExceptionHandler>,
   @Qualifier("mapper") private val objectMapper: ObjectMapper,
   private val clock: Clock,

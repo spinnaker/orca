@@ -16,9 +16,6 @@
 
 package com.netflix.spinnaker.config
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.log.BlackholeExecutionLogRepository
 import com.netflix.spinnaker.orca.log.ExecutionLogRepository
@@ -38,6 +35,7 @@ import java.time.Clock
 @Configuration
 @ComponentScan(basePackages = [
   "com.netflix.spinnaker.orca.q",
+  "com.netflix.spinnaker.orca.q.handler",
   "com.netflix.spinnaker.orca.log",
   "com.netflix.spinnaker.orca.q.trafficshaping"
 ])

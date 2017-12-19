@@ -77,8 +77,7 @@ public class OrcaConfiguration {
     return Schedulers.io();
   }
 
-  @Primary
-  @Bean @Scope(SCOPE_PROTOTYPE) public ObjectMapper mapper() {
+  @Bean public ObjectMapper mapper() {
     return OrcaObjectMapper.newInstance();
   }
 
