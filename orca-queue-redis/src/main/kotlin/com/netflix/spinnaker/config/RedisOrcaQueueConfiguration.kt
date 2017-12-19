@@ -46,7 +46,6 @@ open class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
     }
   }
 
-
   @Bean(name = arrayOf("queueImpl")) override fun queue(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,

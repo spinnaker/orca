@@ -81,6 +81,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.junit4.SpringRunner
+import redis.clients.jedis.Jedis
+import redis.clients.util.Pool
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant.now
@@ -685,16 +687,18 @@ open class QueueIntegrationTest {
 
 @Configuration
 @Import(
+  EmbeddedRedisConfiguration::class,
   PropertyPlaceholderAutoConfiguration::class,
   QueueConfiguration::class,
   OrcaQueueConfiguration::class,
-  EmbeddedRedisConfiguration::class,
   JedisExecutionRepository::class,
   StageNavigator::class,
   RestrictExecutionDuringTimeWindow::class,
   OrcaConfiguration::class
 )
 open class TestConfig {
+  @Bean open fun queueRedisPool(jedisPool: Pool<Jedis>) = jedisPool
+
   @Bean open fun registry(): Registry = NoopRegistry()
 
   @Bean open fun dummyTask(): DummyTask = mock {
