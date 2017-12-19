@@ -44,7 +44,8 @@ open class RedisQueueConfiguration {
   @Bean @ConditionalOnMissingBean(GenericObjectPoolConfig::class)
   open fun redisPoolConfig() = GenericObjectPoolConfig()
 
-  @Bean open fun queueRedisPool(
+  @Bean @ConditionalOnMissingBean(name = arrayOf("queueRedisPool"))
+  open fun queueRedisPool(
     @Value("\${redis.connection:redis://localhost:6379}") connection: String,
     @Value("\${redis.timeout:2000}") timeout: Int,
     redisPoolConfig: GenericObjectPoolConfig
@@ -56,7 +57,8 @@ open class RedisQueueConfiguration {
       JedisPool(redisPoolConfig, cx.host, port, timeout, password, db)
     }
 
-  @Bean open fun queue(
+  @Bean @ConditionalOnMissingBean(name = arrayOf("queue"))
+  open fun queue(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
@@ -74,7 +76,8 @@ open class RedisQueueConfiguration {
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong())
     )
 
-  @Bean open fun redisDeadMessageHandler(
+  @Bean @ConditionalOnMissingBean(name = arrayOf("redisDeadMessageHandler"))
+  open fun redisDeadMessageHandler(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
     clock: Clock
