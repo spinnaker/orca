@@ -16,8 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.redis
 
-import com.netflix.spinnaker.config.RedisQueueConfiguration
-import com.netflix.spinnaker.orca.config.RedisConfiguration
+import com.netflix.spinnaker.config.RedisOrcaQueueConfiguration
 import com.netflix.spinnaker.orca.q.QueueIntegrationTest
 import com.netflix.spinnaker.orca.q.TestConfig
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
@@ -32,13 +31,13 @@ import org.springframework.test.context.junit4.SpringRunner
 @SpringBootTest(
   classes = arrayOf(
     EmbeddedRedisConfiguration::class,
-    RedisQueueConfiguration::class,
+    RedisOrcaQueueConfiguration::class,
     TestConfig::class
   ),
   properties = arrayOf(
-    "queue.retry.delay.ms=10",
-    "logging.level.root=ERROR",
-    "logging.level.org.springframework.test=ERROR",
-    "logging.level.com.netflix.spinnaker=FATAL"
+    "queue.retry.delay.ms=10"
+//    "logging.level.root=ERROR",
+//    "logging.level.org.springframework.test=ERROR",
+//    "logging.level.com.netflix.spinnaker=FATAL"
   ))
 class RedisQueueIntegrationTest : QueueIntegrationTest()

@@ -62,7 +62,7 @@ class StartStageHandler(
   override val contextParameterProcessor: ContextParameterProcessor,
   private val publisher: ApplicationEventPublisher,
   private val exceptionHandlers: List<ExceptionHandler>,
-  @Qualifier("redisQueueObjectMapper") private val objectMapper: ObjectMapper,
+  @Qualifier("mapper") private val objectMapper: ObjectMapper,
   private val clock: Clock,
   private val registry: Registry,
   @Value("\${queue.retry.delay.ms:15000}") retryDelayMs: Long
@@ -94,6 +94,7 @@ class StartStageHandler(
             stage.start()
 
             publisher.publishEvent(StageStarted(this, stage))
+            trackResult(stage)
           } catch(e: Exception) {
             val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.name)
             if (exceptionDetails?.shouldRetry == true) {
