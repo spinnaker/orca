@@ -26,9 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.CLASS
  */
 @JsonTypeInfo(use = CLASS) abstract class Message {
   // TODO: this type should be immutable
-  private val _attributes: MutableList<Attribute> = mutableListOf()
-  val attributes: List<Attribute>
-    get() = _attributes
+  val attributes: MutableList<Attribute> = mutableListOf()
 
   /**
    * @return the attribute of type [A] or `null`.
@@ -39,8 +37,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.CLASS
   /**
    * Adds an attribute of type [A] to the message.
    */
-  fun <A : Attribute> setAttribute(attribute: A): A {
-    _attributes.add(attribute)
+  inline fun <reified A: Attribute> setAttribute(attribute: A): A {
+    attributes.removeIf { it is A }
+    attributes.add(attribute)
 
     return attribute
   }
