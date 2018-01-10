@@ -18,28 +18,53 @@ package com.netflix.spinnaker.orca.pipeline.model;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 
 @JsonTypeName("manual")
 public class ManualTrigger extends Trigger {
 
+  private final String correlationId;
   private final List<Map<String, Object>> notifications;
 
   @JsonCreator
   public ManualTrigger(
+    @Nullable @JsonProperty("correlationId") String correlationId,
     @Nonnull @JsonProperty("user") String user,
     @Nonnull @JsonProperty("parameters") Map<String, Object> parameters,
-    @Nonnull @JsonProperty("notifications")
-      List<Map<String, Object>> notifications
+    @Nonnull @JsonProperty("notifications") List<Map<String, Object>> notifications,
+    @Nullable @JsonProperty("artifacts") List<Artifact> artifacts,
+    @JsonProperty("rebake") boolean rebake
   ) {
-    super(user, parameters);
+    super(user, parameters, artifacts, rebake);
+    this.correlationId = correlationId;
     this.notifications = notifications;
   }
 
   public @Nonnull List<Map<String, Object>> getNotifications() {
     return notifications;
+  }
+
+  public @Nullable String getCorrelationId() {
+    return correlationId;
+  }
+
+  @Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    ManualTrigger trigger = (ManualTrigger) o;
+    return Objects.equals(correlationId, trigger.correlationId) &&
+      Objects.equals(notifications, trigger.notifications);
+  }
+
+  @Override public int hashCode() {
+
+    return Objects.hash(super.hashCode(), correlationId, notifications);
   }
 }

@@ -16,12 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 
 @JsonTypeName("docker")
 public class DockerTrigger extends Trigger {
@@ -40,9 +43,10 @@ public class DockerTrigger extends Trigger {
     @JsonProperty("repository") @Nonnull String repository,
     @JsonProperty("tag") @Nonnull String tag,
     @JsonProperty("user") @Nullable String user,
-    @JsonProperty("parameters") @Nullable Map<String, Object> parameters
+    @JsonProperty("parameters") @Nullable Map<String, Object> parameters,
+    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts
   ) {
-    super(user, parameters);
+    super(user, parameters, artifacts, false);
     this.account = account;
     this.organization = organization;
     this.registry = registry;
@@ -68,5 +72,22 @@ public class DockerTrigger extends Trigger {
 
   public @Nonnull String getTag() {
     return tag;
+  }
+
+  @Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    DockerTrigger that = (DockerTrigger) o;
+    return Objects.equals(account, that.account) &&
+      Objects.equals(organization, that.organization) &&
+      Objects.equals(registry, that.registry) &&
+      Objects.equals(repository, that.repository) &&
+      Objects.equals(tag, that.tag);
+  }
+
+  @Override public int hashCode() {
+
+    return Objects.hash(super.hashCode(), account, organization, registry, repository, tag);
   }
 }

@@ -16,12 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 
 @JsonTypeName("git")
 public class GitTrigger extends Trigger {
@@ -38,9 +41,10 @@ public class GitTrigger extends Trigger {
     @JsonProperty("branch") @Nonnull String branch,
     @JsonProperty("slug") @Nonnull String slug,
     @JsonProperty("user") @Nullable String user,
-    @JsonProperty("parameters") @Nullable Map<String, Object> parameters
+    @JsonProperty("parameters") @Nullable Map<String, Object> parameters,
+    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts
   ) {
-    super(user, parameters);
+    super(user, parameters, artifacts, false);
     this.source = source;
     this.project = project;
     this.branch = branch;
@@ -61,5 +65,21 @@ public class GitTrigger extends Trigger {
 
   public String getSlug() {
     return slug;
+  }
+
+  @Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    GitTrigger that = (GitTrigger) o;
+    return Objects.equals(source, that.source) &&
+      Objects.equals(project, that.project) &&
+      Objects.equals(branch, that.branch) &&
+      Objects.equals(slug, that.slug);
+  }
+
+  @Override public int hashCode() {
+
+    return Objects.hash(super.hashCode(), source, project, branch, slug);
   }
 }
