@@ -31,7 +31,6 @@ public class PubSubTrigger extends Trigger {
 
   @Nonnull private final Map<String, Object> attributeConstraints;
   @Nonnull private final Map<String, Object> payloadConstraints;
-  @Nonnull private final Map<String, Object> constraints;
   @Nonnull private final List<String> expectedArtifactIds;
   @Nonnull private final String pubsubSystem;
   @Nonnull private final String subscriptionName;
@@ -42,7 +41,6 @@ public class PubSubTrigger extends Trigger {
       Map<String, Object> attributeConstraints,
     @Nonnull @JsonProperty("payloadConstraints")
       Map<String, Object> payloadConstraints,
-    @Nonnull @JsonProperty("constraints") Map<String, Object> constraints,
     @Nonnull @JsonProperty("expectedArtifactIds")
       List<String> expectedArtifactIds,
     @Nonnull @JsonProperty("pubsubSystem") String pubsubSystem,
@@ -55,7 +53,6 @@ public class PubSubTrigger extends Trigger {
     super(user, parameters, artifacts, rebake);
     this.attributeConstraints = attributeConstraints;
     this.payloadConstraints = payloadConstraints;
-    this.constraints = constraints;
     this.expectedArtifactIds = expectedArtifactIds;
     this.pubsubSystem = pubsubSystem;
     this.subscriptionName = subscriptionName;
@@ -67,10 +64,6 @@ public class PubSubTrigger extends Trigger {
 
   @Nonnull public Map<String, Object> getPayloadConstraints() {
     return payloadConstraints;
-  }
-
-  @Nonnull public Map<String, Object> getConstraints() {
-    return constraints;
   }
 
   @Nonnull public List<String> getExpectedArtifactIds() {
@@ -92,7 +85,6 @@ public class PubSubTrigger extends Trigger {
     PubSubTrigger that = (PubSubTrigger) o;
     return Objects.equals(attributeConstraints, that.attributeConstraints) &&
       Objects.equals(payloadConstraints, that.payloadConstraints) &&
-      Objects.equals(constraints, that.constraints) &&
       Objects.equals(expectedArtifactIds, that.expectedArtifactIds) &&
       Objects.equals(pubsubSystem, that.pubsubSystem) &&
       Objects.equals(subscriptionName, that.subscriptionName);
@@ -104,7 +96,6 @@ public class PubSubTrigger extends Trigger {
       super.hashCode(),
       attributeConstraints,
       payloadConstraints,
-      constraints,
       expectedArtifactIds,
       pubsubSystem,
       subscriptionName

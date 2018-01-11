@@ -29,9 +29,6 @@ class PubSubTriggerSpec extends AbstractTriggerSpec<PubSubTrigger> {
   "attributeConstraints": {
     "eventType": "OBJECT_FINALIZE"
   },
-  "constraints": {
-    "name": "app.tar"
-  },
   "enabled": true,
   "expectedArtifactIds": [
     "bcebbb6b-8262-4efb-99c5-7bed4a6f4d15"
