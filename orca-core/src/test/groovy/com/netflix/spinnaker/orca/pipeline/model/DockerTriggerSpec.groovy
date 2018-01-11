@@ -26,13 +26,13 @@ class DockerTriggerSpec extends AbstractTriggerSpec<DockerTrigger> {
   protected String getTriggerJson() {
     return '''
 {
-  "account": "prodregistry",
+  "account": "theaccount",
   "enabled": true,
-  "job": "ZZ-WAPP-mimirdemo",
-  "master": "opseng",
-  "organization": "ae",
-  "registry": "titan-registry.main.us-east-1.dynprod.netflix.net:7101",
-  "repository": "ae/dnflx",
+  "job": "the-jenkins-job",
+  "master": "master",
+  "organization": "org",
+  "registry": "registry.covfefe.org",
+  "repository": "org/covfefe",
   "tag": "foo",
   "type": "docker"
 }

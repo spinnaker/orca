@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.echo.config
 
-import javax.annotation.PostConstruct
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.DryRunProperties
 import com.netflix.spinnaker.orca.echo.EchoService
@@ -26,7 +25,6 @@ import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter
 import com.netflix.spinnaker.orca.events.StageListenerAdapter
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.CronTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
@@ -107,10 +105,5 @@ class EchoConfiguration {
   @Bean
   ApplicationListener<ExecutionEvent> echoNotifyingPipelineExecutionListenerAdapter(EchoNotifyingExecutionListener echoNotifyingExecutionListener, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(echoNotifyingExecutionListener, repository)
-  }
-
-  @PostConstruct
-  void registerTriggers() {
-    objectMapper.registerSubtypes(CronTrigger)
   }
 }
