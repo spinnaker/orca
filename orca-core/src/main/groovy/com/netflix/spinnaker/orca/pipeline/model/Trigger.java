@@ -40,7 +40,8 @@ import static java.util.Objects.hash;
   @Type(GitTrigger.class),
   @Type(JenkinsTrigger.class),
   @Type(ManualTrigger.class),
-  @Type(PipelineTrigger.class)
+  @Type(PipelineTrigger.class),
+  @Type(PubSubTrigger.class)
   // to add more sub-types without modifying this class you can autowire the
   // [ObjectMapper] then call [ObjectMapper#registerSubtypes].
 })
