@@ -26,12 +26,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import retrofit.Endpoint;
 import retrofit.Endpoints;
 import retrofit.RestAdapter;
 import retrofit.client.Client;
 import retrofit.converter.JacksonConverter;
 
+@Configuration
 @ConditionalOnExpression("${keel.enabled:true}")
 @ComponentScan(
   basePackageClasses = KeelModule.class,
@@ -83,7 +85,7 @@ public class KeelConfiguration {
 
   @Autowired
   private RestAdapter.LogLevel retrofitLogLevel;
-  
+
   @Autowired
   private Client retrofitClient;
 }
