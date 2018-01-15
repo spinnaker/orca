@@ -16,13 +16,29 @@
 
 package com.netflix.spinnaker.orca.keel.model
 
-class UpsertIntentRequest {
-  public List<UpsertIntent> intents
-  public Boolean dryRun
-}
+data class Intent(
+  val kind: String,
+  val schema: String,
+  val spec: Map<String, Any?>,
+  val status: String = "ACTIVE",
+  val labels: Map<String, String> = mapOf(),
+  val attributes: List<Any> = listOf(),
+  val policies: List<Any> = listOf(),
+  val id: String?,
+  val namespace: String?,
+  val idOverride: String?
+)
 
-class UpsertIntent {
-  public String kind
-  public String schema
-  public Map spec
-}
+data class UpsertIntentRequest(
+  val intents: List<Intent>,
+  val dryRun: Boolean
+)
+
+data class UpsertIntentResponse(
+  val intentId: String,
+  val intentStatus: String
+)
+
+data class UpsertIntentDryRunResponse(
+  val summary: Map<String, Any?>
+)

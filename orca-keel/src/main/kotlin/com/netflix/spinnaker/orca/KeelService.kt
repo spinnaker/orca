@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.keel.model
+package com.netflix.spinnaker.orca
 
-class UpsertIntentResponse {
-  String intentId
-  String intentStatus
-}
+import com.netflix.spinnaker.orca.keel.model.UpsertIntentRequest
+import retrofit.client.Response
+import retrofit.http.Body
+import retrofit.http.DELETE
+import retrofit.http.GET
+import retrofit.http.POST
+import retrofit.http.Path
+import retrofit.http.Query
 
-class UpsertIntentDryRunResponse {
-  Map summary
+interface KeelService {
+  @GET("/v1/intents/")
+  fun getIntents(): Response
+
+  @POST("/v1/intents/")
+  fun upsertIntents(@Body upsertIntentRequest: UpsertIntentRequest): Response
+
+  @DELETE("/v1/intents/{id}")
+  fun deleteIntents(@Path("id") id: String, @Query("status") status: String?) : Response
 }
