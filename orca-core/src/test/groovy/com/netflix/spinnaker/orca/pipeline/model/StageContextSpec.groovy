@@ -24,11 +24,6 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 class StageContextSpec extends Specification {
 
   def pipeline = pipeline {
-    context.foo = "global-foo"
-    context.bar = "global-bar"
-    context.baz = "global-baz"
-    context.qux = "global-qux"
-    context.fnord = "global-fnord"
     stage {
       refId = "1"
       outputs.foo = "root-foo"
@@ -93,8 +88,26 @@ class StageContextSpec extends Specification {
     pipeline.stageByRef("3>1").context.covfefe == null
   }
 
-  def "if all else fails will read from global context"() {
+  def "will not read from global context"() {
     expect:
-    pipeline.stageByRef("3>1").context.fnord == "global-fnord"
+    pipeline.stageByRef("3>1").context.fnord == null
+  }
+
+  def "getAll returns all matching keys in distance order"() {
+    expect:
+    pipeline.stageByRef("3>1").context.getAll("foo") == [
+      "current-foo",
+      "parent-foo",
+      "ancestor-foo",
+      "root-foo"
+    ]
+  }
+
+  def "getAll returns only values for matching keys"() {
+    expect:
+    pipeline.stageByRef("3>1").context.getAll("baz") == [
+      "ancestor-baz",
+      "root-baz"
+    ]
   }
 }

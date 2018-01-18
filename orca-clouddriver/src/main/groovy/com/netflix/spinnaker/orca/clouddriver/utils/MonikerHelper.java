@@ -18,8 +18,6 @@ package com.netflix.spinnaker.orca.clouddriver.utils;
 
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.moniker.Moniker;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.stereotype.Component;
 

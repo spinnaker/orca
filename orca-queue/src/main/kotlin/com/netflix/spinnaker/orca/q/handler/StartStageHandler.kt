@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.StageStarted
@@ -30,12 +31,12 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.q.StartStage
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
+import kotlin.collections.set
 
 @Component
 class StartStageHandler(
@@ -48,6 +49,7 @@ class StartStageHandler(
   private val exceptionHandlers: List<ExceptionHandler>,
   private val objectMapper: ObjectMapper,
   private val clock: Clock,
+  private val registry: Registry,
   @Value("\${queue.retry.delay.ms:15000}") retryDelayMs: Long
 ) : MessageHandler<StartStage>, StageBuilderAware, ExpressionAware, AuthenticationAware {
 
@@ -100,13 +102,31 @@ class StartStageHandler(
     }
   }
 
+  private fun trackResult(stage: Stage) {
+    // We only want to record invocations of parent-level stages; not synthetics
+    if (stage.parentStageId != null) {
+      return
+    }
+
+    val id = registry.createId("stage.invocations")
+      .withTag("type", stage.type)
+      .withTag("application", stage.execution.application)
+      .let { id ->
+        // TODO rz - Need to check synthetics for their cloudProvider.
+        stage.context["cloudProvider"]?.let {
+          id.withTag("cloudProvider", it.toString())
+        } ?: id
+      }
+    registry.counter(id).increment()
+  }
+
   override val messageType = StartStage::class.java
 
   private fun Stage.plan() {
     builder().let { builder ->
       builder.buildTasks(this)
       builder.buildSyntheticStages(this) { it: Stage ->
-        repository.addStage(it)
+        repository.addStage(it.withMergedContext())
       }
     }
   }
@@ -140,7 +160,12 @@ class StartStageHandler(
     }
 
     val clonedContext = objectMapper.convertValue(this.context, Map::class.java) as Map<String, Any>
-    val clonedStage = Stage(this.execution, this.type, clonedContext)
+    val clonedStage = Stage(this.execution, this.type, clonedContext).also {
+      it.refId = refId
+      it.requisiteStageRefIds = requisiteStageRefIds
+      it.syntheticStageOwner = syntheticStageOwner
+      it.parentStageId = parentStageId
+    }
     if (clonedStage.context.containsKey(PipelineExpressionEvaluator.SUMMARY)) {
       this.context.put(PipelineExpressionEvaluator.SUMMARY, clonedStage.context[PipelineExpressionEvaluator.SUMMARY])
     }

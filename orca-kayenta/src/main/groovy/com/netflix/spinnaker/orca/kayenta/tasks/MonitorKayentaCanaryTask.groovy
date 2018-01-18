@@ -16,9 +16,6 @@
 
 package com.netflix.spinnaker.orca.kayenta.tasks
 
-import java.time.Instant
-import java.util.concurrent.TimeUnit
-import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -28,6 +25,10 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
+import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Component
@@ -43,16 +44,16 @@ class MonitorKayentaCanaryTask implements OverridableTimeoutRetryableTask {
   TaskResult execute(@Nonnull Stage stage) {
     Map<String, Object> context = stage.getContext()
     String canaryPipelineExecutionId = (String)context.get("canaryPipelineExecutionId")
-    Execution canaryPipelineExecution = kayentaService.getPipelineExecution(canaryPipelineExecutionId)
+    String storageAccountName = (String)context.get("storageAccountName")
+    Map canaryResults = kayentaService.getCanaryResults(storageAccountName, canaryPipelineExecutionId);
+    ExecutionStatus status = ExecutionStatus.valueOf(canaryResults.status.toUpperCase())
 
-    if (canaryPipelineExecution.status == ExecutionStatus.SUCCEEDED) {
+    if (status == ExecutionStatus.SUCCEEDED) {
       Map<String, String> scoreThresholds = context.get("scoreThresholds")
-      Stage canaryJudgeStage = canaryPipelineExecution.namedStage("canaryJudge")
-      Map<String, Object> canaryJudgeContext = canaryJudgeStage.context
-      double canaryScore = canaryJudgeContext.result.score.score
-      long lastUpdatedMs = canaryJudgeStage.endTime.toLong()
-      String lastUpdatedIso = Instant.ofEpochMilli(lastUpdatedMs).toString()
-      String durationString = canaryJudgeContext.durationString
+      double canaryScore = canaryResults.result.judgeResult.score.score
+      long lastUpdatedMs = canaryResults.endTimeMillis
+      String lastUpdatedIso = canaryResults.endTimeIso
+      String durationString = canaryResults.result.canaryDuration
 
       if (scoreThresholds?.marginal == null && scoreThresholds?.pass == null) {
         return new TaskResult(ExecutionStatus.SUCCEEDED, [canaryPipelineStatus: ExecutionStatus.SUCCEEDED,
@@ -84,20 +85,19 @@ class MonitorKayentaCanaryTask implements OverridableTimeoutRetryableTask {
       }
     }
 
-    if (canaryPipelineExecution.status.halt) {
-      Map<String, Object> stageOutputs = [canaryPipelineStatus: canaryPipelineExecution.status]
+    if (status.halt) {
+      Map<String, Object> stageOutputs = [canaryPipelineStatus: status]
 
-      // Propagate the first canary pipeline exception we can locate.
-      Stage stageWithException = canaryPipelineExecution.stages.find { it.context.exception }
-
-      if (stageWithException) {
-        stageOutputs.exception = stageWithException.context.exception
+      if (canaryResults.exception) {
+        stageOutputs.exception = canaryResults.exception
+      } else if (status == ExecutionStatus.CANCELED) {
+        stageOutputs.exception = [details: [errors: ["Canary execution was canceled."]]]
       }
 
       // Indicates a failure of some sort.
       return new TaskResult(ExecutionStatus.TERMINAL, stageOutputs)
     }
 
-    return new TaskResult(ExecutionStatus.RUNNING, [canaryPipelineStatus: canaryPipelineExecution.status])
+    return new TaskResult(ExecutionStatus.RUNNING, [canaryPipelineStatus: status])
   }
 }

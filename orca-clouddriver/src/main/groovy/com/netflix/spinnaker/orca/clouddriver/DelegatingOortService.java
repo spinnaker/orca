@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver;
 
 import com.netflix.spinnaker.orca.clouddriver.config.SelectableService;
+import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import retrofit.client.Response;
 
 import java.util.List;
@@ -36,7 +37,7 @@ public class DelegatingOortService
   }
 
   @Override
-  public Response getManifest(String account, String location, String name) {
+  public Manifest getManifest(String account, String location, String name) {
     return getService().getManifest(account, location, name);
   }
 
@@ -87,6 +88,11 @@ public class DelegatingOortService
   }
 
   @Override
+  public Response fetchArtifact(String artifactAccount, String type, String reference) {
+    return getService().fetchArtifact(artifactAccount, type, reference);
+  }
+
+  @Override
   public List<Map> getLoadBalancerDetails(String provider, String account, String region, String name) {
     return getService().getLoadBalancerDetails(provider, account, region, name);
   }
@@ -104,5 +110,10 @@ public class DelegatingOortService
   @Override
   public List<Map> getEntityTags(String cloudProvider, String entityType, String entityId, String account, String region) {
     return getService().getEntityTags(cloudProvider, entityType, entityId, account, region);
+  }
+
+  @Override
+  public List<Map> getEntityTags(Map parameters) {
+    return getService().getEntityTags(parameters);
   }
 }

@@ -181,7 +181,7 @@ class RunTaskHandler(
           stage.topLevelTimeout.get().toDuration()
         else
           timeout.toDuration()
-      )
+        )
       if (elapsedTime.minus(pausedDuration).minusMillis(throttleTime) > actualTimeout) {
         val durationString = formatTimeout(elapsedTime.toMillis())
         val msg = StringBuilder("${javaClass.simpleName} of stage ${stage.name} timed out after $durationString. ")
@@ -210,24 +210,36 @@ class RunTaskHandler(
 
   private fun Execution.pausedDurationRelativeTo(instant: Instant?): Duration {
     val pausedDetails = paused
-    if (pausedDetails != null) {
-      return if (pausedDetails.pauseTime.toInstant()?.isAfter(instant) == true) {
+    return if (pausedDetails != null) {
+      if (pausedDetails.pauseTime.toInstant()?.isAfter(instant) == true) {
         Duration.ofMillis(pausedDetails.pausedMs)
       } else ZERO
-    } else return ZERO
+    } else ZERO
   }
 
+  /**
+   * Keys that should never be added to global context. Eventually this will
+   * disappear along with global context itself.
+   */
+  private val blacklistGlobalKeys = setOf(
+    "propertyIdList",
+    "originalProperties",
+    "propertyAction",
+    "propertyAction",
+    "deploymentDetails"
+  )
+
   private fun Stage.processTaskOutput(result: TaskResult) {
-    if (result.context.isNotEmpty() || result.outputs.isNotEmpty()) {
+    val filteredOutputs = result.outputs.filterKeys { it != "stageTimeoutMs" }
+    if (result.context.isNotEmpty() || filteredOutputs.isNotEmpty()) {
       context.putAll(result.context)
-      outputs.putAll(result.outputs)
+      outputs.putAll(filteredOutputs)
       repository.storeStage(this)
     }
-    if (result.outputs.isNotEmpty()) {
-      repository.storeExecutionContext(
-        execution.id,
-        result.outputs
-      )
+    filteredOutputs.filterKeys { it !in blacklistGlobalKeys }.let {
+      if (it.isNotEmpty()) {
+        repository.storeExecutionContext(execution.id, it)
+      }
     }
   }
 }

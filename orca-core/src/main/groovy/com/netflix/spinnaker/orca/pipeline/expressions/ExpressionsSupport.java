@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.expressions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.expressions.whitelisting.FilteredMethodResolver;
 import com.netflix.spinnaker.orca.pipeline.expressions.whitelisting.FilteredPropertyAccessor;
 import com.netflix.spinnaker.orca.pipeline.expressions.whitelisting.MapPropertyAccessor;
@@ -95,8 +96,10 @@ public class ExpressionsSupport {
         registerFunction(evaluationContext, "jsonFromUrl", String.class);
         registerFunction(evaluationContext, "propertiesFromUrl", String.class);
         registerFunction(evaluationContext, "stage", Object.class, String.class);
+        registerFunction(evaluationContext, "stageExists", Object.class, String.class);
         registerFunction(evaluationContext, "judgment", Object.class, String.class);
         registerFunction(evaluationContext, "judgement", Object.class, String.class);
+        registerFunction(evaluationContext, "deployedServerGroups", Object.class, String[].class);
       }
     } catch (NoSuchMethodException e) {
       // Indicates a function was not properly registered. This should not happen. Please fix the faulty function
@@ -258,11 +261,7 @@ public class ExpressionsSupport {
   static Object stage(Object obj, String id) {
     if (obj instanceof Execution) {
       Execution execution = (Execution) obj;
-      List<Stage> stages = Optional.ofNullable((List<Stage>) execution.getStages()).orElseThrow(
-        () -> new SpelHelperFunctionException("#stage(%s) no stages found in execution" + execution.getId())
-      );
-
-      return stages
+      return execution.getStages()
         .stream()
         .filter(i -> id != null && (id.equals(i.getName()) || id.equals(i.getId())))
         .findFirst()
@@ -277,6 +276,23 @@ public class ExpressionsSupport {
   }
 
   /**
+   * Checks existence of a Stage by id
+   * @param obj #root.execution
+   * @param id the name or id of the stage to check existence
+   * @return W
+   */
+  static boolean stageExists(Object obj, String id) {
+    if (obj instanceof Execution) {
+      Execution execution = (Execution) obj;
+      return execution.getStages()
+        .stream()
+        .anyMatch(i -> id != null && (id.equals(i.getName()) || id.equals(i.getId())));
+    }
+
+    throw new SpelHelperFunctionException(String.format("Invalid first param to #stage(%s). must be an execution", id));
+  }
+
+  /**
    * Finds a stage by id and returns the judgment input text
    * @param obj #root.execution
    * @param id the name of the stage to find
@@ -285,11 +301,7 @@ public class ExpressionsSupport {
   static String judgment(Object obj, String id) {
     if (obj instanceof Execution) {
       Execution execution = (Execution) obj;
-      List<Stage> stages = Optional.ofNullable((List<Stage>) execution.getStages()).orElseThrow(
-        () -> new SpelHelperFunctionException("#judgment(%s) no stages found in execution" + execution.getId())
-      );
-
-      Stage stageWithJudgmentInput = stages
+      Stage stageWithJudgmentInput = execution.getStages()
         .stream()
         .filter(isManualStageWithManualInput(id))
         .findFirst()
@@ -310,6 +322,50 @@ public class ExpressionsSupport {
     );
   }
 
+  static List<Map<String, Object>> deployedServerGroups(Object obj, String...id) {
+    if (obj instanceof Execution) {
+      List<Map<String, Object>> deployedServerGroups = new ArrayList<>();
+      ((Execution) obj).getStages()
+        .stream()
+        .filter(matchesDeployedStage(id))
+        .forEach(stage -> {
+          String region = (String) stage.getContext().get("region");
+          if (region == null) {
+            Map<String, Object> availabilityZones = (Map<String, Object>) stage.getContext().get("availabilityZones");
+            if (availabilityZones != null) {
+              region = availabilityZones.keySet().iterator().next();
+            }
+          }
+
+          if (region != null) {
+            Map<String, Object> deployDetails = new HashMap<>();
+            deployDetails.put("account", stage.getContext().get("account"));
+            deployDetails.put("capacity", stage.getContext().get("capacity"));
+            deployDetails.put("parentStage", stage.getContext().get("parentStage"));
+            deployDetails.put("region", region);
+            List<Map> existingDetails = (List<Map>) stage.getContext().get("deploymentDetails");
+            if (existingDetails != null) {
+              existingDetails
+                .stream()
+                .filter(d -> deployDetails.get("region").equals(d.get("region")))
+                .forEach(deployDetails::putAll);
+            }
+
+            List<Map> serverGroups = (List<Map>) ((Map) stage.getContext().get("deploy.server.groups")).get(region);
+            if (serverGroups != null) {
+              deployDetails.put("serverGroup", serverGroups.get(0));
+            }
+
+            deployedServerGroups.add(deployDetails);
+          }
+        });
+
+      return deployedServerGroups;
+    }
+
+    throw new IllegalArgumentException("An execution is required for this function");
+  }
+
   /**
    * Alias to judgment
    */
@@ -319,5 +375,15 @@ public class ExpressionsSupport {
 
   private static Predicate<Stage> isManualStageWithManualInput(String id) {
     return i -> (id != null && id.equals(i.getName())) && (i.getContext() != null && i.getType().equals("manualJudgment") && i.getContext().get("judgmentInput") != null);
+  }
+
+  private static Predicate<Stage> matchesDeployedStage(String ...id) {
+    List<String> idsOrNames = Arrays.asList(id);
+    if (!idsOrNames.isEmpty()){
+      return s -> s.getContext().containsKey("deploy.server.groups") && s.getStatus() == ExecutionStatus.SUCCEEDED &&
+        (idsOrNames.contains(s.getName()) || idsOrNames.contains(s.getId()));
+    } else {
+      return s -> s.getContext().containsKey("deploy.server.groups") && s.getStatus() == ExecutionStatus.SUCCEEDED;
+    }
   }
 }

@@ -31,10 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +52,7 @@ public class WaitForManifestStableTask implements OverridableTimeoutRetryableTas
 
   @Override
   public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(1);
+    return TimeUnit.SECONDS.toMillis(5);
   }
 
   @Override
@@ -66,7 +64,7 @@ public class WaitForManifestStableTask implements OverridableTimeoutRetryableTas
   @Override
   public TaskResult execute(@Nonnull Stage stage) {
     String account = getCredentials(stage);
-    Map<String, List<String>> deployedManifests = (Map<String, List<String>>) stage.getContext().get("deploy.outputs");
+    Map<String, List<String>> deployedManifests = (Map<String, List<String>>) stage.getContext().get("outputs.manifestNamesByNamespace");
     List<String> messages = new ArrayList<>();
     boolean allStable = true;
 
@@ -74,33 +72,20 @@ public class WaitForManifestStableTask implements OverridableTimeoutRetryableTas
       String location = entry.getKey();
       for (String name : entry.getValue()) {
         String identifier = readableIdentifier(account, location, name);
-        Response response;
-        try {
-          response = oortService.getManifest(account, location, name);
-        } catch (RetrofitError e) {
-          allStable = false;
-          log.warn("Unable to read manifest " + identifier, e);
-          continue;
-        }
-
-        if (response.getStatus() != 200) {
-          allStable = false;
-          messages.add(identifier + ": could not retrieve status");
-          continue;
-        }
-
         Manifest manifest;
         try {
-          manifest = objectMapper.readValue(response.getBody().in(), Manifest.class);
-        } catch (IOException e) {
-          log.error("Failed to read " + identifier, e);
-          throw new RuntimeException(e);
+          manifest = oortService.getManifest(account, location, name);
+        } catch (RetrofitError e) {
+          log.warn("Unable to read manifest {}", identifier, e);
+          return new TaskResult(ExecutionStatus.RUNNING, new HashMap<>(), new HashMap<>());
+        } catch (Exception e) {
+          throw new RuntimeException("Execution '" + stage.getExecution().getId() + "' failed with unexpected reason: " + e.getMessage(), e);
         }
 
         Status status = manifest.getStatus();
-        if (!status.isStable()) {
+        if (status.getStable() == null || !status.getStable().isState()) {
           allStable = false;
-          messages.add(identifier + ": " + status.getMessage());
+          messages.add(identifier + ": " + status.getStable().getMessage());
         }
       }
     }

@@ -18,10 +18,9 @@ package com.netflix.spinnaker.orca.config;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.RetrySupport;
+import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.events.ExecutionEvent;
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter;
 import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler;
@@ -31,7 +30,6 @@ import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion;
 import com.netflix.spinnaker.orca.listeners.ExecutionCleanupListener;
 import com.netflix.spinnaker.orca.listeners.ExecutionListener;
 import com.netflix.spinnaker.orca.listeners.MetricsExecutionListener;
-import com.netflix.spinnaker.orca.notifications.scheduling.SuspendedPipelinesNotificationHandler;
 import com.netflix.spinnaker.orca.pipeline.*;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineStack;
@@ -87,11 +85,6 @@ public class OrcaConfiguration {
     return new InMemoryPipelineStack();
   }
 
-  @Bean @Scope(SCOPE_PROTOTYPE)
-  public SuspendedPipelinesNotificationHandler suspendedPipelinesNotificationHandler(Map<String, Object> input) {
-    return new SuspendedPipelinesNotificationHandler(input);
-  }
-
   @Bean @Order(Ordered.LOWEST_PRECEDENCE)
   public DefaultExceptionHandler defaultExceptionHandler() {
     return new DefaultExceptionHandler();
@@ -135,7 +128,7 @@ public class OrcaConfiguration {
 
   @Bean
   public ContextFunctionConfiguration contextFunctionConfiguration(UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
-                                                                   @Value("${spelEvaluator:v1}")
+                                                                   @Value("${spelEvaluator:v2}")
                                                                      String spelEvaluator) {
     return new ContextFunctionConfiguration(userConfiguredUrlRestrictions, spelEvaluator);
   }

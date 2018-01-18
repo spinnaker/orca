@@ -106,7 +106,7 @@ class ExplicitRollback implements Rollback {
     return newStage(
       parentStage.execution,
       captureSourceServerGroupCapacityStage.type,
-      "snapshot",
+      "Snapshot Source Server Group",
       captureSourceServerGroupCapacityContext,
       parentStage,
       SyntheticStageOwner.STAGE_AFTER
@@ -116,8 +116,9 @@ class ExplicitRollback implements Rollback {
   Stage buildApplySourceServerGroupCapacityStage(Stage parentStage,
                                                  ResizeStrategy.Source source) {
     Map applySourceServerGroupCapacityContext = [
-      credentials: source.credentials,
-      target     : [
+      credentials  : source.credentials,
+      cloudProvider: source.cloudProvider,
+      target       : [
         asgName        : restoreServerGroupName,
         serverGroupName: restoreServerGroupName,
         region         : source.region,
@@ -128,7 +129,7 @@ class ExplicitRollback implements Rollback {
     return newStage(
       parentStage.execution,
       applySourceServerGroupCapacityStage.type,
-      "apply",
+      "Restore Min Capacity From Snapshot",
       applySourceServerGroupCapacityContext,
       parentStage,
       SyntheticStageOwner.STAGE_AFTER

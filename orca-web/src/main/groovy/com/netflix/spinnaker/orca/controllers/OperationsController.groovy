@@ -71,6 +71,9 @@ class OperationsController {
   @Autowired(required = false)
   WebhookService webhookService
 
+  @Autowired(required = false)
+  ArtifactResolver artifactResolver
+
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
     parsePipelineTrigger(executionRepository, buildService, pipeline)
@@ -123,8 +126,8 @@ class OperationsController {
           def previousExecution = pipelineTemplateService.retrievePipelineOrNewestExecution(pipeline.executionId, pipeline.id)
           pipeline.trigger = previousExecution.trigger
           pipeline.executionId = previousExecution.id
-        } catch (ExecutionNotFoundException ignore) {
-          // Do nothing
+        } catch (ExecutionNotFoundException | IllegalArgumentException _) {
+          log.info("Could not initialize pipeline template config from previous execution context.")
         }
       }
     }
@@ -151,17 +154,19 @@ class OperationsController {
       }
     }
 
-    if (pipeline.parameterConfig) {
-      if (!pipeline.trigger.parameters) {
-        pipeline.trigger.parameters = [:]
-      }
+    if (!pipeline.trigger.parameters) {
+      pipeline.trigger.parameters = [:]
+    }
 
+    if (pipeline.parameterConfig) {
       pipeline.parameterConfig.each {
         pipeline.trigger.parameters[it.name] = pipeline.trigger.parameters.containsKey(it.name) ? pipeline.trigger.parameters[it.name] : it.default
       }
     }
 
-    ArtifactResolver.resolveArtifacts(pipeline)
+    if (!pipeline.plan) {
+      artifactResolver?.resolveArtifacts(executionRepository, pipeline)
+    }
   }
 
   private void getBuildInfo(Map trigger) {
@@ -217,7 +222,8 @@ class OperationsController {
         type: it.type,
         waitForCompletion: it.waitForCompletion,
         preconfiguredProperties: it.preconfiguredProperties,
-        noUserConfigurableFields: it.noUserConfigurableFields()
+        noUserConfigurableFields: it.noUserConfigurableFields(),
+        parameters: it.parameters,
       ]
     }
   }
