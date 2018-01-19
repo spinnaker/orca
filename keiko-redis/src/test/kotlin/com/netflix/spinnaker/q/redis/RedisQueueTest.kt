@@ -20,8 +20,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
+import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.QueueTest
+import com.netflix.spinnaker.q.TestMessage
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
 import com.netflix.spinnaker.q.metrics.QueueEvent
@@ -50,9 +53,14 @@ private val createQueue = { clock: Clock,
     publisher = publisher ?: (object : EventPublisher {
       override fun publishEvent(event: QueueEvent) {}
     }),
-    mapper = ObjectMapper()
-      .registerModule(KotlinModule())
-      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    mapper = ObjectMapper().apply {
+      registerModule(KotlinModule())
+      disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
+      registerSubtypes(TestMessage::class.java)
+      registerSubtypes(MaxAttemptsAttribute::class.java, AttemptsAttribute::class.java)
+    },
+    serializationMigrators = listOf()
   )
 }
 

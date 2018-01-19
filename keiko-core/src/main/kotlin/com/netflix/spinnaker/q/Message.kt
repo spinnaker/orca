@@ -17,14 +17,17 @@
 package com.netflix.spinnaker.q
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.CLASS
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME
+import com.fasterxml.jackson.annotation.JsonTypeName
+
+const val JSON_NAME_PROPERTY = "kind"
 
 /**
  * Implemented by all messages used with the [Queue]. Sub-types should be simple
  * immutable value types such as Kotlin data classes or _Lombok_ `@Value`
  * classes.
  */
-@JsonTypeInfo(use = CLASS) abstract class Message {
+@JsonTypeInfo(use = NAME, property = JSON_NAME_PROPERTY) abstract class Message {
   // TODO: this type should be immutable
   val attributes: MutableList<Attribute> = mutableListOf()
 
@@ -48,15 +51,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id.CLASS
 /**
  * The base type for message metadata attributes.
  */
-@JsonTypeInfo(use = CLASS)
+@JsonTypeInfo(use = NAME, property = JSON_NAME_PROPERTY)
 interface Attribute
 
 /**
  * An attribute representing the maximum number of retries for a message.
  */
+@JsonTypeName("maxAttempts")
 data class MaxAttemptsAttribute(val maxAttempts: Int = -1) : Attribute
 
 /**
  * An attribute representing the number of times a message has been retried.
  */
+@JsonTypeName("attempts")
 data class AttemptsAttribute(var attempts: Int = 0) : Attribute

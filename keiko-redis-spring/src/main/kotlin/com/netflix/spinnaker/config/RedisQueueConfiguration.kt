@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.migration.SerializationMigrator
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
@@ -64,7 +65,8 @@ open class RedisQueueConfiguration {
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
     publisher: EventPublisher,
-    redisQueueObjectMapper: ObjectMapper
+    redisQueueObjectMapper: ObjectMapper,
+    serializationMigrators: List<SerializationMigrator> = listOf()
   ) =
     RedisQueue(
       queueName = redisQueueProperties.queueName,
@@ -73,7 +75,8 @@ open class RedisQueueConfiguration {
       mapper = redisQueueObjectMapper,
       deadMessageHandler = deadMessageHandler,
       publisher = publisher,
-      ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong())
+      ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong()),
+      serializationMigrators = serializationMigrators
     )
 
   @Bean @ConditionalOnMissingBean(name = arrayOf("redisDeadMessageHandler"))
@@ -91,7 +94,10 @@ open class RedisQueueConfiguration {
   @Bean
   @ConditionalOnMissingBean
   open fun redisQueueObjectMapper(): ObjectMapper =
-    ObjectMapper()
-      .registerModule(KotlinModule())
-      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    ObjectMapper().apply {
+      registerModule(KotlinModule())
+      disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
+      SpringObjectMapperConfigurer(ObjectMapperSubtypeProperties()).registerSubtypes(this)
+    }
 }

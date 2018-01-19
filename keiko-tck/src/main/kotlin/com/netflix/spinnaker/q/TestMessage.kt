@@ -16,4 +16,7 @@
 
 package com.netflix.spinnaker.q
 
+import com.fasterxml.jackson.annotation.JsonTypeName
+
+@JsonTypeName("test")
 data class TestMessage(val payload: String) : Message()
