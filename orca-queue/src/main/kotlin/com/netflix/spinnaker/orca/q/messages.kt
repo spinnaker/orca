@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.fasterxml.jackson.annotation.JsonTypeName
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -25,6 +26,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.q.Attribute
 import com.netflix.spinnaker.q.Message
 
+@JsonTypeName("totalThrottleTime")
 data class TotalThrottleTimeAttribute(var totalThrottleTimeMs: Long = 0) : Attribute {
   fun add(throttleTimeMs: Long) {
     this.totalThrottleTimeMs += throttleTimeMs
@@ -51,6 +53,7 @@ interface TaskLevel : StageLevel {
   val taskId: String
 }
 
+@JsonTypeName("startTask")
 data class StartTask(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -71,6 +74,7 @@ data class StartTask(
     this(source.execution.type, source.execution.id, source.execution.application, source.id, task.id)
 }
 
+@JsonTypeName("completeTask")
 data class CompleteTask(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -83,6 +87,7 @@ data class CompleteTask(
     this(source.executionType, source.executionId, source.application, source.stageId, source.taskId, status)
 }
 
+@JsonTypeName("pauseTask")
 data class PauseTask(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -94,6 +99,7 @@ data class PauseTask(
     this(message.executionType, message.executionId, message.application, message.stageId, message.taskId)
 }
 
+@JsonTypeName("resumeTask")
 data class ResumeTask(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -105,6 +111,7 @@ data class ResumeTask(
     this(message.executionType, message.executionId, message.application, message.stageId, taskId)
 }
 
+@JsonTypeName("runTask")
 data class RunTask(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -123,6 +130,7 @@ data class RunTask(
     this(source.executionType, source.executionId, source.application, stageId, taskId, taskType)
 }
 
+@JsonTypeName("startStage")
 data class StartStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -139,6 +147,7 @@ data class StartStage(
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
+@JsonTypeName("continueParentStage")
 data class ContinueParentStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -149,6 +158,7 @@ data class ContinueParentStage(
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
+@JsonTypeName("completeStage")
 data class CompleteStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -165,6 +175,7 @@ data class CompleteStage(
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
+@JsonTypeName("skipStage")
 data class SkipStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -178,6 +189,7 @@ data class SkipStage(
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
+@JsonTypeName("abortStage")
 data class AbortStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -191,6 +203,7 @@ data class AbortStage(
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
+@JsonTypeName("pauseStage")
 data class PauseStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -204,6 +217,7 @@ data class PauseStage(
     this(source.executionType, source.executionId, source.application, stageId)
 }
 
+@JsonTypeName("restartStage")
 data class RestartStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -215,6 +229,7 @@ data class RestartStage(
     this(source.type, source.id, source.application, stageId, user)
 }
 
+@JsonTypeName("resumeStage")
 data class ResumeStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -228,6 +243,7 @@ data class ResumeStage(
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
+@JsonTypeName("cancelStage")
 data class CancelStage(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -241,6 +257,7 @@ data class CancelStage(
     this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id)
 }
 
+@JsonTypeName("startExecution")
 data class StartExecution(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -250,6 +267,7 @@ data class StartExecution(
     this(source.type, source.id, source.application)
 }
 
+@JsonTypeName("rescheduleExecution")
 data class RescheduleExecution(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -259,6 +277,7 @@ data class RescheduleExecution(
     this(source.type, source.id, source.application)
 }
 
+@JsonTypeName("completeExecution")
 data class CompleteExecution(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -271,6 +290,7 @@ data class CompleteExecution(
     this(source.type, source.id, source.application)
 }
 
+@JsonTypeName("resumeExecution")
 data class ResumeExecution(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -280,6 +300,7 @@ data class ResumeExecution(
     this(source.type, source.id, source.application)
 }
 
+@JsonTypeName("cancelExecution")
 data class CancelExecution(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -299,6 +320,7 @@ sealed class ConfigurationError : Message(), ExecutionLevel
 /**
  * Execution id was not found in the [ExecutionRepository].
  */
+@JsonTypeName("invalidExecutionId")
 data class InvalidExecutionId(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -311,6 +333,7 @@ data class InvalidExecutionId(
 /**
  * Stage id was not found in the execution.
  */
+@JsonTypeName("invalidStageId")
 data class InvalidStageId(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -324,6 +347,7 @@ data class InvalidStageId(
 /**
  * Task id was not found in the stage.
  */
+@JsonTypeName("invalidTaskId")
 data class InvalidTaskId(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -338,6 +362,7 @@ data class InvalidTaskId(
 /**
  * No such [Task] class.
  */
+@JsonTypeName("invalidTaskType")
 data class InvalidTaskType(
   override val executionType: ExecutionType,
   override val executionId: String,
@@ -349,6 +374,7 @@ data class InvalidTaskType(
     this(source.executionType, source.executionId, source.application, source.stageId, className)
 }
 
+@JsonTypeName("noDownstreamTasks")
 data class NoDownstreamTasks(
   override val executionType: ExecutionType,
   override val executionId: String,

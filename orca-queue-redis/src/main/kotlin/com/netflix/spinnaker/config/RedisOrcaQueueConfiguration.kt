@@ -20,12 +20,15 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.q.migration.MinimalClassTypeInfoSerializationMigrator
 import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeDeserializer
 import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.migration.SerializationMigrator
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import redis.clients.jedis.Jedis
@@ -33,9 +36,11 @@ import redis.clients.util.Pool
 import java.time.Clock
 
 @Configuration
+@EnableConfigurationProperties(ObjectMapperSubtypeProperties::class)
 open class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
 
-  @Autowired open fun mapper(mapper: ObjectMapper) {
+  @Autowired open fun redisQueueObjectMapper(mapper: ObjectMapper,
+                                             objectMapperSubtypeProperties: ObjectMapperSubtypeProperties) {
     mapper.apply {
       registerModule(KotlinModule())
       registerModule(
@@ -43,6 +48,15 @@ open class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
           .addDeserializer(ExecutionType::class.java, ExecutionTypeDeserializer())
       )
       disable(FAIL_ON_UNKNOWN_PROPERTIES)
+
+      SpringObjectMapperConfigurer(objectMapperSubtypeProperties.apply {
+        messagePackages = messagePackages.union(listOf(
+          "com.netflix.spinnaker.orca.q"
+        )).toList()
+        attributePackages = attributePackages.union(listOf(
+          "com.netflix.spinnaker.orca.q.handler"
+        )).toList()
+      }).registerSubtypes(this)
     }
   }
 
@@ -52,8 +66,9 @@ open class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
     @Qualifier("queueEventPublisher") publisher: EventPublisher,
-    mapper: ObjectMapper
+    mapper: ObjectMapper,
+    serializationMigrators: List<SerializationMigrator>
   ): RedisQueue {
-    return super.queue(redisPool, redisQueueProperties, clock, deadMessageHandler, publisher, mapper)
+    return super.queue(redisPool, redisQueueProperties, clock, deadMessageHandler, publisher, mapper, serializationMigrators)
   }
 }

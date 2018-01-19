@@ -23,6 +23,7 @@ import com.netflix.spinnaker.q.redis.RedisQueue
 import com.netflix.spinnaker.orca.q.QueueShovel
 import com.netflix.spinnaker.q.Activator
 import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.migration.SerializationMigrator
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.springframework.beans.factory.BeanInitializationException
 import org.springframework.beans.factory.annotation.Qualifier
@@ -63,7 +64,8 @@ open class RedisQueueShovelConfiguration {
     clock: Clock,
     deadMessageHandler: RedisDeadMessageHandler,
     publisher: EventPublisher,
-    redisQueueObjectMapper: ObjectMapper
+    redisQueueObjectMapper: ObjectMapper,
+    serializationMigrators: List<SerializationMigrator>
   ) =
     RedisQueue(
       queueName = redisQueueProperties.queueName,
@@ -72,7 +74,8 @@ open class RedisQueueShovelConfiguration {
       deadMessageHandler = deadMessageHandler,
       publisher = publisher,
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong()),
-      mapper = redisQueueObjectMapper
+      mapper = redisQueueObjectMapper,
+      serializationMigrators = serializationMigrators
     )
 
 
