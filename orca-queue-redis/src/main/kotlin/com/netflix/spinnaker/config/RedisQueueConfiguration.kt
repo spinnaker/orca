@@ -18,6 +18,7 @@ package com.netflix.spinnaker.config
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.config.RedisConfiguration
+import com.netflix.spinnaker.orca.config.RedisSentinelProperties
 import com.netflix.spinnaker.orca.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.orca.q.redis.RedisQueue
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
@@ -40,9 +41,10 @@ open class RedisQueueConfiguration {
   @Bean(name = arrayOf("queueJedisPool")) open fun queueJedisPool(
       @Value("\${redis.connection:redis://localhost:6379}") connection: String,
       @Value("\${redis.timeout:2000}") timeout: Int,
+      sentinelProperties: RedisSentinelProperties,
       redisPoolConfig: GenericObjectPoolConfig,
       registry: Registry
-  ) = RedisConfiguration.createPool(redisPoolConfig, connection, timeout, registry, "queueJedisPool")
+  ) = RedisConfiguration.createPool(redisPoolConfig, sentinelProperties, connection, timeout, registry, "queueJedisPool")
 
   @Bean() open fun redisDeadMessageHandler(
     @Qualifier("queueJedisPool") redisPool: Pool<Jedis>,

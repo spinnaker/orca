@@ -25,11 +25,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.health.Health
 import org.springframework.boot.actuate.health.HealthIndicator
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
+import redis.clients.jedis.JedisSentinelPool
 import redis.clients.jedis.Protocol
 import redis.clients.util.Pool
 
@@ -37,6 +39,7 @@ import java.lang.reflect.Field
 
 @Configuration
 @CompileStatic
+@EnableConfigurationProperties(RedisSentinelProperties.class)
 class RedisConfiguration {
 
   @Bean
@@ -49,21 +52,23 @@ class RedisConfiguration {
   @Primary
   Pool<Jedis> jedisPool(@Value('${redis.connection:redis://localhost:6379}') String connection,
                         @Value('${redis.timeout:2000}') int timeout,
+                        RedisSentinelProperties sentinelProperties,
                         GenericObjectPoolConfig redisPoolConfig,
                         Registry registry) {
-    return createPool(redisPoolConfig, connection, timeout, registry, "jedisPool")
+    return createPool(redisPoolConfig, sentinelProperties, connection, timeout, registry, "jedisPool")
   }
 
   @Bean(name="jedisPoolPrevious")
-  JedisPool jedisPoolPrevious(@Value('${redis.connection:redis://localhost:6379}') String mainConnection,
-                              @Value('${redis.connectionPrevious:#{null}}') String previousConnection,
-                              @Value('${redis.timeout:2000}') int timeout,
-                              Registry registry) {
+  Pool<Jedis> jedisPoolPrevious(@Value('${redis.connection:redis://localhost:6379}') String mainConnection,
+                                @Value('${redis.connectionPrevious:#{null}}') String previousConnection,
+                                @Value('${redis.timeout:2000}') int timeout,
+                                RedisSentinelProperties sentinelProperties,
+                                Registry registry) {
     if (mainConnection == previousConnection || previousConnection == null) {
       return null
     }
 
-    return createPool(null, previousConnection, timeout, registry, "jedisPoolPrevious")
+    return createPool(null, sentinelProperties, previousConnection, timeout, registry, "jedisPoolPrevious")
   }
 
   @Bean
@@ -100,7 +105,12 @@ class RedisConfiguration {
     }
   }
 
-  static JedisPool createPool(GenericObjectPoolConfig redisPoolConfig, String connection, int timeout, Registry registry, String poolName) {
+  static Pool<Jedis> createPool(GenericObjectPoolConfig redisPoolConfig,
+                                RedisSentinelProperties sentinelProperties,
+                                String connection,
+                                int timeout,
+                                Registry registry,
+                                String poolName) {
     URI redisConnection = URI.create(connection)
 
     String host = redisConnection.host
@@ -111,7 +121,13 @@ class RedisConfiguration {
 
     String password = redisConnection.userInfo ? redisConnection.userInfo.split(':', 2)[1] : null
 
-    JedisPool jedisPool = new JedisPool(redisPoolConfig ?: new GenericObjectPoolConfig(), host, port, timeout, password, database, null)
+    Pool<Jedis> jedisPool;
+    if (sentinelProperties.enabled) {
+      jedisPool = new JedisSentinelPool("mymaster", sentinelProperties.sentinels, redisPoolConfig ?: new GenericObjectPoolConfig(), timeout, password, database, null)
+    } else {
+      jedisPool = new JedisPool(redisPoolConfig ?: new GenericObjectPoolConfig(), host, port, timeout, password, database, null)
+    }
+
     final Field poolAccess = Pool.getDeclaredField('internalPool')
     poolAccess.setAccessible(true)
     GenericObjectPool<Jedis> pool = (GenericObjectPool<Jedis>) poolAccess.get(jedisPool)
@@ -120,6 +136,7 @@ class RedisConfiguration {
     registry.gauge(registry.createId("redis.connectionPool.numActive", "poolName", poolName), pool, { GenericObjectPool<Jedis> p -> Integer.valueOf(p.getNumActive()).doubleValue() })
     registry.gauge(registry.createId("redis.connectionPool.numIdle", "poolName", poolName), pool, { GenericObjectPool<Jedis> p -> Integer.valueOf(p.getMaxIdle()).doubleValue() })
     registry.gauge(registry.createId("redis.connectionPool.numWaiters", "poolName", poolName), pool, { GenericObjectPool<Jedis> p -> Integer.valueOf(p.getMaxIdle()).doubleValue() })
+
     return jedisPool
   }
 }
