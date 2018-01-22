@@ -19,12 +19,8 @@ package com.netflix.spinnaker.config
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.log.BlackholeExecutionLogRepository
 import com.netflix.spinnaker.orca.log.ExecutionLogRepository
-import com.netflix.spinnaker.orca.q.Queue
-import com.netflix.spinnaker.orca.q.handler.DeadMessageHandler
-import com.netflix.spinnaker.orca.q.memory.InMemoryQueue
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -39,36 +35,19 @@ import java.time.Clock
 @Configuration
 @ComponentScan(basePackages = [
   "com.netflix.spinnaker.orca.q",
+  "com.netflix.spinnaker.orca.q.handler",
   "com.netflix.spinnaker.orca.log",
   "com.netflix.spinnaker.orca.q.trafficshaping"
 ])
 @EnableScheduling
-open class QueueConfiguration {
+open class OrcaQueueConfiguration {
   @Bean
   @ConditionalOnMissingBean(Clock::class)
   open fun systemClock(): Clock = Clock.systemDefaultZone()
 
-  @Bean(name = ["queueImpl"])
-  @ConditionalOnMissingBean(Queue::class)
-  open fun inMemoryQueue(clock: Clock, deadMessageHandler: DeadMessageHandler, publisher: ApplicationEventPublisher) =
-    InMemoryQueue(
-      clock = clock,
-      deadMessageHandler = deadMessageHandler::handle,
-      publisher = publisher
-    )
-
   @Bean
   @ConditionalOnMissingBean(ExecutionLogRepository::class)
   open fun executionLogRepository(): ExecutionLogRepository = BlackholeExecutionLogRepository()
-
-  @Bean
-  open fun messageHandlerPool(registry: Registry): ThreadPoolTaskExecutor =
-    ThreadPoolTaskExecutor().apply {
-      threadNamePrefix = "handlers-"
-      corePoolSize = 20
-      maxPoolSize = 20
-      setQueueCapacity(0)
-    }
 
   /**
    * This overrides Spring's default application event multicaster as we need
@@ -84,6 +63,7 @@ open class QueueConfiguration {
       // TODO: should set an error handler as well
     }
 
+  // TODO rz - move to a separate location since this is modifying the spring async tasks stuff
   @Bean
   open fun applicationEventTaskExecutor(registry: Registry): ThreadPoolTaskExecutor =
     ThreadPoolTaskExecutor().apply {
@@ -92,6 +72,7 @@ open class QueueConfiguration {
       maxPoolSize = 20
     }
 
+  // TODO rz - Move out of queueconfiguration
   @Bean
   open fun taskScheduler(): TaskScheduler =
     ThreadPoolTaskScheduler().apply {
