@@ -16,25 +16,24 @@
 
 package com.netflix.spinnaker.orca.telemetry;
 
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-
-import com.netflix.discovery.converters.Auto;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+
 import static java.lang.String.format;
 
 @Component
 public class ThreadPoolMetricsPostProcessor extends AbstractMetricsPostProcessor<ThreadPoolTaskExecutor> {
 
   @Autowired
-  public ThreadPoolMetricsPostProcessor(Class<ThreadPoolTaskExecutor> beanType, Registry registry) {
-    super(beanType, registry);
+  public ThreadPoolMetricsPostProcessor(Registry registry) {
+    super(ThreadPoolTaskExecutor.class, registry);
   }
 
   @Override
