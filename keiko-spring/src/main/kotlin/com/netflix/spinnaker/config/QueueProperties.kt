@@ -20,6 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("keiko.queue")
 class QueueProperties {
+  var handlerThreadNamePrefix: String = "handlers-"
   var handlerCorePoolSize: Int = 20
   var handlerMaxPoolSize: Int = 20
 }

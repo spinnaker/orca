@@ -42,6 +42,7 @@ open class QueueConfiguration {
   @Bean
   open fun messageHandlerPool(queueProperties: QueueProperties) =
     ThreadPoolTaskExecutor().apply {
+      threadNamePrefix = queueProperties.handlerThreadNamePrefix
       corePoolSize = queueProperties.handlerCorePoolSize
       maxPoolSize = queueProperties.handlerMaxPoolSize
       setQueueCapacity(0)
