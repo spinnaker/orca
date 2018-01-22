@@ -160,4 +160,20 @@ class JenkinsTriggerSpec extends AbstractTriggerSpec<JenkinsTrigger> {
 }
 '''
   }
+
+  def "can parse a Travis CI trigger"() {
+    given:
+    def travisTrigger = mapper.readValue(triggerJson, Map)
+    travisTrigger.type = "travis"
+
+    when:
+    def trigger = mapper.convertValue(travisTrigger, Trigger)
+
+    then:
+    noExceptionThrown()
+
+    and:
+    trigger.type == "travis"
+    trigger instanceof TravisTrigger
+  }
 }
