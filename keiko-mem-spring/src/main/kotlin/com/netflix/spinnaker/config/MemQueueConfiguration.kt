@@ -24,10 +24,10 @@ import org.springframework.context.annotation.Configuration
 import java.time.Clock
 
 @Configuration
-open class MemQueueConfiguration {
+class MemQueueConfiguration {
 
   @Bean
-  open fun queue(
+  fun queue(
     clock: Clock,
     deadMessageHandler: DeadMessageCallback,
     publisher: EventPublisher

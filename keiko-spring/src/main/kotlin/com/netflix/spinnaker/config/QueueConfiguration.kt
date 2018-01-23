@@ -31,16 +31,16 @@ import java.time.Clock
 
 @Configuration
 @EnableConfigurationProperties(QueueProperties::class)
-@ComponentScan(basePackages = arrayOf("com.netflix.spinnaker.q"))
+@ComponentScan(basePackages = ["com.netflix.spinnaker.q"])
 @EnableScheduling
-open class QueueConfiguration {
+class QueueConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(Clock::class)
-  open fun systemClock(): Clock = Clock.systemDefaultZone()
+  fun systemClock(): Clock = Clock.systemDefaultZone()
 
   @Bean
-  open fun messageHandlerPool(queueProperties: QueueProperties) =
+  fun messageHandlerPool(queueProperties: QueueProperties) =
     ThreadPoolTaskExecutor().apply {
       threadNamePrefix = queueProperties.handlerThreadNamePrefix
       corePoolSize = queueProperties.handlerCorePoolSize
@@ -49,7 +49,7 @@ open class QueueConfiguration {
     }
 
   @Bean
-  open fun queueProcessor(
+  fun queueProcessor(
     queue: Queue,
     executor: QueueExecutor<*>,
     handlers: Collection<MessageHandler<*>>,
@@ -58,7 +58,7 @@ open class QueueConfiguration {
   ) = QueueProcessor(queue, executor, handlers, activator, publisher)
 
   @Bean
-  open fun queueEventPublisher(
+  fun queueEventPublisher(
     applicationEventPublisher: ApplicationEventPublisher
   ) = object : EventPublisher {
     override fun publishEvent(event: QueueEvent) {

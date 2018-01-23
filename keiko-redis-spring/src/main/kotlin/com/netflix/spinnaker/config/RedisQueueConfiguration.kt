@@ -41,13 +41,14 @@ import java.util.*
 
 @Configuration
 @EnableConfigurationProperties(RedisQueueProperties::class)
-open class RedisQueueConfiguration {
+class RedisQueueConfiguration {
 
   @Bean @ConditionalOnMissingBean(GenericObjectPoolConfig::class)
-  open fun redisPoolConfig() = GenericObjectPoolConfig()
+  fun redisPoolConfig() = GenericObjectPoolConfig()
 
-  @Bean @ConditionalOnMissingBean(name = arrayOf("queueRedisPool"))
-  open fun queueRedisPool(
+  @Bean
+  @ConditionalOnMissingBean(name = ["queueRedisPool"])
+  fun queueRedisPool(
     @Value("\${redis.connection:redis://localhost:6379}") connection: String,
     @Value("\${redis.timeout:2000}") timeout: Int,
     redisPoolConfig: GenericObjectPoolConfig
@@ -59,8 +60,9 @@ open class RedisQueueConfiguration {
       JedisPool(redisPoolConfig, cx.host, port, timeout, password, db)
     }
 
-  @Bean @ConditionalOnMissingBean(name = arrayOf("queue"))
-  open fun queue(
+  @Bean
+  @ConditionalOnMissingBean(name = ["queue"])
+  fun queue(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
     clock: Clock,
@@ -80,8 +82,9 @@ open class RedisQueueConfiguration {
       serializationMigrators = serializationMigrators
     )
 
-  @Bean @ConditionalOnMissingBean(name = arrayOf("redisDeadMessageHandler"))
-  open fun redisDeadMessageHandler(
+  @Bean
+  @ConditionalOnMissingBean(name = ["redisDeadMessageHandler"])
+  fun redisDeadMessageHandler(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
     clock: Clock
@@ -94,7 +97,7 @@ open class RedisQueueConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  open fun redisQueueObjectMapper(properties: Optional<ObjectMapperSubtypeProperties>): ObjectMapper =
+  fun redisQueueObjectMapper(properties: Optional<ObjectMapperSubtypeProperties>): ObjectMapper =
     ObjectMapper().apply {
       registerModule(KotlinModule())
       disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

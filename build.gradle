@@ -9,6 +9,7 @@ buildscript {
     classpath "com.netflix.nebula:nebula-kotlin-plugin:$kotlinVersion"
     classpath "com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.16.0"
     classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.15"
+    classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlinVersion"
   }
   configurations.all {
     resolutionStrategy {
@@ -41,7 +42,7 @@ subprojects {
   }
 
   spinnaker {
-    dependenciesVersion = "0.117.0"
+    dependenciesVersion = "0.127.0"
   }
 
   sourceCompatibility = 1.8
