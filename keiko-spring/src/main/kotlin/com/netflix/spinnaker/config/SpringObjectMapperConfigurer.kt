@@ -17,6 +17,7 @@ package com.netflix.spinnaker.config
 
 import com.fasterxml.jackson.annotation.JsonTypeName
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.jsontype.NamedType
 import com.netflix.spinnaker.exception.InvalidSubtypeConfigurationException
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider
@@ -51,7 +52,7 @@ class SpringObjectMapperConfigurer(
     return ClassUtils.resolveClassName(name, ClassUtils.getDefaultClassLoader())
   }
 
-  private fun findSubtypes(clazz: Class<*>, pkg: String): Array<Class<*>> =
+  private fun findSubtypes(clazz: Class<*>, pkg: String): Array<NamedType> =
     ClassPathScanningCandidateComponentProvider(false)
       .apply { addIncludeFilter(AssignableTypeFilter(clazz)) }
       .findCandidateComponents(pkg)
@@ -65,7 +66,7 @@ class SpringObjectMapperConfigurer(
           ?.value ?: throw InvalidSubtypeConfigurationException("Subtype ${cls.simpleName} does not have a JsonTypeName")
 
         log.info("Registering subtype of ${clazz.simpleName}: $serializationName")
-        return@map cls
+        return@map NamedType(cls, serializationName)
       }
       .toTypedArray()
 }

@@ -178,8 +178,16 @@ class RedisQueue(
                           fire<MessageDuplicate>(message)
                         }
                     } catch (e: IOException) {
-                      if (serializationMigrators.isNotEmpty()) {
-                        runSerializationMigrations(fingerprint, json as String)
+                      if (!serializationMigrators.isEmpty()) {
+                        throw e
+                      }
+                      runSerializationMigrations(fingerprint, json as String)?.also {
+                        mapper
+                          .readValue<Message>(it)
+                          .let { message ->
+                            log.warn("Not retrying message $fingerprint because an identical message is already on the queue")
+                            fire<MessageDuplicate>(message)
+                          }
                       }
                     }
                   }
@@ -301,7 +309,7 @@ class RedisQueue(
           block.invoke(message)
         } catch (e: IOException) {
           if (serializationMigrators.isNotEmpty()) {
-            log.error("Failed to read message $fingerprint, attempting to run serialization migrators...", e)
+            log.error("Failed to read message $fingerprint, attempting to run serialization migrators...")
             runSerializationMigrations(fingerprint, json)
           } else {
             log.error("Failed to read message $fingerprint, requeuing...", e)
@@ -312,24 +320,25 @@ class RedisQueue(
     }
   }
 
-  private fun runSerializationMigrations(fingerprint: String, json: String) {
+  private fun runSerializationMigrations(fingerprint: String, json: String): String? {
     val raw: MutableMap<String, Any?>
     try {
       raw = mapper.readValue(json)
     } catch (e: IOException) {
       // "This should never happen"
       log.error("Failed to read message to generic object for serialization migration, cannot migrate message", e)
-      return
+      return null
     }
 
-    serializationMigrators
+    return serializationMigrators
       .map { it.migrate(raw) }
-      .let { mapper.writeValueAsString(it) }
-      .also {
-        log.info("Migrated message (raw: $json, migrated: $it")
+      .let {
+        val migrated = mapper.writeValueAsString(it)
+        log.info("Migrated message (raw: $json, migrated: $migrated")
         pool.resource.use { redis ->
-          redis.hset(messagesKey, fingerprint, it)
+          redis.hset(messagesKey, fingerprint, migrated)
         }
+        migrated
       }
   }
 

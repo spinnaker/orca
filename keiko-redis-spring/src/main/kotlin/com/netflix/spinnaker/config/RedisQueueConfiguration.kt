@@ -37,6 +37,7 @@ import redis.clients.util.Pool
 import java.net.URI
 import java.time.Clock
 import java.time.Duration
+import java.util.*
 
 @Configuration
 @EnableConfigurationProperties(RedisQueueProperties::class)
@@ -93,11 +94,11 @@ open class RedisQueueConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  open fun redisQueueObjectMapper(): ObjectMapper =
+  open fun redisQueueObjectMapper(properties: Optional<ObjectMapperSubtypeProperties>): ObjectMapper =
     ObjectMapper().apply {
       registerModule(KotlinModule())
       disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
-      SpringObjectMapperConfigurer(ObjectMapperSubtypeProperties()).registerSubtypes(this)
+      SpringObjectMapperConfigurer(properties.orElse(ObjectMapperSubtypeProperties())).registerSubtypes(this)
     }
 }
