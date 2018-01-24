@@ -37,18 +37,18 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.time.Clock
 
 @Configuration
-@ComponentScan(basePackages = [
+@ComponentScan(basePackages = arrayOf(
   "com.netflix.spinnaker.orca.q",
   "com.netflix.spinnaker.orca.log",
   "com.netflix.spinnaker.orca.q.trafficshaping"
-])
+))
 @EnableScheduling
 class QueueConfiguration {
   @Bean
   @ConditionalOnMissingBean(Clock::class)
   fun systemClock(): Clock = Clock.systemDefaultZone()
 
-  @Bean(name = ["queueImpl"])
+  @Bean(name = arrayOf("queueImpl"))
   @ConditionalOnMissingBean(Queue::class)
   fun inMemoryQueue(clock: Clock, deadMessageHandler: DeadMessageHandler, publisher: ApplicationEventPublisher) =
     InMemoryQueue(

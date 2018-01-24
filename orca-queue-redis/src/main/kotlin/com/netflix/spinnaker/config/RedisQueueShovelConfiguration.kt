@@ -17,6 +17,7 @@ package com.netflix.spinnaker.config
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.config.RedisConfiguration
+import com.netflix.spinnaker.orca.config.RedisSentinelProperties
 import com.netflix.spinnaker.orca.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.orca.q.redis.RedisQueue
 import com.netflix.spinnaker.orca.q.QueueShovel
@@ -46,12 +47,13 @@ class RedisQueueShovelConfiguration {
     @Value("\${redis.connectionPrevious:#{null}}") previousConnection: String?,
     @Value("\${redis.timeout:2000}") timeout: Int,
     redisPoolConfig: GenericObjectPoolConfig,
+    sentinelProperties: RedisSentinelProperties,
     registry: Registry): Pool<Jedis> {
     if (mainConnection == previousConnection) {
       throw BeanInitializationException("previous Redis connection must not be the same as current connection")
     }
 
-    return RedisConfiguration.createPool(redisPoolConfig, previousConnection, timeout, registry, "previousQueueJedisPool")
+    return RedisConfiguration.createPool(redisPoolConfig, sentinelProperties, previousConnection, timeout, registry, "previousQueueJedisPool")
   }
 
   @Bean(name = ["previousQueueImpl"])
