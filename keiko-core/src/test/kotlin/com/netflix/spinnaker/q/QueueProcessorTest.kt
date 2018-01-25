@@ -17,23 +17,13 @@
 package com.netflix.spinnaker.q
 
 import com.fasterxml.jackson.annotation.JsonTypeName
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.throws
+import com.netflix.spinnaker.assertj.isA
 import com.netflix.spinnaker.mockito.doStub
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import com.netflix.spinnaker.spek.and
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.doThrow
-import com.nhaarman.mockito_kotlin.eq
-import com.nhaarman.mockito_kotlin.isA
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.never
-import com.nhaarman.mockito_kotlin.reset
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.verifyZeroInteractions
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
@@ -207,7 +197,8 @@ object QueueProcessorTest : Spek({
             afterGroup(::resetMocks)
 
             on("the next polling cycle") {
-              assertThat({ subject.pollOnce() }, throws<IllegalStateException>())
+              assertThatThrownBy { subject.pollOnce() }
+                .isA<IllegalStateException>()
             }
 
             it("does not invoke any handlers") {

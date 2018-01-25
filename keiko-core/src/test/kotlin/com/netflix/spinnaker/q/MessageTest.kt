@@ -16,9 +16,7 @@
 
 package com.netflix.spinnaker.q
 
-import com.natpryce.hamkrest.isEmpty
-import com.natpryce.hamkrest.should.shouldMatch
-import com.netflix.spinnaker.spek.shouldEqual
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
@@ -28,16 +26,18 @@ object MessageTest : Spek({
 
   describe("a message supports attributes") {
     it("should have no attributes by default") {
-      message.attributes shouldMatch isEmpty
+      assertThat(message.attributes).isEmpty()
     }
 
     it("should return null if attribute does not exist") {
-      message.getAttribute<MaxAttemptsAttribute>() shouldEqual null
+      assertThat(message.getAttribute<MaxAttemptsAttribute>()).isNull()
     }
 
     it("should support adding an attribute") {
       message.setAttribute(MaxAttemptsAttribute(10))
-      message.getAttribute<MaxAttemptsAttribute>()?.maxAttempts shouldEqual 10
+      assertThat(message.getAttribute<MaxAttemptsAttribute>())
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("maxAttempts", 10)
     }
 
 //    it("should support removing an attribute") {

@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.q.migration
 
-import com.netflix.spinnaker.spek.shouldEqual
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
@@ -33,7 +33,7 @@ object FqnTypeInfoSerializationMigratorTest : Spek({
         )
       )
 
-      migrator.migrate(message) shouldEqual message
+      assertThat(migrator.migrate(message)).isEqualTo(message)
     }
 
     it("should convert a @class property to a name-property object") {
@@ -62,7 +62,7 @@ object FqnTypeInfoSerializationMigratorTest : Spek({
         )
       )
 
-      migrator.migrate(message) shouldEqual expected
+      assertThat(migrator.migrate(message)).isEqualTo(expected)
     }
   }
 })

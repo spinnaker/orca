@@ -22,7 +22,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.spek.and
-import com.netflix.spinnaker.spek.shouldEqual
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -36,7 +36,7 @@ object DiscoveryActivatorTest : Spek({
 
     describe("by default") {
       it("is disabled") {
-        subject.enabled shouldEqual false
+        assertThat(subject.enabled).isFalse()
       }
     }
 
@@ -46,7 +46,7 @@ object DiscoveryActivatorTest : Spek({
       }
 
       it("is enabled") {
-        subject.enabled shouldEqual true
+        assertThat(subject.enabled).isTrue()
       }
 
       and("the instance goes out of service") {
@@ -55,7 +55,7 @@ object DiscoveryActivatorTest : Spek({
         }
 
         it("is disabled again") {
-          subject.enabled shouldEqual false
+          assertThat(subject.enabled).isFalse()
         }
       }
     }

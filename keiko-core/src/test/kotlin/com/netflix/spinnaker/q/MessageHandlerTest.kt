@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.q
 
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.throws
+import com.netflix.spinnaker.assertj.isA
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyZeroInteractions
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
@@ -53,10 +53,8 @@ object MessageHandlerTest : SubjectSpek<MessageHandler<*>>({
     afterGroup(::resetMocks)
 
     action("the handler receives a message") {
-      assertThat(
-        { subject.invoke(message) },
-        throws<IllegalArgumentException>()
-      )
+      assertThatThrownBy { subject.invoke(message) }
+        .isA<IllegalArgumentException>()
     }
 
     it("does not invoke the handler") {

@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.q.metrics
 
+import com.netflix.spinnaker.assertj.softly
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.TestMessage
-import com.netflix.spinnaker.spek.shouldEqual
 import com.netflix.spinnaker.time.MutableClock
 import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
@@ -67,10 +67,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
     it("reports empty") {
       with(queue!!.readState()) {
-        depth shouldEqual 0
-        ready shouldEqual 0
-        unacked shouldEqual 0
-        orphaned shouldEqual 0
+        softly {
+          assertThat(depth).isEqualTo(0)
+          assertThat(ready).isEqualTo(0)
+          assertThat(unacked).isEqualTo(0)
+          assertThat(orphaned).isEqualTo(0)
+        }
       }
     }
   }
@@ -90,10 +92,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
     it("reports the updated queue depth") {
       with(queue!!.readState()) {
-        depth shouldEqual 1
-        unacked shouldEqual 0
-        ready shouldEqual 1
-        orphaned shouldEqual 0
+        softly {
+          assertThat(depth).isEqualTo(1)
+          assertThat(unacked).isEqualTo(0)
+          assertThat(ready).isEqualTo(1)
+          assertThat(orphaned).isEqualTo(0)
+        }
       }
     }
   }
@@ -117,9 +121,11 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
     it("reports an unchanged queue depth") {
       with(queue!!.readState()) {
-        depth shouldEqual 1
-        unacked shouldEqual 0
-        ready shouldEqual 1
+        softly {
+          assertThat(depth).isEqualTo(1)
+          assertThat(unacked).isEqualTo(0)
+          assertThat(ready).isEqualTo(1)
+        }
       }
     }
   }
@@ -139,10 +145,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
     it("reports the updated queue depth") {
       with(queue!!.readState()) {
-        depth shouldEqual 1
-        unacked shouldEqual 0
-        ready shouldEqual 0
-        orphaned shouldEqual 0
+        softly {
+          assertThat(depth).isEqualTo(1)
+          assertThat(unacked).isEqualTo(0)
+          assertThat(ready).isEqualTo(0)
+          assertThat(orphaned).isEqualTo(0)
+        }
       }
     }
   }
@@ -166,10 +174,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
     it("reports unacknowledged message depth") {
       with(queue!!.readState()) {
-        depth shouldEqual 0
-        unacked shouldEqual 1
-        ready shouldEqual 0
-        orphaned shouldEqual 0
+        softly {
+          assertThat(depth).isEqualTo(0)
+          assertThat(unacked).isEqualTo(1)
+          assertThat(ready).isEqualTo(0)
+          assertThat(orphaned).isEqualTo(0)
+        }
       }
     }
   }
@@ -195,10 +205,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
     it("reports an empty queue") {
       with(queue!!.readState()) {
-        depth shouldEqual 0
-        unacked shouldEqual 0
-        ready shouldEqual 0
-        orphaned shouldEqual 0
+        softly {
+          assertThat(depth).isEqualTo(0)
+          assertThat(unacked).isEqualTo(0)
+          assertThat(ready).isEqualTo(0)
+          assertThat(orphaned).isEqualTo(0)
+        }
       }
     }
   }
@@ -247,10 +259,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
       it("reports the depth with the message re-queued") {
         with(queue!!.readState()) {
-          depth shouldEqual 1
-          unacked shouldEqual 0
-          ready shouldEqual 1
-          orphaned shouldEqual 0
+          softly {
+            assertThat(depth).isEqualTo(1)
+            assertThat(unacked).isEqualTo(0)
+            assertThat(ready).isEqualTo(1)
+            assertThat(orphaned).isEqualTo(0)
+          }
         }
       }
     }
@@ -280,9 +294,11 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
       it("reports the depth without the message re-queued") {
         with(queue!!.readState()) {
-          depth shouldEqual 1
-          unacked shouldEqual 0
-          ready shouldEqual 1
+          softly {
+            assertThat(depth).isEqualTo(1)
+            assertThat(unacked).isEqualTo(0)
+            assertThat(ready).isEqualTo(1)
+          }
         }
       }
     }
@@ -314,10 +330,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
 
       it("reports the depth without the message re-queued") {
         with(queue!!.readState()) {
-          depth shouldEqual 0
-          unacked shouldEqual 0
-          ready shouldEqual 0
-          orphaned shouldEqual 0
+          softly {
+            assertThat(depth).isEqualTo(0)
+            assertThat(unacked).isEqualTo(0)
+            assertThat(ready).isEqualTo(0)
+            assertThat(orphaned).isEqualTo(0)
+          }
         }
       }
     }
