@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.common.hash.Hashing
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
@@ -48,6 +49,7 @@ import redis.clients.jedis.params.sortedset.ZAddParams
 import redis.clients.util.Pool
 import java.io.IOException
 import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
@@ -74,6 +76,11 @@ class RedisQueue(
 
   // TODO: use AttemptsAttribute instead
   private val attemptsKey = "$queueName.attempts"
+
+  // Internal ObjectMapper that enforces deterministic property ordering for use only in hashing.
+  private val hashObjectMapper = ObjectMapper().copy().apply {
+    enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+  }
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
@@ -104,21 +111,22 @@ class RedisQueue(
 
   override fun push(message: Message, delay: TemporalAmount) {
     pool.resource.use { redis ->
-      val fingerprint = message.hash()
-      if (redis.zismember(queueKey, fingerprint)) {
-        log.warn("Re-prioritizing message as an identical one is already on the queue: $fingerprint, message: $message")
-        redis.zadd(queueKey, score(delay), fingerprint)
-        fire<MessageDuplicate>(message)
-      } else {
-        redis.queueMessage(message, delay)
-        fire<MessagePushed>(message)
+      redis.firstFingerprint(queueKey, message.fingerprint()).also { fingerprint ->
+        if (fingerprint != null) {
+          log.warn("Re-prioritizing message as an identical one is already on the queue: $fingerprint, message: $message")
+          redis.zadd(queueKey, score(delay), fingerprint)
+          fire<MessageDuplicate>(message)
+        } else {
+          redis.queueMessage(message, delay)
+          fire<MessagePushed>(message)
+        }
       }
     }
   }
 
   override fun reschedule(message: Message, delay: TemporalAmount) {
     pool.resource.use { redis ->
-      val fingerprint = message.hash()
+      val fingerprint = message.fingerprint().latest
       log.debug("Re-scheduling message: $message, fingerprint: $fingerprint to deliver in $delay")
       val status: Long = redis.zadd(queueKey, score(delay), fingerprint, ZAddParams.zAddParams().xx())
       if (status.toInt() == 1) {
@@ -131,8 +139,8 @@ class RedisQueue(
 
   override fun ensure(message: Message, delay: TemporalAmount) {
     pool.resource.use { redis ->
-      val fingerprint = message.hash()
-      if (!redis.zismember(queueKey, fingerprint) && !redis.zismember(unackedKey, fingerprint)) {
+      val fingerprint = message.fingerprint()
+      if (!redis.anyZismember(queueKey, fingerprint.all) && !redis.anyZismember(unackedKey, fingerprint.all)) {
         log.debug("Pushing ensured message onto queue as it does not exist in queue or unacked sets")
         push(message, delay)
       }
@@ -243,7 +251,7 @@ class RedisQueue(
   }
 
   private fun Jedis.queueMessage(message: Message, delay: TemporalAmount = ZERO) {
-    val fingerprint = message.hash()
+    val fingerprint = message.fingerprint().latest
 
     // ensure the message has the attempts tracking attribute
     message.setAttribute(
@@ -376,9 +384,34 @@ class RedisQueue(
   private fun JedisCommands.zismember(key: String, member: String) =
     zrank(key, member) != null
 
-  private fun Message.hash() =
+  private fun JedisCommands.anyZismember(key: String, members: Set<String>) =
+    members.any { zismember(key, it) }
+
+  private fun JedisCommands.firstFingerprint(key: String, fingerprint: Fingerprint) =
+    fingerprint.all.firstOrNull { zismember(key, it) }
+
+  @Deprecated("Hashes the attributes property, which is mutable")
+  private fun Message.hashV1() =
     Hashing
       .murmur3_128()
       .hashString(toString(), Charset.defaultCharset())
       .toString()
+
+  private fun Message.hashV2() =
+    hashObjectMapper.convertValue(this, MutableMap::class.java)
+      .apply { remove("attributes") }
+      .let {
+        Hashing
+          .murmur3_128()
+          .hashString("v2:${hashObjectMapper.writeValueAsString(it)}", StandardCharsets.UTF_8)
+          .toString()
+      }
+
+  private fun Message.fingerprint() =
+    hashV2().let { Fingerprint(latest = it, all = setOf(it, hashV1())) }
+
+  internal data class Fingerprint(
+    val latest: String,
+    val all: Set<String> = setOf()
+  )
 }
