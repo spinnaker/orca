@@ -42,7 +42,8 @@ import static java.util.Objects.hash;
   @Type(ManualTrigger.class),
   @Type(PipelineTrigger.class),
   @Type(PubSubTrigger.class),
-  @Type(TravisTrigger.class)
+  @Type(TravisTrigger.class),
+  @Type(WebhookTrigger.class)
   // to add more sub-types without modifying this class you can autowire the
   // [ObjectMapper] then call [ObjectMapper#registerSubtypes].
 })

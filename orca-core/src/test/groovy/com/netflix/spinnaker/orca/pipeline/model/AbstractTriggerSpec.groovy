@@ -46,4 +46,16 @@ abstract class AbstractTriggerSpec<T extends Trigger> extends Specification {
     expect:
     trigger.type == mapper.readValue(triggerJson, Map).type
   }
+
+  def "can serialize a trigger"() {
+    given:
+    def trigger = mapper.readValue(triggerJson, Trigger)
+    def asJson = new StringWriter().withCloseable {
+      mapper.writeValue(it, trigger)
+      it.toString()
+    }
+
+    expect:
+    mapper.readValue(asJson, Trigger) == trigger
+  }
 }
