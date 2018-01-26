@@ -30,7 +30,7 @@ public class DryRunTrigger extends Trigger {
   public DryRunTrigger(
     @JsonProperty("lastSuccessfulExecution") Execution lastSuccessfulExecution
   ) {
-    super(null, null, null, false);
+    super(null, null, null);
     this.lastSuccessfulExecution = lastSuccessfulExecution;
   }
 
@@ -43,11 +43,17 @@ public class DryRunTrigger extends Trigger {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
     DryRunTrigger that = (DryRunTrigger) o;
-    return Objects.equals(lastSuccessfulExecution, that.lastSuccessfulExecution);
+    return Objects.equals(lastSuccessfulExecution.getId(), that.lastSuccessfulExecution.getId());
   }
 
   @Override public int hashCode() {
+    return Objects.hash(super.hashCode(), lastSuccessfulExecution.getId());
+  }
 
-    return Objects.hash(super.hashCode(), lastSuccessfulExecution);
+  @Override public String toString() {
+    return "DryRunTrigger{" +
+      super.toString() +
+      ", lastSuccessfulExecution=" + lastSuccessfulExecution.getId() +
+      '}';
   }
 }

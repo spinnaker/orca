@@ -1080,7 +1080,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
     given("parameters in the context and in the pipeline") {
       val pipeline = pipeline {
-        trigger = ManualTrigger(null, "fzlem", mapOf("dummy" to "foo"), emptyList(), emptyList(), false)
+        trigger = ManualTrigger(null, "fzlem", mapOf("dummy" to "foo"), emptyList(), emptyList())
         stage {
           refId = "1"
           type = "jenkins"

@@ -237,7 +237,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig
@@ -273,7 +273,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig
@@ -307,7 +307,7 @@ class CreateBakeTaskSpec extends Specification {
       ]
     ]
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], buildInfo, null, null, null, false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], buildInfo, null, null, null)
       stage {
         type = "bake"
         context = bakeConfig
@@ -357,7 +357,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig
@@ -392,7 +392,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig
@@ -425,7 +425,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = mapper.convertValue(bakeConfig, Map)
@@ -458,7 +458,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = mapper.convertValue(contextInfo, Map)
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = mapper.convertValue(bakeConfig, Map)
@@ -491,7 +491,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig
@@ -526,7 +526,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig
@@ -564,7 +564,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig
@@ -601,7 +601,7 @@ class CreateBakeTaskSpec extends Specification {
     given:
     bakeConfig.buildInfo = contextInfo
     def pipelineWithTrigger = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], triggerInfo, null, [:], [])
       stage {
         type = "bake"
         context = bakeConfig

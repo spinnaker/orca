@@ -16,11 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 
 @JsonTypeName("webhook")
@@ -30,21 +31,12 @@ public class WebhookTrigger extends Trigger {
   protected WebhookTrigger(
     @JsonProperty("user") @Nullable String user,
     @JsonProperty("parameters") @Nullable Map<String, Object> parameters,
-    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts,
-    @JsonProperty("rebake") boolean rebake
+    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts
   ) {
-    super(user, parameters, artifacts, rebake);
+    super(user, parameters, artifacts);
   }
 
-  private Map<String, Object> properties = new HashMap<>();
-
-  @JsonAnySetter
-  public void addProperty(String name, Object value) {
-    properties.put(name, value);
-  }
-
-  @JsonAnyGetter
-  public Map<String, Object> getProperties() {
-    return properties;
+  @Override public String toString() {
+    return "WebhookTrigger{" + super.toString() + "}";
   }
 }

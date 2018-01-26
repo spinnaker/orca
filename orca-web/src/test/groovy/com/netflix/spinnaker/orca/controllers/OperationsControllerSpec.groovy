@@ -192,8 +192,6 @@ class OperationsControllerSpec extends Specification {
 
     and:
     with(startedPipeline.trigger) {
-      parentPipelineName == parentPipeline.name
-      parentStatus == CANCELED
       parentExecution != null
       parentExecution.id == "12345"
     }

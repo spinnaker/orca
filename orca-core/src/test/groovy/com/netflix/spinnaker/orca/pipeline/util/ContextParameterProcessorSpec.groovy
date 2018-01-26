@@ -306,8 +306,7 @@ class ContextParameterProcessorSpec extends Specification {
         new BuildInfo("name", 1, null, [], scm, "name", false, "SUCCESS"),
         "user",
         [:],
-        [],
-        false
+        []
       )
     ]
   }

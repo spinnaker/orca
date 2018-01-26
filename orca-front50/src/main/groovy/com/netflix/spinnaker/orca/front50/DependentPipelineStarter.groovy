@@ -60,12 +60,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
 
     pipelineConfig.trigger = new PipelineTrigger(
       parentPipeline,
-      parentPipeline.type == PIPELINE,
-      parentPipeline.id,
-      parentPipeline.name,
-      parentPipeline.application,
       parentPipelineStageId,
-      parentPipeline.status,
       principal?.username ?: user ?: "[anonymous]",
       buildParameters(pipelineConfig, suppliedParameters),
       []

@@ -16,17 +16,16 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -52,20 +51,17 @@ public abstract class Trigger {
   private final String user;
   private final Map<String, Object> parameters;
   private final List<Artifact> artifacts;
-  private final boolean rebake;
   private final String type;
 
   protected Trigger(
     @Nullable String user,
     @Nullable Map<String, Object> parameters,
-    @Nullable List<Artifact> artifacts,
-    boolean rebake
+    @Nullable List<Artifact> artifacts
   ) {
     this.type = getClass().getAnnotation(JsonTypeName.class).value();
     this.user = user == null ? "[anonymous]" : user;
     this.parameters = parameters == null ? emptyMap() : parameters;
     this.artifacts = artifacts == null ? emptyList() : artifacts;
-    this.rebake = rebake;
   }
 
   public @Nonnull String getType() {
@@ -84,8 +80,25 @@ public abstract class Trigger {
     return artifacts;
   }
 
+  @JsonIgnore
   public final boolean isRebake() {
-    return rebake;
+    return Boolean.parseBoolean(otherProperties.getOrDefault("rebake", "false").toString());
+  }
+
+  /**
+   * This is a fallback for any properties in the trigger that are not
+   * statically referenced by code in Orca.
+   */
+  private Map<String, Object> otherProperties = new HashMap<>();
+
+  @JsonAnySetter
+  public void addOtherProperty(String name, Object value) {
+    otherProperties.put(name, value);
+  }
+
+  @JsonAnyGetter
+  public Map<String, Object> getOtherProperties() {
+    return otherProperties;
   }
 
   @Override public boolean equals(Object obj) {
@@ -97,10 +110,17 @@ public abstract class Trigger {
       && Objects.equals(user, other.user)
       && Objects.equals(parameters, other.parameters)
       && Objects.equals(artifacts, other.artifacts)
-      && Objects.equals(rebake, other.rebake);
+      && Objects.equals(otherProperties, other.otherProperties);
   }
 
   @Override public int hashCode() {
-    return hash(type, user, parameters, artifacts, rebake);
+    return hash(type, user, parameters, artifacts, otherProperties);
+  }
+
+  @Override public String toString() {
+    return "user='" + user + '\'' +
+      ", parameters=" + parameters +
+      ", artifacts=" + artifacts +
+      ", otherProperties=" + otherProperties;
   }
 }

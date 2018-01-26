@@ -38,10 +38,9 @@ public class ManualTrigger extends Trigger {
     @Nonnull @JsonProperty("user") String user,
     @Nonnull @JsonProperty("parameters") Map<String, Object> parameters,
     @Nonnull @JsonProperty("notifications") List<Map<String, Object>> notifications,
-    @Nullable @JsonProperty("artifacts") List<Artifact> artifacts,
-    @JsonProperty("rebake") boolean rebake
+    @Nullable @JsonProperty("artifacts") List<Artifact> artifacts
   ) {
-    super(user, parameters, artifacts, rebake);
+    super(user, parameters, artifacts);
     this.correlationId = correlationId;
     this.notifications = notifications;
   }
@@ -64,7 +63,14 @@ public class ManualTrigger extends Trigger {
   }
 
   @Override public int hashCode() {
-
     return Objects.hash(super.hashCode(), correlationId, notifications);
+  }
+
+  @Override public String toString() {
+    return "ManualTrigger{" +
+      super.toString() +
+      ", correlationId='" + correlationId + '\'' +
+      ", notifications=" + notifications +
+      '}';
   }
 }

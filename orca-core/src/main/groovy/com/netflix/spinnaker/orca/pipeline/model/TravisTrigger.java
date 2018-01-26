@@ -37,9 +37,8 @@ public class TravisTrigger extends JenkinsTrigger {
     @JsonProperty("buildInfo") @Nonnull BuildInfo buildInfo,
     @JsonProperty("user") @Nullable String user,
     @JsonProperty("parameters") @Nullable Map<String, Object> parameters,
-    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts,
-    @JsonProperty("rebake") boolean rebake
+    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts
   ) {
-    super(master, job, buildNumber, propertyFile, properties, buildInfo, user, parameters, artifacts, rebake);
+    super(master, job, buildNumber, propertyFile, properties, buildInfo, user, parameters, artifacts);
   }
 }

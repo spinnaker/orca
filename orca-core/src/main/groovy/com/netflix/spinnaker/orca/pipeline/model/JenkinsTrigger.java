@@ -47,10 +47,9 @@ public class JenkinsTrigger extends Trigger {
     @JsonProperty("buildInfo") @Nonnull BuildInfo buildInfo,
     @JsonProperty("user") @Nullable String user,
     @JsonProperty("parameters") @Nullable Map<String, Object> parameters,
-    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts,
-    @JsonProperty("rebake") boolean rebake
+    @JsonProperty("artifacts") @Nullable List<Artifact> artifacts
   ) {
-    super(user, parameters, artifacts, rebake);
+    super(user, parameters, artifacts);
     this.master = master;
     this.job = job;
     this.buildNumber = buildNumber;
@@ -95,6 +94,17 @@ public class JenkinsTrigger extends Trigger {
 
   @Override public int hashCode() {
     return Objects.hash(super.hashCode(), master, job, buildNumber, propertyFile, buildInfo);
+  }
+
+  @Override public String toString() {
+    return "JenkinsTrigger{" +
+      super.toString() +
+      ", master='" + master + '\'' +
+      ", job='" + job + '\'' +
+      ", buildNumber=" + buildNumber +
+      ", propertyFile='" + propertyFile + '\'' +
+      ", buildInfo=" + buildInfo +
+      '}';
   }
 
   public static class BuildInfo {

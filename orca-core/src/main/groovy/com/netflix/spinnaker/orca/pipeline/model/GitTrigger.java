@@ -44,7 +44,7 @@ public class GitTrigger extends Trigger {
     @JsonProperty("parameters") @Nullable Map<String, Object> parameters,
     @JsonProperty("artifacts") @Nullable List<Artifact> artifacts
   ) {
-    super(user, parameters, artifacts, false);
+    super(user, parameters, artifacts);
     this.source = source;
     this.project = project;
     this.branch = branch;
@@ -79,7 +79,16 @@ public class GitTrigger extends Trigger {
   }
 
   @Override public int hashCode() {
-
     return Objects.hash(super.hashCode(), source, project, branch, slug);
+  }
+
+  @Override public String toString() {
+    return "GitTrigger{" +
+      super.toString() +
+      ", source='" + source + '\'' +
+      ", project='" + project + '\'' +
+      ", branch='" + branch + '\'' +
+      ", slug='" + slug + '\'' +
+      '}';
   }
 }

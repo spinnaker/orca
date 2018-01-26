@@ -28,7 +28,7 @@ class EnabledPipelineValidatorSpec extends Specification {
 
   def front50Service = Stub(Front50Service)
   @Subject
-  def validator = new EnabledPipelineValidator(new Optional<>(front50Service))
+  def validator = new EnabledPipelineValidator(Optional.of(front50Service))
 
   def "allows one-off pipeline to run"() {
     given:
@@ -101,9 +101,7 @@ class EnabledPipelineValidatorSpec extends Specification {
     execution = pipeline {
       application = "whatever"
       pipelineConfigId = "1337"
-      trigger = new PipelineTrigger(
-        null, true, null, null, null, null, null, null, [strategy: true], []
-      )
+      trigger = new PipelineTrigger(null, [strategy: true])
     }
   }
 
@@ -123,9 +121,7 @@ class EnabledPipelineValidatorSpec extends Specification {
     execution = pipeline {
       application = "whatever"
       pipelineConfigId = "1337"
-      trigger = new PipelineTrigger(
-        null, true, null, null, null, null, null, null, [strategy: true], []
-      )
+      trigger = new PipelineTrigger(null, [strategy: true])
     }
   }
 
@@ -145,9 +141,7 @@ class EnabledPipelineValidatorSpec extends Specification {
     execution = pipeline {
       application = "whatever"
       pipelineConfigId = "1337"
-      trigger = new ManualTrigger(
-        null, "fzlem", [strategy: "kthxbye"], [], [], false
-      )
+      trigger = new ManualTrigger(null, "fzlem", [strategy: "kthxbye"], [], [])
     }
   }
 }

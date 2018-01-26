@@ -16,13 +16,11 @@
 
 package com.netflix.spinnaker.orca.pipeline.persistence
 
-import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
-import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
-
-import java.rmi.registry.Registry
 import java.util.concurrent.CountDownLatch
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
+import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
+import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
@@ -136,7 +134,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     def pipeline = pipeline {
       application = "orca"
       name = "dummy-pipeline"
-      trigger = new JenkinsTrigger("master", "job", 1, null, [:], new BuildInfo("name", 1, null, [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")], [], null, false, "SUCCESS"), null, [:], [], false)
+      trigger = new JenkinsTrigger("master", "job", 1, null, [:], new BuildInfo("name", 1, null, [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")], [], null, false, "SUCCESS"), null, [:], [])
       stage {
         type = "one"
         context = [foo: "foo"]
@@ -434,7 +432,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
   def "should return task ref for currently running orchestration by correlation id"() {
     given:
     def execution = orchestration {
-      trigger = new ManualTrigger('covfefe', null, [:], [], [], false)
+      trigger = new ManualTrigger('covfefe', null, [:], [], [])
     }
     repository.store(execution)
     repository.updateStatus(execution.id, RUNNING)

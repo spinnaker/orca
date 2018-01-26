@@ -22,11 +22,10 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
 /**
  * The trigger used when a pipeline is triggered by another pipeline completing.
@@ -37,77 +36,35 @@ public final class PipelineTrigger extends Trigger {
   @JsonCreator
   public PipelineTrigger(
     @Nonnull @JsonProperty("parentExecution") Execution parentExecution,
-    @JsonProperty("isPipeline") boolean isPipeline,
-    @Nullable @JsonProperty("parentPipelineId") String parentPipelineId,
-    @Nullable @JsonProperty("parentPipelineName") String parentPipelineName,
-    @Nullable @JsonProperty("parentPipelineApplication")
-      String parentPipelineApplication,
     @Nullable @JsonProperty("parentPipelineStageId")
       String parentPipelineStageId,
-    @Nullable @JsonProperty("parentStatus") ExecutionStatus parentStatus,
     @JsonProperty("user") @Nullable String user,
     @JsonProperty("parameters") @Nullable Map<String, Object> parameters,
     @JsonProperty("artifacts") @Nullable List<Artifact> artifacts
     ) {
-    super(user, parameters, artifacts, false);
+    super(user, parameters, artifacts);
     this.parentExecution = parentExecution;
-    this.isPipeline = isPipeline;
-    this.parentPipelineId = parentPipelineId;
-    this.parentPipelineName = parentPipelineName;
-    this.parentPipelineApplication = parentPipelineApplication;
     this.parentPipelineStageId = parentPipelineStageId;
-    this.parentStatus = parentStatus;
   }
 
   public PipelineTrigger(Execution parentExecution, Map<String, Object> parameters) {
-    this(
-      parentExecution,
-      parentExecution.getType() == PIPELINE,
-      parentExecution.getPipelineConfigId(),
-      parentExecution.getName(),
-      parentExecution.getApplication(),
-      null,
-      parentExecution.getStatus(),
-      null,
-      parameters,
-      null
-    );
+    this(parentExecution, null, null, parameters, null);
   }
 
   private final Execution parentExecution;
-  private final boolean isPipeline;
-  private final String parentPipelineId;
-  private final String parentPipelineName;
-  private final String parentPipelineApplication;
   private final String parentPipelineStageId;
-  private final ExecutionStatus parentStatus;
 
   public @Nonnull Execution getParentExecution() {
     return parentExecution;
   }
 
-  public boolean isPipeline() {
-    return isPipeline;
-  }
-
+  @JsonIgnore
   public @Nullable String getParentPipelineId() {
-    return parentPipelineId;
+    return parentExecution.getPipelineConfigId();
   }
 
-  public @Nullable String getParentPipelineName() {
-    return parentPipelineName;
-  }
-
-  public @Nullable String getParentPipelineApplication() {
-    return parentPipelineApplication;
-  }
-
-  public @Nullable String getParentPipelineStageId() {
+  public String getParentPipelineStageId() {
     return parentPipelineStageId;
-  }
-
-  public @Nullable ExecutionStatus getParentStatus() {
-    return parentStatus;
   }
 
   @Override public boolean equals(Object o) {
@@ -115,17 +72,19 @@ public final class PipelineTrigger extends Trigger {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
     PipelineTrigger that = (PipelineTrigger) o;
-    return isPipeline == that.isPipeline &&
-      Objects.equals(parentExecution, that.parentExecution) &&
-      Objects.equals(parentPipelineId, that.parentPipelineId) &&
-      Objects.equals(parentPipelineName, that.parentPipelineName) &&
-      Objects.equals(parentPipelineApplication, that.parentPipelineApplication) &&
-      Objects.equals(parentPipelineStageId, that.parentPipelineStageId) &&
-      parentStatus == that.parentStatus;
+    return Objects.equals(parentExecution.getId(), that.parentExecution.getId()) &&
+      Objects.equals(parentPipelineStageId, that.parentPipelineStageId);
   }
 
   @Override public int hashCode() {
+    return Objects.hash(super.hashCode(), parentExecution.getId(), parentPipelineStageId);
+  }
 
-    return Objects.hash(super.hashCode(), parentExecution, isPipeline, parentPipelineId, parentPipelineName, parentPipelineApplication, parentPipelineStageId, parentStatus);
+  @Override public String toString() {
+    return "PipelineTrigger{" +
+      super.toString() +
+      ", parentExecution=" + parentExecution.getId() +
+      ", parentPipelineStageId='" + parentPipelineStageId + '\'' +
+      '}';
   }
 }
