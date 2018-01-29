@@ -22,19 +22,22 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.StartExecution
+import com.netflix.spinnaker.orca.q.StartStage
+import com.netflix.spinnaker.orca.q.initialStages
+import com.netflix.spinnaker.q.Queue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
-import net.logstash.logback.argument.StructuredArguments.value
 
 @Component
 class StartExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  private val publisher: ApplicationEventPublisher
-) : MessageHandler<StartExecution> {
+  @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher
+) : OrcaMessageHandler<StartExecution> {
 
   override val messageType = StartExecution::class.java
 
@@ -57,10 +60,8 @@ class StartExecutionHandler(
         if (execution.status == CANCELED || execution.isCanceled) {
           publisher.publishEvent(ExecutionComplete(this, message.executionType, message.executionId, execution.status))
         } else {
-          log.warn("Execution (type: ${message.executionType}, id: {}, status: ${execution.status}, application: {})" +
-            " cannot bes started unless state is NOT_STARTED. Ignoring StartExecution message.",
-            value("executionId", message.executionId),
-            value("application", message.application))
+          log.warn("Execution (type: ${message.executionType}, status: ${execution.status})" +
+            " cannot bes started unless state is NOT_STARTED. Ignoring StartExecution message.")
         }
       }
     }
