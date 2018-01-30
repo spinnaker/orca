@@ -329,7 +329,7 @@ class RedisQueue(
   }
 
   private fun runSerializationMigrations(fingerprint: String, json: String): String? {
-    val raw: MutableMap<String, Any?>
+    val raw: Map<String, Any?>
     try {
       raw = mapper.readValue(json)
     } catch (e: IOException) {
@@ -338,16 +338,17 @@ class RedisQueue(
       return null
     }
 
-    return serializationMigrators
-      .map { it.migrate(raw) }
-      .let {
-        val migrated = mapper.writeValueAsString(it)
-        log.info("Migrated message (raw: $json, migrated: $migrated")
-        pool.resource.use { redis ->
-          redis.hset(messagesKey, fingerprint, migrated)
-        }
-        migrated
+    var migrated = raw.toMutableMap()
+    serializationMigrators.forEach {
+      migrated = it.migrate(migrated)
+    }
+
+    return mapper.writeValueAsString(migrated).also {
+      log.info("Migrated message (raw: $json, migrated: $it")
+      pool.resource.use { redis ->
+        redis.hset(messagesKey, fingerprint, it)
       }
+    }
   }
 
   private fun handleDeadMessage(message: Message) {
