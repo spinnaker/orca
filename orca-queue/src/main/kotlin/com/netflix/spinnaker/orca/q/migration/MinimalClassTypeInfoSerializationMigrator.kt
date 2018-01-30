@@ -63,6 +63,10 @@ class MinimalClassTypeInfoSerializationMigrator : SerializationMigrator {
   private val migrated = AtomicInteger(0)
   private var lastReport: LocalTime? = null
 
+  init {
+    log.info("${javaClass.simpleName} enabled")
+  }
+
   override fun migrate(json: MutableMap<String, Any?>): MutableMap<String, Any?> {
     migrateMinimalClass(json)
 
