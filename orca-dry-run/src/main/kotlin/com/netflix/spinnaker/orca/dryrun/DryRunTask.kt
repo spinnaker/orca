@@ -19,26 +19,35 @@ package com.netflix.spinnaker.orca.dryrun
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.dryrun.stub.OutputStub
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-class DryRunTask : Task {
+class DryRunTask(
+  private val outputStubs: List<OutputStub>
+) : Task {
 
   override fun execute(stage: Stage): TaskResult =
-    stage.triggerOutputs().let { outputs ->
+    stage.generateOutputs().let { outputs ->
       stage.execution.also { execution ->
         log.info("Dry run of ${execution.application} ${execution.name} ${execution.id} stage ${stage.type} ${stage.refId} outputting $outputs")
       }
       TaskResult(SUCCEEDED, emptyMap<String, Any>(), outputs)
     }
 
+  private fun Stage.generateOutputs(): Map<String, Any> =
+    stubOutputs() + triggerOutputs()
+
   private fun Stage.triggerOutputs(): Map<String, Any> {
-    val outputs = execution.trigger["outputs"] as Map<String, Any>?
+    val outputs = execution.trigger["outputs"] as Map<String, Map<String, Any>>?
       ?: emptyMap()
-    return outputs[refId] as Map<String, Any>? ?: emptyMap()
+    return outputs[refId] ?: emptyMap()
   }
+
+  private fun Stage.stubOutputs(): Map<String, Any> =
+    outputStubs.find { it.supports(type) }?.outputs(this) ?: emptyMap()
 
   private val log = LoggerFactory.getLogger(javaClass)
 }
