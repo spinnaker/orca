@@ -35,9 +35,8 @@ class DryRunTask : Task {
     }
 
   private fun Stage.triggerOutputs(): Map<String, Any> {
-    val parameters = execution.trigger["parameters"] as Map<String, Any>?
+    val outputs = execution.trigger["outputs"] as Map<String, Any>?
       ?: emptyMap()
-    val outputs = parameters["outputs"] as Map<String, Any>? ?: emptyMap()
     return outputs[refId] as Map<String, Any>? ?: emptyMap()
   }
 
