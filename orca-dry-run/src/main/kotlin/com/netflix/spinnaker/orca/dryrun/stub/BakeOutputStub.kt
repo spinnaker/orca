@@ -47,8 +47,4 @@ class BakeOutputStub : OutputStub {
         }
       )
     }
-
-  @Suppress("UNCHECKED_CAST")
-  private val Stage.regions: List<String>
-    get() = context["regions"] as List<String>? ?: emptyList()
 }

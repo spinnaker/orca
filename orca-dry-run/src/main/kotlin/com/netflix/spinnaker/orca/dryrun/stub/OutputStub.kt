@@ -28,12 +28,15 @@ interface OutputStub {
   /**
    * Return `true` if a stage type is supported by this stub.
    */
-  fun supports(stageType: String): Boolean = false
+  fun supports(stageType: String): Boolean
 
   /**
    * Generate stub output. This can be based on things in the stage context if
    * necessary.
    */
-  fun outputs(stage: Stage): Map<String, Any> = emptyMap()
+  fun outputs(stage: Stage): Map<String, Any>
 
+  @Suppress("UNCHECKED_CAST")
+  val Stage.regions: List<String>
+    get() = context["regions"] as List<String>? ?: emptyList()
 }

@@ -31,3 +31,10 @@ internal fun randomHex(length: Int) = UUID
   .absoluteValue
   .toString(16)
   .substring(0 until minOf(length, 16))
+
+internal fun randomNumeric(length: Int) = UUID
+  .randomUUID()
+  .leastSignificantBits
+  .absoluteValue
+  .toString(10)
+  .substring(0 until minOf(length, 16))
