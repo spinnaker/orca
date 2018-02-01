@@ -27,82 +27,10 @@ class DryRunTriggerSpec extends AbstractTriggerSpec<DryRunTrigger> {
     '''
 {
   "type": "dryrun",
-  "lastSuccessfulExecution": {
-    "type": "PIPELINE",
-    "id": "848449c9-b152-4cd6-b22c-bd88d619df77",
-    "application": "fletch_test",
-    "name": "Chained 1",
-    "buildTime": 1513102084081,
-    "canceled": false,
-    "canceledBy": null,
-    "cancellationReason": null,
-    "limitConcurrent": true,
-    "keepWaitingPipelines": false,
-    "stages": [
-      {
-        "id": "ea50d669-2a0f-4801-9f89-779a135e5693",
-        "refId": "1",
-        "type": "wait",
-        "name": "Wait",
-        "startTime": 1513102084163,
-        "endTime": 1513102099340,
-        "status": "SUCCEEDED",
-        "context": {
-          "waitTime": 1,
-          "stageDetails": {
-            "name": "Wait",
-            "type": "wait",
-            "startTime": 1513102084163,
-            "isSynthetic": false,
-            "endTime": 1513102099340
-          },
-          "waitTaskState": {}
-        },
-        "outputs": {},
-        "tasks": [
-          {
-            "id": "1",
-            "implementingClass": "com.netflix.spinnaker.orca.pipeline.tasks.WaitTask",
-            "name": "wait",
-            "startTime": 1513102084205,
-            "endTime": 1513102099313,
-            "status": "SUCCEEDED",
-            "stageStart": true,
-            "stageEnd": true,
-            "loopStart": false,
-            "loopEnd": false
-          }
-        ],
-        "syntheticStageOwner": null,
-        "parentStageId": null,
-        "requisiteStageRefIds": [],
-        "scheduledTime": null,
-        "lastModified": null
-      }
-    ],
-    "startTime": 1513102084130,
-    "endTime": 1513102099392,
-    "status": "SUCCEEDED",
-    "authentication": {
-      "user": "fzlem@netflix.com",
-      "allowedAccounts": [
-        "test",
-        "prod"
-      ]
-    },
-    "paused": null,
-    "executionEngine": "v3",
-    "origin": "deck",
-    "trigger": {
-      "type": "manual",
-      "user": "fzlem@netflix.com",
-      "parameters": {},
-      "notifications": []
-    },
-    "description": null,
-    "pipelineConfigId": "241a8418-8649-4f61-bbd1-128bedaef658",
-    "notifications": [],
-    "initialConfig": {}
+  "outputs": {
+    "1": {
+      "foo": "covfefe"
+    }
   }
 }
 '''

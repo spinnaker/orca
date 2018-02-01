@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.front50
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
+import com.netflix.spinnaker.orca.pipeline.model.DryRunTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -132,7 +133,7 @@ class DependentPipelineStarterSpec extends Specification {
     def triggeredPipelineConfig = [name: "triggered", id: "triggered"]
     def parentPipeline = pipeline {
       name = "parent"
-      trigger.type = "dryrun"
+      trigger = new DryRunTrigger()
       authentication = new Execution.AuthenticationDetails("parentUser", "acct1", "acct2")
     }
     def executionLauncher = Mock(ExecutionLauncher)

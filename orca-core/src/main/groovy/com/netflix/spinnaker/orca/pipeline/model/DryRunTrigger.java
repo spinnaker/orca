@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import java.util.Map;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -24,18 +25,18 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 @JsonTypeName("dryrun")
 public class DryRunTrigger extends Trigger {
 
-  private final Execution lastSuccessfulExecution;
+  private final Map<String, Map<String, Object>> outputs;
 
   @JsonCreator
   public DryRunTrigger(
-    @JsonProperty("lastSuccessfulExecution") Execution lastSuccessfulExecution
+    @JsonProperty("outputs") Map<String, Map<String, Object>> outputs
   ) {
     super(null, null, null);
-    this.lastSuccessfulExecution = lastSuccessfulExecution;
+    this.outputs = outputs;
   }
 
-  public Execution getLastSuccessfulExecution() {
-    return lastSuccessfulExecution;
+  public Map<String, Map<String, Object>> getOutputs() {
+    return outputs;
   }
 
   @Override public boolean equals(Object o) {
@@ -43,17 +44,17 @@ public class DryRunTrigger extends Trigger {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
     DryRunTrigger that = (DryRunTrigger) o;
-    return Objects.equals(lastSuccessfulExecution.getId(), that.lastSuccessfulExecution.getId());
+    return Objects.equals(outputs, that.outputs);
   }
 
   @Override public int hashCode() {
-    return Objects.hash(super.hashCode(), lastSuccessfulExecution.getId());
+    return Objects.hash(super.hashCode(), outputs);
   }
 
   @Override public String toString() {
     return "DryRunTrigger{" +
       super.toString() +
-      ", lastSuccessfulExecution=" + lastSuccessfulExecution.getId() +
+      ", outputs=" + outputs +
       '}';
   }
 }
