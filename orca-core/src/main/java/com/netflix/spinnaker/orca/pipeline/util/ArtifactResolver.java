@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.util;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +40,8 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
-@Component public class ArtifactResolver {
+@Component
+public class ArtifactResolver {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -52,16 +54,23 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
     this.executionRepository = executionRepository;
   }
 
-  public @Nonnull List<Artifact> getArtifacts(@Nonnull Stage stage) {
+  public @Nonnull
+  List<Artifact> getArtifacts(@Nonnull Stage stage) {
     if (stage.getContext() instanceof StageContext) {
-      return ((StageContext) stage.getContext()).getAll("artifacts");
+      return (List<Artifact>) Optional.ofNullable((List) ((StageContext) stage.getContext()).getAll("artifacts"))
+        .map(list -> list.stream()
+          .filter(Objects::nonNull)
+          .flatMap(it -> ((List) it).stream())
+          .collect(Collectors.toList()))
+        .orElse(emptyList());
     } else {
       log.warn("Unable to read artifacts from unknown context type: {} ({})", stage.getContext().getClass(), stage.getExecution().getId());
       return emptyList();
     }
   }
 
-  public @Nullable Artifact getBoundArtifactForId(
+  public @Nullable
+  Artifact getBoundArtifactForId(
     @Nonnull Stage stage, @Nullable String id) {
     if (isEmpty(id)) {
       return null;
@@ -69,7 +78,12 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 
     List<ExpectedArtifact> expectedArtifacts;
     if (stage.getContext() instanceof StageContext) {
-      expectedArtifacts = ((StageContext) stage.getContext()).getAll("resolvedExpectedArtifacts");
+      expectedArtifacts = (List<ExpectedArtifact>) Optional.ofNullable((List) ((StageContext) stage.getContext()).getAll("resolvedExpectedArtifacts"))
+        .map(list -> list.stream()
+          .filter(Objects::nonNull)
+          .flatMap(it -> ((List) it).stream())
+          .collect(Collectors.toList()))
+        .orElse(emptyList());
     } else {
       log.warn("Unable to read resolved expected artifacts from unknown context type: {} ({})", stage.getContext().getClass(), stage.getExecution().getId());
       expectedArtifacts = new ArrayList<>();
@@ -83,7 +97,8 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
       .orElse(null);
   }
 
-  public @Nonnull List<Artifact> getArtifactsForPipelineId(
+  public @Nonnull
+  List<Artifact> getArtifactsForPipelineId(
     @Nonnull String pipelineId,
     @Nonnull ExecutionCriteria criteria
   ) {
@@ -100,16 +115,11 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
       .orElse(emptyList());
   }
 
-  public void resolveArtifacts(
-    @Nonnull ExecutionRepository repository,
-    @Nonnull Map pipeline
-  ) {
-    List<ExpectedArtifact> expectedArtifacts = Optional.
-      ofNullable((List<ExpectedArtifact>) pipeline.get("expectedArtifacts"))
+  public void resolveArtifacts(@Nonnull Map pipeline) {
+    List<ExpectedArtifact> expectedArtifacts = (List<ExpectedArtifact>) Optional.ofNullable((List) pipeline.get("expectedArtifacts"))
       .map(list -> list.stream().map(it -> objectMapper.convertValue(it, ExpectedArtifact.class)).collect(toList()))
       .orElse(emptyList());
-    List<Artifact> receivedArtifacts = Optional.
-      ofNullable((List<ExpectedArtifact>) pipeline.get("receivedArtifacts"))
+    List<Artifact> receivedArtifacts = (List<Artifact>) Optional.ofNullable((List) pipeline.get("receivedArtifacts"))
       .map(list -> list.stream().map(it -> objectMapper.convertValue(it, Artifact.class)).collect(toList()))
       .orElse(emptyList());
 
