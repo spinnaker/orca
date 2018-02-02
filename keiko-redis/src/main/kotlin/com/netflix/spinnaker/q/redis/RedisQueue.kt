@@ -82,6 +82,10 @@ class RedisQueue(
     enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
   }
 
+  init {
+    log.info("Configured queue: $queueName")
+  }
+
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
       redis.zrangeByScore(queueKey, 0.0, score(), 0, 1)
