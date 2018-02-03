@@ -562,7 +562,7 @@ class OperationsControllerSpec extends Specification {
     ]
     def response = Mock(HttpServletResponse)
     Execution startedPipeline = null
-    executionLauncher.logFailedExecution(*_) >> { ExecutionType type, String json, Throwable t ->
+    executionLauncher.fail(*_) >> { ExecutionType type, String json, Throwable t ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -587,7 +587,7 @@ class OperationsControllerSpec extends Specification {
       throw new IllegalStateException(format("Unmatched expected artifact could not be resolved."))
     }
     Execution startedPipeline = null
-    executionLauncher.logFailedExecution(*_) >> { ExecutionType type, String json, Throwable t ->
+    executionLauncher.fail(*_) >> { ExecutionType type, String json, Throwable t ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline

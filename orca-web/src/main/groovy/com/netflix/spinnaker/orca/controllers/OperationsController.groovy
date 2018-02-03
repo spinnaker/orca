@@ -77,17 +77,19 @@ class OperationsController {
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
-    if (pipeline.plan) {
-      parseAndValidatePipeline(pipeline)
-      log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
-      return pipeline
-    }
-
-    Throwable pipelineError = null
+    Exception pipelineError = null
     try {
       parseAndValidatePipeline(pipeline)
-    } catch (Throwable t) {
-      pipelineError = t
+    } catch (Exception e) {
+      pipelineError = e
+    }
+
+    if (pipeline.plan) {
+      log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
+      if (pipelineError != null) {
+        throw pipelineError
+      }
+      return pipeline
     }
 
     def augmentedContext = [trigger: pipeline.trigger]
@@ -108,8 +110,6 @@ class OperationsController {
       for (PipelinePreprocessor preprocessor : (pipelinePreprocessors ?: [])) {
         pipeline = preprocessor.process(pipeline)
       }
-    } catch (Throwable t) {
-      throw t
     } finally {
       // Even if an exception is thrown above, we need to convert pipeline.trigger to
       // a Trigger object, as the code to log the error to the execution history is
@@ -268,12 +268,12 @@ class OperationsController {
     [ref: "/pipelines/${pipeline.id}".toString()]
   }
 
-  private Map<String, String> markPipelineFailed(Map config, Throwable t) {
+  private Map<String, String> markPipelineFailed(Map config, Exception e) {
     injectPipelineOrigin(config)
     def json = objectMapper.writeValueAsString(config)
     log.info('requested pipeline: {}', json)
 
-    def pipeline = executionLauncher.logFailedExecution(PIPELINE, json, t)
+    def pipeline = executionLauncher.fail(PIPELINE, json, e)
 
     [ref: "/pipelines/${pipeline.id}".toString()]
   }
