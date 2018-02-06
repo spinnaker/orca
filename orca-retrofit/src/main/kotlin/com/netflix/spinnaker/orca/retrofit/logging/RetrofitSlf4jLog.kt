@@ -19,40 +19,33 @@ package com.netflix.spinnaker.orca.retrofit.logging
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import retrofit.RestAdapter
-
 import java.lang.reflect.Method
 
-class RetrofitSlf4jLog implements RestAdapter.Log {
-  private final Logger logger
-  private final Level level
+class RetrofitSlf4jLog
+@JvmOverloads constructor(
+  private val logger: Logger,
+  private val level: Level = Level.INFO
+) : RestAdapter.Log {
 
-
-  RetrofitSlf4jLog(Class clazz, Level level = Level.INFO) {
+  @JvmOverloads
+  constructor(clazz: Class<*>, level: Level = Level.INFO) :
     this(LoggerFactory.getLogger(clazz), level)
-  }
 
-  RetrofitSlf4jLog(Logger logger, Level level = Level.INFO) {
-    this.logger = logger
-    this.level = level
-  }
-
-  @Override
-  void log(String message) {
+  override fun log(message: String) {
     level.log(logger, message)
   }
 
-  public static enum Level {
+  enum class Level {
     ERROR,
     WARN,
     INFO,
     DEBUG,
-    TRACE
+    TRACE;
 
-    private Method getLoggerMethod() {
-      Logger.getMethod(this.name().toLowerCase(), String)
-    }
+    private fun getLoggerMethod(): Method =
+      Logger::class.java.getMethod(this.name.toLowerCase(), String::class.java)
 
-    public void log(Logger logger, String message) {
+    fun log(logger: Logger, message: String) {
       getLoggerMethod().invoke(logger, message)
     }
   }
