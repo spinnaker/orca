@@ -21,10 +21,9 @@ import org.springframework.core.Ordered.HIGHEST_PRECEDENCE
 import org.springframework.core.annotation.Order
 import retrofit.RetrofitError
 import retrofit.RetrofitError.Kind.HTTP
-import retrofit.RetrofitError.Kind.NETWORK
+import retrofit.client.Response
 import retrofit.http.RestMethod
 import retrofit.mime.TypedByteArray
-import java.lang.reflect.Method
 import java.net.HttpURLConnection.*
 
 @Order(HIGHEST_PRECEDENCE)
@@ -35,39 +34,40 @@ class RetrofitExceptionHandler : ExceptionHandler {
 
   override fun handle(stepName: String, ex: Exception): ExceptionHandler.Response {
     val e = ex as RetrofitError
-    return e.response.run {
+    return e.response.let { response: Response? ->
       val responseDetails = mutableMapOf<String, Any?>()
 
       try {
-        val body = e.getBodyAs(Map::class.java) as Map<String, Any>
+        val body = e.getBodyAs(Map::class.java) as Map<String, Any>?
 
-        val error = body["error"] as String? ?: reason
-        val errors: MutableList<String> = body["errors"] as MutableList<String>?
-          ?: (body["messages"]
+        val error = body?.get("error") as String? ?: response?.reason
+        val errors: MutableList<String> = body?.get("errors") as MutableList<String>?
+          ?: (body?.get("messages")
             ?: mutableListOf<String>()) as MutableList<String>
         if (errors.isEmpty()) {
-          errors.addAll(body["message"] as List<String>? ?: emptyList())
+          (body?.get("message") as String?)?.let { errors.add(it) }
         }
 
         responseDetails.putAll(ExceptionHandler.responseDetails(error, errors))
 
-        if (body["exception"] != null) {
+        if (body?.get("exception") != null) {
           responseDetails["rootException"] = body["exception"] as Any
         }
-      } catch (_: Exception) {
-        responseDetails.putAll(ExceptionHandler.responseDetails(reason
+      } catch (ex: Exception) {
+        ex.printStackTrace()
+        responseDetails.putAll(ExceptionHandler.responseDetails(response?.reason
           ?: e.message))
       }
 
       try {
-        responseDetails["responseBody"] = (e.response.body as TypedByteArray).bytes.contentToString()
+        responseDetails["responseBody"] = String((e.response.body as TypedByteArray).bytes)
       } catch (_: Exception) {
         responseDetails["responseBody"] = null
       }
       responseDetails["kind"] = e.kind
-      responseDetails["status"] = status
-      responseDetails["url"] = url
-      val shouldRetry = ((isNetworkError(e) || isGatewayTimeout(e) || isThrottle(e)) && isIdempotentRequest(e))
+      responseDetails["status"] = response?.status
+      responseDetails["url"] = response?.url
+      val shouldRetry = (e.isNetworkError || e.isGatewayTimeout || e.isThrottle) && e.isIdempotentRequest
 
       ExceptionHandler.Response(e.javaClass.simpleName, stepName, responseDetails, shouldRetry)
     }
@@ -77,25 +77,27 @@ class RetrofitExceptionHandler : ExceptionHandler {
     private val HTTP_TOO_MANY_REQUESTS = 429
   }
 
-  private fun isGatewayTimeout(e: RetrofitError) =
-    e.kind == HTTP && e.response.status in listOf(HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT)
+  private val RetrofitError.isGatewayTimeout: Boolean
+    get() = kind == HTTP && response.status in listOf(HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT)
 
-  private fun isThrottle(e: RetrofitError) =
-    e.kind == HTTP && e.response.status == HTTP_TOO_MANY_REQUESTS
+  private val RetrofitError.isThrottle: Boolean
+    get() = kind == HTTP && response.status == HTTP_TOO_MANY_REQUESTS
 
-  private fun isNetworkError(e: RetrofitError) =
-    e.kind == NETWORK
-
-  private fun isIdempotentRequest(e: RetrofitError) =
-    findHttpMethodAnnotation(e) in listOf("GET", "HEAD", "DELETE", "PUT")
+  private val RetrofitError.isIdempotentRequest: Boolean
+    get() = findHttpMethodAnnotation(this) in listOf("GET", "HEAD", "DELETE", "PUT")
 
   private fun findHttpMethodAnnotation(exception: RetrofitError): String? {
     return try {
-      exception
-        .stackTrace
-        .map { Class.forName(it.className).getDeclaredMethod(it.methodName) }
-        .firstOrNull { it.isAnnotationPresent<RestMethod>() }
-        ?.getAnnotation<RestMethod>()?.value
+      exception.stackTrace
+        .mapNotNull { frame ->
+          Class.forName(frame.className)
+            .interfaces.asIterable()
+            .flatMap { iface -> Class.forName(iface.name).declaredMethods.filter { it.name == frame.methodName } }
+            .flatMap { it.declaredAnnotations.asIterable() }
+            .firstOrNull { annotation -> annotation.isAnnotationPresent<RestMethod>() }
+            ?.getAnnotation<RestMethod>()?.value
+        }
+        .firstOrNull()
     } catch (_: ClassNotFoundException) {
       // inner class or something non-accessible
       null
@@ -103,8 +105,8 @@ class RetrofitExceptionHandler : ExceptionHandler {
   }
 }
 
-private inline fun <reified T : Annotation> Method.isAnnotationPresent(): Boolean =
-  isAnnotationPresent(T::class.java)
+private inline fun <reified T : Annotation> Annotation.isAnnotationPresent(): Boolean =
+  annotationClass.java.isAnnotationPresent(T::class.java)
 
-private inline fun <reified T : Annotation> Method.getAnnotation(): T? =
-  getAnnotation(T::class.java)
+private inline fun <reified T : Annotation> Annotation.getAnnotation(): T? =
+  annotationClass.java.getAnnotation(T::class.java)
