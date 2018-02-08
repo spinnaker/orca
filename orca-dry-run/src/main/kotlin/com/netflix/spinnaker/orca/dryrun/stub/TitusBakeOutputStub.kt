@@ -20,30 +20,29 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
-class BakeOutputStub : OutputStub {
+class TitusBakeOutputStub : OutputStub {
 
-  override fun supports(stageType: String) = stageType == "bake"
+  override fun supports(stage: Stage) =
+    stage.type == "bake" && stage.context["cloudProviderType"] == "titus"
 
   override fun outputs(stage: Stage) =
     if (stage.parent?.type == "bake") {
       emptyMap()
     } else {
+      val app = stage.execution.application
       mapOf(
         "deploymentDetails" to (stage.regions).map { region ->
-          randomHex(8).let { id ->
-            mapOf(
-              "ami" to "ami-$id",
-              "imageId" to "ami-$id",
-              "amiSuffix" to timestamp(),
-              "baseLabel" to "release",
-              "baseOs" to "trusty",
-              "storeType" to "ebs",
-              "vmType" to "hvm",
-              "region" to region,
-              "package" to stage.execution.application,
-              "cloudProvider" to "aws"
-            )
-          }
+          val ami = "$app/basic:master-h${randomNumeric(5)}.${randomHex(7)}"
+          mapOf(
+            "ami" to ami,
+            "imageId" to ami,
+            "amiSuffix" to timestamp(),
+            "baseOs" to "trusty",
+            "storeType" to "docker",
+            "region" to region,
+            "package" to "ssh://git@my.docker.repo:7999/${app}/docker-build-repo.git?${randomHex(40)}",
+            "cloudProviderType" to "titus"
+          )
         }
       )
     }
