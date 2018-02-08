@@ -166,7 +166,7 @@ class OperationsController {
         pipeline.trigger.parentExecution    = parentExecution
         pipeline.trigger.parentPipelineName = parentExecution.name
 
-        pipeline.receivedArtifacts = artifactResolver.getArtifacts(parentExecution)
+        pipeline.receivedArtifacts = artifactResolver.getAllArtifacts(parentExecution)
       }
     }
 

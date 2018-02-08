@@ -25,8 +25,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.util.stream.Collectors
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -262,7 +260,7 @@ class ArtifactResolverSpec extends Specification {
     def artifactResolver = makeArtifactResolver()
 
     then:
-    def artifacts = artifactResolver.getArtifacts(execution)
+    def artifacts = artifactResolver.getAllArtifacts(execution)
     artifacts.size == 3
     artifacts*.type == ["2", "1", "trigger"]
   }
