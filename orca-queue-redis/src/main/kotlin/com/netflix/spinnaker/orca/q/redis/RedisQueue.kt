@@ -41,6 +41,7 @@ import com.netflix.spinnaker.orca.q.metrics.RetryPolled
 import com.netflix.spinnaker.orca.q.metrics.fire
 import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeDeserializer
 import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeSerializer
+import com.netflix.spinnaker.orca.q.redis.migration.KeikoMessageDeserializer
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -75,6 +76,7 @@ class RedisQueue(
       SimpleModule()
         .addSerializer(ExecutionTypeSerializer())
         .addDeserializer(ExecutionType::class.java, ExecutionTypeDeserializer())
+        .addDeserializer(Message::class.java, KeikoMessageDeserializer())
     )
 
   private val log: Logger = LoggerFactory.getLogger(javaClass)
