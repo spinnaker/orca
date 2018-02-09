@@ -41,7 +41,6 @@ import com.netflix.spinnaker.orca.q.metrics.RetryPolled
 import com.netflix.spinnaker.orca.q.metrics.fire
 import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeDeserializer
 import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeSerializer
-import com.netflix.spinnaker.orca.q.redis.migration.KeikoMessageDeserializer
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -76,7 +75,6 @@ class RedisQueue(
       SimpleModule()
         .addSerializer(ExecutionTypeSerializer())
         .addDeserializer(ExecutionType::class.java, ExecutionTypeDeserializer())
-        .addDeserializer(Message::class.java, KeikoMessageDeserializer())
     )
 
   private val log: Logger = LoggerFactory.getLogger(javaClass)
@@ -179,7 +177,7 @@ class RedisQueue(
                   }
                   .let { (_, _, json) ->
                     mapper
-                      .readValue<Message>(json as String)
+                      .readValue<Message>(cobbledKeikoMessageMigrator(json as String))
                       .let { message ->
                         log.warn("Not retrying message $fingerprint because an identical message is already on the queue")
                         fire<MessageDuplicate>(message)
@@ -310,7 +308,7 @@ class RedisQueue(
         removeMessage(fingerprint)
       } else {
         try {
-          val message = mapper.readValue<Message>(json)
+          val message = mapper.readValue<Message>(cobbledKeikoMessageMigrator(json))
 
           // TODO: AttemptsAttribute could replace `attemptsKey`
           message.setAttribute(
@@ -366,4 +364,53 @@ class RedisQueue(
       .murmur3_128()
       .hashString(toString(), Charset.defaultCharset())
       .toString()
+
+  private fun cobbledKeikoMessageMigrator(json: String): String {
+    val m = mapper.readValue<MutableMap<String, Any?>>(json)
+
+    val replaceKind = fun (target: MutableMap<String, Any?>) {
+      if (target.containsKey("kind")) {
+        target["@class"] = keikoToOrcaTypes[target["kind"]]
+        target.remove("kind")
+      }
+    }
+
+    replaceKind(m)
+    if (m.containsKey("attributes")) {
+      (m["attributes"] as List<MutableMap<String, Any?>>).forEach(replaceKind)
+    }
+
+    return mapper.writeValueAsString(m)
+  }
 }
+
+internal val keikoToOrcaTypes = mapOf(
+  "startTask" to ".StartTask",
+  "completeTask" to ".CompleteTask",
+  "pauseTask" to ".PauseTask",
+  "resumeTask" to ".ResumeTask",
+  "runTask" to ".RunTask",
+  "startStage" to ".StartStage",
+  "continueParentStage" to ".ContinueParentStage",
+  "completeStage" to ".CompleteStage",
+  "skipStage" to ".SkipStage",
+  "abortStage" to ".AbortStage",
+  "pauseStage" to ".PauseStage",
+  "restartStage" to ".RestartStage",
+  "resumeStage" to ".ResumeStage",
+  "cancelStage" to ".CancelStage",
+  "startExecution" to ".StartExecution",
+  "rescheduleExecution" to ".RescheduleExecution",
+  "completeExecution" to ".CompleteExecution",
+  "resumeExecution" to ".ResumeExecution",
+  "cancelExecution" to ".CancelExecution",
+  "invalidExecutionId" to ".InvalidExecutionId",
+  "invalidStageId" to ".InvalidStageId",
+  "invalidTaskId" to ".InvalidTaskId",
+  "invalidTaskType" to ".InvalidTaskType",
+  "noDownstreamTasks" to ".NoDownstreamTasks",
+  "totalThrottleTime" to ".TotalThrottleTimeAttribute",
+  "deadMessage" to ".handler.DeadMessageAttribute",
+  "maxAttempts" to ".MaxAttemptsAttribute",
+  "attempts" to ".AttemptsAttribute"
+)
