@@ -18,9 +18,10 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
+import com.netflix.spinnaker.orca.pipeline.model.Trigger
+import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -31,7 +32,10 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     given:
     def targetReferenceSupport = Mock(TargetReferenceSupport)
     def supportStage = new TargetReferenceLinearStageSupportStage()
-    def stage = new Stage(Execution.newPipeline("orca"), "test", [regions: ["us-east-1"]])
+    def stage = ExecutionBuilder.stage {
+      type = "text"
+      context["regions"] = ["us-east-1"]
+    }
     stage.parentStageId = parentStageId
     supportStage.targetReferenceSupport = targetReferenceSupport
 
@@ -60,7 +64,10 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     given:
     def targetReferenceSupport = Mock(TargetReferenceSupport)
     def supportStage = new TargetReferenceLinearStageSupportStage()
-    def stage = new Stage(Execution.newPipeline("orca"), "test", [regions: ["us-east-1", "us-west-1", "us-west-2", "eu-west-2"]])
+    def stage = ExecutionBuilder.stage {
+      type = "test"
+      context["regions"] = ["us-east-1", "us-west-1", "us-west-2", "eu-west-2"]
+    }
     supportStage.targetReferenceSupport = targetReferenceSupport
 
     when:
@@ -85,7 +92,9 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     given:
     def targetReferenceSupport = Mock(TargetReferenceSupport)
     def supportStage = new TargetReferenceLinearStageSupportStage()
-    def stage = new Stage(Execution.newPipeline("orca"), "test", [:])
+    def stage = ExecutionBuilder.stage {
+      type = "test"
+    }
     supportStage.targetReferenceSupport = targetReferenceSupport
 
     when:
@@ -114,7 +123,9 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     given:
     def targetReferenceSupport = Mock(TargetReferenceSupport)
     def supportStage = new TargetReferenceLinearStageSupportStage()
-    def stage = new Stage(Execution.newPipeline("orca"), "test", [:])
+    def stage = ExecutionBuilder.stage {
+      type = "test"
+    }
     supportStage.targetReferenceSupport = targetReferenceSupport
 
     when:
@@ -130,11 +141,18 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     given:
     def targetReferenceSupport = Mock(TargetReferenceSupport)
     def supportStage = new TargetReferenceLinearStageSupportStage()
-    def stage = new Stage(Execution.newPipeline("orca"), "test", [:])
+    def stage = ExecutionBuilder.stage {
+      type = "test"
+    }
     supportStage.targetReferenceSupport = targetReferenceSupport
 
-    stage.execution.trigger = new PipelineTrigger(
-      Execution.newPipeline("orca"),
+    stage.execution.trigger = new Trigger(
+      "pipeline",
+      new PipelineTriggerPayload(
+        Execution.newPipeline("orca")
+      ),
+      null,
+      null,
       [
         strategy   : true,
         region     : 'us-west-1',

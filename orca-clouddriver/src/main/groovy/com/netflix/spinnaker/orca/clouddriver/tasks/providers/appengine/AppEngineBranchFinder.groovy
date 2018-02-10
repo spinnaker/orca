@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine
 
 import java.util.regex.Pattern
-import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
+import com.netflix.spinnaker.orca.pipeline.model.GitTriggerPayload
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
@@ -27,10 +27,10 @@ class AppEngineBranchFinder {
     if (operation.fromTrigger && operation.trigger && stage.execution.type == PIPELINE) {
       def trigger = stage.execution.trigger
 
-      if (trigger instanceof GitTrigger) {
-        return fromGitTrigger(operation, (GitTrigger) trigger)
-      } else if (trigger.type == "jenkins" || (trigger.type == "manual" && trigger.master && trigger.job)) {
-        return fromJenkinsTrigger(operation, (JenkinsTrigger) trigger)
+      if (trigger.payload instanceof GitTriggerPayload) {
+        return fromGitTrigger(operation, (GitTriggerPayload) trigger.payload)
+      } else if (trigger.payload instanceof JenkinsTriggerPayload) {
+        return fromJenkinsTrigger(operation, (JenkinsTriggerPayload) trigger.payload)
       } else {
         throw new IllegalArgumentException("Trigger type '${trigger.type}' not supported " +
                                            "for resolving App Engine deployment details dynamically.")
@@ -38,7 +38,7 @@ class AppEngineBranchFinder {
     }
   }
 
-  static String fromGitTrigger(Map operation, GitTrigger trigger) {
+  static String fromGitTrigger(Map operation, GitTriggerPayload trigger) {
     def matchConditions = [
       trigger.source == operation.trigger.source,
       trigger.project == operation.trigger.project,
@@ -57,11 +57,11 @@ class AppEngineBranchFinder {
   }
 
   /*
-  * This method throws an error if it does not resolve exactly one branch from a Jenkin trigger's SCM details.
+  * This method throws an error if it does not resolve exactly one branch from a Jenkins trigger's SCM details.
   * A user can provide a regex to help narrow down the list of branches.
   * */
 
-  static String fromJenkinsTrigger(Map operation, JenkinsTrigger trigger) {
+  static String fromJenkinsTrigger(Map operation, JenkinsTriggerPayload trigger) {
     def matchConditions = [
       trigger.master == operation.trigger.master,
       trigger.job == operation.trigger.job

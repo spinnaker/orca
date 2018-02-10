@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.tasks
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
@@ -97,7 +97,7 @@ trait DeploymentDetailsAware {
       def parentPipelineExecution = getParentPipelineExecution(execution)
 
       if (parentPipelineExecution) {
-        String parentPipelineStageId = (execution.trigger as PipelineTrigger).parentPipelineStageId
+        String parentPipelineStageId = (execution.trigger.payload as PipelineTriggerPayload).parentPipelineStageId
         Stage parentPipelineStage = parentPipelineExecution.stages?.find {
           it.type == "pipeline" && it.id == parentPipelineStageId
         }
@@ -129,8 +129,8 @@ trait DeploymentDetailsAware {
 
   private Execution getParentPipelineExecution(Execution execution) {
     // The initial stage execution is a Pipeline, and the ancestor executions are Maps.
-    if (execution.type == PIPELINE && execution.trigger instanceof PipelineTrigger) {
-      return (execution.trigger as PipelineTrigger).parentExecution
+    if (execution.type == PIPELINE && execution.trigger.payload instanceof PipelineTriggerPayload) {
+      return (execution.trigger.payload as PipelineTriggerPayload).parentExecution
     }
     return null
   }

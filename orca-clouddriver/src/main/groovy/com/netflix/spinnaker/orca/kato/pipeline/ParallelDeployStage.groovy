@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGr
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import groovy.transform.CompileDynamic
@@ -62,10 +63,8 @@ class ParallelDeployStage implements StageDefinitionBuilder {
   protected Collection<Map<String, Object>> parallelContexts(Stage stage) {
     if (stage.execution.type == PIPELINE) {
       Trigger trigger = stage.execution.trigger
-      if (trigger.strategy) {
-        Stage parentStage = trigger.parentExecution.stages.find {
-          it.id == trigger.parameters.parentStageId
-        }
+      if (trigger.strategy && trigger.payload instanceof PipelineTriggerPayload) {
+        Stage parentStage = trigger.payload.parentStage
         Map cluster = parentStage.context as Map
         cluster.strategy = 'none'
         if (!cluster.amiName && trigger.parameters.amiName) {

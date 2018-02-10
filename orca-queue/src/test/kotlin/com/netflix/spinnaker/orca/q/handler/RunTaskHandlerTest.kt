@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
-import com.netflix.spinnaker.orca.pipeline.model.ManualTrigger
+import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -1079,7 +1079,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
     given("parameters in the context and in the pipeline") {
       val pipeline = pipeline {
-        trigger = ManualTrigger(null, "fzlem", mapOf("dummy" to "foo"), emptyList(), emptyList())
+        trigger = Trigger(type = "manual", parameters = mapOf("dummy" to "foo"))
         stage {
           refId = "1"
           type = "jenkins"

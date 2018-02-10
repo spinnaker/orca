@@ -19,8 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import spock.lang.Specification
-import spock.lang.Subject;
-
+import spock.lang.Subject
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class RollbackClusterStageSpec extends Specification {
@@ -32,7 +31,7 @@ class RollbackClusterStageSpec extends Specification {
 
   def "should not build any aroundStages()"() {
     expect:
-    stageBuilder.aroundStages(null).isEmpty()
+    stageBuilder.aroundStages(stage {}).isEmpty()
   }
 
   def "should build rollback stages corresponding to each region with a rollback target"() {
