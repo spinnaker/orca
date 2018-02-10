@@ -29,13 +29,13 @@ class PipelineTriggerParsingSpec extends Specification {
     def execution = mapper.readValue(json, Execution)
 
     when:
-    def parent = mapper.convertValue(execution.trigger.parentExecution, Execution)
+    def parent = mapper.convertValue(execution.trigger.payload.parentExecution, Execution)
 
     then:
     parent.id == "84099610-f292-4cab-bd5a-49ecf8570ffe"
 
     when:
-    def grandpa = parent.trigger.parentExecution
+    def grandpa = parent.trigger.payload.parentExecution
 
     then:
     grandpa.id == "eecce10e-2a99-41e4-b6aa-db2aa73c63db"

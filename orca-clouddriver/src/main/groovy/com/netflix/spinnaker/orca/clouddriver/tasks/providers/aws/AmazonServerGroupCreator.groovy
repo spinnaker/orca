@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
+import com.netflix.spinnaker.orca.pipeline.model.DockerTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -102,8 +102,8 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
         // Get image id from the trigger
         if (context.cloudProvider == 'titus') {
           def trigger = stage.execution.trigger
-          if (trigger instanceof DockerTrigger && trigger.repository && trigger.tag) {
-            operation.imageId = "${trigger.repository}:${trigger.tag}".toString()
+          if (trigger.payload instanceof DockerTriggerPayload) {
+            operation.imageId = "${trigger.payload.repository}:${trigger.payload.tag}".toString()
           }
           if (!operation.imageId && trigger.otherProperties.imageName) {
             operation.imageId = trigger.otherProperties.imageName

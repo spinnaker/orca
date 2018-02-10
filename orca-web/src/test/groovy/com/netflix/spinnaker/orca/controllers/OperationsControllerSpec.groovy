@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import rx.Observable
-
 import javax.servlet.http.HttpServletResponse
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
@@ -41,6 +39,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.mock.env.MockEnvironment
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -125,10 +124,10 @@ class OperationsControllerSpec extends Specification {
     then:
     with(startedPipeline) {
       trigger.type == requestedPipeline.trigger.type
-      trigger.master == master
-      trigger.job == job
-      trigger.buildNumber == buildNumber
-      trigger.buildInfo.result == buildInfo.result
+      trigger.payload.master == master
+      trigger.payload.job == job
+      trigger.payload.buildNumber == buildNumber
+      trigger.payload.buildInfo.result == buildInfo.result
     }
 
     where:
@@ -164,10 +163,11 @@ class OperationsControllerSpec extends Specification {
 
     where:
     requestedPipeline = [
-      trigger: [
+      application: "covfefe",
+      trigger    : [
         type            : "manual",
         parentPipelineId: "12345",
-        parentExecution : ['name': 'abc']
+        parentExecution : [name: "abc"]
       ]
     ]
   }
@@ -194,7 +194,7 @@ class OperationsControllerSpec extends Specification {
     1 * executionRepository.retrieve(PIPELINE, "12345") >> parentPipeline
 
     and:
-    with(startedPipeline.trigger) {
+    with(startedPipeline.trigger.payload) {
       parentExecution != null
       parentExecution.id == "12345"
     }
@@ -260,10 +260,10 @@ class OperationsControllerSpec extends Specification {
     then:
     with(startedPipeline) {
       trigger.type == requestedPipeline.trigger.type
-      trigger.master == master
-      trigger.job == job
-      trigger.buildNumber == buildNumber
-      trigger.buildInfo.result == buildInfo.result
+      trigger.payload.master == master
+      trigger.payload.job == job
+      trigger.payload.buildNumber == buildNumber
+      trigger.payload.buildInfo.result == buildInfo.result
       trigger.user == expectedUser
     }
 
@@ -305,8 +305,8 @@ class OperationsControllerSpec extends Specification {
 
     then:
     with(startedPipeline) {
-      trigger.propertyFile == propertyFile
-      trigger.properties == propertyFileContent
+      trigger.payload.propertyFile == propertyFile
+      trigger.payload.properties == propertyFileContent
     }
 
     where:
@@ -542,10 +542,10 @@ class OperationsControllerSpec extends Specification {
     then:
     with(startedPipeline) {
       trigger.type == requestedPipeline.trigger.type
-      trigger.master == master
-      trigger.job == job
-      trigger.buildNumber == buildNumber
-      trigger.buildInfo.artifacts.fileName == expectedArtifacts
+      trigger.payload.master == master
+      trigger.payload.job == job
+      trigger.payload.buildNumber == buildNumber
+      trigger.payload.buildInfo.artifacts.fileName == expectedArtifacts
     }
 
     where:

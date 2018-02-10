@@ -19,8 +19,9 @@ package com.netflix.spinnaker.orca.pipeline.util;
 import java.util.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.BuildInfo;
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.SourceControl;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload.BuildInfo;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload.SourceControl;
 import org.apache.commons.lang3.StringUtils;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -102,7 +103,7 @@ public class BuildDetailExtractor {
   private static class DefaultDetailExtractor implements DetailExtractor {
 
     @Override
-    public boolean tryToExtractBuildDetails(BuildInfo buildInfo, Map<String, Object> request) {
+    public boolean tryToExtractBuildDetails(JenkinsTriggerPayload.BuildInfo buildInfo, Map<String, Object> request) {
 
       if (buildInfo == null || request == null) {
         return false;

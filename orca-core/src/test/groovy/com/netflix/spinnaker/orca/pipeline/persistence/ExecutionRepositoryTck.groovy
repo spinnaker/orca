@@ -95,12 +95,12 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     def runningExecution = orchestration {
       status = RUNNING
       buildTime = 0
-      trigger = new ManualTrigger(null, "fnord", [:], null, null)
+      trigger = new Trigger("manual")
     }
     def succeededExecution = orchestration {
       status = SUCCEEDED
       buildTime = 0
-      trigger = new ManualTrigger(null, "fnord", [:], null, null)
+      trigger = new Trigger("manual")
     }
 
     when:
@@ -135,7 +135,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     def pipeline = pipeline {
       application = "orca"
       name = "dummy-pipeline"
-      trigger = new JenkinsTrigger("master", "job", 1, null, null, [:], [])
+      trigger = new Trigger("jenkins", new JenkinsTriggerPayload("master", "job", 1, null))
       stage {
         type = "one"
         context = [foo: "foo"]
@@ -244,8 +244,10 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     where:
-    execution << [pipeline { trigger = new PipelineTrigger(pipeline(), [:]) }, orchestration {
-      trigger = new ManualTrigger(null, "fnord", [:], null, null)
+    execution << [pipeline {
+      trigger = new Trigger("pipeline", new PipelineTriggerPayload(pipeline()))
+    }, orchestration {
+      trigger = new Trigger("manual")
     }]
   }
 
@@ -268,10 +270,12 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     where:
-    execution                                                                     | status
-    pipeline { trigger = new PipelineTrigger(pipeline(), [:]) }                   | CANCELED
-    orchestration { trigger = new ManualTrigger(null, "fnord", [:], null, null) } | SUCCEEDED
-    orchestration { trigger = new ManualTrigger(null, "fnord", [:], null, null) } | TERMINAL
+    execution                                         | status
+    pipeline {
+      trigger = new Trigger("pipeline", new PipelineTriggerPayload(pipeline()))
+    }                                                 | CANCELED
+    orchestration { trigger = new Trigger("manual") } | SUCCEEDED
+    orchestration { trigger = new Trigger("manual") } | TERMINAL
   }
 
   def "cancelling a not-yet-started execution updates the status immediately"() {
@@ -435,7 +439,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
   def "should return task ref for currently running orchestration by correlation id"() {
     given:
     def execution = orchestration {
-      trigger = new ManualTrigger('covfefe', 'tremendous', [:], [], [])
+      trigger = new Trigger("manual", null, "covfefe")
     }
     repository.store(execution)
     repository.updateStatus(execution.id, RUNNING)
@@ -457,13 +461,13 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
   def "parses the parent execution of a pipeline trigger"() {
     given:
     def execution = pipeline {
-      trigger = new PipelineTrigger(pipeline(), [:])
+      trigger = new Trigger("pipeline", new PipelineTriggerPayload(pipeline()))
     }
     repository.store(execution)
 
     expect:
     with(repository.retrieve(PIPELINE, execution.id)) {
-      trigger["parentExecution"] instanceof Execution
+      trigger.payload.parentExecution instanceof Execution
     }
   }
 }
@@ -554,7 +558,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     4.times {
       repository.store(orchestration {
         application = "orca"
-        trigger = new ManualTrigger(null, "fnord", [:], null, null)
+        trigger = new Trigger("manual", null, "fnord")
       })
     }
 
@@ -578,7 +582,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     given:
     def orchestration = orchestration {
       application = "paperclips"
-      trigger = new ManualTrigger(null, "fnord", [:], null, null)
+      trigger = new Trigger("manual", null, "fnord")
       stage {
         type = "one"
         context = [:]
@@ -606,7 +610,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     given:
     def orchestration = orchestration {
       application = "paperclips"
-      trigger = new ManualTrigger(null, "fnord", [:], null, null)
+      trigger = new Trigger("manual", null, "fnord")
       stage {
         type = "one"
         context = [:]
@@ -635,7 +639,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     given:
     def previousRepository = new JedisExecutionRepository(new NoopRegistry(), previousRedisClientDelegate.get(), Optional.empty(), 1, 50)
     def execution = orchestration {
-      trigger = new ManualTrigger('covfefe', 'tremendous', [:], [], [])
+      trigger = new Trigger("manual", null, "covfefe")
     }
     previousRepository.store(execution)
     previousRepository.updateStatus(execution.id, RUNNING)
@@ -654,13 +658,12 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     thrown(ExecutionNotFoundException)
   }
 
-
   def "can retrieve orchestrations from multiple redis stores"() {
     given:
     3.times {
       repository.store(orchestration {
         application = "orca"
-        trigger = new ManualTrigger(null, "fnord", [:], null, null)
+        trigger = new Trigger("manual", null, "fnord")
       })
     }
 
@@ -669,7 +672,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     3.times {
       previousRepository.store(orchestration {
         application = "orca"
-        trigger = new ManualTrigger(null, "fnord", [:], null, null)
+        trigger = new Trigger("manual", null, "fnord")
       })
     }
 
@@ -687,7 +690,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     given:
     def orchestration1 = orchestration {
       application = "orca"
-      trigger = new ManualTrigger(null, "fnord", [:], null, null)
+      trigger = new Trigger("manual", null, "fnord")
     }
     repository.store(orchestration1)
 
@@ -695,7 +698,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<JedisExecution
     def previousRepository = new JedisExecutionRepository(new NoopRegistry(), previousRedisClientDelegate.get(), Optional.empty(), 1, 50)
     def orchestration2 = orchestration {
       application = "orca"
-      trigger = new ManualTrigger(null, "fnord", [:], null, null)
+      trigger = new Trigger("manual", null, "fnord")
     }
     previousRepository.store(orchestration2)
 

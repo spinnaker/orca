@@ -21,10 +21,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.ManualTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
-import com.netflix.spinnaker.orca.pipeline.model.WebhookTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -34,7 +31,6 @@ import org.springframework.context.support.StaticApplicationContext
 import spock.lang.Specification
 import spock.lang.Subject
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
-import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class DependentPipelineStarterSpec extends Specification {
@@ -144,8 +140,7 @@ class DependentPipelineStarterSpec extends Specification {
     def triggeredPipelineConfig = [name: "triggered", id: "triggered"]
     def parentPipeline = pipeline {
       name = "parent"
-      trigger = new ManualTrigger(null, "fzlem@netflix.com", [:], [], [])
-      trigger.otherProperties.dryRun = true
+      trigger = new Trigger("manual", null, null, "fzlem@netflix.com", [:], [], [], false, true)
       authentication = new Execution.AuthenticationDetails("parentUser", "acct1", "acct2")
     }
     def executionLauncher = Mock(ExecutionLauncher)
@@ -184,23 +179,23 @@ class DependentPipelineStarterSpec extends Specification {
   def "should find artifacts from triggering pipeline"() {
     given:
     def triggeredPipelineConfig = [
-      name              : "triggered",
-      id                : "triggered",
-      expectedArtifacts : [[
-          matchArtifact: [
-            kind: "gcs",
-            name: "gs://test/file.yaml",
-            type: "gcs/object"
-          ]
-        ]]
+      name             : "triggered",
+      id               : "triggered",
+      expectedArtifacts: [[
+                            matchArtifact: [
+                              kind: "gcs",
+                              name: "gs://test/file.yaml",
+                              type: "gcs/object"
+                            ]
+                          ]]
     ];
     Artifact testArtifact = new Artifact(
-      type : "gcs/object",
-      name : "gs://test/file.yaml"
+      type: "gcs/object",
+      name: "gs://test/file.yaml"
     )
     def parentPipeline = pipeline {
       name = "parent"
-      trigger = new WebhookTrigger("test", [:], [testArtifact]);
+      trigger = new Trigger("webhook", null, null, "test", [:], [testArtifact]);
       authentication = new Execution.AuthenticationDetails("parentUser", "acct1", "acct2")
     }
     def executionLauncher = Mock(ExecutionLauncher)
@@ -236,30 +231,30 @@ class DependentPipelineStarterSpec extends Specification {
     )
 
     then:
-    result.trigger.getArtifacts().size() == 1
-    result.trigger.getArtifacts()*.name == ["gs://test/file.yaml"]
+    result.trigger.artifacts.size() == 1
+    result.trigger.artifacts*.name == ["gs://test/file.yaml"]
   }
 
   def "should find artifacts from parent pipeline stage"() {
     given:
     def triggeredPipelineConfig = [
-      name              : "triggered",
-      id                : "triggered",
-      expectedArtifacts : [[
-                             matchArtifact: [
-                               kind: "gcs",
-                               name: "gs://test/file.yaml",
-                               type: "gcs/object"
-                             ]
-                           ]]
+      name             : "triggered",
+      id               : "triggered",
+      expectedArtifacts: [[
+                            matchArtifact: [
+                              kind: "gcs",
+                              name: "gs://test/file.yaml",
+                              type: "gcs/object"
+                            ]
+                          ]]
     ];
     Artifact testArtifact = new Artifact(
-      type : "gcs/object",
-      name : "gs://test/file.yaml"
+      type: "gcs/object",
+      name: "gs://test/file.yaml"
     )
     def parentPipeline = pipeline {
       name = "parent"
-      trigger = new WebhookTrigger("test", [:], []);
+      trigger = new Trigger("webhook", null, null, "test")
       authentication = new Execution.AuthenticationDetails("parentUser", "acct1", "acct2")
       stage {
         id = "stage1"
@@ -305,44 +300,44 @@ class DependentPipelineStarterSpec extends Specification {
     )
 
     then:
-    result.trigger.getArtifacts().size() == 1
-    result.trigger.getArtifacts()*.name == ["gs://test/file.yaml"]
+    result.trigger.artifacts.size() == 1
+    result.trigger.artifacts*.name == ["gs://test/file.yaml"]
   }
 
   def "should find artifacts from triggering pipeline without expected artifacts"() {
     given:
     def triggeredPipelineConfig = [
-        name              : "triggered",
-        id                : "triggered",
-        expectedArtifacts : [[
-          matchArtifact: [
-            kind: "gcs",
-            name: "gs://test/file.yaml",
-            type: "gcs/object"
-          ]
-        ]]
-    ];
+      name             : "triggered",
+      id               : "triggered",
+      expectedArtifacts: [[
+                            matchArtifact: [
+                              kind: "gcs",
+                              name: "gs://test/file.yaml",
+                              type: "gcs/object"
+                            ]
+                          ]]
+    ]
     Artifact testArtifact1 = new Artifact(
-        type : "gcs/object",
-        name : "gs://test/file.yaml"
+      type: "gcs/object",
+      name: "gs://test/file.yaml"
     )
     Artifact testArtifact2 = new Artifact(
-        type : "docker/image",
-        name : "gcr.io/project/image"
+      type: "docker/image",
+      name: "gcr.io/project/image"
     )
     def parentPipeline = pipeline {
       name = "parent"
-      trigger = new WebhookTrigger("test", [:], [testArtifact1, testArtifact2]);
+      trigger = new Trigger("webhook", null, null, "test", [:], [testArtifact1, testArtifact2])
       authentication = new Execution.AuthenticationDetails("parentUser", "acct1", "acct2")
     }
     def executionLauncher = Mock(ExecutionLauncher)
     def applicationContext = new StaticApplicationContext()
     applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
     dependentPipelineStarter = new DependentPipelineStarter(
-        objectMapper: mapper,
-        applicationContext: applicationContext,
-        contextParameterProcessor: new ContextParameterProcessor(),
-        artifactResolver: artifactResolver
+      objectMapper: mapper,
+      applicationContext: applicationContext,
+      contextParameterProcessor: new ContextParameterProcessor(),
+      artifactResolver: artifactResolver
     )
 
     and:
@@ -360,17 +355,17 @@ class DependentPipelineStarterSpec extends Specification {
 
     when:
     def result = dependentPipelineStarter.trigger(
-        triggeredPipelineConfig,
-        null,
-        parentPipeline,
-        [:],
-        null
+      triggeredPipelineConfig,
+      null,
+      parentPipeline,
+      [:],
+      null
     )
 
     then:
-    result.trigger.getArtifacts().size() == 2
-    result.trigger.getArtifacts()*.name.contains(testArtifact1.name)
-    result.trigger.getArtifacts()*.name.contains(testArtifact2.name)
+    result.trigger.artifacts.size() == 2
+    result.trigger.artifacts*.name.contains(testArtifact1.name)
+    result.trigger.artifacts*.name.contains(testArtifact2.name)
     result.trigger.resolvedExpectedArtifacts.size() == 1
     result.trigger.resolvedExpectedArtifacts*.boundArtifact.name == [testArtifact1.name]
   }

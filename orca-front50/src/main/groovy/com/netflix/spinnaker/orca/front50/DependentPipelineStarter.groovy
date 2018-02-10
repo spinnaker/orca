@@ -98,7 +98,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
 
     pipelineConfig.trigger = objectMapper.readValue(objectMapper.writeValueAsString(pipelineConfig.trigger), Trigger.class)
     if (parentPipeline.trigger.dryRun) {
-      pipelineConfig.trigger.otherProperties["dryRun"] = true
+      pipelineConfig.trigger.dryRun = true
     }
 
     def augmentedContext = [trigger: pipelineConfig.trigger]

@@ -26,7 +26,6 @@ import javax.annotation.Nonnull;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.ManualTrigger;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import org.slf4j.Logger;
@@ -57,7 +56,7 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
     try {
       JitterConfig jitter = stage.mapTo("/restrictedExecutionWindow/jitter", JitterConfig.class);
       if (jitter.enabled && jitter.maxDelay > 0) {
-        if (jitter.skipManual && stage.getExecution().getTrigger() instanceof ManualTrigger) {
+        if (jitter.skipManual && stage.getExecution().getTrigger().getType().equals("manual")) {
           return;
         }
 

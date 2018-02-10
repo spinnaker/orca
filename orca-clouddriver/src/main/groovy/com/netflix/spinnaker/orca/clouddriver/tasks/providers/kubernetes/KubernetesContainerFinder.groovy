@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes
 
-import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
+import com.netflix.spinnaker.orca.pipeline.model.DockerTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
@@ -85,8 +85,7 @@ class KubernetesContainerFinder {
         if (stage.execution.type == PIPELINE) {
           def trigger = stage.execution.trigger
 
-
-          if ((trigger instanceof DockerTrigger && trigger.account == container.imageDescription.account && trigger.repository == container.imageDescription.repository) || (trigger?.otherProperties?.account == container.imageDescription.account && trigger?.otherProperties?.repository == container.imageDescription.repository)) {
+          if (trigger?.payload instanceof DockerTriggerPayload && trigger.payload.account == container.imageDescription.account && trigger.payload.repository == container.imageDescription.repository) {
             container.imageDescription.tag = trigger.tag
           }
         }
