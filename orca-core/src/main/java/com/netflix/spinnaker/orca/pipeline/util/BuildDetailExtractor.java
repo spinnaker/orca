@@ -16,12 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
-import java.util.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger;
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.BuildInfo;
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.SourceControl;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.*;
+
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.joining;
@@ -102,7 +105,7 @@ public class BuildDetailExtractor {
   private static class DefaultDetailExtractor implements DetailExtractor {
 
     @Override
-    public boolean tryToExtractBuildDetails(BuildInfo buildInfo, Map<String, Object> request) {
+    public boolean tryToExtractBuildDetails(JenkinsTrigger.BuildInfo buildInfo, Map<String, Object> request) {
 
       if (buildInfo == null || request == null) {
         return false;
