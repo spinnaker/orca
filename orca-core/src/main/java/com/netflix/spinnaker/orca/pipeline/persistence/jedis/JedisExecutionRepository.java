@@ -22,13 +22,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.*;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.pipeline.model.Trigger;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionSerializationException;
 import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException;
@@ -49,7 +51,6 @@ import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-
 import static com.google.common.collect.Maps.filterValues;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
@@ -426,9 +427,9 @@ public class JedisExecutionRepository extends AbstractRedisExecutionRepository {
     } else if (execution.getType() == ORCHESTRATION) {
       map.put("description", execution.getDescription());
     }
-    if (execution.getTrigger() instanceof ManualTrigger && ((ManualTrigger) execution.getTrigger()).getCorrelationId() != null) {
+    if (execution.getTrigger().getCorrelationId() != null) {
       tx.set(
-        format("correlation:%s", ((ManualTrigger) execution.getTrigger()).getCorrelationId()),
+        format("correlation:%s", execution.getTrigger().getCorrelationId()),
         execution.getId()
       );
     }

@@ -23,16 +23,15 @@ import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionTransform
 import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionsSupport
 import com.netflix.spinnaker.orca.pipeline.expressions.SpelHelperFunctionException
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
-import com.netflix.spinnaker.orca.pipeline.model.ManualTrigger
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload
+import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import org.springframework.expression.spel.SpelEvaluationException
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
-import static com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.BuildInfo
-import static com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.SourceControl
+import static com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload.BuildInfo
+import static com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload.SourceControl
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -282,7 +281,7 @@ class ContextParameterProcessorSpec extends Specification {
   @Unroll
   def "correctly compute scmInfo attribute"() {
     given:
-    context.trigger.buildInfo = new BuildInfo("name", 1, "http://jenkins", [], scm, false, "SUCCESS")
+    context.trigger.payload.buildInfo = new BuildInfo("name", 1, "http://jenkins", [], scm, false, "SUCCESS")
 
     def source = ['branch': '${scmInfo.branch}']
 
@@ -301,26 +300,22 @@ class ContextParameterProcessorSpec extends Specification {
     [new SourceControl("", "buildBranch", ""), new SourceControl("", "jenkinsBranch", "")] | 'buildBranch'
 
     context = [
-      trigger: new JenkinsTrigger(
-        "master",
-        "job",
-        1,
-        null,
-        "user",
-        [:],
-        []
+      trigger: new Trigger(
+        "jenkins",
+        new JenkinsTriggerPayload("master", "job", 1, null)
       )
     ]
   }
 
   @Unroll
-  def "does not fail when buildInfo contains a webhook stage response"() {  // TODO(jacobkiefer): Outgoing webhook stage responses land in buildInfo. Why?
+  def "does not fail when buildInfo contains a webhook stage response"() {
+    // TODO(jacobkiefer): Outgoing webhook stage responses land in buildInfo. Why?
     given:
     def source = ['triggerId': '${trigger.correlationId}']
     def context = [
-        trigger: new ManualTrigger('id', 'user', [:], [], []),
-        buildInfo: buildInfo
-      ]
+      trigger  : new Trigger("manual", null, "id"),
+      buildInfo: buildInfo
+    ]
 
     when:
     def result = contextParameterProcessor.process(source, context, true)
