@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.dcos
 
+import com.netflix.spinnaker.orca.pipeline.model.DockerTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
@@ -46,8 +47,8 @@ class DcosContainerFinder {
       if (stage.execution.type == PIPELINE) {
         def trigger = stage.execution.trigger
 
-        if (trigger?.account == imageDescription.account && trigger?.repository == imageDescription.repository) {
-          imageDescription.tag = trigger.tag
+        if (trigger?.payload instanceof DockerTriggerPayload && trigger.payload.account == imageDescription.account && trigger.payload.repository == imageDescription.repository) {
+          imageDescription.tag = trigger.payload.tag
         }
 
         imageDescription.imageId = buildImageId(imageDescription.registry, imageDescription.repository, imageDescription.tag)

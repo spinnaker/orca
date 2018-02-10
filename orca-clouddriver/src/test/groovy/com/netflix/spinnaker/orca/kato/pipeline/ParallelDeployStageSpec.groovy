@@ -16,9 +16,10 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import spock.lang.Specification
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
@@ -30,7 +31,7 @@ class ParallelDeployStageSpec extends Specification {
   def "should build contexts corresponding to cluster configuration(s)"() {
     given:
     def pipeline = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, "user@example.com", [:], [])
+      trigger = new Trigger("jenkins", new JenkinsTriggerPayload("master", "job", 1, null), null, "user@example.com")
       application = "orca"
     }
     def bakeStage = new Stage(pipeline, "deploy", "Deploy!", stageContext)
@@ -57,28 +58,36 @@ class ParallelDeployStageSpec extends Specification {
   def "pipeline strategy should #data.scenario"() {
     given:
     def parentPipeline = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null, "user@example.com", [:], [])
+      trigger = new Trigger("jenkins", new JenkinsTriggerPayload("master", "job", 1, null), null, "user@example.com")
       application = "orca"
       stage {
         name = "parent stage"
         type = "createServerGroup"
         refId = "parentStage"
         context = [
-          account: "prod",
-          availabilityZones: ["us-west-1": []],
-          cloudProvider: "aws",
+          account                  : "prod",
+          availabilityZones        : ["us-west-1": []],
+          cloudProvider            : "aws",
           restrictedExecutionWindow: [:]
         ].with { putAll(data.parentStageContext); it }
       }
     }
 
     def strategyPipeline = pipeline {
-      trigger = new PipelineTrigger(
-        parentPipeline,
-        parentPipeline.stageByRef("parentStage").id,
+      trigger = new Trigger(
+        "pipeline",
+        new PipelineTriggerPayload(
+          parentPipeline,
+          parentPipeline.stageByRef("parentStage").id
+        ),
+        null,
         "example@example.com",
-        data.triggerParams.with { putAll([strategy: true, parentStageId: parentPipeline.stageByRef("parentStage").id]); it },
-        []
+        data.triggerParams,
+        [],
+        [],
+        false,
+        false,
+        true
       )
     }
 
@@ -95,85 +104,85 @@ class ParallelDeployStageSpec extends Specification {
     where:
     data << [
       [
-        scenario: "pull contexts from trigger when missing from parent",
-        parentStageContext: [:],
-        stageContext: [:],
-        triggerParams: [
+        scenario                : "pull contexts from trigger when missing from parent",
+        parentStageContext      : [:],
+        stageContext            : [:],
+        triggerParams           : [
           amiName: "ami-1234"
         ],
         expectedParallelContexts: [
           [
-            name: "Deploy in us-west-1",
+            name   : "Deploy in us-west-1",
             cluster: [
-              account: "prod",
-              availabilityZones: ["us-west-1": []],
-              cloudProvider: "aws",
+              account                  : "prod",
+              availabilityZones        : ["us-west-1": []],
+              cloudProvider            : "aws",
               restrictedExecutionWindow: [:],
-              strategy: "none",
-              amiName: "ami-1234",
+              strategy                 : "none",
+              amiName                  : "ami-1234",
             ],
-            type: "createServerGroup",
+            type   : "createServerGroup",
             account: "prod"
           ]
         ]
       ],
       [
-        scenario: "inherit traffic options from parent",
-        parentStageContext: [
-          amiName: "ami-1234",
-          trafficOptions: "enable",
+        scenario                : "inherit traffic options from parent",
+        parentStageContext      : [
+          amiName           : "ami-1234",
+          trafficOptions    : "enable",
           suspendedProcesses: [],
         ],
-        stageContext: [
+        stageContext            : [
           trafficOptions: "inherit"
         ],
-        triggerParams: [:],
+        triggerParams           : [:],
         expectedParallelContexts: [
           [
-            name: "Deploy in us-west-1",
-            cluster: [
-              account: "prod",
-              availabilityZones: ["us-west-1": []],
-              cloudProvider: "aws",
+            name          : "Deploy in us-west-1",
+            cluster       : [
+              account                  : "prod",
+              availabilityZones        : ["us-west-1": []],
+              cloudProvider            : "aws",
               restrictedExecutionWindow: [:],
-              strategy: "none",
-              amiName: "ami-1234",
-              trafficOptions: "enable",
-              suspendedProcesses: [],
+              strategy                 : "none",
+              amiName                  : "ami-1234",
+              trafficOptions           : "enable",
+              suspendedProcesses       : [],
             ],
             trafficOptions: "inherit",
-            type: "createServerGroup",
-            account: "prod"
+            type          : "createServerGroup",
+            account       : "prod"
           ]
         ]
       ],
       [
-        scenario: "override traffic options in parent",
-        parentStageContext: [
-          amiName: "ami-1234",
-          trafficOptions: "disable",
+        scenario                : "override traffic options in parent",
+        parentStageContext      : [
+          amiName           : "ami-1234",
+          trafficOptions    : "disable",
           suspendedProcesses: ['AddToLoadBalancer'],
         ],
-        stageContext: [
+        stageContext            : [
           trafficOptions: "enable"
         ],
-        triggerParams: [:],
+        triggerParams           : [:],
         expectedParallelContexts: [
           [
-            name: "Deploy in us-west-1",
-            cluster: [
-              account: "prod",
-              availabilityZones: ["us-west-1": []],
-              cloudProvider: "aws",
+            name          : "Deploy in us-west-1",
+            cluster       : [
+              account                  : "prod",
+              availabilityZones        : ["us-west-1": []],
+              cloudProvider            : "aws",
               restrictedExecutionWindow: [:],
-              strategy: "none",
-              amiName: "ami-1234",
-              trafficOptions: "disable",
-              suspendedProcesses: []
+              strategy                 : "none",
+              amiName                  : "ami-1234",
+              trafficOptions           : "disable",
+              suspendedProcesses       : []
             ],
-            account: "prod",
+            account       : "prod",
             trafficOptions: "enable",
-            type: "createServerGroup",
+            type          : "createServerGroup",
           ]
         ]
       ]
@@ -189,7 +198,9 @@ class ParallelDeployStageSpec extends Specification {
         context.cluster.cloudProvider = cloudProvider
       }
     } else {
-      context.clusters = availabilityZones.collect { ["availabilityZones": [(it): []]] }
+      context.clusters = availabilityZones.collect {
+        ["availabilityZones": [(it): []]]
+      }
 
       if (cloudProvider) {
         context.clusters.each {

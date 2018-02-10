@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELIN
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import java.lang.System.currentTimeMillis
 
 /**
@@ -28,6 +29,7 @@ import java.lang.System.currentTimeMillis
  */
 fun pipeline(init: Execution.() -> Unit = {}): Execution {
   val pipeline = Execution(PIPELINE, "covfefe")
+  pipeline.trigger = Trigger("manual")
   pipeline.buildTime = currentTimeMillis()
   pipeline.init()
   return pipeline

@@ -16,23 +16,25 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
+import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluationSummary;
+import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluator;
+import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload.BuildInfo;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload.SourceControl;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.Trigger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluationSummary;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluator;
-import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger;
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.BuildInfo;
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.SourceControl;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.Trigger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ExpressionEvaluationVersion.V2;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.util.Collections.emptyList;
@@ -45,7 +47,7 @@ public class ContextParameterProcessor {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
-  private final static ObjectMapper mapper = new ObjectMapper();
+  private final static ObjectMapper mapper = OrcaObjectMapper.newInstance();
 
   private ExpressionEvaluator expressionEvaluator;
 
@@ -115,8 +117,8 @@ public class ContextParameterProcessor {
       context.put("scmInfo", Optional.ofNullable((BuildInfo) context.get("buildInfo")).map(BuildInfo::getScm).orElse(null));
     }
 
-    if (context.get("scmInfo") == null && trigger instanceof JenkinsTrigger) {
-      context.put("scmInfo", Optional.ofNullable(((JenkinsTrigger) trigger).getBuildInfo()).map(BuildInfo::getScm).orElse(emptyList()));
+    if (context.get("scmInfo") == null && (trigger != null && trigger.getPayload() instanceof JenkinsTriggerPayload)) {
+      context.put("scmInfo", Optional.ofNullable(((JenkinsTriggerPayload) trigger.getPayload()).getBuildInfo()).map(BuildInfo::getScm).orElse(emptyList()));
     }
     if (context.get("scmInfo") != null && ((List) context.get("scmInfo")).size() >= 2) {
       List<SourceControl> scmInfos = (List<SourceControl>) context.get("scmInfo");

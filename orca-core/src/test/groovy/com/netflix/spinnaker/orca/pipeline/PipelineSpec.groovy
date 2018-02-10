@@ -16,8 +16,9 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTriggerPayload
 import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -31,7 +32,7 @@ class PipelineSpec extends Specification {
 
   @Subject
     pipeline = pipeline {
-      trigger = new JenkinsTrigger("master", "SPINNAKER-build-job", 1, null, null, null, null);
+      trigger = new Trigger("jenkins", new JenkinsTriggerPayload("master", "SPINNAKER-build-job", 1, null));
       stage { type = "stage1" }
       stage { type = "stage2" }
       stage { type = "stage3" }
@@ -57,6 +58,7 @@ class PipelineSpec extends Specification {
 
   def "trigger is properly build into the pipeline"() {
     expect:
-    pipeline.trigger.job == "SPINNAKER-build-job" && pipeline.trigger.buildNumber == 1
+    pipeline.trigger.payload.job == "SPINNAKER-build-job"
+    pipeline.trigger.payload.buildNumber == 1
   }
 }
