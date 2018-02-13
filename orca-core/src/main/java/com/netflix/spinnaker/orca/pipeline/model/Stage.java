@@ -31,7 +31,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.listeners.StageTaskPropagationListener;
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.lang.String.format;
@@ -230,8 +229,6 @@ public class Stage implements Serializable {
   /**
    * Returns the tasks that are associated with this stage. Tasks are the most granular unit of work in a stage.
    * Because tasks can be dynamically composed, this list is open updated during a stage's execution.
-   *
-   * @see StageTaskPropagationListener
    */
   private List<Task> tasks = new ArrayList<>();
 
@@ -489,12 +486,22 @@ public class Stage implements Serializable {
     return topLevelStage;
   }
 
-  /**
-   * Returns the top-most stage timeout value if present.
-   */
-  @JsonIgnore public Optional<Long> getTopLevelTimeout() {
-    Stage topLevelStage = getTopLevelStage();
-    Object timeout = topLevelStage.getContext().get("stageTimeoutMs");
+  @JsonIgnore public Optional<Stage> getParentWithTimeout() {
+    Stage current = this;
+    Optional<Long> timeout = Optional.empty();
+
+    while (current != null && !timeout.isPresent()) {
+      timeout = current.getTimeout();
+      if (!timeout.isPresent()) {
+        current = current.getParent();
+      }
+    }
+
+    return timeout.isPresent() ? Optional.of(current) : Optional.empty();
+  }
+
+  @JsonIgnore public Optional<Long> getTimeout() {
+    Object timeout = getContext().get(STAGE_TIMEOUT_OVERRIDE_KEY);
     if (timeout instanceof Integer) {
       return Optional.of((Integer) timeout).map(Integer::longValue);
     } else if (timeout instanceof Long) {
