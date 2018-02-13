@@ -64,7 +64,8 @@ class ParallelDeployStage implements StageDefinitionBuilder {
     if (stage.execution.type == PIPELINE) {
       Trigger trigger = stage.execution.trigger
       if (trigger.strategy && trigger.payload instanceof PipelineTriggerPayload) {
-        Stage parentStage = trigger.payload.parentStage
+        // NOTE: this is NOT the actual parent stage, it's the grandparent which is the top level deploy stage
+        Stage parentStage = trigger.payload.parentExecution.stageById(trigger.parameters.parentStageId)
         Map cluster = parentStage.context as Map
         cluster.strategy = 'none'
         if (!cluster.amiName && trigger.parameters.amiName) {
