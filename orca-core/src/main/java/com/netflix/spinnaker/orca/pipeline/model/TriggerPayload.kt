@@ -16,9 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.model
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.*
 
 interface TriggerPayload
 
@@ -90,4 +88,9 @@ data class GitTriggerPayload
   @JsonProperty("project") val project: String,
   @JsonProperty("branch") val branch: String,
   @JsonProperty("slug") val slug: String
+) : TriggerPayload
+
+data class UnknownTriggerPayload
+@JsonCreator constructor(
+  @set:JsonAnySetter @get:JsonAnyGetter var content: Map<String, Any>
 ) : TriggerPayload

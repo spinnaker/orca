@@ -82,7 +82,10 @@ class ParallelDeployStageSpec extends Specification {
         ),
         null,
         "example@example.com",
-        data.triggerParams,
+        data.triggerParams.with {
+          putAll([strategy: true, parentStageId: parentPipeline.stageByRef("parentStage").id]);
+          it
+        },
         [],
         [],
         false,
