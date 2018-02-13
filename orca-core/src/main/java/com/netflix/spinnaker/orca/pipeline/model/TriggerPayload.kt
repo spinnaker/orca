@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.pipeline.model
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonProperty
 
 interface TriggerPayload
 
@@ -75,6 +75,7 @@ data class PipelineTriggerPayload
 ) : TriggerPayload {
   constructor(parentExecution: Execution) : this(parentExecution, null)
 
+  @JsonIgnore
   val parentStage: Stage? =
     if (parentPipelineStageId != null) {
       parentExecution.stageById(parentPipelineStageId)

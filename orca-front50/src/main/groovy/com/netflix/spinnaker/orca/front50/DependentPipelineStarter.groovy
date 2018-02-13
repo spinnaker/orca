@@ -62,8 +62,9 @@ class DependentPipelineStarter implements ApplicationContextAware {
       user                 : principal?.username ?: user ?: "[anonymous]",
       parentExecution      : parentPipeline,
       parentPipelineStageId: parentPipelineStageId,
-      parameters           : [:]
-    ];
+      parameters           : [:],
+      strategy             : suppliedParameters.strategy == true
+    ]
 
     if (pipelineConfig.parameterConfig || !suppliedParameters.empty) {
       def pipelineParameters = suppliedParameters ?: [:]
