@@ -48,6 +48,32 @@ class TriggerSpec extends Specification {
     }'''
   }
 
+  def "can parse a trigger with an unknown payload"() {
+    given:
+    def trigger = mapper.readValue(triggerJson, Trigger)
+
+    expect:
+    with(trigger) {
+      payload instanceof UnknownTriggerPayload
+      payload.content.foo == "covfefe"
+      payload.content.bar == "fnord"
+    }
+
+    where:
+    triggerJson = '''
+    {
+      "type": "manual",
+      "user": "afeldman@netflix.com",
+      "parameters": {
+        "foo": "covfefe",
+        "bar": "fnord"
+      },
+      "notifications": [],
+      "foo": "covfefe",
+      "bar": "fnord"
+    }'''
+  }
+
   def "can parse nested parameters"() {
     given:
     def trigger = mapper.readValue(triggerJson, Trigger)
@@ -80,7 +106,6 @@ class TriggerSpec extends Specification {
     expect:
     with(trigger) {
       type == "manual"
-      payload == null
       user == "[anonymous]"
       parameters == [:]
       notifications == []

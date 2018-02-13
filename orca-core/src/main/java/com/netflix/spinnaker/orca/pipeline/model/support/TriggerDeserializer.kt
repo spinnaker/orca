@@ -42,13 +42,13 @@ internal class TriggerDeserializer
       }
     }
 
-  private fun JsonNode.parseTriggerPayload(parser: JsonParser): TriggerPayload? {
+  private fun JsonNode.parseTriggerPayload(parser: JsonParser): TriggerPayload {
     return when {
       looksLikeDocker() -> parseValue<DockerTriggerPayload>(parser)
       looksLikeJenkins() -> parseValue<JenkinsTriggerPayload>(parser)
       looksLikePipeline() -> parseValue<PipelineTriggerPayload>(parser)
       looksLikeGit() -> parseValue<GitTriggerPayload>(parser)
-      else -> null
+      else -> parseValue<UnknownTriggerPayload>(parser)
     }
   }
 
