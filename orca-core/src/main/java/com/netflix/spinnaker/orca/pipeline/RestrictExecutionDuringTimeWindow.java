@@ -16,13 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.time.Instant;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -32,6 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Nonnull;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+
 import static com.netflix.spinnaker.orca.ExecutionStatus.*;
 import static java.lang.String.format;
 import static java.util.Calendar.*;
@@ -396,7 +398,7 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
       final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
       @Override public String toString() {
-        return "{${start.format(FORMAT)} to ${end.format(FORMAT)}}";
+        return format("{%s to %s}", start.format(FORMAT), end.format(FORMAT));
       }
     }
 

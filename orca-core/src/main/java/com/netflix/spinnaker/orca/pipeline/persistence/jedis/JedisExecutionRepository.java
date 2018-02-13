@@ -16,12 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline.persistence.jedis;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
@@ -51,6 +45,14 @@ import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
 import static com.google.common.collect.Maps.filterValues;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
@@ -463,7 +465,7 @@ public class JedisExecutionRepository extends AbstractRedisExecutionRepository {
       return c.exists(key);
     });
     if (!exists) {
-      throw new ExecutionNotFoundException("No ${type} found for $id");
+      throw new ExecutionNotFoundException(format("No %s found for %s", type, id));
     }
 
     final Map<String, String> map = new HashMap<>();
