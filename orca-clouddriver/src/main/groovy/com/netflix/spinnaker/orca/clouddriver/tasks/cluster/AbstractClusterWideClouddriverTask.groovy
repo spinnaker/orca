@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
+import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWideClouddriverOperationStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
@@ -76,6 +77,10 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
       moniker?.app ?: Names.parseName(cluster).app
     }
 
+    String getClusterName() {
+      moniker?.cluster ?: cluster
+    }
+
   }
 
   protected TaskResult missingClusterResult(Stage stage, ClusterSelection clusterSelection) {
@@ -110,18 +115,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
       return emptyClusterResult(stage, clusterSelection, cluster.get())
     }
 
-    def locations =
-      stage.context.namespaces
-      ? stage.context.namespaces.collect { new Location(type: Location.Type.NAMESPACE, value: it) }
-      : stage.context.regions
-        ? stage.context.regions.collect { new Location(type: Location.Type.REGION, value: it) }
-        : stage.context.zones
-          ? stage.context.zones.collect { new Location(type: Location.Type.ZONE, value: it) }
-          : stage.context.namespace
-            ? [new Location(type: Location.Type.NAMESPACE, value: stage.context.namespace)]
-            : stage.context.region
-              ? [new Location(type: Location.Type.REGION, value: stage.context.region)]
-              : []
+    def locations = AbstractClusterWideClouddriverOperationStage.getLocations(stage)
 
     Location.Type exactLocationType = locations?.getAt(0)?.type
 

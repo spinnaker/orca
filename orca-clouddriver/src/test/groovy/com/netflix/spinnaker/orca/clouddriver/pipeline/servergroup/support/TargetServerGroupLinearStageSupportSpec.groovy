@@ -82,7 +82,7 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     def stage = new Stage(Execution.newPipeline("orca"), "test", ['region': 'should be overridden'])
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
+    def syntheticStages = supportStage.composeTargets(stage).findAll { !['acquireLock', 'releaseLock'].contains(it.type) }.groupBy { it.syntheticStageOwner }
 
     then:
     1 * resolver.resolveByParams(_) >> [
@@ -114,7 +114,7 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     )]
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
+    def syntheticStages = supportStage.composeTargets(stage).findAll { !['acquireLock', 'releaseLock'].contains(it.type) }.groupBy { it.syntheticStageOwner }
 
     then:
     (shouldResolve ? 1 : 0) * resolver.resolveByParams(_) >> [

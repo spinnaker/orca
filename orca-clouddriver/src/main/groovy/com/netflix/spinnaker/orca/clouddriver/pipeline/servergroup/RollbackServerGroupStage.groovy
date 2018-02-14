@@ -20,7 +20,12 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.ExplicitRollback
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollback
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.Rollback
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.RollbackCluster
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.TestRollback
+import com.netflix.spinnaker.orca.clouddriver.utils.LockNameHelper
+import com.netflix.spinnaker.orca.locks.LockContext
+import com.netflix.spinnaker.orca.locks.LockableStageSupport
+import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,6 +39,9 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
   @Autowired
   AutowireCapableBeanFactory autowireCapableBeanFactory
 
+  @Autowired
+  LockingConfigurationProperties lockingConfiguration
+
   @Override
   List<Stage> aroundStages(Stage stage) {
     def stageData = stage.mapTo(StageData)
@@ -42,9 +50,22 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
       throw new IllegalStateException("Missing `rollbackType` (execution: ${stage.execution.id})")
     }
 
-    def explicitRollback = stage.mapTo("/rollbackContext", stageData.rollbackType.implementationClass) as Rollback
-    autowireCapableBeanFactory.autowireBean(explicitRollback)
-    return explicitRollback.buildStages(stage)
+    def rollback = stage.mapTo("/rollbackContext", stageData.rollbackType.implementationClass) as Rollback
+    autowireCapableBeanFactory.autowireBean(rollback)
+    List<Stage> stages = []
+    int insertionIndex = 0
+    if (LockableStageSupport.useLocking(stage, lockingConfiguration)) {
+      RollbackCluster rollbackCluster = rollback.getRollbackCluster(stage)
+      if (rollbackCluster) {
+        insertionIndex = 1
+        String lockName = LockNameHelper.buildClusterLockName(rollbackCluster.cloudProvider, rollbackCluster.credentials, rollbackCluster.cluster, rollbackCluster.region)
+        LockContext lockContext = LockableStageSupport.buildLockContext(stage, lockName)
+        stages.add(LockableStageSupport.buildAcquireLockStage(stage, lockContext))
+        stages.add(LockableStageSupport.buildReleaseLockStage(stage, lockContext))
+      }
+    }
+    stages.addAll(insertionIndex, rollback.buildStages(stage))
+    return stages
   }
 
   static enum RollbackType {

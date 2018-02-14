@@ -271,6 +271,41 @@ public class Execution implements Serializable {
     return initialConfig;
   }
 
+  /**
+   * Execution flags are used to store flags that control behavior of a specific pipeline execution.
+   *
+   * For example ExecutionEngine (if it was added after this map existed) would have been a great
+   * candidate for an execution flag.
+   */
+  private Map<String, String> executionFlags = new HashMap<>();
+
+  public Map<String, String> getExecutionFlags() {
+    return executionFlags;
+  }
+
+  public void setExecutionFlags(Map<String, String> executionFlags) {
+    this.executionFlags = executionFlags;
+  }
+
+  @JsonIgnore
+  public String getExecutionFlag(@Nonnull String flag) {
+    return getExecutionFlag(flag, null);
+  }
+
+  @JsonIgnore
+  @Nullable
+  public String getExecutionFlag(@Nonnull String flag, @Nullable String defaultValue) {
+    if (executionFlags == null) {
+      return defaultValue;
+    }
+    return Optional.ofNullable(executionFlags.get(flag)).orElse(defaultValue);
+  }
+
+  @JsonIgnore
+  public void setExecutionFlag(String flag, String value) {
+    executionFlags.put(flag, value);
+  }
+
   @Nullable
   public Stage namedStage(String type) {
     return stages

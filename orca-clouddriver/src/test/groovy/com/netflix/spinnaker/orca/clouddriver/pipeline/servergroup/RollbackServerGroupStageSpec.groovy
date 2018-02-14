@@ -18,6 +18,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.TestRollback
+import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
@@ -40,6 +41,7 @@ class RollbackServerGroupStageSpec extends Specification {
 
     def rollbackServerGroupStage = new RollbackServerGroupStage()
     rollbackServerGroupStage.autowireCapableBeanFactory = autowireCapableBeanFactory
+    rollbackServerGroupStage.lockingConfiguration = new LockingConfigurationProperties(enabled: true, executionDefault: true)
 
     def stage = stage {
       type = "rollbackServerGroup"

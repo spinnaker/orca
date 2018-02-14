@@ -21,18 +21,24 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwar
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
+import com.netflix.spinnaker.orca.clouddriver.utils.LockNameHelper
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
+import com.netflix.spinnaker.orca.locks.LockableStageSupport
+import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+
+import java.util.concurrent.TimeUnit
+
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Slf4j
-abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareStage {
+abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareStage implements LockableStageSupport {
 
   @Autowired
   List<Strategy> strategies
@@ -45,6 +51,9 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
 
   @Autowired(required = false)
   List<DeployStagePreProcessor> deployStagePreProcessors = []
+
+  @Autowired
+  LockingConfigurationProperties lockingConfiguration
 
   AbstractDeployStrategyStage(String name) {
     super(name)
@@ -92,12 +101,21 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  def List<Stage> aroundStages(Stage stage) {
+  List<String> getLockNames(Stage stage) {
+    def stageData = stage.mapTo(StageData)
+    return [LockNameHelper.buildClusterLockName(stageData.cloudProvider, stageData.account, stageData.cluster, stageData.region)]
+  }
+
+  @Override
+  List<Stage> aroundStages(Stage stage) {
     correctContext(stage)
     Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
       it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
     })
-    def stages = strategy.composeFlow(stage)
+    List<Stage> stages = []
+    def lockStages = LockableStageSupport.buildAroundStages(stage, this)
+    stages.addAll(lockStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE })
+    stages.addAll(strategy.composeFlow(stage))
 
     def stageData = stage.mapTo(StageData)
     deployStagePreProcessors.findAll { it.supports(stage) }.each {
@@ -126,6 +144,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
         )
       }
     }
+    stages.addAll(lockStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER })
 
     return stages
   }

@@ -34,6 +34,11 @@ public class TestRollback implements Rollback {
   WaitStage waitStage;
 
   @Override
+  public RollbackCluster getRollbackCluster(Stage parentStage) {
+    return null;
+  }
+
+  @Override
   public List<Stage> buildStages(Stage parentStage) {
     Map<String, Object> waitContext = Collections.singletonMap("waitTime", waitTime);
 

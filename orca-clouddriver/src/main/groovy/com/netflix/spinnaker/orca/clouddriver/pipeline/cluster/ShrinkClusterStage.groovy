@@ -41,7 +41,8 @@ class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationStage {
   }
 
   @Override
-  def List<Stage> aroundStages(Stage stage) {
+  List<Stage> aroundStages(Stage stage) {
+    def aroundStages = buildAroundStages(stage, this)
     if (stage.context.allowDeleteActive == true) {
       def context = stage.context + [
         remainingEnabledServerGroups  : stage.context.shrinkToSize,
@@ -55,12 +56,9 @@ class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationStage {
         context.interestingHealthProviderNames = stage.context.interestingHealthProviderNames
       }
 
-      return [
-        newStage(
-          stage.execution, disableClusterStage.type, "disableCluster", context, stage, SyntheticStageOwner.STAGE_BEFORE
-        )
-      ]
+      aroundStages.add(newStage(
+        stage.execution, disableClusterStage.type, "disableCluster", context, stage, SyntheticStageOwner.STAGE_BEFORE))
     }
-    return []
+    return aroundStages
   }
 }

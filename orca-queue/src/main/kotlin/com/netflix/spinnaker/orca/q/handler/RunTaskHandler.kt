@@ -50,11 +50,14 @@ class RunTaskHandler(
   private val tasks: Collection<Task>,
   private val clock: Clock,
   private val exceptionHandlers: List<ExceptionHandler>,
+  private val taskExecutionInterceptors: List<TaskExecutionInterceptor>,
   private val registry: Registry
 ) : OrcaMessageHandler<RunTask>, ExpressionAware, AuthenticationAware {
 
   override fun handle(message: RunTask) {
-    message.withTask { stage, taskModel, task ->
+    message.withTask { origStage, taskModel, task ->
+      var stage = origStage
+      taskExecutionInterceptors.forEach { t -> stage = t.beforeTaskExecution(task, stage) }
       val execution = stage.execution
       try {
         if (execution.isCanceled || execution.status.isComplete) {
@@ -65,7 +68,9 @@ class RunTaskHandler(
           task.checkForTimeout(stage, taskModel, message)
 
           stage.withAuth {
-            task.execute(stage.withMergedContext()).let { result: TaskResult ->
+            var taskResult = task.execute(stage.withMergedContext())
+            taskExecutionInterceptors.forEach { t -> taskResult = t.afterTaskExecution(task, stage, taskResult) }
+            taskResult.let { result: TaskResult ->
               // TODO: rather send this data with CompleteTask message
               stage.processTaskOutput(result)
               when (result.status) {

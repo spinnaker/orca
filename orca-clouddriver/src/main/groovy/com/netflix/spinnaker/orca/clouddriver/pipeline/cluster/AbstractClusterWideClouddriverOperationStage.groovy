@@ -16,17 +16,25 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 
-import java.beans.Introspector
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask
+import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask.ClusterSelection
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractWaitForClusterWideClouddriverTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.clouddriver.utils.LockNameHelper
+import com.netflix.spinnaker.orca.locks.LockableStageSupport
+import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import org.springframework.beans.factory.annotation.Autowired
 
-abstract class AbstractClusterWideClouddriverOperationStage implements StageDefinitionBuilder {
+import java.beans.Introspector
+
+abstract class AbstractClusterWideClouddriverOperationStage implements LockableStageSupport {
+  @Autowired LockingConfigurationProperties lockingConfiguration
+
   abstract Class<? extends AbstractClusterWideClouddriverTask> getClusterOperationTask()
 
   abstract Class<? extends AbstractWaitForClusterWideClouddriverTask> getWaitForTask()
@@ -36,6 +44,23 @@ abstract class AbstractClusterWideClouddriverOperationStage implements StageDefi
       return taskClassSimpleName.substring(0, taskClassSimpleName.length() - "Task".length())
     }
     return taskClassSimpleName
+  }
+
+  public List<String> getLockNames(Stage stage) {
+    final ClusterSelection cluster = stage.mapTo(AbstractClusterWideClouddriverTask.ClusterSelection.class)
+    return getLocations(stage).collect { LockNameHelper.buildClusterLockName(cluster.cloudProvider, cluster.credentials, cluster.cluster, it.value) }
+  }
+
+  static List<Location> getLocations(Stage stage) {
+   List<Location> locations =
+    stage.context.namespaces ? stage.context.namespaces.collect { new Location(type: Location.Type.NAMESPACE, value: it) } :
+     stage.context.regions ? stage.context.regions.collect { new Location(type: Location.Type.REGION, value: it) } :
+       stage.context.zones ? stage.context.zones.collect { new Location(type: Location.Type.ZONE, value: it) } :
+         stage.context.namespace ? [new Location(type: Location.Type.NAMESPACE, value: stage.context.namespace)] :
+           stage.context.region ? [new Location(type: Location.Type.REGION, value: stage.context.region)] :
+             []
+
+    return locations
   }
 
   @Override

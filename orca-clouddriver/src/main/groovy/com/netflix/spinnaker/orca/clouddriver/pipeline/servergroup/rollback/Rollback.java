@@ -21,4 +21,5 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 
 public interface Rollback {
   List<Stage> buildStages(Stage parentStage);
+  RollbackCluster getRollbackCluster(Stage parentStage);
 }
