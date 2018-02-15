@@ -20,16 +20,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
-import com.netflix.spinnaker.q.AttemptsAttribute
-import com.netflix.spinnaker.q.DeadMessageCallback
-import com.netflix.spinnaker.q.MaxAttemptsAttribute
-import com.netflix.spinnaker.q.QueueTest
-import com.netflix.spinnaker.q.TestMessage
+import com.netflix.spinnaker.q.*
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
 import com.netflix.spinnaker.q.metrics.QueueEvent
 import org.funktionale.partials.invoke
 import java.time.Clock
+import java.util.*
 
 object RedisQueueTest : QueueTest<RedisQueue>(createQueue(p3 = null), ::shutdownCallback)
 
@@ -60,7 +57,7 @@ private val createQueue = { clock: Clock,
       registerSubtypes(TestMessage::class.java)
       registerSubtypes(MaxAttemptsAttribute::class.java, AttemptsAttribute::class.java)
     },
-    serializationMigrators = listOf()
+    serializationMigrator = Optional.empty()
   )
 }
 

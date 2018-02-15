@@ -69,7 +69,7 @@ class RedisQueueConfiguration {
     deadMessageHandler: RedisDeadMessageHandler,
     publisher: EventPublisher,
     redisQueueObjectMapper: ObjectMapper,
-    serializationMigrators: List<SerializationMigrator> = listOf()
+    serializationMigrator: Optional<SerializationMigrator>
   ) =
     RedisQueue(
       queueName = redisQueueProperties.queueName,
@@ -79,7 +79,7 @@ class RedisQueueConfiguration {
       deadMessageHandler = deadMessageHandler,
       publisher = publisher,
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong()),
-      serializationMigrators = serializationMigrators
+      serializationMigrator = serializationMigrator
     )
 
   @Bean

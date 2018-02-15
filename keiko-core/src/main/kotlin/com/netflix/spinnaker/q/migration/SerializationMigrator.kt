@@ -15,12 +15,6 @@
  */
 package com.netflix.spinnaker.q.migration
 
-/**
- * Provides a generic interface for handling jackson deserialization errors
- * and migrating messages to a new, supported format.
- */
 interface SerializationMigrator {
-
-  fun migrate(json: MutableMap<String, Any?>): MutableMap<String, Any?>
-  fun report()
+  fun migrate(json: String): String
 }

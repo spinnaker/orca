@@ -23,20 +23,7 @@ import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.q.metrics.EventPublisher
-import com.netflix.spinnaker.q.metrics.LockFailed
-import com.netflix.spinnaker.q.metrics.MessageAcknowledged
-import com.netflix.spinnaker.q.metrics.MessageDead
-import com.netflix.spinnaker.q.metrics.MessageDuplicate
-import com.netflix.spinnaker.q.metrics.MessageNotFound
-import com.netflix.spinnaker.q.metrics.MessagePushed
-import com.netflix.spinnaker.q.metrics.MessageRescheduled
-import com.netflix.spinnaker.q.metrics.MessageRetried
-import com.netflix.spinnaker.q.metrics.MonitorableQueue
-import com.netflix.spinnaker.q.metrics.QueuePolled
-import com.netflix.spinnaker.q.metrics.QueueState
-import com.netflix.spinnaker.q.metrics.RetryPolled
-import com.netflix.spinnaker.q.metrics.fire
+import com.netflix.spinnaker.q.metrics.*
 import com.netflix.spinnaker.q.migration.SerializationMigrator
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
@@ -54,6 +41,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
 import java.time.temporal.TemporalAmount
+import java.util.*
 
 class RedisQueue(
   private val queueName: String,
@@ -61,7 +49,7 @@ class RedisQueue(
   private val clock: Clock,
   private val lockTtlSeconds: Int = 10,
   private val mapper: ObjectMapper,
-  private val serializationMigrators: List<SerializationMigrator>,
+  private val serializationMigrator: Optional<SerializationMigrator>,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandler: (Queue, Message) -> Unit,
   override val publisher: EventPublisher
@@ -182,26 +170,12 @@ class RedisQueue(
                     hget(messagesKey, fingerprint)
                   }
                   .let { (_, _, json) ->
-                    try {
-                      mapper
-                        .readValue<Message>(json as String)
-                        .let { message ->
-                          log.warn("Not retrying message $fingerprint because an identical message is already on the queue")
-                          fire<MessageDuplicate>(message)
-                        }
-                    } catch (e: IOException) {
-                      if (!serializationMigrators.isEmpty()) {
-                        throw e
+                    mapper
+                      .readValue<Message>(runSerializationMigration(json as String))
+                      .let { message ->
+                        log.warn("Not retrying message $fingerprint because an identical message is already on the queue")
+                        fire<MessageDuplicate>(message)
                       }
-                      runSerializationMigrations(fingerprint, json as String)?.also {
-                        mapper
-                          .readValue<Message>(it)
-                          .let { message ->
-                            log.warn("Not retrying message $fingerprint because an identical message is already on the queue")
-                            fire<MessageDuplicate>(message)
-                          }
-                      }
-                    }
                   }
               } else {
                 log.warn("Retrying message $fingerprint after $attempts attempts")
@@ -308,7 +282,7 @@ class RedisQueue(
         removeMessage(fingerprint)
       } else {
         try {
-          val message = mapper.readValue<Message>(json)
+          val message = mapper.readValue<Message>(runSerializationMigration(json))
             .apply {
               // TODO: AttemptsAttribute could replace `attemptsKey`
               val currentAttempts = (getAttribute() ?: AttemptsAttribute())
@@ -320,39 +294,18 @@ class RedisQueue(
 
           block.invoke(message)
         } catch (e: IOException) {
-          if (serializationMigrators.isNotEmpty()) {
-            log.error("Failed to read message $fingerprint, attempting to run serialization migrators...")
-            runSerializationMigrations(fingerprint, json)
-          } else {
-            log.error("Failed to read message $fingerprint, requeuing...", e)
-          }
+          log.error("Failed to read message $fingerprint, requeuing...", e)
           requeueMessage(fingerprint)
         }
       }
     }
   }
 
-  private fun runSerializationMigrations(fingerprint: String, json: String): String? {
-    val raw: Map<String, Any?>
-    try {
-      raw = mapper.readValue(json)
-    } catch (e: IOException) {
-      // "This should never happen"
-      log.error("Failed to read message to generic object for serialization migration, cannot migrate message", e)
-      return null
+  private fun runSerializationMigration(json: String): String {
+    if (serializationMigrator.isPresent) {
+      return serializationMigrator.get().migrate(json)
     }
-
-    var migrated = raw.toMutableMap()
-    serializationMigrators.forEach {
-      migrated = it.migrate(migrated)
-    }
-
-    return mapper.writeValueAsString(migrated).also {
-      log.info("Migrated message (raw: $json, migrated: $it")
-      pool.resource.use { redis ->
-        redis.hset(messagesKey, fingerprint, it)
-      }
-    }
+    return json
   }
 
   private fun handleDeadMessage(message: Message) {
