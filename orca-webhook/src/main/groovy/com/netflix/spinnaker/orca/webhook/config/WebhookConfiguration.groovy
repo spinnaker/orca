@@ -18,8 +18,6 @@
 package com.netflix.spinnaker.orca.webhook.config
 
 import ch.qos.logback.classic.pattern.MessageConverter
-import com.jayway.jsonpath.spi.cache.CacheProvider
-import com.jayway.jsonpath.spi.cache.NOOPCache
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -29,17 +27,12 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.http.converter.StringHttpMessageConverter
 import org.springframework.web.client.RestTemplate
-import javax.annotation.PostConstruct
 
 @Configuration
 @ConditionalOnProperty(prefix = "webhook.stage", value = "enabled", matchIfMissing = true)
 @ComponentScan("com.netflix.spinnaker.orca.webhook")
 @EnableConfigurationProperties(PreconfiguredWebhookProperties)
 class WebhookConfiguration {
-  @PostConstruct
-  public void disableJsonPathCache() {
-    CacheProvider.setCache(new NOOPCache())
-  }
 
   @Bean
   @ConditionalOnMissingBean(RestTemplate)
