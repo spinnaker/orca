@@ -88,7 +88,8 @@ class CreateWebhookTask implements RetryableTask {
             break
           case "webhookResponse":
             try {
-              statusUrl = readJsonPath(response.body, stage.context.statusUrlJsonPath)
+              JsonPath path = JsonPath.compile(stage.context.statusUrlJsonPath as String)
+              statusUrl = new JsonContext().parse(response.body).read(path)
             } catch (PathNotFoundException e) {
               outputs.webhook << [error: e.message]
               return new TaskResult(ExecutionStatus.TERMINAL, outputs)
@@ -110,10 +111,5 @@ class CreateWebhookTask implements RetryableTask {
       outputs.webhook << [error: "The request did not return a 2xx/3xx status"]
       return new TaskResult(ExecutionStatus.TERMINAL, outputsDeprecated + outputs)
     }
-  }
-
-  static def readJsonPath(def json, String jsonPath) {
-    JsonPath path = JsonPath.compile(jsonPath)
-    return new JsonContext().parse(json).read(path)
   }
 }
