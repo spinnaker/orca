@@ -79,7 +79,8 @@ class RedisQueueConfiguration {
       deadMessageHandler = deadMessageHandler,
       publisher = publisher,
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong()),
-      serializationMigrator = serializationMigrator
+      serializationMigrator = serializationMigrator,
+      prefetchCount = redisQueueProperties.prefetchCount
     )
 
   @Bean

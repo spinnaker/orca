@@ -48,6 +48,7 @@ class RedisQueue(
   private val pool: Pool<Jedis>,
   private val clock: Clock,
   private val lockTtlSeconds: Int = 10,
+  private val prefetchCount: Int = 10,
   private val mapper: ObjectMapper,
   private val serializationMigrator: Optional<SerializationMigrator>,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
@@ -76,11 +77,7 @@ class RedisQueue(
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
-      redis.zrangeByScore(queueKey, 0.0, score(), 0, 1)
-        .firstOrNull()
-        ?.takeIf { fingerprint ->
-          redis.acquireLock(fingerprint)
-        }
+      redis.fetchFingerprint()
         ?.also { fingerprint ->
           val ack = this::ackMessage.partially1(fingerprint)
           redis.readMessage(fingerprint) { message ->
@@ -311,6 +308,21 @@ class RedisQueue(
   private fun handleDeadMessage(message: Message) {
     deadMessageHandler.invoke(this, message)
   }
+
+  /**
+   * Will pre-fetch a list of fingerprints, returning the first fingerprint it is
+   * able to successfully acquire a lock on.
+   */
+  private fun Jedis.fetchFingerprint() =
+    zrangeByScore(queueKey, 0.0, score(), 0, prefetchCount)
+      .let { fingerprints ->
+        fingerprints.forEach { fingerprint ->
+          if (acquireLock(fingerprint)) {
+            return@let fingerprint
+          }
+        }
+        return@let null
+      }
 
   private fun Jedis.acquireLock(fingerprint: String) =
     (set("$locksKey:$fingerprint", "\uD83D\uDD12", "NX", "EX", lockTtlSeconds) == "OK")
