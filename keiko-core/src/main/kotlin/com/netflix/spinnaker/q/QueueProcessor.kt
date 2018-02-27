@@ -33,40 +33,55 @@ class QueueProcessor(
   private val executor: QueueExecutor<*>,
   private val handlers: Collection<MessageHandler<*>>,
   private val activator: Activator,
-  private val publisher: EventPublisher
+  private val publisher: EventPublisher,
+  private val fillExecutorEachCycle: Boolean = false
 ) {
   private val log: Logger = getLogger(javaClass)
 
   /**
-   * Polls the [Queue] once to attempt to read a single message so long as
-   * [executor] has capacity.
+   * Polls the [Queue] once (or more if [fillExecutorEachCycle] is true) so
+   * long as [executor] has capacity.
    */
   @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:10}")
-  fun pollOnce() =
+  fun poll() =
     activator.ifEnabled {
       if (executor.hasCapacity()) {
-        queue.poll { message, ack ->
-          log.info("Received message $message")
-          val handler = handlerFor(message)
-          if (handler != null) {
-            try {
-              executor.execute {
-                handler.invoke(message)
-                ack.invoke()
-              }
-            } catch (e: RejectedExecutionException) {
-              log.warn("Executor at capacity, immediately re-queuing message", e)
-              queue.push(message)
-            }
-          } else {
-            // TODO: DLQ
-            throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}: $message")
+        if (fillExecutorEachCycle) {
+          val availableCapacity = executor.availableCapacity()
+          availableCapacity.downTo(0).forEach {
+            pollOnce()
           }
+        } else {
+          pollOnce()
         }
       } else {
         publisher.publishEvent(NoHandlerCapacity())
       }
     }
+
+  /**
+   * Polls the [Queue] once to attempt to read a single message.
+   */
+  private fun pollOnce() {
+    queue.poll { message, ack ->
+      log.info("Received message $message")
+      val handler = handlerFor(message)
+      if (handler != null) {
+        try {
+          executor.execute {
+            handler.invoke(message)
+            ack.invoke()
+          }
+        } catch (e: RejectedExecutionException) {
+          log.warn("Executor at capacity, immediately re-queuing message", e)
+          queue.push(message)
+        }
+      } else {
+        // TODO: DLQ
+        throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}: $message")
+      }
+    }
+  }
 
   private val handlerCache = mutableMapOf<Class<out Message>, MessageHandler<*>>()
 

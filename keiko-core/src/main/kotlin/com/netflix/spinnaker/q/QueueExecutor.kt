@@ -26,4 +26,5 @@ abstract class QueueExecutor<out T : Executor>(
   protected val executor: T
 ) : Executor by executor {
   abstract fun hasCapacity(): Boolean
+  abstract fun availableCapacity(): Int
 }

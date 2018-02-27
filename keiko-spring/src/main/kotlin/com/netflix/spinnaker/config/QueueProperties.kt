@@ -23,4 +23,5 @@ class QueueProperties {
   var handlerThreadNamePrefix: String = "handlers-"
   var handlerCorePoolSize: Int = 20
   var handlerMaxPoolSize: Int = 20
+  var fillExecutorEachCycle: Boolean = false
 }

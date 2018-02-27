@@ -54,8 +54,9 @@ class QueueConfiguration {
     executor: QueueExecutor<*>,
     handlers: Collection<MessageHandler<*>>,
     activator: Activator,
-    publisher: EventPublisher
-  ) = QueueProcessor(queue, executor, handlers, activator, publisher)
+    publisher: EventPublisher,
+    queueProperties: QueueProperties
+  ) = QueueProcessor(queue, executor, handlers, activator, publisher, queueProperties.fillExecutorEachCycle)
 
   @Bean
   fun queueEventPublisher(

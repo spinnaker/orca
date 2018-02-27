@@ -62,7 +62,7 @@ object QueueProcessorTest : Spek({
       afterGroup(::resetMocks)
 
       on("the next polling cycle") {
-        subject.pollOnce()
+        subject.poll()
       }
 
       it("does not poll the queue") {
@@ -98,7 +98,7 @@ object QueueProcessorTest : Spek({
         }
 
         action("the worker runs") {
-          subject.pollOnce()
+          subject.poll()
         }
 
         it("does not poll the queue") {
@@ -135,7 +135,7 @@ object QueueProcessorTest : Spek({
             afterGroup(::resetMocks)
 
             on("the next polling cycle") {
-              subject.pollOnce()
+              subject.poll()
             }
 
             it("passes the message to the correct handler") {
@@ -166,7 +166,7 @@ object QueueProcessorTest : Spek({
             afterGroup(::resetMocks)
 
             on("the next polling cycle") {
-              subject.pollOnce()
+              subject.poll()
             }
 
             it("passes the message to the correct handler") {
@@ -197,7 +197,7 @@ object QueueProcessorTest : Spek({
             afterGroup(::resetMocks)
 
             on("the next polling cycle") {
-              assertThatThrownBy { subject.pollOnce() }
+              assertThatThrownBy { subject.poll() }
                 .isA<IllegalStateException>()
             }
 
@@ -228,7 +228,7 @@ object QueueProcessorTest : Spek({
             afterGroup(::resetMocks)
 
             on("the next polling cycle") {
-              subject.pollOnce()
+              subject.poll()
             }
 
             it("does not acknowledge the message") {
@@ -271,6 +271,7 @@ class BlockingThreadExecutor : Executor {
 
 class BlockingQueueExecutor : QueueExecutor<Executor>(BlockingThreadExecutor()) {
   override fun hasCapacity() = true
+  override fun availableCapacity(): Int = 1
 }
 
 class DummyException : RuntimeException("deliberate exception for test")
