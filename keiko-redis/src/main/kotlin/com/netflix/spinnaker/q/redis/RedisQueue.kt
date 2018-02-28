@@ -49,7 +49,6 @@ class RedisQueue(
   private val pool: Pool<Jedis>,
   private val clock: Clock,
   private val lockTtlSeconds: Int = 10,
-  private val prefetchCount: Int = 10,
   private val mapper: ObjectMapper,
   private val serializationMigrator: Optional<SerializationMigrator>,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
@@ -318,14 +317,12 @@ class RedisQueue(
    * able to successfully acquire a lock on.
    */
   private fun Jedis.fetchFingerprint(): Pair<String, Instant>? =
-    zrangeByScoreWithScores(queueKey, 0.0, score(), 0, prefetchCount)
-      .let { fingerprints ->
-        fingerprints.forEach { fingerprint ->
-          if (acquireLock(fingerprint.element)) {
-            return@let Pair(fingerprint.element, Instant.ofEpochMilli(fingerprint.score.toLong()))
-          }
-        }
-        return@let null
+    zrangeByScoreWithScores(queueKey, 0.0, score(), 0, 1)
+      .firstOrNull {
+        acquireLock(it.element)
+      }
+      ?.let {
+        Pair(it.element, Instant.ofEpochMilli(it.score.toLong()))
       }
 
   private fun Jedis.acquireLock(fingerprint: String) =
