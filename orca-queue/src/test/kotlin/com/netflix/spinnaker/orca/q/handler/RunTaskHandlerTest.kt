@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -306,27 +307,39 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
     }
 
     describe("that throws an exception") {
-      val pipeline = pipeline {
-        stage {
-          refId = "1"
-          type = "whatever"
-          task {
-            id = "1"
-            startTime = clock.instant().toEpochMilli()
+      fun makePipeline(): Execution {
+        return pipeline {
+          stage {
+            refId = "1"
+            type = "whatever"
+            errors = listOf()
+            task {
+              id = "1"
+              startTime = clock.instant().toEpochMilli()
+            }
           }
         }
       }
-      val message = RunTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
+
+      fun makeMessage(pipeline: Execution): RunTask {
+        return RunTask(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id, "1", DummyTask::class.java)
+      }
 
       and("it is not recoverable") {
-        val exceptionDetails = ExceptionHandler.Response(
-          RuntimeException::class.qualifiedName,
-          "o noes",
-          ExceptionHandler.responseDetails("o noes"),
-          false
-        )
+        fun makeExceptionDetails(error: String? = null, errors: List<String>? = null): ExceptionHandler.Response {
+          return ExceptionHandler.Response(
+              RuntimeException::class.qualifiedName,
+              "o noes",
+              ExceptionHandler.responseDetails(error, errors),
+              false
+          )
+        }
 
         and("the task should fail the pipeline") {
+          val pipeline = makePipeline()
+          val message = makeMessage(pipeline)
+          val exceptionDetails = makeExceptionDetails()
+
           beforeGroup {
             whenever(task.execute(any())) doThrow RuntimeException("o noes")
             whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
@@ -353,8 +366,59 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           }
         }
 
+        listOf(
+          Triple(
+            "no error message",
+            makeExceptionDetails(),
+            listOf()
+          ),
+          Triple(
+            "an error message",
+            makeExceptionDetails("oh noes"),
+            listOf("oh noes")
+          ),
+          Triple(
+            "an error message and error detail",
+            makeExceptionDetails("oh noes", listOf("dis bad")),
+            listOf("oh noes: dis bad")
+          ),
+          Triple(
+            "an error message and error multiple details",
+            makeExceptionDetails("oh noes", listOf("dis bad", "what do?")),
+            listOf("oh noes: dis bad", "oh noes: what do?")
+          )
+        ).forEach { (responseErrorDescription, exceptionDetails, stageErrors) ->
+          and("the ExceptionHandler.Response has $responseErrorDescription") {
+            val pipeline = makePipeline()
+            val message = makeMessage(pipeline)
+
+            beforeGroup {
+              whenever(task.execute(any())) doThrow RuntimeException("o noes")
+              whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+              whenever(exceptionHandler.handles(any())) doReturn true
+              whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
+            }
+
+            afterGroup(::resetMocks)
+
+            action("the handler receives a message") {
+              subject.handle(message)
+            }
+
+            it("adds errors: $stageErrors to the stage") {
+              verify(repository).storeStage(check {
+                it.errors shouldEqual stageErrors
+              })
+            }
+          }
+        }
+
         and("the task should not fail the whole pipeline, only the branch") {
+          val pipeline = makePipeline()
+          val message = makeMessage(pipeline)
+
           beforeGroup {
+            val exceptionDetails = makeExceptionDetails()
             pipeline.stageByRef("1").apply {
               context["failPipeline"] = false
               context["continuePipeline"] = false
@@ -381,6 +445,10 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         }
 
         and("the task should allow the pipeline to proceed") {
+          val pipeline = makePipeline()
+          val message = makeMessage(pipeline)
+          val exceptionDetails = makeExceptionDetails()
+
           beforeGroup {
             pipeline.stageByRef("1").apply {
               context["failPipeline"] = false
@@ -409,6 +477,9 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       and("it is recoverable") {
+        val pipeline = makePipeline()
+        val message = makeMessage(pipeline)
+
         val taskBackoffMs = 30_000L
         val exceptionDetails = ExceptionHandler.Response(
           RuntimeException::class.qualifiedName,

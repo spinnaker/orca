@@ -197,6 +197,23 @@ public class Stage implements Serializable {
   }
 
   /**
+   * The execution status for this stage
+   */
+  private List<String> errors = new ArrayList<>();
+
+  public @Nonnull List<String> getErrors() {
+    return errors;
+  }
+
+  public void setErrors(@Nonnull List<String> errors) {
+    this.errors = new ArrayList<>(errors);
+  }
+
+  public void addErrors(@Nonnull List<String> errors) {
+    this.errors.addAll(errors);
+  }
+
+  /**
    * The context driving this stage. Provides inputs necessary to component steps
    */
   private Map<String, Object> context = new StageContext(this);

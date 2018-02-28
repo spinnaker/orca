@@ -150,6 +150,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
       stage {
         type = "one"
         context = [foo: "foo"]
+        errors = ["error: first", "error: second"]
       }
       stage {
         type = "two"
@@ -158,6 +159,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
       stage {
         type = "three"
         context = [baz: "baz"]
+        errors = []
       }
     }
     def application = pipeline.application
@@ -177,6 +179,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
       }
       stages.every {
         it.context == pipeline.namedStage(it.type).context
+        it.errors == pipeline.namedStage(it.type).errors
       }
     }
   }
