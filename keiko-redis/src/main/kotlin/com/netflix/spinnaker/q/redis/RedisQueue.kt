@@ -92,7 +92,7 @@ class RedisQueue(
               redis.removeMessage(fingerprint)
               fire(MessageDead)
             } else {
-              fire(MessageProcessing(message, scheduledTime))
+              fire(MessageProcessing(message, scheduledTime, clock.instant()))
               callback(message, ack)
             }
           }

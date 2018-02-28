@@ -18,6 +18,7 @@ package com.netflix.spinnaker.q.metrics
 
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -35,7 +36,11 @@ object RetryPolled : QueueEvent()
 data class MessagePushed(val payload: Message) : QueueEvent()
 object MessageAcknowledged : QueueEvent()
 object MessageRetried : QueueEvent()
-data class MessageProcessing(val payload: Message, val scheduledTime: Instant) : QueueEvent()
+data class MessageProcessing(val payload: Message, val lag: Duration) : QueueEvent() {
+  constructor(payload: Message, scheduledTime: Instant, now: Instant) :
+    this(payload, Duration.between(scheduledTime, now))
+}
+
 object MessageDead : QueueEvent()
 data class MessageDuplicate(val payload: Message) : QueueEvent()
 object LockFailed : QueueEvent()

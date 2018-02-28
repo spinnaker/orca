@@ -53,7 +53,7 @@ class InMemoryQueue(
 
     queue.poll()?.let { envelope ->
       unacked.put(envelope.copy(scheduledTime = clock.instant().plus(ackTimeout)))
-      fire(MessageProcessing(envelope.payload, envelope.scheduledTime))
+      fire(MessageProcessing(envelope.payload, envelope.scheduledTime, clock.instant()))
       callback.invoke(envelope.payload) {
         ack(envelope.id)
         fire(MessageAcknowledged)
