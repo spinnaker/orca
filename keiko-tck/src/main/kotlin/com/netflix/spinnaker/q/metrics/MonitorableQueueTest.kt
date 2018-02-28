@@ -172,6 +172,10 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
       verify(publisher).publishEvent(isA<QueuePolled>())
     }
 
+    it("fires an event to report the message is being processed") {
+      verify(publisher).publishEvent(isA<MessageProcessing>())
+    }
+
     it("reports unacknowledged message depth") {
       with(queue!!.readState()) {
         softly {

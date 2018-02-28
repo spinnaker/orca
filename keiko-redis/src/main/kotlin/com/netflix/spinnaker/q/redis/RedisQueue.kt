@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
+import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.*
 
@@ -78,23 +79,26 @@ class RedisQueue(
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
       redis.fetchFingerprint()
-        ?.also { fingerprint ->
+        ?.also { (fingerprint, scheduledTime) ->
           val ack = this::ackMessage.partially1(fingerprint)
           redis.readMessage(fingerprint) { message ->
-            val attempts = message.getAttribute<AttemptsAttribute>()?.attempts ?: 0
-            val maxAttempts = message.getAttribute<MaxAttemptsAttribute>()?.maxAttempts ?: 0
+            val attempts = message.getAttribute<AttemptsAttribute>()?.attempts
+              ?: 0
+            val maxAttempts = message.getAttribute<MaxAttemptsAttribute>()?.maxAttempts
+              ?: 0
 
             if (maxAttempts > 0 && attempts > maxAttempts) {
               log.warn("Message $fingerprint with payload $message exceeded $maxAttempts retries")
               handleDeadMessage(message)
               redis.removeMessage(fingerprint)
-              fire<MessageDead>()
+              fire(MessageDead)
             } else {
+              fire(MessageProcessing(message, scheduledTime))
               callback(message, ack)
             }
           }
         }
-      fire<QueuePolled>()
+      fire(QueuePolled)
     }
   }
 
@@ -104,10 +108,10 @@ class RedisQueue(
         if (fingerprint != null) {
           log.warn("Re-prioritizing message as an identical one is already on the queue: $fingerprint, message: $message")
           redis.zadd(queueKey, score(delay), fingerprint)
-          fire<MessageDuplicate>(message)
+          fire(MessageDuplicate(message))
         } else {
           redis.queueMessage(message, delay)
-          fire<MessagePushed>(message)
+          fire(MessagePushed(message))
         }
       }
     }
@@ -119,9 +123,9 @@ class RedisQueue(
       log.debug("Re-scheduling message: $message, fingerprint: $fingerprint to deliver in $delay")
       val status: Long = redis.zadd(queueKey, score(delay), fingerprint, ZAddParams.zAddParams().xx())
       if (status.toInt() == 1) {
-        fire<MessageRescheduled>(message)
+        fire(MessageRescheduled(message))
       } else {
-        fire<MessageNotFound>(message)
+        fire(MessageNotFound(message))
       }
     }
   }
@@ -156,7 +160,7 @@ class RedisQueue(
                 handleDeadMessage(message)
                 redis.removeMessage(fingerprint)
               }
-              fire<MessageDead>()
+              fire(MessageDead)
             } else {
               if (redis.zismember(queueKey, fingerprint)) {
                 redis
@@ -171,19 +175,19 @@ class RedisQueue(
                       .readValue<Message>(runSerializationMigration(json as String))
                       .let { message ->
                         log.warn("Not retrying message $fingerprint because an identical message is already on the queue")
-                        fire<MessageDuplicate>(message)
+                        fire(MessageDuplicate(message))
                       }
                   }
               } else {
                 log.warn("Retrying message $fingerprint after $attempts attempts")
                 redis.requeueMessage(fingerprint)
-                fire<MessageRetried>()
+                fire(MessageRetried)
               }
             }
           }
         }
         .also {
-          fire<RetryPolled>()
+          fire(RetryPolled)
         }
     }
   }
@@ -221,7 +225,7 @@ class RedisQueue(
       } else {
         redis.removeMessage(fingerprint)
       }
-      fire<MessageAcknowledged>()
+      fire(MessageAcknowledged)
     }
   }
 
@@ -313,12 +317,12 @@ class RedisQueue(
    * Will pre-fetch a list of fingerprints, returning the first fingerprint it is
    * able to successfully acquire a lock on.
    */
-  private fun Jedis.fetchFingerprint() =
-    zrangeByScore(queueKey, 0.0, score(), 0, prefetchCount)
+  private fun Jedis.fetchFingerprint(): Pair<String, Instant>? =
+    zrangeByScoreWithScores(queueKey, 0.0, score(), 0, prefetchCount)
       .let { fingerprints ->
         fingerprints.forEach { fingerprint ->
-          if (acquireLock(fingerprint)) {
-            return@let fingerprint
+          if (acquireLock(fingerprint.element)) {
+            return@let Pair(fingerprint.element, Instant.ofEpochMilli(fingerprint.score.toLong()))
           }
         }
         return@let null
@@ -328,7 +332,7 @@ class RedisQueue(
     (set("$locksKey:$fingerprint", "\uD83D\uDD12", "NX", "EX", lockTtlSeconds) == "OK")
       .also {
         if (!it) {
-          fire<LockFailed>()
+          fire(LockFailed)
         }
       }
 

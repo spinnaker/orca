@@ -18,6 +18,7 @@ package com.netflix.spinnaker.q.metrics
 
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import java.time.Instant
 
 /**
  * Events that may be emitted by a [Queue].
@@ -29,14 +30,15 @@ sealed class QueueEvent
  */
 sealed class PayloadQueueEvent(val payload: Message) : QueueEvent()
 
-class QueuePolled : QueueEvent()
-class RetryPolled : QueueEvent()
-class MessagePushed(payload: Message) : PayloadQueueEvent(payload)
-class MessageAcknowledged : QueueEvent()
-class MessageRetried : QueueEvent()
-class MessageDead : QueueEvent()
-class MessageDuplicate(payload: Message) : PayloadQueueEvent(payload)
-class LockFailed : QueueEvent()
-class NoHandlerCapacity : QueueEvent()
-class MessageRescheduled(payload: Message) : PayloadQueueEvent(payload)
-class MessageNotFound(payload: Message) : PayloadQueueEvent(payload)
+object QueuePolled : QueueEvent()
+object RetryPolled : QueueEvent()
+data class MessagePushed(val payload: Message) : QueueEvent()
+object MessageAcknowledged : QueueEvent()
+object MessageRetried : QueueEvent()
+data class MessageProcessing(val payload: Message, val scheduledTime: Instant) : QueueEvent()
+object MessageDead : QueueEvent()
+data class MessageDuplicate(val payload: Message) : QueueEvent()
+object LockFailed : QueueEvent()
+object NoHandlerCapacity : QueueEvent()
+data class MessageRescheduled(val payload: Message) : QueueEvent()
+data class MessageNotFound(val payload: Message) : QueueEvent()

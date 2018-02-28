@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.q.metrics
 
-import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
 
 /**
@@ -36,20 +35,7 @@ interface MonitorableQueue : Queue {
 /**
  * Convenience method to allow implementations to fire events.
  */
-inline fun <reified E : QueueEvent> MonitorableQueue.fire(message: Message? = null) {
-  val event = when (E::class) {
-    QueuePolled::class -> QueuePolled()
-    RetryPolled::class -> RetryPolled()
-    MessageAcknowledged::class -> MessageAcknowledged()
-    MessageRetried::class -> MessageRetried()
-    MessageDead::class -> MessageDead()
-    LockFailed::class -> LockFailed()
-    MessagePushed::class -> MessagePushed(message!!)
-    MessageDuplicate::class -> MessageDuplicate(message!!)
-    MessageRescheduled::class -> MessageRescheduled(message!!)
-    MessageNotFound::class -> MessageNotFound(message!!)
-    else -> throw IllegalArgumentException("Unknown event type ${E::class}")
-  }
+fun MonitorableQueue.fire(event: QueueEvent) {
   publisher.publishEvent(event)
 }
 

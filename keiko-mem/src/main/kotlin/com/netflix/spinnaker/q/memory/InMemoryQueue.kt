@@ -19,17 +19,7 @@ package com.netflix.spinnaker.q.memory
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.q.metrics.EventPublisher
-import com.netflix.spinnaker.q.metrics.MessageAcknowledged
-import com.netflix.spinnaker.q.metrics.MessageDead
-import com.netflix.spinnaker.q.metrics.MessageDuplicate
-import com.netflix.spinnaker.q.metrics.MessagePushed
-import com.netflix.spinnaker.q.metrics.MessageRetried
-import com.netflix.spinnaker.q.metrics.MonitorableQueue
-import com.netflix.spinnaker.q.metrics.QueuePolled
-import com.netflix.spinnaker.q.metrics.QueueState
-import com.netflix.spinnaker.q.metrics.RetryPolled
-import com.netflix.spinnaker.q.metrics.fire
+import com.netflix.spinnaker.q.metrics.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
@@ -59,13 +49,14 @@ class InMemoryQueue(
   private val unacked = DelayQueue<Envelope>()
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
-    fire<QueuePolled>()
+    fire(QueuePolled)
 
     queue.poll()?.let { envelope ->
       unacked.put(envelope.copy(scheduledTime = clock.instant().plus(ackTimeout)))
+      fire(MessageProcessing(envelope.payload, envelope.scheduledTime))
       callback.invoke(envelope.payload) {
         ack(envelope.id)
-        fire<MessageAcknowledged>()
+        fire(MessageAcknowledged)
       }
     }
   }
@@ -74,9 +65,9 @@ class InMemoryQueue(
     val existed = queue.removeIf { it.payload == message }
     queue.put(Envelope(message, clock.instant().plus(delay), clock))
     if (existed) {
-      fire<MessageDuplicate>(message)
+      fire(MessageDuplicate(message))
     } else {
-      fire<MessagePushed>(message)
+      fire(MessagePushed(message))
     }
   }
 
@@ -96,19 +87,19 @@ class InMemoryQueue(
   @Scheduled(fixedDelayString = "\${queue.retry.frequency.ms:10000}")
   override fun retry() {
     val now = clock.instant()
-    fire<RetryPolled>()
+    fire(RetryPolled)
     unacked.pollAll { message ->
       if (message.count >= Queue.maxRetries) {
         deadMessageHandler.invoke(this, message.payload)
-        fire<MessageDead>()
+        fire(MessageDead)
       } else {
         val existed = queue.removeIf { it.payload == message.payload }
         log.warn("redelivering unacked message ${message.payload}")
         queue.put(message.copy(scheduledTime = now, count = message.count + 1))
         if (existed) {
-          fire<MessageDuplicate>(message.payload)
+          fire(MessageDuplicate(message.payload))
         } else {
-          fire<MessageRetried>()
+          fire(MessageRetried)
         }
       }
     }

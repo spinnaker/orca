@@ -55,7 +55,7 @@ class QueueProcessor(
           pollOnce()
         }
       } else {
-        publisher.publishEvent(NoHandlerCapacity())
+        publisher.publishEvent(NoHandlerCapacity)
       }
     }
 
