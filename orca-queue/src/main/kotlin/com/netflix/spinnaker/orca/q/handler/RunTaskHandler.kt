@@ -39,6 +39,7 @@ import java.time.Duration
 import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.temporal.TemporalAmount
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -99,12 +100,25 @@ class RunTaskHandler(
         } else {
           log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
           stage.context["exception"] = exceptionDetails
+
+          val errorPrefix = exceptionDetails?.details?.get("error") as String?
+          val detailStrings = exceptionDetails?.details?.get("errors") as List<String>?
+          stage.addErrors(makeErrors(errorPrefix, detailStrings))
+
           repository.storeStage(stage)
           queue.push(CompleteTask(message, stage.failureStatus()))
           trackResult(stage, taskModel, stage.failureStatus())
         }
       }
     }
+  }
+
+  // Make strings of `errorPrefix: $errors[i]`, `errorPrefix`, or `$errors[i]`
+  private fun makeErrors(errorPrefix: String?, errorDetailStrings: List<String>?): List<String> {
+    val detailStrings = if (errorDetailStrings != null && !errorDetailStrings.isEmpty()) errorDetailStrings else Arrays.asList<String>(null)
+    return detailStrings
+      .map { listOf(errorPrefix, it).filter { it != null }.joinToString(": ") }
+      .filter { it.isNotBlank() }
   }
 
   private fun trackResult(stage: Stage, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {

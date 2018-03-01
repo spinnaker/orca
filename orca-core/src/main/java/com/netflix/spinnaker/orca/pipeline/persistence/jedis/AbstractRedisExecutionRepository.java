@@ -58,6 +58,9 @@ import static net.logstash.logback.argument.StructuredArguments.value;
 
 public abstract class AbstractRedisExecutionRepository implements ExecutionRepository {
 
+  private static final TypeReference<List<String>> LIST_OF_STRINGS =
+    new TypeReference<List<String>>() {
+    };
   private static final TypeReference<List<Task>> LIST_OF_TASKS =
     new TypeReference<List<Task>>() {
     };
@@ -499,6 +502,11 @@ public abstract class AbstractRedisExecutionRepository implements ExecutionRepos
         } else {
           stage.setOutputs(emptyMap());
         }
+        if (map.get(prefix + "errors") != null) {
+          stage.setErrors(mapper.readValue(map.get(prefix + "errors"), LIST_OF_STRINGS));
+        } else {
+          stage.setErrors(emptyList());
+        }
         if (map.get(prefix + "tasks") != null) {
           stage.setTasks(mapper.readValue(map.get(prefix + "tasks"), LIST_OF_TASKS));
         } else {
@@ -589,6 +597,7 @@ public abstract class AbstractRedisExecutionRepository implements ExecutionRepos
     try {
       map.put(prefix + "context", mapper.writeValueAsString(stage.getContext()));
       map.put(prefix + "outputs", mapper.writeValueAsString(stage.getOutputs()));
+      map.put(prefix + "errors", mapper.writeValueAsString(stage.getErrors()));
       map.put(prefix + "tasks", mapper.writeValueAsString(stage.getTasks()));
       map.put(prefix + "lastModified", (stage.getLastModified() != null ? mapper.writeValueAsString(stage.getLastModified()) : null));
     } catch (JsonProcessingException e) {

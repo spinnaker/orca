@@ -29,19 +29,37 @@ public final class TaskResult {
   private final ExecutionStatus status;
   private final ImmutableMap<String, ?> context;
   private final ImmutableMap<String, ?> outputs;
+  private final String error;
 
   public TaskResult(ExecutionStatus status) {
-    this(status, emptyMap(), emptyMap());
-  }
-
-  public TaskResult(ExecutionStatus status, Map<String, ?> context, Map<String, ?> outputs) {
-    this.status = status;
-    this.context = ImmutableMap.copyOf(context);
-    this.outputs = ImmutableMap.copyOf(outputs);
+    this(status, emptyMap(), emptyMap(), null);
   }
 
   public TaskResult(ExecutionStatus status, Map<String, ?> context) {
-    this(status, context, emptyMap());
+    this(status, context, emptyMap(), null);
+  }
+
+  public TaskResult(ExecutionStatus status, Map<String, ?> context, Map<String, ?> outputs) {
+    this(status, context, outputs, null);
+  }
+
+  public TaskResult(ExecutionStatus status, Map<String, ?> context, Map<String, ?> outputs, String error) {
+    this.status = status;
+    this.context = ImmutableMap.copyOf(context);
+    this.outputs = ImmutableMap.copyOf(outputs);
+    this.error = error;
+  }
+
+  public @Nonnull TaskResult withContext(@Nonnull Map<String, ?> context) {
+    return new TaskResult(this.status, context, this.outputs, this.error);
+  }
+
+  public @Nonnull TaskResult withOutputs(@Nonnull Map<String, ?> outputs) {
+    return new TaskResult(this.status, this.context, outputs, this.error);
+  }
+
+  public @Nonnull TaskResult withError(@Nonnull String error) {
+    return new TaskResult(this.status, this.context, this.outputs, error);
   }
 
   public @Nonnull ExecutionStatus getStatus() {
