@@ -19,19 +19,17 @@ package com.netflix.spinnaker.orca.q.metrics
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.q.ApplicationAware
-import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.metrics.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.event.EventListener
-import org.springframework.context.ApplicationListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PostConstruct
 
@@ -52,7 +50,10 @@ class AtlasQueueMonitor
   @EventListener
   fun onQueueEvent(event: QueueEvent) {
     when (event) {
-      is QueuePolled -> _lastQueuePoll.set(clock.instant())
+      QueuePolled -> _lastQueuePoll.set(clock.instant())
+      is MessageProcessing -> {
+        registry.timer("queue.message.lag").record(event.lag.toMillis(), MILLISECONDS)
+      }
       is RetryPolled -> _lastRetryPoll.set(clock.instant())
       is MessagePushed -> event.counter.increment()
       is MessageAcknowledged -> event.counter.increment()

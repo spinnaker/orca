@@ -18,12 +18,13 @@ package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.Timer
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.q.metrics.*
-import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
@@ -31,6 +32,7 @@ import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import java.time.Duration
 import java.time.Instant.now
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
 
@@ -43,6 +45,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
   val deadCounter: Counter = mock()
   val duplicateCounter: Counter = mock()
   val lockFailedCounter: Counter = mock()
+  val messageLagTimer: Timer = mock()
 
   val registry: Registry = mock {
     on { counter(eq("queue.pushed.messages"), anyVararg<String>()) } doReturn pushCounter
@@ -51,6 +54,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     on { counter("queue.dead.messages") } doReturn deadCounter
     on { counter(eq("queue.duplicate.messages"), anyVararg<String>()) } doReturn duplicateCounter
     on { counter("queue.lock.failed") } doReturn lockFailedCounter
+    on { timer("queue.message.lag") } doReturn messageLagTimer
   }
 
   subject(GROUP) {
@@ -62,8 +66,8 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
 
   describe("default values") {
     it("reports system uptime if the queue has never been polled") {
-      subject.lastQueuePoll shouldEqual clock.instant()
-      subject.lastRetryPoll shouldEqual clock.instant()
+      assertThat(subject.lastQueuePoll).isEqualTo(clock.instant())
+      assertThat(subject.lastRetryPoll).isEqualTo(clock.instant())
     }
   }
 
@@ -71,28 +75,42 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     describe("when the queue is polled") {
       afterGroup(::resetMocks)
 
-      val event = QueuePolled()
+      val event = QueuePolled
 
       on("receiving a ${event.javaClass.simpleName} event") {
         subject.onQueueEvent(event)
       }
 
       it("updates the last poll time") {
-        subject.lastQueuePoll shouldEqual clock.instant()
+        assertThat(subject.lastQueuePoll).isEqualTo(clock.instant())
       }
     }
 
     describe("when the retry queue is polled") {
       afterGroup(::resetMocks)
 
-      val event = RetryPolled()
+      val event = RetryPolled
 
       on("receiving a ${event.javaClass.simpleName} event") {
         subject.onQueueEvent(event)
       }
 
       it("updates the last poll time") {
-        subject.lastRetryPoll shouldEqual clock.instant()
+        assertThat(subject.lastRetryPoll).isEqualTo(clock.instant())
+      }
+    }
+
+    describe("when a message is processed") {
+      afterGroup(::resetMocks)
+
+      val event = MessageProcessing(StartExecution(PIPELINE, "1", "covfefe"), Duration.ofSeconds(5))
+
+      on("receiving a ${event.javaClass.simpleName} event") {
+        subject.onQueueEvent(event)
+      }
+
+      it("records the lag") {
+        verify(messageLagTimer).record(event.lag.toMillis(), MILLISECONDS)
       }
     }
 
@@ -113,7 +131,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     describe("when a message is acknowledged") {
       afterGroup(::resetMocks)
 
-      val event = MessageAcknowledged()
+      val event = MessageAcknowledged
 
       on("receiving a ${event.javaClass.simpleName} event") {
         subject.onQueueEvent(event)
@@ -127,7 +145,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     describe("when a message is retried") {
       afterGroup(::resetMocks)
 
-      val event = MessageRetried()
+      val event = MessageRetried
 
       on("receiving a ${event.javaClass.simpleName} event") {
         subject.onQueueEvent(event)
@@ -141,7 +159,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     describe("when a message is dead") {
       afterGroup(::resetMocks)
 
-      val event = MessageDead()
+      val event = MessageDead
 
       on("receiving a ${event.javaClass.simpleName} event") {
         subject.onQueueEvent(event)
@@ -169,7 +187,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     describe("when an instance fails to lock a message") {
       afterGroup(::resetMocks)
 
-      val event = LockFailed()
+      val event = LockFailed
 
       on("receiving a ${event.javaClass.simpleName} event") {
         subject.onQueueEvent(event)
@@ -195,7 +213,12 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     }
 
     it("updates the queue state") {
-      subject.lastState shouldEqual queueState
+      assertThat(subject.lastState).isEqualTo(queueState)
     }
   }
 })
+
+private fun Sequence<Duration>.average() =
+  map { it.toMillis() }
+    .average()
+    .let { Duration.ofMillis(it.toLong()) }

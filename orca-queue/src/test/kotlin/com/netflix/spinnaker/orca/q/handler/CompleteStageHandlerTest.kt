@@ -20,6 +20,8 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.fixture.pipeline
+import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
@@ -34,8 +36,8 @@ import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
-import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.*
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
@@ -153,8 +155,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("updates the stage state") {
             verify(repository).storeStage(check {
-              it.status shouldEqual taskStatus
-              it.endTime shouldEqual clock.millis()
+              assertThat(it.status).isEqualTo(taskStatus)
+              assertThat(it.endTime).isEqualTo(clock.millis())
             })
           }
 
@@ -168,10 +170,10 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("publishes an event") {
             verify(publisher).publishEvent(check<StageComplete> {
-              it.executionType shouldEqual pipeline.type
-              it.executionId shouldEqual pipeline.id
-              it.stageId shouldEqual message.stageId
-              it.status shouldEqual taskStatus
+              assertThat(it.executionType).isEqualTo(pipeline.type)
+              assertThat(it.executionId).isEqualTo(pipeline.id)
+              assertThat(it.stageId).isEqualTo(message.stageId)
+              assertThat(it.status).isEqualTo(taskStatus)
             })
           }
         }
@@ -206,8 +208,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("updates the stage state") {
             verify(repository).storeStage(check {
-              it.status shouldEqual taskStatus
-              it.endTime shouldEqual clock.millis()
+              assertThat(it.status).isEqualTo(taskStatus)
+              assertThat(it.endTime).isEqualTo(clock.millis())
             })
           }
 
@@ -261,7 +263,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
           it("runs the next stages") {
             argumentCaptor<StartStage>().apply {
               verify(queue, times(2)).push(capture())
-              allValues.map { it.stageId }.toSet() shouldEqual pipeline.stages[1..2].map { it.id }.toSet()
+              assertThat(allValues.map { it.stageId }.toSet()).isEqualTo(pipeline.stages[1..2].map { it.id }.toSet())
             }
           }
         }
@@ -351,7 +353,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           beforeGroup {
             whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
-            pipeline.stages.map { it.type } shouldEqual listOf("stageWithTaskAndAfterStages")
+            assertThat(pipeline.stages.map { it.type }).isEqualTo(listOf("stageWithTaskAndAfterStages"))
           }
 
           afterGroup(::resetMocks)
@@ -361,7 +363,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
           }
 
           it("adds a new AFTER_STAGE") {
-            pipeline.stages.map { it.type } shouldEqual listOf("stageWithTaskAndAfterStages", "singleTaskStage")
+            assertThat(pipeline.stages.map { it.type }).isEqualTo(listOf("stageWithTaskAndAfterStages", "singleTaskStage"))
           }
 
           it("starts the new AFTER_STAGE") {
@@ -404,8 +406,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
         it("updates the stage state") {
           verify(repository).storeStage(check {
-            it.status shouldEqual taskStatus
-            it.endTime shouldEqual clock.millis()
+            assertThat(it.status).isEqualTo(taskStatus)
+            assertThat(it.endTime).isEqualTo(clock.millis())
           })
         }
 
@@ -427,10 +429,10 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
         it("publishes an event") {
           verify(publisher).publishEvent(check<StageComplete> {
-            it.executionType shouldEqual pipeline.type
-            it.executionId shouldEqual pipeline.id
-            it.stageId shouldEqual message.stageId
-            it.status shouldEqual taskStatus
+            assertThat(it.executionType).isEqualTo(pipeline.type)
+            assertThat(it.executionId).isEqualTo(pipeline.id)
+            assertThat(it.stageId).isEqualTo(message.stageId)
+            assertThat(it.status).isEqualTo(taskStatus)
           })
         }
       }
@@ -468,8 +470,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
       it("updates the stage state") {
         verify(repository).storeStage(check {
-          it.status shouldEqual TERMINAL
-          it.endTime shouldEqual clock.millis()
+          assertThat(it.status).isEqualTo(TERMINAL)
+          assertThat(it.endTime).isEqualTo(clock.millis())
         })
       }
 
@@ -491,10 +493,10 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(check<StageComplete> {
-          it.executionType shouldEqual pipeline.type
-          it.executionId shouldEqual pipeline.id
-          it.stageId shouldEqual message.stageId
-          it.status shouldEqual TERMINAL
+          assertThat(it.executionType).isEqualTo(pipeline.type)
+          assertThat(it.executionId).isEqualTo(pipeline.id)
+          assertThat(it.stageId).isEqualTo(message.stageId)
+          assertThat(it.status).isEqualTo(TERMINAL)
         })
       }
     }
@@ -530,8 +532,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("updates the stage state") {
             verify(repository).storeStage(check {
-              it.status shouldEqual failureStatus
-              it.endTime shouldEqual clock.millis()
+              assertThat(it.status).isEqualTo(failureStatus)
+              assertThat(it.endTime).isEqualTo(clock.millis())
             })
           }
         }
@@ -567,8 +569,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
         it("updates the stage state") {
           verify(repository).storeStage(check {
-            it.status shouldEqual FAILED_CONTINUE
-            it.endTime shouldEqual clock.millis()
+            assertThat(it.status).isEqualTo(FAILED_CONTINUE)
+            assertThat(it.endTime).isEqualTo(clock.millis())
           })
         }
       }
@@ -858,7 +860,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
       it("should contain evaluation summary as well as the existing error") {
         val errors = exceptionErrors(pipeline.stages)
-        errors.size shouldEqual 2
+        assertThat(errors.size).isEqualTo(2)
         expressionError in errors
         existingException in errors
       }
@@ -895,7 +897,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
       it("should only contain evaluation error message") {
         val errors = exceptionErrors(pipeline.stages)
-        errors.size shouldEqual 1
+        assertThat(errors.size).isEqualTo(1)
         expressionError in errors
       }
     }
