@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisCommands
+import redis.clients.jedis.ScriptingCommands
 import redis.clients.jedis.Transaction
 import redis.clients.jedis.params.sortedset.ZAddParams
 import redis.clients.util.Pool
@@ -77,10 +78,10 @@ class RedisQueue(
 
   override fun poll(callback: (Message, () -> Unit) -> Unit) {
     pool.resource.use { redis ->
-      redis.fetchFingerprint()
-        ?.also { (fingerprint, scheduledTime) ->
+      redis.readMessageWithLock()
+        ?.also { (fingerprint, scheduledTime, json) ->
           val ack = this::ackMessage.partially1(fingerprint)
-          redis.readMessage(fingerprint) { message ->
+          redis.readMessage(fingerprint, json) { message ->
             val attempts = message.getAttribute<AttemptsAttribute>()?.attempts
               ?: 0
             val maxAttempts = message.getAttribute<MaxAttemptsAttribute>()?.maxAttempts
@@ -154,7 +155,7 @@ class RedisQueue(
           fingerprints.forEach { fingerprint ->
             val attempts = redis.hgetInt(attemptsKey, fingerprint)
             if (attempts >= Queue.maxRetries) {
-              redis.readMessage(fingerprint) { message ->
+              redis.readMessageWithoutLock(fingerprint) { message ->
                 log.warn("Message $fingerprint with payload $message exceeded max retries")
                 handleDeadMessage(message)
                 redis.removeMessage(fingerprint)
@@ -261,42 +262,77 @@ class RedisQueue(
     }
   }
 
+  private fun Jedis.readMessageWithoutLock(fingerprint: String, block: (Message) -> Unit) {
+    eval(READ_MESSAGE,
+      listOf(
+        queueKey,
+        unackedKey,
+        messagesKey,
+        attemptsKey
+      ),
+      listOf(
+        fingerprint,
+        score(ackTimeout).toString()
+      )
+    ).let {
+      readMessage(fingerprint, it as String?, block)
+    }
+  }
+
+  private fun ScriptingCommands.readMessageWithLock(): Triple<String, Instant, String?>? {
+    val response = eval(READ_MESSAGE_WITH_LOCK, listOf(
+      queueKey,
+      unackedKey,
+      locksKey,
+      messagesKey,
+      attemptsKey
+    ), listOf(
+      score().toString(),
+      10.toString(), // TODO rz - make this configurable.
+      lockTtlSeconds.toString(),
+      score(ackTimeout).toString()
+    ))
+    if (response is List<*>) {
+      return Triple(
+        response[0].toString(), // fingerprint
+        Instant.ofEpochSecond(response[1].toString().toLong()), // fingerprintScore
+        response[2]?.toString() // message
+      )
+    }
+    if (response == "ReadLockFailed") {
+      // This isn't a "bad" thing, but means there's more work than keiko can process in a cycle
+      // in this case, but may be a signal to tune `peekFingerprintCount`
+      fire(LockFailed)
+    }
+    return null
+  }
+
   /**
    * Tries to read the message with the specified [fingerprint] passing it to
    * [block]. If it's not accessible for whatever reason any references are
    * cleaned up.
    */
-  private fun Jedis.readMessage(fingerprint: String, block: (Message) -> Unit) {
-    multi {
-      hget(messagesKey, fingerprint)
-      zrem(queueKey, fingerprint)
-      zadd(unackedKey, score(ackTimeout), fingerprint)
+  private fun Jedis.readMessage(fingerprint: String, json: String?, block: (Message) -> Unit) {
+    if (json == null) {
+      log.error("Payload for message $fingerprint is missing")
+      // clean up what is essentially an unrecoverable message
+      removeMessage(fingerprint)
+    } else {
+      try {
+        val message = mapper.readValue<Message>(runSerializationMigration(json))
+          .apply {
+            // TODO: AttemptsAttribute could replace `attemptsKey`
+            val currentAttempts = (getAttribute() ?: AttemptsAttribute())
+              .run { copy(attempts = attempts + 1) }
+            setAttribute(currentAttempts)
+          }
 
-      // TODO: use AttemptsAttribute instead
-      hincrBy(attemptsKey, fingerprint, 1)
-    }.let {
-      val json = it[0] as String?
-      if (json == null) {
-        log.error("Payload for message $fingerprint is missing")
-        // clean up what is essentially an unrecoverable message
-        removeMessage(fingerprint)
-      } else {
-        try {
-          val message = mapper.readValue<Message>(runSerializationMigration(json))
-            .apply {
-              // TODO: AttemptsAttribute could replace `attemptsKey`
-              val currentAttempts = (getAttribute() ?: AttemptsAttribute())
-                .run { copy(attempts = attempts + 1) }
-              setAttribute(currentAttempts)
-            }
+        hset(messagesKey, fingerprint, mapper.writeValueAsString(message))
 
-          hset(messagesKey, fingerprint, mapper.writeValueAsString(message))
-
-          block.invoke(message)
-        } catch (e: IOException) {
-          log.error("Failed to read message $fingerprint, requeuing...", e)
-          requeueMessage(fingerprint)
-        }
+        block.invoke(message)
+      } catch (e: IOException) {
+        log.error("Failed to read message $fingerprint, requeuing...", e)
+        requeueMessage(fingerprint)
       }
     }
   }
@@ -311,27 +347,6 @@ class RedisQueue(
   private fun handleDeadMessage(message: Message) {
     deadMessageHandler.invoke(this, message)
   }
-
-  /**
-   * Will pre-fetch a list of fingerprints, returning the first fingerprint it is
-   * able to successfully acquire a lock on.
-   */
-  private fun Jedis.fetchFingerprint(): Pair<String, Instant>? =
-    zrangeByScoreWithScores(queueKey, 0.0, score(), 0, 1)
-      .firstOrNull {
-        acquireLock(it.element)
-      }
-      ?.let {
-        Pair(it.element, Instant.ofEpochMilli(it.score.toLong()))
-      }
-
-  private fun Jedis.acquireLock(fingerprint: String) =
-    (set("$locksKey:$fingerprint", "\uD83D\uDD12", "NX", "EX", lockTtlSeconds) == "OK")
-      .also {
-        if (!it) {
-          fire(LockFailed)
-        }
-      }
 
   /**
    * @return current time (plus optional [delay]) converted to a score for a
@@ -386,3 +401,71 @@ class RedisQueue(
     val all: Set<String> = setOf()
   )
 }
+
+private const val READ_MESSAGE_WITH_LOCK = """
+  local queueKey = KEYS[1]
+  local unackKey = KEYS[2]
+  local lockKey = KEYS[3]
+  local messagesKey = KEYS[4]
+  local attemptsKey = KEYS[5]
+  local maxScore = ARGV[1]
+  local peekFingerprintCount = ARGV[2]
+  local lockTtlSeconds = ARGV[3]
+  local unackScore = ARGV[4]
+
+  local not_empty = function(x)
+    return (type(x) == "table") and (not x.err) and (#x ~= 0)
+  end
+
+  local acquire_lock = function(fingerprints, locksKey, lockTtlSeconds)
+    if not_empty(fingerprints) then
+      local i=1
+      while (i <= #fingerprints) do
+        redis.call("ECHO", "attempting lock on " .. fingerprints[i])
+        if redis.call("SET", locksKey .. ":" .. fingerprints[i], "\uD83D\uDD12", "EX", lockTtlSeconds, "NX") ~= nil then
+          redis.call("ECHO", "acquired lock on " .. fingerprints[i])
+          return fingerprints[i], fingerprints[i+1]
+        end
+        i=i+2
+      end
+    end
+    return nil, nil
+  end
+
+  -- acquire a lock on a fingerprint
+  local fingerprints = redis.call("ZRANGEBYSCORE", queueKey, 0.0, maxScore, "WITHSCORES", "LIMIT", 0, peekFingerprintCount)
+  local fingerprint, fingerprintScore = acquire_lock(fingerprints, lockKey, lockTtlSeconds)
+
+  -- no lock could be acquired
+  if fingerprint == nil then
+    if #fingerprints == 0 then
+      return "NoReadyMessages"
+    end
+    return "AcquireLockFailed"
+  end
+
+  -- get the message, move the fingerprint to the unacked queue and return
+  local message = redis.call("HGET", messagesKey, fingerprint)
+  redis.call("ZREM", queueKey, fingerprint)
+  redis.call("ZADD", unackKey, unackScore, fingerprint)
+  redis.call("HINCRBY", attemptsKey, fingerprint, 1)
+
+  return {fingerprint, fingerprintScore, message}
+"""
+
+// TODO rz - I don't think we should be incrementing attempts here...
+private const val READ_MESSAGE = """
+  local queueKey = KEYS[1]
+  local unackKey = KEYS[2]
+  local messagesKey = KEYS[3]
+  local attemptsKey = KEYS[4]
+  local fingerprint = ARGV[1]
+  local score = ARGV[2]
+
+  local message = redis.call("HGET", messagesKey, fingerprint)
+  redis.call("ZREM", queueKey, fingerprint)
+  redis.call("ZADD", unackKey, score, fingerprint)
+  redis.call("HINCRBY", attemptsKey, fingerprint, 1)
+
+  return message
+"""
