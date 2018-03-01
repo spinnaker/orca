@@ -295,7 +295,7 @@ class RedisQueue(
     if (response is List<*>) {
       return Triple(
         response[0].toString(), // fingerprint
-        Instant.ofEpochSecond(response[1].toString().toLong()), // fingerprintScore
+        Instant.ofEpochMilli(response[1].toString().toLong()), // fingerprintScore
         response[2]?.toString() // message
       )
     }

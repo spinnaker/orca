@@ -22,6 +22,7 @@ import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.TestMessage
 import com.netflix.spinnaker.time.MutableClock
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -161,7 +162,7 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
     afterGroup(::resetMocks)
 
     beforeGroup {
-      queue!!.push(TestMessage("a"))
+      queue!!.push(TestMessage("a"), Duration.ofSeconds(-1))
     }
 
     on("processing the message") {
@@ -173,7 +174,18 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
     }
 
     it("fires an event to report the message is being processed") {
-      verify(publisher).publishEvent(isA<MessageProcessing>())
+      argumentCaptor<QueueEvent>().apply {
+        verify(publisher, atLeastOnce()).publishEvent(capture())
+        assertThat(allValues).anyMatch { it is MessageProcessing }
+        allValues
+          .first { it is MessageProcessing }
+          .let { event ->
+            if (event is MessageProcessing) {
+              assertThat(event.payload).isEqualTo(TestMessage("a"))
+              assertThat(event.lag).isEqualTo(Duration.ofSeconds(1))
+            }
+          }
+      }
     }
 
     it("reports unacknowledged message depth") {
