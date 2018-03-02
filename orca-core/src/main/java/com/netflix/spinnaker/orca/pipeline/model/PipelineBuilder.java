@@ -73,6 +73,11 @@ public class PipelineBuilder {
     return this;
   }
 
+  public PipelineBuilder withHideSkippedStages(boolean hideSkippedStages) {
+    pipeline.setHideSkippedStages(hideSkippedStages);
+    return this;
+  }
+
   public PipelineBuilder withKeepWaitingPipelines(boolean waiting) {
     pipeline.setKeepWaitingPipelines(waiting);
     return this;

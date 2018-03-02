@@ -199,6 +199,7 @@ public class ExecutionLauncher {
       .withStages((List<Map<String, Object>>) config.get("stages"))
       .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
       .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
+      .withHideSkippedStages(getBoolean(config, "hideSkippedStages"))
       .withNotifications((List<Map<String, Object>>) config.get("notifications"))
       .withOrigin(getString(config, "origin"))
       .build();

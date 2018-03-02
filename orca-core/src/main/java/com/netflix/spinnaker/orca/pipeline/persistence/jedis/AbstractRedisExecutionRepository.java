@@ -449,6 +449,7 @@ public abstract class AbstractRedisExecutionRepository implements ExecutionRepos
       execution.setCanceledBy(map.get("canceledBy"));
       execution.setCancellationReason(map.get("cancellationReason"));
       execution.setLimitConcurrent(Boolean.parseBoolean(map.get("limitConcurrent")));
+      execution.setHideSkippedStages(Boolean.parseBoolean(map.get("hideSkippedStages")));
       execution.setBuildTime(NumberUtils.createLong(map.get("buildTime")));
       execution.setStartTime(NumberUtils.createLong(map.get("startTime")));
       execution.setEndTime(NumberUtils.createLong(map.get("endTime")));
@@ -546,6 +547,7 @@ public abstract class AbstractRedisExecutionRepository implements ExecutionRepos
       map.put("authentication", mapper.writeValueAsString(execution.getAuthentication()));
       map.put("paused", mapper.writeValueAsString(execution.getPaused()));
       map.put("keepWaitingPipelines", String.valueOf(execution.isKeepWaitingPipelines()));
+      map.put("hideSkippedStages", String.valueOf(execution.isHideSkippedStages()));
       map.put("origin", execution.getOrigin());
       map.put("trigger", mapper.writeValueAsString(execution.getTrigger()));
     } catch (JsonProcessingException e) {
