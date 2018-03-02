@@ -18,15 +18,20 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.fixture.pipeline
+import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.AbortStage
+import com.netflix.spinnaker.orca.q.CancelStage
+import com.netflix.spinnaker.orca.q.CompleteExecution
+import com.netflix.spinnaker.orca.q.CompleteStage
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
@@ -104,8 +109,8 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("marks the stage as TERMINAL") {
         verify(repository).storeStage(check {
-          it.status shouldEqual TERMINAL
-          it.endTime.toInstant() shouldEqual clock.instant()
+          assertThat(it.status).isEqualTo(TERMINAL)
+          assertThat(it.endTime.toInstant()).isEqualTo(clock.instant())
         })
       }
 
@@ -119,7 +124,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("emits an event") {
         verify(publisher).publishEvent(check<StageComplete> {
-          it.status shouldEqual TERMINAL
+          assertThat(it.status).isEqualTo(TERMINAL)
         })
       }
     }
@@ -154,8 +159,8 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("marks the stage as TERMINAL") {
         verify(repository).storeStage(check {
-          it.status shouldEqual TERMINAL
-          it.endTime.toInstant() shouldEqual clock.instant()
+          assertThat(it.status).isEqualTo(TERMINAL)
+          assertThat(it.endTime.toInstant()).isEqualTo(clock.instant())
         })
       }
 
@@ -169,7 +174,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("emits an event") {
         verify(publisher).publishEvent(check<StageComplete> {
-          it.status shouldEqual TERMINAL
+          assertThat(it.status).isEqualTo(TERMINAL)
         })
       }
     }

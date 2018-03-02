@@ -18,13 +18,15 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.fixture.pipeline
+import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
@@ -99,8 +101,8 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
 
       it("updates the stage state") {
         verify(repository).storeStage(check {
-          it.status shouldEqual SKIPPED
-          it.endTime shouldEqual clock.millis()
+          assertThat(it.status).isEqualTo(SKIPPED)
+          assertThat(it.endTime).isEqualTo(clock.millis())
         })
       }
 
@@ -114,10 +116,10 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(check<StageComplete> {
-          it.executionType shouldEqual pipeline.type
-          it.executionId shouldEqual pipeline.id
-          it.stageId shouldEqual message.stageId
-          it.status shouldEqual SKIPPED
+          assertThat(it.executionType).isEqualTo(pipeline.type)
+          assertThat(it.executionId).isEqualTo(pipeline.id)
+          assertThat(it.stageId).isEqualTo(message.stageId)
+          assertThat(it.status).isEqualTo(SKIPPED)
         })
       }
     }
@@ -150,8 +152,8 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
 
       it("updates the stage state") {
         verify(repository).storeStage(check {
-          it.status shouldEqual SKIPPED
-          it.endTime shouldEqual clock.millis()
+          assertThat(it.status).isEqualTo(SKIPPED)
+          assertThat(it.endTime).isEqualTo(clock.millis())
         })
       }
 
@@ -203,7 +205,7 @@ object SkipStageHandlerTest : SubjectSpek<SkipStageHandler>({
       it("runs the next stages") {
         argumentCaptor<StartStage>().apply {
           verify(queue, times(2)).push(capture())
-          allValues.map { it.stageId }.toSet() shouldEqual pipeline.stages[1..2].map { it.id }.toSet()
+          assertThat(allValues.map { it.stageId }.toSet()).isEqualTo(pipeline.stages[1..2].map { it.id }.toSet())
         }
       }
     }

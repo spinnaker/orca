@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PostConstruct
 
@@ -49,8 +50,10 @@ class AtlasQueueMonitor
   @EventListener
   fun onQueueEvent(event: QueueEvent) {
     when (event) {
-      is QueuePolled -> _lastQueuePoll.set(clock.instant())
-      is MessageProcessing -> _messageLags.add(Duration.between(event.scheduledTime, clock.instant()))
+      QueuePolled -> _lastQueuePoll.set(clock.instant())
+      is MessageProcessing -> {
+        registry.timer("queue.message.lag").record(event.lag.toMillis(), MILLISECONDS)
+      }
       is RetryPolled -> _lastRetryPoll.set(clock.instant())
       is MessagePushed -> event.counter.increment()
       is MessageAcknowledged -> event.counter.increment()
@@ -96,11 +99,6 @@ class AtlasQueueMonitor
         .toMillis()
         .toDouble()
     })
-    registry.gauge("queue.message.lag", this, {
-      it.averageMessageLag
-        .toMillis()
-        .toDouble()
-    })
   }
 
   /**
@@ -120,16 +118,6 @@ class AtlasQueueMonitor
   val lastState: QueueState
     get() = _lastState.get()
   private val _lastState = AtomicReference<QueueState>(QueueState(0, 0, 0))
-
-  val averageMessageLag: Duration
-    get() = _messageLags.run {
-      val avg = map { it.toMillis() }
-        .average()
-        .let { Duration.ofMillis(it.toLong()) }
-      clear()
-      return avg
-    }
-  private val _messageLags = mutableListOf<Duration>()
 
   /**
    * Count of messages pushed to the queue.

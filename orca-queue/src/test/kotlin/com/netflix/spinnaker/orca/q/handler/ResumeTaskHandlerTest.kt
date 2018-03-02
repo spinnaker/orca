@@ -18,12 +18,17 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.PAUSED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.fixture.pipeline
+import com.netflix.spinnaker.orca.fixture.stage
+import com.netflix.spinnaker.orca.fixture.task
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask
+import com.netflix.spinnaker.orca.q.ResumeTask
+import com.netflix.spinnaker.orca.q.RunTask
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
@@ -67,13 +72,13 @@ object ResumeTaskHandlerTest : SubjectSpek<ResumeTaskHandler>({
 
     it("sets the stage status to running") {
       verify(repository).storeStage(check {
-        it.id shouldEqual message.stageId
-        it.tasks.first().status shouldEqual RUNNING
+        assertThat(it.id).isEqualTo(message.stageId)
+        assertThat(it.tasks.first().status).isEqualTo(RUNNING)
       })
     }
 
     it("resumes all paused tasks") {
-      verify(queue).push(RunTask(message, DummyTask::class.java))
+      verify(queue).push(RunTask(message, NoOpTask::class.java))
       verifyNoMoreInteractions(queue)
     }
   }

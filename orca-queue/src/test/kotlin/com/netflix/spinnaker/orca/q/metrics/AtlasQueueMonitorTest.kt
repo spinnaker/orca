@@ -18,12 +18,13 @@ package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.Timer
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.q.metrics.*
-import com.netflix.spinnaker.spek.shouldEqual
 import com.nhaarman.mockito_kotlin.*
+import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
@@ -31,6 +32,7 @@ import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import java.time.Duration
 import java.time.Instant.now
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
 
@@ -43,6 +45,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
   val deadCounter: Counter = mock()
   val duplicateCounter: Counter = mock()
   val lockFailedCounter: Counter = mock()
+  val messageLagTimer: Timer = mock()
 
   val registry: Registry = mock {
     on { counter(eq("queue.pushed.messages"), anyVararg<String>()) } doReturn pushCounter
@@ -51,6 +54,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     on { counter("queue.dead.messages") } doReturn deadCounter
     on { counter(eq("queue.duplicate.messages"), anyVararg<String>()) } doReturn duplicateCounter
     on { counter("queue.lock.failed") } doReturn lockFailedCounter
+    on { timer("queue.message.lag") } doReturn messageLagTimer
   }
 
   subject(GROUP) {
@@ -62,8 +66,8 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
 
   describe("default values") {
     it("reports system uptime if the queue has never been polled") {
-      subject.lastQueuePoll shouldEqual clock.instant()
-      subject.lastRetryPoll shouldEqual clock.instant()
+      assertThat(subject.lastQueuePoll).isEqualTo(clock.instant())
+      assertThat(subject.lastRetryPoll).isEqualTo(clock.instant())
     }
   }
 
@@ -78,7 +82,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
       }
 
       it("updates the last poll time") {
-        subject.lastQueuePoll shouldEqual clock.instant()
+        assertThat(subject.lastQueuePoll).isEqualTo(clock.instant())
       }
     }
 
@@ -92,28 +96,21 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
       }
 
       it("updates the last poll time") {
-        subject.lastRetryPoll shouldEqual clock.instant()
+        assertThat(subject.lastRetryPoll).isEqualTo(clock.instant())
       }
     }
 
-    describe("when a message is being processed") {
+    describe("when a message is processed") {
       afterGroup(::resetMocks)
 
-      val lag = sequenceOf(
-        Duration.ofSeconds(5),
-        Duration.ofSeconds(13),
-        Duration.ofSeconds(7)
-      )
-      val events = lag.mapIndexed { i, lag ->
-        MessageProcessing(StartExecution(PIPELINE, "$i", "covfefe"), clock.instant().minus(lag))
+      val event = MessageProcessing(StartExecution(PIPELINE, "1", "covfefe"), Duration.ofSeconds(5))
+
+      on("receiving a ${event.javaClass.simpleName} event") {
+        subject.onQueueEvent(event)
       }
 
-      on("receiving a ${events.first().javaClass.simpleName} event") {
-        events.forEach(subject::onQueueEvent)
-      }
-
-      it("averages the lag time") {
-        subject.averageMessageLag shouldEqual lag.map { it.toMillis() }.average().let { Duration.ofMillis(it.toLong()) }
+      it("records the lag") {
+        verify(messageLagTimer).record(event.lag.toMillis(), MILLISECONDS)
       }
     }
 
@@ -216,7 +213,12 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     }
 
     it("updates the queue state") {
-      subject.lastState shouldEqual queueState
+      assertThat(subject.lastState).isEqualTo(queueState)
     }
   }
 })
+
+private fun Sequence<Duration>.average() =
+  map { it.toMillis() }
+    .average()
+    .let { Duration.ofMillis(it.toLong()) }
