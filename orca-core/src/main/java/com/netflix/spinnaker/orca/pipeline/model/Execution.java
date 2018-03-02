@@ -151,6 +151,16 @@ public class Execution implements Serializable {
     this.keepWaitingPipelines = keepWaitingPipelines;
   }
 
+  private boolean hideSkippedStages = false;
+
+  public boolean isHideSkippedStages() {
+    return hideSkippedStages;
+  }
+
+  public void setHideSkippedStages(boolean hideSkippedStages) {
+    this.hideSkippedStages = hideSkippedStages;
+  }
+
   @Deprecated
   @JsonIgnore
   public @Nonnull Map<String, Object> getContext() {
