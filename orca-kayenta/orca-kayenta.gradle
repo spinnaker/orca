@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-apply from: "$rootDir/gradle/groovy.gradle"
+apply from: "$rootDir/gradle/kotlin.gradle"
+apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
+  compile project(":orca-kotlin")
   compile project(":orca-retrofit")
 
   testCompile project(":orca-test-groovy")

@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
-import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
@@ -29,48 +28,46 @@ import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import retrofit.Endpoint
+import retrofit.Endpoints.newFixedEndpoint
 import retrofit.RequestInterceptor
 import retrofit.RestAdapter
 import retrofit.client.Client
 import retrofit.converter.JacksonConverter
 
-import static retrofit.Endpoints.newFixedEndpoint
-
 @Configuration
-@Import(RetrofitConfiguration)
-@ComponentScan([
+@Import(RetrofitConfiguration::class)
+@ComponentScan(
   "com.netflix.spinnaker.orca.kayenta.pipeline",
   "com.netflix.spinnaker.orca.kayenta.tasks"
-])
-@CompileStatic
-@ConditionalOnExpression('${kayenta.enabled:false}')
+)
+@ConditionalOnExpression("\${kayenta.enabled:false}")
 class KayentaConfiguration {
 
   @Autowired
-  Client retrofitClient
+  private lateinit var retrofitClient: Client
 
   @Autowired
-  RestAdapter.LogLevel retrofitLogLevel
+  private lateinit var retrofitLogLevel: RestAdapter.LogLevel
 
   @Autowired
-  RequestInterceptor spinnakerRequestInterceptor
+  private lateinit var spinnakerRequestInterceptor: RequestInterceptor
 
   @Bean
-  Endpoint kayentaEndpoint(
-    @Value('${kayenta.baseUrl}') String kayentaBaseUrl) {
-    newFixedEndpoint(kayentaBaseUrl)
+  fun kayentaEndpoint(
+    @Value("\${kayenta.baseUrl}") kayentaBaseUrl: String): Endpoint {
+    return newFixedEndpoint(kayentaBaseUrl)
   }
 
   @Bean
-  KayentaService kayentaService(Endpoint kayentaEndpoint, ObjectMapper mapper) {
-    new RestAdapter.Builder()
+  internal fun kayentaService(kayentaEndpoint: Endpoint, mapper: ObjectMapper): KayentaService {
+    return RestAdapter.Builder()
       .setRequestInterceptor(spinnakerRequestInterceptor)
       .setEndpoint(kayentaEndpoint)
       .setClient(retrofitClient)
       .setLogLevel(retrofitLogLevel)
-      .setLog(new RetrofitSlf4jLog(KayentaService))
-      .setConverter(new JacksonConverter(mapper))
+      .setLog(RetrofitSlf4jLog(KayentaService::class.java))
+      .setConverter(JacksonConverter(mapper))
       .build()
-      .create(KayentaService)
+      .create(KayentaService::class.java)
   }
 }
