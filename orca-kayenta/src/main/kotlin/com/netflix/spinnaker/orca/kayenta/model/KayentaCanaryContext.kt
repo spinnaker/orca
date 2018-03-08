@@ -51,8 +51,16 @@ data class CanaryConfigScope(
   val controlRegion: String?,
   val experimentScope: String,
   val experimentRegion: String?,
-  val startTimeIso: Instant?,
-  val endTimeIso: Instant?,
+  val startTimeIso: String?,
+  val endTimeIso: String?,
   val step: Duration = Duration.ofSeconds(60),
   val extendedScopeParams: Map<String, String> = emptyMap()
-)
+) {
+  // I don't love having these as separate properties but other things in Orca rely
+  // on serializing Instant as epoch Millis which is not what Kayenta wants.
+  @JsonIgnore
+  val startTime = if (startTimeIso == null) null else Instant.parse(startTimeIso)
+
+  @JsonIgnore
+  val endTime = if (endTimeIso == null) null else Instant.parse(endTimeIso)
+}

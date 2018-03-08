@@ -178,10 +178,10 @@ class KayentaCanaryStage(
 }
 
 private val KayentaCanaryContext.endTime: Instant?
-  get() = scopes.first().endTimeIso
+  get() = scopes.first().endTime
 
 private val KayentaCanaryContext.startTime: Instant?
-  get() = scopes.first().startTimeIso
+  get() = scopes.first().startTime
 
 private val KayentaCanaryContext.step: Duration
   get() = scopes.first().step
