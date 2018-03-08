@@ -16,7 +16,8 @@
 
 package com.netflix.spinnaker.orca.kayenta.config
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
@@ -59,7 +60,10 @@ class KayentaConfiguration {
   }
 
   @Bean
-  internal fun kayentaService(kayentaEndpoint: Endpoint, mapper: ObjectMapper): KayentaService {
+  internal fun kayentaService(kayentaEndpoint: Endpoint): KayentaService {
+    val mapper = OrcaObjectMapper
+      .newInstance()
+      .disable(WRITE_DATES_AS_TIMESTAMPS) // we want Instant serialized as ISO string
     return RestAdapter.Builder()
       .setRequestInterceptor(spinnakerRequestInterceptor)
       .setEndpoint(kayentaEndpoint)

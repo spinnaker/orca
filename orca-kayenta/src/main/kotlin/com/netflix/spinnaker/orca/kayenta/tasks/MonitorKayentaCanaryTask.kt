@@ -94,12 +94,12 @@ class MonitorKayentaCanaryTask(
     }
 
     if (status.isHalt) {
-      val stageOutputs = singletonMap<String, Any>("canaryPipelineStatus", status)
+      val stageOutputs = mutableMapOf<String, Any>("canaryPipelineStatus" to status)
 
-      if (canaryResults["exception"] != null) {
-        stageOutputs["exception"] = canaryResults["exception"]
-      } else if (status == CANCELED) {
-        stageOutputs["exception"] = singletonMap("details", singletonMap("errors", listOf("Canary execution was canceled.")))
+      if (status == CANCELED) {
+        stageOutputs["exception"] = mapOf("details" to mapOf("errors" to listOf("Canary execution was canceled.")))
+      } else {
+        canaryResults["exception"]?.let { stageOutputs["exception"] = it }
       }
 
       // Indicates a failure of some sort.
