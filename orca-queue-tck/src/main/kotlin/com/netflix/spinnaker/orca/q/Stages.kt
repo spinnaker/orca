@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
@@ -63,10 +64,18 @@ val stageWithSyntheticOnFailure = object : StageDefinitionBuilder {
     builder.withTask("dummy", DummyTask::class.java)
   }
 
-  override fun onFailureStages(stage: Stage) = listOf(
-    newStage(stage.execution, singleTaskStage.type, "onFailure1", stage.context, stage, STAGE_AFTER),
-    newStage(stage.execution, singleTaskStage.type, "onFailure2", stage.context, stage, STAGE_AFTER)
-  )
+  override fun onFailureStages(stage: Stage, graph: StageGraphBuilder) {
+    val stage1 = graph.add {
+      it.type = singleTaskStage.type
+      it.name = "onFailure1"
+      it.context = stage.context
+    }
+    graph.connect(stage1) {
+      it.type = singleTaskStage.type
+      it.name = "onFailure2"
+      it.context = stage.context
+    }
+  }
 }
 
 val stageWithSyntheticBeforeAndNoTasks = object : StageDefinitionBuilder {

@@ -17,19 +17,21 @@
 package com.netflix.spinnaker.orca.mine.pipeline
 
 import java.util.concurrent.TimeUnit
+import javax.annotation.Nonnull
 import com.netflix.frigga.autoscaling.AutoScalingGroupNameBuilder
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.CancellableStage.Result
-import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 
 @Slf4j
 @Component
@@ -46,8 +48,8 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
   @Override
   def List<Stage> aroundStages(Stage stage) {
     Map canaryStageId = [
-      canaryStageId: stage.id,
-      failPipeline: stage.context.failPipeline,
+      canaryStageId   : stage.id,
+      failPipeline    : stage.context.failPipeline,
       continuePipeline: stage.context.continuePipeline
     ]
 
@@ -55,9 +57,35 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
     Map<String, Object> monitorContext = canaryStageId + [scaleUp: stage.context.scaleUp ?: [:]]
 
     return [
-      newStage(stage.execution, deployCanaryStage.type, "Deploy Canary", deployContext, stage, SyntheticStageOwner.STAGE_AFTER),
-      newStage(stage.execution, monitorCanaryStage.type, "Monitor Canary", monitorContext, stage, SyntheticStageOwner.STAGE_AFTER)
+      newStage(stage.execution, deployCanaryStage.type, "Deploy Canary", deployContext, stage, STAGE_AFTER),
+      newStage(stage.execution, monitorCanaryStage.type, "Monitor Canary", monitorContext, stage, STAGE_AFTER)
     ]
+  }
+
+  @Override
+  void afterStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder builder) {
+    Map canaryStageId = [
+      canaryStageId   : stage.id,
+      failPipeline    : stage.context.failPipeline,
+      continuePipeline: stage.context.continuePipeline
+    ]
+
+    Map<String, Object> deployContext = canaryStageId + stage.context
+    Map<String, Object> monitorContext = canaryStageId + [scaleUp: stage.context.scaleUp ?: [:]]
+
+    def deployCanaryStage = newStage(parent) {
+      it.type = deployCanaryStage.type
+      it.name = "Deploy Canary"
+      it.context = deployContext
+      it.syntheticStageOwner = STAGE_AFTER
+    }
+    def monitorCanaryStage = newStage(parent) {
+      it.type = monitorCanaryStage.type
+      it.name = "Monitor Canary"
+      it.context = monitorContext
+      it.syntheticStageOwner = STAGE_AFTER
+    }
+    builder.connect(deployCanaryStage, monitorCanaryStage)
   }
 
   @Override
@@ -99,10 +127,10 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
         matches.each {
           disableContexts << [
             disableServerGroup: [
-              serverGroupName: it.name,
-              region         : it.region,
-              credentials    : cluster.account,
-              cloudProvider  : cloudProvider,
+              serverGroupName             : it.name,
+              region                      : it.region,
+              credentials                 : cluster.account,
+              cloudProvider               : cloudProvider,
               remainingEnabledServerGroups: 0,
               preferLargerOverNewer       : false
             ]

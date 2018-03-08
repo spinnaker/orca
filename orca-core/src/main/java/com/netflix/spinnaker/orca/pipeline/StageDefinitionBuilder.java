@@ -16,17 +16,23 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph;
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
+
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL;
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 
 public interface StageDefinitionBuilder {
 
@@ -40,23 +46,61 @@ public interface StageDefinitionBuilder {
     @Nonnull Stage stage, @Nonnull Builder builder) {
   }
 
-  default @Nonnull List<Stage> aroundStages(
-    @Nonnull Stage stage) {
+  @Deprecated
+  default @Nonnull List<Stage> aroundStages(@Nonnull Stage stage) {
     return emptyList();
   }
 
+  @Deprecated
   default @Nonnull List<Stage> parallelStages(
     @Nonnull Stage stage) {
     return emptyList();
   }
 
-  default @Nonnull List<Stage> afterStages(@Nonnull Stage stage) {
-    return emptyList();
+  default void beforeStages(
+    @Nonnull Stage parent,
+    @Nonnull StageGraphBuilder builder
+  ) {
+    List<Stage> stages = aroundStages(parent)
+      .stream()
+      .filter((it) -> it.getSyntheticStageOwner() == STAGE_BEFORE)
+      .collect(toList());
+    if (!stages.isEmpty()) {
+      builder.add(stages.get(0));
+    }
+    for (int i = 1; i < stages.size(); i++) {
+      builder.connect(stages.get(i - 1), stages.get(i));
+    }
+    parallelStages(parent)
+      .stream()
+      .filter((it) -> it.getSyntheticStageOwner() == STAGE_BEFORE)
+      .forEach(builder::add);
   }
 
-  default @Nonnull List<Stage> onFailureStages(@Nonnull Stage stage) {
-    return emptyList();
+  default void afterStages(
+    @Nonnull Stage parent,
+    @Nonnull StageGraphBuilder builder
+  ) {
+    List<Stage> stages = aroundStages(parent)
+      .stream()
+      .filter((it) -> it.getSyntheticStageOwner() == STAGE_AFTER)
+      .collect(toList());
+    if (!stages.isEmpty()) {
+      builder.add(stages.get(0));
+    }
+    for (int i = 1; i < stages.size(); i++) {
+      builder.connect(stages.get(i - 1), stages.get(i));
+    }
+    parallelStages(parent)
+      .stream()
+      .filter((it) -> it.getSyntheticStageOwner() == STAGE_AFTER)
+      .forEach(builder::add);
   }
+
+  default void onFailureStages(
+    @Nonnull Stage stage,
+    @Nonnull StageGraphBuilder builder
+  ) {}
 
   /**
    * @return the stage type this builder handles.
@@ -76,6 +120,7 @@ public interface StageDefinitionBuilder {
     return className.substring(0, 1).toLowerCase() + className.substring(1).replaceFirst("StageDefinitionBuilder$", "").replaceFirst("Stage$", "");
   }
 
+  @Deprecated
   static @Nonnull Stage newStage(
     @Nonnull Execution execution,
     @Nonnull String type,

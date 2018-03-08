@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -210,8 +209,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
           })
         }
 
-        it("immediately starts the first after stage") {
-          verify(queue).push(StartStage(pipeline.stageByRef("1>1")))
+        it("completes the stage") {
+          verify(queue).push(CompleteStage(message))
           verifyNoMoreInteractions(queue)
         }
 
@@ -338,11 +337,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
           subject.handle(message)
         }
 
-        it("attaches the synthetic stage to the pipeline") {
-          verify(repository, times(2)).addStage(check {
-            assertThat(it.parentStageId).isEqualTo(message.stageId)
-            assertThat(it.syntheticStageOwner).isEqualTo(STAGE_AFTER)
-          })
+        it("defers planning the after stages") {
+          verify(repository, never()).addStage(any())
         }
 
         it("raises an event to indicate the first task is starting") {
@@ -787,7 +783,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
           refId = "1"
           name = "parallel"
           type = stageWithParallelBranches.type
-          stageWithParallelBranches.buildSyntheticStages(this)
+          stageWithParallelBranches.buildBeforeStages(this)
           stageWithParallelBranches.buildTasks(this)
         }
       }
