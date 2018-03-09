@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.*
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spectator.api.NoopRegistry
@@ -419,6 +421,7 @@ class QueueIntegrationTest {
 
   @Test
   fun `can run a stage with an execution window`() {
+    val nowHour = now().atZone(timeZone).hour
     val pipeline = pipeline {
       application = "spinnaker"
       stage {
@@ -429,9 +432,9 @@ class QueueIntegrationTest {
           "restrictedExecutionWindow" to mapOf(
             "days" to (1..7).toList(),
             "whitelist" to listOf(mapOf(
-              "startHour" to now().atZone(timeZone).hour,
+              "startHour" to nowHour,
               "startMin" to 0,
-              "endHour" to now().atZone(timeZone).hour + 1,
+              "endHour" to if (nowHour + 1 == 24) 0 else nowHour + 1,
               "endMin" to 0
             ))
           )
@@ -446,7 +449,7 @@ class QueueIntegrationTest {
     context.runToCompletion(pipeline, runner::start, repository)
 
     repository.retrieve(PIPELINE, pipeline.id).apply {
-      assertThat(status).isEqualTo(SUCCEEDED)
+      assertThat(status).withFailMessage("status is not succeeded:\n ${jacksonObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(this)}").isEqualTo(SUCCEEDED)
       assertThat(stages.size).isEqualTo(2)
       assertThat(stages.first().type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
       assertThat(stages.map { it.status }).allMatch { it == SUCCEEDED }
@@ -455,6 +458,7 @@ class QueueIntegrationTest {
 
   @Test
   fun `parallel stages do not duplicate execution windows`() {
+    val nowHour = now().atZone(timeZone).hour
     val pipeline = pipeline {
       application = "spinnaker"
       stage {
@@ -465,9 +469,9 @@ class QueueIntegrationTest {
           "restrictedExecutionWindow" to mapOf(
             "days" to (1..7).toList(),
             "whitelist" to listOf(mapOf(
-              "startHour" to now().atZone(timeZone).hour,
+              "startHour" to nowHour,
               "startMin" to 0,
-              "endHour" to now().atZone(timeZone).hour + 1,
+              "endHour" to if (nowHour + 1 == 24) 0 else nowHour + 1,
               "endMin" to 0
             ))
           )
