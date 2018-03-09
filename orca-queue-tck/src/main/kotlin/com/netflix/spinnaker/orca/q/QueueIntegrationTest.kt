@@ -70,6 +70,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant.now
 import java.time.ZoneId
+import java.time.ChronoUnit.HOURS
 
 @SpringBootTest(
   classes = [TestConfig::class],
@@ -421,7 +422,7 @@ class QueueIntegrationTest {
 
   @Test
   fun `can run a stage with an execution window`() {
-    val nowHour = now().atZone(timeZone).hour
+    val now = now().atZone(timeZone)
     val pipeline = pipeline {
       application = "spinnaker"
       stage {
@@ -432,9 +433,9 @@ class QueueIntegrationTest {
           "restrictedExecutionWindow" to mapOf(
             "days" to (1..7).toList(),
             "whitelist" to listOf(mapOf(
-              "startHour" to nowHour,
+              "startHour" to now.hour,
               "startMin" to 0,
-              "endHour" to if (nowHour + 1 == 24) 0 else nowHour + 1,
+              "endHour" to if now.plus(HOURS, 1).hour,
               "endMin" to 0
             ))
           )
@@ -458,7 +459,7 @@ class QueueIntegrationTest {
 
   @Test
   fun `parallel stages do not duplicate execution windows`() {
-    val nowHour = now().atZone(timeZone).hour
+    val now = now().atZone(timeZone)
     val pipeline = pipeline {
       application = "spinnaker"
       stage {
@@ -469,9 +470,9 @@ class QueueIntegrationTest {
           "restrictedExecutionWindow" to mapOf(
             "days" to (1..7).toList(),
             "whitelist" to listOf(mapOf(
-              "startHour" to nowHour,
+              "startHour" to now.hour,
               "startMin" to 0,
-              "endHour" to if (nowHour + 1 == 24) 0 else nowHour + 1,
+              "endHour" to if now.plus(HOURS, 1).hour,
               "endMin" to 0
             ))
           )
