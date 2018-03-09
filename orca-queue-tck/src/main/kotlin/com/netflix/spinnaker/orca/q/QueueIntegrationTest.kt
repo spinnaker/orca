@@ -449,7 +449,7 @@ class QueueIntegrationTest {
     context.runToCompletion(pipeline, runner::start, repository)
 
     repository.retrieve(PIPELINE, pipeline.id).apply {
-      assertThat(status)isEqualTo(SUCCEEDED)
+      assertThat(status).isEqualTo(SUCCEEDED)
       assertThat(stages.size).isEqualTo(2)
       assertThat(stages.first().type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
       assertThat(stages.map { it.status }).allMatch { it == SUCCEEDED }
