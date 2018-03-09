@@ -435,7 +435,7 @@ class QueueIntegrationTest {
             "whitelist" to listOf(mapOf(
               "startHour" to now.hour,
               "startMin" to 0,
-              "endHour" to now.plus(HOURS, 1).hour,
+              "endHour" to now.plus(1, HOURS).hour,
               "endMin" to 0
             ))
           )
@@ -472,7 +472,7 @@ class QueueIntegrationTest {
             "whitelist" to listOf(mapOf(
               "startHour" to now.hour,
               "startMin" to 0,
-              "endHour" to now.plus(HOURS, 1).hour,
+              "endHour" to now.plus(1, HOURS).hour,
               "endMin" to 0
             ))
           )
