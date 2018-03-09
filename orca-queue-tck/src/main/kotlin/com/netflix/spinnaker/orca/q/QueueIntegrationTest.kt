@@ -70,7 +70,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant.now
 import java.time.ZoneId
-import java.time.ChronoUnit.HOURS
+import java.time.temporal.ChronoUnit.HOURS
 
 @SpringBootTest(
   classes = [TestConfig::class],
