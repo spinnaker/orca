@@ -16,25 +16,30 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce
 
+import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import spock.lang.Specification
 
 class GoogleServerGroupCreatorSpec extends Specification {
 
+  ArtifactResolver artifactResolver = Mock(ArtifactResolver)
+
   def "should get operations"() {
     given:
-    def ctx = [
+    def basectx = [
       account          : "abc",
       region           : "north-pole",
       zone             : "north-pole-1",
       deploymentDetails: [[imageId: "testImageId", region: "north-pole"]],
-    ]
+    ].asImmutable()
+
+    when:
+    def ctx = [:] << basectx
     def stage = ExecutionBuilder.stage {
       context.putAll(ctx)
     }
-
-    when:
-    def ops = new GoogleServerGroupCreator().getOperations(stage)
+    def ops = new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
 
     then:
     ops == [
@@ -51,12 +56,13 @@ class GoogleServerGroupCreatorSpec extends Specification {
     ]
 
     when: "fallback to non-region matching image"
+    ctx = [:] << basectx
     ctx.region = "south-pole"
     ctx.zone = "south-pole-1"
     stage = ExecutionBuilder.stage {
       context.putAll(ctx)
     }
-    ops = new GoogleServerGroupCreator().getOperations(stage)
+    ops = new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
 
     then:
     ops == [
@@ -72,15 +78,44 @@ class GoogleServerGroupCreatorSpec extends Specification {
       ]
     ]
 
+    when: "use artifact when set as imageSource"
+    ctx = [:] << basectx
+    ctx.imageSource = "artifact"
+    stage = ExecutionBuilder.stage {
+      context.putAll(ctx)
+    }
+    artifactResolver.getBoundArtifactForId(*_) >> {
+      Artifact artifact = new Artifact();
+      artifact.setName("santaImage")
+      return artifact
+    }
+    ops = new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
+
+    then:
+    ops == [
+      [
+        "createServerGroup": [
+          imageSource      : "artifact",
+          account          : "abc",
+          credentials      : "abc",
+          image            : "santaImage",
+          region           : "north-pole",
+          zone             : "north-pole-1",
+          deploymentDetails: [[imageId: "testImageId", region: "north-pole"]],
+        ],
+      ]
+    ]
+
     when: "throw error if no image found"
+    ctx = [:] << basectx
     ctx.deploymentDetails = []
     stage = ExecutionBuilder.stage {
       context.putAll(ctx)
     }
-    new GoogleServerGroupCreator().getOperations(stage)
+    new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
 
     then:
     IllegalStateException ise = thrown()
-    ise.message == "No image could be found in south-pole."
+    ise.message == "No image could be found in north-pole."
   }
 }
