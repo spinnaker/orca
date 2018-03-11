@@ -153,7 +153,7 @@ class KayentaCanaryStage(
         scope.controlRegion,
         start,
         end,
-        config.step,
+        config.step.seconds.toString(),
         scope.extendedScopeParams
       )
       val experimentScope = controlScope.copy(

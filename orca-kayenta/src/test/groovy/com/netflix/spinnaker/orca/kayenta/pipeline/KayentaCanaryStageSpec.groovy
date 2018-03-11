@@ -411,7 +411,7 @@ class KayentaCanaryStageSpec extends Specification {
         }
 
         if (it.context.scopes[scopeName].controlScope.step) {
-          ret.step = Duration.parse(it.context.scopes[scopeName].controlScope.step).seconds
+          ret.step = it.context.scopes[scopeName].controlScope.step.toLong()
         }
 
         if (it.context.scopes[scopeName].controlScope.extendedScopeParams) {
