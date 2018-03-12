@@ -16,12 +16,11 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.*
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.assertj.assertSoftly
 import com.netflix.spinnaker.config.OrcaQueueConfiguration
 import com.netflix.spinnaker.config.QueueConfiguration
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
@@ -487,12 +486,14 @@ class QueueIntegrationTest {
     context.runToCompletion(pipeline, runner::start, repository)
 
     repository.retrieve(PIPELINE, pipeline.id).apply {
-      assertThat(status).isEqualTo(SUCCEEDED)
-      assertThat(stages.size).isEqualTo(5)
-      assertThat(stages.first().type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
-      assertThat(stages[1..3].map { it.type }).allMatch { it == "dummy" }
-      assertThat(stages.last().type).isEqualTo("parallel")
-      assertThat(stages.map { it.status }).allMatch { it == SUCCEEDED }
+      assertSoftly {
+        assertThat(status).isEqualTo(SUCCEEDED)
+        assertThat(stages.size).isEqualTo(5)
+        assertThat(stages.first().type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
+        assertThat(stages[1..3].map { it.type }).allMatch { it == "dummy" }
+        assertThat(stages.last().type).isEqualTo("parallel")
+        assertThat(stages.map { it.status }).allMatch { it == SUCCEEDED }
+      }
     }
   }
 

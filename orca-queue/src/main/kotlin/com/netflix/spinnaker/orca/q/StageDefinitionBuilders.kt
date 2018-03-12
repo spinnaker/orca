@@ -79,16 +79,13 @@ fun StageDefinitionBuilder.buildBeforeStages(
 ) {
   val executionWindow = stage.buildExecutionWindow()
 
-  val graph = StageGraphBuilder.beforeStages(stage)
+  val graph = StageGraphBuilder.beforeStages(stage, executionWindow)
   beforeStages(stage, graph)
   val beforeStages = graph.build().toList()
-  val allBeforeStages = if (executionWindow == null) {
-    beforeStages
-  } else {
-    listOf(executionWindow) + beforeStages
-  }
+
   stage.execution.apply {
-    allBeforeStages.forEach {
+    beforeStages.forEach {
+      it.sanitizeContext()
       injectStage(stages.indexOf(stage), it)
       callback.invoke(it)
     }
@@ -123,6 +120,7 @@ fun Stage.appendAfterStages(
 ) {
   val index = execution.stages.indexOf(this) + 1
   afterStages.reversed().forEach {
+    it.sanitizeContext()
     execution.injectStage(index, it)
     callback.invoke(it)
   }

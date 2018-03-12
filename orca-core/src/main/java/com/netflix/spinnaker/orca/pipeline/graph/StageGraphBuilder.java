@@ -21,7 +21,10 @@ import com.google.common.graph.MutableGraph;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -34,24 +37,35 @@ public class StageGraphBuilder {
   private final Stage parent;
   private final SyntheticStageOwner type;
   private final MutableGraph<Stage> graph = GraphBuilder.directed().build(); // TODO: is this actually useful?
+  private final Optional<Stage> requiredPrefix;
 
-  private StageGraphBuilder(Stage parent, SyntheticStageOwner type) {
+  private StageGraphBuilder(Stage parent, SyntheticStageOwner type, Optional<Stage> requiredPrefix) {
     this.parent = parent;
     this.type = type;
+    this.requiredPrefix = requiredPrefix;
+    this.requiredPrefix.ifPresent(this::add);
   }
 
   /**
    * Create a new builder for the before stages of {@code parent}.
    */
-  public static StageGraphBuilder beforeStages(Stage parent) {
-    return new StageGraphBuilder(parent, STAGE_BEFORE);
+  public static @Nonnull StageGraphBuilder beforeStages(@Nonnull Stage parent) {
+    return new StageGraphBuilder(parent, STAGE_BEFORE, Optional.empty());
+  }
+
+  /**
+   * Create a new builder for the before stages of {@code parent}.
+   */
+  public static @Nonnull StageGraphBuilder beforeStages(
+    @Nonnull Stage parent, @Nullable Stage requiredPrefix) {
+    return new StageGraphBuilder(parent, STAGE_BEFORE, Optional.ofNullable(requiredPrefix));
   }
 
   /**
    * Create a new builder for the after stages of {@code parent}.
    */
-  public static StageGraphBuilder afterStages(Stage parent) {
-    return new StageGraphBuilder(parent, STAGE_AFTER);
+  public static @Nonnull StageGraphBuilder afterStages(@Nonnull Stage parent) {
+    return new StageGraphBuilder(parent, STAGE_AFTER, Optional.empty());
   }
 
   /**
@@ -65,7 +79,7 @@ public class StageGraphBuilder {
    *             method will do that automatically.
    * @return the newly created stage.
    */
-  public Stage add(Consumer<Stage> init) {
+  public @Nonnull Stage add(@Nonnull Consumer<Stage> init) {
     Stage stage = newStage(init);
     add(stage);
     return stage;
@@ -76,7 +90,7 @@ public class StageGraphBuilder {
    * others. Use {@link #connect(Stage, Stage)} to make it depend on other stages or
    * have other stages depend on it.
    */
-  public void add(Stage stage) {
+  public void add(@Nonnull Stage stage) {
     stage.setExecution(parent.getExecution());
     stage.setParentStageId(parent.getId());
     stage.setSyntheticStageOwner(type);
@@ -93,7 +107,10 @@ public class StageGraphBuilder {
    * @param init     See {@link #add(Consumer)}
    * @return the newly created stage.
    */
-  public Stage connect(Stage previous, Consumer<Stage> init) {
+  public @Nonnull Stage connect(
+    @Nonnull Stage previous,
+    @Nonnull Consumer<Stage> init
+  ) {
     Stage stage = add(init);
     connect(previous, stage);
     return stage;
@@ -103,7 +120,7 @@ public class StageGraphBuilder {
    * Makes {@code next} depend on {@code previous}. If either {@code next} or
    * {@code previous} are not yet present in the graph this method will add them.
    */
-  public void connect(Stage previous, Stage next) {
+  public void connect(@Nonnull Stage previous, @Nonnull Stage next) {
     add(previous);
     add(next);
     Set<String> requisiteStageRefIds = new HashSet<>(next.getRequisiteStageRefIds());
@@ -112,11 +129,17 @@ public class StageGraphBuilder {
     graph.putEdge(previous, next);
   }
 
-  public Stage getParent() {
+  public @Nonnull Stage getParent() {
     return parent;
   }
 
-  public Iterable<Stage> build() {
+  public @Nonnull Iterable<Stage> build() {
+    requiredPrefix.ifPresent(prefix ->
+      graph.nodes().forEach(it -> {
+        if (it != prefix && it.getRequisiteStageRefIds().isEmpty()) {
+          connect(prefix, it);
+        }
+      }));
     return graph.nodes();
   }
 

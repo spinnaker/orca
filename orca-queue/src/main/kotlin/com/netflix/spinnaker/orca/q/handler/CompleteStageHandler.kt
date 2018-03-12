@@ -139,8 +139,6 @@ class CompleteStageHandler(
 
     // TODO: this can be neater
     builder().let { builder ->
-      val graph = StageGraphBuilder.afterStages(this)
-      builder.afterStages(this, graph)
       builder.buildAfterStages(this) { it: Stage ->
         repository.addStage(it)
         hasPlannedStages = true

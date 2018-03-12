@@ -88,13 +88,13 @@ class StageGraphBuilderSpec extends Specification {
       it.name = "A"
     }
     def stage2 = subject.add {
-      it.name = "B"
+      it.name = "B1"
     }
     def stage3 = subject.add {
-      it.name = "C"
+      it.name = "B2"
     }
     def stage4 = subject.add {
-      it.name = "D"
+      it.name = "C"
     }
     subject.connect(stage1, stage2)
     subject.connect(stage1, stage3)
@@ -116,6 +116,35 @@ class StageGraphBuilderSpec extends Specification {
     afterStages(parent)  | STAGE_AFTER
 
     stageType = "covfefe"
+  }
+
+  def "prefixing a stage wires up refId relationships"() {
+    given:
+    def stage1 = subject.add {
+      it.name = "A1"
+    }
+    def stage2 = subject.add {
+      it.name = "A2"
+    }
+    def stage3 = subject.connect(stage1) {
+      it.name = "B"
+    }
+    subject.connect(stage2, stage3)
+
+    and:
+    def stage0 = subject.prefix {
+      it.name = "Z"
+    }
+
+    expect:
+    stage1.requisiteStageRefIds == [stage0.refId] as Set
+    stage2.requisiteStageRefIds == [stage0.refId] as Set
+
+    and:
+    stage3.requisiteStageRefIds == [stage1.refId, stage2.refId] as Set
+
+    where:
+    subject << [beforeStages(parent)]
   }
 
 }

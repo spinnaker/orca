@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.assertj.assertSoftly
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
@@ -496,10 +497,12 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         it("injects a 'wait for execution window' stage before any other synthetic stages") {
           argumentCaptor<Stage>().apply {
             verify(repository, times(3)).addStage(capture())
-            assertThat(firstValue.type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
-            assertThat(firstValue.parentStageId).isEqualTo(message.stageId)
-            assertThat(firstValue.syntheticStageOwner).isEqualTo(STAGE_BEFORE)
-            assertThat(secondValue.requisiteStageRefIds).isEqualTo(setOf(firstValue.refId))
+            assertSoftly {
+              assertThat(firstValue.type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
+              assertThat(firstValue.parentStageId).isEqualTo(message.stageId)
+              assertThat(firstValue.syntheticStageOwner).isEqualTo(STAGE_BEFORE)
+              assertThat(secondValue.requisiteStageRefIds).isEqualTo(setOf(firstValue.refId))
+            }
           }
         }
 
@@ -535,14 +538,18 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         it("injects a 'wait for execution window' stage before any other synthetic stages") {
           argumentCaptor<Stage>().apply {
             verify(repository, times(4)).addStage(capture())
-            assertThat(firstValue.type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
-            assertThat(firstValue.parentStageId).isEqualTo(message.stageId)
-            assertThat(firstValue.syntheticStageOwner).isEqualTo(STAGE_BEFORE)
-            allValues[1..3].forEach {
-              assertThat(it.requisiteStageRefIds).isEqualTo(setOf(firstValue.refId))
+            assertSoftly {
+              assertThat(firstValue.type)
+                .isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
+              assertThat(firstValue.parentStageId).isEqualTo(message.stageId)
+              assertThat(firstValue.syntheticStageOwner).isEqualTo(STAGE_BEFORE)
+              allValues[1..3].forEach {
+                assertThat(it.requisiteStageRefIds)
+                  .isEqualTo(setOf(firstValue.refId))
+              }
+              assertThat(allValues[1..3].map { it.type })
+                .allMatch { it == singleTaskStage.type }
             }
-            assertThat(allValues[1..3].map { it.type })
-              .allMatch { it == singleTaskStage.type }
           }
         }
 
