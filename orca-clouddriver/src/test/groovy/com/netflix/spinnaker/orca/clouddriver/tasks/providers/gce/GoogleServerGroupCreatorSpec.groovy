@@ -81,6 +81,7 @@ class GoogleServerGroupCreatorSpec extends Specification {
     when: "use artifact when set as imageSource"
     ctx = [:] << basectx
     ctx.imageSource = "artifact"
+    ctx.imageArtifactId = "b3d33e5a-0423-4bdc-8e37-dea923b57c9a"
     stage = ExecutionBuilder.stage {
       context.putAll(ctx)
     }
@@ -96,6 +97,7 @@ class GoogleServerGroupCreatorSpec extends Specification {
       [
         "createServerGroup": [
           imageSource      : "artifact",
+          imageArtifactId  : "b3d33e5a-0423-4bdc-8e37-dea923b57c9a",
           account          : "abc",
           credentials      : "abc",
           image            : "santaImage",
@@ -106,6 +108,23 @@ class GoogleServerGroupCreatorSpec extends Specification {
       ]
     ]
 
+    when: "throw error if imageSource is artifact but no artifact is specified"
+    ctx = [:] << basectx
+    ctx.imageSource = "artifact"
+    stage = ExecutionBuilder.stage {
+      context.putAll(ctx)
+    }
+    artifactResolver.getBoundArtifactForId(*_) >> {
+      Artifact artifact = new Artifact();
+      artifact.setName("santaImage")
+      return artifact
+    }
+    ops = new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
+
+    then:
+    IllegalStateException ise = thrown()
+    ise.message == "Image source was set to artifact but no artifact was specified."
+
     when: "throw error if no image found"
     ctx = [:] << basectx
     ctx.deploymentDetails = []
@@ -115,7 +134,7 @@ class GoogleServerGroupCreatorSpec extends Specification {
     new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
 
     then:
-    IllegalStateException ise = thrown()
+    ise = thrown()
     ise.message == "No image could be found in north-pole."
   }
 }
