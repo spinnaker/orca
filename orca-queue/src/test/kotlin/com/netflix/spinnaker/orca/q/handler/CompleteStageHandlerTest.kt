@@ -36,7 +36,6 @@ import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
-import com.netflix.spinnaker.spek.xand
 import com.nhaarman.mockito_kotlin.*
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.*
@@ -91,7 +90,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
   fun resetMocks() = reset(queue, repository, publisher)
 
-  xdescribe("completing top level stages") {
+  describe("completing top level stages") {
     setOf(SUCCEEDED, FAILED_CONTINUE).forEach { taskStatus ->
       describe("when a stage's tasks complete with $taskStatus status") {
         and("it is already complete") {
@@ -571,7 +570,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
     }
   }
 
-  xdescribe("completing synthetic stages") {
+  describe("completing synthetic stages") {
     listOf(SUCCEEDED, FAILED_CONTINUE).forEach { taskStatus ->
       given("a synthetic stage's task completes with $taskStatus") {
         and("it comes before its parent stage") {
@@ -748,7 +747,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
     }
   }
 
-  xdescribe("branching stages") {
+  describe("branching stages") {
     listOf(SUCCEEDED, FAILED_CONTINUE).forEach { status ->
       context("when one branch completes with $status") {
         val pipeline = pipeline {
@@ -811,7 +810,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
     }
   }
 
-  xdescribe("surfacing expression evaluation errors") {
+  describe("surfacing expression evaluation errors") {
     fun exceptionErrors(stages: List<Stage>): List<*> =
       stages.flatMap {
         ((it.context["exception"] as Map<*, *>)["details"] as Map<*, *>)["errors"] as List<*>
@@ -893,7 +892,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
   setOf(TERMINAL).forEach { taskStatus ->
     given("a stage ends with $taskStatus status") {
-      xand("it has not run its on failure stages yet") {
+      and("it has not run its on failure stages yet") {
         val pipeline = pipeline {
           stage {
             refId = "1"
