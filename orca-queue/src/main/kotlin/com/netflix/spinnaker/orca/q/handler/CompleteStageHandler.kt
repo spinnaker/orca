@@ -68,6 +68,15 @@ class CompleteStageHandler(
           }
         }
 
+        if (status.isFailure) {
+          if (stage.planOnFailureStages()) {
+            stage.firstAfterStages().forEach {
+              queue.push(StartStage(it))
+            }
+            return@withStage
+          }
+        }
+
         stage.status = status
         stage.endTime = clock.millis()
         stage.includeExpressionEvaluationSummary()
@@ -76,14 +85,6 @@ class CompleteStageHandler(
         if (status in listOf(SUCCEEDED, FAILED_CONTINUE)) {
           stage.startNext()
         } else {
-          stage.planOnFailureStages()
-          if (stage.afterStages().any { it.status == NOT_STARTED }) {
-            stage.firstAfterStages().forEach {
-              queue.push(StartStage(it))
-            }
-            return@withStage
-          }
-
           queue.push(CancelStage(message))
           if (stage.syntheticStageOwner == null) {
             log.debug("Stage has no synthetic owner, completing execution (original message: $message)")
@@ -137,12 +138,9 @@ class CompleteStageHandler(
   private fun Stage.planAfterStages() {
     var hasPlannedStages = false
 
-    // TODO: this can be neater
-    builder().let { builder ->
-      builder.buildAfterStages(this) { it: Stage ->
-        repository.addStage(it)
-        hasPlannedStages = true
-      }
+    builder().buildAfterStages(this) { it: Stage ->
+      repository.addStage(it)
+      hasPlannedStages = true
     }
 
     if (hasPlannedStages) {
@@ -153,25 +151,24 @@ class CompleteStageHandler(
   /**
    * Plan any outstanding synthetic on failure stages.
    */
-  private fun Stage.planOnFailureStages() {
-    builder().let { builder ->
-      // Avoid planning failure stages if _any_ with the same name are already complete
-      val previouslyPlannedAfterStageNames = afterStages().filter { it.status.isComplete }.map { it.name }
+  private fun Stage.planOnFailureStages(): Boolean {
+    // Avoid planning failure stages if _any_ with the same name are already complete
+    val previouslyPlannedAfterStageNames = afterStages().filter { it.status.isComplete }.map { it.name }
 
-      val graph = StageGraphBuilder.afterStages(this)
-      builder.onFailureStages(this, graph)
-      val onFailureStages = graph.build().toList()
+    val graph = StageGraphBuilder.afterStages(this)
+    builder().onFailureStages(this, graph)
+    val onFailureStages = graph.build().toList()
 
-      val alreadyPlanned = onFailureStages.any { previouslyPlannedAfterStageNames.contains(it.name) }
+    val alreadyPlanned = onFailureStages.any { previouslyPlannedAfterStageNames.contains(it.name) }
 
-      if (alreadyPlanned || onFailureStages.isEmpty()) {
-        return
-      } else {
-        removeNotStartedSynthetics() // should be all synthetics (nothing should have been started!)
-        appendAfterStages(onFailureStages) {
-          repository.addStage(it)
-        }
+    return if (alreadyPlanned || onFailureStages.isEmpty()) {
+      false
+    } else {
+      removeNotStartedSynthetics() // should be all synthetics (nothing should have been started!)
+      appendAfterStages(onFailureStages) {
+        repository.addStage(it)
       }
+      true
     }
   }
 
