@@ -184,4 +184,4 @@ private val KayentaCanaryContext.startTime: Instant?
   get() = scopes.first().startTime
 
 private val KayentaCanaryContext.step: Duration
-  get() = scopes.first().step
+  get() = Duration.ofSeconds(scopes.first().step)

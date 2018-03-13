@@ -53,7 +53,7 @@ data class CanaryConfigScope(
   val experimentRegion: String?,
   val startTimeIso: String?,
   val endTimeIso: String?,
-  val step: Duration = Duration.ofSeconds(60),
+  val step: Long = 60, // TODO: clarify this is in seconds
   val extendedScopeParams: Map<String, String> = emptyMap()
 ) {
   // I don't love having these as separate properties but other things in Orca rely

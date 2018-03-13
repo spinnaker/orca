@@ -367,10 +367,10 @@ class KayentaCanaryStageSpec extends Specification {
           metricsAccountName        : "atlas-acct-1",
           canaryConfigId            : "MySampleAtlasCanaryConfig",
           scopes                    : [[
-            controlScope       : "some.host.node",
-            experimentScope    : "some.other.host.node",
-            step               : "PT60S",
-            extendedScopeParams: [type: "node"]
+                                         controlScope       : "some.host.node",
+                                         experimentScope    : "some.other.host.node",
+                                         step               : 60,
+                                         extendedScopeParams: [type: "node"]
           ]],
           canaryAnalysisIntervalMins: Duration.ofHours(6).toMinutes(),
           lifetimeHours             : "12"
