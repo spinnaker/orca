@@ -46,17 +46,32 @@ public interface StageDefinitionBuilder {
     @Nonnull Stage stage, @Nonnull Builder builder) {
   }
 
+  /**
+   * @deprecated implement {@link #beforeStages}, {@link #afterStages}, and
+   * {@link #onFailureStages} instead.
+   */
   @Deprecated
   default @Nonnull List<Stage> aroundStages(@Nonnull Stage stage) {
     return emptyList();
   }
 
+  /**
+   * @deprecated implement {@link #beforeStages}, {@link #afterStages}, and
+   * {@link #onFailureStages} instead.
+   */
   @Deprecated
   default @Nonnull List<Stage> parallelStages(
     @Nonnull Stage stage) {
     return emptyList();
   }
 
+  /**
+   * Implement this method to define any stages that should run before any tasks in
+   * this stage as part of a composed workflow.
+   * <p>
+   * This default implementation is for backward compatibility with the legacy
+   * {@link #aroundStages} and {@link #parallelStages} methods.
+   */
   default void beforeStages(
     @Nonnull Stage parent,
     @Nonnull StageGraphBuilder builder
@@ -77,6 +92,13 @@ public interface StageDefinitionBuilder {
       .forEach(builder::add);
   }
 
+  /**
+   * Implement this method to define any stages that should run after any tasks in
+   * this stage as part of a composed workflow.
+   *
+   * This default implementation is for backward compatibility with the legacy
+   * {@link #aroundStages} and {@link #parallelStages} methods.
+   */
   default void afterStages(
     @Nonnull Stage parent,
     @Nonnull StageGraphBuilder builder
@@ -97,6 +119,10 @@ public interface StageDefinitionBuilder {
       .forEach(builder::add);
   }
 
+  /**
+   * Implement this method to define any stages that should run in response to a
+   * failure in tasks, before or after stages.
+   */
   default void onFailureStages(
     @Nonnull Stage stage,
     @Nonnull StageGraphBuilder builder
