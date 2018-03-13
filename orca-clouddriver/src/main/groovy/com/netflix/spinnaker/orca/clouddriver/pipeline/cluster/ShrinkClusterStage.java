@@ -33,8 +33,13 @@ import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAG
 
 @Component
 public class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationStage {
+
+  private final DisableClusterStage disableClusterStage;
+
   @Autowired
-  DisableClusterStage disableClusterStage;
+  public ShrinkClusterStage(DisableClusterStage disableClusterStage) {
+    this.disableClusterStage = disableClusterStage;
+  }
 
   @Override
   public Class<? extends AbstractClusterWideClouddriverTask> getClusterOperationTask() {
