@@ -37,7 +37,7 @@ class GoogleServerGroupCreatorSpec extends Specification {
     when: "image is specified directly in context"
     def ctx = [:] << basectx
     ctx.image = "specifiedImage"
-    ctx.remove('deploymentDetails')
+    ctx.remove("deploymentDetails")
     def stage = ExecutionBuilder.stage {
       context.putAll(ctx)
     }
