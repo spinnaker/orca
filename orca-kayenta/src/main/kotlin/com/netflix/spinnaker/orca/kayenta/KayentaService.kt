@@ -75,8 +75,8 @@ data class Thresholds(
 data class CanaryResults(
   val complete: Boolean,
   val status: String,
-  val result: CanaryResult,
-  val buildTimeIso: Instant,
+  val result: CanaryResult?,
+  val buildTimeIso: Instant?,
   val startTimeIso: Instant?,
   val endTimeIso: Instant?,
   val storageAccountName: String?,

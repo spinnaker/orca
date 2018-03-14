@@ -49,7 +49,7 @@ class MonitorKayentaCanaryTask(
     val canaryResults = kayentaService.getCanaryResults(context.storageAccountName, context.canaryPipelineExecutionId)
 
     if (canaryResults.executionStatus == SUCCEEDED) {
-      val canaryScore = canaryResults.result.judgeResult.score.score
+      val canaryScore = canaryResults.result!!.judgeResult.score.score
 
       return if (canaryScore <= context.scoreThresholds.marginal) {
         TaskResult(TERMINAL, mapOf(

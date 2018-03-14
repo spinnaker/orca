@@ -420,9 +420,9 @@ object KayentaServiceTest : Spek({
             assertThat(response.buildTimeIso).isEqualTo(Instant.ofEpochMilli(1521059331684))
             assertThat(response.endTimeIso).isEqualTo(Instant.ofEpochMilli(1521059341101))
             assertThat(response.startTimeIso).isEqualTo(Instant.ofEpochMilli(1521059331909))
-            assertThat(response.result.application).isEqualTo("myapp")
-            assertThat(response.result.canaryDuration).isEqualTo(Duration.ofHours(1))
-            assertThat(response.result.judgeResult.score.score).isEqualTo(33)
+            assertThat(response.result!!.application).isEqualTo("myapp")
+            assertThat(response.result!!.canaryDuration).isEqualTo(Duration.ofHours(1))
+            assertThat(response.result!!.judgeResult.score.score).isEqualTo(33)
             assertThat(response.exception).isNull()
           }
       }
