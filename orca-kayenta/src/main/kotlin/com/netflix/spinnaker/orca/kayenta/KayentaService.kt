@@ -60,7 +60,7 @@ data class CanaryScope(
   val region: String?,
   val start: Instant,
   val end: Instant,
-  val step: String = "60", // TODO: would be nice to use a Duration
+  val step: Long = 60, // TODO: would be nice to use a Duration
   val extendedScopeParams: Map<String, String> = emptyMap()
 )
 
