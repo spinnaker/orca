@@ -16,7 +16,10 @@
 
 package com.netflix.spinnaker.orca.kayenta
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.netflix.spinnaker.orca.ExecutionStatus
 import retrofit.http.*
+import java.time.Duration
 import java.time.Instant
 
 interface KayentaService {
@@ -36,7 +39,7 @@ interface KayentaService {
   fun getCanaryResults(
     @Query("storageAccountName") storageAccountName: String?,
     @Path("canaryExecutionId") canaryExecutionId: String
-  ): Map<*, *>
+  ): CanaryResults
 
   @PUT("/pipelines/{executionId}/cancel")
   fun cancelPipelineExecution(
@@ -68,3 +71,35 @@ data class Thresholds(
   val pass: Int,
   val marginal: Int
 )
+
+data class CanaryResults(
+  val complete: Boolean,
+  val status: String,
+  val result: CanaryResult,
+  val buildTimeIso: Instant,
+  val startTimeIso: Instant?,
+  val endTimeIso: Instant?,
+  val storageAccountName: String?,
+  val exception: String?
+) {
+  @JsonIgnore
+  val executionStatus = ExecutionStatus.valueOf(status.toUpperCase())
+}
+
+data class CanaryResult(
+  val application: String,
+  val judgeResult: JudgeResult,
+  val canaryExecutionRequest: CanaryExecutionRequest,
+  val canaryDuration: Duration
+)
+
+data class JudgeResult(
+  val score: JudgeScore
+)
+
+data class JudgeScore(
+  val score: Int,
+  val classification: String,
+  val classificationReason: String
+)
+

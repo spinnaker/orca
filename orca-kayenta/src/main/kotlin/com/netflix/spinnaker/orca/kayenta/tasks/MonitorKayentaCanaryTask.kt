@@ -16,16 +16,15 @@
 
 package com.netflix.spinnaker.orca.kayenta.tasks
 
-import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.kayenta.Thresholds
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.util.Collections.singletonMap
 import java.util.concurrent.TimeUnit.HOURS
 
 @Component
@@ -39,44 +38,44 @@ class MonitorKayentaCanaryTask(
 
   override fun getTimeout() = HOURS.toMillis(12)
 
+  data class MonitorKayentaCanaryContext(
+    val canaryPipelineExecutionId: String,
+    val storageAccountName: String?,
+    val scoreThresholds: Thresholds?
+  )
+
   override fun execute(stage: Stage): TaskResult {
-    val context = stage.context
-    val canaryPipelineExecutionId = context["canaryPipelineExecutionId"] as String
-    val storageAccountName = context["storageAccountName"] as String
-    val canaryResults = kayentaService.getCanaryResults(storageAccountName, canaryPipelineExecutionId)
-    val status = ExecutionStatus.valueOf(canaryResults["status"].toString().toUpperCase())
+    val context = stage.mapTo<MonitorKayentaCanaryContext>()
+    val canaryResults = kayentaService.getCanaryResults(context.storageAccountName, context.canaryPipelineExecutionId)
 
-    if (status == SUCCEEDED) {
-      val (pass, marginal) = context["scoreThresholds"] as Thresholds
-      // TODO: for the love of god can this be an actual type?
-      val result = canaryResults["result"] as Map<String, Any>
-      val canaryScore = (result["judgeResult"] as Map<String, Map<String, Double>>)["score"]!!["score"]!!
-      val lastUpdatedMs = canaryResults["endTimeMillis"] as Long
-      val lastUpdatedIso = canaryResults["endTimeIso"] as String
-      val durationString = result["canaryDuration"] as String
+    if (canaryResults.executionStatus == SUCCEEDED) {
+      val result = canaryResults.result
+      val canaryScore = result.judgeResult.score.score
+      val lastUpdatedIso = canaryResults.endTimeIso
+      val durationString = result.canaryDuration
 
-      return if (marginal == null && pass == null) {
+      return if (context.scoreThresholds == null) {
         TaskResult(SUCCEEDED, mapOf(
           "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedMs,
+          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
           "lastUpdatedIso" to lastUpdatedIso,
           "durationString" to durationString,
           "canaryScore" to canaryScore,
           "canaryScoreMessage" to "No score thresholds were specified."
         ))
-      } else if (marginal == null) {
+      } else if (context.scoreThresholds.marginal == null) {
         TaskResult(SUCCEEDED, mapOf(
           "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedMs,
+          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
           "lastUpdatedIso" to lastUpdatedIso,
           "durationString" to durationString,
           "canaryScore" to canaryScore,
           "canaryScoreMessage" to "No marginal score threshold was specified."
         ))
-      } else if (canaryScore <= marginal) {
+      } else if (canaryScore <= context.scoreThresholds.marginal) {
         TaskResult(TERMINAL, mapOf(
           "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedMs,
+          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
           "lastUpdatedIso" to lastUpdatedIso,
           "durationString" to durationString,
           "canaryScore" to canaryScore,
@@ -85,7 +84,7 @@ class MonitorKayentaCanaryTask(
       } else {
         TaskResult(SUCCEEDED, mapOf(
           "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedMs,
+          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
           "lastUpdatedIso" to lastUpdatedIso,
           "durationString" to durationString,
           "canaryScore" to canaryScore
@@ -93,19 +92,19 @@ class MonitorKayentaCanaryTask(
       }
     }
 
-    if (status.isHalt) {
-      val stageOutputs = mutableMapOf<String, Any>("canaryPipelineStatus" to status)
+    if (canaryResults.executionStatus.isHalt) {
+      val stageOutputs = mutableMapOf<String, Any>("canaryPipelineStatus" to canaryResults.executionStatus)
 
-      if (status == CANCELED) {
+      if (canaryResults.executionStatus == CANCELED) {
         stageOutputs["exception"] = mapOf("details" to mapOf("errors" to listOf("Canary execution was canceled.")))
       } else {
-        canaryResults["exception"]?.let { stageOutputs["exception"] = it }
+        canaryResults.exception?.let { stageOutputs["exception"] = it }
       }
 
       // Indicates a failure of some sort.
       return TaskResult(TERMINAL, stageOutputs)
     }
 
-    return TaskResult(RUNNING, singletonMap("canaryPipelineStatus", status))
+    return TaskResult(RUNNING, mapOf("canaryPipelineStatus" to canaryResults.executionStatus))
   }
 }
