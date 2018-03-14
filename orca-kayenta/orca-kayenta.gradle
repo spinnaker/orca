@@ -15,6 +15,7 @@
  */
 
 apply from: "$rootDir/gradle/kotlin.gradle"
+apply from: "$rootDir/gradle/spek.gradle"
 apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
@@ -22,4 +23,6 @@ dependencies {
   compile project(":orca-retrofit")
 
   testCompile project(":orca-test-groovy")
+  testCompile project(":orca-test-kotlin")
+  testCompile "com.github.tomakehurst:wiremock:2.15.0"
 }
