@@ -41,7 +41,7 @@ class MonitorKayentaCanaryTask(
   data class MonitorKayentaCanaryContext(
     val canaryPipelineExecutionId: String,
     val storageAccountName: String?,
-    val scoreThresholds: Thresholds?
+    val scoreThresholds: Thresholds
   )
 
   override fun execute(stage: Stage): TaskResult {
@@ -49,44 +49,23 @@ class MonitorKayentaCanaryTask(
     val canaryResults = kayentaService.getCanaryResults(context.storageAccountName, context.canaryPipelineExecutionId)
 
     if (canaryResults.executionStatus == SUCCEEDED) {
-      val result = canaryResults.result
-      val canaryScore = result.judgeResult.score.score
-      val lastUpdatedIso = canaryResults.endTimeIso
-      val durationString = result.canaryDuration
+      val canaryScore = canaryResults.result.judgeResult.score.score
 
-      return if (context.scoreThresholds == null) {
-        TaskResult(SUCCEEDED, mapOf(
-          "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
-          "lastUpdatedIso" to lastUpdatedIso,
-          "durationString" to durationString,
-          "canaryScore" to canaryScore,
-          "canaryScoreMessage" to "No score thresholds were specified."
-        ))
-      } else if (context.scoreThresholds.marginal == null) {
-        TaskResult(SUCCEEDED, mapOf(
-          "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
-          "lastUpdatedIso" to lastUpdatedIso,
-          "durationString" to durationString,
-          "canaryScore" to canaryScore,
-          "canaryScoreMessage" to "No marginal score threshold was specified."
-        ))
-      } else if (canaryScore <= context.scoreThresholds.marginal) {
+      return if (canaryScore <= context.scoreThresholds.marginal) {
         TaskResult(TERMINAL, mapOf(
           "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
-          "lastUpdatedIso" to lastUpdatedIso,
-          "durationString" to durationString,
+          "lastUpdated" to canaryResults.endTimeIso?.toEpochMilli(),
+          "lastUpdatedIso" to canaryResults.endTimeIso,
+          "durationString" to canaryResults.result.canaryDuration,
           "canaryScore" to canaryScore,
           "canaryScoreMessage" to "Canary score is not above the marginal score threshold."
         ))
       } else {
         TaskResult(SUCCEEDED, mapOf(
           "canaryPipelineStatus" to SUCCEEDED,
-          "lastUpdated" to lastUpdatedIso?.toEpochMilli(),
-          "lastUpdatedIso" to lastUpdatedIso,
-          "durationString" to durationString,
+          "lastUpdated" to canaryResults.endTimeIso?.toEpochMilli(),
+          "lastUpdatedIso" to canaryResults.endTimeIso,
+          "durationString" to canaryResults.result.canaryDuration,
           "canaryScore" to canaryScore
         ))
       }
