@@ -49,8 +49,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void taskGraph(
-    @Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("determineRollbackCandidates", DetermineRollbackCandidatesTask.class);
   }
