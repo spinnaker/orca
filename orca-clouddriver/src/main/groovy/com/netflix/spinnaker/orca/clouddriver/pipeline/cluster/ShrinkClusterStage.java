@@ -30,8 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
-
 @Component
 public class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationStage {
 
@@ -73,7 +71,6 @@ public class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationS
         it.setType(disableClusterStage.getType());
         it.setName("disableCluster");
         it.setContext(context);
-        it.setSyntheticStageOwner(STAGE_BEFORE);
       });
     }
   }
