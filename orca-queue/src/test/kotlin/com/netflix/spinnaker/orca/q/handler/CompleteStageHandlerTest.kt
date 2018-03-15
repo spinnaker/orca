@@ -59,8 +59,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
       builder.withTask("dummy", DummyTask::class.java)
     }
 
-    override fun afterStages(parent: Stage, builder: StageGraphBuilder) {
-      builder.add {
+    override fun afterStages(parent: Stage, graph: StageGraphBuilder) {
+      graph.add {
         it.type = singleTaskStage.type
         it.name = "After Stage"
         it.context = mapOf("key" to "value")

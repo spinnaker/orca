@@ -74,22 +74,22 @@ public interface StageDefinitionBuilder {
    */
   default void beforeStages(
     @Nonnull Stage parent,
-    @Nonnull StageGraphBuilder builder
+    @Nonnull StageGraphBuilder graph
   ) {
     List<Stage> stages = aroundStages(parent)
       .stream()
       .filter((it) -> it.getSyntheticStageOwner() == STAGE_BEFORE)
       .collect(toList());
     if (!stages.isEmpty()) {
-      builder.add(stages.get(0));
+      graph.add(stages.get(0));
     }
     for (int i = 1; i < stages.size(); i++) {
-      builder.connect(stages.get(i - 1), stages.get(i));
+      graph.connect(stages.get(i - 1), stages.get(i));
     }
     parallelStages(parent)
       .stream()
       .filter((it) -> it.getSyntheticStageOwner() == STAGE_BEFORE)
-      .forEach(builder::add);
+      .forEach(graph::add);
   }
 
   /**
@@ -101,22 +101,22 @@ public interface StageDefinitionBuilder {
    */
   default void afterStages(
     @Nonnull Stage parent,
-    @Nonnull StageGraphBuilder builder
+    @Nonnull StageGraphBuilder graph
   ) {
     List<Stage> stages = aroundStages(parent)
       .stream()
       .filter((it) -> it.getSyntheticStageOwner() == STAGE_AFTER)
       .collect(toList());
     if (!stages.isEmpty()) {
-      builder.add(stages.get(0));
+      graph.add(stages.get(0));
     }
     for (int i = 1; i < stages.size(); i++) {
-      builder.connect(stages.get(i - 1), stages.get(i));
+      graph.connect(stages.get(i - 1), stages.get(i));
     }
     parallelStages(parent)
       .stream()
       .filter((it) -> it.getSyntheticStageOwner() == STAGE_AFTER)
-      .forEach(builder::add);
+      .forEach(graph::add);
   }
 
   /**
@@ -125,7 +125,7 @@ public interface StageDefinitionBuilder {
    */
   default void onFailureStages(
     @Nonnull Stage stage,
-    @Nonnull StageGraphBuilder builder
+    @Nonnull StageGraphBuilder graph
   ) {}
 
   /**

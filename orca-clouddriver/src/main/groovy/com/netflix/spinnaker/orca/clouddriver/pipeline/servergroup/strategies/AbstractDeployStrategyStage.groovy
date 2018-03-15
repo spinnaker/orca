@@ -135,13 +135,13 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void onFailureStages(Stage stage, StageGraphBuilder builder) {
+  void onFailureStages(Stage stage, StageGraphBuilder graph) {
     deployStagePreProcessors
       .findAll { it.supports(stage) }
       .collect { it.onFailureStageDefinitions(stage) }
       .flatten()
       .forEach { StageDefinition stageDefinition ->
-      builder.add {
+      graph.add {
         it.type = stageDefinition.stageDefinitionBuilder.type
         it.name = stageDefinition.name
         it.context = stageDefinition.context

@@ -63,7 +63,7 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  void afterStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder builder) {
+  void afterStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
     Map canaryStageId = [
       canaryStageId   : stage.id,
       failPipeline    : stage.context.failPipeline,
@@ -85,7 +85,7 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
       it.context = monitorContext
       it.syntheticStageOwner = STAGE_AFTER
     }
-    builder.connect(deployCanaryStage, monitorCanaryStage)
+    graph.connect(deployCanaryStage, monitorCanaryStage)
   }
 
   @Override

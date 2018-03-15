@@ -34,14 +34,14 @@ class DryRunStage(private val delegate: StageDefinitionBuilder) : StageDefinitio
   override fun parallelStages(stage: Stage): List<Stage>
     = delegate.parallelStages(stage)
 
-  override fun beforeStages(parent: Stage, builder: StageGraphBuilder) =
-    delegate.beforeStages(parent, builder)
+  override fun beforeStages(parent: Stage, graph: StageGraphBuilder) =
+    delegate.beforeStages(parent, graph)
 
-  override fun afterStages(parent: Stage, builder: StageGraphBuilder) =
-    delegate.afterStages(parent, builder)
+  override fun afterStages(parent: Stage, graph: StageGraphBuilder) =
+    delegate.afterStages(parent, graph)
 
-  override fun onFailureStages(stage: Stage, builder: StageGraphBuilder) =
-    delegate.onFailureStages(stage, builder)
+  override fun onFailureStages(stage: Stage, graph: StageGraphBuilder) =
+    delegate.onFailureStages(stage, graph)
 
   override fun getType() = delegate.type
 

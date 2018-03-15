@@ -57,7 +57,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
 
   @Override
   public void afterStages(
-    @Nonnull Stage parent, @Nonnull StageGraphBuilder builder) {
+    @Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
     StageData stageData = parent.mapTo(StageData.class);
 
     Map<String, String> rollbackTypes = (Map<String, String>) parent.getOutputs().get("rollbackTypes");
@@ -86,7 +86,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
       // propagate any attributes of the parent stage that are relevant to this rollback
       context.putAll(propagateParentStageContext(parent.getParent()));
 
-      Stage rollbackStage = builder.add((it) -> {
+      Stage rollbackStage = graph.add((it) -> {
         it.setType(rollbackServerGroupStage.getType());
         it.setName("Rollback " + region);
         it.setContext(context);
@@ -94,7 +94,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
 
       if (stageData.waitTimeBetweenRegions != null && regionsToRollback.indexOf(region) < regionsToRollback.size() - 1) {
         // only add the waitStage if we're not the very last region!
-        builder.connect(
+        graph.connect(
           rollbackStage,
           (it) -> {
             it.setType(waitStage.getType());

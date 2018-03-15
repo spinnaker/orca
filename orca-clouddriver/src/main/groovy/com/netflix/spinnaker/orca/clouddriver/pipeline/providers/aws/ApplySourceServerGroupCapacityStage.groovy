@@ -64,7 +64,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void afterStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder builder) {
+  void afterStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder graph) {
     try {
       def taggingEnabled = featuresService.areEntityTagsAvailable()
       if (!taggingEnabled) {
@@ -76,7 +76,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
         return
       }
 
-      builder.add {
+      graph.add {
         it.type = deleteEntityTagsStage.type
         it.name = "Cleanup Server Group Tags"
         it.context = [

@@ -53,7 +53,7 @@ public class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationS
   @Override
   public void beforeStages(
     @Nonnull Stage parent,
-    @Nonnull StageGraphBuilder builder
+    @Nonnull StageGraphBuilder graph
   ) {
     if (Objects.equals(parent.getContext().get("allowDeleteActive"), true)) {
       Map<String, Object> context = new HashMap<>(parent.getContext());
@@ -67,7 +67,7 @@ public class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationS
         context.put("interestingHealthProviderNames", parent.getContext().get("interestingHealthProviderNames"));
       }
 
-      builder.add((it) -> {
+      graph.add((it) -> {
         it.setType(disableClusterStage.getType());
         it.setName("disableCluster");
         it.setContext(context);
