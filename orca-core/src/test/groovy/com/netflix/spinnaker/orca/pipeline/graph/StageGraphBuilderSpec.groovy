@@ -53,9 +53,9 @@ class StageGraphBuilderSpec extends Specification {
     }
 
     where:
-    subject              | expectedSyntheticType
-    beforeStages(parent) | STAGE_BEFORE
-    afterStages(parent)  | STAGE_AFTER
+    subject              || expectedSyntheticType
+    beforeStages(parent) || STAGE_BEFORE
+    afterStages(parent)  || STAGE_AFTER
   }
 
   @Unroll
@@ -77,9 +77,9 @@ class StageGraphBuilderSpec extends Specification {
     stage2.requisiteStageRefIds.first() == stage1.refId
 
     where:
-    subject              | expectedSyntheticType
-    beforeStages(parent) | STAGE_BEFORE
-    afterStages(parent)  | STAGE_AFTER
+    subject              || expectedSyntheticType
+    beforeStages(parent) || STAGE_BEFORE
+    afterStages(parent)  || STAGE_AFTER
   }
 
   @Unroll
@@ -112,9 +112,9 @@ class StageGraphBuilderSpec extends Specification {
     stage4.requisiteStageRefIds == [stage2.refId, stage3.refId] as Set
 
     where:
-    subject              | expectedSyntheticType
-    beforeStages(parent) | STAGE_BEFORE
-    afterStages(parent)  | STAGE_AFTER
+    subject              || expectedSyntheticType
+    beforeStages(parent) || STAGE_BEFORE
+    afterStages(parent)  || STAGE_AFTER
 
     stageType = "covfefe"
   }
