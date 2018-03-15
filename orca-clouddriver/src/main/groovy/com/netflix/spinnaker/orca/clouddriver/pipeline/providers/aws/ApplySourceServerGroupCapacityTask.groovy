@@ -67,10 +67,10 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
         targetServerGroup.capacity.min as Long
       )
 
-      // only update the min capacity, desired + max should be inherited/unchanged from the target server group
-      context.capacity = targetServerGroup.capacity + [
-        min: minCapacity
-      ]
+      // only update the min capacity
+      // this is important, as passing a stale 'desired' value here could interfere with autoscaling
+      // and result in instances that are needed being destroyed
+      context.capacity = [ min: minCapacity ]
 
       log.info("Restoring min capacity of ${context.region}/${targetServerGroup.name} to ${minCapacity} (currentMin: ${targetServerGroup.capacity.min}, snapshotMin: ${sourceServerGroupCapacitySnapshot.min})")
 
