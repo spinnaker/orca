@@ -55,8 +55,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void afterStages(
-    @Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+  public void afterStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
     StageData stageData = parent.mapTo(StageData.class);
 
     Map<String, String> rollbackTypes = (Map<String, String>) parent.getOutputs().get("rollbackTypes");
