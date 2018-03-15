@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline.graph;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 
@@ -100,7 +101,8 @@ public class StageGraphBuilder {
   }
 
   /**
-   * Adds a new stage to the graph and makes it depend on {@code previous}.
+   * Adds a new stage to the graph and makes it depend on {@code previous} via its
+   * {@link Stage#requisiteStageRefIds}.
    *
    * @param previous The stage the new stage will depend on. If {@code previous}
    *                 does not already exist in the graph, this method will add it.
@@ -117,7 +119,8 @@ public class StageGraphBuilder {
   }
 
   /**
-   * Makes {@code next} depend on {@code previous}. If either {@code next} or
+   * Makes {@code next} depend on {@code previous} via its
+   * {@link Stage#requisiteStageRefIds}. If either {@code next} or
    * {@code previous} are not yet present in the graph this method will add them.
    */
   public void connect(@Nonnull Stage previous, @Nonnull Stage next) {
@@ -129,10 +132,11 @@ public class StageGraphBuilder {
     graph.putEdge(previous, next);
   }
 
-  public @Nonnull Stage getParent() {
-    return parent;
-  }
-
+  /**
+   * Builds and returns the stages represented in the graph. This method is not
+   * typically useful to implementors of {@link StageDefinitionBuilder}, it's used
+   * internally and by tests.
+   */
   public @Nonnull Iterable<Stage> build() {
     requiredPrefix.ifPresent(prefix ->
       graph.nodes().forEach(it -> {
