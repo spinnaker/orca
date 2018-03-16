@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-apply from: "$rootDir/gradle/kotlin.gradle"
-apply from: "$rootDir/gradle/spek.gradle"
+package com.netflix.spinnaker.assertj
 
-dependencies {
-  compile project(":orca-core")
-  compile project(":orca-kotlin")
-  compile "com.netflix.spinnaker.keiko:keiko-spring:$keikoVersion"
-  compile "org.threeten:threeten-extra:1.0"
-  compile "org.funktionale:funktionale-partials:1.2"
-  compile spinnaker.dependency("logstashEncoder")
-  compile "com.netflix.spinnaker.keiko:keiko-spring:$keikoVersion"
+import org.assertj.core.api.SoftAssertions
 
-  testCompile project(":orca-test-kotlin")
-  testCompile project(":orca-queue-tck")
+fun assertSoftly(softly: SoftAssertions.() -> Unit) {
+  val assertions = SoftAssertions()
+  assertions.softly()
+  assertions.assertAll()
 }
