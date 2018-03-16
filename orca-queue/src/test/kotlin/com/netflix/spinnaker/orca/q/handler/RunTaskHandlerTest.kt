@@ -30,9 +30,9 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.q.*
-import com.netflix.spinnaker.orca.time.fixedClock
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
+import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.describe
@@ -205,7 +205,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
       beforeGroup {
         whenever(task.execute(any())) doReturn taskResult
-        whenever(task.getDynamicBackoffPeriod(any())) doReturn taskBackoffMs
+        whenever(task.getDynamicBackoffPeriod(any(), any())) doReturn taskBackoffMs
         whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
       }
 
@@ -419,7 +419,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         )
 
         beforeGroup {
-          whenever(task.getDynamicBackoffPeriod(any())) doReturn taskBackoffMs
+          whenever(task.getDynamicBackoffPeriod(any(), any())) doReturn taskBackoffMs
           whenever(task.execute(any())) doThrow RuntimeException("o noes")
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
           whenever(exceptionHandler.handles(any())) doReturn true

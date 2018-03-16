@@ -20,9 +20,9 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.entitytags.DeleteEntityTagsStage
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import spock.lang.Specification
-import spock.lang.Subject;
-
+import spock.lang.Subject
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class ApplySourceServerGroupCapacityStageSpec extends Specification {
@@ -50,10 +50,12 @@ class ApplySourceServerGroupCapacityStageSpec extends Specification {
 
   def "should not generate any stages when 'upsertEntityTags' is not enabled"() {
     when:
-    def afterStages = stageBuilder.afterStages(stage)
+    def graph = StageGraphBuilder.afterStages(stage)
+    stageBuilder.afterStages(stage, graph)
+    def afterStages = graph.build()
 
     then:
-    1 * featuresService.isStageAvailable("upsertEntityTags") >> { return false }
+    1 * featuresService.areEntityTagsAvailable() >> { return false }
     0 * oortService.getEntityTags(_)
 
     afterStages.isEmpty()
@@ -61,10 +63,12 @@ class ApplySourceServerGroupCapacityStageSpec extends Specification {
 
   def "should not generate any stages when there are no entity tags"() {
     when:
-    def afterStages = stageBuilder.afterStages(stage)
+    def graph = StageGraphBuilder.afterStages(stage)
+    stageBuilder.afterStages(stage, graph)
+    def afterStages = graph.build()
 
     then:
-    1 * featuresService.isStageAvailable("upsertEntityTags") >> { return true }
+    1 * featuresService.areEntityTagsAvailable() >> { return true }
     1 * oortService.getEntityTags(_) >> { return [] }
 
     afterStages.isEmpty()
@@ -72,12 +76,14 @@ class ApplySourceServerGroupCapacityStageSpec extends Specification {
 
   def "should not generate any stages when an exception is raised"() {
     when:
-    def afterStages = stageBuilder.afterStages(stage)
+    def graph = StageGraphBuilder.afterStages(stage)
+    stageBuilder.afterStages(stage, graph)
+    def afterStages = graph.build()
 
     then:
     notThrown(RuntimeException)
 
-    1 * featuresService.isStageAvailable("upsertEntityTags") >> { throw new RuntimeException("An Exception!") }
+    1 * featuresService.areEntityTagsAvailable() >> { throw new RuntimeException("An Exception!") }
     0 * oortService.getEntityTags(_)
 
     afterStages.isEmpty()
@@ -85,10 +91,12 @@ class ApplySourceServerGroupCapacityStageSpec extends Specification {
 
   def "should generate a delete entity tags stage when the server group has a `spinnaker:pinned_capacity` entity tag"() {
     when:
-    def afterStages = stageBuilder.afterStages(stage)
+    def graph = StageGraphBuilder.afterStages(stage)
+    stageBuilder.afterStages(stage, graph)
+    def afterStages = graph.build()
 
     then:
-    1 * featuresService.isStageAvailable("upsertEntityTags") >> { return true }
+    1 * featuresService.areEntityTagsAvailable() >> { return true }
     1 * oortService.getEntityTags([
       "tag:spinnaker:pinned_capacity": "*",
       "entityId"                     : "app-stack-details-v001",
