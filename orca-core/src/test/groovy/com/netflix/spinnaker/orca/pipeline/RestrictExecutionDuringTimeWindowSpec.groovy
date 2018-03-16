@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import com.netflix.spinnaker.orca.pipeline.window.TimeWindowCalculator
+
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -27,7 +29,7 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.SuspendExecutionDuringTimeWindowTask
-import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.SuspendExecutionDuringTimeWindowTask.TimeWindow
+import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.TimeWindow
 
 @Unroll
 class RestrictExecutionDuringTimeWindowSpec extends Specification {
@@ -35,16 +37,21 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
   def builder = Spy(new TaskNode.Builder(TaskNode.GraphType.FULL))
 
   @Subject
+  timeWindowCalculator = new TimeWindowCalculator()
+
+  @Subject
   restrictExecutionDuringTimeWindow = new RestrictExecutionDuringTimeWindow()
+
+  void setup() {
+    timeWindowCalculator.timeZoneId = "America/Los_Angeles"
+  }
 
   void 'stage should be scheduled at #expectedTime when triggered at #scheduledTime with time windows #timeWindows'() {
     when:
-    SuspendExecutionDuringTimeWindowTask suspendExecutionDuringTimeWindowTask = new SuspendExecutionDuringTimeWindowTask()
-    suspendExecutionDuringTimeWindowTask.timeZoneId = "America/Los_Angeles"
-    def result = suspendExecutionDuringTimeWindowTask.calculateScheduledTime(scheduledTime, timeWindows, [])
+    def result = timeWindowCalculator.calculateScheduledTime(scheduledTime, timeWindows, [])
 
     then:
-    result.equals(expectedTime)
+    result == expectedTime
 
     where:
     scheduledTime          | expectedTime           | timeWindows
@@ -94,9 +101,8 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
   @Unroll
   void 'stage should consider whitelisted days when calculating scheduled time'() {
     when:
-    SuspendExecutionDuringTimeWindowTask suspendExecutionDuringTimeWindowTask = new SuspendExecutionDuringTimeWindowTask()
-    suspendExecutionDuringTimeWindowTask.timeZoneId = "America/Los_Angeles"
-    def result = suspendExecutionDuringTimeWindowTask.calculateScheduledTime(scheduledTime, timeWindows, days)
+    timeWindowCalculator.timeZoneId = "America/Los_Angeles"
+    def result = timeWindowCalculator.calculateScheduledTime(scheduledTime, timeWindows, days)
 
     then:
     result.equals(expectedTime)
@@ -116,11 +122,11 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
   void 'stage should be scheduled at #expectedTime when triggered at #scheduledTime with time windows #stage in stage context'() {
     when:
     SuspendExecutionDuringTimeWindowTask suspendExecutionDuringTimeWindowTask = new SuspendExecutionDuringTimeWindowTask()
-    suspendExecutionDuringTimeWindowTask.timeZoneId = "America/Los_Angeles"
-    def result = suspendExecutionDuringTimeWindowTask.getTimeInWindow(stage, scheduledTime)
+    suspendExecutionDuringTimeWindowTask.timeWindowCalculator = timeWindowCalculator
+    def result = suspendExecutionDuringTimeWindowTask.getTimeInWindowForStage(stage, scheduledTime)
 
     then:
-    result.equals(expectedTime)
+    result == expectedTime
 
     where:
     scheduledTime          | expectedTime           | stage
@@ -163,12 +169,10 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
   @Unroll
   void 'should be valid all day if no time window selected but some days are selected'() {
     when:
-    SuspendExecutionDuringTimeWindowTask suspendExecutionDuringTimeWindowTask = new SuspendExecutionDuringTimeWindowTask()
-    suspendExecutionDuringTimeWindowTask.timeZoneId = "America/Los_Angeles"
-    def result = suspendExecutionDuringTimeWindowTask.calculateScheduledTime(scheduledTime, timeWindows, days)
+    def result = timeWindowCalculator.calculateScheduledTime(scheduledTime, timeWindows, days)
 
     then:
-    result.equals(expectedTime)
+    result == expectedTime
 
     where:
     scheduledTime           | timeWindows                                        | days            || expectedTime
