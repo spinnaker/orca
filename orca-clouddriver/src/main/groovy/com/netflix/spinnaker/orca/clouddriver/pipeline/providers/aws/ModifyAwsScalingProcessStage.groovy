@@ -36,9 +36,6 @@ import org.springframework.stereotype.Component
 @Component
 @CompileStatic
 class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
-  ModifyAwsScalingProcessStage() {
-    name = "Modify Scaling Process"
-  }
 
   @Override
   void taskGraph(Stage stage, TaskNode.Builder builder) {

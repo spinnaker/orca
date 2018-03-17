@@ -17,25 +17,26 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
-import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import spock.lang.Specification
 import spock.lang.Unroll
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport.Injectable
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class TargetServerGroupLinearStageSupportSpec extends Specification {
 
-  def resolver = Spy(TargetServerGroupResolver)
-  def supportStage = new TestSupportStage(determineTargetServerGroupStage: new DetermineTargetServerGroupStage())
+  def resolver = Stub(TargetServerGroupResolver)
+  def supportStage = new testSupport(determineTargetServerGroupStage: new DetermineTargetServerGroupStage())
 
   void setup() {
     supportStage.resolver = resolver
   }
 
   @Unroll
-  void "#description determineTargetReferences stage when target is dynamic and parentStageId is #parentStageId"() {
+  void "should inject determineTargetReferences stage when target is dynamic and parentStageId is #parentStageId"() {
     given:
-    def stage = ExecutionBuilder.stage {
+    def stage = stage {
       type = "test"
       context["regions"] = ["us-east-1"]
       context["target"] = "current_asg_dynamic"
@@ -46,13 +47,13 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
-    syntheticStages.getOrDefault(SyntheticStageOwner.STAGE_BEFORE, [])*.name == stageNamesBefore
-    syntheticStages.getOrDefault(SyntheticStageOwner.STAGE_AFTER, []).isEmpty()
+    syntheticStages.getOrDefault(STAGE_BEFORE, [])*.name == stageNamesBefore
+    syntheticStages.getOrDefault(STAGE_AFTER, []).isEmpty()
 
     where:
-    parentStageId | stageNamesBefore               | description
-    null          | ["determineTargetServerGroup"] | "should inject"
-    "a"           | []                             | "should inject"
+    parentStageId | stageNamesBefore
+    null          | ["determineTargetServerGroup"]
+    "a"           | []
   }
 
   @Unroll
@@ -69,12 +70,12 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
-    syntheticStages[SyntheticStageOwner.STAGE_BEFORE].size() == 1
-    syntheticStages[SyntheticStageOwner.STAGE_AFTER].size() == 3
-    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
+    syntheticStages[STAGE_BEFORE].size() == 1
+    syntheticStages[STAGE_AFTER].size() == 3
+    syntheticStages[STAGE_AFTER]*.name == ["testSupport", "testSupport", "testSupport"]
     stage.context[locationType] == "us-east-1"
     stage.context[oppositeLocationType] == null
-    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.context[locationType].flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
+    syntheticStages[STAGE_AFTER]*.context[locationType].flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
 
     where:
     locationType | oppositeLocationType | cloudProvider
@@ -86,22 +87,24 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     given:
     def stage = stage {
       type = "test"
-      context["region"] = 'should be overridden'
+      context["region"] = "should be overridden"
     }
 
-    when:
-    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
-
-    then:
-    1 * resolver.resolveByParams(_) >> [
+    and:
+    resolver.resolveByParams(_) >> [
       new TargetServerGroup(name: "asg-v001", region: "us-east-1"),
       new TargetServerGroup(name: "asg-v001", region: "us-west-1"),
       new TargetServerGroup(name: "asg-v002", region: "us-west-2"),
       new TargetServerGroup(name: "asg-v003", region: "eu-west-2"),
     ]
-    syntheticStages[SyntheticStageOwner.STAGE_BEFORE] == null
-    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.name == ["testSupportStage", "testSupportStage", "testSupportStage"]
-    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
+
+    when:
+    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
+
+    then:
+    syntheticStages[STAGE_BEFORE] == null
+    syntheticStages[STAGE_AFTER]*.name == ["testSupport", "testSupport", "testSupport"]
+    syntheticStages[STAGE_AFTER]*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
     stage.context.region == "us-east-1"
   }
 
@@ -114,60 +117,58 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
       context["regions"] = ["us-east-1", "us-west-1"]
     }
     def arbitraryStageBuilder = new ResizeServerGroupStage()
-    supportStage.preInjectables = [new TargetServerGroupLinearStageSupport.Injectable(
+    supportStage.preInjectables = [new Injectable(
       name: "testPreInjectable",
       stage: arbitraryStageBuilder,
       context: ["abc": 123]
     )]
-    supportStage.postInjectables = [new TargetServerGroupLinearStageSupport.Injectable(
+    supportStage.postInjectables = [new Injectable(
       name: "testPostInjectable",
       stage: arbitraryStageBuilder,
       context: ["abc": 123]
     )]
 
+    and:
+    resolver.resolveByParams(_) >> [
+      new TargetServerGroup(name: "asg-v001", region: "us-east-1"),
+      new TargetServerGroup(name: "asg-v002", region: "us-west-1"),
+    ]
+
     when:
     def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
 
     then:
-    (shouldResolve ? 1 : 0) * resolver.resolveByParams(_) >> [
-        new TargetServerGroup(name: "asg-v001", region: "us-east-1"),
-        new TargetServerGroup(name: "asg-v002", region: "us-west-1"),
-    ]
-    syntheticStages[SyntheticStageOwner.STAGE_BEFORE]*.name == beforeNames
-    syntheticStages[SyntheticStageOwner.STAGE_AFTER]*.name == ["testPostInjectable", "testPreInjectable", "testSupportStage", "testPostInjectable"]
+    syntheticStages[STAGE_BEFORE]*.name == beforeNames
+    syntheticStages[STAGE_AFTER]*.name == ["testPostInjectable", "testPreInjectable", "testSupport", "testPostInjectable"]
 
     where:
-    target                | beforeNames                                         | shouldResolve
-    "current_asg"         | ["testPreInjectable"]                               | true
-    "current_asg_dynamic" | ["determineTargetServerGroup", "testPreInjectable"] | false
+    target                | beforeNames
+    "current_asg"         | ["testPreInjectable"]
+    "current_asg_dynamic" | ["determineTargetServerGroup", "testPreInjectable"]
   }
 
-  class TestSupportStage extends TargetServerGroupLinearStageSupport {
+  class testSupport extends TargetServerGroupLinearStageSupport {
 
-    List<TargetServerGroupLinearStageSupport.Injectable> preInjectables
-    List<TargetServerGroupLinearStageSupport.Injectable> postInjectables
-
-    TestSupportStage() {
-      name = "testSupportStage"
-    }
+    List<Injectable> preInjectables
+    List<Injectable> postInjectables
 
     @Override
-    List<TargetServerGroupLinearStageSupport.Injectable> preStatic(Map descriptor) {
+    List<Injectable> preStatic(Map descriptor) {
       preInjectables
     }
 
     @Override
-    List<TargetServerGroupLinearStageSupport.Injectable> postStatic(Map descriptor) {
+    List<Injectable> postStatic(Map descriptor) {
       postInjectables
     }
 
     @Override
-    List<TargetServerGroupLinearStageSupport.Injectable> preDynamic(Map context) {
+    List<Injectable> preDynamic(Map context) {
       preInjectables
     }
 
     @Override
-    List<TargetServerGroupLinearStageSupport.Injectable> postDynamic(Map context) {
+    List<Injectable> postDynamic(Map context) {
       postInjectables
     }
   }

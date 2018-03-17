@@ -29,16 +29,16 @@ import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAG
 @Slf4j
 abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBuilder, Nameable {
 
-  @Autowired
-  TargetServerGroupResolver resolver
-
-  @Autowired
-  DetermineTargetServerGroupStage determineTargetServerGroupStage
-
-  String name = this.type
+  @Autowired TargetServerGroupResolver resolver
+  @Autowired DetermineTargetServerGroupStage determineTargetServerGroupStage
 
   @Override
-  def List<Stage> aroundStages(Stage parentStage) {
+  String getName() {
+    return type
+  }
+
+  @Override
+  List<Stage> aroundStages(Stage parentStage) {
     return composeTargets(parentStage)
   }
 
