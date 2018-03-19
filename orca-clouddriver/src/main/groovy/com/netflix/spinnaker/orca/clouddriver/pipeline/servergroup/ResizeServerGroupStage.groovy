@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 /**
@@ -39,9 +38,6 @@ import org.springframework.stereotype.Component
 @Slf4j
 class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
   public static final String TYPE = getType(ResizeServerGroupStage)
-
-  @Autowired
-  ModifyAwsScalingProcessStage modifyAwsScalingProcessStage
 
   @Override
   protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {
@@ -58,7 +54,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
     if (descriptor.cloudProvider == "aws") {
       graph.add {
         it.name = "resumeScalingProcesses"
-        it.type = modifyAwsScalingProcessStage.type
+        it.type = ModifyAwsScalingProcessStage.TYPE
         it.context = [
           serverGroupName: descriptor.asgName,
           cloudProvider  : descriptor.cloudProvider,
@@ -76,7 +72,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
     if (descriptor.cloudProvider == "aws") {
       graph.add {
         it.name = "suspendScalingProcesses"
-        it.type = modifyAwsScalingProcessStage.type
+        it.type = ModifyAwsScalingProcessStage.TYPE
         it.context = [
           serverGroupName: descriptor.asgName,
           cloudProvider  : descriptor.cloudProvider,
@@ -94,7 +90,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
       context.remove("asgName")
       graph.add {
         it.name = "resumeScalingProcesses"
-        it.type = modifyAwsScalingProcessStage.type
+        it.type = ModifyAwsScalingProcessStage.TYPE
         it.context.putAll(context)
         it.context["action"] = "resume"
         it.context["processes"] = ["Launch", "Terminate"]
@@ -108,7 +104,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
       context.remove("asgName")
       graph.add {
         it.name = "suspendScalingProcesses"
-        it.type = modifyAwsScalingProcessStage.type
+        it.type = ModifyAwsScalingProcessStage.TYPE
         it.context.putAll(context)
         it.context["action"] = "suspend"
       }

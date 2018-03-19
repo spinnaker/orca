@@ -37,6 +37,8 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
 
+  public static final String TYPE = getType(ModifyAwsScalingProcessStage)
+
   @Override
   protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {
     def data = stage.mapTo(StageData)

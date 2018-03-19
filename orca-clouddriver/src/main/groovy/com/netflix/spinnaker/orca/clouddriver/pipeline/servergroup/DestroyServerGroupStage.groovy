@@ -22,15 +22,11 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.*
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 class DestroyServerGroupStage extends TargetServerGroupLinearStageSupport {
   static final String PIPELINE_CONFIG_TYPE = "destroyServerGroup"
-
-  @Autowired
-  DisableServerGroupStage disableServerGroupStage
 
   @Override
   protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {

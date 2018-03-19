@@ -31,9 +31,6 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
 
   @Autowired TargetServerGroupResolver resolver
 
-  // TODO: get rid
-  @Autowired DetermineTargetServerGroupStage determineTargetServerGroupStage
-
   @Override
   String getName() {
     return type
