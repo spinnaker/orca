@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component
 class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {
     def data = stage.mapTo(StageData)
     switch (data.action) {
       case StageAction.suspend:

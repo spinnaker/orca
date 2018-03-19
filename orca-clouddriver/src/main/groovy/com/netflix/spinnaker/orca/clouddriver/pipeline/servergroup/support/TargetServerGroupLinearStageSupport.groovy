@@ -16,20 +16,22 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
+import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.kato.pipeline.Nameable
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import groovy.transform.Memoized
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup.isDynamicallyBound
 
 @Slf4j
 abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBuilder, Nameable {
 
   @Autowired TargetServerGroupResolver resolver
+
+  // TODO: get rid
   @Autowired DetermineTargetServerGroupStage determineTargetServerGroupStage
 
   @Override
@@ -38,55 +40,107 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
   }
 
   @Override
-  List<Stage> aroundStages(Stage parentStage) {
-    return composeTargets(parentStage)
+  final void taskGraph(Stage stage, TaskNode.Builder builder) {
+    if (isTopLevel(stage)) {
+      taskGraphInternal(stage, builder)
+    }
   }
 
-  @Memoized
-  List<Stage> composeTargets(Stage stage) {
-    stage.resolveStrategyParams()
-    def params = TargetServerGroup.Params.fromStage(stage)
-    if (TargetServerGroup.isDynamicallyBound(stage)) {
-      return composeDynamicTargets(stage, params)
-    }
+  protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {}
 
-    return composeStaticTargets(stage, params)
+  @Override
+  final void beforeStages(
+    @Nonnull Stage parent,
+    @Nonnull StageGraphBuilder graph
+  ) {
+    if (isTopLevel(parent)) {
+      composeTargets(parent, graph)
+    } else {
+      if (isDynamicallyBound(parent)) {
+        preDynamic(parent.context, graph)
+      } else {
+        preStatic(parent.context, graph)
+      }
+    }
   }
 
-  private List<Stage> composeStaticTargets(Stage stage, TargetServerGroup.Params params) {
-    if (stage.parentStageId) {
-      // Only process this stage as-is when the user specifies. Otherwise, the targets should already be defined in the
-      // context.
-      return []
+  @Override
+  final void afterStages(
+    @Nonnull Stage parent,
+    @Nonnull StageGraphBuilder graph
+  ) {
+    if (!isTopLevel(parent)) {
+      if (isDynamicallyBound(parent)) {
+        postDynamic(parent.context, graph)
+      } else {
+        postStatic(parent.context, graph)
+      }
     }
+  }
 
-    def stages = []
+  void composeTargets(Stage parent, StageGraphBuilder graph) {
+    parent.resolveStrategyParams()
+    def params = TargetServerGroup.Params.fromStage(parent)
+    if (isDynamicallyBound(parent)) {
+      composeDynamicTargets(parent, params, graph)
+    } else {
+      composeStaticTargets(parent, params, graph)
+    }
+  }
 
+  private boolean isTopLevel(Stage stage) {
+    return stage.parentStageId == null
+  }
+
+  private void composeStaticTargets(Stage stage, TargetServerGroup.Params params, StageGraphBuilder graph) {
     def targets = resolver.resolveByParams(params)
     def descriptionList = buildStaticTargetDescriptions(stage, targets)
-    def first = descriptionList.remove(0)
-    stage.context.putAll(first)
 
-    preStatic(first).each {
-      stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_BEFORE)
-    }
-    postStatic(first).each {
-      stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_AFTER)
-    }
-
-    for (description in descriptionList) {
-      preStatic(description).each {
-        // Operations done after the first iteration must all be added with injectAfter.
-        stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_AFTER)
-      }
-      stages << newStage(stage.execution, this.type, name, description, stage, STAGE_AFTER)
-
-      postStatic(description).each {
-        stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_AFTER)
+    descriptionList.inject(null) { Stage previous, Map<String, Object> description ->
+      if (previous == null) {
+        graph.add {
+          it.type = type
+          it.name = name
+          it.context = description
+        }
+      } else {
+        graph.connect(previous) {
+          it.type = type
+          it.name = name
+          it.context = description
+        }
       }
     }
+  }
 
-    return stages
+  private void composeDynamicTargets(Stage stage, TargetServerGroup.Params params, StageGraphBuilder graph) {
+    // Scrub the context of any preset location.
+    stage.context.with {
+      remove("zone")
+      remove("zones")
+      remove("region")
+      remove("regions")
+    }
+
+    def singularLocationType = params.locations[0].singularType()
+    def pluralLocationType = params.locations[0].pluralType()
+
+    def determineTargetServerGroups = graph.add {
+      it.type = DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE
+      it.name = DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE
+      it.context.putAll(stage.context)
+      it.context[pluralLocationType] = params.locations.collect { it.value }
+    }
+
+    params.locations.inject(determineTargetServerGroups) { Stage previous, Location location ->
+      graph.connect(previous) {
+        it.type = type
+        it.name = name
+        it.context.putAll(stage.context)
+        it.context[singularLocationType] = location.value
+        it.context["targetLocation"] = [type: location.type.name(), value: location.value]
+      }
+    }
   }
 
   protected List<Map<String, Object>> buildStaticTargetDescriptions(Stage stage, List<TargetServerGroup> targets) {
@@ -110,81 +164,15 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
     descriptions
   }
 
-  private List<Stage> composeDynamicTargets(Stage stage, TargetServerGroup.Params params) {
-    if (stage.parentStageId) {
-      // We only want to determine the target server groups once per stage, so only inject if this is the root stage,
-      // i.e. the one the user configured.
-      // This may become a bad assumption, or a limiting one, in that we cannot inject a dynamic stage ourselves
-      // as part of some other stage that is not itself injecting a determineTargetReferences stage.
-      return []
-    }
-
-    def stages = []
-
-    // Scrub the context of any preset location.
-    stage.context.with {
-      remove("zone")
-      remove("zones")
-      remove("region")
-      remove("regions")
-    }
-
-    def singularLocationType = params.locations[0].singularType()
-    def pluralLocationType = params.locations[0].pluralType()
-
-    Map dtsgContext = new HashMap(stage.context)
-    dtsgContext[pluralLocationType] = params.locations.collect { it.value }
-
-    // The original stage.context object is reused here because concrete subclasses must actually perform the requested
-    // operation. All future copies of the subclass (operating on different regions/zones) use a copy of the context.
-    def initialLocation = params.locations.head()
-    def remainingLocations = params.locations.tail()
-    stage.context[singularLocationType] = initialLocation.value
-    stage.context.targetLocation = [type: initialLocation.type.name(), value: initialLocation.value]
-
-    preDynamic(stage.context).each {
-      stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_BEFORE)
-    }
-    postDynamic(stage.context).each {
-      stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_AFTER)
-    }
-
-    for (location in remainingLocations) {
-      def ctx = new HashMap(stage.context)
-      ctx[singularLocationType] = location.value
-      ctx.targetLocation = [type: location.type.name(), value: location.value]
-      preDynamic(ctx).each {
-        // Operations done after the first pre-postDynamic injection must all be added with injectAfter.
-        stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_AFTER)
-      }
-      stages << newStage(stage.execution, this.type, name, ctx, stage, STAGE_AFTER)
-      postDynamic(ctx).each {
-        stages << newStage(stage.execution, it.stage.type, it.name, it.context, stage, STAGE_AFTER)
-      }
-    }
-
-    stages.add(0, newStage(
-      stage.execution,
-      determineTargetServerGroupStage.type,
-      DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE,
-      dtsgContext,
-      stage,
-      STAGE_BEFORE
-    ))
-    return stages
+  protected void preStatic(Map<String, Object> descriptor, StageGraphBuilder graph) {
   }
 
-  protected List<Injectable> preStatic(Map descriptor) {}
+  protected void postStatic(Map<String, Object> descriptor, StageGraphBuilder graph) {
+  }
 
-  protected List<Injectable> postStatic(Map descriptor) {}
+  protected void preDynamic(Map<String, Object> context, StageGraphBuilder graph) {
+  }
 
-  protected List<Injectable> preDynamic(Map context) {}
-
-  protected List<Injectable> postDynamic(Map context) {}
-
-  static class Injectable {
-    String name
-    StageDefinitionBuilder stage
-    Map<String, Object> context
+  protected void postDynamic(Map<String, Object> context, StageGraphBuilder graph) {
   }
 }

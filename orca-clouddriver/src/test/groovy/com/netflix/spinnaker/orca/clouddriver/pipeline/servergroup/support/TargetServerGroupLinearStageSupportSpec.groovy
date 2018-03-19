@@ -16,25 +16,22 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import spock.lang.Specification
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport.Injectable
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class TargetServerGroupLinearStageSupportSpec extends Specification {
 
   def resolver = Stub(TargetServerGroupResolver)
-  def supportStage = new testSupport(determineTargetServerGroupStage: new DetermineTargetServerGroupStage())
+  def supportStage = new TestSupport()
 
-  void setup() {
+  def setup() {
     supportStage.resolver = resolver
   }
 
   @Unroll
-  void "should inject determineTargetReferences stage when target is dynamic and parentStageId is #parentStageId"() {
+  def "should inject determineTargetReferences stage when target is dynamic and parentStageId is #parentStageId"() {
     given:
     def stage = stage {
       type = "test"
@@ -44,46 +41,45 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     stage.parentStageId = parentStageId
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
+    def graph = StageGraphBuilder.beforeStages(stage)
+    supportStage.beforeStages(stage, graph)
 
     then:
-    syntheticStages.getOrDefault(STAGE_BEFORE, [])*.name == stageNamesBefore
-    syntheticStages.getOrDefault(STAGE_AFTER, []).isEmpty()
+    graph.build()*.name == stageNamesBefore
 
     where:
-    parentStageId | stageNamesBefore
-    null          | ["determineTargetServerGroup"]
-    "a"           | []
+    parentStageId                | stageNamesBefore
+    null                         | ["determineTargetServerGroup", "testSupport"]
+    UUID.randomUUID().toString() | ["preDynamic"]
   }
 
   @Unroll
-  void "should inject a stage for each extra region when the target is dynamically bound"() {
+  def "should inject a stage before for each extra region when the target is dynamically bound"() {
     given:
     def stage = stage {
       type = "test"
-      context[(locationType + 's')] = ["us-east-1", "us-west-1", "us-west-2", "eu-west-2"]
+      context[(locationType + "s")] = ["us-east-1", "us-west-1", "us-west-2", "eu-west-2"]
       context["target"] = "current_asg_dynamic"
       context["cloudProvider"] = cloudProvider
     }
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
+    def graph = StageGraphBuilder.beforeStages(stage)
+    supportStage.beforeStages(stage, graph)
+    def syntheticStages = graph.build().toList()
 
     then:
-    syntheticStages[STAGE_BEFORE].size() == 1
-    syntheticStages[STAGE_AFTER].size() == 3
-    syntheticStages[STAGE_AFTER]*.name == ["testSupport", "testSupport", "testSupport"]
-    stage.context[locationType] == "us-east-1"
-    stage.context[oppositeLocationType] == null
-    syntheticStages[STAGE_AFTER]*.context[locationType].flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
+    syntheticStages*.name == ["determineTargetServerGroup"] + (["testSupport"] * 4)
+    syntheticStages.tail()*.context[locationType].flatten() == ["us-east-1", "us-west-1", "us-west-2", "eu-west-2"]
+    syntheticStages.tail()*.context[oppositeLocationType].flatten().every { it == null }
 
     where:
     locationType | oppositeLocationType | cloudProvider
     "region"     | "zone"               | null
-    "zone"       | "region"             | 'gce'
+    "zone"       | "region"             | "gce"
   }
 
-  void "should inject a stage after for each extra target when target is not dynamically bound"() {
+  def "should inject a stage before for each extra target when target is not dynamically bound"() {
     given:
     def stage = stage {
       type = "test"
@@ -99,13 +95,13 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     ]
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
+    def graph = StageGraphBuilder.beforeStages(stage)
+    supportStage.beforeStages(stage, graph)
+    def syntheticStages = graph.build().toList()
 
     then:
-    syntheticStages[STAGE_BEFORE] == null
-    syntheticStages[STAGE_AFTER]*.name == ["testSupport", "testSupport", "testSupport"]
-    syntheticStages[STAGE_AFTER]*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
-    stage.context.region == "us-east-1"
+    syntheticStages*.name == ["testSupport"] * 4
+    syntheticStages*.context.region.flatten() == ["us-east-1", "us-west-1", "us-west-2", "eu-west-2"]
   }
 
   @Unroll
@@ -115,18 +111,8 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
       type = "test"
       context["target"] = target
       context["regions"] = ["us-east-1", "us-west-1"]
+      parentStageId = UUID.randomUUID().toString()
     }
-    def arbitraryStageBuilder = new ResizeServerGroupStage()
-    supportStage.preInjectables = [new Injectable(
-      name: "testPreInjectable",
-      stage: arbitraryStageBuilder,
-      context: ["abc": 123]
-    )]
-    supportStage.postInjectables = [new Injectable(
-      name: "testPostInjectable",
-      stage: arbitraryStageBuilder,
-      context: ["abc": 123]
-    )]
 
     and:
     resolver.resolveByParams(_) >> [
@@ -135,41 +121,60 @@ class TargetServerGroupLinearStageSupportSpec extends Specification {
     ]
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage).groupBy { it.syntheticStageOwner }
+    def graph = StageGraphBuilder.beforeStages(stage)
+    supportStage.beforeStages(stage, graph)
 
     then:
-    syntheticStages[STAGE_BEFORE]*.name == beforeNames
-    syntheticStages[STAGE_AFTER]*.name == ["testPostInjectable", "testPreInjectable", "testSupport", "testPostInjectable"]
+    graph.build()*.name == beforeNames
+
+    when:
+    graph = StageGraphBuilder.afterStages(stage)
+    supportStage.afterStages(stage, graph)
+
+    then:
+    graph.build()*.name == afterNames
 
     where:
-    target                | beforeNames
-    "current_asg"         | ["testPreInjectable"]
-    "current_asg_dynamic" | ["determineTargetServerGroup", "testPreInjectable"]
+    target                | beforeNames    | afterNames
+    "current_asg"         | ["preStatic"]  | ["postStatic"]
+    "current_asg_dynamic" | ["preDynamic"] | ["postDynamic"]
   }
 
-  class testSupport extends TargetServerGroupLinearStageSupport {
-
-    List<Injectable> preInjectables
-    List<Injectable> postInjectables
-
+  class TestSupport extends TargetServerGroupLinearStageSupport {
     @Override
-    List<Injectable> preStatic(Map descriptor) {
-      preInjectables
+    void preStatic(Map<String, Object> descriptor, StageGraphBuilder graph) {
+      graph.add {
+        it.type = "whatever"
+        it.name = "preStatic"
+        it.context = ["abc": 123]
+      }
     }
 
     @Override
-    List<Injectable> postStatic(Map descriptor) {
-      postInjectables
+    void postStatic(Map<String, Object> descriptor, StageGraphBuilder graph) {
+      graph.add {
+        it.type = "whatever"
+        it.name = "postStatic"
+        it.context = ["abc": 123]
+      }
     }
 
     @Override
-    List<Injectable> preDynamic(Map context) {
-      preInjectables
+    void preDynamic(Map<String, Object> context, StageGraphBuilder graph) {
+      graph.add {
+        it.type = "whatever"
+        it.name = "preDynamic"
+        it.context = ["abc": 123]
+      }
     }
 
     @Override
-    List<Injectable> postDynamic(Map context) {
-      postInjectables
+    void postDynamic(Map<String, Object> context, StageGraphBuilder graph) {
+      graph.add {
+        it.type = "whatever"
+        it.name = "postDynamic"
+        it.context = ["abc": 123]
+      }
     }
   }
 }

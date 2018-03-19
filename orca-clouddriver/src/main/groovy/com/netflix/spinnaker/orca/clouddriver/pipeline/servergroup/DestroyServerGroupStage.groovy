@@ -33,7 +33,7 @@ class DestroyServerGroupStage extends TargetServerGroupLinearStageSupport {
   DisableServerGroupStage disableServerGroupStage
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {
     try {
       builder
         .withTask("disableServerGroup", DisableServerGroupTask)
