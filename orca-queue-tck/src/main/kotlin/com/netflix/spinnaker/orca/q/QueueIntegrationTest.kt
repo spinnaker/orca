@@ -24,6 +24,8 @@ import com.netflix.spinnaker.assertj.assertSoftly
 import com.netflix.spinnaker.config.OrcaQueueConfiguration
 import com.netflix.spinnaker.config.QueueConfiguration
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
+import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
+import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
@@ -422,6 +424,47 @@ class QueueIntegrationTest {
   }
 
   @Test
+  fun `terminal pipeline immediately cancels stages in other branches where tasks have long backoff times`() {
+    val pipeline = pipeline {
+      application = "spinnaker"
+      stage {
+        refId = "1"
+        type = "wait"
+        context = mapOf("waitTime" to 60)
+      }
+      stage {
+        refId = "2"
+        type = "dummy"
+        requisiteStageRefIds = emptyList()
+      }
+    }
+    repository.store(pipeline)
+
+    whenever(dummyTask.execute(argThat { refId == "2" })) doReturn TaskResult(TERMINAL)
+
+    context.runToCompletion(pipeline, runner::start, repository)
+
+    repository.retrieve(PIPELINE, pipeline.id).apply {
+      assertThat(status).isEqualTo(TERMINAL)
+      assertThat(stageByRef("2").status).isEqualTo(TERMINAL)
+      assertThat(stageByRef("1").status).isEqualTo(CANCELED)
+      assertThat(stageByRef("1").startTime).isGreaterThan(1L)
+      assertThat(stageByRef("1").endTime).isGreaterThan(1L)
+      assertThat(stageByRef("1").wasShorterThan(10000L)).isTrue()
+    }
+  }
+
+  private fun Stage.wasShorterThan(lengthMs: Long): Boolean {
+    val start = startTime
+    val end = endTime
+    return if (start == null || end == null) {
+      false
+    } else {
+      start + lengthMs > end
+    }
+  }
+
+  @Test
   fun `can run a stage with an execution window`() {
     val now = now().atZone(timeZone)
     val pipeline = pipeline {
@@ -807,5 +850,8 @@ class TestConfig {
       deadMessageHandler = deadMessageHandler,
       publisher = publisher
     )
+
+  @Bean fun redisClientSelector(redisClientDelegates: List<RedisClientDelegate>) =
+    RedisClientSelector(redisClientDelegates)
 }
 
