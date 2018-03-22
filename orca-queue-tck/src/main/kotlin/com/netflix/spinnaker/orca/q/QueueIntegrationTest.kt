@@ -40,10 +40,11 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisConfiguration
-import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.persistence.jedis.RedisExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
@@ -733,6 +734,13 @@ class QueueIntegrationTest {
       stage {
         refId = "1"
         type = "syntheticFailure"
+
+        stage {
+          refId = "1>1"
+          syntheticStageOwner = SyntheticStageOwner.STAGE_AFTER
+          type = "dummy"
+          status = SUCCEEDED
+        }
       }
     }
     repository.store(pipeline)
@@ -752,10 +760,13 @@ class QueueIntegrationTest {
     repository.retrieve(PIPELINE, pipeline.id).apply {
       assertSoftly {
         assertThat(status).isEqualTo(TERMINAL)
-        assertThat(stageByRef("1>1").name).isEqualTo("onFailure1")
-        assertThat(stageByRef("1>1").status).isEqualTo(SUCCEEDED)
-        assertThat(stageByRef("1>2").name).isEqualTo("onFailure2")
+        assertThat(stageByRef("1").status).isEqualTo(TERMINAL)
+        assertThat(stageByRef("1>2").name).isEqualTo("onFailure1")
         assertThat(stageByRef("1>2").status).isEqualTo(SUCCEEDED)
+
+        assertThat(stageByRef("1>3").requisiteStageRefIds).isEqualTo(setOf("1>2"))
+        assertThat(stageByRef("1>3").name).isEqualTo("onFailure2")
+        assertThat(stageByRef("1>3").status).isEqualTo(SUCCEEDED)
       }
     }
   }
@@ -768,7 +779,7 @@ class QueueIntegrationTest {
   OrcaConfiguration::class,
   QueueConfiguration::class,
   JedisConfiguration::class,
-  JedisExecutionRepository::class,
+  RedisExecutionRepository::class,
   StageNavigator::class,
   RestrictExecutionDuringTimeWindow::class,
   OrcaQueueConfiguration::class
@@ -813,12 +824,13 @@ class TestConfig {
     }
 
     override fun onFailureStages(stage: Stage, graph: StageGraphBuilder) {
-      val stage1 = graph.add {
+      graph.add {
         it.type = "dummy"
         it.name = "onFailure1"
         it.context = stage.context
       }
-      graph.connect(stage1) {
+
+      graph.add {
         it.type = "dummy"
         it.name = "onFailure2"
         it.context = stage.context

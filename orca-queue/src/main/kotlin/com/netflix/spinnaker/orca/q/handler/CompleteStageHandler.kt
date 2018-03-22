@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.ext.afterStages
@@ -26,6 +27,7 @@ import com.netflix.spinnaker.orca.ext.syntheticStages
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
@@ -81,6 +83,7 @@ class CompleteStageHandler(
           stage.status = status
           stage.endTime = clock.millis()
         } catch (e: Exception) {
+          log.error("Failed to construct after stages", e)
           stage.status = TERMINAL
           stage.endTime = clock.millis()
           repository.storeStage(stage)
@@ -165,7 +168,14 @@ class CompleteStageHandler(
 
     val graph = StageGraphBuilder.afterStages(this)
     builder().onFailureStages(this, graph)
+
     val onFailureStages = graph.build().toList()
+    onFailureStages.forEachIndexed { index, stage ->
+      if (index > 0) {
+        // all on failure stages should be run linearly
+        graph.connect(onFailureStages.get(index - 1), stage)
+      }
+    }
 
     val alreadyPlanned = onFailureStages.any { previouslyPlannedAfterStageNames.contains(it.name) }
 
@@ -194,5 +204,19 @@ class CompleteStageHandler(
         stage.removeNotStartedSynthetics() // should be all synthetics!
         repository.removeStage(execution, stage.id)
       }
+  }
+}
+
+private fun Stage.determineStatus(): ExecutionStatus {
+  val syntheticStatuses = syntheticStages().map(Stage::getStatus)
+  val taskStatuses = tasks.map(Task::getStatus)
+  val allStatuses = syntheticStatuses + taskStatuses
+  return when {
+    allStatuses.contains(TERMINAL)        -> TERMINAL
+    allStatuses.contains(STOPPED)         -> STOPPED
+    allStatuses.contains(CANCELED)        -> CANCELED
+    allStatuses.contains(FAILED_CONTINUE) -> FAILED_CONTINUE
+    allStatuses.all { it == SUCCEEDED }   -> SUCCEEDED
+    else                                  -> TERMINAL
   }
 }
