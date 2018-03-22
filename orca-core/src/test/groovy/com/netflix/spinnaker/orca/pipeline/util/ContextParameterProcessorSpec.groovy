@@ -361,6 +361,50 @@ class ContextParameterProcessorSpec extends Specification {
 
   }
 
+  def "should return raw value if configured to skip fields"() {
+    given:
+    def source = [
+      comments: '${#stage("Bake")["context"]["comments"]}',
+      ami: '${#stage("Bake")["context"]["ami"]}',
+      spelEvaluation: [
+        excludes : [
+          [
+            "key": "comments",
+            "path": "."
+          ]
+        ]
+      ]
+    ]
+
+    when:
+    def result = contextParameterProcessor.process(source, [execution: execution], true)
+
+    then: 'should skip `comments`'
+    result.ami == "ami-f759b7b3"
+    result.comments == '${#stage( #root.execution, "Bake")["context"]["comments"]}'
+
+    where:
+    execution = pipeline {
+      stage {
+        type = "bake"
+        name = "Bake"
+        refId = "1"
+        status = SUCCEEDED
+        context.putAll(
+          ami      : "ami-f759b7b3",
+          amiSuffix: "201505150627",
+          baseLabel: "candidate",
+          baseOs   : "ubuntu",
+          package  : "flex",
+          region   : "us-west-1",
+          storeType: "ebs",
+          vmType   : "pv",
+          comments : "${'Hello World'.split(' ')}"
+        )
+      }
+     }
+  }
+
   def "is able to parse deployment details correctly from execution"() {
     given:
     def source = ['deployed': '${deployedServerGroups}']

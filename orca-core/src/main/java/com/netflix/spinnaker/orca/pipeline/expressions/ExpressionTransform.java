@@ -37,13 +37,15 @@ public class ExpressionTransform {
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   private static final List<String> EXECUTION_AWARE_FUNCTIONS = Arrays.asList("judgment", "judgement", "stage", "stageExists", "deployedServerGroups");
-  private static final List<String> EXECUTION_AWARE_ALIASES = Arrays.asList("deployedServerGroups");
+  private static final List<String> EXECUTION_AWARE_ALIASES = Collections.singletonList("deployedServerGroups");
   private final ParserContext parserContext;
   private final ExpressionParser parser;
+  private final List<EvaluationStrategy> evaluationStrategies;
 
-  public ExpressionTransform(ParserContext parserContext, ExpressionParser parser) {
+  public ExpressionTransform(ParserContext parserContext, ExpressionParser parser, List<EvaluationStrategy> evaluationStrategies) {
     this.parserContext = parserContext;
     this.parser = parser;
+    this.evaluationStrategies = evaluationStrategies;
   }
 
   public <T> T transform(T source, EvaluationContext evaluationContext, ExpressionEvaluationSummary summary) {
@@ -53,10 +55,6 @@ public class ExpressionTransform {
   /**
    * Traverses and attempts to evaluate expressions
    * Failures can either be INFO (for a simple unresolved expression) or ERROR when an exception is thrown
-   *
-   * @param source
-   * @param evaluationContext
-   * @param summary
    * @return the transformed source object
    */
   public <T> T transform(T source, EvaluationContext evaluationContext, ExpressionEvaluationSummary summary, Map<String, ?> additionalContext) {
@@ -94,42 +92,47 @@ public class ExpressionTransform {
         log.info("Failed to evaluate {}, returning raw value {}", source, e.getMessage());
         exception = e;
       } finally {
-        escapedExpressionString = escapedExpressionString != null ? escapedExpressionString : escapeSimpleExpression(source.toString());
-        if (exception != null) {
-          Set<String> keys = getKeys(source, additionalContext);
-          Object fields = !keys.isEmpty() ? keys : literalExpression;
-          String errorDescription = format("Failed to evaluate %s ", fields);
-          Throwable originalException = unwrapOriginalException(exception);
-          if (originalException == null || originalException.getMessage().contains(exception.getMessage())) {
-            errorDescription += exception.getMessage();
-          } else {
-            errorDescription += originalException.getMessage() + " - " + exception.getMessage();
+        Set<String> keys = getKeys(source, additionalContext);
+        boolean shouldSkipEvaluation = evaluationStrategies.stream().anyMatch(e -> !e.shouldEvaluate(keys));
+        if (shouldSkipEvaluation) {
+          log.info("Skipping evaluation for fields {}", keys);
+          result = (T) literalExpression;
+        } else {
+          escapedExpressionString = escapedExpressionString != null ? escapedExpressionString : escapeSimpleExpression(source.toString());
+          if (exception != null) {
+            Object fields = !keys.isEmpty() ? keys : literalExpression;
+            String errorDescription = format("Failed to evaluate %s ", fields);
+            Throwable originalException = unwrapOriginalException(exception);
+            if (originalException == null || originalException.getMessage().contains(exception.getMessage())) {
+              errorDescription += exception.getMessage();
+            } else {
+              errorDescription += originalException.getMessage() + " - " + exception.getMessage();
+            }
+
+            summary.add(
+              escapedExpressionString,
+              ExpressionEvaluationSummary.Result.Level.ERROR,
+              errorDescription.replaceAll("\\$", ""),
+              Optional.ofNullable(originalException).map(Object::getClass).orElse(null)
+            );
+
+            result = source;
+          } else if (result == null) {
+            Object fields = !keys.isEmpty() ? keys : literalExpression;
+            String errorDescription = format("Failed to evaluate %s ", fields);
+            summary.add(
+              escapedExpressionString,
+              ExpressionEvaluationSummary.Result.Level.INFO,
+              format("%s: %s not found", errorDescription, escapedExpressionString),
+              null
+            );
+
+            result = source;
           }
 
-          summary.add(
-            escapedExpressionString,
-            ExpressionEvaluationSummary.Result.Level.ERROR,
-            errorDescription.replaceAll("\\$", ""),
-            Optional.ofNullable(originalException).map(Object::getClass).orElse(null)
-          );
-
-          result = source;
-        } else if (result == null) {
-          Set<String> keys = getKeys(source, additionalContext);
-          Object fields = !keys.isEmpty() ? keys : literalExpression;
-          String errorDescription = format("Failed to evaluate %s ", fields);
-          summary.add(
-            escapedExpressionString,
-            ExpressionEvaluationSummary.Result.Level.INFO,
-            format("%s: %s not found", errorDescription, escapedExpressionString),
-            null
-          );
-
-          result = source;
+          summary.appendAttempted(escapedExpressionString);
+          summary.incrementTotalEvaluated();
         }
-
-        summary.appendAttempted(escapedExpressionString);
-        summary.incrementTotalEvaluated();
       }
 
       return result;
@@ -211,7 +214,7 @@ public class ExpressionTransform {
   /**
    * Lazily include the execution object (#root.execution) for Stage locating functions & aliases
    *
-   * @param expression #stage('property') becomes #stage(#root.execution, 'property')
+   * @param e #stage('property') becomes #stage(#root.execution, 'property')
    * @return an execution aware helper function
    */
   private static String includeExecutionParameter(String e) {
