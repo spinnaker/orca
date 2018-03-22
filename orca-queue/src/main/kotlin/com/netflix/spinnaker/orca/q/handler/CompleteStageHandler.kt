@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.ext.afterStages
@@ -26,6 +27,7 @@ import com.netflix.spinnaker.orca.ext.syntheticStages
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
@@ -51,38 +53,46 @@ class CompleteStageHandler(
     message.withStage { stage ->
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {
         val status = stage.determineStatus()
-        if (status.isComplete && !status.isHalt) {
-          // check to see if this stage has any unplanned synthetic after stages
-          var afterStages = stage.firstAfterStages()
-          if (afterStages.isEmpty()) {
-            stage.planAfterStages()
+        try {
+          if (status.isComplete && !status.isHalt) {
+            // check to see if this stage has any unplanned synthetic after stages
+            var afterStages = stage.firstAfterStages()
+            if (afterStages.isEmpty()) {
+              stage.planAfterStages()
 
-            afterStages = stage.firstAfterStages()
-            if (afterStages.isNotEmpty()) {
-              afterStages.forEach {
-                queue.push(StartStage(message, it.id))
+              afterStages = stage.firstAfterStages()
+              if (afterStages.isNotEmpty()) {
+                afterStages.forEach {
+                  queue.push(StartStage(message, it.id))
+                }
+
+                return@withStage
               }
+            }
+          }
 
+          if (status.isFailure) {
+            if (stage.planOnFailureStages()) {
+              stage.firstAfterStages().forEach {
+                queue.push(StartStage(it))
+              }
               return@withStage
             }
           }
+
+          stage.status = status
+          stage.endTime = clock.millis()
+        } catch (e: Exception) {
+          log.error("Failed to construct after stages", e)
+          stage.status = TERMINAL
+          stage.endTime = clock.millis()
+          repository.storeStage(stage)
         }
 
-        if (status.isFailure) {
-          if (stage.planOnFailureStages()) {
-            stage.firstAfterStages().forEach {
-              queue.push(StartStage(it))
-            }
-            return@withStage
-          }
-        }
-
-        stage.status = status
-        stage.endTime = clock.millis()
         stage.includeExpressionEvaluationSummary()
         repository.storeStage(stage)
 
-        if (status in listOf(SUCCEEDED, FAILED_CONTINUE)) {
+        if (stage.status in listOf(SUCCEEDED, FAILED_CONTINUE)) {
           stage.startNext()
         } else {
           queue.push(CancelStage(message))
@@ -100,6 +110,7 @@ class CompleteStageHandler(
     }
   }
 
+  // TODO: this should be done out of band by responding to the StageComplete event
   private fun trackResult(stage: Stage) {
     // We only want to record durations of parent-level stages; not synthetics.
     if (stage.parentStageId != null) {
@@ -126,8 +137,8 @@ class CompleteStageHandler(
       duration > TimeUnit.MINUTES.toMillis(60) -> "gt60m"
       duration > TimeUnit.MINUTES.toMillis(30) -> "gt30m"
       duration > TimeUnit.MINUTES.toMillis(15) -> "gt15m"
-      duration > TimeUnit.MINUTES.toMillis(5) -> "gt5m"
-      else -> "lt5m"
+      duration > TimeUnit.MINUTES.toMillis(5)  -> "gt5m"
+      else                                     -> "lt5m"
     }
 
   override val messageType = CompleteStage::class.java
@@ -157,7 +168,14 @@ class CompleteStageHandler(
 
     val graph = StageGraphBuilder.afterStages(this)
     builder().onFailureStages(this, graph)
+
     val onFailureStages = graph.build().toList()
+    onFailureStages.forEachIndexed { index, stage ->
+      if (index > 0) {
+        // all on failure stages should be run linearly
+        graph.connect(onFailureStages.get(index - 1), stage)
+      }
+    }
 
     val alreadyPlanned = onFailureStages.any { previouslyPlannedAfterStageNames.contains(it.name) }
 
@@ -186,5 +204,19 @@ class CompleteStageHandler(
         stage.removeNotStartedSynthetics() // should be all synthetics!
         repository.removeStage(execution, stage.id)
       }
+  }
+}
+
+private fun Stage.determineStatus(): ExecutionStatus {
+  val syntheticStatuses = syntheticStages().map(Stage::getStatus)
+  val taskStatuses = tasks.map(Task::getStatus)
+  val allStatuses = syntheticStatuses + taskStatuses
+  return when {
+    allStatuses.contains(TERMINAL)        -> TERMINAL
+    allStatuses.contains(STOPPED)         -> STOPPED
+    allStatuses.contains(CANCELED)        -> CANCELED
+    allStatuses.contains(FAILED_CONTINUE) -> FAILED_CONTINUE
+    allStatuses.all { it == SUCCEEDED }   -> SUCCEEDED
+    else                                  -> TERMINAL
   }
 }
