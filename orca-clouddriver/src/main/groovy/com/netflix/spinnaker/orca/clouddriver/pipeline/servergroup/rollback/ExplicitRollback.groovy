@@ -32,6 +32,8 @@ class ExplicitRollback implements Rollback {
   String rollbackServerGroupName
   String restoreServerGroupName
   Integer targetHealthyRollbackPercentage
+  Boolean disableOnly
+  Boolean enableAndDisableOnly
 
   @Autowired
   @JsonIgnore
@@ -54,16 +56,37 @@ class ExplicitRollback implements Rollback {
   ApplySourceServerGroupCapacityStage applySourceServerGroupCapacityStage
 
   @JsonIgnore
-  def List<Stage> buildStages(Stage parentStage) {
-    def stages = []
+  @Override
+  List<Stage> buildStages(Stage parentStage) {
+    Map disableServerGroupContext = new HashMap(parentStage.context)
+    disableServerGroupContext.serverGroupName = rollbackServerGroupName
+    def disableServerGroupStage = newStage(
+      parentStage.execution, disableServerGroupStage.type, "disable", disableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
+    )
+
+    if (disableOnly) {
+      // no need to do anything but disable the newly deployed (and failing!) server group
+      return [
+        disableServerGroupStage
+      ]
+    }
 
     Map enableServerGroupContext = new HashMap(parentStage.context)
     enableServerGroupContext.targetHealthyDeployPercentage = targetHealthyRollbackPercentage
     enableServerGroupContext.serverGroupName = restoreServerGroupName
-    stages << newStage(
+    def enableServerGroupStage = newStage(
       parentStage.execution, enableServerGroupStage.type, "enable", enableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
     )
 
+    if (enableAndDisableOnly) {
+      // ensure previous server group is 100% enabled before disabling the new server group
+      return [
+        enableServerGroupStage,
+        disableServerGroupStage
+      ]
+    }
+
+    def stages = [enableServerGroupStage]
     if (!parentStage.getContext().containsKey("sourceServerGroupCapacitySnapshot")) {
       // capacity has been previously captured (likely as part of a failed deploy), no need to do again!
       stages << buildCaptureSourceServerGroupCapacityStage(parentStage, parentStage.mapTo(ResizeStrategy.Source))
@@ -84,12 +107,7 @@ class ExplicitRollback implements Rollback {
       parentStage.execution, resizeServerGroupStage.type, "resize", resizeServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
     )
 
-    Map disableServerGroupContext = new HashMap(parentStage.context)
-    disableServerGroupContext.serverGroupName = rollbackServerGroupName
-    stages << newStage(
-      parentStage.execution, disableServerGroupStage.type, "disable", disableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
-    )
-
+    stages << disableServerGroupStage
     stages << buildApplySourceServerGroupCapacityStage(parentStage, parentStage.mapTo(ResizeStrategy.Source))
     return stages
   }

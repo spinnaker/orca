@@ -22,6 +22,8 @@ import com.netflix.spinnaker.orca.*
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.exceptions.TimeoutException
+import com.netflix.spinnaker.orca.ext.shouldContinueOnFailure
+import com.netflix.spinnaker.orca.ext.shouldFailPipeline
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -70,7 +72,7 @@ class RunTaskHandler(
               stage.processTaskOutput(result)
               when (result.status) {
                 RUNNING -> {
-                  queue.push(message, task.backoffPeriod(taskModel))
+                  queue.push(message, task.backoffPeriod(taskModel, stage))
                   trackResult(stage, taskModel, result.status)
                 }
                 SUCCEEDED, REDIRECT, FAILED_CONTINUE -> {
@@ -92,7 +94,7 @@ class RunTaskHandler(
         val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
         if (exceptionDetails?.shouldRetry == true) {
           log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
-          queue.push(message, task.backoffPeriod(taskModel))
+          queue.push(message, task.backoffPeriod(taskModel, stage))
           trackResult(stage, taskModel, RUNNING)
         } else if (e is TimeoutException && stage.context["markSuccessfulOnTimeout"] == true) {
           queue.push(CompleteTask(message, SUCCEEDED))
@@ -155,10 +157,10 @@ class RunTaskHandler(
         }
     }
 
-  private fun Task.backoffPeriod(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task): TemporalAmount =
+  private fun Task.backoffPeriod(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: Stage): TemporalAmount =
     when (this) {
       is RetryableTask -> Duration.ofMillis(
-        getDynamicBackoffPeriod(Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime ?: 0)))
+        getDynamicBackoffPeriod(stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime ?: 0)))
       )
       else -> Duration.ofSeconds(1)
     }
@@ -245,3 +247,10 @@ class RunTaskHandler(
     }
   }
 }
+
+private fun Stage.failureStatus(default: ExecutionStatus = TERMINAL) =
+  when {
+    shouldContinueOnFailure() -> FAILED_CONTINUE
+    shouldFailPipeline() -> default
+    else -> STOPPED
+  }

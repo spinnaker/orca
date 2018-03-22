@@ -18,12 +18,16 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.ext.afterStages
 import com.netflix.spinnaker.orca.ext.firstAfterStages
+import com.netflix.spinnaker.orca.ext.syntheticStages
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.*
@@ -49,37 +53,46 @@ class CompleteStageHandler(
     message.withStage { stage ->
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {
         val status = stage.determineStatus()
-        if (status.isComplete && !status.isHalt) {
-          // check to see if this stage has any unplanned synthetic after stages
-          var afterStages = stage.firstAfterStages()
-          if (afterStages.isEmpty()) {
-            stage.planAfterStages()
+        try {
+          if (status.isComplete && !status.isHalt) {
+            // check to see if this stage has any unplanned synthetic after stages
+            var afterStages = stage.firstAfterStages()
+            if (afterStages.isEmpty()) {
+              stage.planAfterStages()
 
-            afterStages = stage.firstAfterStages()
-            if (afterStages.isNotEmpty()) {
-              afterStages.forEach {
-                queue.push(StartStage(message, it.id))
+              afterStages = stage.firstAfterStages()
+              if (afterStages.isNotEmpty()) {
+                afterStages.forEach {
+                  queue.push(StartStage(message, it.id))
+                }
+
+                return@withStage
               }
+            }
+          }
 
+          if (status.isFailure) {
+            if (stage.planOnFailureStages()) {
+              stage.firstAfterStages().forEach {
+                queue.push(StartStage(it))
+              }
               return@withStage
             }
           }
+
+          stage.status = status
+          stage.endTime = clock.millis()
+        } catch (e: Exception) {
+          log.error("Failed to construct after stages", e)
+          stage.status = TERMINAL
+          stage.endTime = clock.millis()
+          repository.storeStage(stage)
         }
 
-        if (status.isFailure) {
-          val onFailureStages = stage.planOnFailureStages()
-          if (!onFailureStages.isEmpty()) {
-            queue.push(StartStage(message, onFailureStages.get(0).id))
-            return@withStage
-          }
-        }
-
-        stage.status = status
-        stage.endTime = clock.millis()
         stage.includeExpressionEvaluationSummary()
         repository.storeStage(stage)
 
-        if (status in listOf(SUCCEEDED, FAILED_CONTINUE)) {
+        if (stage.status in listOf(SUCCEEDED, FAILED_CONTINUE)) {
           stage.startNext()
         } else {
           queue.push(CancelStage(message))
@@ -97,6 +110,7 @@ class CompleteStageHandler(
     }
   }
 
+  // TODO: this should be done out of band by responding to the StageComplete event
   private fun trackResult(stage: Stage) {
     // We only want to record durations of parent-level stages; not synthetics.
     if (stage.parentStageId != null) {
@@ -123,8 +137,8 @@ class CompleteStageHandler(
       duration > TimeUnit.MINUTES.toMillis(60) -> "gt60m"
       duration > TimeUnit.MINUTES.toMillis(30) -> "gt30m"
       duration > TimeUnit.MINUTES.toMillis(15) -> "gt15m"
-      duration > TimeUnit.MINUTES.toMillis(5) -> "gt5m"
-      else -> "lt5m"
+      duration > TimeUnit.MINUTES.toMillis(5)  -> "gt5m"
+      else                                     -> "lt5m"
     }
 
   override val messageType = CompleteStage::class.java
@@ -135,11 +149,9 @@ class CompleteStageHandler(
   private fun Stage.planAfterStages() {
     var hasPlannedStages = false
 
-    builder().let { builder ->
-      builder.buildAfterStages(this, builder.afterStages(this)) { it: Stage ->
-        repository.addStage(it)
-        hasPlannedStages = true
-      }
+    builder().buildAfterStages(this) { it: Stage ->
+      repository.addStage(it)
+      hasPlannedStages = true
     }
 
     if (hasPlannedStages) {
@@ -150,43 +162,61 @@ class CompleteStageHandler(
   /**
    * Plan any outstanding synthetic on failure stages.
    */
-  private fun Stage.planOnFailureStages(): List<Stage> {
-    builder().let { builder ->
-      /*
-       * Avoid planning failure stages if _any_ with the same name are already complete
-       */
-      val previouslyPlannedAfterStageNames = afterStages().filter { it.status.isComplete }.map { it.name }
+  private fun Stage.planOnFailureStages(): Boolean {
+    // Avoid planning failure stages if _any_ with the same name are already complete
+    val previouslyPlannedAfterStageNames = afterStages().filter { it.status.isComplete }.map { it.name }
 
-      val onFailureStages = builder.onFailureStages(this)
-      val alreadyPlanned = onFailureStages.any { previouslyPlannedAfterStageNames.contains(it.name) }
+    val graph = StageGraphBuilder.afterStages(this)
+    builder().onFailureStages(this, graph)
 
-      if (alreadyPlanned || onFailureStages.isEmpty()) {
-        return emptyList()
+    val onFailureStages = graph.build().toList()
+    onFailureStages.forEachIndexed { index, stage ->
+      if (index > 0) {
+        // all on failure stages should be run linearly
+        graph.connect(onFailureStages.get(index - 1), stage)
       }
+    }
 
-      val notStartedSynthetics = execution.stages.filter { it.parentStageId == id && it.status == NOT_STARTED}
+    val alreadyPlanned = onFailureStages.any { previouslyPlannedAfterStageNames.contains(it.name) }
 
-      builder.buildAfterStages(this, onFailureStages) { it: Stage ->
+    return if (alreadyPlanned || onFailureStages.isEmpty()) {
+      false
+    } else {
+      removeNotStartedSynthetics() // should be all synthetics (nothing should have been started!)
+      appendAfterStages(onFailureStages) {
         repository.addStage(it)
       }
-
-      notStartedSynthetics.forEach {
-        it.removeNotStartedSynthetics() // should be all synthetics (nothing should have been started!)
-        repository.removeStage(execution, it.id)
-      }
-
-      this.execution = repository.retrieve(this.execution.type, this.execution.id)
-      return onFailureStages
+      true
     }
   }
 
   private fun Stage.removeNotStartedSynthetics() {
-    execution
-      .stages
-      .filter { it.parentStageId == id && it.status == NOT_STARTED}
-      .forEach {
-        it.removeNotStartedSynthetics() // should be all synthetics!
-        repository.removeStage(execution, it.id)
+    syntheticStages()
+      .filter { it.status == NOT_STARTED }
+      .forEach { stage ->
+        execution
+          .stages
+          .filter { it.requisiteStageRefIds.contains(stage.id) }
+          .forEach {
+            it.requisiteStageRefIds = it.requisiteStageRefIds - stage.id
+            repository.addStage(it)
+          }
+        stage.removeNotStartedSynthetics() // should be all synthetics!
+        repository.removeStage(execution, stage.id)
       }
+  }
+}
+
+private fun Stage.determineStatus(): ExecutionStatus {
+  val syntheticStatuses = syntheticStages().map(Stage::getStatus)
+  val taskStatuses = tasks.map(Task::getStatus)
+  val allStatuses = syntheticStatuses + taskStatuses
+  return when {
+    allStatuses.contains(TERMINAL)        -> TERMINAL
+    allStatuses.contains(STOPPED)         -> STOPPED
+    allStatuses.contains(CANCELED)        -> CANCELED
+    allStatuses.contains(FAILED_CONTINUE) -> FAILED_CONTINUE
+    allStatuses.all { it == SUCCEEDED }   -> SUCCEEDED
+    else                                  -> TERMINAL
   }
 }

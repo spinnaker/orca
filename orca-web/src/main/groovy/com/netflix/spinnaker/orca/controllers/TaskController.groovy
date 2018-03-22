@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import com.netflix.spinnaker.orca.model.OrchestrationViewModel
-
 import java.time.Clock
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.model.OrchestrationViewModel
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.PipelineStartTracker
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -129,7 +129,14 @@ class TaskController {
   @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.DELETE)
   void deleteTask(@PathVariable String id) {
-    executionRepository.delete(ORCHESTRATION, id)
+    executionRepository.retrieve(ORCHESTRATION, id).with {
+      if (it.status.complete) {
+        executionRepository.delete(ORCHESTRATION, id)
+      } else {
+        log.warn("Not deleting $ORCHESTRATION $id as it is $it.status")
+        throw new CannotDeleteRunningExecution(ORCHESTRATION, id)
+      }
+    }
   }
 
   @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
@@ -180,7 +187,14 @@ class TaskController {
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/pipelines/{id}", method = RequestMethod.DELETE)
   void deletePipeline(@PathVariable String id) {
-    executionRepository.delete(PIPELINE, id)
+    executionRepository.retrieve(PIPELINE, id).with {
+      if (it.status.complete) {
+        executionRepository.delete(PIPELINE, id)
+      } else {
+        log.warn("Not deleting $PIPELINE $id as it is $it.status")
+        throw new CannotDeleteRunningExecution(PIPELINE, id)
+      }
+    }
   }
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
@@ -285,15 +299,17 @@ class TaskController {
   @RequestMapping(value = "/v2/applications/{application}/pipelines", method = RequestMethod.GET)
   List<Execution> getApplicationPipelines(@PathVariable String application,
                                          @RequestParam(value = "limit", defaultValue = "5") int limit,
-                                         @RequestParam(value = "statuses", required = false) String statuses) {
-    return getPipelinesForApplication(application, limit, statuses)
+                                         @RequestParam(value = "statuses", required = false) String statuses,
+                                         @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
+    return getPipelinesForApplication(application, limit, statuses, expand)
   }
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/applications/{application}/pipelines", method = RequestMethod.GET)
   List<Execution> getPipelinesForApplication(@PathVariable String application,
                                             @RequestParam(value = "limit", defaultValue = "5") int limit,
-                                            @RequestParam(value = "statuses", required = false) String statuses) {
+                                            @RequestParam(value = "statuses", required = false) String statuses,
+                                            @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Cannot lookup pipelines, front50 has not been enabled. Fix this by setting front50.enabled: true")
     }
@@ -315,6 +331,17 @@ class TaskController {
     def allPipelines = rx.Observable.merge(allIds.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
     }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
+
+    if (!expand) {
+      allPipelines.each { pipeline ->
+        pipeline.getStages().each { stage ->
+          if (stage.type == "runJob") {
+            stage?.context?.jobStatus?.logs = ""
+            stage?.outputs?.jobStatus?.logs = ""
+          }
+        }
+      }
+    }
 
     return filterPipelinesByHistoryCutoff(allPipelines, limit)
   }
@@ -379,4 +406,11 @@ class TaskController {
   @InheritConstructors
   @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
   private static class FeatureNotEnabledException extends RuntimeException {}
+
+  @ResponseStatus(HttpStatus.CONFLICT)
+  private static class CannotDeleteRunningExecution extends RuntimeException {
+    CannotDeleteRunningExecution(ExecutionType type, String id) {
+      super("Cannot delete a running $type, please cancel it first.")
+    }
+  }
 }
