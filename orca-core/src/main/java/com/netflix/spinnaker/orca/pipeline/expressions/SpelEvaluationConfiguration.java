@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,37 @@
 
 package com.netflix.spinnaker.orca.pipeline.expressions;
 
-import java.util.Map;
+import java.util.List;
 
-public interface ExpressionEvaluator {
-  Map<String, Object> evaluate(Map<String, Object> source, Object rootObject, ExpressionEvaluationSummary summary, boolean allowUnknownKeys);
+public class SpelEvaluationConfiguration {
+  private List<Excludes> excludes;
+  public List<Excludes> getExcludes() {
+    return excludes;
+  }
+
+  public void setExcludes(List<Excludes> excludes) {
+    this.excludes = excludes;
+  }
+}
+
+class Excludes {
+  Excludes() {}
+  public String key;
+  private String path;
+
+  public String getKey() {
+    return key;
+  }
+
+  public void setKey(String key) {
+    this.key = key;
+  }
+
+  public String getPath() {
+    return path;
+  }
+
+  public void setPath(String path) {
+    this.path = path;
+  }
 }

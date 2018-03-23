@@ -56,7 +56,7 @@ public class ContextParameterProcessor {
   }
 
   public ContextParameterProcessor(ContextFunctionConfiguration contextFunctionConfiguration) {
-    expressionEvaluator = new PipelineExpressionEvaluator(contextFunctionConfiguration);
+    expressionEvaluator = new PipelineExpressionEvaluator(contextFunctionConfiguration, mapper);
   }
 
   public Map<String, Object> process(Map<String, Object> source, Map<String, Object> context, boolean allowUnknownKeys) {
