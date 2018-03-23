@@ -83,6 +83,7 @@ class CompleteStageHandler(
           stage.status = status
           stage.endTime = clock.millis()
         } catch (e: Exception) {
+          log.error("Failed to construct after stages", e)
           stage.status = TERMINAL
           stage.endTime = clock.millis()
           repository.storeStage(stage)
@@ -167,7 +168,14 @@ class CompleteStageHandler(
 
     val graph = StageGraphBuilder.afterStages(this)
     builder().onFailureStages(this, graph)
+
     val onFailureStages = graph.build().toList()
+    onFailureStages.forEachIndexed { index, stage ->
+      if (index > 0) {
+        // all on failure stages should be run linearly
+        graph.connect(onFailureStages.get(index - 1), stage)
+      }
+    }
 
     val alreadyPlanned = onFailureStages.any { previouslyPlannedAfterStageNames.contains(it.name) }
 
