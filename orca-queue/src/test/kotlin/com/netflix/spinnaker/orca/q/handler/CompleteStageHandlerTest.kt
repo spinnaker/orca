@@ -52,10 +52,12 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   val registry = NoopRegistry()
   val contextParameterProcessor: ContextParameterProcessor = mock()
 
+  val emptyStage = object : StageDefinitionBuilder {}
+
   val stageWithTaskAndAfterStages = object : StageDefinitionBuilder {
     override fun getType() = "stageWithTaskAndAfterStages"
 
-    override fun  taskGraph(stage: Stage, builder: TaskNode.Builder) {
+    override fun taskGraph(stage: Stage, builder: TaskNode.Builder) {
       builder.withTask("dummy", DummyTask::class.java)
     }
 
@@ -87,7 +89,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
         stageWithSyntheticAfter,
         stageWithParallelBranches,
         stageWithTaskAndAfterStages,
-        stageWithSyntheticOnFailure
+        stageWithSyntheticOnFailure,
+        emptyStage
       )
     )
   }
@@ -353,7 +356,6 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           beforeGroup {
             whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
-            assertThat(pipeline.stages.map { it.type }).isEqualTo(listOf("stageWithTaskAndAfterStages"))
           }
 
           afterGroup(::resetMocks)
@@ -369,7 +371,42 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
           it("starts the new AFTER_STAGE") {
             verify(queue).push(StartStage(message, pipeline.stages[1].id))
           }
+
+          it("does not update the status of the stage itself") {
+            verify(repository, never()).storeStage(pipeline.stageById(message.stageId))
+          }
         }
+      }
+    }
+
+    given("a stage had no synthetics or tasks") {
+      val pipeline = pipeline {
+        application = "foo"
+        stage {
+          refId = "1"
+          name = "empty"
+          status = RUNNING
+          type = emptyStage.type
+        }
+      }
+
+      val message = CompleteStage(pipeline.stageByRef("1"))
+
+      beforeGroup {
+        whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+      }
+
+      afterGroup(::resetMocks)
+
+      action("receiving the message") {
+        subject.handle(message)
+      }
+
+      it("just marks the stage as SKIPPED") {
+        verify(repository).storeStage(check {
+          assertThat(it.id).isEqualTo(message.stageId)
+          assertThat(it.status).isEqualTo(SKIPPED)
+        })
       }
     }
 
@@ -769,7 +806,12 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
             stageWithParallelBranches.buildTasks(this)
           }
         }
-        val message = CompleteStage(pipeline.stageByRef("1=1"))
+
+        val message = pipeline.stageByRef("1=1").let { completedSynthetic ->
+          singleTaskStage.buildTasks(completedSynthetic)
+          completedSynthetic.tasks.forEach { it.status = SUCCEEDED }
+          CompleteStage(completedSynthetic)
+        }
 
         beforeGroup {
           pipeline.stageById(message.stageId).status = RUNNING
@@ -797,6 +839,11 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
             stageWithParallelBranches.buildSyntheticStages(this)
             stageWithParallelBranches.buildTasks(this)
           }
+        }
+
+        pipeline.stages.filter { it.parentStageId != null }.forEach {
+          singleTaskStage.buildTasks(it)
+          it.tasks.forEach { it.status = SUCCEEDED }
         }
         val message = CompleteStage(pipeline.stageByRef("1=1"))
 
