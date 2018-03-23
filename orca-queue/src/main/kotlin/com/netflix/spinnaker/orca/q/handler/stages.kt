@@ -29,6 +29,7 @@ fun Stage.determineStatus(): ExecutionStatus {
   val taskStatuses = tasks.map(Task::getStatus)
   val allStatuses = syntheticStatuses + taskStatuses
   return when {
+    allStatuses.isEmpty() -> NOT_STARTED
     allStatuses.contains(TERMINAL) -> TERMINAL
     allStatuses.contains(STOPPED) -> STOPPED
     allStatuses.contains(CANCELED) -> CANCELED

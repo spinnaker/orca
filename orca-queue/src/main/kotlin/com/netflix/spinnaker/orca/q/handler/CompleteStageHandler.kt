@@ -48,8 +48,27 @@ class CompleteStageHandler(
   override fun handle(message: CompleteStage) {
     message.withStage { stage ->
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {
-        val status = stage.determineStatus()
-        if (status.isComplete && !status.isHalt) {
+        var status = stage.determineStatus()
+        if (status == NOT_STARTED) {
+          // Stage had no before stages or tasks so we'll see if it had any
+          // un-planned after stages
+          var afterStages = stage.firstAfterStages()
+          if (afterStages.isEmpty()) {
+            stage.planAfterStages()
+            afterStages = stage.firstAfterStages()
+          }
+          if (afterStages.isNotEmpty()) {
+            afterStages.forEach {
+              queue.push(StartStage(message, it.id))
+            }
+
+            return@withStage
+          } else {
+            // stage had no synthetic stages or tasks, which is odd but whatever
+            log.warn("Stage ${stage.id} (${stage.type}) of ${stage.execution.id} had no tasks or synthetic stages!")
+            status = SKIPPED
+          }
+        } else if (status.isComplete && !status.isHalt) {
           // check to see if this stage has any unplanned synthetic after stages
           var afterStages = stage.firstAfterStages()
           if (afterStages.isEmpty()) {
@@ -64,9 +83,7 @@ class CompleteStageHandler(
               return@withStage
             }
           }
-        }
-
-        if (status.isFailure) {
+        } else if (status.isFailure) {
           val onFailureStages = stage.planOnFailureStages()
           if (!onFailureStages.isEmpty()) {
             queue.push(StartStage(message, onFailureStages.get(0).id))
@@ -123,8 +140,8 @@ class CompleteStageHandler(
       duration > TimeUnit.MINUTES.toMillis(60) -> "gt60m"
       duration > TimeUnit.MINUTES.toMillis(30) -> "gt30m"
       duration > TimeUnit.MINUTES.toMillis(15) -> "gt15m"
-      duration > TimeUnit.MINUTES.toMillis(5) -> "gt5m"
-      else -> "lt5m"
+      duration > TimeUnit.MINUTES.toMillis(5)  -> "gt5m"
+      else                                     -> "lt5m"
     }
 
   override val messageType = CompleteStage::class.java
@@ -164,7 +181,7 @@ class CompleteStageHandler(
         return emptyList()
       }
 
-      val notStartedSynthetics = execution.stages.filter { it.parentStageId == id && it.status == NOT_STARTED}
+      val notStartedSynthetics = execution.stages.filter { it.parentStageId == id && it.status == NOT_STARTED }
       val notStartedSyntheticRefIds = notStartedSynthetics.map { it.refId }
 
       builder.buildAfterStages(this, onFailureStages) { it: Stage ->
@@ -190,7 +207,7 @@ class CompleteStageHandler(
   private fun Stage.removeNotStartedSynthetics() {
     execution
       .stages
-      .filter { it.parentStageId == id && it.status == NOT_STARTED}
+      .filter { it.parentStageId == id && it.status == NOT_STARTED }
       .forEach {
         it.removeNotStartedSynthetics() // should be all synthetics!
         repository.removeStage(execution, it.id)
