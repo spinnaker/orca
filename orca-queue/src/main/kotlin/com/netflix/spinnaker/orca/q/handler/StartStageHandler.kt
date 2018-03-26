@@ -185,5 +185,5 @@ class StartStageHandler(
   }
 
   private fun Stage.afterStartTimeTtl(): Boolean =
-    startTimeTtl?.let { clock.millis() > it } ?: false
+    startTimeTtl?.isAfter(clock.instant()) ?: false
 }
