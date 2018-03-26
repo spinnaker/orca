@@ -93,5 +93,5 @@ class StartExecutionHandler(
   }
 
   private fun Execution.afterStartTimeTtl() =
-    startTimeTtl?.let { clock.millis() > it } ?: false
+    startTimeTtl?.isAfter(clock.instant()) ?: false
 }
