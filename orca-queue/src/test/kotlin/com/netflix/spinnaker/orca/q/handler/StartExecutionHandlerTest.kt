@@ -226,7 +226,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         stage {
           type = singleTaskStage.type
         }
-        startTimeTtl = clock.instant().minusSeconds(30).toEpochMilli()
+        startTimeTtl = clock.instant().minusSeconds(30)
       }
       val message = StartExecution(pipeline.type, pipeline.id, "foo")
 
