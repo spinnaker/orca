@@ -49,50 +49,58 @@ class CompleteStageHandler(
     message.withStage { stage ->
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {
         var status = stage.determineStatus()
-        if (status == NOT_STARTED) {
-          // Stage had no before stages or tasks so we'll see if it had any
-          // un-planned after stages
-          var afterStages = stage.firstAfterStages()
-          if (afterStages.isEmpty()) {
-            stage.planAfterStages()
-            afterStages = stage.firstAfterStages()
-          }
-          if (afterStages.isNotEmpty()) {
-            afterStages.forEach {
-              queue.push(StartStage(message, it.id))
+        try {
+          if (status == NOT_STARTED) {
+            // Stage had no before stages or tasks so we'll see if it had any
+            // un-planned after stages
+            var afterStages = stage.firstAfterStages()
+            if (afterStages.isEmpty()) {
+              stage.planAfterStages()
+              afterStages = stage.firstAfterStages()
             }
-
-            return@withStage
-          } else {
-            // stage had no synthetic stages or tasks, which is odd but whatever
-            log.warn("Stage ${stage.id} (${stage.type}) of ${stage.execution.id} had no tasks or synthetic stages!")
-            status = SKIPPED
-          }
-        } else if (status.isComplete && !status.isHalt) {
-          // check to see if this stage has any unplanned synthetic after stages
-          var afterStages = stage.firstAfterStages()
-          if (afterStages.isEmpty()) {
-            stage.planAfterStages()
-
-            afterStages = stage.firstAfterStages()
             if (afterStages.isNotEmpty()) {
               afterStages.forEach {
                 queue.push(StartStage(message, it.id))
               }
 
               return@withStage
+            } else {
+              // stage had no synthetic stages or tasks, which is odd but whatever
+              log.warn("Stage ${stage.id} (${stage.type}) of ${stage.execution.id} had no tasks or synthetic stages!")
+              status = SKIPPED
+            }
+          } else if (status.isComplete && !status.isHalt) {
+            // check to see if this stage has any unplanned synthetic after stages
+            var afterStages = stage.firstAfterStages()
+            if (afterStages.isEmpty()) {
+              stage.planAfterStages()
+
+              afterStages = stage.firstAfterStages()
+              if (afterStages.isNotEmpty()) {
+                afterStages.forEach {
+                  queue.push(StartStage(message, it.id))
+                }
+
+                return@withStage
+              }
+            }
+          } else if (status.isFailure) {
+            val onFailureStages = stage.planOnFailureStages()
+            if (!onFailureStages.isEmpty()) {
+              queue.push(StartStage(message, onFailureStages.get(0).id))
+              return@withStage
             }
           }
-        } else if (status.isFailure) {
-          val onFailureStages = stage.planOnFailureStages()
-          if (!onFailureStages.isEmpty()) {
-            queue.push(StartStage(message, onFailureStages.get(0).id))
-            return@withStage
-          }
+
+          stage.status = status
+          stage.endTime = clock.millis()
+        } catch (e: Exception) {
+          log.error("Failed to construct after stages", e)
+          stage.status = TERMINAL
+          stage.endTime = clock.millis()
+          repository.storeStage(stage)
         }
 
-        stage.status = status
-        stage.endTime = clock.millis()
         stage.includeExpressionEvaluationSummary()
         repository.storeStage(stage)
 
