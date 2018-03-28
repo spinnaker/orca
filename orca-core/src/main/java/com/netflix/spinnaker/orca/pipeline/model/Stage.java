@@ -587,5 +587,4 @@ public class Stage implements Serializable {
   }
 
   public static final String STAGE_TIMEOUT_OVERRIDE_KEY = "stageTimeoutMs";
-
 }
