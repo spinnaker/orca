@@ -14,6 +14,8 @@ import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails;
 import com.netflix.spinnaker.orca.pipeline.persistence.*;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -176,10 +178,10 @@ public class RedisExecutionRepository implements ExecutionRepository {
     delegate.withCommandsClient(c -> {
       Map<String, String> data = new HashMap<>();
       data.put("canceled", "true");
-      if (!Strings.isNullOrEmpty(user)) {
+      if (StringUtils.isNotEmpty(user)) {
         data.put("canceledBy", user);
       }
-      if (!Strings.isNullOrEmpty(reason)) {
+      if (StringUtils.isNotEmpty(reason)) {
         data.put("cancellationReason", reason);
       }
       ExecutionStatus currentStatus = ExecutionStatus.valueOf(c.hget(pair.getLeft(), "status"));
@@ -510,9 +512,9 @@ public class RedisExecutionRepository implements ExecutionRepository {
       execution.setCanceledBy(map.get("canceledBy"));
       execution.setCancellationReason(map.get("cancellationReason"));
       execution.setLimitConcurrent(Boolean.parseBoolean(map.get("limitConcurrent")));
-      execution.setBuildTime(longOrZero(map.get("buildTime")));
-      execution.setStartTime(longOrZero(map.get("startTime")));
-      execution.setEndTime(longOrZero(map.get("endTime")));
+      execution.setBuildTime(NumberUtils.createLong(map.get("buildTime")));
+      execution.setStartTime(NumberUtils.createLong(map.get("startTime")));
+      execution.setEndTime(NumberUtils.createLong(map.get("endTime")));
       if (map.get("status") != null) {
         execution.setStatus(ExecutionStatus.valueOf(map.get("status")));
       }
@@ -537,8 +539,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
         stage.setRefId(map.get(prefix + "refId"));
         stage.setType(map.get(prefix + "type"));
         stage.setName(map.get(prefix + "name"));
-        stage.setStartTime(longOrZero(map.get(prefix + "startTime")));
-        stage.setEndTime(longOrZero(map.get(prefix + "endTime")));
+        stage.setStartTime(NumberUtils.createLong(map.get(prefix + "startTime")));
+        stage.setEndTime(NumberUtils.createLong(map.get(prefix + "endTime")));
         stage.setStatus(ExecutionStatus.valueOf(map.get(prefix + "status")));
         if (map.get(prefix + "syntheticStageOwner") != null) {
           stage.setSyntheticStageOwner(SyntheticStageOwner.valueOf(map.get(prefix + "syntheticStageOwner")));
@@ -546,12 +548,12 @@ public class RedisExecutionRepository implements ExecutionRepository {
         stage.setParentStageId(map.get(prefix + "parentStageId"));
 
         String requisiteStageRefIds = map.get(prefix + "requisiteStageRefIds");
-        if (!Strings.isNullOrEmpty(requisiteStageRefIds)) {
+        if (StringUtils.isNotEmpty(requisiteStageRefIds)) {
           stage.setRequisiteStageRefIds(Arrays.asList(requisiteStageRefIds.split(",")));
         } else {
           stage.setRequisiteStageRefIds(emptySet());
         }
-        stage.setScheduledTime(longOrZero(map.get(prefix + "scheduledTime")));
+        stage.setScheduledTime(NumberUtils.createLong(map.get(prefix + "scheduledTime")));
         if (map.get(prefix + "context") != null) {
           stage.setContext(mapper.readValue(map.get(prefix + "context"), MAP_STRING_TO_OBJECT));
         } else {
@@ -953,7 +955,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   private RedisClientDelegate getRedisDelegate(ExecutionType type, String id) {
-    if (Strings.isNullOrEmpty(id) || !previousRedisClientDelegate.isPresent()) {
+    if (StringUtils.isBlank(id) || !previousRedisClientDelegate.isPresent()) {
       return redisClientDelegate;
     }
 
@@ -979,7 +981,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   private RedisClientDelegate getRedisDelegate(String key) {
-    if (Strings.isNullOrEmpty(key) || !previousRedisClientDelegate.isPresent()) {
+    if (StringUtils.isBlank(key) || !previousRedisClientDelegate.isPresent()) {
       return redisClientDelegate;
     }
 
@@ -1028,13 +1030,6 @@ public class RedisExecutionRepository implements ExecutionRepository {
     }
 
     return (delegate == null) ? redisClientDelegate : delegate;
-  }
-
-  private static Long longOrZero(String input) {
-    if (input == null) {
-      return 0L;
-    }
-    return Long.valueOf(input);
   }
 
   private static class ImmutablePair<L, R> {

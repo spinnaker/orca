@@ -16,31 +16,21 @@
 
 package com.netflix.spinnaker.orca.pipeline.persistence
 
+import java.util.concurrent.CountDownLatch
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.RedisExecutionRepository
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
 import rx.schedulers.Schedulers
-import spock.lang.AutoCleanup
-import spock.lang.Shared
-import spock.lang.Specification
-import spock.lang.Subject
-import spock.lang.Unroll
-
-import com.netflix.spectator.api.Registry
-import java.util.concurrent.CountDownLatch
-
+import spock.lang.*
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
@@ -1042,7 +1032,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
   def "can deserialize ancient executions"() {
     given:
     Jedis jedis = embeddedRedis.getJedis()
-    def key = repository.pipelineKey(repository.redisClientDelegate, "ancient")
+    def key = repository.pipelineKey("ancient")
 
     jedis.hmset(key, [
       "canceledBy"                                                                                 : "parent pipeline",
