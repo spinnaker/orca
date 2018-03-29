@@ -36,7 +36,6 @@ dependencies {
   compile spinnaker.dependency('korkExceptions')
   compile spinnaker.dependency('korkArtifacts')
   compile spinnaker.dependency('korkJedis')
-  compile spinnaker.dependency("korkDynomite")
   compile spinnaker.dependency("logstashEncoder")
   compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${spinnaker.version('jackson')}"
   compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${spinnaker.version('jackson')}"

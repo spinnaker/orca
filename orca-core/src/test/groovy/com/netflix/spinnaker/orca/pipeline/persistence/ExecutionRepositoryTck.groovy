@@ -16,10 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.persistence
 
-import com.netflix.dyno.jedis.DynoJedisClient
 import com.netflix.spectator.api.NoopRegistry
-import com.netflix.spinnaker.kork.dynomite.DynomiteClientDelegate
-import com.netflix.spinnaker.kork.dynomite.LocalRedisDynomiteClient
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
@@ -1144,28 +1141,3 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     repository.retrieve(PIPELINE, "ancient")
   }
 }
-
-class DynomiteExecutionRepositorySpec extends JedisExecutionRepositorySpec {
-  @Override
-  void setup() {
-    repository = createDynomiteExecutionRepository()
-    previousRepository = createDynomiteExecutionRepositoryPrevious()
-  }
-
-  RedisExecutionRepository createDynomiteExecutionRepository() {
-    DynoJedisClient embeddedDyno = new LocalRedisDynomiteClient(embeddedRedis.port).getClient()
-    DynoJedisClient embeddedDynoPrevious = new LocalRedisDynomiteClient(embeddedRedisPrevious.port).getClient()
-
-    RedisClientDelegate dynoClientDelegate = new DynomiteClientDelegate("primaryDefault", embeddedDyno)
-    RedisClientDelegate previousDynoClientDelegate = new DynomiteClientDelegate("previousDefault", embeddedDynoPrevious)
-
-    return new RedisExecutionRepository(registry, new RedisClientSelector([dynoClientDelegate, previousDynoClientDelegate]), 1, 50)
-  }
-
-  RedisExecutionRepository createDynomiteExecutionRepositoryPrevious() {
-    DynoJedisClient embeddedDynoPrevious = new LocalRedisDynomiteClient(embeddedRedisPrevious.port).getClient()
-    RedisClientDelegate dynoClientDelegate = new DynomiteClientDelegate("primaryDefault", embeddedDynoPrevious)
-    return new RedisExecutionRepository(registry, new RedisClientSelector([dynoClientDelegate]), 1, 50)
-  }
-}
-
