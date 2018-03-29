@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.q
 
 import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.metrics.MessageDead
 import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
@@ -34,6 +35,7 @@ class QueueProcessor(
   private val handlers: Collection<MessageHandler<*>>,
   private val activator: Activator,
   private val publisher: EventPublisher,
+  private val deadMessageHandler: DeadMessageCallback,
   private val fillExecutorEachCycle: Boolean = false
 ) {
   private val log: Logger = getLogger(javaClass)
@@ -77,8 +79,9 @@ class QueueProcessor(
           queue.push(message)
         }
       } else {
-        // TODO: DLQ
-        throw IllegalStateException("Unsupported message type ${message.javaClass.simpleName}: $message")
+        log.error("Unsupported message type ${message.javaClass.simpleName}: $message")
+        deadMessageHandler.invoke(queue, message)
+        publisher.publishEvent(MessageDead)
       }
     }
   }

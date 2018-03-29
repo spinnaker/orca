@@ -17,13 +17,12 @@
 package com.netflix.spinnaker.q
 
 import com.fasterxml.jackson.annotation.JsonTypeName
-import com.netflix.spinnaker.assertj.isA
 import com.netflix.spinnaker.mockito.doStub
 import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.metrics.MessageDead
 import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.*
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.context
 import org.jetbrains.spek.api.dsl.describe
@@ -41,6 +40,7 @@ object QueueProcessorTest : Spek({
     val ackFunction: () -> Unit = mock()
     val activator: Activator = mock()
     val publisher: EventPublisher = mock()
+    val deadMessageHandler: DeadMessageCallback = mock()
 
     fun resetMocks() = reset(
       queue,
@@ -56,7 +56,8 @@ object QueueProcessorTest : Spek({
         BlockingQueueExecutor(),
         emptyList(),
         activator,
-        publisher
+        publisher,
+        deadMessageHandler
       )
 
       afterGroup(::resetMocks)
@@ -85,7 +86,8 @@ object QueueProcessorTest : Spek({
           executor,
           emptyList(),
           activator,
-          publisher
+          publisher,
+          deadMessageHandler
         )
 
         beforeGroup {
@@ -116,7 +118,8 @@ object QueueProcessorTest : Spek({
           BlockingQueueExecutor(),
           listOf(simpleMessageHandler, parentMessageHandler),
           activator,
-          publisher
+          publisher,
+          deadMessageHandler
         )
 
         describe("when a message is on the queue") {
@@ -197,8 +200,7 @@ object QueueProcessorTest : Spek({
             afterGroup(::resetMocks)
 
             on("the next polling cycle") {
-              assertThatThrownBy { subject.poll() }
-                .isA<IllegalStateException>()
+              subject.poll()
             }
 
             it("does not invoke any handlers") {
@@ -208,6 +210,14 @@ object QueueProcessorTest : Spek({
 
             it("does not acknowledge the message") {
               verify(ackFunction, never()).invoke()
+            }
+
+            it("sends the message to the DLQ") {
+              verify(deadMessageHandler).invoke(queue, message)
+            }
+
+            it("emits an event") {
+              verify(publisher).publishEvent(MessageDead)
             }
           }
 
