@@ -46,8 +46,8 @@ class DetermineTerminationCandidatesTask implements Task {
     def terminationInstancePool = knownInstanceIds
     if (stage.context.termination?.instances) {
       terminationInstancePool = knownInstanceIds.intersect(stage.context.termination?.instances)
-      if (stage.context.termination?.order == 'given') {
-        terminationInstancePool = terminationInstancePool.sort { stage.context.termination?.instances.indexOf(it) }
+      if (stage.context.termination.order == 'given') {
+        terminationInstancePool = terminationInstancePool.sort { stage.context.termination.instances.indexOf(it) }
       }
     }
     int totalRelaunches = getNumberOfRelaunches(stage.context.termination, terminationInstancePool.size())
