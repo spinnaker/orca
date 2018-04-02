@@ -20,7 +20,9 @@ import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.ext.initialStages
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.q.Queue
@@ -30,12 +32,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
+import java.time.Clock
 
 @Component
 class StartExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
-  @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher
+  @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher,
+  private val clock: Clock
 ) : OrcaMessageHandler<StartExecution> {
 
   override val messageType = StartExecution::class.java
@@ -46,20 +50,34 @@ class StartExecutionHandler(
   override fun handle(message: StartExecution) {
     message.withExecution { execution ->
       if (execution.status == NOT_STARTED && !execution.isCanceled) {
-        val initialStages = execution.initialStages()
-        if (initialStages.isEmpty()) {
-          log.warn("No initial stages found (executionId: ${message.executionId})")
-          repository.updateStatus(message.executionId, TERMINAL)
-          publisher.publishEvent(ExecutionComplete(this, message.executionType, message.executionId, TERMINAL))
-          return@withExecution
-        }
-
-        repository.updateStatus(message.executionId, RUNNING)
-        initialStages
-          .forEach {
-            queue.push(StartStage(message, it.id))
+        if (execution.isAfterStartTimeCutoff()) {
+          log.warn("Execution (type ${message.executionType}, id {}, application: {}) start was canceled because" +
+            "start time would be after defined start time TTL (now: ${clock.millis()}, ttl: ${execution.startTimeTtl})",
+            value("executionId", message.executionId),
+            value("application", message.application))
+          queue.push(CancelExecution(
+            message.executionType,
+            message.executionId,
+            message.application,
+            "spinnaker",
+            "Could not begin execution before start time TTL"
+          ))
+        } else {
+          val initialStages = execution.initialStages()
+          if (initialStages.isEmpty()) {
+            log.warn("No initial stages found (executionId: ${message.executionId})")
+            repository.updateStatus(message.executionId, TERMINAL)
+            publisher.publishEvent(ExecutionComplete(this, message.executionType, message.executionId, TERMINAL))
+            return@withExecution
           }
-        publisher.publishEvent(ExecutionStarted(this, message.executionType, message.executionId))
+
+          repository.updateStatus(message.executionId, RUNNING)
+          initialStages
+            .forEach {
+              queue.push(StartStage(message, it.id))
+            }
+          publisher.publishEvent(ExecutionStarted(this, message.executionType, message.executionId))
+        }
       } else {
         if (execution.status == CANCELED || execution.isCanceled) {
           publisher.publishEvent(ExecutionComplete(this, message.executionType, message.executionId, execution.status))
@@ -72,4 +90,7 @@ class StartExecutionHandler(
       }
     }
   }
+
+  private fun Execution.isAfterStartTimeCutoff() =
+    startTimeTtl?.isBefore(clock.instant()) ?: false
 }

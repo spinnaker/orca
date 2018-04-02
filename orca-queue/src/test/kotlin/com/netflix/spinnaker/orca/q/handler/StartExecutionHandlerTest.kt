@@ -22,10 +22,12 @@ import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.singleTaskStage
 import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.context
@@ -40,9 +42,10 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
+  val clock = fixedClock()
 
   subject(GROUP) {
-    StartExecutionHandler(queue, repository, publisher)
+    StartExecutionHandler(queue, repository, publisher, clock)
   }
 
   fun resetMocks() = reset(queue, repository, publisher)
@@ -54,7 +57,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           type = singleTaskStage.type
         }
       }
-      val message = StartExecution(pipeline.type, pipeline.id, "foo")
+      val message = StartExecution(pipeline)
 
       beforeGroup {
         whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
@@ -71,12 +74,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("starts the first stage") {
-        verify(queue).push(StartStage(
-          message.executionType,
-          message.executionId,
-          "foo",
-          pipeline.stages.first().id
-        ))
+        verify(queue).push(StartStage(pipeline.stages.first()))
       }
 
       it("publishes an event") {
@@ -95,7 +93,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         status = ExecutionStatus.CANCELED
       }
 
-      val message = StartExecution(pipeline.type, pipeline.id, "foo")
+      val message = StartExecution(pipeline)
 
       beforeGroup {
         whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
@@ -128,7 +126,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         isCanceled = true
       }
 
-      val message = StartExecution(pipeline.type, pipeline.id, "foo")
+      val message = StartExecution(pipeline)
 
       beforeGroup {
         whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
@@ -162,7 +160,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           type = singleTaskStage.type
         }
       }
-      val message = StartExecution(pipeline.type, pipeline.id, "foo")
+      val message = StartExecution(pipeline)
 
       beforeGroup {
         whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
@@ -193,7 +191,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           requisiteStageRefIds = listOf("1")
         }
       }
-      val message = StartExecution(pipeline.type, pipeline.id, "foo")
+      val message = StartExecution(pipeline)
 
       beforeGroup {
         whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
@@ -215,6 +213,34 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           assertThat(it.executionId).isEqualTo(message.executionId)
           assertThat(it.status).isEqualTo(ExecutionStatus.TERMINAL)
         })
+      }
+    }
+
+    context("with a start time after ttl") {
+      val pipeline = pipeline {
+        stage {
+          type = singleTaskStage.type
+        }
+        startTimeTtl = clock.instant().minusSeconds(30)
+      }
+      val message = StartExecution(pipeline)
+
+      beforeGroup {
+        whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives the message") {
+        subject.handle(message)
+      }
+
+      it("cancels the execution") {
+        verify(queue).push(CancelExecution(
+          pipeline,
+          "spinnaker",
+          "Could not begin execution before start time TTL"
+        ))
       }
     }
   }
