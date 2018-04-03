@@ -32,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -186,6 +187,21 @@ public class Stage implements Serializable {
 
   public void setEndTime(@Nullable Long endTime) {
     this.endTime = endTime;
+  }
+
+  /**
+   * Gets the start ttl timestamp for this stage. If the stage has not started
+   * before this timestamp, the stage will fail.
+   */
+  private Instant startTimeTtl;
+
+  public @Nullable
+  Instant getStartTimeTtl() {
+    return startTimeTtl;
+  }
+
+  public void setStartTimeTtl(@Nullable Instant startTimeTtl) {
+    this.startTimeTtl = startTimeTtl;
   }
 
   /**
