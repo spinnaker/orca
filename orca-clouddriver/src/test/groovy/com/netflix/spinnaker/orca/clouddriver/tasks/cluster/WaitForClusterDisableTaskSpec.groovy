@@ -96,7 +96,12 @@ class WaitForClusterDisableTaskSpec extends Specification {
         where:
         dsgregion | oldSGDisabled | desired | desiredPct | interestingHealthProviderNames | platformHealthState || status
         "other"   | false         | 3       | null       | ['platformHealthType']         | 'Unknown'           || SUCCEEDED  // exercises if (!remainingDeployServerGroups)
+
+        // tests for isDisabled==true
         region    | true          | 3       | null       | ['platformHealthType']         | 'Unknown'           || SUCCEEDED  // exercises if (isDisabled) short-circuit
+        region    | true          | 3       | null       | ['platformHealthType']         | 'NotUnknown'        || RUNNING    // wait for instances down even if cluster is disabled
+        region    | true          | 3       | 100        | ['platformHealthType']         | 'NotUnknown'        || RUNNING    // also wait for instances down with a desiredPct
+        region    | true          | 4       | 50         | ['platformHealthType']         | 'Unknown'           || SUCCEEDED
 
         // tests for isDisabled==false, no desiredPct
         region    | false         | 3       | null       | []                             | 'Unknown'           || SUCCEEDED  // no health providers to check so short-circuits early

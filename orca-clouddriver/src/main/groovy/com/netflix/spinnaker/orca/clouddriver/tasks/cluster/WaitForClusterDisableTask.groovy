@@ -62,39 +62,39 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
     return taskResult
   }
 
+  private def getPlatformHealthType(Stage stage, TargetServerGroup targetServerGroup) {
+    def platformHealthType = targetServerGroup.instances.collect { instance ->
+      HealthHelper.findPlatformHealth(instance.health)
+    }?.find {
+      it.type
+    }?.type
+
+    return platformHealthType ? platformHealthType : healthProviderNamesByPlatform[getCloudProvider(stage)]
+  }
+
   @Override
   boolean isServerGroupOperationInProgress(Stage stage,
                                            List<Map> interestingHealthProviderNames,
                                            Optional<TargetServerGroup> serverGroup) {
+    // TODO(dreynaud): this can probably be changed to interestingHealthProviderNames == null || isEmpty()
     if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {
       return false
     }
 
-    // Assume a missing server group is disabled.
-    boolean isDisabled = serverGroup.map({ it.disabled } as Function<TargetServerGroup, Boolean>).orElse(true)
-
-    // If the server group shows as disabled, we don't need to do anything special w.r.t. interestingHealthProviderNames.
-    if (isDisabled) {
+    if (!serverGroup.isPresent()) {
       return false
-    } else {
-      def targetServerGroup = serverGroup.get()
-      if (stage.context.desiredPercentage) {
-        // TODO(lwander) investigate if the non-desiredPercentage case code can be dropped below in favor of this
-        return !waitForRequiredInstancesDownTask.hasSucceeded(stage, targetServerGroup as Map, targetServerGroup.getInstances(), interestingHealthProviderNames)
-      }
-
-      // The operation can be considered complete if it was requested to only consider the platform health.
-      def platformHealthType = targetServerGroup.instances.collect { instance ->
-        HealthHelper.findPlatformHealth(instance.health)
-      }?.find {
-        it.type
-      }?.type
-
-      if (!platformHealthType) {
-        platformHealthType = healthProviderNamesByPlatform[getCloudProvider(stage)]
-      }
-
-      return !(platformHealthType && interestingHealthProviderNames == [platformHealthType])
     }
+
+    // Even if the server group is disabled, we want to make sure instances are down
+    // to prevent downstream stages (e.g. scaleDownCluster) from having to deal with disabled-but-instances-up server groups
+    def targetServerGroup = serverGroup.get()
+    if (targetServerGroup.isDisabled() || stage.context.desiredPercentage) {
+      return !waitForRequiredInstancesDownTask.hasSucceeded(stage, targetServerGroup as Map, targetServerGroup.getInstances(), interestingHealthProviderNames)
+    }
+
+    // TODO(lwander) investigate if the non-desiredPercentage/only-platform-health case code can be dropped in favor of waitForRequiredInstancesDownTask
+    // The operation can be considered complete if it was requested to only consider the platform health.
+    def platformHealthType = getPlatformHealthType(stage, targetServerGroup)
+    return !(platformHealthType && interestingHealthProviderNames == [platformHealthType])
   }
 }
