@@ -18,13 +18,12 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
-import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import org.springframework.web.bind.annotation.ResponseStatus
 import retrofit.RetrofitError
 
 @Deprecated

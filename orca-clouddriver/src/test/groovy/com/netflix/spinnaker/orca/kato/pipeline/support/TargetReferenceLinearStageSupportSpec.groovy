@@ -17,9 +17,9 @@
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -37,26 +37,25 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     }
     stage.parentStageId = parentStageId
     supportStage.targetReferenceSupport = targetReferenceSupport
+    def beforeGraphBuilder = StageGraphBuilder.beforeStages(stage)
+    def afterGraphBuilder = StageGraphBuilder.afterStages(stage)
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage)
-    def beforeStages = syntheticStages.findAll {
-      it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE
-    }
-    def afterStages = syntheticStages.findAll {
-      it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER
-    }
+    supportStage.beforeStages(stage, beforeGraphBuilder)
+    supportStage.afterStages(stage, afterGraphBuilder)
+    def beforeStages = beforeGraphBuilder.build()
+    def afterStages = afterGraphBuilder.build()
 
     then:
     beforeStages.size() == stageNamesBefore.size()
     afterStages.size() == 0
     beforeStages*.name == stageNamesBefore
-    1 * targetReferenceSupport.isDynamicallyBound(stage) >> true
+    2 * targetReferenceSupport.isDynamicallyBound(stage) >> true
 
     where:
     parentStageId | stageNamesBefore              | description
     null          | ["determineTargetReferences"] | "should inject"
-    "a"           | []                            | "should inject"
+    "a"           | []                            | "should not inject"
   }
 
   void "should inject a stage for each extra region when the target is dynamically bound"() {
@@ -68,15 +67,14 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
       context["regions"] = ["us-east-1", "us-west-1", "us-west-2", "eu-west-2"]
     }
     supportStage.targetReferenceSupport = targetReferenceSupport
+    def beforeGraphBuilder = StageGraphBuilder.beforeStages(stage)
+    def afterGraphBuilder = StageGraphBuilder.afterStages(stage)
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage)
-    def beforeStages = syntheticStages.findAll {
-      it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE
-    }
-    def afterStages = syntheticStages.findAll {
-      it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER
-    }
+    supportStage.beforeStages(stage, beforeGraphBuilder)
+    supportStage.afterStages(stage, afterGraphBuilder)
+    def beforeStages = beforeGraphBuilder.build()
+    def afterStages = afterGraphBuilder.build()
 
     then:
     beforeStages.size() == 1
@@ -84,7 +82,7 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     afterStages*.name == ["targetReferenceLinearStageSupport", "targetReferenceLinearStageSupport", "targetReferenceLinearStageSupport"]
     stage.context.region == "us-east-1"
     afterStages*.context.region.flatten() == ["us-west-1", "us-west-2", "eu-west-2"]
-    1 * targetReferenceSupport.isDynamicallyBound(stage) >> true
+    2 * targetReferenceSupport.isDynamicallyBound(stage) >> true
   }
 
   void "should inject a stage after for each extra target when target is not dynamically bound"() {
@@ -95,21 +93,20 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
       type = "test"
     }
     supportStage.targetReferenceSupport = targetReferenceSupport
+    def beforeGraphBuilder = StageGraphBuilder.beforeStages(stage)
+    def afterGraphBuilder = StageGraphBuilder.afterStages(stage)
 
     when:
-    def syntheticStages = supportStage.composeTargets(stage)
-    def beforeStages = syntheticStages.findAll {
-      it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE
-    }
-    def afterStages = syntheticStages.findAll {
-      it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER
-    }
+    supportStage.beforeStages(stage, beforeGraphBuilder)
+    supportStage.afterStages(stage, afterGraphBuilder)
+    def beforeStages = beforeGraphBuilder.build()
+    def afterStages = afterGraphBuilder.build()
 
     then:
     beforeStages.size() == 0
     afterStages.size() == 3
     afterStages*.name == ["targetReferenceLinearStageSupport", "targetReferenceLinearStageSupport", "targetReferenceLinearStageSupport"]
-    1 * targetReferenceSupport.isDynamicallyBound(stage) >> false
+    2 * targetReferenceSupport.isDynamicallyBound(stage) >> false
     1 * targetReferenceSupport.getTargetAsgReferences(stage) >> [
       new TargetReference(region: "us-east-1", asg: [name: "asg-v001"]),
       new TargetReference(region: "us-west-1", asg: [name: "asg-v001"]),
@@ -126,13 +123,16 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
       type = "test"
     }
     supportStage.targetReferenceSupport = targetReferenceSupport
+    def beforeGraphBuilder = StageGraphBuilder.beforeStages(stage)
+    def afterGraphBuilder = StageGraphBuilder.afterStages(stage)
 
     when:
-    supportStage.composeTargets(stage)
+    supportStage.beforeStages(stage, beforeGraphBuilder)
+    supportStage.afterStages(stage, afterGraphBuilder)
 
     then:
     thrown TargetReferenceNotFoundException
-    1 * targetReferenceSupport.isDynamicallyBound(stage) >> false
+    2 * targetReferenceSupport.isDynamicallyBound(stage) >> false
     1 * targetReferenceSupport.getTargetAsgReferences(stage) >> []
   }
 
@@ -144,6 +144,8 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
       type = "test"
     }
     supportStage.targetReferenceSupport = targetReferenceSupport
+    def beforeGraphBuilder = StageGraphBuilder.beforeStages(stage)
+    def afterGraphBuilder = StageGraphBuilder.afterStages(stage)
 
     stage.execution.trigger = new PipelineTrigger(
       "pipeline",
@@ -159,7 +161,8 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
     )
 
     when:
-    supportStage.composeTargets(stage)
+    supportStage.beforeStages(stage, beforeGraphBuilder)
+    supportStage.afterStages(stage, afterGraphBuilder)
 
     then:
     thrown TargetReferenceNotFoundException

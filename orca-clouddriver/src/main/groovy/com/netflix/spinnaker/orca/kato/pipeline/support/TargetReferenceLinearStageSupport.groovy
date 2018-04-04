@@ -19,13 +19,17 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
+import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
+import javax.annotation.Nonnull
+
+@Slf4j
 @Deprecated
 abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuilder {
+
   @Autowired
   ObjectMapper objectMapper
 
@@ -36,20 +40,43 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
   DetermineTargetReferenceStage determineTargetReferenceStage
 
   @Override
-  def List<Stage> aroundStages(Stage parentStage) {
-    return composeTargets(parentStage)
+  void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+    log.warn("TargetReferenceLinearStageSupport is deprecated (execution: ${parent.execution.id})")
+
+    parent.resolveStrategyParams()
+
+    if (targetReferenceSupport.isDynamicallyBound(parent) && !parent.parentStageId) {
+      Map injectedContext = new HashMap(parent.context)
+      injectedContext.regions = new ArrayList(parent.context.regions)
+      graph.add {
+        it.type = determineTargetReferenceStage.type
+        it.name = "determineTargetReferences"
+        it.context = injectedContext
+      }
+    }
   }
 
-  List<Stage> composeTargets(Stage stage) {
-    stage.resolveStrategyParams()
+  @Override
+  void afterStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+    parent.resolveStrategyParams()
+
+    List<Stage> stages = composeTargets(parent, graph)
+    if (stages.size() > 1) {
+      for (int i = 1; i < stages.size(); i++) {
+        graph.connect(stages.get(i - 1), stages.get(i))
+      }
+    }
+  }
+
+  List<Stage> composeTargets(Stage stage, StageGraphBuilder graph) {
     if (targetReferenceSupport.isDynamicallyBound(stage)) {
-      return composeDynamicTargets(stage)
+      return composeDynamicTargets(stage, graph)
     }
 
-    return composeStaticTargets(stage)
+    return composeStaticTargets(stage, graph)
   }
 
-  private List<Stage> composeStaticTargets(Stage stage) {
+  private List<Stage> composeStaticTargets(Stage stage, StageGraphBuilder graph) {
     def descriptionList = buildStaticTargetDescriptions(stage)
     if (descriptionList.empty) {
       throw new TargetReferenceNotFoundException("Could not find any server groups for specified target")
@@ -57,12 +84,13 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
     def first = descriptionList.remove(0)
     stage.context.putAll(first)
 
-    if (descriptionList.size()) {
-      return descriptionList.collect {
-        newStage(stage.execution, this.type, this.type, it, stage, SyntheticStageOwner.STAGE_AFTER)
+    return descriptionList.collect { description ->
+      graph.add {
+        it.type = type
+        it.name = type
+        it.context = description
       }
     }
-    return []
   }
 
   private List<Map<String, Object>> buildStaticTargetDescriptions(Stage stage) {
@@ -82,7 +110,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
     }
   }
 
-  private List<Stage> composeDynamicTargets(Stage stage) {
+  private List<Stage> composeDynamicTargets(Stage stage, StageGraphBuilder graph) {
     def stages = []
 
     // We only want to determine the target ASGs once per stage, so only inject if this is the root stage, i.e.
@@ -91,25 +119,16 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
     // as part of some other stage that is not itself injecting a determineTargetReferences stage
     if (!stage.parentStageId) {
       def configuredRegions = stage.context.regions
-      Map injectedContext = new HashMap(stage.context)
-      injectedContext.regions = new ArrayList(configuredRegions)
-      stages << newStage(
-        stage.execution,
-        determineTargetReferenceStage.type,
-        "determineTargetReferences",
-        injectedContext,
-        stage,
-        SyntheticStageOwner.STAGE_BEFORE
-      )
-
       if (configuredRegions.size() > 1) {
         stage.context.region = configuredRegions.remove(0)
         for (region in configuredRegions) {
           def description = new HashMap(stage.context)
           description.region = region
-          stages << newStage(
-            stage.execution, this.type, this.type, description, stage, SyntheticStageOwner.STAGE_AFTER
-          )
+          stages << graph.add {
+            it.name = type
+            it.type = type
+            it.context = description
+          }
         }
       }
     }
