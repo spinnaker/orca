@@ -62,4 +62,13 @@ public final class TaskResult {
   public @Nonnull Map<String, ?> getOutputs() {
     return outputs;
   }
+
+  @Override
+  public String toString() {
+    return "TaskResult{" +
+            "status=" + status +
+            ", context=" + context +
+            ", outputs=" + outputs +
+            '}';
+  }
 }
