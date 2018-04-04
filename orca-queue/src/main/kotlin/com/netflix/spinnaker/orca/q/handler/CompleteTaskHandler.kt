@@ -49,9 +49,7 @@ class CompleteTaskHandler(
       } else {
         repository.storeStage(mergedContextStage)
 
-        if (message.status !in setOf(SUCCEEDED)) {
-          queue.push(CompleteStage(message))
-        } else if (task.isStageEnd) {
+        if (message.status !in setOf(SUCCEEDED) || task.isStageEnd) {
           queue.push(CompleteStage(message))
         } else {
           mergedContextStage.nextTask(task).let {
