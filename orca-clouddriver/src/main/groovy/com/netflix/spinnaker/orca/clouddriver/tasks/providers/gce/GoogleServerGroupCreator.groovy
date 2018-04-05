@@ -69,7 +69,7 @@ class GoogleServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
 
     def artifactId = stageContext.imageArtifactId as String
     if (artifactId == null) {
-      throw new IllegalStateException("Image source was set to artifact but no artifact was specified.")
+      throw new IllegalArgumentException("Image source was set to artifact but no artifact was specified.")
     }
     return artifactResolver.getBoundArtifactForId(stage, artifactId)
   }
