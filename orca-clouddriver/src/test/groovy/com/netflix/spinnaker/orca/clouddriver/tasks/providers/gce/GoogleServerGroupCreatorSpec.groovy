@@ -144,8 +144,8 @@ class GoogleServerGroupCreatorSpec extends Specification {
     ops = new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
 
     then:
-    IllegalStateException ise = thrown()
-    ise.message == "Image source was set to artifact but no artifact was specified."
+    IllegalArgumentException illegalArgumentException = thrown()
+    illegalArgumentException.message == "Image source was set to artifact but no artifact was specified."
 
     when: "throw error if no image found"
     ctx = [:] << basectx
@@ -156,7 +156,7 @@ class GoogleServerGroupCreatorSpec extends Specification {
     new GoogleServerGroupCreator(artifactResolver: artifactResolver).getOperations(stage)
 
     then:
-    ise = thrown()
-    ise.message == "No image could be found in north-pole."
+    IllegalStateException illegalStagteException = thrown()
+    illegalStagteException.message == "No image could be found in north-pole."
   }
 }
