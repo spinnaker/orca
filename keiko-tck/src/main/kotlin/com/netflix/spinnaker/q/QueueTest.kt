@@ -19,13 +19,7 @@ package com.netflix.spinnaker.q
 import com.netflix.spinnaker.q.Queue.Companion.maxRetries
 import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.time.MutableClock
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.eq
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.reset
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
-import com.nhaarman.mockito_kotlin.verifyZeroInteractions
+import com.nhaarman.mockito_kotlin.*
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -222,6 +216,46 @@ abstract class QueueTest<out Q : Queue>(
       }
 
       it("retries the message") {
+        verify(callback).invoke(eq(message), any())
+      }
+    }
+
+    given("a message with an ack override was not acknowledged") {
+      val ackTimeoutOverride = Duration.ofMinutes(5)
+      val message = TestMessage("a", ackTimeoutOverride.toMillis())
+
+      beforeGroup {
+        queue = createQueue(clock, deadLetterCallback)
+        with(queue!!) {
+          push(message)
+          poll { _, _ -> }
+        }
+      }
+
+      afterGroup(::stopQueue)
+      afterGroup(::resetMocks)
+
+      on("polling the queue after the message acknowledgment default has timed out") {
+        with(queue!!) {
+          clock.incrementBy(ackTimeout)
+          retry()
+          poll(callback)
+        }
+      }
+
+      it("does not retry the message") {
+        verifyZeroInteractions(callback)
+      }
+
+      on("polling the queue after the message acknowledgment override has timed out") {
+        with(queue!!) {
+          clock.incrementBy(ackTimeoutOverride)
+          retry()
+          poll(callback)
+        }
+      }
+
+      it ("retries the message") {
         verify(callback).invoke(eq(message), any())
       }
     }

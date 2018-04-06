@@ -52,7 +52,13 @@ class InMemoryQueue(
     fire(QueuePolled)
 
     queue.poll()?.let { envelope ->
-      unacked.put(envelope.copy(scheduledTime = clock.instant().plus(ackTimeout)))
+      val messageAckTimeout = if (envelope.payload.ackTimeoutMs == null) {
+        ackTimeout
+      } else {
+        Duration.ofMillis(envelope.payload.ackTimeoutMs as Long)
+      }
+
+      unacked.put(envelope.copy(scheduledTime = clock.instant().plus(messageAckTimeout)))
       fire(MessageProcessing(envelope.payload, envelope.scheduledTime, clock.instant()))
       callback.invoke(envelope.payload) {
         ack(envelope.id)

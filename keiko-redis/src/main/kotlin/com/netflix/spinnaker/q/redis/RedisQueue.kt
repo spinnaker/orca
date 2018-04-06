@@ -36,6 +36,7 @@ import redis.clients.jedis.Transaction
 import redis.clients.jedis.params.sortedset.ZAddParams
 import redis.clients.util.Pool
 import java.io.IOException
+import java.lang.String.format
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.time.Clock
@@ -263,7 +264,7 @@ class RedisQueue(
   }
 
   private fun Jedis.readMessageWithoutLock(fingerprint: String, block: (Message) -> Unit) {
-    eval(READ_MESSAGE,
+    eval(READ_MESSAGE_WITHOUT_LOCK,
       listOf(
         queueKey,
         unackedKey,
@@ -272,7 +273,8 @@ class RedisQueue(
       ),
       listOf(
         fingerprint,
-        score(ackTimeout).toString()
+        format("%f", score(ackTimeout)),
+        format("%f", score())
       )
     ).let {
       readMessage(fingerprint, it as String?, block)
@@ -290,7 +292,8 @@ class RedisQueue(
       score().toString(),
       10.toString(), // TODO rz - make this configurable.
       lockTtlSeconds.toString(),
-      score(ackTimeout).toString()
+      format("%f", score(ackTimeout)),
+      format("%f", score())
     ))
     if (response is List<*>) {
       return Triple(
@@ -402,6 +405,30 @@ class RedisQueue(
   )
 }
 
+private const val READ_MESSAGE = """
+  local java_scientific = function(x)
+    return string.format("%.12E", x):gsub("\+", "")
+  end
+
+  -- get the message, move the fingerprint to the unacked queue and return
+  local message = redis.call("HGET", messagesKey, fingerprint)
+
+  -- check for an ack timeout override on the message
+  local unackScore = unackDefaultScore
+  if message ~= nil then
+    local ackTimeoutOverride = tonumber(cjson.decode(message)["ackTimeoutMs"])
+    if ackTimeoutOverride ~= nil and unackBaseScore ~= nil then
+      unackScore = unackBaseScore + ackTimeoutOverride
+    end
+  end
+
+  unackScore = java_scientific(unackScore)
+
+  redis.call("ZREM", queueKey, fingerprint)
+  redis.call("ZADD", unackKey, unackScore, fingerprint)
+  redis.call("HINCRBY", attemptsKey, fingerprint, 1)
+"""
+
 private const val READ_MESSAGE_WITH_LOCK = """
   local queueKey = KEYS[1]
   local unackKey = KEYS[2]
@@ -411,7 +438,8 @@ private const val READ_MESSAGE_WITH_LOCK = """
   local maxScore = ARGV[1]
   local peekFingerprintCount = ARGV[2]
   local lockTtlSeconds = ARGV[3]
-  local unackScore = ARGV[4]
+  local unackDefaultScore = ARGV[4]
+  local unackBaseScore = ARGV[5]
 
   local not_empty = function(x)
     return (type(x) == "table") and (not x.err) and (#x ~= 0)
@@ -444,28 +472,22 @@ private const val READ_MESSAGE_WITH_LOCK = """
     return "AcquireLockFailed"
   end
 
-  -- get the message, move the fingerprint to the unacked queue and return
-  local message = redis.call("HGET", messagesKey, fingerprint)
-  redis.call("ZREM", queueKey, fingerprint)
-  redis.call("ZADD", unackKey, unackScore, fingerprint)
-  redis.call("HINCRBY", attemptsKey, fingerprint, 1)
+  $READ_MESSAGE
 
   return {fingerprint, fingerprintScore, message}
 """
 
 // TODO rz - I don't think we should be incrementing attempts here...
-private const val READ_MESSAGE = """
+private const val READ_MESSAGE_WITHOUT_LOCK = """
   local queueKey = KEYS[1]
   local unackKey = KEYS[2]
   local messagesKey = KEYS[3]
   local attemptsKey = KEYS[4]
   local fingerprint = ARGV[1]
-  local score = ARGV[2]
+  local unackDefaultScore = ARGV[2]
+  local unackBaseScore = ARGV[3]
 
-  local message = redis.call("HGET", messagesKey, fingerprint)
-  redis.call("ZREM", queueKey, fingerprint)
-  redis.call("ZADD", unackKey, score, fingerprint)
-  redis.call("HINCRBY", attemptsKey, fingerprint, 1)
+  $READ_MESSAGE
 
   return message
 """

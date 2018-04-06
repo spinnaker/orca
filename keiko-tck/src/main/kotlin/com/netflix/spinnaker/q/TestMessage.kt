@@ -19,4 +19,4 @@ package com.netflix.spinnaker.q
 import com.fasterxml.jackson.annotation.JsonTypeName
 
 @JsonTypeName("test")
-data class TestMessage(val payload: String) : Message()
+data class TestMessage(val payload: String, override val ackTimeoutMs: Long? = null) : Message()

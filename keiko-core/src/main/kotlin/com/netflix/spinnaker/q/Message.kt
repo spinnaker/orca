@@ -32,6 +32,12 @@ const val JSON_NAME_PROPERTY = "kind"
   val attributes: MutableList<Attribute> = mutableListOf()
 
   /**
+   * Defines an ack timeout override in milliseconds, a null value will use the
+   * queue default.
+   */
+  open val ackTimeoutMs: Long? = null
+
+  /**
    * @return the attribute of type [A] or `null`.
    */
   inline fun <reified A : Attribute> getAttribute() =
