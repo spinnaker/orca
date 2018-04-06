@@ -29,7 +29,10 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.CompleteTask
+import com.netflix.spinnaker.orca.q.InvalidTaskType
+import com.netflix.spinnaker.orca.q.PauseTask
+import com.netflix.spinnaker.orca.q.RunTask
 import com.netflix.spinnaker.orca.time.toDuration
 import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Message
@@ -42,6 +45,7 @@ import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.TimeUnit
+import kotlin.collections.set
 
 @Component
 class RunTaskHandler(
@@ -79,7 +83,7 @@ class RunTaskHandler(
               // TODO: rather send this data with CompleteTask message
               stage.processTaskOutput(result)
               when (result.status) {
-                RUNNING -> {
+                RUNNING                              -> {
                   queue.push(message, task.backoffPeriod(taskModel, stage))
                   trackResult(stage, taskModel, result.status)
                 }
@@ -87,18 +91,18 @@ class RunTaskHandler(
                   queue.push(CompleteTask(message, result.status))
                   trackResult(stage, taskModel, result.status)
                 }
-                CANCELED -> {
+                CANCELED                             -> {
                   task.onCancel(stage)
                   val status = stage.failureStatus(default = result.status)
                   queue.push(CompleteTask(message, status))
                   trackResult(stage, taskModel, status)
                 }
-                TERMINAL -> {
+                TERMINAL                             -> {
                   val status = stage.failureStatus(default = result.status)
                   queue.push(CompleteTask(message, status))
                   trackResult(stage, taskModel, status)
                 }
-                else ->
+                else                                 ->
                   TODO("Unhandled task status ${result.status}")
               }
             }
@@ -174,9 +178,10 @@ class RunTaskHandler(
   private fun Task.backoffPeriod(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: Stage): TemporalAmount =
     when (this) {
       is RetryableTask -> Duration.ofMillis(
-        getDynamicBackoffPeriod(stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime ?: 0)))
+        getDynamicBackoffPeriod(stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime
+          ?: 0)))
       )
-      else -> Duration.ofSeconds(1)
+      else             -> Duration.ofSeconds(1)
     }
 
   private fun formatTimeout(timeout: Long): String {
@@ -194,18 +199,16 @@ class RunTaskHandler(
       if (startTime != null) {
         val pausedDuration = stage.execution.pausedDurationRelativeTo(startTime)
         val elapsedTime = Duration.between(startTime, clock.instant())
-        val throttleTime = message.getAttribute<TotalThrottleTimeAttribute>()?.totalThrottleTimeMs ?: 0
         val actualTimeout = (
           if (this is OverridableTimeoutRetryableTask && stage.parentWithTimeout.isPresent)
             stage.parentWithTimeout.get().timeout.get().toDuration()
           else
             timeout.toDuration()
           )
-        if (elapsedTime.minus(pausedDuration).minusMillis(throttleTime) > actualTimeout) {
+        if (elapsedTime.minus(pausedDuration) > actualTimeout) {
           val durationString = formatTimeout(elapsedTime.toMillis())
           val msg = StringBuilder("${javaClass.simpleName} of stage ${stage.name} timed out after $durationString. ")
           msg.append("pausedDuration: ${formatTimeout(pausedDuration.toMillis())}, ")
-          msg.append("throttleTime: ${formatTimeout(throttleTime)}, ")
           msg.append("elapsedTime: ${formatTimeout(elapsedTime.toMillis())},")
           msg.append("timeoutValue: ${formatTimeout(actualTimeout.toMillis())}")
 
@@ -229,7 +232,6 @@ class RunTaskHandler(
       }
     }
   }
-
 
   private fun Execution.pausedDurationRelativeTo(instant: Instant?): Duration {
     val pausedDetails = paused
@@ -265,6 +267,6 @@ class RunTaskHandler(
 private fun Stage.failureStatus(default: ExecutionStatus = TERMINAL) =
   when {
     shouldContinueOnFailure() -> FAILED_CONTINUE
-    shouldFailPipeline() -> default
-    else -> STOPPED
+    shouldFailPipeline()      -> default
+    else                      -> STOPPED
   }

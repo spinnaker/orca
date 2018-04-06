@@ -110,18 +110,20 @@ class TargetServerGroupResolverSpec extends Specification {
     Stage stageLookingForRefs
     pipeline {
       commonParent = stage {
-        id = "1"
-      }
-      dtsgStage = stage {
-        type = DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE
-        id = "2"
-        parentStageId = "1"
-        context = [targetReferences: [decoy, want]]
-      }
-      stageLookingForRefs = stage {
-        id = "3"
-        parentStageId = "1"
-        context = [region: "north-pole"]
+        refId = "1"
+        dtsgStage = stage {
+          refId = "1<1"
+          type = DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE
+          context = [targetReferences: [decoy, want]]
+        }
+        stage {
+          refId = "1<2"
+          requisiteStageRefIds = ["1<1"]
+          stageLookingForRefs = stage {
+            refId = "1<2<1"
+            context = [region: "north-pole"]
+          }
+        }
       }
     }
 
@@ -137,6 +139,49 @@ class TargetServerGroupResolverSpec extends Specification {
 
     then:
     thrown(TargetServerGroup.NotFoundException)
+  }
+
+  def "should resolve target refs from directly preceding DTSG stage if there are more than one"() {
+    setup:
+    TargetServerGroup want = new TargetServerGroup(name: "i-want-this-one", region: "us-west-2")
+    TargetServerGroup decoy = new TargetServerGroup(name: "not-this-one", region: "us-west-2")
+
+    def pipeline = pipeline {
+      stage {
+        refId = "1"
+        stage {
+          refId = "1<1"
+          type = DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE
+          context = [targetReferences: [decoy]]
+        }
+        stage {
+          refId = "1<2"
+          requisiteStageRefIds = ["1<1"]
+          context = [region: "us-west-2"]
+        }
+      }
+      stage {
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+        stage {
+          refId = "2<1"
+          type = DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE
+          context = [targetReferences: [want]]
+        }
+        stage {
+          refId = "2<2"
+          requisiteStageRefIds = ["2<1"]
+          context = [region: "us-west-2"]
+        }
+      }
+    }
+    def stageLookingForRefs = pipeline.stageByRef("2<2")
+
+    when:
+    def got = TargetServerGroupResolver.fromPreviousStage(stageLookingForRefs)
+
+    then:
+    got == want
   }
 
   @Unroll
