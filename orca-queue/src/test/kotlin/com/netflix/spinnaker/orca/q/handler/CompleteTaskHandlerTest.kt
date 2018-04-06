@@ -50,137 +50,27 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
   fun resetMocks() = reset(queue, repository, publisher)
 
-  describe("when a task completes successfully") {
-    given("the stage contains further tasks") {
-      val pipeline = pipeline {
-        stage {
-          type = multiTaskStage.type
-          multiTaskStage.buildTasks(this)
-        }
-      }
-      val message = CompleteTask(
-        pipeline.type,
-        pipeline.id,
-        pipeline.application,
-        pipeline.stages.first().id,
-        "1",
-        SUCCEEDED
-      )
-
-      beforeGroup {
-        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-      }
-
-      afterGroup(::resetMocks)
-
-      action("the handler receives a message") {
-        subject.handle(message)
-      }
-
-      it("updates the task state in the stage") {
-        verify(repository).storeStage(check {
-          it.tasks.first().apply {
-            assertThat(status).isEqualTo(SUCCEEDED)
-            assertThat(endTime).isEqualTo(clock.millis())
+  setOf(SUCCEEDED).forEach { successfulStatus ->
+    describe("when a task completes with $successfulStatus status") {
+      given("the stage contains further tasks") {
+        val pipeline = pipeline {
+          stage {
+            type = multiTaskStage.type
+            multiTaskStage.buildTasks(this)
           }
-        })
-      }
-
-      it("runs the next task") {
-        verify(queue)
-          .push(StartTask(
-            message.executionType,
-            message.executionId,
-            message.application,
-            message.stageId,
-            "2"
-          ))
-      }
-
-      it("publishes an event") {
-        verify(publisher).publishEvent(check<TaskComplete> {
-          assertThat(it.executionType).isEqualTo(pipeline.type)
-          assertThat(it.executionId).isEqualTo(pipeline.id)
-          assertThat(it.stageId).isEqualTo(message.stageId)
-          assertThat(it.taskId).isEqualTo(message.taskId)
-          assertThat(it.status).isEqualTo(SUCCEEDED)
-        })
-      }
-    }
-
-    given("the stage is complete") {
-      val pipeline = pipeline {
-        stage {
-          type = singleTaskStage.type
-          singleTaskStage.buildTasks(this)
         }
-      }
-      val message = CompleteTask(
-        pipeline.type,
-        pipeline.id,
-        pipeline.application,
-        pipeline.stages.first().id,
-        "1",
-        SUCCEEDED
-      )
-
-      beforeGroup {
-        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-      }
-
-      afterGroup(::resetMocks)
-
-      action("the handler receives a message") {
-        subject.handle(message)
-      }
-
-      it("updates the task state in the stage") {
-        verify(repository).storeStage(check {
-          it.tasks.last().apply {
-            assertThat(status).isEqualTo(SUCCEEDED)
-            assertThat(endTime).isEqualTo(clock.millis())
-          }
-        })
-      }
-
-      it("emits an event to signal the stage is complete") {
-        verify(queue)
-          .push(CompleteStage(
-            message.executionType,
-            message.executionId,
-            message.application,
-            message.stageId
-          ))
-      }
-    }
-
-    given("the task is the end of a rolling push loop") {
-      val pipeline = pipeline {
-        stage {
-          refId = "1"
-          type = rollingPushStage.type
-          rollingPushStage.buildTasks(this)
-        }
-      }
-
-      and("when the task returns REDIRECT") {
         val message = CompleteTask(
           pipeline.type,
           pipeline.id,
           pipeline.application,
-          pipeline.stageByRef("1").id,
-          "4",
-          REDIRECT
+          pipeline.stages.first().id,
+          "1",
+          successfulStatus,
+          successfulStatus
         )
 
         beforeGroup {
-          pipeline.stageByRef("1").apply {
-            tasks[0].status = SUCCEEDED
-            tasks[1].status = SUCCEEDED
-            tasks[2].status = SUCCEEDED
-          }
-
-          whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
         }
 
         afterGroup(::resetMocks)
@@ -189,24 +79,138 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
           subject.handle(message)
         }
 
-        it("repeats the loop") {
-          verify(queue).push(check<StartTask> {
-            assertThat(it.taskId).isEqualTo("2")
-          })
-        }
-
-        it("resets the status of the loop tasks") {
+        it("updates the task state in the stage") {
           verify(repository).storeStage(check {
-            assertThat(it.tasks[1..3].map(Task::getStatus)).allMatch { it == NOT_STARTED }
+            it.tasks.first().apply {
+              assertThat(status).isEqualTo(successfulStatus)
+              assertThat(endTime).isEqualTo(clock.millis())
+            }
           })
         }
 
-        it("does not publish an event") {
-          verifyZeroInteractions(publisher)
+        it("runs the next task") {
+          verify(queue)
+            .push(StartTask(
+              message.executionType,
+              message.executionId,
+              message.application,
+              message.stageId,
+              "2"
+            ))
+        }
+
+        it("publishes an event") {
+          verify(publisher).publishEvent(check<TaskComplete> {
+            assertThat(it.executionType).isEqualTo(pipeline.type)
+            assertThat(it.executionId).isEqualTo(pipeline.id)
+            assertThat(it.stageId).isEqualTo(message.stageId)
+            assertThat(it.taskId).isEqualTo(message.taskId)
+            assertThat(it.status).isEqualTo(successfulStatus)
+          })
+        }
+      }
+
+      given("the stage is complete") {
+        val pipeline = pipeline {
+          stage {
+            type = singleTaskStage.type
+            singleTaskStage.buildTasks(this)
+          }
+        }
+        val message = CompleteTask(
+          pipeline.type,
+          pipeline.id,
+          pipeline.application,
+          pipeline.stages.first().id,
+          "1",
+          SUCCEEDED,
+          SUCCEEDED
+        )
+
+        beforeGroup {
+          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        action("the handler receives a message") {
+          subject.handle(message)
+        }
+
+        it("updates the task state in the stage") {
+          verify(repository).storeStage(check {
+            it.tasks.last().apply {
+              assertThat(status).isEqualTo(SUCCEEDED)
+              assertThat(endTime).isEqualTo(clock.millis())
+            }
+          })
+        }
+
+        it("emits an event to signal the stage is complete") {
+          verify(queue)
+            .push(CompleteStage(
+              message.executionType,
+              message.executionId,
+              message.application,
+              message.stageId
+            ))
+        }
+      }
+
+      given("the task is the end of a rolling push loop") {
+        val pipeline = pipeline {
+          stage {
+            refId = "1"
+            type = rollingPushStage.type
+            rollingPushStage.buildTasks(this)
+          }
+        }
+
+        and("when the task returns REDIRECT") {
+          val message = CompleteTask(
+            pipeline.type,
+            pipeline.id,
+            pipeline.application,
+            pipeline.stageByRef("1").id,
+            "4",
+            REDIRECT,
+            REDIRECT
+          )
+
+          beforeGroup {
+            pipeline.stageByRef("1").apply {
+              tasks[0].status = SUCCEEDED
+              tasks[1].status = SUCCEEDED
+              tasks[2].status = SUCCEEDED
+            }
+
+            whenever(repository.retrieve(PIPELINE, pipeline.id)) doReturn pipeline
+          }
+
+          afterGroup(::resetMocks)
+
+          action("the handler receives a message") {
+            subject.handle(message)
+          }
+
+          it("repeats the loop") {
+            verify(queue).push(check<StartTask> {
+              assertThat(it.taskId).isEqualTo("2")
+            })
+          }
+
+          it("resets the status of the loop tasks") {
+            verify(repository).storeStage(check {
+              assertThat(it.tasks[1..3].map(Task::getStatus)).allMatch { it == NOT_STARTED }
+            })
+          }
+
+          it("does not publish an event") {
+            verifyZeroInteractions(publisher)
+          }
         }
       }
     }
-
   }
 
   setOf(TERMINAL, CANCELED).forEach { status ->
@@ -223,6 +227,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
         pipeline.application,
         pipeline.stages.first().id,
         "1",
+        status,
         status
       )
 
@@ -267,6 +272,25 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
           assertThat(it.status).isEqualTo(status)
         })
       }
+    }
+  }
+
+  describe("when a task should complete parent stage") {
+    val task = fun(isStageEnd: Boolean) : Task {
+      val task = Task()
+      task.isStageEnd = isStageEnd
+      return task
+    }
+
+    it("is last task in stage") {
+      subject.shouldCompleteStage(task(true), SUCCEEDED, SUCCEEDED) == true
+      subject.shouldCompleteStage(task(false), SUCCEEDED, SUCCEEDED) == false
+    }
+
+    it("did not originally complete with FAILED_CONTINUE") {
+      subject.shouldCompleteStage(task(false), TERMINAL, TERMINAL) == true
+      subject.shouldCompleteStage(task(false), FAILED_CONTINUE, TERMINAL) == true
+      subject.shouldCompleteStage(task(false), FAILED_CONTINUE, FAILED_CONTINUE) == false
     }
   }
 })

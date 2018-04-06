@@ -23,15 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.q.Attribute
 import com.netflix.spinnaker.q.Message
-
-@JsonTypeName("totalThrottleTime")
-data class TotalThrottleTimeAttribute(var totalThrottleTimeMs: Long = 0) : Attribute {
-  fun add(throttleTimeMs: Long) {
-    this.totalThrottleTimeMs += throttleTimeMs
-  }
-}
 
 /**
  * Messages used internally by the queueing system.
@@ -81,10 +73,22 @@ data class CompleteTask(
   override val application: String,
   override val stageId: String,
   override val taskId: String,
-  val status: ExecutionStatus
+  val status: ExecutionStatus,
+  val originalStatus: ExecutionStatus?
 ) : Message(), TaskLevel {
   constructor(source: TaskLevel, status: ExecutionStatus) :
-    this(source.executionType, source.executionId, source.application, source.stageId, source.taskId, status)
+    this(source, status, status)
+
+  constructor(source: TaskLevel, status: ExecutionStatus, originalStatus: ExecutionStatus) :
+    this(
+      source.executionType,
+      source.executionId,
+      source.application,
+      source.stageId,
+      source.taskId,
+      status,
+      originalStatus
+    )
 }
 
 @JsonTypeName("pauseTask")
@@ -305,12 +309,21 @@ data class CancelExecution(
   override val executionType: ExecutionType,
   override val executionId: String,
   override val application: String,
-  val user: String,
+  val user: String?,
   val reason: String?
 ) : Message(), ExecutionLevel {
-  constructor(source: Execution, user: String, reason: String?) :
+  constructor(source: Execution, user: String?, reason: String?) :
     this(source.type, source.id, source.application, user, reason)
+
+  constructor(source: Execution) :
+    this(source.type, source.id, source.application, null, null)
 }
+
+@JsonTypeName("startWaitingExecutions")
+data class StartWaitingExecutions(
+  val pipelineConfigId: String,
+  val purgeQueue: Boolean = false
+) : Message()
 
 /**
  * Fatal errors in processing the execution configuration.
