@@ -62,21 +62,12 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
     return taskResult
   }
 
-  private def getPlatformHealthType(Stage stage, TargetServerGroup targetServerGroup) {
-    def platformHealthType = targetServerGroup.instances.collect { instance ->
-      HealthHelper.findPlatformHealth(instance.health)
-    }?.find {
-      it.type
-    }?.type
-
-    return platformHealthType ? platformHealthType : healthProviderNamesByPlatform[getCloudProvider(stage)]
-  }
-
   @Override
   boolean isServerGroupOperationInProgress(Stage stage,
                                            List<Map> interestingHealthProviderNames,
                                            Optional<TargetServerGroup> serverGroup) {
-    // TODO(dreynaud): this can probably be changed to interestingHealthProviderNames == null || isEmpty()
+    // null vs empty interestingHealthProviderNames do mean very different things to Spinnaker
+    // a null value will result in Spinnaker waiting for discovery + platform, etc. whereas an empty will not wait for anything.
     if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {
       return false
     }
@@ -96,5 +87,15 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
     // The operation can be considered complete if it was requested to only consider the platform health.
     def platformHealthType = getPlatformHealthType(stage, targetServerGroup)
     return !(platformHealthType && interestingHealthProviderNames == [platformHealthType])
+  }
+
+  private String getPlatformHealthType(Stage stage, TargetServerGroup targetServerGroup) {
+    def platformHealthType = targetServerGroup.instances.collect { instance ->
+      HealthHelper.findPlatformHealth(instance.health)
+    }?.find {
+      it.type
+    }?.type
+
+    return platformHealthType ? platformHealthType : healthProviderNamesByPlatform[getCloudProvider(stage)]
   }
 }
