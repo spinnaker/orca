@@ -415,7 +415,7 @@ private const val READ_MESSAGE = """
 
   -- check for an ack timeout override on the message
   local unackScore = unackDefaultScore
-  if message ~= nil then
+  if type(message) == "string" and message ~= nil then
     local ackTimeoutOverride = tonumber(cjson.decode(message)["ackTimeoutMs"])
     if ackTimeoutOverride ~= nil and unackBaseScore ~= nil then
       unackScore = unackBaseScore + ackTimeoutOverride
