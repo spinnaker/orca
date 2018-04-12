@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.q.trafficshaping.capacity
 
-import com.netflix.spinnaker.orca.events.ExecutionEvent
-import com.netflix.spinnaker.orca.q.ApplicationAware
+package com.netflix.spinnaker.orca.clouddriver.pollers;
 
-interface PrioritizationStrategy {
-  fun getPriority(execution: ExecutionEvent): Priority
-  fun getPriority(message: ApplicationAware): Priority
-}
+class ServerGroup {
+  public Moniker moniker;
+  public Long createdTime;
 
-class ConstantPrioritizationStrategy : PrioritizationStrategy {
-  override fun getPriority(execution: ExecutionEvent) = Priority.MEDIUM
-  override fun getPriority(message: ApplicationAware) = Priority.MEDIUM
+  public Capacity capacity;
+
+  static class Moniker {
+    public String app;
+  }
+
+  static class Capacity {
+    public Integer min;
+    public Integer desired;
+    public Integer max;
+  }
 }

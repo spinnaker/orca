@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,28 @@
  * limitations under the License.
  */
 
-apply from: "$rootDir/gradle/groovy.gradle"
+package com.netflix.spinnaker.orca.clouddriver.pollers;
 
-dependencies {
-  compile project(":orca-retrofit")
-  spinnaker.group('jackson')
-  compile spinnaker.dependency('jacksonGuava')
-  compileOnly spinnaker.dependency('lombok')
-  testCompile project(":orca-test-groovy")
-  testCompile "com.github.tomakehurst:wiremock:2.15.0"
+import java.util.List;
+
+class EntityTags {
+  public String id;
+  public List<Tag> tags;
+
+  public EntityRef entityRef;
+
+  static class Tag {
+    public String name;
+    public Object value;
+  }
+
+  static class EntityRef {
+    public String cloudProvider;
+    public String application;
+    public String account;
+    public String region;
+
+    public String entityType;
+    public String entityId;
+  }
 }

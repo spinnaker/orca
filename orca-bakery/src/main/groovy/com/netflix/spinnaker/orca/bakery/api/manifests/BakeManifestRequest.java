@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -12,12 +12,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.netflix.spinnaker.orca.pipeline.expressions;
+package com.netflix.spinnaker.orca.bakery.api.manifests;
 
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import lombok.Data;
 
-public interface ExpressionEvaluator {
-  Map<String, Object> evaluate(Map<String, Object> source, Object rootObject, ExpressionEvaluationSummary summary, boolean allowUnknownKeys);
+import java.util.List;
+
+@Data
+public class BakeManifestRequest {
+  @JsonProperty("templateRenderer")
+  String templateRenderer;
+  @JsonProperty("inputArtifact")
+  Artifact inputArtifact;
+  List<Artifact> values;
+  @JsonProperty("outputName")
+  String outputName;
 }

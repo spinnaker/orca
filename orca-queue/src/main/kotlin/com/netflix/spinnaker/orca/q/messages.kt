@@ -25,13 +25,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.q.Attribute
 import com.netflix.spinnaker.q.Message
-
-@JsonTypeName("totalThrottleTime")
-data class TotalThrottleTimeAttribute(var totalThrottleTimeMs: Long = 0) : Attribute {
-  fun add(throttleTimeMs: Long) {
-    this.totalThrottleTimeMs += throttleTimeMs
-  }
-}
+import java.time.Duration
 
 /**
  * Messages used internally by the queueing system.
@@ -81,10 +75,22 @@ data class CompleteTask(
   override val application: String,
   override val stageId: String,
   override val taskId: String,
-  val status: ExecutionStatus
+  val status: ExecutionStatus,
+  val originalStatus: ExecutionStatus?
 ) : Message(), TaskLevel {
   constructor(source: TaskLevel, status: ExecutionStatus) :
-    this(source.executionType, source.executionId, source.application, source.stageId, source.taskId, status)
+    this(source, status, status)
+
+  constructor(source: TaskLevel, status: ExecutionStatus, originalStatus: ExecutionStatus) :
+    this(
+      source.executionType,
+      source.executionId,
+      source.application,
+      source.stageId,
+      source.taskId,
+      status,
+      originalStatus
+    )
 }
 
 @JsonTypeName("pauseTask")
@@ -120,6 +126,8 @@ data class RunTask(
   override val taskId: String,
   val taskType: Class<out Task>
 ) : Message(), TaskLevel {
+  override val ackTimeoutMs = Duration.ofMinutes(10).toMillis()
+
   constructor(message: StageLevel, taskId: String, taskType: Class<out Task>) :
     this(message.executionType, message.executionId, message.application, message.stageId, taskId, taskType)
 
@@ -393,4 +401,12 @@ data class NoDownstreamTasks(
 ) : ConfigurationError(), TaskLevel {
   constructor(source: TaskLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId, source.taskId)
+}
+
+@Deprecated("Kept only to support old messages on the queue without having to do a migration")
+@JsonTypeName("totalThrottleTime")
+data class TotalThrottleTimeAttribute(var totalThrottleTimeMs: Long = 0) : Attribute {
+  fun add(throttleTimeMs: Long) {
+    this.totalThrottleTimeMs += throttleTimeMs
+  }
 }
