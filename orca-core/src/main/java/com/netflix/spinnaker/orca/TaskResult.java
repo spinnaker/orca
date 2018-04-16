@@ -25,6 +25,7 @@ public final class TaskResult {
    * A useful constant for a success result with no outputs.
    */
   public static final TaskResult SUCCEEDED = new TaskResult(ExecutionStatus.SUCCEEDED);
+  public static final TaskResult RUNNING = new TaskResult(ExecutionStatus.RUNNING);
 
   private final ExecutionStatus status;
   private final ImmutableMap<String, ?> context;
@@ -61,5 +62,14 @@ public final class TaskResult {
    */
   public @Nonnull Map<String, ?> getOutputs() {
     return outputs;
+  }
+
+  @Override
+  public String toString() {
+    return "TaskResult{" +
+            "status=" + status +
+            ", context=" + context +
+            ", outputs=" + outputs +
+            '}';
   }
 }
