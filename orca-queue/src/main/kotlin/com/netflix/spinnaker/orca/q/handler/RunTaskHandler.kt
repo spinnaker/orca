@@ -85,22 +85,22 @@ class RunTaskHandler(
               when (result.status) {
                 RUNNING                              -> {
                   queue.push(message, task.backoffPeriod(taskModel, stage))
-                  trackResult(stage, taskModel, result.status)
+                  trackResult(stage, task, taskModel, result.status)
                 }
                 SUCCEEDED, REDIRECT, FAILED_CONTINUE -> {
                   queue.push(CompleteTask(message, result.status))
-                  trackResult(stage, taskModel, result.status)
+                  trackResult(stage, task, taskModel, result.status)
                 }
                 CANCELED                             -> {
                   task.onCancel(stage)
                   val status = stage.failureStatus(default = result.status)
                   queue.push(CompleteTask(message, status, result.status))
-                  trackResult(stage, taskModel, status)
+                  trackResult(stage, task, taskModel, status)
                 }
                 TERMINAL                             -> {
                   val status = stage.failureStatus(default = result.status)
                   queue.push(CompleteTask(message, status, result.status))
-                  trackResult(stage, taskModel, status)
+                  trackResult(stage, task, taskModel, status)
                 }
                 else                                 ->
                   TODO("Unhandled task status ${result.status}")
@@ -113,7 +113,7 @@ class RunTaskHandler(
         if (exceptionDetails?.shouldRetry == true) {
           log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
           queue.push(message, task.backoffPeriod(taskModel, stage))
-          trackResult(stage, taskModel, RUNNING)
+          trackResult(stage, task, taskModel, RUNNING)
         } else if (e is TimeoutException && stage.context["markSuccessfulOnTimeout"] == true) {
           queue.push(CompleteTask(message, SUCCEEDED))
         } else {
@@ -121,16 +121,17 @@ class RunTaskHandler(
           stage.context["exception"] = exceptionDetails
           repository.storeStage(stage)
           queue.push(CompleteTask(message, stage.failureStatus()))
-          trackResult(stage, taskModel, stage.failureStatus())
+          trackResult(stage, task, taskModel, stage.failureStatus())
         }
       }
     }
   }
 
-  private fun trackResult(stage: Stage, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
+  private fun trackResult(stage: Stage, task: Task, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
     val id = registry.createId("task.invocations")
       .withTag("status", status.toString())
       .withTag("executionType", stage.execution.type.name.capitalize())
+      .withTag("taskType", task::class.qualifiedName)
       .withTag("isComplete", status.isComplete.toString())
       .withTag("application", stage.execution.application)
       .let { id ->
