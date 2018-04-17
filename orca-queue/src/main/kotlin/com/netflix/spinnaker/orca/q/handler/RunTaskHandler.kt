@@ -16,7 +16,10 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.netflix.spectator.api.BasicTag
+import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.Tag
 import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spinnaker.orca.*
 import com.netflix.spinnaker.orca.ExecutionStatus.*
@@ -128,36 +131,34 @@ class RunTaskHandler(
   }
 
   private fun trackResult(stage: Stage, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
-    val id = registry.createId("task.invocations")
-      .withTag("status", status.toString())
-      .withTag("executionType", stage.execution.type.name.capitalize())
-      .withTag("taskType", taskModel.implementingClass)
-      .withTag("isComplete", status.isComplete.toString())
+    val commonTags = arrayListOf(
+      BasicTag("status", status.toString()),
+      BasicTag("executionType", stage.execution.type.name.capitalize()),
+      BasicTag("isComplete", status.isComplete.toString()),
+      BasicTag("cloudProvider", stage.context["cloudProvider"].toString()?: "n/a"))
+
+    val taskInvocationsId = registry.createId("task.invocations")
+      .withTags(commonTags)
       .withTag("application", stage.execution.application)
-      .let { id ->
-        stage.context["cloudProvider"]?.let {
-          id.withTag("cloudProvider", it.toString())
-        } ?: id
-      }
-    registry.counter(id).increment()
 
-    val distributionId = registry.createId("task.invocations.duration").withTags(id.tags())
-    BucketCounter
-      .get(registry, distributionId, { v -> bucketDuration(v) })
-      .record(System.currentTimeMillis() - (taskModel.startTime ?: 0))
-  }
+    val taskInvocationsWithTypeId = registry.createId("task.invocations.withType")
+      .withTags(commonTags)
+      .withTag("taskType", taskModel.implementingClass)
+      .withTag("account", stage.context["account"].toString()?: "n/a")
+      .withTag("region", stage.context["region"].toString()?: "n/a")
 
-  fun bucketDuration(duration: Long): String {
-    return if (duration > TimeUnit.MINUTES.toMillis(60)) {
-      "gt60m"
-    } else if (duration > TimeUnit.MINUTES.toMillis(30)) {
-      "gt30m"
-    } else if (duration > TimeUnit.MINUTES.toMillis(15)) {
-      "gt15m"
-    } else if (duration > TimeUnit.MINUTES.toMillis(5)) {
-      "gt5m"
-    } else {
-      "lt5m"
+    registry.counter(taskInvocationsId).increment()
+    registry.counter(taskInvocationsWithTypeId).increment()
+
+    val elapsedMillis = System.currentTimeMillis() - (taskModel.startTime ?: 0)
+
+    hashMapOf(
+      "task.invocations.duration" to taskInvocationsId.tags(),
+      "task.invocations.duration.withType" to taskInvocationsWithTypeId.tags()
+    ).forEach {
+      name, tags ->
+        val id = registry.createId(name).withTags(tags)
+        registry.timer(id).record(elapsedMillis, TimeUnit.MILLISECONDS)
     }
   }
 
