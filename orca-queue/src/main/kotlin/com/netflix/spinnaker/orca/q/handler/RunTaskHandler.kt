@@ -135,7 +135,7 @@ class RunTaskHandler(
       BasicTag("status", status.toString()),
       BasicTag("executionType", stage.execution.type.name.capitalize()),
       BasicTag("isComplete", status.isComplete.toString()),
-      BasicTag("cloudProvider", stage.context["cloudProvider"].toString()?: "n/a"))
+      BasicTag("cloudProvider", stage.context["cloudProvider"].toString()?: "n_a"))
 
     val taskInvocationsId = registry.createId("task.invocations")
       .withTags(commonTags)
@@ -144,13 +144,13 @@ class RunTaskHandler(
     val taskInvocationsWithTypeId = registry.createId("task.invocations.withType")
       .withTags(commonTags)
       .withTag("taskType", taskModel.implementingClass)
-      .withTag("account", stage.context["account"].toString()?: "n/a")
-      .withTag("region", stage.context["region"].toString()?: "n/a")
+      .withTag("account", stage.context["account"].toString()?: "n_a")
+      .withTag("region", stage.context["region"].toString()?: "n_a")
 
     registry.counter(taskInvocationsId).increment()
     registry.counter(taskInvocationsWithTypeId).increment()
 
-    val elapsedMillis = System.currentTimeMillis() - (taskModel.startTime ?: 0)
+    val elapsedMillis = clock.millis() - (taskModel.startTime ?: 0)
 
     hashMapOf(
       "task.invocations.duration" to taskInvocationsId.tags(),
