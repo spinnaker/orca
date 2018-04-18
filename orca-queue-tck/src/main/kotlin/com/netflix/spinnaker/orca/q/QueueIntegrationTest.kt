@@ -34,7 +34,6 @@ import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
-import com.netflix.spinnaker.orca.listeners.DelegatingApplicationEventMulticaster
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
@@ -61,7 +60,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
@@ -70,11 +68,6 @@ import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
-import org.springframework.context.event.ApplicationEventMulticaster
-import org.springframework.context.event.SimpleApplicationEventMulticaster
-import org.springframework.scheduling.TaskScheduler
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.context.junit4.SpringRunner
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
@@ -930,15 +923,5 @@ class TestConfig {
   @Bean
   fun redisClientSelector(redisClientDelegates: List<RedisClientDelegate>) =
     RedisClientSelector(redisClientDelegates)
-
-  @Bean
-  fun applicationEventMulticaster(@Qualifier("applicationEventTaskExecutor") taskExecutor: ThreadPoolTaskExecutor): ApplicationEventMulticaster {
-    // TODO rz - Add error handlers
-    val async = SimpleApplicationEventMulticaster()
-    async.setTaskExecutor(taskExecutor)
-    val sync = SimpleApplicationEventMulticaster()
-
-    return DelegatingApplicationEventMulticaster(sync, async)
-  }
 }
 
