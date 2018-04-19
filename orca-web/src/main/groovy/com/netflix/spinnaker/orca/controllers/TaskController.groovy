@@ -337,16 +337,32 @@ class TaskController {
 
     if (!expand) {
       allPipelines.each { pipeline ->
+        clearTriggerStages(pipeline.trigger.other) // remove from the "other" field - that is what Jackson works against
         pipeline.getStages().each { stage ->
-          if (stage.type == "runJob") {
-            stage?.context?.jobStatus?.logs = ""
-            stage?.outputs?.jobStatus?.logs = ""
+          if (stage.context?.group) {
+            // TODO: consider making "group" a top-level field on the Stage model
+            // for now, retain group in the context, as it is needed for collapsing templated pipelines in the UI
+            stage.context = [ group: stage.context.group ]
+          } else {
+            stage.context = [:]
           }
+          stage.outputs = [:]
+          stage.tasks = []
         }
       }
     }
 
     return filterPipelinesByHistoryCutoff(allPipelines, limit)
+  }
+
+  private static void clearTriggerStages(Map trigger) {
+    if (trigger.type.toLowerCase() != "pipeline") {
+      return
+    }
+    ((List) trigger.parentExecution.stages).clear()
+    if (trigger.parentExecution.trigger.type.toLowerCase() == "pipeline") {
+      clearTriggerStages((Map) trigger.parentExecution.trigger)
+    }
   }
 
   private List<Execution> filterPipelinesByHistoryCutoff(List<Execution> pipelines, int limit) {

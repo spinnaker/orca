@@ -61,6 +61,7 @@ public class PinnedServerGroupTagGenerator implements ServerGroupEntityTagGenera
     return Collections.singletonList(
       ImmutableMap.<String, Object>builder()
         .put("name", PINNED_CAPACITY_TAG)
+        .put("namespace", "spinnaker")
         .put("value", value)
         .build()
     );

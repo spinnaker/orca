@@ -32,7 +32,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -85,6 +84,10 @@ public class Stage implements Serializable {
     this.context.putAll(context);
 
     this.refId = (String) context.remove("refId");
+    this.startTimeExpiry = Optional
+      .ofNullable(context.remove("startTimeExpiry"))
+      .map(expiry -> Long.valueOf((String) expiry))
+      .orElse(null);
     this.requisiteStageRefIds = Optional
       .ofNullable((Collection<String>) context.remove("requisiteStageRefIds"))
       .orElse(emptySet());
@@ -190,18 +193,17 @@ public class Stage implements Serializable {
   }
 
   /**
-   * Gets the start ttl timestamp for this stage. If the stage has not started
-   * before this timestamp, the stage will fail.
+   * Gets the start expiry timestamp for this stage. If the stage has not started
+   * before this timestamp, the stage will be skipped.
    */
-  private Instant startTimeTtl;
+  private Long startTimeExpiry;
 
-  public @Nullable
-  Instant getStartTimeTtl() {
-    return startTimeTtl;
+  public @Nullable Long getStartTimeExpiry() {
+    return startTimeExpiry;
   }
 
-  public void setStartTimeTtl(@Nullable Instant startTimeTtl) {
-    this.startTimeTtl = startTimeTtl;
+  public void setStartTimeExpiry(@Nullable Long startTimeExpiry) {
+    this.startTimeExpiry = startTimeExpiry;
   }
 
   /**
@@ -334,20 +336,15 @@ public class Stage implements Serializable {
     this.lastModified = lastModified;
   }
 
-  @Override public final boolean equals(Object o) {
+  @Override public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-
     Stage stage = (Stage) o;
-
-    return id.equals(stage.id);
+    return Objects.equals(id, stage.id);
   }
 
-  @Override public final int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + id.hashCode();
-    return result;
+  @Override public int hashCode() {
+    return Objects.hash(id);
   }
 
   public Task taskById(String taskId) {

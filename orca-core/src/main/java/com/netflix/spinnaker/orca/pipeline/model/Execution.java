@@ -28,7 +28,6 @@ import com.netflix.spinnaker.security.User;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.*;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
@@ -152,7 +151,6 @@ public class Execution implements Serializable {
     this.keepWaitingPipelines = keepWaitingPipelines;
   }
 
-  @Deprecated
   @JsonIgnore
   public @Nonnull Map<String, Object> getContext() {
     return Stage.topologicalSort(stages)
@@ -194,18 +192,17 @@ public class Execution implements Serializable {
   }
 
   /**
-   * Gets the start ttl timestamp for this execution. If the execution has not
+   * Gets the start expiry timestamp for this execution. If the execution has not
    * started before this timestamp, the execution will immediately terminate.
    */
-  private Instant startTimeTtl;
+  private Long startTimeExpiry;
 
-  public @Nullable
-  Instant getStartTimeTtl() {
-    return startTimeTtl;
+  public @Nullable Long getStartTimeExpiry() {
+    return startTimeExpiry;
   }
 
-  public void setStartTimeTtl(@Nullable Instant startTimeTtl) {
-    this.startTimeTtl = startTimeTtl;
+  public void setStartTimeExpiry(@Nullable Long startTimeExpiry) {
+    this.startTimeExpiry = startTimeExpiry;
   }
 
   private ExecutionStatus status = NOT_STARTED;
@@ -318,20 +315,15 @@ public class Execution implements Serializable {
       .orElseThrow(() -> new IllegalArgumentException(String.format("No stage with refId %s exists", refId)));
   }
 
-  @Override public final boolean equals(Object o) {
+  @Override public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-
     Execution execution = (Execution) o;
-
-    return id.equals(execution.id);
+    return Objects.equals(id, execution.id);
   }
 
-  @Override public final int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + id.hashCode();
-    return result;
+  @Override public int hashCode() {
+    return Objects.hash(id);
   }
 
   @Deprecated
