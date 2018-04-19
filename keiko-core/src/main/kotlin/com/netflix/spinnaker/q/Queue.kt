@@ -91,7 +91,7 @@ interface Queue {
    * A handler for messages that have failed to acknowledge delivery more than
    * [Queue.ackTimeout] times.
    */
-  val deadMessageHandler: DeadMessageCallback
+  val deadMessageHandlers: List<DeadMessageCallback>
 
   companion object {
     /**

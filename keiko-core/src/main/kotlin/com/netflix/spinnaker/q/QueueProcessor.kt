@@ -18,6 +18,7 @@ package com.netflix.spinnaker.q
 
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MessageDead
+import com.netflix.spinnaker.q.metrics.HandlerThrewError
 import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
@@ -71,8 +72,14 @@ class QueueProcessor(
       if (handler != null) {
         try {
           executor.execute {
-            handler.invoke(message)
-            ack.invoke()
+            try {
+              handler.invoke(message)
+              ack.invoke()
+            } catch (e: Throwable) {
+              // Something very bad is happening
+              log.error("Unhandled throwable from $message", e)
+              publisher.publishEvent(HandlerThrewError(message))
+            }
           }
         } catch (e: RejectedExecutionException) {
           log.warn("Executor at capacity, immediately re-queuing message", e)

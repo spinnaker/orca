@@ -36,7 +36,7 @@ private val createQueue = { clock: Clock,
                             publisher: EventPublisher? ->
   InMemoryQueue(
     clock = clock,
-    deadMessageHandler = deadLetterCallback,
+    deadMessageHandlers = listOf(deadLetterCallback),
     publisher = publisher ?: (object : EventPublisher {
       override fun publishEvent(event: QueueEvent) {}
     })

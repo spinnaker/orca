@@ -34,7 +34,7 @@ class MemQueueConfiguration {
   ) =
     InMemoryQueue(
       clock = clock,
-      deadMessageHandler = deadMessageHandler,
+      deadMessageHandlers = listOf(deadMessageHandler),
       publisher = publisher
     )
 }

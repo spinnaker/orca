@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.common.hash.Hashing
 import com.netflix.spinnaker.q.AttemptsAttribute
+import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
@@ -54,7 +55,7 @@ class RedisQueue(
   private val mapper: ObjectMapper,
   private val serializationMigrator: Optional<SerializationMigrator>,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
-  override val deadMessageHandler: (Queue, Message) -> Unit,
+  override val deadMessageHandlers: List<DeadMessageCallback>,
   override val publisher: EventPublisher
 ) : MonitorableQueue {
 
@@ -348,7 +349,9 @@ class RedisQueue(
   }
 
   private fun handleDeadMessage(message: Message) {
-    deadMessageHandler.invoke(this, message)
+    deadMessageHandlers.forEach {
+      it.invoke(this, message)
+    }
   }
 
   /**

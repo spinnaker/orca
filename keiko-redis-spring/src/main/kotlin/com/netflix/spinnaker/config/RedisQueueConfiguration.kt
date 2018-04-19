@@ -76,7 +76,7 @@ class RedisQueueConfiguration {
       pool = redisPool,
       clock = clock,
       mapper = redisQueueObjectMapper,
-      deadMessageHandler = deadMessageHandler,
+      deadMessageHandlers = listOf(deadMessageHandler),
       publisher = publisher,
       ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong()),
       serializationMigrator = serializationMigrator

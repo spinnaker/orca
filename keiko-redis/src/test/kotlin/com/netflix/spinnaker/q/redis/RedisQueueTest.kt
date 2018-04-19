@@ -46,7 +46,7 @@ private val createQueue = { clock: Clock,
     queueName = "test",
     pool = redis!!.pool,
     clock = clock,
-    deadMessageHandler = deadLetterCallback,
+    deadMessageHandlers = listOf(deadLetterCallback),
     publisher = publisher ?: (object : EventPublisher {
       override fun publishEvent(event: QueueEvent) {}
     }),

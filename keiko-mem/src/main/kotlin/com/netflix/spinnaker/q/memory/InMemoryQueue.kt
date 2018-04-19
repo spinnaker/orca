@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 class InMemoryQueue(
   private val clock: Clock,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
-  override val deadMessageHandler: DeadMessageCallback,
+  override val deadMessageHandlers: List<DeadMessageCallback>,
   override val publisher: EventPublisher
 ) : MonitorableQueue {
 
@@ -96,7 +96,7 @@ class InMemoryQueue(
     fire(RetryPolled)
     unacked.pollAll { message ->
       if (message.count >= Queue.maxRetries) {
-        deadMessageHandler.invoke(this, message.payload)
+        deadMessageHandlers.forEach { it.invoke(this, message.payload) }
         fire(MessageDead)
       } else {
         val existed = queue.removeIf { it.payload == message.payload }
