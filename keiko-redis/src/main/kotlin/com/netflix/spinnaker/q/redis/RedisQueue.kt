@@ -453,7 +453,7 @@ private const val READ_MESSAGE_WITH_LOCK = """
       local i=1
       while (i <= #fingerprints) do
         redis.call("ECHO", "attempting lock on " .. fingerprints[i])
-        if redis.call("SET", locksKey .. ":" .. fingerprints[i], "\uD83D\uDD12", "EX", lockTtlSeconds, "NX") ~= nil then
+        if redis.call("SET", locksKey .. ":" .. fingerprints[i], "\uD83D\uDD12", "EX", lockTtlSeconds, "NX") then
           redis.call("ECHO", "acquired lock on " .. fingerprints[i])
           return fingerprints[i], fingerprints[i+1]
         end
