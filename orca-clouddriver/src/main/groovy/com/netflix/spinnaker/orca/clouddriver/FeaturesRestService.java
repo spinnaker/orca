@@ -25,7 +25,7 @@ public interface FeaturesRestService {
   @GET("/features/stages")
   List<AvailableStage> getStages();
 
-  public static class AvailableStage {
+  class AvailableStage {
     public String name;
     public Boolean enabled;
   }

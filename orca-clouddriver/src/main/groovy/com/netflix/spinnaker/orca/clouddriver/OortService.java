@@ -1,0 +1,134 @@
+package com.netflix.spinnaker.orca.clouddriver;
+
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
+import retrofit.client.Response;
+import retrofit.http.*;
+
+import java.util.List;
+import java.util.Map;
+
+public interface OortService {
+  @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}")
+  Response getCluster(
+    @Path("app") String app,
+    @Path("account") String account,
+    @Path("cluster") String cluster,
+    @Path("cloudProvider") String cloudProvider
+  );
+
+  @GET("/applications/{app}/serverGroups")
+  Response getServerGroups(@Path("app") String app);
+
+  @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}/serverGroups/{serverGroup}")
+  Response getServerGroupFromCluster(
+    @Path("app") String app,
+    @Path("account") String account,
+    @Path("cluster") String cluster,
+    @Path("serverGroup") String serverGroup,
+    @Query("region") String region,
+    @Path("cloudProvider") String cloudProvider
+  );
+
+  @GET("/manifests/{account}/{location}/{manifest}")
+  Manifest getManifest(
+    @Path("account") String account,
+    @Path("location") String location,
+    @Path("manifest") String manifest
+  );
+
+  @Deprecated
+  @GET("/applications/{app}/serverGroups/{account}/{region}/{serverGroup}")
+  Response getServerGroup(
+    @Path("app") String app,
+    @Path("account") String account,
+    @Path("region") String region,
+    @Path("serverGroup") String serverGroup
+  );
+
+  @GET("/serverGroups/{account}/{region}/{serverGroup}")
+  Response getServerGroup(
+    @Path("account") String account,
+    @Path("region") String region,
+    @Path("serverGroup") String serverGroup
+  );
+
+  @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}/{scope}/serverGroups/target/{target}")
+  Response getTargetServerGroup(
+    @Path("app") String app,
+    @Path("account") String account,
+    @Path("cluster") String cluster,
+    @Path("cloudProvider") String cloudProvider,
+    @Path("scope") String scope,
+    @Path("target") String target
+  );
+
+  @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}/{scope}/serverGroups/target/{target}/{summaryType}")
+  Map<String, Object> getServerGroupSummary(
+    @Path("app") String app,
+    @Path("account") String account,
+    @Path("cluster") String cluster,
+    @Path("cloudProvider") String cloudProvider,
+    @Path("scope") String scope,
+    @Path("target") String target,
+    @Path("summaryType") String summaryType,
+    @Query("onlyEnabled") String onlyEnabled
+  );
+
+  @GET("/search")
+  Response getSearchResults(
+    @Query("q") String searchTerm,
+    @Query("type") String type,
+    @Query("cloudProvider") String cloudProvider
+  );
+
+  @GET("/applications/{app}")
+  Response getApplication(@Path("app") String app);
+
+  @GET("/instances/{account}/{region}/{instanceId}")
+  Response getInstance(
+    @Path("account") String account,
+    @Path("region") String region,
+    @Path("instanceId") String instanceId
+  );
+
+  @PUT("/artifacts/fetch/")
+  Response fetchArtifact(@Body Artifact artifact);
+
+  @GET("/{provider}/loadBalancers/{account}/{region}/{name}")
+  List<Map> getLoadBalancerDetails(
+    @Path("provider") String provider,
+    @Path("account") String account,
+    @Path("region") String region,
+    @Path("name") String name
+  );
+
+  @GET("/{type}/images/{account}/{region}/{imageId}")
+  List<Map> getByAmiId(
+    @Path("type") String type,
+    @Path("account") String account,
+    @Path("region") String region,
+    @Path("imageId") String imageId
+  );
+
+  @GET("/{cloudProvider}/images/find")
+  List<Map> findImage(
+    @Path("cloudProvider") String cloudProvider,
+    @Query("q") String query,
+    @Query("account") String account,
+    @Query("region") String region,
+    @QueryMap Map additionalFilters
+  );
+
+  @GET("/tags")
+  List<Map> getEntityTags(
+    @Query("cloudProvider") String cloudProvider,
+    @Query("entityType") String entityType,
+    @Query("entityId") String entityId,
+    @Query("account") String account,
+    @Query("region") String region
+  );
+
+  @GET("/tags")
+  List<Map> getEntityTags(@QueryMap Map parameters);
+}
