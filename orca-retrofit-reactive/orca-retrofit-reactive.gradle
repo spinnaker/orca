@@ -19,6 +19,7 @@ apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
   compile project(":orca-kotlin")
+  compile project(":orca-qos")
   compile project(":orca-retrofit")
 
   testCompile project(":orca-test-kotlin")
