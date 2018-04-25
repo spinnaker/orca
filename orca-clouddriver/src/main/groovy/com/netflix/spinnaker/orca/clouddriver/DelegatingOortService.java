@@ -99,7 +99,7 @@ public class DelegatingOortService
   }
 
   @Override
-  public List<Map> getByAmiId(String type, String account, String region, Object imageId) {
+  public List<Map> getByAmiId(String type, String account, String region, String imageId) {
     return getService().getByAmiId(type, account, region, imageId);
   }
 

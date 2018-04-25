@@ -49,6 +49,10 @@ class CloudDriverConfigurationProperties {
     clouddriver?.baseUrl ?: kato?.baseUrl ?: oort?.baseUrl ?: mort?.baseUrl
   }
 
+  boolean hasReadOnlyBaseUrl() {
+    clouddriver?.readonly?.baseUrl
+  }
+
   List<BaseUrl> getCloudDriverReadOnlyBaseUrls() {
     if (clouddriver?.readonly?.baseUrl) {
       return [
