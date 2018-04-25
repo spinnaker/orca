@@ -16,6 +16,5 @@
 
 dependencies {
   compile project(":orca-core")
-  compile spinnaker.dependency("korkJedisTest")
   compile spinnaker.dependency("spectatorApi")
 }

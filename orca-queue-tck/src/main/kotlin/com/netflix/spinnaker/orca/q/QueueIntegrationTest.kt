@@ -24,8 +24,6 @@ import com.netflix.spinnaker.assertj.assertSoftly
 import com.netflix.spinnaker.config.OrcaQueueConfiguration
 import com.netflix.spinnaker.config.QueueConfiguration
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
-import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
-import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.TaskResult
@@ -34,6 +32,7 @@ import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
+import com.netflix.spinnaker.orca.listeners.DelegatingApplicationEventMulticaster
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
@@ -44,11 +43,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.persistence.jedis.JedisConfiguration
-import com.netflix.spinnaker.orca.pipeline.persistence.jedis.RedisExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import com.netflix.spinnaker.orca.test.redis.EmbeddedRedisConfiguration
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.memory.InMemoryQueue
@@ -60,6 +56,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
@@ -68,9 +65,10 @@ import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.context.event.ApplicationEventMulticaster
+import org.springframework.context.event.SimpleApplicationEventMulticaster
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.test.context.junit4.SpringRunner
-import redis.clients.jedis.Jedis
-import redis.clients.util.Pool
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant.now
@@ -816,19 +814,14 @@ class QueueIntegrationTest {
 
 @Configuration
 @Import(
-  EmbeddedRedisConfiguration::class,
   PropertyPlaceholderAutoConfiguration::class,
   OrcaConfiguration::class,
   QueueConfiguration::class,
-  JedisConfiguration::class,
-  RedisExecutionRepository::class,
   StageNavigator::class,
   RestrictExecutionDuringTimeWindow::class,
   OrcaQueueConfiguration::class
 )
 class TestConfig {
-  @Bean
-  fun queueRedisPool(jedisPool: Pool<Jedis>) = jedisPool
 
   @Bean
   fun registry(): Registry = NoopRegistry()
@@ -916,12 +909,18 @@ class TestConfig {
   ) =
     InMemoryQueue(
       clock = clock,
-      deadMessageHandler = deadMessageHandler,
+      deadMessageHandlers = listOf(deadMessageHandler),
       publisher = publisher
     )
 
   @Bean
-  fun redisClientSelector(redisClientDelegates: List<RedisClientDelegate>) =
-    RedisClientSelector(redisClientDelegates)
+  fun applicationEventMulticaster(@Qualifier("applicationEventTaskExecutor") taskExecutor: ThreadPoolTaskExecutor): ApplicationEventMulticaster {
+    // TODO rz - Add error handlers
+    val async = SimpleApplicationEventMulticaster()
+    async.setTaskExecutor(taskExecutor)
+    val sync = SimpleApplicationEventMulticaster()
+
+    return DelegatingApplicationEventMulticaster(sync, async)
+  }
 }
 
