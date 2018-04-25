@@ -24,9 +24,11 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 
 /**
  * A mechanism for recording request metrics that has a look-back limit. That is
- * the metrics it reports represent those reported over the last [expireAfter].
+ * the metrics it reports represent those reported over the last [expireAfter]
+ * duration.
  */
-class WindowedRequestMetrics(
+class WindowedRequestMetrics
+@JvmOverloads constructor(
   private val expireAfter: Duration,
   private val ticker: Ticker = Ticker.systemTicker()
 ) : WritableRequestMetrics {

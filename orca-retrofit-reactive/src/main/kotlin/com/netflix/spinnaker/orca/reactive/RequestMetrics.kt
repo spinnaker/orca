@@ -16,35 +16,12 @@
 
 package com.netflix.spinnaker.orca.reactive
 
-import org.springframework.http.HttpStatus
-import retrofit.Profiler
 import java.time.Duration
 
 /**
- * Tracks timing and status information from requests to a Retrofit endpoint.
+ * Read-only interface allowing access for consumers of request metrics.
  */
-class RecordingProfiler(
-  private val metrics: WritableRequestMetrics
-) : Profiler<Nothing> {
-
-  override fun beforeCall(): Nothing? = null
-
-  override fun afterCall(
-    requestInfo: Profiler.RequestInformation,
-    elapsedTime: Long,
-    statusCode: Int,
-    beforeCallData: Nothing?
-  ) = metrics.record(
-    Duration.ofMillis(elapsedTime),
-    HttpStatus.valueOf(statusCode)
-  )
-}
-
 interface RequestMetrics {
   val averageDuration: Duration
   val errorPercentage: Double
-}
-
-interface WritableRequestMetrics : RequestMetrics {
-  fun record(duration: Duration, statusCode: HttpStatus)
 }

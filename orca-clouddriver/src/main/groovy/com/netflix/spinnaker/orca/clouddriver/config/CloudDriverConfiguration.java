@@ -19,22 +19,28 @@ package com.netflix.spinnaker.orca.clouddriver.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.clouddriver.*;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
+import com.netflix.spinnaker.orca.reactive.RequestMetricsProfiler;
+import com.netflix.spinnaker.orca.reactive.WindowedRequestMetrics;
+import com.netflix.spinnaker.orca.reactive.WritableRequestMetrics;
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration;
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import retrofit.Profiler;
 import retrofit.RequestInterceptor;
 import retrofit.RestAdapter;
 import retrofit.client.Client;
 import retrofit.converter.JacksonConverter;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 
 import static java.util.stream.Collectors.toList;
 import static retrofit.Endpoints.newFixedEndpoint;
@@ -56,19 +62,33 @@ class CloudDriverConfiguration {
   }
 
   @Bean
+  WritableRequestMetrics cloudDriverRequestMetrics(
+    @Value("${cloudDriver.qos.metrics.window.seconds:300}")
+      long qosMetricsWindowSeconds) {
+    return new WindowedRequestMetrics(Duration.ofSeconds(qosMetricsWindowSeconds));
+  }
+
+  @Bean
+  Profiler<?> cloudDriverRequestProfiler(WritableRequestMetrics cloudDriverRequestMetrics) {
+    return new RequestMetricsProfiler(cloudDriverRequestMetrics);
+  }
+
+  @Bean
   ClouddriverRetrofitBuilder clouddriverRetrofitBuilder(
     ObjectMapper objectMapper,
     Client retrofitClient,
     RestAdapter.LogLevel retrofitLogLevel,
     RequestInterceptor spinnakerRequestInterceptor,
-    CloudDriverConfigurationProperties cloudDriverConfigurationProperties
+    CloudDriverConfigurationProperties cloudDriverConfigurationProperties,
+    WritableRequestMetrics cloudDriverRequestMetrics
   ) {
     return new ClouddriverRetrofitBuilder(
       objectMapper,
       retrofitClient,
       retrofitLogLevel,
       spinnakerRequestInterceptor,
-      cloudDriverConfigurationProperties
+      cloudDriverConfigurationProperties,
+      cloudDriverRequestMetrics
     );
   }
 
@@ -78,6 +98,7 @@ class CloudDriverConfiguration {
     private final RestAdapter.LogLevel retrofitLogLevel;
     private final RequestInterceptor spinnakerRequestInterceptor;
     private final CloudDriverConfigurationProperties cloudDriverConfigurationProperties;
+    private final WritableRequestMetrics cloudDriverRequestMetrics;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -86,13 +107,15 @@ class CloudDriverConfiguration {
       Client retrofitClient,
       RestAdapter.LogLevel retrofitLogLevel,
       RequestInterceptor spinnakerRequestInterceptor,
-      CloudDriverConfigurationProperties cloudDriverConfigurationProperties
+      CloudDriverConfigurationProperties cloudDriverConfigurationProperties,
+      WritableRequestMetrics cloudDriverRequestMetrics
     ) {
       this.objectMapper = objectMapper;
       this.retrofitClient = retrofitClient;
       this.retrofitLogLevel = retrofitLogLevel;
       this.spinnakerRequestInterceptor = spinnakerRequestInterceptor;
       this.cloudDriverConfigurationProperties = cloudDriverConfigurationProperties;
+      this.cloudDriverRequestMetrics = cloudDriverRequestMetrics;
     }
 
     public <T> T buildWriteableService(Class<T> type) {
@@ -107,6 +130,7 @@ class CloudDriverConfiguration {
         .setLogLevel(retrofitLogLevel)
         .setLog(new RetrofitSlf4jLog(type))
         .setConverter(new JacksonConverter(objectMapper))
+        .setProfiler(new RequestMetricsProfiler(cloudDriverRequestMetrics))
         .build()
         .create(type);
     }

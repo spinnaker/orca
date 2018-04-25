@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
-apply from: "$rootDir/gradle/kotlin.gradle"
-apply from: "$rootDir/gradle/spek.gradle"
+package com.netflix.spinnaker.orca.reactive
 
-dependencies {
-  compile project(":orca-kotlin")
-  compile project(":orca-retrofit")
+import org.springframework.http.HttpStatus
+import java.time.Duration
 
-  testCompile project(":orca-test-kotlin")
-  testCompile "com.google.guava:guava-testlib:${spinnaker.version('guava')}"
+/**
+ * No-op implementation of [WritableRequestMetrics] for tests, etc.
+ */
+class NoOpRequestMetrics : WritableRequestMetrics {
+  override val averageDuration: Duration = Duration.ZERO
+  override val errorPercentage: Double = 0.0
+  override fun record(duration: Duration, statusCode: HttpStatus) {}
+
+  companion object {
+    @JvmStatic
+    val instance = NoOpRequestMetrics()
+  }
 }

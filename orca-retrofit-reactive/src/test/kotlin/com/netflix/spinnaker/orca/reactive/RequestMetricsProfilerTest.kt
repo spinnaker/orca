@@ -23,10 +23,10 @@ import org.springframework.http.HttpStatus
 import retrofit.Profiler.RequestInformation
 import java.time.Duration
 
-internal object RecordingProfilerTest : Spek({
+internal object RequestMetricsProfilerTest : Spek({
 
   val metrics = mock<WritableRequestMetrics>()
-  val subject = RecordingProfiler(metrics)
+  val subject = RequestMetricsProfiler(metrics)
 
   describe("recording request times") {
     val requestInfo = RequestInformation("GET", "https://river/", "/whatever", 0, "application/json")

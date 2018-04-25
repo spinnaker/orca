@@ -20,6 +20,7 @@ dependencies {
   compile spinnaker.dependency('frigga')
   compileOnly spinnaker.dependency('lombok')
   compile project(":orca-retrofit")
+  compile project(":orca-retrofit-reactive")
   compile project(":orca-front50")
   compile project(":orca-bakery")
   compile 'com.netflix.spinnaker.moniker:moniker:0.2.0'
