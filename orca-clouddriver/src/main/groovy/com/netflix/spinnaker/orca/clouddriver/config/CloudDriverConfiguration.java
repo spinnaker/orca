@@ -41,6 +41,7 @@ import retrofit.converter.JacksonConverter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static retrofit.Endpoints.newFixedEndpoint;
@@ -65,7 +66,7 @@ class CloudDriverConfiguration {
   WritableRequestMetrics cloudDriverRequestMetrics(
     @Value("${cloudDriver.qos.metrics.window.seconds:300}")
       long qosMetricsWindowSeconds) {
-    return new WindowedRequestMetrics(Duration.ofSeconds(qosMetricsWindowSeconds));
+    return new WindowedRequestMetrics("CloudDriver", Duration.ofSeconds(qosMetricsWindowSeconds));
   }
 
   @Bean
@@ -151,7 +152,17 @@ class CloudDriverConfiguration {
           .map(it -> {
             ServiceSelector selector = new DefaultServiceSelector(buildService(type, it.getBaseUrl()), it.getPriority(), it.getConfig());
 
-            Class<ServiceSelector> selectorClass = it.getConfig() == null ? null : (Class<ServiceSelector>) it.getConfig().get("selectorClass");
+            Class<ServiceSelector> selectorClass = (Class<ServiceSelector>) Optional.ofNullable(it.getConfig())
+              .map(cfg -> cfg.get("selectorClass"))
+              .map(Object::toString)
+              .map(clz -> {
+                try {
+                  return Class.forName(clz);
+                } catch (ClassNotFoundException e) {
+                  throw new IllegalStateException("ServiceSelector implementation not found", e);
+                }
+              })
+              .orElse(null);
             if (selectorClass != null) {
               try {
                 selector = (ServiceSelector) selectorClass.getConstructors()[0].newInstance(

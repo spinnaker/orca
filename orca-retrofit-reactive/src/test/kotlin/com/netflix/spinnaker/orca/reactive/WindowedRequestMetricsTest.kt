@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 internal object WindowedRequestMetricsTest : Spek({
 
   val ticker = FakeTicker()
-  val subject = WindowedRequestMetrics(Duration.ofSeconds(10), ticker)
+  val subject = WindowedRequestMetrics("Subject", Duration.ofSeconds(10), ticker)
 
   describe("reporting metrics") {
     given("no requests have been recorded") {

@@ -22,6 +22,7 @@ import java.time.Duration
  * Read-only interface allowing access for consumers of request metrics.
  */
 interface RequestMetrics {
+  val name: String
   val averageDuration: Duration
   val errorPercentage: Double
 }

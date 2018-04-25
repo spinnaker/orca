@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
  */
 class WindowedRequestMetrics
 @JvmOverloads constructor(
+  override val name: String,
   private val expireAfter: Duration,
   private val ticker: Ticker = Ticker.systemTicker()
 ) : WritableRequestMetrics {

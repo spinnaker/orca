@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.qos.BufferState
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
 import com.netflix.spinnaker.orca.qos.BufferState.INACTIVE
 import com.netflix.spinnaker.orca.qos.BufferStateSupplier
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -32,8 +33,19 @@ class RequestMetricsBufferStateSupplier(
 ) : BufferStateSupplier {
   override fun get(): BufferState =
     when {
-      metrics.averageDuration > averageRequestDurationThreshold -> ACTIVE
-      metrics.errorPercentage > errorPercentageThreshold        -> ACTIVE
-      else                                                      -> INACTIVE
+      metrics.averageDuration > averageRequestDurationThreshold -> {
+        log.warn("${metrics.name} average request duration ${metrics.averageDuration} is above the threshold $averageRequestDurationThreshold")
+        ACTIVE
+      }
+      metrics.errorPercentage > errorPercentageThreshold        -> {
+        log.warn("${metrics.name} request error rate ${metrics.errorPercentage}% is above the threshold $errorPercentageThreshold%")
+        ACTIVE
+      }
+      else                                                      -> {
+        log.debug("${metrics.name} average request duration ${metrics.averageDuration} and error rate ${metrics.errorPercentage}% are within operating parameters")
+        INACTIVE
+      }
     }
+
+  private val log by lazy { LoggerFactory.getLogger(javaClass) }
 }

@@ -23,6 +23,7 @@ import java.time.Duration
  * No-op implementation of [WritableRequestMetrics] for tests, etc.
  */
 class NoOpRequestMetrics : WritableRequestMetrics {
+  override val name: String = "No-op"
   override val averageDuration: Duration = Duration.ZERO
   override val errorPercentage: Double = 0.0
   override fun record(duration: Duration, statusCode: HttpStatus) {}

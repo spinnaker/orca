@@ -38,6 +38,7 @@ internal object RequestMetricsBufferStateSupplierTest : Spek({
   describe("controlling execution buffering with request metrics") {
     given("everything looks good") {
       beforeGroup {
+        whenever(metrics.name) doReturn "Test"
         whenever(metrics.averageDuration) doReturn averageRequestDurationThreshold.minusSeconds(1)
         whenever(metrics.errorPercentage) doReturn (errorPercentageThreshold - 1).toDouble()
       }
@@ -51,6 +52,7 @@ internal object RequestMetricsBufferStateSupplierTest : Spek({
 
     given("average request durations are up") {
       beforeGroup {
+        whenever(metrics.name) doReturn "Test"
         whenever(metrics.averageDuration) doReturn averageRequestDurationThreshold.plusSeconds(1)
         whenever(metrics.errorPercentage) doReturn (errorPercentageThreshold - 1).toDouble()
       }
@@ -64,6 +66,7 @@ internal object RequestMetricsBufferStateSupplierTest : Spek({
 
     given("request error rates are up") {
       beforeGroup {
+        whenever(metrics.name) doReturn "Test"
         whenever(metrics.averageDuration) doReturn averageRequestDurationThreshold.minusSeconds(1)
         whenever(metrics.errorPercentage) doReturn (errorPercentageThreshold + 1).toDouble()
       }
