@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import org.springframework.stereotype.Component;
+
 import java.util.Arrays;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
 @Component
 public class KubernetesInterestingHealthProviderNamesSupplier implements InterestingHealthProviderNamesSupplier {
