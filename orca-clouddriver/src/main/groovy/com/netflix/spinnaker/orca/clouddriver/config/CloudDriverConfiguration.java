@@ -19,9 +19,8 @@ package com.netflix.spinnaker.orca.clouddriver.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.clouddriver.*;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.reactive.RequestMetricsProfiler;
-import com.netflix.spinnaker.orca.reactive.WindowedRequestMetrics;
-import com.netflix.spinnaker.orca.reactive.WritableRequestMetrics;
+import com.netflix.spinnaker.orca.qos.BufferStateSupplier;
+import com.netflix.spinnaker.orca.reactive.*;
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration;
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog;
 import org.slf4j.Logger;
@@ -67,6 +66,20 @@ class CloudDriverConfiguration {
     @Value("${cloudDriver.qos.metrics.window.seconds:300}")
       long qosMetricsWindowSeconds) {
     return new WindowedRequestMetrics("CloudDriver", Duration.ofSeconds(qosMetricsWindowSeconds));
+  }
+
+  @Bean BufferStateSupplier cloudDriverRequestMetricsBufferStateSupplier(
+    RequestMetrics cloudDriverRequestMetrics,
+    @Value("${cloudDriver.qos.thresholds.averageRequestDurationMillis:10000}")
+      long averageRequestDurationThresholdMillis,
+    @Value("${cloudDriver.qos.thresholds.errorPercentage:50}")
+      int errorPercentageThreshold
+  ) {
+    return new RequestMetricsBufferStateSupplier(
+      cloudDriverRequestMetrics,
+      Duration.ofMillis(averageRequestDurationThresholdMillis),
+      errorPercentageThreshold
+    );
   }
 
   @Bean
