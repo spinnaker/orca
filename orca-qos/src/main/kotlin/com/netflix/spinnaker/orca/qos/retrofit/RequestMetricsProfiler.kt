@@ -14,14 +14,28 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.reactive
+package com.netflix.spinnaker.orca.qos.retrofit
 
 import org.springframework.http.HttpStatus
+import retrofit.Profiler
 import java.time.Duration
 
 /**
- * Writable extension to [RequestMetrics] for producers of metrics.
+ * Tracks timing and status information from requests to a Retrofit endpoint.
  */
-interface WritableRequestMetrics : RequestMetrics {
-  fun record(duration: Duration, statusCode: HttpStatus)
+class RequestMetricsProfiler(
+  private val metrics: WritableRequestMetrics
+) : Profiler<Nothing> {
+
+  override fun beforeCall(): Nothing? = null
+
+  override fun afterCall(
+    requestInfo: Profiler.RequestInformation,
+    elapsedTime: Long,
+    statusCode: Int,
+    beforeCallData: Nothing?
+  ) = metrics.record(
+    Duration.ofMillis(elapsedTime),
+    HttpStatus.valueOf(statusCode)
+  )
 }

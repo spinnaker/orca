@@ -20,7 +20,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.reactive.NoOpRequestMetrics
+import com.netflix.spinnaker.orca.qos.retrofit.NoOpRequestMetrics
 import org.junit.Rule
 import retrofit.RequestInterceptor
 import retrofit.client.OkClient

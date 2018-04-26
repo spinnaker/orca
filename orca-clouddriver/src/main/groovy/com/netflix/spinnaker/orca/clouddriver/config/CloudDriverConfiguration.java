@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.clouddriver.*;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.qos.BufferStateSupplier;
-import com.netflix.spinnaker.orca.reactive.*;
+import com.netflix.spinnaker.orca.qos.retrofit.*;
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration;
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog;
 import org.slf4j.Logger;

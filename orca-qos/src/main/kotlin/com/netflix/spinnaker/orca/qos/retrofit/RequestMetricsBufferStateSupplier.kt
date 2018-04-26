@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.reactive
+package com.netflix.spinnaker.orca.qos.retrofit
 
 import com.netflix.spinnaker.orca.qos.BufferState
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE

@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.reactive
+package com.netflix.spinnaker.orca.qos.retrofit
 
 import org.springframework.http.HttpStatus
 import java.time.Duration
 
 /**
- * No-op implementation of [WritableRequestMetrics] for tests, etc.
+ * Writable extension to [RequestMetrics] for producers of metrics.
  */
-class NoOpRequestMetrics : WritableRequestMetrics {
-  override val name: String = "No-op"
-  override val averageDuration: Duration = Duration.ZERO
-  override val errorPercentage: Double = 0.0
-  override fun record(duration: Duration, statusCode: HttpStatus) {}
-
-  companion object {
-    @JvmStatic
-    val instance = NoOpRequestMetrics()
-  }
+interface WritableRequestMetrics : RequestMetrics {
+  fun record(duration: Duration, statusCode: HttpStatus)
 }
