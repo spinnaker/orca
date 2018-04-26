@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.reactive
 import com.google.common.base.Ticker
 import com.google.common.cache.CacheBuilder
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.TOO_MANY_REQUESTS
 import java.time.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
@@ -75,7 +76,7 @@ private fun <E> Collection<E>.percentMatching(predicate: (E) -> Boolean): Double
   (count(predicate) * 100.0) / size
 
 private val HttpStatus.isError: Boolean
-  get() = is4xxClientError || is5xxServerError
+  get() = is5xxServerError || this == TOO_MANY_REQUESTS
 
 private fun Collection<Duration>.average(): Duration =
   map(Duration::toMillis).average().toLong().let(Duration::ofMillis)

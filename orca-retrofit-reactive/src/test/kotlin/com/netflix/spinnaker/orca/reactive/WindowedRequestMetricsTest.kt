@@ -41,23 +41,17 @@ internal object WindowedRequestMetricsTest : Spek({
       }
     }
 
-    given("a bunch of recorded requests") {
-      val requests = listOf(
-        Pair(Duration.ofSeconds(10), OK),
-        Pair(Duration.ofSeconds(10), SEE_OTHER),
+    given("a a series of recorded requests") {
+      beforeGroup {
+        subject.record(Duration.ofSeconds(10), OK)
+        subject.record(Duration.ofSeconds(10), SEE_OTHER)
         // below are client or server errors
-        Pair(Duration.ofSeconds(29), TOO_MANY_REQUESTS),
-        Pair(Duration.ofSeconds(5), BAD_REQUEST),
-        Pair(Duration.ofSeconds(30), INTERNAL_SERVER_ERROR)
-      )
-
-      afterGroup { subject.clear() }
-
-      on("recording the requests") {
-        requests.forEach { (duration, status) ->
-          subject.record(duration, status)
-        }
+        subject.record(Duration.ofSeconds(29), TOO_MANY_REQUESTS)
+        subject.record(Duration.ofSeconds(5), TOO_MANY_REQUESTS)
+        subject.record(Duration.ofSeconds(30), INTERNAL_SERVER_ERROR)
       }
+
+      afterGroup(subject::clear)
 
       it("reports the average duration") {
         assertThat(subject.averageDuration)
@@ -76,10 +70,11 @@ internal object WindowedRequestMetricsTest : Spek({
           subject.record(Duration.ofSeconds(60), GATEWAY_TIMEOUT)
           subject.record(Duration.ofSeconds(59), GATEWAY_TIMEOUT)
           subject.record(Duration.ofSeconds(1), OK)
+          // advance time, but not enough to expire any of these requests
           ticker.advance(9, SECONDS)
         }
 
-        afterGroup { subject.clear() }
+        afterGroup(subject::clear)
 
         it("reports average time based on the non-expired metrics") {
           assertThat(subject.averageDuration).isEqualTo(Duration.ofSeconds(45))
@@ -97,10 +92,11 @@ internal object WindowedRequestMetricsTest : Spek({
           ticker.advance(5, SECONDS)
           subject.record(Duration.ofSeconds(59), GATEWAY_TIMEOUT)
           subject.record(Duration.ofSeconds(1), OK)
+          // advance time enough that the first batch of requests expire
           ticker.advance(5, SECONDS)
         }
 
-        afterGroup { subject.clear() }
+        afterGroup(subject::clear)
 
         it("reports average time based on the non-expired metrics") {
           assertThat(subject.averageDuration).isEqualTo(Duration.ofSeconds(30))
@@ -118,10 +114,11 @@ internal object WindowedRequestMetricsTest : Spek({
           subject.record(Duration.ofSeconds(59), GATEWAY_TIMEOUT)
           ticker.advance(5, SECONDS)
           subject.record(Duration.ofSeconds(1), OK)
+          // advance time enough that the first batch of requests expire
           ticker.advance(5, SECONDS)
         }
 
-        afterGroup { subject.clear() }
+        afterGroup(subject::clear)
 
         it("reports average time based on the non-expired metrics") {
           assertThat(subject.averageDuration).isEqualTo(Duration.ofSeconds(1))
