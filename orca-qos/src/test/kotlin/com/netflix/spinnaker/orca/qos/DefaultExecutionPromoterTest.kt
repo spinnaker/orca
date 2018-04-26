@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.qos
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.DOWN
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.fixture.pipeline
@@ -36,7 +37,7 @@ class DefaultExecutionPromoterTest : SubjectSpek<DefaultExecutionPromoter>({
   val policy: PromotionPolicy = mock()
 
   subject(CachingMode.GROUP) {
-    DefaultExecutionPromoter(executionRepository, listOf(policy))
+    DefaultExecutionPromoter(executionRepository, listOf(policy), NoopRegistry())
       .also {
         it.onApplicationEvent(RemoteStatusChangedEvent(StatusChangeEvent(DOWN, UP)))
       }

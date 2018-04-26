@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.qos
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.annotations.Sync
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
@@ -35,12 +36,16 @@ import org.springframework.stereotype.Component
 class ExecutionBufferActuator(
   private val environment: Environment,
   private val bufferStateSupplier: BufferStateSupplier,
+  private val registry: Registry,
   policies: List<BufferPolicy>
 ) {
 
   private val log = LoggerFactory.getLogger(ExecutionBufferActuator::class.java)
 
   private val orderedPolicies = policies.sortedByDescending { it.order }.toList()
+
+  private val bufferedId = registry.createId("qos.executionsBuffered")
+  private val elapsedTimeId = registry.createId("qos.promoter.elapsedTimeMs")
 
   @Sync
   @EventListener(BeforeInitialExecutionPersist::class)
@@ -55,6 +60,7 @@ class ExecutionBufferActuator(
             } else {
               log.warn("Buffering execution: {}, reason: ${it.reason}", value("executionId", execution.id))
               execution.status = BUFFERED
+              registry.counter(bufferedId).increment()
             }
           }
           ENQUEUE -> {
@@ -66,29 +72,31 @@ class ExecutionBufferActuator(
   }
 
   fun withActionDecision(execution: Execution, fn: (BufferResult) -> Unit) {
-    orderedPolicies
-      .map { it.apply(execution) }
-      .let { bufferResults ->
-        if (bufferResults.isEmpty()) {
-          return@let null
+    registry.timer(elapsedTimeId).record {
+      orderedPolicies
+        .map { it.apply(execution) }
+        .let { bufferResults ->
+          if (bufferResults.isEmpty()) {
+            return@let null
+          }
+
+          val forcedDecision = bufferResults.firstOrNull { it.force }
+          if (forcedDecision != null) {
+            return@let forcedDecision
+          }
+
+          // Require all results to call for enqueuing the execution, otherwise buffer.
+          val enqueue = bufferResults.all { it.action == ENQUEUE }
+          val reasons = bufferResults.joinToString(",") { it.reason }
+
+          return@let BufferResult(
+            action = if (enqueue) ENQUEUE else BUFFER,
+            force = false,
+            reason = reasons
+          )
         }
-
-        val forcedDecision = bufferResults.firstOrNull { it.force }
-        if (forcedDecision != null) {
-          return@let forcedDecision
-        }
-
-        // Require all results to call for enqueuing the execution, otherwise buffer.
-        val enqueue = bufferResults.all { it.action == ENQUEUE }
-        val reasons = bufferResults.joinToString(",") { it.reason }
-
-        return@let BufferResult(
-          action = if (enqueue) ENQUEUE else BUFFER,
-          force = false,
-          reason = reasons
-        )
-      }
-      ?.run { fn.invoke(this) }
+        ?.run { fn.invoke(this) }
+    }
   }
 
   private fun Environment.qosInLearningMode() =

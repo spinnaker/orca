@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca.qos
 
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -37,12 +38,15 @@ interface ExecutionPromoter
 @ConditionalOnMissingBean(ExecutionPromoter::class)
 class DefaultExecutionPromoter(
   private val executionRepository: ExecutionRepository,
-  private val policies: List<PromotionPolicy>
+  private val policies: List<PromotionPolicy>,
+  private val registry: Registry
 ) : ExecutionPromoter, ApplicationListener<RemoteStatusChangedEvent> {
 
   private val log = LoggerFactory.getLogger(ExecutionPromoter::class.java)
-
   private val discoveryActivated = AtomicBoolean()
+
+  private val elapsedTimeId = registry.createId("qos.promoter.elapsedTimeMs")
+  private val promotedId = registry.createId("qos.executionsPromoted")
 
   init {
     if (policies.isEmpty()) {
@@ -67,34 +71,37 @@ class DefaultExecutionPromoter(
       return
     }
 
-    executionRepository.retrieveBufferedExecutions()
-      .sortedByDescending { it.buildTime }
-      .let {
-        // TODO rz - This is all temporary mess and isn't meant to live long-term. I'd like to calculate until
-        // result.finalized==true or the end of the list, then be able to pass all contributing source & reason pairs
-        // into a log, with a zipped summary that would be saved into an execution's system notifications.
-        var lastResult: PromotionResult? = null
-        var candidates = it
-        policies.forEach { policy ->
-          val result = policy.apply(candidates)
-          if (result.finalized) {
-            return@let result
+    registry.timer(elapsedTimeId).record {
+      executionRepository.retrieveBufferedExecutions()
+        .sortedByDescending { it.buildTime }
+        .let {
+          // TODO rz - This is all temporary mess and isn't meant to live long-term. I'd like to calculate until
+          // result.finalized==true or the end of the list, then be able to pass all contributing source & reason pairs
+          // into a log, with a zipped summary that would be saved into an execution's system notifications.
+          var lastResult: PromotionResult? = null
+          var candidates = it
+          policies.forEach { policy ->
+            val result = policy.apply(candidates)
+            if (result.finalized) {
+              return@let result
+            }
+            candidates = result.candidates
+            lastResult = result
           }
-          candidates = result.candidates
-          lastResult = result
+          lastResult ?: PromotionResult(
+            candidates = candidates,
+            finalized = true,
+            reason = "No promotion policy resulted in an action"
+          )
         }
-        lastResult ?: PromotionResult(
-          candidates = candidates,
-          finalized = true,
-          reason = "No promotion policy resulted in an action"
-        )
-      }
-      .also { result ->
-        result.candidates.forEach {
-          log.info("Promoting execution {} for work: {}", value("executionId", it.id), result.reason)
-          executionRepository.updateStatus(it.id, NOT_STARTED)
+        .also { result ->
+          result.candidates.forEach {
+            log.info("Promoting execution {} for work: {}", value("executionId", it.id), result.reason)
+            executionRepository.updateStatus(it.id, NOT_STARTED)
+          }
+          registry.counter(promotedId).increment(result.candidates.size.toLong())
         }
-      }
+    }
   }
 
   private class NoPromotionPolicies(message: String) : BeanInitializationException(message)

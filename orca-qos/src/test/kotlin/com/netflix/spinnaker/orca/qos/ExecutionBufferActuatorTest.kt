@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.qos
 
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
@@ -40,7 +41,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
   val policy2: BufferPolicy = mock()
 
   subject(CachingMode.GROUP) {
-    ExecutionBufferActuator(environment, bufferStateSupplier, listOf(policy1, policy2))
+    ExecutionBufferActuator(environment, bufferStateSupplier, NoopRegistry(), listOf(policy1, policy2))
   }
 
   fun resetMocks() = reset(bufferStateSupplier, policy1, policy2)
