@@ -63,16 +63,16 @@ class CloudDriverConfiguration {
 
   @Bean
   WritableRequestMetrics cloudDriverRequestMetrics(
-    @Value("${cloudDriver.qos.metrics.window.seconds:300}")
+    @Value("${clouddriver.qos.metrics.window.seconds:300}")
       long qosMetricsWindowSeconds) {
     return new WindowedRequestMetrics("CloudDriver", Duration.ofSeconds(qosMetricsWindowSeconds));
   }
 
   @Bean BufferStateSupplier cloudDriverRequestMetricsBufferStateSupplier(
     RequestMetrics cloudDriverRequestMetrics,
-    @Value("${cloudDriver.qos.thresholds.averageRequestDurationMillis:10000}")
+    @Value("${clouddriver.qos.thresholds.averageRequestDurationMillis:10000}")
       long averageRequestDurationThresholdMillis,
-    @Value("${cloudDriver.qos.thresholds.errorPercentage:50}")
+    @Value("${clouddriver.qos.thresholds.errorPercentage:50}")
       int errorPercentageThreshold
   ) {
     return new RequestMetricsBufferStateSupplier(
