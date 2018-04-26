@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.BinaryClient;
 import redis.clients.jedis.Response;
@@ -55,6 +56,7 @@ import static redis.clients.jedis.BinaryClient.LIST_POSITION.AFTER;
 import static redis.clients.jedis.BinaryClient.LIST_POSITION.BEFORE;
 
 @Component
+@ConditionalOnProperty(value = "executionRepository.redis.enabled", matchIfMissing = true)
 public class RedisExecutionRepository implements ExecutionRepository {
 
   private static final TypeReference<List<Task>> LIST_OF_TASKS =
@@ -63,6 +65,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   private static final TypeReference<Map<String, Object>> MAP_STRING_TO_OBJECT =
     new TypeReference<Map<String, Object>>() {
     };
+
   private final RedisClientDelegate redisClientDelegate;
   private final Optional<RedisClientDelegate> previousRedisClientDelegate;
   private final ObjectMapper mapper = OrcaObjectMapper.newInstance();
@@ -499,6 +502,18 @@ public class RedisExecutionRepository implements ExecutionRepository {
         format("No Orchestration found for correlation ID %s", correlationId)
       );
     });
+  }
+
+  @Override
+  public @Nonnull List<Execution> retrieveBufferedExecutions() {
+    // TODO rz - This is definitely not a healthy way to do this.
+    return Observable.concat(
+        retrieve(PIPELINE),
+        retrieve(ORCHESTRATION)
+      )
+      .filter(execution -> execution.getStatus() == ExecutionStatus.BUFFERED)
+      .toList()
+      .toBlocking().single();
   }
 
   protected Execution buildExecution(@Nonnull Execution execution, @Nonnull Map<String, String> map, List<String> stageIds) {
