@@ -15,6 +15,10 @@
  */
 package com.netflix.spinnaker.orca.qos
 
+import com.netflix.appinfo.InstanceInfo.InstanceStatus.DOWN
+import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
+import com.netflix.discovery.StatusChangeEvent
+import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -33,6 +37,9 @@ class DefaultExecutionPromoterTest : SubjectSpek<DefaultExecutionPromoter>({
 
   subject(CachingMode.GROUP) {
     DefaultExecutionPromoter(executionRepository, listOf(policy))
+      .also {
+        it.onApplicationEvent(RemoteStatusChangedEvent(StatusChangeEvent(DOWN, UP)))
+      }
   }
 
   fun resetMocks() = reset(executionRepository, policy)

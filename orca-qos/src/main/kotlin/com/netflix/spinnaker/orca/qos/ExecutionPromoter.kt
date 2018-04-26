@@ -15,14 +15,18 @@
  */
 package com.netflix.spinnaker.orca.qos
 
+import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
+import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanInitializationException
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.context.ApplicationListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Marker interface if someone wants to override the default promoter.
@@ -34,9 +38,11 @@ interface ExecutionPromoter
 class DefaultExecutionPromoter(
   private val executionRepository: ExecutionRepository,
   private val policies: List<PromotionPolicy>
-) : ExecutionPromoter {
+) : ExecutionPromoter, ApplicationListener<RemoteStatusChangedEvent> {
 
   private val log = LoggerFactory.getLogger(ExecutionPromoter::class.java)
+
+  private val discoveryActivated = AtomicBoolean()
 
   init {
     if (policies.isEmpty()) {
@@ -44,8 +50,23 @@ class DefaultExecutionPromoter(
     }
   }
 
+  override fun onApplicationEvent(event: RemoteStatusChangedEvent) =
+    event.source.let { e ->
+      if (e.status == UP) {
+        log.info("Instance is ${e.status}... ${javaClass.simpleName} starting")
+        discoveryActivated.set(true)
+      } else if (e.previousStatus == UP) {
+        log.info("Instance is ${e.status}... ${javaClass.simpleName} stopping")
+        discoveryActivated.set(false)
+      }
+    }
+
   @Scheduled(fixedDelayString = "\${pollers.qos.promoteIntervalMs:5000}")
   fun promote() {
+    if (!discoveryActivated.get()) {
+      return
+    }
+
     executionRepository.retrieveBufferedExecutions()
       .sortedByDescending { it.buildTime }
       .let {
