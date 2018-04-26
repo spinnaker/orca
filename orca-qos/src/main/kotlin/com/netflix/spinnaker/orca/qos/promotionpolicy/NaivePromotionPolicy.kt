@@ -27,7 +27,6 @@ class NaivePromotionPolicy : PromotionPolicy {
 
   override fun apply(candidates: List<Execution>) =
    PromotionResult(
-     source = javaClass.simpleName,
      candidates = candidates.subList(0, 1),
      finalized = false,
      reason = "Naive policy promotes 1 execution every cycle"

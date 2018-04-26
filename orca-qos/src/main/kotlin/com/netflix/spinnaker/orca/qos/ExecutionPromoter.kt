@@ -63,7 +63,6 @@ class DefaultExecutionPromoter(
           lastResult = result
         }
         lastResult ?: PromotionResult(
-          source =  javaClass.simpleName,
           candidates = candidates,
           finalized = true,
           reason = "No promotion policy resulted in an action"

@@ -52,7 +52,6 @@ class DefaultExecutionPromoterTest : SubjectSpek<DefaultExecutionPromoter>({
       beforeGroup {
         whenever(executionRepository.retrieveBufferedExecutions()) doReturn listOf(execution1, execution2)
         whenever(policy.apply(any())) doReturn PromotionResult(
-          source = "mockPolicy",
           candidates = listOf(execution1, execution2, execution3),
           finalized = false,
           reason = "Testing"
