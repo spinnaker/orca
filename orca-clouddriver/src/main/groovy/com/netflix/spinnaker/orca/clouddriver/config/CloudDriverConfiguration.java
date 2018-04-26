@@ -182,7 +182,7 @@ class CloudDriverConfiguration {
                   selector.getService(), it.getPriority(), it.getConfig()
                 );
               } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
+                throw new IllegalStateException("Could not construct ServiceSelector implementation", e);
               }
             }
 
