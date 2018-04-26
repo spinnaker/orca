@@ -44,7 +44,7 @@ class DefaultExecutionPromoter(
     }
   }
 
-  @Scheduled(fixedDelayString = "\${qos.executionPromoter.intervalMs:5000}")
+  @Scheduled(fixedDelayString = "\${pollers.qos.promoteIntervalMs:5000}")
   fun promote() {
     executionRepository.retrieveBufferedExecutions()
       .sortedByDescending { it.buildTime }
