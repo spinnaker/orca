@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
 import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
+import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 
 /**
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ExecutionBufferActuator(
+  private val environment: Environment,
   private val bufferStateSupplier: BufferStateSupplier,
   policies: List<BufferPolicy>
 ) {
@@ -48,8 +50,12 @@ class ExecutionBufferActuator(
       withActionDecision(execution) {
         when (it.action) {
           BUFFER -> {
-            log.warn("Buffering execution: {}, reason: ${it.reason}", value("executionId", execution.id))
-            execution.status = BUFFERED
+            if (environment.qosInLearningMode()) {
+              log.debug("Learning mode: Would have buffered execution: {}, reason ${it.reason}", value("executionId", execution.id))
+            } else {
+              log.warn("Buffering execution: {}, reason: ${it.reason}", value("executionId", execution.id))
+              execution.status = BUFFERED
+            }
           }
           ENQUEUE -> {
             log.debug("Enqueuing execution: {}, reason: ${it.reason}", value("executionId", execution.id))
@@ -84,4 +90,7 @@ class ExecutionBufferActuator(
       }
       ?.run { fn.invoke(this) }
   }
+
+  private fun Environment.qosInLearningMode() =
+    getProperty("qos.learning", "true").toBoolean()
 }

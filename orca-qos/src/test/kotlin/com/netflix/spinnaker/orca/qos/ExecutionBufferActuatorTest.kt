@@ -30,21 +30,27 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.subject.SubjectSpek
+import org.springframework.core.env.Environment
 
 class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
 
+  val environment: Environment = mock()
   val bufferStateSupplier: BufferStateSupplier = mock()
   val policy1: BufferPolicy = mock()
   val policy2: BufferPolicy = mock()
 
   subject(CachingMode.GROUP) {
-    ExecutionBufferActuator(bufferStateSupplier, listOf(policy1, policy2))
+    ExecutionBufferActuator(environment, bufferStateSupplier, listOf(policy1, policy2))
   }
 
   fun resetMocks() = reset(bufferStateSupplier, policy1, policy2)
 
   describe("buffering executions") {
+    beforeGroup {
+      whenever(environment.getProperty(any(), any())) doReturn "false"
+    }
     afterGroup(::resetMocks)
+
 
     given("buffer state is INACTIVE") {
       val execution = pipeline {
@@ -149,6 +155,38 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
           force = false,
           reason = "Should buffer"
         )
+      }
+
+      on("before initial persist event") {
+        subject.beforeInitialPersist(BeforeInitialExecutionPersist("orca-core", execution))
+      }
+
+      it("does nothing") {
+        verify(policy1, times(1)).apply(execution)
+        verify(policy2, times(1)).apply(execution)
+        assert(execution.status == NOT_STARTED)
+      }
+    }
+
+    given("in learning mode and buffer state is ACTIVE") {
+      val execution = pipeline {
+        application = "spintest"
+        status = NOT_STARTED
+      }
+
+      beforeGroup {
+        whenever(bufferStateSupplier.get()) doReturn ACTIVE
+        whenever(policy1.apply(any())) doReturn BufferResult(
+          action = BUFFER,
+          force = false,
+          reason = "Buffer"
+        )
+        whenever(policy2.apply(any())) doReturn BufferResult(
+          action = BUFFER,
+          force = false,
+          reason = "Should"
+        )
+        whenever(environment.getProperty(any(), any())) doReturn "true"
       }
 
       on("before initial persist event") {
