@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca.qos
 
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.transientconfig.TransientConfigService
 import com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.annotations.Sync
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
@@ -26,7 +27,6 @@ import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
 import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
-import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 
 /**
@@ -34,8 +34,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ExecutionBufferActuator(
-  private val environment: Environment,
   private val bufferStateSupplier: BufferStateSupplier,
+  private val transientConfigService: TransientConfigService,
   private val registry: Registry,
   policies: List<BufferPolicy>
 ) {
@@ -45,7 +45,7 @@ class ExecutionBufferActuator(
   private val orderedPolicies = policies.sortedByDescending { it.order }.toList()
 
   private val bufferedId = registry.createId("qos.executionsBuffered")
-  private val elapsedTimeId = registry.createId("qos.promoter.elapsedTimeMs")
+  private val elapsedTimeId = registry.createId("qos.promoter.elapsedTime")
 
   @Sync
   @EventListener(BeforeInitialExecutionPersist::class)
@@ -55,7 +55,7 @@ class ExecutionBufferActuator(
       withActionDecision(execution) {
         when (it.action) {
           BUFFER -> {
-            if (environment.qosInLearningMode()) {
+            if (transientConfigService.isEnabled("qos.learningMode", true)) {
               log.debug("Learning mode: Would have buffered execution: {}, reason ${it.reason}", value("executionId", execution.id))
             } else {
               log.warn("Buffering execution: {}, reason: ${it.reason}", value("executionId", execution.id))
@@ -98,7 +98,4 @@ class ExecutionBufferActuator(
         ?.run { fn.invoke(this) }
     }
   }
-
-  private fun Environment.qosInLearningMode() =
-    getProperty("qos.learning", "true").toBoolean()
 }

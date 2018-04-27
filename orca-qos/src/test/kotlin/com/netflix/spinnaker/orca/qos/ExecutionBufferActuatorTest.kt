@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca.qos
 
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.kork.transientconfig.TransientConfigService
 import com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
@@ -31,24 +32,23 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.subject.SubjectSpek
-import org.springframework.core.env.Environment
 
 class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
 
-  val environment: Environment = mock()
+  val transientConfigService: TransientConfigService = mock()
   val bufferStateSupplier: BufferStateSupplier = mock()
   val policy1: BufferPolicy = mock()
   val policy2: BufferPolicy = mock()
 
   subject(CachingMode.GROUP) {
-    ExecutionBufferActuator(environment, bufferStateSupplier, NoopRegistry(), listOf(policy1, policy2))
+    ExecutionBufferActuator(bufferStateSupplier, transientConfigService, NoopRegistry(), listOf(policy1, policy2))
   }
 
   fun resetMocks() = reset(bufferStateSupplier, policy1, policy2)
 
   describe("buffering executions") {
     beforeGroup {
-      whenever(environment.getProperty(any(), any())) doReturn "false"
+      whenever(transientConfigService.isEnabled(any(), any())) doReturn false
     }
     afterGroup(::resetMocks)
 
@@ -187,7 +187,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
           force = false,
           reason = "Should"
         )
-        whenever(environment.getProperty(any(), any())) doReturn "true"
+        whenever(transientConfigService.isEnabled(any(), any())) doReturn true
       }
 
       on("before initial persist event") {

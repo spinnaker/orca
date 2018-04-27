@@ -45,7 +45,7 @@ class DefaultExecutionPromoter(
   private val log = LoggerFactory.getLogger(ExecutionPromoter::class.java)
   private val discoveryActivated = AtomicBoolean()
 
-  private val elapsedTimeId = registry.createId("qos.promoter.elapsedTimeMs")
+  private val elapsedTimeId = registry.createId("qos.promoter.elapsedTime")
   private val promotedId = registry.createId("qos.executionsPromoted")
 
   init {
