@@ -16,10 +16,11 @@
 
 package com.netflix.spinnaker.orca.qos.retrofit
 
+import ch.tutteli.atrium.api.cc.infix.en_UK.*
+import ch.tutteli.atrium.verbs.expect.*
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
 import com.netflix.spinnaker.orca.qos.BufferState.INACTIVE
 import com.nhaarman.mockito_kotlin.*
-import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.*
 import java.time.Duration
@@ -46,7 +47,7 @@ internal object RequestMetricsBufferStateSupplierTest : Spek({
       afterGroup { reset(metrics) }
 
       it("does not buffer incoming executions") {
-        assertThat(subject.get()).isEqualTo(INACTIVE)
+        expect(subject.get()) toBe INACTIVE
       }
     }
 
@@ -60,7 +61,7 @@ internal object RequestMetricsBufferStateSupplierTest : Spek({
       afterGroup { reset(metrics) }
 
       it("buffers incoming executions") {
-        assertThat(subject.get()).isEqualTo(ACTIVE)
+        expect(subject.get()) toBe ACTIVE
       }
     }
 
@@ -74,7 +75,7 @@ internal object RequestMetricsBufferStateSupplierTest : Spek({
       afterGroup { reset(metrics) }
 
       it("buffers incoming executions") {
-        assertThat(subject.get()).isEqualTo(ACTIVE)
+        expect(subject.get()) toBe ACTIVE
       }
     }
   }

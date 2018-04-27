@@ -16,8 +16,9 @@
 
 package com.netflix.spinnaker.orca.qos.retrofit
 
+import ch.tutteli.atrium.api.cc.infix.en_UK.*
+import ch.tutteli.atrium.verbs.expect.*
 import com.google.common.testing.FakeTicker
-import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.*
 import org.springframework.http.HttpStatus.*
@@ -33,11 +34,11 @@ internal object WindowedRequestMetricsTest : Spek({
   describe("reporting metrics") {
     given("no requests have been recorded") {
       it("reports zero average duration") {
-        assertThat(subject.averageDuration).isEqualTo(ZERO)
+        expect(subject.averageDuration) toBe ZERO
       }
 
       it("reports zero error percentage") {
-        assertThat(subject.errorPercentage).isEqualTo(0.0)
+        expect(subject.errorPercentage) toBe 0.0
       }
     }
 
@@ -54,12 +55,11 @@ internal object WindowedRequestMetricsTest : Spek({
       afterGroup(subject::clear)
 
       it("reports the average duration") {
-        assertThat(subject.averageDuration)
-          .isEqualTo(Duration.ofMillis(16_800))
+        expect(subject.averageDuration) toBe Duration.ofMillis(16_800)
       }
 
       it("reports the error percentage") {
-        assertThat(subject.errorPercentage).isEqualTo(60.0)
+        expect(subject.errorPercentage) toBe 60.0
       }
     }
 
@@ -77,11 +77,11 @@ internal object WindowedRequestMetricsTest : Spek({
         afterGroup(subject::clear)
 
         it("reports average time based on the non-expired metrics") {
-          assertThat(subject.averageDuration).isEqualTo(Duration.ofSeconds(45))
+          expect(subject.averageDuration) toBe Duration.ofSeconds(45)
         }
 
         it("reports error percentage based on the non-expired metrics") {
-          assertThat(subject.errorPercentage).isEqualTo(75.0)
+          expect(subject.errorPercentage) toBe 75.0
         }
       }
 
@@ -99,11 +99,11 @@ internal object WindowedRequestMetricsTest : Spek({
         afterGroup(subject::clear)
 
         it("reports average time based on the non-expired metrics") {
-          assertThat(subject.averageDuration).isEqualTo(Duration.ofSeconds(30))
+          expect(subject.averageDuration) toBe Duration.ofSeconds(30)
         }
 
         it("reports error percentage based on the non-expired metrics") {
-          assertThat(subject.errorPercentage).isEqualTo(50.0)
+          expect(subject.errorPercentage) toBe 50.0
         }
       }
 
@@ -121,11 +121,11 @@ internal object WindowedRequestMetricsTest : Spek({
         afterGroup(subject::clear)
 
         it("reports average time based on the non-expired metrics") {
-          assertThat(subject.averageDuration).isEqualTo(Duration.ofSeconds(1))
+          expect(subject.averageDuration) toBe Duration.ofSeconds(1)
         }
 
         it("reports error percentage based on the non-expired metrics") {
-          assertThat(subject.errorPercentage).isEqualTo(0.0)
+          expect(subject.errorPercentage) toBe 0.0
         }
       }
     }

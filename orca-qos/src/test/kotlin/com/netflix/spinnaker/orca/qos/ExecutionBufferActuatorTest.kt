@@ -15,6 +15,8 @@
  */
 package com.netflix.spinnaker.orca.qos
 
+import ch.tutteli.atrium.api.cc.infix.en_UK.*
+import ch.tutteli.atrium.verbs.expect.*
 import com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
@@ -24,14 +26,11 @@ import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
 import com.netflix.spinnaker.orca.qos.BufferState.INACTIVE
 import com.nhaarman.mockito_kotlin.*
-import org.jetbrains.spek.api.dsl.describe
-import org.jetbrains.spek.api.dsl.given
-import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.api.dsl.*
 import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.subject.SubjectSpek
 
-class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
+internal object ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
 
   val bufferStateSupplier: BufferStateSupplier = mock()
   val policy1: BufferPolicy = mock()
@@ -65,7 +64,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       it("does nothing") {
         verify(policy1, never()).apply(execution)
         verify(policy2, never()).apply(execution)
-        assert(execution.status == NOT_STARTED)
+        expect(execution.status) toBe NOT_STARTED
       }
     }
 
@@ -96,7 +95,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       it("does nothing") {
         verify(policy1, times(1)).apply(execution)
         verify(policy2, times(1)).apply(execution)
-        assert(execution.status == NOT_STARTED)
+        expect(execution.status) toBe NOT_STARTED
       }
     }
 
@@ -127,7 +126,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       it("does nothing") {
         verify(policy1, times(1)).apply(execution)
         verify(policy2, times(1)).apply(execution)
-        assert(execution.status == BUFFERED)
+        expect(execution.status) toBe BUFFERED
       }
     }
 
@@ -158,7 +157,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       it("does nothing") {
         verify(policy1, times(1)).apply(execution)
         verify(policy2, times(1)).apply(execution)
-        assert(execution.status == NOT_STARTED)
+        expect(execution.status) toBe NOT_STARTED
       }
     }
   }

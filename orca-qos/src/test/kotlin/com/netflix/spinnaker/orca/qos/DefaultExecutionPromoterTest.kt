@@ -19,14 +19,11 @@ import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.nhaarman.mockito_kotlin.*
-import org.jetbrains.spek.api.dsl.describe
-import org.jetbrains.spek.api.dsl.given
-import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.api.dsl.*
 import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.subject.SubjectSpek
 
-class DefaultExecutionPromoterTest : SubjectSpek<DefaultExecutionPromoter>({
+internal object DefaultExecutionPromoterTest : SubjectSpek<DefaultExecutionPromoter>({
 
   val executionRepository: ExecutionRepository = mock()
   val policy: PromotionPolicy = mock()

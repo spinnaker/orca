@@ -24,4 +24,6 @@ dependencies {
 
   testCompile project(":orca-test-kotlin")
   testCompile "com.google.guava:guava-testlib:${spinnaker.version('guava')}"
+  testCompile "ch.tutteli:atrium-cc-infix-en_UK-robstoll:0.6.0"
+  testCompile "ch.tutteli:atrium-verbs:0.6.0"
 }
