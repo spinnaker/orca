@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,15 @@
 package com.netflix.spinnaker.orca.clouddriver;
 
 import retrofit.http.GET;
+import retrofit.http.Path;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 
-public interface FeaturesRestService {
-
-  @GET("/features/stages")
-  List<AvailableStage> getStages();
-
-  class AvailableStage {
-    public String name;
-    public Boolean enabled;
-  }
+public interface CloudDriverCacheStatusService {
+  @GET("/cache/{cloudProvider}/{type}")
+  Collection<Map> pendingForceCacheUpdates(
+    @Path("cloudProvider") String cloudProvider,
+    @Path("type") String type
+  );
 }
-

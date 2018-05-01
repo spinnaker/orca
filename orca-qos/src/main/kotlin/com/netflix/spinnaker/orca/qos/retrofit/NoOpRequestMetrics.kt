@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver;
+package com.netflix.spinnaker.orca.qos.retrofit
 
-import retrofit.http.GET;
+import org.springframework.http.HttpStatus
+import java.time.Duration
 
-import java.util.List;
+/**
+ * No-op implementation of [WritableRequestMetrics] for tests, etc.
+ */
+class NoOpRequestMetrics : WritableRequestMetrics {
+  override val name: String = "No-op"
+  override val averageDuration: Duration = Duration.ZERO
+  override val errorPercentage: Double = 0.0
+  override fun record(duration: Duration, statusCode: HttpStatus) {}
 
-public interface FeaturesRestService {
-
-  @GET("/features/stages")
-  List<AvailableStage> getStages();
-
-  class AvailableStage {
-    public String name;
-    public Boolean enabled;
+  companion object {
+    @JvmStatic
+    val instance = NoOpRequestMetrics()
   }
 }
-

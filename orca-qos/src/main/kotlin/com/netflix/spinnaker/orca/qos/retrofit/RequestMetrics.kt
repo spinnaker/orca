@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver;
+package com.netflix.spinnaker.orca.qos.retrofit
 
-import retrofit.http.GET;
+import java.time.Duration
 
-import java.util.List;
-
-public interface FeaturesRestService {
-
-  @GET("/features/stages")
-  List<AvailableStage> getStages();
-
-  class AvailableStage {
-    public String name;
-    public Boolean enabled;
-  }
+/**
+ * Read-only interface allowing access for consumers of request metrics.
+ */
+interface RequestMetrics {
+  val name: String
+  val averageDuration: Duration
+  val errorPercentage: Double
 }
-

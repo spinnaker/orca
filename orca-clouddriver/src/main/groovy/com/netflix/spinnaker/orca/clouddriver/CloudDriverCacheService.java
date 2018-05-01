@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver
+package com.netflix.spinnaker.orca.clouddriver;
 
-import retrofit.client.Response
-import retrofit.http.Body
-import retrofit.http.POST
-import retrofit.http.Path
+import retrofit.client.Response;
+import retrofit.http.Body;
+import retrofit.http.POST;
+import retrofit.http.Path;
 
-interface CloudDriverCacheService {
+import java.util.Map;
 
+public interface CloudDriverCacheService {
   @POST("/cache/{cloudProvider}/{type}")
-  Response forceCacheUpdate(@Path("cloudProvider") String cloudProvider,
-                            @Path("type") String type,
-                            @Body Map<String, ? extends Object> data)
-
+  Response forceCacheUpdate(
+    @Path("cloudProvider") String cloudProvider,
+    @Path("type") String type,
+    @Body Map<String, ?> data
+  );
 }

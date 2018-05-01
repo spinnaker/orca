@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.netflix.spinnaker.orca.clouddriver
 
 import com.fasterxml.jackson.annotation.JsonRawValue

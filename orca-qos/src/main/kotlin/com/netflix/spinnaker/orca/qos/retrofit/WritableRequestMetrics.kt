@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver
+package com.netflix.spinnaker.orca.qos.retrofit
 
-import retrofit.http.GET
-import retrofit.http.Path
+import org.springframework.http.HttpStatus
+import java.time.Duration
 
-interface CloudDriverCacheStatusService {
-  @GET("/cache/{cloudProvider}/{type}")
-  Collection<Map> pendingForceCacheUpdates(@Path("cloudProvider") String cloudProvider,
-                                           @Path("type") String type)
+/**
+ * Writable extension to [RequestMetrics] for producers of metrics.
+ */
+interface WritableRequestMetrics : RequestMetrics {
+  fun record(duration: Duration, statusCode: HttpStatus)
 }
