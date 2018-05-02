@@ -15,7 +15,6 @@
  */
 
 include "orca-extensionpoint",
-  "orca-common",
   "orca-core",
   "orca-core-tck",
   "orca-redis",

@@ -29,7 +29,7 @@ import java.util.Set;
 
 public interface CloudProviderAware {
   String DEFAULT_CLOUD_PROVIDER = "aws";  // TODO: Should we fetch this from configuration instead?
-  Logger log = LoggerFactory.getLogger(CloudProviderAware.class);
+  Logger cloudProviderAwareLog = LoggerFactory.getLogger(CloudProviderAware.class);
 
   default String getDefaultCloudProvider() {
     return DEFAULT_CLOUD_PROVIDER;
@@ -69,7 +69,7 @@ public interface CloudProviderAware {
       Set<String> regions = (Set<String>) deployServerGroups.keySet();
       return ImmutableList.copyOf(regions);
     } catch (ClassCastException e) {
-      log.error("Failed to parse deploy.server.groups in stage context " + context, e);
+      cloudProviderAwareLog.error("Failed to parse deploy.server.groups in stage context " + context, e);
       return ImmutableList.of();
     }
   }
