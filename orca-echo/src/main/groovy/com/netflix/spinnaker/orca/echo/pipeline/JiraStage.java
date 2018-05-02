@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.listeners;
+package com.netflix.spinnaker.orca.echo.pipeline;
 
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
+import com.netflix.spinnaker.orca.echo.tasks.CreateJiraIssueTask;
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import org.springframework.stereotype.Component;
 
-public interface Persister {
-  void save(Stage stage);
+import javax.annotation.Nonnull;
 
-  boolean isCanceled(ExecutionType type, String executionId);
-
-  void updateStatus(ExecutionType type, String executionId, ExecutionStatus executionStatus);
+@Component
+public class JiraStage implements StageDefinitionBuilder {
+  @Override
+  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+    builder
+      .withTask("createJiraIssue", CreateJiraIssueTask.class);
+  }
 }

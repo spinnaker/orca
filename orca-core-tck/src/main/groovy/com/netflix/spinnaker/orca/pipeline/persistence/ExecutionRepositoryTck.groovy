@@ -26,7 +26,6 @@ import rx.schedulers.Schedulers
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
@@ -237,7 +236,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     when:
-    repository.updateStatus(execution.id, RUNNING)
+    repository.updateStatus(execution.type, execution.id, RUNNING)
 
     then:
     with(repository.retrieve(execution.type, execution.id)) {
@@ -255,15 +254,17 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
   def "updateStatus sets endTime to current time if new status is #status"() {
     given:
+    execution.startTime = System.currentTimeMillis()
     repository.store(execution)
 
     expect:
     with(repository.retrieve(execution.type, execution.id)) {
+      startTime != null
       endTime == null
     }
 
     when:
-    repository.updateStatus(execution.id, status)
+    repository.updateStatus(execution.type, execution.id, status)
 
     then:
     with(repository.retrieve(execution.type, execution.id)) {
@@ -278,6 +279,30 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     orchestration { trigger = new DefaultTrigger("manual") } | TERMINAL
   }
 
+  def "updateStatus does not set endTime if a pipeline never started"() {
+    given:
+    repository.store(execution)
+
+    expect:
+    with(repository.retrieve(execution.type, execution.id)) {
+      startTime == null
+      endTime == null
+    }
+
+    when:
+    repository.updateStatus(execution.type, execution.id, status)
+
+    then:
+    with(repository.retrieve(execution.type, execution.id)) {
+      status == status
+      endTime == null
+    }
+
+    where:
+    execution                                              | status
+    pipeline { trigger = new PipelineTrigger(pipeline()) } | CANCELED
+  }
+
   def "cancelling a not-yet-started execution updates the status immediately"() {
     given:
     def execution = pipeline()
@@ -289,7 +314,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     when:
-    repository.cancel(execution.id)
+    repository.cancel(execution.type, execution.id)
 
 
     then:
@@ -303,7 +328,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     given:
     def execution = pipeline()
     repository.store(execution)
-    repository.updateStatus(execution.id, RUNNING)
+    repository.updateStatus(execution.type, execution.id, RUNNING)
 
     expect:
     with(repository.retrieve(execution.type, execution.id)) {
@@ -311,7 +336,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     when:
-    repository.cancel(execution.id)
+    repository.cancel(execution.type, execution.id)
 
 
     then:
@@ -327,7 +352,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     def execution = pipeline()
     def user = "user@netflix.com"
     repository.store(execution)
-    repository.updateStatus(execution.id, RUNNING)
+    repository.updateStatus(execution.type, execution.id, RUNNING)
 
     expect:
     with(repository.retrieve(execution.type, execution.id)) {
@@ -335,7 +360,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     when:
-    repository.cancel(execution.id, user, reason)
+    repository.cancel(execution.type, execution.id, user, reason)
 
 
     then:
@@ -357,10 +382,10 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     given:
     def execution = pipeline()
     repository.store(execution)
-    repository.updateStatus(execution.id, RUNNING)
+    repository.updateStatus(execution.type, execution.id, RUNNING)
 
     when:
-    repository.pause(execution.id, "user@netflix.com")
+    repository.pause(execution.type, execution.id, "user@netflix.com")
 
     then:
     with(repository.retrieve(execution.type, execution.id)) {
@@ -373,7 +398,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     }
 
     when:
-    repository.resume(execution.id, "another@netflix.com")
+    repository.resume(execution.type, execution.id, "another@netflix.com")
 
     then:
     with(repository.retrieve(execution.type, execution.id)) {
@@ -392,10 +417,10 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     given:
     def execution = pipeline()
     repository.store(execution)
-    repository.updateStatus(execution.id, status)
+    repository.updateStatus(execution.type, execution.id, status)
 
     when:
-    repository."${method}"(execution.id, "user@netflix.com")
+    repository."${method}"(execution.type, execution.id, "user@netflix.com")
 
     then:
     def e = thrown(IllegalStateException)
@@ -414,18 +439,18 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     given:
     def execution = pipeline()
     repository.store(execution)
-    repository.updateStatus(execution.id, RUNNING)
+    repository.updateStatus(execution.type, execution.id, RUNNING)
 
     when:
-    repository.pause(execution.id, "user@netflix.com")
+    repository.pause(execution.type, execution.id, "user@netflix.com")
     execution = repository.retrieve(execution.type, execution.id)
 
     then:
     execution.paused.isPaused()
 
     when:
-    repository.updateStatus(execution.id, status)
-    repository.resume(execution.id, "user@netflix.com", true)
+    repository.updateStatus(execution.type, execution.id, status)
+    repository.resume(execution.type, execution.id, "user@netflix.com", true)
     execution = repository.retrieve(execution.type, execution.id)
 
     then:
@@ -442,7 +467,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
       trigger = new DefaultTrigger("manual", "covfefe")
     }
     repository.store(execution)
-    repository.updateStatus(execution.id, RUNNING)
+    repository.updateStatus(execution.type, execution.id, RUNNING)
 
     when:
     def result = repository.retrieveOrchestrationForCorrelationId('covfefe')
@@ -451,7 +476,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     result.id == execution.id
 
     when:
-    repository.updateStatus(execution.id, SUCCEEDED)
+    repository.updateStatus(execution.type, execution.id, SUCCEEDED)
     repository.retrieveOrchestrationForCorrelationId('covfefe')
 
     then:
