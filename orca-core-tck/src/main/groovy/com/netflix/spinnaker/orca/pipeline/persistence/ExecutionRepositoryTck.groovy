@@ -154,7 +154,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(pipeline)
 
     expect:
-    repository.retrieve(PIPELINE).toBlocking().first().id == pipeline.id
+    repository.retrieve(PIPELINE).first().id == pipeline.id
 
     with(repository.retrieve(pipeline.type, pipeline.id)) {
       id == pipeline.id
@@ -223,7 +223,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(PIPELINE).toList().toBlocking().first() == []
+    repository.retrieve(PIPELINE).toList() == []
   }
 
   def "updateStatus sets startTime to current time if new status is RUNNING"() {

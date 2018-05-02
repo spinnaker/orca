@@ -71,9 +71,7 @@ class TaskControllerSpec extends Specification {
     mockMvc.perform(get('/tasks')).andReturn().response
 
     then:
-    1 * executionRepository.retrieve(ORCHESTRATION) >> {
-      return rx.Observable.empty()
-    }
+    1 * executionRepository.retrieve(ORCHESTRATION) >> { [] }
   }
 
   void 'should cancel a list of tasks by id'() {
@@ -90,14 +88,14 @@ class TaskControllerSpec extends Specification {
 
   void 'step names are properly translated'() {
     given:
-    executionRepository.retrieve(ORCHESTRATION) >> rx.Observable.from([orchestration {
+    executionRepository.retrieve(ORCHESTRATION) >> [orchestration {
       id = "1"
       application = "covfefe"
       stage {
         type = "test"
         tasks = [new Task(name: 'jobOne'), new Task(name: 'jobTwo')]
       }
-    }])
+    }]
 
     when:
     def response = mockMvc.perform(get('/tasks')).andReturn().response
@@ -134,7 +132,7 @@ class TaskControllerSpec extends Specification {
     MockHttpServletResponse response = mockMvc.perform(get('/tasks')).andReturn().response
 
     then:
-    1 * executionRepository.retrieve(ORCHESTRATION) >> rx.Observable.from([])
+    1 * executionRepository.retrieve(ORCHESTRATION) >> []
     response.status == 200
     response.contentAsString == '[]'
   }

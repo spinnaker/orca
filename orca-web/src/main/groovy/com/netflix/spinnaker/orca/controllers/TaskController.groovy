@@ -104,7 +104,7 @@ class TaskController {
   @PostFilter("hasPermission(filterObject.application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/tasks", method = RequestMethod.GET)
   List<OrchestrationViewModel> list() {
-    executionRepository.retrieve(ORCHESTRATION).toBlocking().iterator.collect {
+    executionRepository.retrieve(ORCHESTRATION).collect {
       convert it
     }
   }

@@ -92,7 +92,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     jedis.sadd("allJobs:pipeline", id)
 
     when:
-    def result = repository.retrieve(PIPELINE).toList().toBlocking().first()
+    def result = repository.retrieve(PIPELINE).toList()
 
     then:
     result.isEmpty()
@@ -129,7 +129,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(PIPELINE).toList().toBlocking().first() == []
+    repository.retrieve(PIPELINE).toList() == []
     jedis.zrange(RedisExecutionRepository.executionsByPipelineKey(pipeline.pipelineConfigId), 0, 1).isEmpty()
   }
 

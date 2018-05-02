@@ -300,12 +300,16 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull
-  Observable<Execution> retrieve(@Nonnull ExecutionType type) {
+  public @Nonnull Iterable<Execution> retrieve(@Nonnull ExecutionType type) {
     List<Observable<Execution>> observables = allRedisDelegates().stream()
       .map(d -> all(type, d))
       .collect(Collectors.toList());
-    return Observable.merge(observables);
+
+    return Observable.from(observables)
+      .flatMap(task -> task.observeOn(queryAllScheduler))
+      .toList()
+      .toBlocking()
+      .single();
   }
 
   @Override
@@ -511,12 +515,10 @@ public class RedisExecutionRepository implements ExecutionRepository {
   @Override
   public @Nonnull List<Execution> retrieveBufferedExecutions() {
     // TODO rz - This is definitely not a healthy way to do this.
-    return Observable.concat(
-        retrieve(PIPELINE),
-        retrieve(ORCHESTRATION)
-      )
+    return Observable.merge(Observable.from(retrieve(PIPELINE)), Observable.from(retrieve(ORCHESTRATION)))
       .filter(execution -> execution.getStatus() == ExecutionStatus.BUFFERED)
       .toList()
+      .first()
       .toBlocking().single();
   }
 
