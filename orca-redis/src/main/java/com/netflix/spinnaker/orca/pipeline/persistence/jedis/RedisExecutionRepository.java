@@ -320,11 +320,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Override
   public @Nonnull
-  Observable<Execution> retrievePipelinesForApplication(@Nonnull String application) {
+  Iterable<Execution> retrievePipelinesForApplication(@Nonnull String application) {
     List<Observable<Execution>> observables = allRedisDelegates().stream()
       .map(d -> allForApplication(PIPELINE, application, d))
       .collect(Collectors.toList());
-    return Observable.merge(observables);
+    return Observable.merge(observables).toList().toBlocking().single();
   }
 
   @Override

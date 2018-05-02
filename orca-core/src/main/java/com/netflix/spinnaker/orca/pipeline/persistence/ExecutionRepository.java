@@ -58,7 +58,7 @@ public interface ExecutionRepository {
 
   @Nonnull Iterable<Execution> retrieve(ExecutionType type);
 
-  @Nonnull Observable<Execution> retrievePipelinesForApplication(@Nonnull String application);
+  @Nonnull Iterable<Execution> retrievePipelinesForApplication(@Nonnull String application);
 
   @Nonnull Observable<Execution> retrievePipelinesForPipelineConfigId(
     @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);

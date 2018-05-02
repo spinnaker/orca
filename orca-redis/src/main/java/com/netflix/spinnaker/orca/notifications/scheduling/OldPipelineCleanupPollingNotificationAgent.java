@@ -31,7 +31,6 @@ import org.springframework.stereotype.Component;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 import javax.annotation.PreDestroy;
@@ -40,7 +39,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
@@ -56,9 +59,9 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
   private Scheduler scheduler = Schedulers.io();
   private Subscription subscription;
 
-  private Func1<Execution, Boolean> filter = new Func1<Execution, Boolean>() {
+  private Predicate<Execution> filter = new Predicate<Execution>() {
     @Override
-    public Boolean call(Execution execution) {
+    public boolean test(Execution execution) {
       if (!COMPLETED_STATUSES.contains(execution.getStatus().toString())) {
         return false;
       }
@@ -67,7 +70,7 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     }
   };
 
-  private Func1<Execution, PipelineExecutionDetails> mapper = execution -> new PipelineExecutionDetails(
+  private Function<Execution, PipelineExecutionDetails> mapper = execution -> new PipelineExecutionDetails(
     execution.getId(),
     execution.getApplication(),
     execution.getPipelineConfigId() == null ? "ungrouped" : execution.getPipelineConfigId(),
@@ -138,7 +141,7 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
 
       applications.forEach(app -> {
         log.debug("Cleaning up " + app);
-        cleanupApp(executionRepository.retrievePipelinesForApplication(app));
+        cleanupApp(iteratorToStream(executionRepository.retrievePipelinesForApplication(app)));
       });
 
     } catch (Exception e) {
@@ -146,8 +149,8 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     }
   }
 
-  private void cleanupApp(Observable<Execution> observable) {
-    List<PipelineExecutionDetails> allPipelines = observable.filter(filter).map(mapper).toList().toBlocking().single();
+  private void cleanupApp(Stream<Execution> executions) {
+    List<PipelineExecutionDetails> allPipelines = executions.filter(filter).map(mapper).collect(Collectors.toList());
 
     Map<String, List<PipelineExecutionDetails>> groupedPipelines = new HashMap<>();
     allPipelines.forEach(p -> {
@@ -181,6 +184,10 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     return redisClientDelegate.withCommandsClient(c -> {
       return c.sismember("existingServerGroups:pipeline", "pipeline:" + pipelineId);
     });
+  }
+
+  private <T> Stream<T> iteratorToStream(Iterable<T> executions) {
+    return StreamSupport.stream(Spliterators.spliteratorUnknownSize(executions.iterator(), Spliterator.ORDERED), false);
   }
 
   private static class PipelineExecutionDetails {
