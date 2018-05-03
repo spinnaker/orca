@@ -43,7 +43,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.IterableUtil.toStream;
@@ -185,10 +184,6 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     return redisClientDelegate.withCommandsClient(c -> {
       return c.sismember("existingServerGroups:pipeline", "pipeline:" + pipelineId);
     });
-  }
-
-  private <T> Stream<T> iteratorToStream(Iterable<T> executions) {
-    return StreamSupport.stream(Spliterators.spliteratorUnknownSize(executions.iterator(), Spliterator.ORDERED), false);
   }
 
   private static class PipelineExecutionDetails {
