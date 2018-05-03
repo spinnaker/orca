@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import java.time.Clock
-import java.time.Instant
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
@@ -32,6 +30,11 @@ import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
+
+import java.time.Clock
+import java.time.Instant
+
+import static com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
@@ -93,7 +96,10 @@ class TaskControllerSpec extends Specification {
       application = "covfefe"
       stage {
         type = "test"
-        tasks = [new Task(name: 'jobOne'), new Task(name: 'jobTwo')]
+        tasks = [
+          new Task(id: "1", name: 'jobOne', implementingClass: "foo", status: TERMINAL),
+          new Task(id: "2", name: 'jobTwo', implementingClass: "foo", status: TERMINAL)
+        ]
       }
     }]
 
@@ -191,7 +197,7 @@ class TaskControllerSpec extends Specification {
       [pipelineConfigId: "2", id: 'older3', application: app, startTime: clock.instant().minus(daysOfExecutionHistory + 1, DAYS).minus(4, HOURS).toEpochMilli()]
     ]
 
-    executionRepository.retrievePipelinesForPipelineConfigId("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigId("1", _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       pipeline {
@@ -200,8 +206,8 @@ class TaskControllerSpec extends Specification {
         startTime = config.startTime
         pipelineConfigId = config.pipelineConfigId
       }
-    })
-    executionRepository.retrievePipelinesForPipelineConfigId("2", _) >> rx.Observable.from(pipelines.findAll {
+    }
+    executionRepository.retrievePipelinesForPipelineConfigId("2", _) >> pipelines.findAll {
       it.pipelineConfigId == "2"
     }.collect { config ->
       pipeline {
@@ -210,7 +216,7 @@ class TaskControllerSpec extends Specification {
         startTime = config.startTime
         pipelineConfigId = config.pipelineConfigId
       }
-    })
+    }
     front50Service.getPipelines(app, false) >> [[id: "1"], [id: "2"]]
     front50Service.getStrategies(app) >> []
 
@@ -234,7 +240,7 @@ class TaskControllerSpec extends Specification {
       [pipelineConfigId: "3", id: "started-5", application: "covfefe", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(), id: 'old-3']
     ]
 
-    executionRepository.retrievePipelinesForPipelineConfigId("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigId("1", _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       pipeline {
@@ -243,8 +249,8 @@ class TaskControllerSpec extends Specification {
         startTime = config.startTime
         pipelineConfigId = config.pipelineConfigId
       }
-    })
-    executionRepository.retrievePipelinesForPipelineConfigId("2", _) >> rx.Observable.from(pipelines.findAll {
+    }
+    executionRepository.retrievePipelinesForPipelineConfigId("2", _) >> pipelines.findAll {
       it.pipelineConfigId == "2"
     }.collect { config ->
       pipeline {
@@ -253,8 +259,8 @@ class TaskControllerSpec extends Specification {
         startTime = config.startTime
         pipelineConfigId = config.pipelineConfigId
       }
-    })
-    executionRepository.retrievePipelinesForPipelineConfigId("3", _) >> rx.Observable.from(pipelines.findAll {
+    }
+    executionRepository.retrievePipelinesForPipelineConfigId("3", _) >> pipelines.findAll {
       it.pipelineConfigId == "3"
     }.collect { config ->
       pipeline {
@@ -263,7 +269,7 @@ class TaskControllerSpec extends Specification {
         startTime = config.startTime
         pipelineConfigId = config.pipelineConfigId
       }
-    })
+    }
 
     when:
     def response = mockMvc.perform(get("/pipelines?pipelineConfigIds=1,2")).andReturn().response

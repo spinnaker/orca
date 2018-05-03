@@ -357,7 +357,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     when:
     // TODO-AJ limits are current applied to each backing redis
     def retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionRepository.ExecutionCriteria(limit: 2))
-      .toList().toBlocking().first()
+      .toList()
 
     then:
     // pipelines are stored in a sorted sets and results should be reverse buildTime ordered
@@ -384,7 +384,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     when:
     repository.delete(pipeline1.type, pipeline1.id)
     def retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionRepository.ExecutionCriteria(limit: 2))
-      .toList().toBlocking().first()
+      .toList()
 
     then:
     retrieved*.id == [pipeline2.id]
@@ -392,7 +392,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     when:
     repository.delete(pipeline2.type, pipeline2.id)
     retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionRepository.ExecutionCriteria(limit: 2))
-      .toList().toBlocking().first()
+      .toList()
 
     then:
     retrieved.isEmpty()

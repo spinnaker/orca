@@ -43,9 +43,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.IterableUtil.toStream;
 
 // TODO rz - Remove redis know-how and move back into orca-core
 @Component
@@ -141,7 +141,7 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
 
       applications.forEach(app -> {
         log.debug("Cleaning up " + app);
-        cleanupApp(iteratorToStream(executionRepository.retrievePipelinesForApplication(app)));
+        cleanupApp(toStream(executionRepository.retrievePipelinesForApplication(app)));
       });
 
     } catch (Exception e) {
@@ -184,10 +184,6 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     return redisClientDelegate.withCommandsClient(c -> {
       return c.sismember("existingServerGroups:pipeline", "pipeline:" + pipelineId);
     });
-  }
-
-  private <T> Stream<T> iteratorToStream(Iterable<T> executions) {
-    return StreamSupport.stream(Spliterators.spliteratorUnknownSize(executions.iterator(), Spliterator.ORDERED), false);
   }
 
   private static class PipelineExecutionDetails {

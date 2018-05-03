@@ -24,6 +24,8 @@ import rx.Observable;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 
@@ -60,7 +62,7 @@ public interface ExecutionRepository {
 
   @Nonnull Iterable<Execution> retrievePipelinesForApplication(@Nonnull String application);
 
-  @Nonnull Observable<Execution> retrievePipelinesForPipelineConfigId(
+  @Nonnull Iterable<Execution> retrievePipelinesForPipelineConfigId(
     @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull Observable<Execution> retrieveOrchestrationsForApplication(
@@ -114,6 +116,13 @@ public interface ExecutionRepository {
 
     @Override public int hashCode() {
       return Objects.hash(limit, statuses);
+    }
+  }
+
+  final class IterableUtil {
+
+    public static <T> Stream<T> toStream(Iterable<T> iterable) {
+      return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterable.iterator(), Spliterator.ORDERED), false);
     }
   }
 }

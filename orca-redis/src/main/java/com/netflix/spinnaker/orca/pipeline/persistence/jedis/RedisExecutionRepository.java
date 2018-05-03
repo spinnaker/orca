@@ -329,8 +329,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Override
   public @Nonnull
-  Observable<Execution> retrievePipelinesForPipelineConfigId(@Nonnull String pipelineConfigId,
-                                                             @Nonnull ExecutionCriteria criteria) {
+  Iterable<Execution> retrievePipelinesForPipelineConfigId(@Nonnull String pipelineConfigId,
+                                                           @Nonnull ExecutionCriteria criteria) {
     /*
      * Fetch pipeline ids from the primary redis (and secondary if configured)
      */
@@ -400,10 +400,10 @@ public class RedisExecutionRepository implements ExecutionRepository {
       );
 
       // merge primary + secondary observables
-      return Observable.merge(currentObservable, previousObservable);
+      return Observable.merge(currentObservable, previousObservable).toList().toBlocking().single();
     }
 
-    return currentObservable;
+    return currentObservable.toList().toBlocking().single();
   }
 
   @Override

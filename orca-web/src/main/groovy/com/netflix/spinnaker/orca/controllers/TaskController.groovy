@@ -70,10 +70,8 @@ class TaskController {
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/applications/{application}/tasks", method = RequestMethod.GET)
   List<Execution> list(@PathVariable String application,
-                       @RequestParam(value = "limit", defaultValue = "3500")
-                         int limit,
-                       @RequestParam(value = "statuses", required = false)
-                         String statuses) {
+                       @RequestParam(value = "limit", defaultValue = "3500") int limit,
+                       @RequestParam(value = "statuses", required = false) String statuses) {
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
     def executionCriteria = new ExecutionRepository.ExecutionCriteria(
       limit: limit,
@@ -95,7 +93,7 @@ class TaskController {
       .toList()
       .toBlocking()
       .single()
-      .sort(startTimeOrId)
+    orchestrations.sort(startTimeOrId)
 
     orchestrations.subList(0, Math.min(orchestrations.size(), limit))
   }
@@ -169,9 +167,10 @@ class TaskController {
 
     def ids = pipelineConfigIds.split(',')
 
-    def allPipelines = rx.Observable.merge(ids.collect {
+    def allPipelines = ids.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
-    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
+    }.flatten()
+    allPipelines.sort(startTimeOrId)
 
     return filterPipelinesByHistoryCutoff(allPipelines, limit)
   }
@@ -331,9 +330,10 @@ class TaskController {
     def strategyConfigIds = front50Service.getStrategies(application)*.id as List<String>
     def allIds = pipelineConfigIds + strategyConfigIds
 
-    def allPipelines = rx.Observable.merge(allIds.collect {
+    def allPipelines = allIds.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
-    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
+    }.flatten()
+    allPipelines.sort(startTimeOrId)
 
     if (!expand) {
       allPipelines.each { pipeline ->
@@ -373,7 +373,10 @@ class TaskController {
     pipelines.groupBy {
       it.pipelineConfigId
     }.values().each { List<Execution> pipelinesGroup ->
-      def sortedPipelinesGroup = pipelinesGroup.sort(startTimeOrId).reverse()
+      def sortedPipelinesGroup = pipelinesGroup
+      sortedPipelinesGroup.sort(startTimeOrId)
+      sortedPipelinesGroup = sortedPipelinesGroup.reverse()
+
       def recentPipelines = sortedPipelinesGroup.findAll {
         !it.startTime || it.startTime > cutoffTime
       }
@@ -385,11 +388,12 @@ class TaskController {
 
       pipelinesSatisfyingCutoff.addAll(recentPipelines.subList(0, Math.min(recentPipelines.size(), limit)))
     }
+    pipelinesSatisfyingCutoff.sort(startTimeOrId)
 
-    return pipelinesSatisfyingCutoff.sort(startTimeOrId)
+    return pipelinesSatisfyingCutoff
   }
 
-  private static Closure startTimeOrId = { a, b ->
+  private static Comparator<Execution> startTimeOrId = { a, b ->
     def aStartTime = a.startTime ?: 0
     def bStartTime = b.startTime ?: 0
 

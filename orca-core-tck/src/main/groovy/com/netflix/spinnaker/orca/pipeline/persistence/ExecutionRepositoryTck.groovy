@@ -66,7 +66,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(succeededExecution)
     def pipelines = repository.retrievePipelinesForPipelineConfigId(
       "pipeline-1", new ExecutionCriteria(limit: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
-    ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
+    ).toList()
 
     then:
     pipelines*.id.sort() == [runningExecution.id, succeededExecution.id].sort()
@@ -74,7 +74,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     when:
     pipelines = repository.retrievePipelinesForPipelineConfigId(
       "pipeline-1", new ExecutionCriteria(limit: 5, statuses: ["RUNNING"])
-    ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
+    ).toList()
 
     then:
     pipelines*.id.sort() == [runningExecution.id].sort()
@@ -82,7 +82,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     when:
     pipelines = repository.retrievePipelinesForPipelineConfigId(
       "pipeline-1", new ExecutionCriteria(limit: 5, statuses: ["TERMINAL"])
-    ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
+    ).toList()
 
     then:
     pipelines.isEmpty()
