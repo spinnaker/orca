@@ -19,7 +19,6 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import rx.Observable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -65,7 +64,7 @@ public interface ExecutionRepository {
   @Nonnull Iterable<Execution> retrievePipelinesForPipelineConfigId(
     @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
-  @Nonnull Observable<Execution> retrieveOrchestrationsForApplication(
+  @Nonnull Iterable<Execution> retrieveOrchestrationsForApplication(
     @Nonnull String application, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull Execution retrieveOrchestrationForCorrelationId(

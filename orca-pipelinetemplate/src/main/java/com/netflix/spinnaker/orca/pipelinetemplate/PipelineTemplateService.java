@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -87,14 +88,12 @@ public class PipelineTemplateService {
     } else if (pipelineConfigId != null) {
       // No executionId set - use last execution
       ExecutionRepository.ExecutionCriteria criteria = new ExecutionRepository.ExecutionCriteria().setLimit(1);
-      try {
-        return executionRepository.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria)
-          .iterator()
-          .next();
-      } catch (NoSuchElementException e) {
-        throw new ExecutionNotFoundException("No pipeline execution could be found for config id " +
-          pipelineConfigId + ": " + e.getMessage());
+
+      Iterator<Execution> executions = executionRepository.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria).iterator();
+      if (!executions.hasNext()) {
+        throw new ExecutionNotFoundException("No pipeline execution could be found for config id " + pipelineConfigId);
       }
+      return executions.next();
     } else {
       throw new IllegalArgumentException("Either executionId or pipelineConfigId have to be set.");
     }

@@ -400,7 +400,10 @@ public class RedisExecutionRepository implements ExecutionRepository {
       );
 
       // merge primary + secondary observables
-      return Observable.merge(currentObservable, previousObservable).toList().toBlocking().single();
+      return Observable.merge(currentObservable, previousObservable)
+        .subscribeOn(queryByAppScheduler)
+        .toList()
+        .toBlocking().single();
     }
 
     return currentObservable.toList().toBlocking().single();
@@ -408,7 +411,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Override
   public @Nonnull
-  Observable<Execution> retrieveOrchestrationsForApplication(@Nonnull String application, @Nonnull ExecutionCriteria criteria) {
+  Iterable<Execution> retrieveOrchestrationsForApplication(@Nonnull String application, @Nonnull ExecutionCriteria criteria) {
     String allOrchestrationsKey = appKey(ORCHESTRATION, application);
 
     /*
@@ -482,10 +485,13 @@ public class RedisExecutionRepository implements ExecutionRepository {
       );
 
       // merge primary + secondary observables
-      return Observable.merge(currentObservable, previousObservable);
+      return Observable.merge(currentObservable, previousObservable)
+        .subscribeOn(queryByAppScheduler)
+        .toList()
+        .toBlocking().single();
     }
 
-    return currentObservable;
+    return currentObservable.subscribeOn(queryByAppScheduler).toList().toBlocking().single();
   }
 
   @Override

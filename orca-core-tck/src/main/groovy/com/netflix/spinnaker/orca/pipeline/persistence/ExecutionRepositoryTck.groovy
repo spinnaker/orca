@@ -22,10 +22,10 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
-import rx.schedulers.Schedulers
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
+
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
@@ -106,7 +106,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(succeededExecution)
     def orchestrations = repository.retrieveOrchestrationsForApplication(
       runningExecution.application, new ExecutionCriteria(limit: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
-    ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
+    ).toList()
 
     then:
     orchestrations*.id.sort() == [runningExecution.id, succeededExecution.id].sort()
@@ -114,7 +114,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     when:
     orchestrations = repository.retrieveOrchestrationsForApplication(
       runningExecution.application, new ExecutionCriteria(limit: 5, statuses: ["RUNNING"])
-    ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
+    ).toList()
 
     then:
     orchestrations*.id.sort() == [runningExecution.id].sort()
@@ -122,7 +122,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     when:
     orchestrations = repository.retrieveOrchestrationsForApplication(
       runningExecution.application, new ExecutionCriteria(limit: 5, statuses: ["TERMINAL"])
-    ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
+    ).toList()
 
     then:
     orchestrations.isEmpty()

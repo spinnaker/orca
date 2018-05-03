@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.json.JsonSlurper
 import org.springframework.http.MediaType
-import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
@@ -69,14 +68,6 @@ class TaskControllerSpec extends Specification {
     ).build()
   }
 
-  void '/tasks returns a list of active tasks'() {
-    when:
-    mockMvc.perform(get('/tasks')).andReturn().response
-
-    then:
-    1 * executionRepository.retrieve(ORCHESTRATION) >> { [] }
-  }
-
   void 'should cancel a list of tasks by id'() {
     when:
     def response = mockMvc.perform(
@@ -91,9 +82,9 @@ class TaskControllerSpec extends Specification {
 
   void 'step names are properly translated'() {
     given:
-    executionRepository.retrieve(ORCHESTRATION) >> [orchestration {
+    executionRepository.retrieve(ORCHESTRATION, _) >> orchestration {
       id = "1"
-      application = "covfefe"
+      application = "test"
       stage {
         type = "test"
         tasks = [
@@ -101,14 +92,14 @@ class TaskControllerSpec extends Specification {
           new Task(id: "2", name: 'jobTwo', implementingClass: "foo", status: TERMINAL)
         ]
       }
-    }]
+    }
 
     when:
-    def response = mockMvc.perform(get('/tasks')).andReturn().response
+    def response = mockMvc.perform(get('/tasks/1')).andReturn().response
 
     then:
     response.status == 200
-    with(new JsonSlurper().parseText(response.contentAsString).first()) {
+    with(new JsonSlurper().parseText(response.contentAsString)) {
       steps.name == ['jobOne', 'jobTwo']
     }
   }
@@ -133,22 +124,12 @@ class TaskControllerSpec extends Specification {
     ]
   }
 
-  void '/tasks returns [] when there are no tasks'() {
-    when:
-    MockHttpServletResponse response = mockMvc.perform(get('/tasks')).andReturn().response
-
-    then:
-    1 * executionRepository.retrieve(ORCHESTRATION) >> []
-    response.status == 200
-    response.contentAsString == '[]'
-  }
-
   void '/applications/{application}/tasks filters tasks by application'() {
     when:
     def response = mockMvc.perform(get("/applications/$app/tasks")).andReturn().response
 
     then:
-    1 * executionRepository.retrieveOrchestrationsForApplication(app, _) >> rx.Observable.empty()
+    1 * executionRepository.retrieveOrchestrationsForApplication(app, _) >> []
 
     where:
     app = "test"
@@ -170,7 +151,7 @@ class TaskControllerSpec extends Specification {
       }
     }
     def app = 'test'
-    executionRepository.retrieveOrchestrationsForApplication(app, _) >> rx.Observable.from(tasks)
+    executionRepository.retrieveOrchestrationsForApplication(app, _) >> tasks
 
     when:
     def response = new ObjectMapper().readValue(

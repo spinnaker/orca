@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import retrofit.RetrofitError
+import rx.schedulers.Schedulers
 
 @RestController
 class ProjectController {
@@ -66,9 +67,9 @@ class ProjectController {
       statuses: (statuses.split(",") as Collection)
     )
 
-    def allPipelines = pipelineConfigIds.collect {
-      executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
-    }.toList().sort(startTimeOrId)
+    def allPipelines = rx.Observable.merge(pipelineConfigIds.collect {
+      rx.Observable.from(executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria))
+    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
 
     return allPipelines
   }

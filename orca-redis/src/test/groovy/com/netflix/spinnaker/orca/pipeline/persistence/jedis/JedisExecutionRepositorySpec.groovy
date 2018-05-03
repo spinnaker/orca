@@ -145,7 +145,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
 
     when:
     def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionRepository.ExecutionCriteria(limit: limit))
-      .toList().toBlocking().first()
+      .toList()
 
     then:
     retrieved.size() == actual
@@ -256,7 +256,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     when:
     // TODO-AJ limits are current applied to each backing redis
     def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionRepository.ExecutionCriteria(limit: 2))
-      .toList().toBlocking().first()
+      .toList()
 
     then:
     // orchestrations are stored in an unsorted set and results are non-deterministic
@@ -281,7 +281,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     when:
     repository.delete(orchestration1.type, orchestration1.id)
     def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionRepository.ExecutionCriteria(limit: 2))
-      .toList().toBlocking().first()
+      .toList()
 
     then:
     retrieved*.id == [orchestration2.id]
@@ -289,7 +289,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     when:
     repository.delete(orchestration2.type, orchestration2.id)
     retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionRepository.ExecutionCriteria(limit: 2))
-      .toList().toBlocking().first()
+      .toList()
 
     then:
     retrieved.isEmpty()

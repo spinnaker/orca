@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import java.time.Clock
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.model.OrchestrationViewModel
@@ -36,8 +35,17 @@ import org.springframework.security.access.prepost.PostAuthorize
 import org.springframework.security.access.prepost.PostFilter
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.access.prepost.PreFilter
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 import rx.schedulers.Schedulers
+
+import java.time.Clock
+
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static java.time.ZoneOffset.UTC
@@ -69,9 +77,9 @@ class TaskController {
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/applications/{application}/tasks", method = RequestMethod.GET)
-  List<Execution> list(@PathVariable String application,
-                       @RequestParam(value = "limit", defaultValue = "3500") int limit,
-                       @RequestParam(value = "statuses", required = false) String statuses) {
+  List<OrchestrationViewModel> list(@PathVariable String application,
+                                    @RequestParam(value = "limit", defaultValue = "3500") int limit,
+                                    @RequestParam(value = "statuses", required = false) String statuses) {
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
     def executionCriteria = new ExecutionRepository.ExecutionCriteria(
       limit: limit,
@@ -87,24 +95,13 @@ class TaskController {
 
     def orchestrations = executionRepository
       .retrieveOrchestrationsForApplication(application, executionCriteria)
-      .filter({ Execution orchestration -> !orchestration.startTime || (orchestration.startTime > startTimeCutoff) })
-      .map({ Execution orchestration -> convert(orchestration) })
-      .subscribeOn(Schedulers.io())
       .toList()
-      .toBlocking()
-      .single()
+      .findAll({ Execution orchestration -> !orchestration.startTime || (orchestration.startTime > startTimeCutoff) })
     orchestrations.sort(startTimeOrId)
 
-    orchestrations.subList(0, Math.min(orchestrations.size(), limit))
-  }
-
-  @PreAuthorize("@fiatPermissionEvaluator.storeWholePermission()")
-  @PostFilter("hasPermission(filterObject.application, 'APPLICATION', 'READ')")
-  @RequestMapping(value = "/tasks", method = RequestMethod.GET)
-  List<OrchestrationViewModel> list() {
-    executionRepository.retrieve(ORCHESTRATION).collect {
-      convert it
-    }
+    orchestrations
+      .collect({ Execution orchestration -> convert(orchestration) })
+      .subList(0, Math.min(orchestrations.size(), limit))
   }
 
   // @PostAuthorize("hasPermission(returnObject.application, 'APPLICATION', 'READ')")
@@ -167,9 +164,9 @@ class TaskController {
 
     def ids = pipelineConfigIds.split(',')
 
-    def allPipelines = ids.collect {
-      executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
-    }.flatten()
+    def allPipelines = rx.Observable.merge(ids.collect {
+      rx.Observable.from(executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria))
+    }).subscribeOn(Schedulers.io()).toList().toBlocking().single()
     allPipelines.sort(startTimeOrId)
 
     return filterPipelinesByHistoryCutoff(allPipelines, limit)
