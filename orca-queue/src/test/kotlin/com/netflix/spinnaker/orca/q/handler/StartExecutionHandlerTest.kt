@@ -21,21 +21,20 @@ import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.q.StartStage
+import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
 import com.netflix.spinnaker.orca.q.singleTaskStage
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.spek.api.dsl.describe
-import org.jetbrains.spek.api.dsl.given
-import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.api.dsl.*
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import org.springframework.context.ApplicationEventPublisher
@@ -46,11 +45,12 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
+  val pendingExecutionService: PendingExecutionService = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
 
   subject(GROUP) {
-    StartExecutionHandler(queue, repository, publisher, clock)
+    StartExecutionHandler(queue, repository, pendingExecutionService, publisher, clock)
   }
 
   fun resetMocks() = reset(queue, repository, publisher)
@@ -75,7 +75,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as running") {
-        verify(repository).updateStatus(message.executionId, RUNNING)
+        verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
       }
 
       it("starts the first stage") {
@@ -211,7 +211,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as TERMINAL") {
-        verify(repository, times(1)).updateStatus(pipeline.id, TERMINAL)
+        verify(repository, times(1)).updateStatus(PIPELINE, pipeline.id, TERMINAL)
       }
 
       it("publishes an event with TERMINAL status") {
@@ -292,7 +292,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("does not start the new pipeline") {
-          verify(repository, never()).updateStatus(message.executionId, RUNNING)
+          verify(repository, never()).updateStatus(PIPELINE, message.executionId, RUNNING)
           verify(queue, never()).push(isA<StartStage>())
         }
 
@@ -326,7 +326,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("starts the new pipeline") {
-          verify(repository).updateStatus(message.executionId, RUNNING)
+          verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
           verify(queue).push(isA<StartStage>())
         }
       }

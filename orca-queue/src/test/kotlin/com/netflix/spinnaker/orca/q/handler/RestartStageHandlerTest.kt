@@ -26,12 +26,12 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELIN
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.*
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.spek.api.dsl.describe
-import org.jetbrains.spek.api.dsl.it
+import org.jetbrains.spek.api.dsl.*
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import java.time.temporal.ChronoUnit.HOURS
@@ -41,6 +41,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
+  val pendingExecutionService: PendingExecutionService = mock()
   val clock = fixedClock()
 
   subject(GROUP) {
@@ -52,6 +53,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
         stageWithSyntheticBefore,
         stageWithNestedSynthetics
       ),
+      pendingExecutionService,
       clock
     )
   }
@@ -199,7 +201,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
       }
 
       it("marks the execution as running") {
-        verify(repository).updateStatus(pipeline.id, RUNNING)
+        verify(repository).updateStatus(PIPELINE, pipeline.id, RUNNING)
       }
 
       it("runs the stage") {
