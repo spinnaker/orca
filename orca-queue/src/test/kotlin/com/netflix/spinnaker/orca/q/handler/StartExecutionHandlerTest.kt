@@ -275,10 +275,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           pipeline.isLimitConcurrent = true
           runningPipeline.isLimitConcurrent = true
 
-          whenever(
-            repository
-              .retrievePipelinesForPipelineConfigId(configId, ExecutionCriteria().setLimit(1).setStatuses(RUNNING))
-          ) doReturn listOf(runningPipeline)
+          whenever(pendingExecutionService.depth(configId)) doReturn 1
           whenever(
             repository.retrieve(message.executionType, message.executionId)
           ) doReturn pipeline
@@ -309,10 +306,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           pipeline.isLimitConcurrent = false
           runningPipeline.isLimitConcurrent = false
 
-          whenever(
-            repository
-              .retrievePipelinesForPipelineConfigId(configId, ExecutionCriteria().setLimit(1).setStatuses(RUNNING))
-          ) doReturn listOf(runningPipeline)
+          whenever(pendingExecutionService.depth(configId)) doReturn 1
           whenever(
             repository.retrieve(message.executionType, message.executionId)
           ) doReturn pipeline
