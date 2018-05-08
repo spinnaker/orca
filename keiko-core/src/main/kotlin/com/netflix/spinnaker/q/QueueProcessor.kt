@@ -23,6 +23,8 @@ import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
+import java.time.Duration
+import java.util.Random
 import java.util.concurrent.RejectedExecutionException
 import javax.annotation.PostConstruct
 
@@ -37,9 +39,12 @@ class QueueProcessor(
   private val activator: Activator,
   private val publisher: EventPublisher,
   private val deadMessageHandler: DeadMessageCallback,
-  private val fillExecutorEachCycle: Boolean = false
+  private val fillExecutorEachCycle: Boolean = false,
+  private val requeueDelay : Duration = Duration.ofSeconds(0),
+  private val requeueMaxJitter : Duration = Duration.ofSeconds(0)
 ) {
   private val log: Logger = getLogger(javaClass)
+  private val random: Random = Random()
 
   /**
    * Polls the [Queue] once (or more if [fillExecutorEachCycle] is true) so
@@ -82,8 +87,22 @@ class QueueProcessor(
             }
           }
         } catch (e: RejectedExecutionException) {
-          log.warn("Executor at capacity, immediately re-queuing message", e)
-          queue.push(message)
+          var requeueDelaySeconds = requeueDelay.seconds
+          if (requeueMaxJitter.seconds > 0) {
+            requeueDelaySeconds += random.nextInt(requeueMaxJitter.seconds.toInt())
+          }
+
+          val requeueDelay = Duration.ofSeconds(requeueDelaySeconds)
+          val numberOfAttempts = message.getAttribute<AttemptsAttribute>()
+
+          log.warn(
+            "Executor at capacity, re-queuing message {} (delay: {}, attempts: {})",
+            message,
+            requeueDelay,
+            numberOfAttempts,
+            e
+          )
+          queue.push(message, requeueDelay)
         }
       } else {
         log.error("Unsupported message type ${message.javaClass.simpleName}: $message")

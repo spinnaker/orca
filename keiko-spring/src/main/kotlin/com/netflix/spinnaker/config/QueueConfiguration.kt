@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Clock
+import java.time.Duration
 
 @Configuration
 @EnableConfigurationProperties(QueueProperties::class)
@@ -57,7 +58,17 @@ class QueueConfiguration {
     publisher: EventPublisher,
     queueProperties: QueueProperties,
     deadMessageHandler: DeadMessageCallback
-  ) = QueueProcessor(queue, executor, handlers, activator, publisher, deadMessageHandler, queueProperties.fillExecutorEachCycle)
+  ) = QueueProcessor(
+    queue,
+    executor,
+    handlers,
+    activator,
+    publisher,
+    deadMessageHandler,
+    queueProperties.fillExecutorEachCycle,
+    Duration.ofSeconds(queueProperties.requeueDelaySeconds),
+    Duration.ofSeconds(queueProperties.requeueMaxJitterSeconds)
+  )
 
   @Bean
   fun queueEventPublisher(
