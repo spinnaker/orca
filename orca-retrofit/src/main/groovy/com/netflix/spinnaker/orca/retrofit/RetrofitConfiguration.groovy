@@ -47,18 +47,18 @@ import java.util.concurrent.TimeUnit
 @EnableConfigurationProperties
 class RetrofitConfiguration {
 
-   @Value('${okHttp3Client.connectionPool.maxIdleConnections:5}')
+   @Value('${okHttpClient.connectionPool.maxIdleConnections:5}')
    int maxIdleConnections
 
-   @Value('${okHttp3Client.connectionPool.keepAliveDurationMs:300000}')
+   @Value('${okHttpClient.connectionPool.keepAliveDurationMs:300000}')
    int keepAliveDurationMs
 
-   @Value('${okHttp3Client.retryOnConnectionFailure:true}')
+   @Value('${okHttpClient.retryOnConnectionFailure:true}')
    boolean retryOnConnectionFailure
 
    @Bean(name = ["retrofitClient"])
    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
-   Ok3Client retrofitClient(OkHttp3ClientConfiguration okHttpClientConfig) {
+   Ok3Client ok3Client(OkHttp3ClientConfiguration okHttpClientConfig) {
      final String userAgent = "Spinnaker-${System.getProperty('spring.application.name', 'unknown')}/${getClass().getPackage().implementationVersion ?: '1.0'}"
      OkHttpClient.Builder builder = okHttpClientConfig.create()
      builder.addNetworkInterceptor(
@@ -75,9 +75,9 @@ class RetrofitConfiguration {
      new Ok3Client(builder.build())
   }
 
-  @Bean(name = ["okClient"])
+  @Bean
   @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  OkClient oldRetrofitClient(@Qualifier("okHttpClientConfiguration") OkHttpClientConfiguration okHttpClientConfig) {
+  OkClient okClient(@Qualifier("okHttpClientConfiguration") OkHttpClientConfiguration okHttpClientConfig) {
     final String userAgent = "Spinnaker-${System.getProperty('spring.application.name', 'unknown')}/${getClass().getPackage().implementationVersion ?: '1.0'}"
     def cfg = okHttpClientConfig.create()
     cfg.networkInterceptors().add(new com.squareup.okhttp.Interceptor() {
