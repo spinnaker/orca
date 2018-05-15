@@ -19,6 +19,7 @@ package com.netflix.spinnaker.q.redis
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.common.hash.Hashing
+import com.netflix.spinnaker.KotlinOpen
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
@@ -47,6 +48,7 @@ import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.*
 
+@KotlinOpen
 class RedisQueue(
   private val queueName: String,
   private val pool: Pool<Jedis>,

@@ -16,6 +16,11 @@
 
 apply plugin: "nebula.kotlin"
 apply plugin: "kotlin-spring"
+apply plugin: "kotlin-allopen"
+
+allOpen {
+  annotation("com.netflix.spinnaker.KotlinOpen")
+}
 
 configurations.all {
   resolutionStrategy {

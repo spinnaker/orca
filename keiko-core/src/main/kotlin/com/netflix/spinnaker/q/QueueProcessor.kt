@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.q
 
+import com.netflix.spinnaker.KotlinOpen
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MessageDead
 import com.netflix.spinnaker.q.metrics.HandlerThrewError
@@ -32,6 +33,7 @@ import javax.annotation.PostConstruct
  * The processor that fetches messages from the [Queue] and hands them off to
  * the appropriate [MessageHandler].
  */
+@KotlinOpen
 class QueueProcessor(
   private val queue: Queue,
   private val executor: QueueExecutor<*>,
