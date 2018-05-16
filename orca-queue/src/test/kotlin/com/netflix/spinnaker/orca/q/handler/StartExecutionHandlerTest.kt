@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.q.StartStage
@@ -38,6 +37,7 @@ import org.jetbrains.spek.api.dsl.*
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import org.springframework.context.ApplicationEventPublisher
+import rx.Observable.just
 import java.util.*
 
 object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
@@ -275,7 +275,10 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           pipeline.isLimitConcurrent = true
           runningPipeline.isLimitConcurrent = true
 
-          whenever(pendingExecutionService.depth(configId)) doReturn 1
+          whenever(
+            repository
+              .retrievePipelinesForPipelineConfigId(configId, ExecutionRepository.ExecutionCriteria().setLimit(1).setStatuses(RUNNING))
+          ) doReturn just(runningPipeline)
           whenever(
             repository.retrieve(message.executionType, message.executionId)
           ) doReturn pipeline
@@ -306,7 +309,10 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           pipeline.isLimitConcurrent = false
           runningPipeline.isLimitConcurrent = false
 
-          whenever(pendingExecutionService.depth(configId)) doReturn 1
+          whenever(
+            repository
+              .retrievePipelinesForPipelineConfigId(configId, ExecutionRepository.ExecutionCriteria().setLimit(1).setStatuses(RUNNING))
+          ) doReturn just(runningPipeline)
           whenever(
             repository.retrieve(message.executionType, message.executionId)
           ) doReturn pipeline

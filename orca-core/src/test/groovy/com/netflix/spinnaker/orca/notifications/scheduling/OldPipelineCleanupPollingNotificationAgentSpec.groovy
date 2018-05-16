@@ -15,16 +15,10 @@
  */
 package com.netflix.spinnaker.orca.notifications.scheduling
 
-import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
-import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Task
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.ScanParams
-import redis.clients.jedis.ScanResult
-import redis.clients.util.Pool
 import spock.lang.Specification
 
 import java.time.Clock
@@ -42,18 +36,25 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     def clock = Mock(Clock) {
       millis() >> { Duration.ofDays(3).toMillis() }
     }
-    def filter = new OldPipelineCleanupPollingNotificationAgent(clock: clock, thresholdDays: 1).filter
+    def filter = new OldPipelineCleanupPollingNotificationAgent(
+      Mock(NotificationClusterLock),
+      Mock(PollingAgentExecutionRepository),
+      clock,
+      5000,
+      1,
+      5
+    ).filter
 
     expect:
-    filter.test(pipeline {
+    filter.call(pipeline {
       status = ExecutionStatus.SUCCEEDED
       startTime = Duration.ofDays(1).toMillis()
     }) == true
-    filter.test(pipeline {
+    filter.call(pipeline {
       status = ExecutionStatus.RUNNING
       startTime = Duration.ofDays(1).toMillis()
     }) == false
-    filter.test(pipeline {
+    filter.call(pipeline {
       status = ExecutionStatus.SUCCEEDED
       startTime = Duration.ofDays(3).toMillis()
     }) == false
@@ -71,10 +72,17 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     }
 
     and:
-    def mapper = new OldPipelineCleanupPollingNotificationAgent().mapper
+    def mapper = new OldPipelineCleanupPollingNotificationAgent(
+      Mock(NotificationClusterLock),
+      Mock(PollingAgentExecutionRepository),
+      Mock(Clock),
+      5000,
+      1,
+      5
+    ).mapper
 
     expect:
-    with(mapper.apply(pipeline)) {
+    with(mapper.call(pipeline)) {
       id == "ID1"
       application == "orca"
       pipelineConfigId == "P1"
@@ -93,24 +101,17 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     def clock = Mock(Clock) {
       millis() >> { Duration.ofDays(10).toMillis() }
     }
-    def executionRepository = Mock(ExecutionRepository) {
-      1 * retrievePipelinesForApplication("orca") >> pipelines
+    def executionRepository = Mock(PollingAgentExecutionRepository) {
+      1 * retrieveAllApplicationNames(PIPELINE) >> ["orca"]
+      1 * retrievePipelinesForApplication("orca") >> rx.Observable.from(pipelines)
     }
-    def jedisPool = Stub(Pool) {
-      getResource() >> {
-        return Stub(Jedis) {
-          scan("0", _ as ScanParams) >> { new ScanResult<String>("0", ["pipeline:app:orca"]) }
-        }
-      }
-    }
-    def redisClientDelegate = (RedisClientDelegate) new JedisClientDelegate(jedisPool)
-
     def agent = new OldPipelineCleanupPollingNotificationAgent(
-      executionRepository: executionRepository,
-      redisClientDelegate: redisClientDelegate,
-      clock: clock,
-      thresholdDays: 5,
-      minimumPipelineExecutions: 3
+      Mock(NotificationClusterLock),
+      executionRepository,
+      clock,
+      5000,
+      5,
+      3
     )
 
     when:
