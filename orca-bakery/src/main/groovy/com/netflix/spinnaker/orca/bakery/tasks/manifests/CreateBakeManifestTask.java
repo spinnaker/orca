@@ -88,6 +88,7 @@ public class CreateBakeManifestTask implements RetryableTask {
     request.setTemplateRenderer((String) context.get("templateRenderer"));
     request.setOutputName((String) context.get("outputName"));
     request.setOverrides(objectMapper.convertValue(context.get("overrides"), new TypeReference<Map<String, Object>>() { }));
+    request.setNamespace((String) context.get("namespace"));
 
     log.info("Requesting {}", request);
     Artifact result = bakery.bakeManifest(request);

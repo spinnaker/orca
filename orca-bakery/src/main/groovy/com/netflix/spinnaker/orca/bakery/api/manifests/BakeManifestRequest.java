@@ -35,4 +35,6 @@ public class BakeManifestRequest {
   String outputName;
   @JsonProperty("overrides")
   Map<String, Object> overrides;
+  @JsonProperty("namespace")
+  String namespace;
 }
