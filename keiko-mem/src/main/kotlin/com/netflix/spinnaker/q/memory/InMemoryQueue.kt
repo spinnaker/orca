@@ -118,6 +118,9 @@ class InMemoryQueue(
       unacked = unacked.size
     )
 
+  override fun containsMessage(predicate: (Message) -> Boolean): Boolean =
+    queue.map(Envelope::payload).any(predicate)
+
   private fun ack(messageId: UUID) {
     unacked.removeIf { it.id == messageId }
   }

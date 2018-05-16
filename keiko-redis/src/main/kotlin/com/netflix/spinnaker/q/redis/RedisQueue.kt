@@ -20,10 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.common.hash.Hashing
 import com.netflix.spinnaker.KotlinOpen
-import com.netflix.spinnaker.q.AttemptsAttribute
-import com.netflix.spinnaker.q.DeadMessageCallback
-import com.netflix.spinnaker.q.MaxAttemptsAttribute
-import com.netflix.spinnaker.q.Message
+import com.netflix.spinnaker.q.*
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.metrics.*
 import com.netflix.spinnaker.q.migration.SerializationMigrator
@@ -213,6 +210,22 @@ class RedisQueue(
             orphaned = messages - (queued + processing)
           )
         }
+    }
+
+  override fun containsMessage(predicate: (Message) -> Boolean): Boolean =
+    pool.resource.use { redis ->
+      var found = false
+      var cursor = "0"
+      while (!found) {
+        redis.hscan(messagesKey, cursor).apply {
+          found = result
+            .map { mapper.readValue<Message>(it.value) }
+            .any(predicate)
+          cursor = stringCursor
+        }
+        if (cursor == "0") break
+      }
+      return found
     }
 
   override fun toString() = "RedisQueue[$queueName]"

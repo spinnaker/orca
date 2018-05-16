@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.q.metrics
 
+import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
 
 /**
@@ -30,6 +31,12 @@ interface MonitorableQueue : Queue {
    * @return the current state of the queue.
    */
   fun readState(): QueueState
+
+  /**
+   * Confirms if the queue currently contains one or more messages matching
+   * [predicate].
+   */
+  fun containsMessage(predicate: (Message) -> Boolean): Boolean
 }
 
 /**

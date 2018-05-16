@@ -24,10 +24,7 @@ import com.netflix.spinnaker.time.MutableClock
 import com.nhaarman.mockito_kotlin.*
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.describe
-import org.jetbrains.spek.api.dsl.given
-import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.dsl.on
+import org.jetbrains.spek.api.dsl.*
 import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
@@ -76,6 +73,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
         }
       }
     }
+
+    it("reports no matching message exists") {
+      with(queue!!) {
+        assertThat(containsMessage { it is TestMessage }).isFalse()
+      }
+    }
   }
 
   describe("pushing a message") {
@@ -99,6 +102,12 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
           assertThat(ready).isEqualTo(1)
           assertThat(orphaned).isEqualTo(0)
         }
+      }
+    }
+
+    it("reports a matching message exists") {
+      with(queue!!) {
+        assertThat(containsMessage { it is TestMessage && it.payload == "a" }).isTrue()
       }
     }
   }
