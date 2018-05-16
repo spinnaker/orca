@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.orca.notifications.scheduling
 
-apply from: "$rootDir/gradle/groovy.gradle"
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 
-dependencies {
-  compile project(":orca-core")
-  spinnaker.group('retrofitDefault')
-  compile spinnaker.dependency('korkWeb')
-  compile spinnaker.dependency('rxJava')
-  compile spinnaker.dependency('retrofit1okHttp3Client')
+interface PollingAgentExecutionRepository : ExecutionRepository {
+
+  fun retrieveAllApplicationNames(type: ExecutionType?): List<String>
+  fun retrieveAllApplicationNames(type: ExecutionType?, minExecutions: Int): List<String>
+  fun hasEntityTags(type: ExecutionType, id: String): Boolean
 }
