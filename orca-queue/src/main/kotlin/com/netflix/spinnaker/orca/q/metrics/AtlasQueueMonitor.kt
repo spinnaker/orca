@@ -16,8 +16,10 @@
 
 package com.netflix.spinnaker.orca.q.metrics
 
+import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.Tag
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
@@ -29,6 +31,7 @@ import com.netflix.spinnaker.q.metrics.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
@@ -55,7 +58,8 @@ class AtlasQueueMonitor
   private val registry: Registry,
   private val repository: ExecutionRepository,
   private val clock: Clock,
-  @Qualifier("scheduler") private val zombieCheckScheduler: Optional<Scheduler>
+  @Qualifier("scheduler") private val zombieCheckScheduler: Optional<Scheduler>,
+  @Value("\${queue.zombie.check.cutoff.minutes:10}") private val zombieCheckCutoffMinutes: Long
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
@@ -97,7 +101,11 @@ class AtlasQueueMonitor
         log.info("Completed zombie check in ${Duration.between(startedAt, clock.instant())}")
       }
       .subscribe {
-        registry.counter("zombie.execution", "id", it.id).increment()
+        val tags = mutableListOf<Tag>(BasicTag("application", it.application))
+        if (it.type == PIPELINE && it.pipelineConfigId != null) {
+          tags.add(BasicTag("name", it.name))
+        }
+        registry.counter("zombie.execution", tags).increment()
       }
   }
 
@@ -209,7 +217,7 @@ class AtlasQueueMonitor
 
   private fun hasBeenAroundAWhile(execution: Execution): Boolean =
     Instant.ofEpochMilli(execution.buildTime!!)
-      .isBefore(clock.instant().minus(10, MINUTES))
+      .isBefore(clock.instant().minus(zombieCheckCutoffMinutes, MINUTES))
 
   private fun queueHasNoMessages(execution: Execution): Boolean =
     !queue.containsMessage { message ->
