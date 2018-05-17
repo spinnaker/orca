@@ -101,10 +101,10 @@ class AtlasQueueMonitor
         log.info("Completed zombie check in ${Duration.between(startedAt, clock.instant())}")
       }
       .subscribe {
-        val tags = mutableListOf<Tag>(BasicTag("application", it.application))
-        if (it.type == PIPELINE && it.pipelineConfigId != null) {
-          tags.add(BasicTag("name", it.name))
-        }
+        val tags = mutableListOf<Tag>(
+          BasicTag("application", it.application),
+          BasicTag("type", it.type.name)
+        )
         registry.counter("zombie.execution", tags).increment()
       }
   }

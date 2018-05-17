@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
+import com.netflix.spectator.api.Tag
 import com.netflix.spectator.api.Timer
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
@@ -63,7 +64,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     on { counter(eq("queue.duplicate.messages"), anyVararg<String>()) } doReturn duplicateCounter
     on { counter("queue.lock.failed") } doReturn lockFailedCounter
     on { timer("queue.message.lag") } doReturn messageLagTimer
-    on { counter(eq("zombie.execution"), anyVararg<String>()) } doReturn zombieCounter
+    on { counter(eq("zombie.execution"), any<Iterable<Tag>>()) } doReturn zombieCounter
   }
 
   subject(GROUP) {
