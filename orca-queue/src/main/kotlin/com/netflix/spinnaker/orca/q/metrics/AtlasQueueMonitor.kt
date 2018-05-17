@@ -18,17 +18,28 @@ package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.ApplicationAware
+import com.netflix.spinnaker.orca.q.ExecutionLevel
 import com.netflix.spinnaker.q.metrics.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import rx.Scheduler
+import rx.schedulers.Schedulers
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit.MINUTES
+import java.util.*
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PostConstruct
@@ -42,7 +53,9 @@ class AtlasQueueMonitor
 @Autowired constructor(
   private val queue: MonitorableQueue,
   private val registry: Registry,
-  private val clock: Clock
+  private val repository: ExecutionRepository,
+  private val clock: Clock,
+  @Qualifier("scheduler") private val zombieCheckScheduler: Optional<Scheduler>
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
@@ -69,6 +82,23 @@ class AtlasQueueMonitor
   @Scheduled(fixedDelayString = "\${queue.depth.metric.frequency:30000}")
   fun pollQueueState() {
     _lastState.set(queue.readState())
+  }
+
+  @Scheduled(fixedDelayString = "\${queue.zombie.check.frequency:3600000}")
+  fun checkForZombies() {
+    val startedAt = clock.instant()
+    repository.retrieve(PIPELINE)
+      .mergeWith(repository.retrieve(ORCHESTRATION))
+      .subscribeOn(zombieCheckScheduler.orElseGet(Schedulers::io))
+      .filter { it.status == RUNNING }
+      .filter(this::hasBeenAroundAWhile)
+      .filter(this::queueHasNoMessages)
+      .doOnCompleted {
+        log.info("Completed zombie check in ${Duration.between(startedAt, clock.instant())}")
+      }
+      .subscribe {
+        registry.counter("zombie.execution", "id", it.id).increment()
+      }
   }
 
   @PostConstruct
@@ -176,4 +206,13 @@ class AtlasQueueMonitor
    */
   private val MessageNotFound.counter: Counter
     get() = registry.counter("queue.message.notfound")
+
+  private fun hasBeenAroundAWhile(execution: Execution): Boolean =
+    Instant.ofEpochMilli(execution.buildTime!!)
+      .isBefore(clock.instant().minus(10, MINUTES))
+
+  private fun queueHasNoMessages(execution: Execution): Boolean =
+    !queue.containsMessage { message ->
+      message is ExecutionLevel && message.executionId == execution.id
+    }
 }
