@@ -58,9 +58,9 @@ class AtlasQueueMonitor
   private val registry: Registry,
   private val repository: ExecutionRepository,
   private val clock: Clock,
-  @Value("\${queue.zombie.check.enabled:false}")private val zombieCheckEnabled: Boolean,
+  @Value("\${queue.zombieCheck.enabled:false}")private val zombieCheckEnabled: Boolean,
   @Qualifier("scheduler") private val zombieCheckScheduler: Optional<Scheduler>,
-  @Value("\${queue.zombie.check.cutoff.minutes:10}") private val zombieCheckCutoffMinutes: Long
+  @Value("\${queue.zombieCheck.cutoffMinutes:10}") private val zombieCheckCutoffMinutes: Long
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
@@ -89,7 +89,7 @@ class AtlasQueueMonitor
     _lastState.set(queue.readState())
   }
 
-  @Scheduled(fixedDelayString = "\${queue.zombie.check.frequency:3600000}")
+  @Scheduled(fixedDelayString = "\${queue.zombieCheck.intervalMs:3600000}")
   fun checkForZombies() {
     if (!zombieCheckEnabled) return
 
