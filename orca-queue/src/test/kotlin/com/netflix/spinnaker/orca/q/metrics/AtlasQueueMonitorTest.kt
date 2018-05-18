@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.q.metrics.*
 import com.netflix.spinnaker.time.fixedClock
@@ -228,6 +229,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
   }
 
   describe("detecting zombie executions") {
+    val criteria = ExecutionCriteria().setStatuses(RUNNING)
     given("a non-running pipeline with no associated messages") {
       val pipeline = pipeline {
         status = SUCCEEDED
@@ -235,7 +237,8 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
       }
 
       beforeGroup {
-        whenever(repository.retrieve(pipeline.type)) doReturn just(pipeline)
+        whenever(repository.retrieve(PIPELINE, criteria)) doReturn just(pipeline)
+        whenever(queue.containsMessage(any())) doReturn true
       }
 
       afterGroup(::resetMocks)
@@ -256,7 +259,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
       }
 
       beforeGroup {
-        whenever(repository.retrieve(pipeline.type)) doReturn just(pipeline)
+        whenever(repository.retrieve(pipeline.type, criteria)) doReturn just(pipeline)
         whenever(queue.containsMessage(any())) doReturn true
       }
 
@@ -278,7 +281,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
       }
 
       beforeGroup {
-        whenever(repository.retrieve(pipeline.type)) doReturn just(pipeline)
+        whenever(repository.retrieve(PIPELINE, criteria)) doReturn just(pipeline)
         whenever(queue.containsMessage(any())) doReturn false
       }
 

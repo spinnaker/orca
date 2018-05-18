@@ -91,10 +91,10 @@ class AtlasQueueMonitor
   @Scheduled(fixedDelayString = "\${queue.zombie.check.frequency:3600000}")
   fun checkForZombies() {
     val startedAt = clock.instant()
-    repository.retrieve(PIPELINE)
-      .mergeWith(repository.retrieve(ORCHESTRATION))
+    val criteria = ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING)
+    repository.retrieve(PIPELINE, criteria)
+      .mergeWith(repository.retrieve(ORCHESTRATION, criteria))
       .subscribeOn(zombieCheckScheduler.orElseGet(Schedulers::io))
-      .filter { it.status == RUNNING }
       .filter(this::hasBeenAroundAWhile)
       .filter(this::queueHasNoMessages)
       .doOnCompleted {
