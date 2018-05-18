@@ -58,6 +58,7 @@ class AtlasQueueMonitor
   private val registry: Registry,
   private val repository: ExecutionRepository,
   private val clock: Clock,
+  @Value("\${queue.zombie.check.enabled:false}")private val zombieCheckEnabled: Boolean,
   @Qualifier("scheduler") private val zombieCheckScheduler: Optional<Scheduler>,
   @Value("\${queue.zombie.check.cutoff.minutes:10}") private val zombieCheckCutoffMinutes: Long
 ) {
@@ -90,6 +91,8 @@ class AtlasQueueMonitor
 
   @Scheduled(fixedDelayString = "\${queue.zombie.check.frequency:3600000}")
   fun checkForZombies() {
+    if (!zombieCheckEnabled) return
+
     val startedAt = clock.instant()
     val criteria = ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING)
     repository.retrieve(PIPELINE, criteria)

@@ -69,7 +69,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
   }
 
   subject(GROUP) {
-    AtlasQueueMonitor(queue, registry, repository, clock, Optional.of(Schedulers.immediate()), 10)
+    AtlasQueueMonitor(queue, registry, repository, clock, true, Optional.of(Schedulers.immediate()), 10)
   }
 
   fun resetMocks() =
