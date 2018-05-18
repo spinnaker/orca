@@ -108,7 +108,7 @@ class AtlasQueueMonitor
           BasicTag("application", it.application),
           BasicTag("type", it.type.name)
         )
-        registry.counter("zombie.execution", tags).increment()
+        registry.counter("queue.zombies", tags).increment()
       }
   }
 

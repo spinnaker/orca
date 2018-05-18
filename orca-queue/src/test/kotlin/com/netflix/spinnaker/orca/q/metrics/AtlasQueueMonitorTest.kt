@@ -65,7 +65,7 @@ object AtlasQueueMonitorTest : SubjectSpek<AtlasQueueMonitor>({
     on { counter(eq("queue.duplicate.messages"), anyVararg<String>()) } doReturn duplicateCounter
     on { counter("queue.lock.failed") } doReturn lockFailedCounter
     on { timer("queue.message.lag") } doReturn messageLagTimer
-    on { counter(eq("zombie.execution"), any<Iterable<Tag>>()) } doReturn zombieCounter
+    on { counter(eq("queue.zombies"), any<Iterable<Tag>>()) } doReturn zombieCounter
   }
 
   subject(GROUP) {
