@@ -67,7 +67,8 @@ class QueueConfiguration {
     deadMessageHandler,
     queueProperties.fillExecutorEachCycle,
     Duration.ofSeconds(queueProperties.requeueDelaySeconds),
-    Duration.ofSeconds(queueProperties.requeueMaxJitterSeconds)
+    Duration.ofSeconds(queueProperties.requeueMaxJitterSeconds),
+    queueProperties.enabled
   )
 
   @Bean

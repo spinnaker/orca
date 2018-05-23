@@ -18,14 +18,14 @@ package com.netflix.spinnaker.q
 
 import com.netflix.spinnaker.KotlinOpen
 import com.netflix.spinnaker.q.metrics.EventPublisher
-import com.netflix.spinnaker.q.metrics.MessageDead
 import com.netflix.spinnaker.q.metrics.HandlerThrewError
+import com.netflix.spinnaker.q.metrics.MessageDead
 import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
 import java.time.Duration
-import java.util.Random
+import java.util.*
 import java.util.concurrent.RejectedExecutionException
 import javax.annotation.PostConstruct
 
@@ -43,7 +43,8 @@ class QueueProcessor(
   private val deadMessageHandler: DeadMessageCallback,
   private val fillExecutorEachCycle: Boolean = false,
   private val requeueDelay : Duration = Duration.ofSeconds(0),
-  private val requeueMaxJitter : Duration = Duration.ofSeconds(0)
+  private val requeueMaxJitter : Duration = Duration.ofSeconds(0),
+  private val enabled: Boolean = true
 ) {
   private val log: Logger = getLogger(javaClass)
   private val random: Random = Random()
@@ -54,7 +55,7 @@ class QueueProcessor(
    */
   @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:10}")
   fun poll() =
-    activator.ifEnabled {
+    ifEnabled {
       if (executor.hasCapacity()) {
         if (fillExecutorEachCycle) {
           val availableCapacity = executor.availableCapacity()
@@ -111,6 +112,12 @@ class QueueProcessor(
         deadMessageHandler.invoke(queue, message)
         publisher.publishEvent(MessageDead)
       }
+    }
+  }
+
+  private fun ifEnabled(fn: () -> Unit) {
+    if (enabled) {
+      activator.ifEnabled(fn)
     }
   }
 
