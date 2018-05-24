@@ -16,8 +16,13 @@
 
 package com.netflix.spinnaker.assertj
 
-import org.assertj.core.api.*
+import org.assertj.core.api.AbstractAssert
+import org.assertj.core.api.Assert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.IntegerAssert
+import org.assertj.core.api.IterableAssert
+import org.assertj.core.api.MapAssert
+import org.assertj.core.api.SoftAssertions
 import java.lang.reflect.Field
 import kotlin.reflect.KProperty1
 
@@ -51,17 +56,17 @@ fun Assert<*, *>.asIterable() = run {
   IterableAssert(actual as Iterable<Any>)
 }
 
-//fun <SELF : Assert<*, ACTUAL>, ACTUAL, PROP>
+// fun <SELF : Assert<*, ACTUAL>, ACTUAL, PROP>
 //  SELF.get(
 //  getter: KFunction1<ACTUAL, PROP>
-//): Assert<*, PROP> =
+// ): Assert<*, PROP> =
 //  assertThat(getter.invoke(actual))
 //    .`as`(getter.name) as Assert<*, PROP>
 
 fun <SELF : Assert<*, ACTUAL>, ACTUAL, PROP>
   SELF.get(
-  property: KProperty1<ACTUAL, PROP>
-): Assert<*, PROP> =
+    property: KProperty1<ACTUAL, PROP>
+  ): Assert<*, PROP> =
   assertThat(property.get(actual))
     .`as`(property.name) as Assert<*, PROP>
 

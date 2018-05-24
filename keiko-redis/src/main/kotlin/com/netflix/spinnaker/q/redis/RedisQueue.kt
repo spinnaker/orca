@@ -20,9 +20,26 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.common.hash.Hashing
 import com.netflix.spinnaker.KotlinOpen
-import com.netflix.spinnaker.q.*
+import com.netflix.spinnaker.q.AttemptsAttribute
+import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.MaxAttemptsAttribute
+import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.q.metrics.*
+import com.netflix.spinnaker.q.metrics.EventPublisher
+import com.netflix.spinnaker.q.metrics.LockFailed
+import com.netflix.spinnaker.q.metrics.MessageAcknowledged
+import com.netflix.spinnaker.q.metrics.MessageDead
+import com.netflix.spinnaker.q.metrics.MessageDuplicate
+import com.netflix.spinnaker.q.metrics.MessageNotFound
+import com.netflix.spinnaker.q.metrics.MessageProcessing
+import com.netflix.spinnaker.q.metrics.MessagePushed
+import com.netflix.spinnaker.q.metrics.MessageRescheduled
+import com.netflix.spinnaker.q.metrics.MessageRetried
+import com.netflix.spinnaker.q.metrics.MonitorableQueue
+import com.netflix.spinnaker.q.metrics.QueuePolled
+import com.netflix.spinnaker.q.metrics.QueueState
+import com.netflix.spinnaker.q.metrics.RetryPolled
+import com.netflix.spinnaker.q.metrics.fire
 import com.netflix.spinnaker.q.migration.SerializationMigrator
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
@@ -32,7 +49,7 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisCommands
 import redis.clients.jedis.ScriptingCommands
 import redis.clients.jedis.Transaction
-import redis.clients.jedis.params.sortedset.ZAddParams
+import redis.clients.jedis.params.sortedset.ZAddParams.zAddParams
 import redis.clients.util.Pool
 import java.io.IOException
 import java.lang.String.format
@@ -43,7 +60,7 @@ import java.time.Duration
 import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.temporal.TemporalAmount
-import java.util.*
+import java.util.Optional
 
 @KotlinOpen
 class RedisQueue(
@@ -107,7 +124,8 @@ class RedisQueue(
     pool.resource.use { redis ->
       redis.firstFingerprint(queueKey, message.fingerprint()).also { fingerprint ->
         if (fingerprint != null) {
-          log.warn("Re-prioritizing message as an identical one is already on the queue: $fingerprint, message: $message")
+          log.warn("Re-prioritizing message as an identical one is already on the queue: " +
+            "$fingerprint, message: $message")
           redis.zadd(queueKey, score(delay), fingerprint)
           fire(MessageDuplicate(message))
         } else {
@@ -122,7 +140,7 @@ class RedisQueue(
     pool.resource.use { redis ->
       val fingerprint = message.fingerprint().latest
       log.debug("Re-scheduling message: $message, fingerprint: $fingerprint to deliver in $delay")
-      val status: Long = redis.zadd(queueKey, score(delay), fingerprint, ZAddParams.zAddParams().xx())
+      val status: Long = redis.zadd(queueKey, score(delay), fingerprint, zAddParams().xx())
       if (status.toInt() == 1) {
         fire(MessageRescheduled(message))
       } else {
@@ -134,8 +152,11 @@ class RedisQueue(
   override fun ensure(message: Message, delay: TemporalAmount) {
     pool.resource.use { redis ->
       val fingerprint = message.fingerprint()
-      if (!redis.anyZismember(queueKey, fingerprint.all) && !redis.anyZismember(unackedKey, fingerprint.all)) {
-        log.debug("Pushing ensured message onto queue as it does not exist in queue or unacked sets")
+      if (!redis.anyZismember(queueKey, fingerprint.all) &&
+        !redis.anyZismember(unackedKey, fingerprint.all)) {
+        log.debug(
+          "Pushing ensured message onto queue as it does not exist in queue or unacked sets"
+        )
         push(message, delay)
       }
     }
@@ -175,7 +196,8 @@ class RedisQueue(
                     mapper
                       .readValue<Message>(runSerializationMigration(json as String))
                       .let { message ->
-                        log.warn("Not retrying message $fingerprint because an identical message is already on the queue")
+                        log.warn("Not retrying message $fingerprint because an identical message " +
+                          "is already on the queue")
                         fire(MessageDuplicate(message))
                       }
                   }
@@ -447,6 +469,7 @@ private const val READ_MESSAGE = """
   redis.call("HINCRBY", attemptsKey, fingerprint, 1)
 """
 
+/* ktlint-disable max-line-length */
 private const val READ_MESSAGE_WITH_LOCK = """
   local queueKey = KEYS[1]
   local unackKey = KEYS[2]
@@ -494,6 +517,7 @@ private const val READ_MESSAGE_WITH_LOCK = """
 
   return {fingerprint, fingerprintScore, message}
 """
+/* ktlint-enable max-line-length */
 
 // TODO rz - I don't think we should be incrementing attempts here...
 private const val READ_MESSAGE_WITHOUT_LOCK = """

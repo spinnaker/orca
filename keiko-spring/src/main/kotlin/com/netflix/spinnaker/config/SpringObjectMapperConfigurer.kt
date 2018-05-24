@@ -42,7 +42,11 @@ class SpringObjectMapperConfigurer(
     }
   }
 
-  private fun registerSubtypes(mapper: ObjectMapper, rootType: String, subtypePackages: List<String>) {
+  private fun registerSubtypes(
+    mapper: ObjectMapper,
+    rootType: String,
+    subtypePackages: List<String>
+  ) {
     getRootTypeClass(rootType).also { cls ->
       subtypePackages.forEach { mapper.registerSubtypes(*findSubtypes(cls, it)) }
     }
@@ -63,7 +67,10 @@ class SpringObjectMapperConfigurer(
         val serializationName = cls.annotations
           .filterIsInstance<JsonTypeName>()
           .firstOrNull()
-          ?.value ?: throw InvalidSubtypeConfigurationException("Subtype ${cls.simpleName} does not have a JsonTypeName")
+          ?.value
+          ?: throw InvalidSubtypeConfigurationException(
+            "Subtype ${cls.simpleName} does not have a JsonTypeName"
+          )
 
         log.info("Registering subtype of ${clazz.simpleName}: $serializationName")
         return@map NamedType(cls, serializationName)

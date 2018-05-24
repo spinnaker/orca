@@ -54,4 +54,6 @@ subprojects {
   }
 }
 
+apply from: "$rootDir/gradle/ktlint-root.gradle"
+
 defaultTasks "build"

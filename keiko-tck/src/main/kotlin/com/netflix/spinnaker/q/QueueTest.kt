@@ -19,7 +19,13 @@ package com.netflix.spinnaker.q
 import com.netflix.spinnaker.q.Queue.Companion.maxRetries
 import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.time.MutableClock
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.eq
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.reset
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
+import com.nhaarman.mockito_kotlin.verifyZeroInteractions
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -574,7 +580,9 @@ abstract class QueueTest<out Q : Queue>(
         }
       }
 
+      /* ktlint-disable max-line-length */
       and("the first message is never acknowledged, gets re-delivered then another identical message is pushed") {
+      /* ktlint-enable max-line-length */
         beforeGroup {
           queue = createQueue(clock, deadLetterCallback).apply {
             push(message)

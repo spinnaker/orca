@@ -25,6 +25,6 @@ class QueueProperties {
   var handlerCorePoolSize: Int = 20
   var handlerMaxPoolSize: Int = 20
   var fillExecutorEachCycle: Boolean = false
-  var requeueDelaySeconds : Long = 0
-  var requeueMaxJitterSeconds : Long = 0
+  var requeueDelaySeconds: Long = 0
+  var requeueMaxJitterSeconds: Long = 0
 }

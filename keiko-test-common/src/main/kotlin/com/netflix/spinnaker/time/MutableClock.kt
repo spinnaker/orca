@@ -36,7 +36,7 @@ class MutableClock(
     instant = instant.plus(amount)
   }
 
-  fun instant(newInstant: Instant): Unit {
+  fun instant(newInstant: Instant) {
     instant = newInstant
   }
 }

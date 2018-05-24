@@ -40,7 +40,8 @@ class RedisDeadMessageHandler(
 
   override fun invoke(queue: Queue, message: Message) {
     pool.resource.use { redis ->
-      redis.zadd(dlqKey, clock.instant().toEpochMilli().toDouble(), mapper.writeValueAsString(message))
+      val score = clock.instant().toEpochMilli().toDouble()
+      redis.zadd(dlqKey, score, mapper.writeValueAsString(message))
     }
   }
 }

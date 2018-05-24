@@ -46,7 +46,7 @@ const val JSON_NAME_PROPERTY = "kind"
   /**
    * Adds an attribute of type [A] to the message.
    */
-  inline fun <reified A: Attribute> setAttribute(attribute: A): A {
+  inline fun <reified A : Attribute> setAttribute(attribute: A): A {
     attributes.removeIf { it is A }
     attributes.add(attribute)
 

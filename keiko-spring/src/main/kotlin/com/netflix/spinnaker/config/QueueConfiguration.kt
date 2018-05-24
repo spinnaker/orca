@@ -16,7 +16,12 @@
 
 package com.netflix.spinnaker.config
 
-import com.netflix.spinnaker.q.*
+import com.netflix.spinnaker.q.Activator
+import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.MessageHandler
+import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.QueueExecutor
+import com.netflix.spinnaker.q.QueueProcessor
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.QueueEvent
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean

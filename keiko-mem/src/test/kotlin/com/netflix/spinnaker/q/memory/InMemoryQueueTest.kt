@@ -42,4 +42,3 @@ private val createQueue = { clock: Clock,
     })
   )
 }
-

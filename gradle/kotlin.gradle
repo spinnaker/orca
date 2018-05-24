@@ -17,6 +17,7 @@
 apply plugin: "nebula.kotlin"
 apply plugin: "kotlin-spring"
 apply plugin: "kotlin-allopen"
+apply from: "${project.rootDir}/gradle/ktlint.gradle"
 
 allOpen {
   annotation("com.netflix.spinnaker.KotlinOpen")

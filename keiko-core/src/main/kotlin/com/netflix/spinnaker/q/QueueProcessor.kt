@@ -25,7 +25,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled
 import java.time.Duration
-import java.util.*
+import java.util.Random
 import java.util.concurrent.RejectedExecutionException
 import javax.annotation.PostConstruct
 
@@ -42,8 +42,8 @@ class QueueProcessor(
   private val publisher: EventPublisher,
   private val deadMessageHandler: DeadMessageCallback,
   private val fillExecutorEachCycle: Boolean = false,
-  private val requeueDelay : Duration = Duration.ofSeconds(0),
-  private val requeueMaxJitter : Duration = Duration.ofSeconds(0),
+  private val requeueDelay: Duration = Duration.ofSeconds(0),
+  private val requeueMaxJitter: Duration = Duration.ofSeconds(0),
   private val enabled: Boolean = true
 ) {
   private val log: Logger = getLogger(javaClass)

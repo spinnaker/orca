@@ -37,7 +37,7 @@ import redis.clients.util.Pool
 import java.net.URI
 import java.time.Clock
 import java.time.Duration
-import java.util.*
+import java.util.Optional
 
 @Configuration
 @EnableConfigurationProperties(RedisQueueProperties::class)
@@ -55,7 +55,11 @@ class RedisQueueConfiguration {
   ) =
     URI.create(connection).let { cx ->
       val port = if (cx.port == -1) Protocol.DEFAULT_PORT else cx.port
-      val db = if (cx.path.isNullOrEmpty()) Protocol.DEFAULT_DATABASE else cx.path.substringAfter("/").toInt()
+      val db = if (cx.path.isNullOrEmpty()) {
+        Protocol.DEFAULT_DATABASE
+      } else {
+        cx.path.substringAfter("/").toInt()
+      }
       val password = cx.userInfo?.substringAfter(":")
       JedisPool(redisPoolConfig, cx.host, port, timeout, password, db)
     }
@@ -102,6 +106,8 @@ class RedisQueueConfiguration {
       registerModule(KotlinModule())
       disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
-      SpringObjectMapperConfigurer(properties.orElse(ObjectMapperSubtypeProperties())).registerSubtypes(this)
+      SpringObjectMapperConfigurer(
+        properties.orElse(ObjectMapperSubtypeProperties())
+      ).registerSubtypes(this)
     }
 }
