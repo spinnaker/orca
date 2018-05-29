@@ -26,7 +26,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
+import retrofit2.HttpException
 
 @Slf4j
 @Component
@@ -48,7 +48,7 @@ class MonitorBakeTask implements OverridableTimeoutRetryableTask {
     def previousStatus = stage.context.status as BakeStatus
 
     try {
-      def newStatus = bakery.lookupStatus(region, previousStatus.id).toBlocking().single()
+      def newStatus = bakery.lookupStatus(region, previousStatus.id)
       if (isCanceled(newStatus.state) && previousStatus.state == BakeStatus.State.PENDING) {
         log.info("Original bake was 'canceled', re-baking (executionId: ${stage.execution.id}, previousStatus: ${previousStatus.state})")
         def rebakeResult = createBakeTask.execute(stage)
@@ -56,8 +56,8 @@ class MonitorBakeTask implements OverridableTimeoutRetryableTask {
       }
 
       new TaskResult(mapStatus(newStatus), [status: newStatus])
-    } catch (RetrofitError e) {
-      if (e.response?.status == 404) {
+    } catch (HttpException e) {
+      if (e.code() == 404) {
         return new TaskResult(ExecutionStatus.RUNNING)
       }
       throw e

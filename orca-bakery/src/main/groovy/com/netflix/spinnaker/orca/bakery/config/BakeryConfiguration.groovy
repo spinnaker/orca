@@ -16,33 +16,26 @@
 
 package com.netflix.spinnaker.orca.bakery.config
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
-
 import java.text.SimpleDateFormat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategy.LowerCaseWithUnderscoresStrategy
-import com.netflix.spinnaker.orca.bakery.api.BakeryService
+import com.netflix.spinnaker.orca.bakery.api.BakeryApi
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
-import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
-import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
 import groovy.transform.CompileStatic
-import org.springframework.beans.factory.annotation.Autowired
+import okhttp3.HttpUrl
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
-import retrofit.Endpoint
-import retrofit.RestAdapter
-import retrofit.RestAdapter.LogLevel
-import retrofit.client.Client
-import retrofit.converter.JacksonConverter
+import retrofit2.Retrofit
+import retrofit2.converter.jackson.JacksonConverterFactory
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
-import static retrofit.Endpoints.newFixedEndpoint
 
 @Configuration
-@Import([OrcaConfiguration, RetrofitConfiguration])
+@Import([OrcaConfiguration])
 @ComponentScan([
   "com.netflix.spinnaker.orca.bakery.pipeline",
   "com.netflix.spinnaker.orca.bakery.tasks"
@@ -51,29 +44,23 @@ import static retrofit.Endpoints.newFixedEndpoint
 @ConditionalOnExpression('${bakery.enabled:true}')
 class BakeryConfiguration {
 
-  @Autowired Client retrofitClient
-  @Autowired LogLevel retrofitLogLevel
-
   @Bean
-  Endpoint bakeryEndpoint(@Value('${bakery.baseUrl}') String bakeryBaseUrl) {
-    newFixedEndpoint(bakeryBaseUrl)
+  HttpUrl bakeryEndpoint(@Value('${bakery.baseUrl}') String bakeryBaseUrl) {
+    HttpUrl.parse(bakeryBaseUrl)
   }
 
   @Bean
-  BakeryService bakery(Endpoint bakeryEndpoint) {
+  BakeryApi bakery(HttpUrl bakeryEndpoint) {
     def objectMapper = new ObjectMapper()
       .setPropertyNamingStrategy(new LowerCaseWithUnderscoresStrategy())
       .setDateFormat(new SimpleDateFormat("YYYYMMDDHHmm"))
       .setSerializationInclusion(NON_NULL)
       .disable(FAIL_ON_UNKNOWN_PROPERTIES)
 
-    new RestAdapter.Builder()
-      .setEndpoint(bakeryEndpoint)
-      .setConverter(new JacksonConverter(objectMapper))
-      .setClient(retrofitClient)
-      .setLogLevel(retrofitLogLevel)
-      .setLog(new RetrofitSlf4jLog(BakeryService))
+    new Retrofit.Builder()
+      .baseUrl(bakeryEndpoint)
+      .addConverterFactory(JacksonConverterFactory.create(objectMapper))
       .build()
-      .create(BakeryService)
+      .create(BakeryApi.class);
   }
 }

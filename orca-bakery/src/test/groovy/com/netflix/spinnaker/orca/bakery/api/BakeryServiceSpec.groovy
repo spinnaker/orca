@@ -19,17 +19,15 @@ package com.netflix.spinnaker.orca.bakery.api
 import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
+import okhttp3.HttpUrl
 import org.junit.Rule
-import retrofit.RetrofitError
-import retrofit.client.OkClient
+import retrofit2.HttpException
 import spock.lang.Specification
 import spock.lang.Subject
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import static com.google.common.net.HttpHeaders.LOCATION
 import static java.net.HttpURLConnection.*
-import static retrofit.Endpoints.newFixedEndpoint
-import static retrofit.RestAdapter.LogLevel.FULL
 
 class BakeryServiceSpec extends Specification {
 
@@ -54,8 +52,9 @@ class BakeryServiceSpec extends Specification {
     bakeURI = wireMockRule.url(bakePath)
     statusURI = wireMockRule.url(statusPath)
 
-    bakery = new BakeryConfiguration(retrofitClient: new OkClient(), retrofitLogLevel: FULL)
-      .bakery(newFixedEndpoint(wireMockRule.url("/")))
+    bakery = new RetrofitBakeryService(new BakeryConfiguration()
+      .bakery(HttpUrl.parse(wireMockRule.url("/")))
+    )
   }
 
   def "can lookup a bake status"() {
@@ -83,7 +82,7 @@ class BakeryServiceSpec extends Specification {
     )
 
     expect:
-    with(bakery.lookupStatus(region, statusId).toBlocking().first()) {
+    with(bakery.lookupStatus(region, statusId)) {
       id == statusId
       state == BakeStatus.State.COMPLETED
       resourceId == bakeId
@@ -101,11 +100,11 @@ class BakeryServiceSpec extends Specification {
     )
 
     when:
-    bakery.lookupStatus(region, statusId).toBlocking().first()
+    bakery.lookupStatus(region, statusId)
 
     then:
-    def ex = thrown(RetrofitError)
-    ex.response.status == HTTP_NOT_FOUND
+    def ex = thrown(HttpException)
+    ex.code() == HTTP_NOT_FOUND
   }
 
   def "should return status of newly created bake"() {
@@ -131,7 +130,7 @@ class BakeryServiceSpec extends Specification {
     )
 
     expect: "createBake should return the status of the bake"
-    with(bakery.createBake(region, bake, null).toBlocking().first()) {
+    with(bakery.createBake(region, bake, null)) {
       id == statusId
       state == BakeStatus.State.PENDING
       resourceId == bakeId
@@ -170,7 +169,7 @@ class BakeryServiceSpec extends Specification {
     )
 
     expect: "createBake should return the status of the bake"
-    with(bakery.createBake(region, bake, null).toBlocking().first()) {
+    with(bakery.createBake(region, bake, null)) {
       id == statusId
       state == BakeStatus.State.RUNNING
       resourceId == bakeId
@@ -197,7 +196,7 @@ class BakeryServiceSpec extends Specification {
     )
 
     expect:
-    with(bakery.lookupBake(region, bakeId).toBlocking().first()) {
+    with(bakery.lookupBake(region, bakeId)) {
       id == bakeId
       ami == "ami"
     }
