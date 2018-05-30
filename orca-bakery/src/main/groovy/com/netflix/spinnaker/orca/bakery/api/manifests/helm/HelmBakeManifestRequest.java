@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google, Inc.
+ * Copyright 2018 Mirantis, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,16 @@
  *
  */
 
-package com.netflix.spinnaker.orca.bakery.api.manifests;
+package com.netflix.spinnaker.orca.bakery.api.manifests.helm;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
 import lombok.Data;
-
-import java.util.List;
-import java.util.Map;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class BakeManifestRequest {
-  @JsonProperty("templateRenderer")
-  String templateRenderer;
-  @JsonProperty("inputArtifacts")
-  List<Artifact> inputArtifacts;
-  List<Artifact> values;
-  @JsonProperty("outputName")
-  String outputName;
-  @JsonProperty("overrides")
-  Map<String, Object> overrides;
+@EqualsAndHashCode(callSuper = true)
+public class HelmBakeManifestRequest extends BakeManifestRequest {
+  @JsonProperty("namespace")
+  String namespace;
 }
