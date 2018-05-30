@@ -19,11 +19,11 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanInitializationException
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.ApplicationListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 interface ExecutionPromoter
 
 @Component
-@ConditionalOnMissingBean(ExecutionPromoter::class)
 class DefaultExecutionPromoter(
+  private val executionLauncher: ExecutionLauncher,
   private val executionRepository: ExecutionRepository,
   private val policies: List<PromotionPolicy>,
   private val registry: Registry
@@ -46,7 +46,7 @@ class DefaultExecutionPromoter(
   private val discoveryActivated = AtomicBoolean()
 
   private val elapsedTimeId = registry.createId("qos.promoter.elapsedTime")
-  private val promotedId = registry.createId("qos.executionsPromoted")
+  private val promotedId = registry.createId("qos.promoter.executionsPromoted")
 
   init {
     if (policies.isEmpty()) {
@@ -98,6 +98,7 @@ class DefaultExecutionPromoter(
           result.candidates.forEach {
             log.info("Promoting execution {} for work: {}", value("executionId", it.id), result.reason)
             executionRepository.updateStatus(it.type, it.id, NOT_STARTED)
+            executionLauncher.start(it)
           }
           registry.counter(promotedId).increment(result.candidates.size.toLong())
         }
