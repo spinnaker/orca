@@ -49,7 +49,7 @@ import java.util.stream.StreamSupport;
 
 @Component
 @Slf4j
-public class PatchManifestTask extends AbstractCloudProviderAwareTask implements Task{
+public class PatchManifestTask extends AbstractCloudProviderAwareTask implements Task {
 
   public static final String TASK_NAME = "patchManifest";
   private static final ThreadLocal<Yaml> yamlParser = ThreadLocal.withInitial(Yaml::new);
@@ -69,7 +69,8 @@ public class PatchManifestTask extends AbstractCloudProviderAwareTask implements
   @Autowired
   ContextParameterProcessor contextParameterProcessor;
 
-  RetrySupport retrySupport = new RetrySupport();
+  @Autowired
+  RetrySupport retrySupport;
 
   @Nonnull
   @Override
@@ -96,8 +97,7 @@ public class PatchManifestTask extends AbstractCloudProviderAwareTask implements
     log.info("Patching {} artifacts within the provided manifest", requiredArtifacts);
 
     task.put("requiredArtifacts", requiredArtifacts);
-    // optionalArtifacts is actually all artifacts incl. the required ones.
-    task.put("optionalArtifacts", artifacts);
+    task.put("allArtifacts", artifacts);
     Map<String, Map> operation = new ImmutableMap.Builder<String, Map>()
       .put(TASK_NAME, task)
       .build();
