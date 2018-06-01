@@ -38,13 +38,12 @@ class QueueProcessor(
   private val queue: Queue,
   private val executor: QueueExecutor<*>,
   private val handlers: Collection<MessageHandler<*>>,
-  private val activator: Activator,
+  private val activators: List<Activator>,
   private val publisher: EventPublisher,
   private val deadMessageHandler: DeadMessageCallback,
   private val fillExecutorEachCycle: Boolean = false,
   private val requeueDelay: Duration = Duration.ofSeconds(0),
-  private val requeueMaxJitter: Duration = Duration.ofSeconds(0),
-  private val enabled: Boolean = true
+  private val requeueMaxJitter: Duration = Duration.ofSeconds(0)
 ) {
   private val log: Logger = getLogger(javaClass)
   private val random: Random = Random()
@@ -116,8 +115,8 @@ class QueueProcessor(
   }
 
   private fun ifEnabled(fn: () -> Unit) {
-    if (enabled) {
-      activator.ifEnabled(fn)
+    if (activators.all { it.enabled }) {
+      fn.invoke()
     }
   }
 

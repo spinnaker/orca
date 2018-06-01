@@ -18,6 +18,7 @@ package com.netflix.spinnaker.config
 
 import com.netflix.spinnaker.q.Activator
 import com.netflix.spinnaker.q.DeadMessageCallback
+import com.netflix.spinnaker.q.EnabledActivator
 import com.netflix.spinnaker.q.MessageHandler
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.QueueExecutor
@@ -59,7 +60,7 @@ class QueueConfiguration {
     queue: Queue,
     executor: QueueExecutor<*>,
     handlers: Collection<MessageHandler<*>>,
-    activator: Activator,
+    activators: List<Activator>,
     publisher: EventPublisher,
     queueProperties: QueueProperties,
     deadMessageHandler: DeadMessageCallback
@@ -67,14 +68,16 @@ class QueueConfiguration {
     queue,
     executor,
     handlers,
-    activator,
+    activators,
     publisher,
     deadMessageHandler,
     queueProperties.fillExecutorEachCycle,
     Duration.ofSeconds(queueProperties.requeueDelaySeconds),
-    Duration.ofSeconds(queueProperties.requeueMaxJitterSeconds),
-    queueProperties.enabled
+    Duration.ofSeconds(queueProperties.requeueMaxJitterSeconds)
   )
+
+  @Bean
+  fun enabledActivator(queueProperties: QueueProperties) = EnabledActivator(queueProperties.enabled)
 
   @Bean
   fun queueEventPublisher(

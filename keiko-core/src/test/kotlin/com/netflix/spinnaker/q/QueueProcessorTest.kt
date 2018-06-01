@@ -65,7 +65,7 @@ object QueueProcessorTest : Spek({
         queue,
         BlockingQueueExecutor(),
         emptyList(),
-        activator,
+        listOf(activator),
         publisher,
         deadMessageHandler
       )
@@ -83,9 +83,7 @@ object QueueProcessorTest : Spek({
 
     describe("when enabled") {
       beforeEachTest {
-        whenever(activator.ifEnabled(any())) doStub { callback: () -> Unit ->
-          callback.invoke()
-        }
+        whenever(activator.enabled) doReturn true
       }
 
       and("there is no capacity in the thread pool") {
@@ -95,7 +93,7 @@ object QueueProcessorTest : Spek({
           queue,
           executor,
           emptyList(),
-          activator,
+          listOf(activator),
           publisher,
           deadMessageHandler
         )
@@ -127,7 +125,7 @@ object QueueProcessorTest : Spek({
           queue,
           BlockingQueueExecutor(),
           listOf(simpleMessageHandler, parentMessageHandler),
-          activator,
+          listOf(activator),
           publisher,
           deadMessageHandler
         )
