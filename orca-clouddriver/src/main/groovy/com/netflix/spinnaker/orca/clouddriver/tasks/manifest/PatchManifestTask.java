@@ -83,8 +83,8 @@ public class PatchManifestTask extends AbstractCloudProviderAwareTask implements
     String artifactSource = (String) task.get("source");
 
     if (StringUtils.isNotEmpty(artifactSource) && artifactSource.equals("artifact")) {
-      Object parsedManifests = parsedManifestArtifact(stage, task);
-      task.put("manifests", parsedManifests);
+      Object parsedPatchBody = parsedManifestArtifact(stage, task);
+      task.put("patchBody", parsedPatchBody);
       task.put("source", "text");
     }
 
