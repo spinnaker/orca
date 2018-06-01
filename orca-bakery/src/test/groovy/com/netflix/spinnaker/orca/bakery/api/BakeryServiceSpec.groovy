@@ -16,14 +16,17 @@
 
 package com.netflix.spinnaker.orca.bakery.api
 
+import com.github.tomakehurst.wiremock.http.Fault
 import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
+import com.netflix.spinnaker.orca.retrofit2.NetworkingException
 import okhttp3.HttpUrl
 import org.junit.Rule
 import retrofit2.HttpException
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Unroll
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import static com.google.common.net.HttpHeaders.LOCATION
@@ -55,6 +58,50 @@ class BakeryServiceSpec extends Specification {
     bakery = new RetrofitBakeryService(new BakeryConfiguration()
       .bakery(HttpUrl.parse(wireMockRule.url("/")))
     )
+  }
+
+  @Unroll
+  def "can handle HTTP #status from the server"() {
+    given:
+    stubFor(
+      post(bakePath)
+        .willReturn(aResponse().withStatus(status))
+    )
+
+    when:
+    bakery.createBake(region, bake, null)
+
+    then:
+    def e = thrown(HttpException)
+    e.code() == status
+
+    where:
+    status              | _
+    HTTP_NOT_FOUND      | _
+    HTTP_BAD_REQUEST    | _
+    HTTP_INTERNAL_ERROR | _
+  }
+
+  @Unroll
+  def "can handle a #fault connecting to the server"() {
+    given:
+    stubFor(
+      post(bakePath)
+        .willReturn(aResponse().withFault(fault))
+    )
+
+    when:
+    bakery.createBake(region, bake, null)
+
+    then:
+    def e = thrown(NetworkingException)
+    with(e.request) {
+      method() == "POST"
+      url() == HttpUrl.parse(bakeURI)
+    }
+
+    where:
+    fault << Fault.values()
   }
 
   def "can lookup a bake status"() {

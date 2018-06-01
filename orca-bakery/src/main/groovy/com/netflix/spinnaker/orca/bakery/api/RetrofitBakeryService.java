@@ -2,6 +2,7 @@ package com.netflix.spinnaker.orca.bakery.api;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
+import com.netflix.spinnaker.orca.retrofit2.NetworkingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
@@ -50,17 +51,17 @@ public final class RetrofitBakeryService implements BakeryService {
     return retrofit(() -> api.getBaseImage(cloudProvider, imageId));
   }
 
-  private <T> T retrofit(Supplier<Call<T>> call) {
+  private <T> T retrofit(Supplier<Call<T>> action) {
+    Call<T> call = action.get();
     try {
-      Response<T> response = call.get().execute();
+      Response<T> response = call.execute();
       if (response.isSuccessful()) {
         return response.body();
       } else {
         throw new HttpException(response);
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new NetworkingException(call.request(), e);
     }
   }
 }
-
