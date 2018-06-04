@@ -570,29 +570,55 @@ public class RedisExecutionRepository implements ExecutionRepository, PollingAge
   @Nonnull
   @Override
   public List<String> retrieveAllApplicationNames(@Nullable ExecutionType type, int minExecutions) {
-    return redisClientDelegate.withMultiClient(c -> {
+    return redisClientDelegate.withMultiClient(mc -> {
       ScanParams scanParams = new ScanParams().match(executionKeyPattern(type)).count(2000);
       String cursor = "0";
 
-      Map<String, Integer> results = new HashMap<>();
+      Map<String, Long> apps = new HashMap<>();
       while (true) {
         String finalCursor = cursor;
-        ScanResult<String> chunk = c.scan(finalCursor, scanParams);
+        ScanResult<String> chunk = mc.scan(finalCursor, scanParams);
 
+        if (redisClientDelegate.supportsMultiKeyPipelines()) {
+          Map<String, Response<Long>> pipelineResults = new HashMap<>();
+          redisClientDelegate.withMultiKeyPipeline(p -> {
+            chunk.getResult().forEach(id -> {
+              String[] parts = id.split(":");
+              String app = parts[2];
+              pipelineResults.put(app, p.scard(id));
+            });
+            p.sync();
+          });
 
-        chunk.getResult().forEach(id -> {
-          String[] parts = id.split(":");
-          String app = parts[2];
-          results.compute(app, (s, integer) -> results.getOrDefault(s, 0) + 1);
-        });
+          pipelineResults
+            .entrySet()
+            .forEach(e -> apps.compute(
+              e.getKey(),
+              (app, numExecutions) -> Optional.ofNullable(numExecutions).orElse(0L) + e.getValue().get())
+            );
+        } else {
+          redisClientDelegate.withCommandsClient(cc -> {
+            chunk.getResult().forEach(id -> {
+              String[] parts = id.split(":");
+              String app = parts[2];
+              long cardinality = cc.scard(id);
+              apps.compute(
+                app,
+                (appKey, numExecutions) -> Optional.ofNullable(numExecutions).orElse(0L) + cardinality
+              );
+            });
+          });
+        }
+
         cursor = chunk.getStringCursor();
         if (cursor.equals("0")) {
           break;
         }
       }
 
-      return results.entrySet().stream()
-        .filter(it -> it.getValue() >= minExecutions)
+      return apps.entrySet()
+        .stream()
+        .filter(e -> e.getValue().intValue() >= minExecutions)
         .map(Map.Entry::getKey)
         .collect(Collectors.toList());
     });
