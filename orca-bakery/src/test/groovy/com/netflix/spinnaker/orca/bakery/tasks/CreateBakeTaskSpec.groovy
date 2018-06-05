@@ -26,10 +26,10 @@ import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
-import retrofit.RetrofitError
-import retrofit.client.Response
-import retrofit.mime.TypedString
-import rx.Observable
+import okhttp3.MediaType
+import okhttp3.ResponseBody
+import retrofit2.HttpException
+import retrofit2.Response
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -39,7 +39,6 @@ import static com.netflix.spinnaker.orca.bakery.api.BakeStatus.State.RUNNING
 import static com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.*
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND
 import static java.util.UUID.randomUUID
 
 class CreateBakeTaskSpec extends Specification {
@@ -186,11 +185,14 @@ class CreateBakeTaskSpec extends Specification {
   ]
 
   @Shared
-  def error404 = RetrofitError.httpError(
-    null,
-    new Response("", HTTP_NOT_FOUND, "Not Found", [], new TypedString("{ \"messages\": [\"Error Message\"]}")),
-    null,
-    null
+  def error404 = new HttpException(
+    Response.error(
+      404,
+      ResponseBody.create(
+        MediaType.parse("application/json"),
+        "{ \"messages\": [\"Error Message\"]}"
+      )
+    )
   )
 
   def setup() {
@@ -206,20 +208,21 @@ class CreateBakeTaskSpec extends Specification {
     task.execute(bakeStage)
 
     then:
-    1 * task.bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> Observable.from(runningStatus)
+    1 * task.bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> runningStatus
   }
 
   def "should surface error message (if available) on a 404"() {
     given:
-    task.bakery = Mock(BakeryService)
+    task.bakery = Stub(BakeryService) {
+      createBake(bakeConfig.region, _ as BakeRequest, null) >> {
+        throw error404
+      }
+    }
 
     when:
     task.execute(bakeStage)
 
     then:
-    1 * task.bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> {
-      throw error404
-    }
     IllegalStateException e = thrown()
     e.message == "Error Message"
   }
@@ -230,7 +233,7 @@ class CreateBakeTaskSpec extends Specification {
     task.bakery = Mock(BakeryService) {
       1 * createBake(*_) >> {
         bake = it[1]
-        Observable.from(runningStatus)
+        runningStatus
       }
     }
 
@@ -263,7 +266,7 @@ class CreateBakeTaskSpec extends Specification {
     task.bakery = Mock(BakeryService) {
       1 * createBake(*_) >> {
         bake = it[1]
-        Observable.from(runningStatus)
+        runningStatus
       }
     }
 
@@ -345,7 +348,7 @@ class CreateBakeTaskSpec extends Specification {
   def "outputs the status of the bake"() {
     given:
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     when:
@@ -361,7 +364,7 @@ class CreateBakeTaskSpec extends Specification {
   def "outputs the packageName of the bake"() {
     given:
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     when:
@@ -387,7 +390,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
     task.extractBuildDetails = true
 
@@ -425,7 +428,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
     task.extractBuildDetails = true
 
@@ -461,7 +464,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
     task.extractBuildDetails = true
 
@@ -497,7 +500,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
     task.extractBuildDetails = true
 
@@ -533,7 +536,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
     task.extractBuildDetails = extractBuildDetails
 
@@ -588,7 +591,7 @@ class CreateBakeTaskSpec extends Specification {
           it.buildNumber == "69"
         it.commitHash == null
       },
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
 
     where:
     triggerInfo      | contextInfo
@@ -628,7 +631,7 @@ class CreateBakeTaskSpec extends Specification {
           it.buildNumber == null &&
           it.commitHash == null
       },
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
 
     where:
     triggerInfo      | contextInfo
@@ -668,7 +671,7 @@ class CreateBakeTaskSpec extends Specification {
           it.buildNumber == null &&
           it.commitHash == null
       },
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
 
     where:
     triggerInfo | contextInfo
@@ -688,7 +691,7 @@ class CreateBakeTaskSpec extends Specification {
     task.bakery = Mock(BakeryService) {
       1 * createBake(*_) >> {
         bake = it[1]
-        Observable.from(runningStatus)
+        runningStatus
       }
     }
 
@@ -707,7 +710,7 @@ class CreateBakeTaskSpec extends Specification {
   def "sets previouslyBaked flag to #previouslyBaked when status is #status.state"() {
     given:
     task.bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(status)
+      createBake(*_) >> status
     }
 
     when:
@@ -742,7 +745,7 @@ class CreateBakeTaskSpec extends Specification {
           it.baseLabel == "release" &&
           it.baseOs == "ubuntu"
       } as BakeRequest,
-      "1") >> Observable.from(runningStatus)
+      "1") >> runningStatus
     0 * _
   }
 
@@ -769,7 +772,7 @@ class CreateBakeTaskSpec extends Specification {
           it.baseLabel == "release" &&
           it.baseOs == "ubuntu"
       } as BakeRequest,
-      queryParameter) >> Observable.from(runningStatus)
+      queryParameter) >> runningStatus
     0 * _
 
     when:
@@ -786,7 +789,7 @@ class CreateBakeTaskSpec extends Specification {
           it.baseLabel == "release" &&
           it.baseOs == "ubuntu"
       } as BakeRequest,
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
     0 * _
 
     where:

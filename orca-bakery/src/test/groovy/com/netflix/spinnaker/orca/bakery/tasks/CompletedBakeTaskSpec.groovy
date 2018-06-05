@@ -23,14 +23,13 @@ import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import retrofit.RetrofitError
-import retrofit.client.Response
-import rx.Observable
+import okhttp3.ResponseBody
+import retrofit2.HttpException
+import retrofit2.Response
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND
 
 class CompletedBakeTaskSpec extends Specification {
 
@@ -38,17 +37,13 @@ class CompletedBakeTaskSpec extends Specification {
 
   @Shared Execution pipeline = pipeline()
 
-  @Shared notFoundError = RetrofitError.httpError(
-    null,
-    new Response("http://bakery", HTTP_NOT_FOUND, "Not Found", [], null),
-    null,
-    null
-  )
+  @Shared
+    notFoundError = new HttpException(Response.error(404, ResponseBody.create(null, new byte[0])))
 
   def "finds the AMI and artifact created by a bake"() {
     given:
     task.bakery = Stub(BakeryService) {
-      lookupBake(region, bakeId) >> Observable.from(new Bake(id: bakeId, ami: ami, artifact: artifact))
+      lookupBake(region, bakeId) >> new Bake(id: bakeId, ami: ami, artifact: artifact)
     }
 
     and:
@@ -82,7 +77,7 @@ class CompletedBakeTaskSpec extends Specification {
     task.execute(stage)
 
     then:
-    thrown(RetrofitError)
+    thrown(HttpException)
 
     where:
     region = "us-west-1"

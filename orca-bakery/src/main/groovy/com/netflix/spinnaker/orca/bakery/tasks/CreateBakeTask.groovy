@@ -33,7 +33,7 @@ import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import retrofit.RetrofitError
+import retrofit2.HttpException
 
 @Component
 @CompileStatic
@@ -70,7 +70,7 @@ class CreateBakeTask implements RetryableTask {
       // throw a Retrofit exception (HTTP 404 Not Found)
       def bake = bakeFromContext(stage)
       String rebake = shouldRebake(stage) ? "1" : null
-      def bakeStatus = bakery.createBake(region, bake, rebake).toBlocking().single()
+      def bakeStatus = bakery.createBake(region, bake, rebake)
 
       def stageOutputs = [
         status         : bakeStatus,
@@ -95,18 +95,16 @@ class CreateBakeTask implements RetryableTask {
       }
 
       new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs)
-    } catch (RetrofitError e) {
-      if (e.response?.status && e.response.status == 404) {
-        try {
-          def exceptionResult = mapper.readValue(e.response.body.in().text, Map)
+    } catch (HttpException e) {
+      if (e.code() == 404) {
+        def errorBody = e.response().errorBody()
+        if (errorBody.contentLength() > 0) {
+          def exceptionResult = mapper.readValue(errorBody.charStream(), Map)
           def exceptionMessages = (exceptionResult.messages ?: []) as List<String>
           if (exceptionMessages) {
             throw new IllegalStateException(exceptionMessages[0])
           }
-        } catch (IOException ignored) {
-          // do nothing
         }
-
         return new TaskResult(ExecutionStatus.RUNNING)
       }
       throw e

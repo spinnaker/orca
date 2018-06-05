@@ -17,10 +17,11 @@
 apply from: "$rootDir/gradle/groovy.gradle"
 
 dependencies {
-  compile project(":orca-retrofit")
+  compile project(":orca-retrofit2")
   spinnaker.group('jackson')
   compile spinnaker.dependency('jacksonGuava')
   compileOnly spinnaker.dependency('lombok')
   testCompile project(":orca-test-groovy")
   testCompile "com.github.tomakehurst:wiremock:2.15.0"
+  testCompile "com.squareup.retrofit2:retrofit-mock:2.4.0"
 }

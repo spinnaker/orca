@@ -21,7 +21,6 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import rx.Observable
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -45,7 +44,8 @@ class MonitorBakeTaskSpec extends Specification {
 
     and:
     task.bakery = Stub(BakeryService) {
-      lookupStatus(stage.context.region, id) >> Observable.from(new BakeStatus(id: id, state: bakeState, result: bakeResult))
+      lookupStatus(stage.context.region, id) >>
+        new BakeStatus(id: id, state: bakeState, result: bakeResult)
     }
 
     expect:
@@ -72,9 +72,8 @@ class MonitorBakeTaskSpec extends Specification {
 
     and:
     task.bakery = Stub(BakeryService) {
-      lookupStatus(stage.context.region, id) >> Observable.from(
+      lookupStatus(stage.context.region, id) >>
         new BakeStatus(id: id, state: state, result: null)
-      )
     }
     task.createBakeTask = Mock(CreateBakeTask) {
       1 * execute(_) >> { return new TaskResult(ExecutionStatus.SUCCEEDED, [stage: 1], [global: 2]) }
@@ -99,7 +98,8 @@ class MonitorBakeTaskSpec extends Specification {
 
     and:
     task.bakery = Stub(BakeryService) {
-      lookupStatus(stage.context.region, id) >> Observable.from(new BakeStatus(id: id, state: BakeStatus.State.COMPLETED))
+      lookupStatus(stage.context.region, id) >>
+        new BakeStatus(id: id, state: BakeStatus.State.COMPLETED)
     }
 
     when:
