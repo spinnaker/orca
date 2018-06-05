@@ -16,13 +16,12 @@
 package com.netflix.spinnaker.orca.qos.bufferstate
 
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigSerivce
 import com.netflix.spinnaker.orca.qos.BufferState
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
 import com.netflix.spinnaker.orca.qos.BufferState.INACTIVE
 import com.netflix.spinnaker.orca.qos.BufferStateSupplier
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -34,9 +33,8 @@ import org.springframework.stereotype.Component
  * state. By default, this is 60 seconds.
  */
 @Component
-@ConditionalOnProperty(name = ["qos.bufferingState.supplier"], havingValue = "activeExecutions")
 class ActiveExecutionsBufferStateSupplier(
-  @Value("\${qos.bufferingState.activeExecutionsThreshold:100}") private val threshold: Int,
+  private val configService: DynamicConfigSerivce,
   private val registry: Registry
 ) : BufferStateSupplier {
 
@@ -44,30 +42,38 @@ class ActiveExecutionsBufferStateSupplier(
 
   private var state: BufferState = INACTIVE
 
-  private val bufferingId = registry.createId("qos.buffering")
-
   @Scheduled(fixedDelayString = "\${pollers.qos.updateStateIntervalMs:5000}")
   private fun updateCurrentState() {
+    if (!enabled()) {
+      state = INACTIVE
+      return
+    }
+
     val activeExecutions = registry.gauges()
       .filter { it.id().name() == "executions.active" }
       .map { it.value() }
       .reduce { p: Double, o: Double -> o + p }
       .get().toInt()
 
+    val threshold = getThreshold()
     state = if (activeExecutions > threshold) {
       if (state == INACTIVE) {
         log.warn("Enabling buffering: System active executions over threshold ($activeExecutions/$threshold)")
-        registry.gauge(bufferingId).set(1.0)
       }
       ACTIVE
     } else {
       if (state == ACTIVE) {
         log.warn("Disabling buffering: System active executions below threshold ($activeExecutions/$threshold)")
-        registry.gauge(bufferingId).set(0.0)
       }
       INACTIVE
     }
   }
 
   override fun get() = state
+
+  override fun enabled() =
+    configService.getConfig(String::class.java, "qos.bufferingState.supplier", "") == "activeExecutions"
+
+  private fun getThreshold() =
+    configService.getConfig(Int::class.java, "qos.bufferingState.activeExecutions.threshold", 100)
 }

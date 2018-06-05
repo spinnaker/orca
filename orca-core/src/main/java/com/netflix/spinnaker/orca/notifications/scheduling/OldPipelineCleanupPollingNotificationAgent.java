@@ -15,26 +15,24 @@
  */
 package com.netflix.spinnaker.orca.notifications.scheduling;
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus;
-import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent;
-import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
+import com.netflix.spectator.api.Id;
+import com.netflix.spectator.api.LongTaskTimer;
+import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
+import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import rx.Observable;
 import rx.Scheduler;
-import rx.Subscription;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
-import javax.annotation.PreDestroy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -44,17 +42,15 @@ import java.util.stream.Collectors;
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
-// TODO rz - Remove redis know-how and move back into orca-core
 @Component
 @ConditionalOnExpression("${pollers.oldPipelineCleanup.enabled:false}")
-public class OldPipelineCleanupPollingNotificationAgent implements ApplicationListener<RemoteStatusChangedEvent> {
+public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingNotificationAgent {
 
   private static final List<String> COMPLETED_STATUSES = ExecutionStatus.COMPLETED.stream().map(Enum::toString).collect(Collectors.toList());
 
   private final Logger log = LoggerFactory.getLogger(OldPipelineCleanupPollingNotificationAgent.class);
 
   private Scheduler scheduler = Schedulers.io();
-  private Subscription subscription;
 
   private Func1<Execution, Boolean> filter = new Func1<Execution, Boolean>() {
     @Override
@@ -86,42 +82,49 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     return 0;
   };
 
-  private Clock clock = Clock.systemDefaultZone();
+  private final Clock clock;
+  private final PollingAgentExecutionRepository executionRepository;
+  private final Registry registry;
+
+  private final long pollingIntervalMs;
+  private final int thresholdDays;
+  private final int minimumPipelineExecutions;
+
+  private final Id deletedId;
+  private final Id timerId;
 
   @Autowired
-  private ExecutionRepository executionRepository;
+  public OldPipelineCleanupPollingNotificationAgent(NotificationClusterLock clusterLock,
+                                                    PollingAgentExecutionRepository executionRepository,
+                                                    Clock clock,
+                                                    Registry registry,
+                                                    @Value("${pollers.oldPipelineCleanup.intervalMs:3600000}") long pollingIntervalMs,
+                                                    @Value("${pollers.oldPipelineCleanup.thresholdDays:30}") int thresholdDays,
+                                                    @Value("${pollers.oldPipelineCleanup.minimumPipelineExecutions:5}") int minimumPipelineExecutions) {
+    super(clusterLock);
+    this.executionRepository = executionRepository;
+    this.clock = clock;
+    this.registry = registry;
+    this.pollingIntervalMs = pollingIntervalMs;
+    this.thresholdDays = thresholdDays;
+    this.minimumPipelineExecutions = minimumPipelineExecutions;
 
-  @Autowired
-  private RedisClientDelegate redisClientDelegate;
-
-  @Value("${pollers.oldPipelineCleanup.intervalMs:3600000}")
-  private long pollingIntervalMs;
-
-  @Value("${pollers.oldPipelineCleanup.thresholdDays:30}")
-  private int thresholdDays;
-
-  @Value("${pollers.oldPipelineCleanup.minimumPipelineExecutions:5}")
-  private int minimumPipelineExecutions;
-
-  @PreDestroy
-  private void stopPolling() {
-    if (subscription != null) {
-      subscription.unsubscribe();
-    }
+    deletedId = registry.createId("pollers.oldPipelineCleanup.deleted");
+    timerId = registry.createId("pollers.oldPipelineCleanup.timing");
   }
 
   @Override
-  public void onApplicationEvent(RemoteStatusChangedEvent event) {
-    if (event.getSource().isUp()) {
-      log.info("Instance is " + event.getSource().getStatus() + "... starting old pipeline cleanup");
-      startPolling();
-    } else if (event.getSource().getPreviousStatus() == InstanceStatus.UP) {
-      log.warn("Instance is " + event.getSource().getStatus() + "... stopping old pipeline cleanup");
-      stopPolling();
-    }
+  protected long getPollingInterval() {
+    return pollingIntervalMs;
   }
 
-  private void startPolling() {
+  @Override
+  protected String getNotificationType() {
+    return OldPipelineCleanupPollingNotificationAgent.class.getSimpleName();
+  }
+
+  @Override
+  protected void startPolling() {
     subscription = Observable
       .timer(pollingIntervalMs, TimeUnit.MILLISECONDS, scheduler)
       .repeat()
@@ -129,20 +132,17 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
   }
 
   private void tick() {
-    List<String> applications = new ArrayList<>();
-
+    LongTaskTimer timer = registry.longTaskTimer(timerId);
+    long timerId = timer.start();
     try {
-      redisClientDelegate.withKeyScan("pipeline:app:*", 200, r -> {
-        applications.addAll(r.getResults().stream().map(k -> k.split(":")[2]).collect(Collectors.toList()));
-      });
-
-      applications.forEach(app -> {
+      executionRepository.retrieveAllApplicationNames(PIPELINE).forEach(app -> {
         log.debug("Cleaning up " + app);
         cleanupApp(executionRepository.retrievePipelinesForApplication(app));
       });
-
     } catch (Exception e) {
       log.error("Cleanup failed", e);
+    } finally {
+      timer.stop(timerId);
     }
   }
 
@@ -169,17 +169,11 @@ public class OldPipelineCleanupPollingNotificationAgent implements ApplicationLi
     executions.subList(0, (executions.size() - minimumPipelineExecutions)).forEach(p -> {
       long startTime = p.startTime == null ? p.buildTime : p.startTime;
       long days = ChronoUnit.DAYS.between(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(clock.millis()));
-      if (days > thresholdDays && !hasEntityTags(p.id)) {
+      if (days > thresholdDays && !executionRepository.hasEntityTags(PIPELINE, p.id)) {
         log.info("Deleting pipeline execution " + p.id + ": " + p.toString());
+        registry.counter(deletedId.withTag("application", p.application)).increment();
         executionRepository.delete(PIPELINE, p.id);
       }
-    });
-  }
-
-  private boolean hasEntityTags(String pipelineId) {
-    // TODO rz - This index exists only in Netflix-land. Should be added to OSS eventually
-    return redisClientDelegate.withCommandsClient(c -> {
-      return c.sismember("existingServerGroups:pipeline", "pipeline:" + pipelineId);
     });
   }
 

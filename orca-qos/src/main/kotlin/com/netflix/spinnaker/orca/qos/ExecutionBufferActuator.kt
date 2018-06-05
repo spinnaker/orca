@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.qos
 
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.kork.transientconfig.TransientConfigService
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigSerivce
 import com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.annotations.Sync
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.qos.BufferAction.BUFFER
 import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
+import com.netflix.spinnaker.orca.qos.bufferstate.BufferStateSupplierProvider
 import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -34,8 +35,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ExecutionBufferActuator(
-  private val bufferStateSupplier: BufferStateSupplier,
-  private val transientConfigService: TransientConfigService,
+  private val bufferStateSupplierProvider: BufferStateSupplierProvider,
+  private val configService: DynamicConfigSerivce,
   private val registry: Registry,
   policies: List<BufferPolicy>
 ) {
@@ -44,30 +45,45 @@ class ExecutionBufferActuator(
 
   private val orderedPolicies = policies.sortedByDescending { it.order }.toList()
 
+  private val bufferingId = registry.createId("qos.buffering")
   private val bufferedId = registry.createId("qos.executionsBuffered")
-  private val elapsedTimeId = registry.createId("qos.promoter.elapsedTime")
+  private val enqueuedId = registry.createId("qos.executionsEnqueued")
+  private val elapsedTimeId = registry.createId("qos.actuator.elapsedTime")
 
   @Sync
   @EventListener(BeforeInitialExecutionPersist::class)
   fun beforeInitialPersist(event: BeforeInitialExecutionPersist) {
+    if (!configService.isEnabled("qos", false)) {
+      return
+    }
+
+    val bufferStateSupplier = bufferStateSupplierProvider.provide()
+
+    val supplierName = bufferStateSupplier.javaClass.simpleName
     if (bufferStateSupplier.get() == ACTIVE) {
+      registry.gauge(bufferingId).set(1.0)
+
       val execution = event.execution
       withActionDecision(execution) {
         when (it.action) {
           BUFFER -> {
-            if (transientConfigService.isEnabled("qos.learningMode", true)) {
-              log.debug("Learning mode: Would have buffered execution: {}, reason ${it.reason}", value("executionId", execution.id))
+            if (configService.isEnabled("qos.learningMode", true)) {
+              log.debug("Learning mode: Would have buffered execution {} (using $supplierName), reason: ${it.reason}", value("executionId", execution.id))
+              registry.counter(bufferedId.withTag("learning", "true")).increment()
             } else {
-              log.warn("Buffering execution: {}, reason: ${it.reason}", value("executionId", execution.id))
+              log.warn("Buffering execution {} (using $supplierName), reason: ${it.reason}", value("executionId", execution.id))
+              registry.counter(bufferedId.withTag("learning", "false")).increment()
               execution.status = BUFFERED
-              registry.counter(bufferedId).increment()
             }
           }
           ENQUEUE -> {
-            log.debug("Enqueuing execution: {}, reason: ${it.reason}", value("executionId", execution.id))
+            log.debug("Enqueuing execution {} (using $supplierName), reason: ${it.reason}", value("executionId", execution.id))
+            registry.counter(enqueuedId).increment()
           }
         }
       }
+    } else {
+      registry.gauge(bufferingId).set(0.0)
     }
   }
 
@@ -87,7 +103,7 @@ class ExecutionBufferActuator(
 
           // Require all results to call for enqueuing the execution, otherwise buffer.
           val enqueue = bufferResults.all { it.action == ENQUEUE }
-          val reasons = bufferResults.joinToString(",") { it.reason }
+          val reasons = bufferResults.joinToString(", ") { it.reason }
 
           return@let BufferResult(
             action = if (enqueue) ENQUEUE else BUFFER,

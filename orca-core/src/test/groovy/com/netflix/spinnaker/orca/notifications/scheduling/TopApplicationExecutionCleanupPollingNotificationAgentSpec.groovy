@@ -16,14 +16,11 @@
 
 package com.netflix.spinnaker.orca.notifications.scheduling
 
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Task
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.ScanParams
-import redis.clients.jedis.ScanResult
-import redis.clients.util.Pool
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -37,7 +34,13 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
   @Unroll
   void "filter should only consider SUCCEEDED executions"() {
     given:
-    def filter = new TopApplicationExecutionCleanupPollingNotificationAgent().filter
+    def filter = new TopApplicationExecutionCleanupPollingNotificationAgent(
+      Mock(NotificationClusterLock),
+      Mock(PollingAgentExecutionRepository),
+      new NoopRegistry(),
+      5000,
+      2500
+    ).filter
 
     expect:
     ExecutionStatus.values().each { s ->
@@ -61,7 +64,13 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
     }
 
     and:
-    def mapper = new TopApplicationExecutionCleanupPollingNotificationAgent().mapper
+    def mapper = new TopApplicationExecutionCleanupPollingNotificationAgent(
+      Mock(NotificationClusterLock),
+      Mock(PollingAgentExecutionRepository),
+      new NoopRegistry(),
+      5000,
+      2500
+    ).mapper
 
     expect:
     with(mapper.call(pipeline)) {
@@ -78,28 +87,28 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
     def orchestrations = buildExecutions(startTime, 3)
     def pipelines = buildExecutions(startTime, 3, "P1") + buildExecutions(startTime, 5, "P2")
 
-    def agent = new TopApplicationExecutionCleanupPollingNotificationAgent(threshold: 2)
-    agent.jedisPool = Stub(Pool) {
-      getResource() >> {
-        return Stub(Jedis) {
-          scan("0", _ as ScanParams) >> { new ScanResult<String>("0", ["orchestration:app:app1"]) }
-          scard("orchestration:app:app1") >> { return orchestrations.size() }
-        }
-      }
+    def executionRepository = Mock(PollingAgentExecutionRepository) {
+      1 * retrieveAllApplicationNames(_, _) >> ["app1"]
+      1 * retrieveOrchestrationsForApplication("app1", _) >> rx.Observable.from(orchestrations)
     }
-    agent.executionRepository = Mock(ExecutionRepository) {
-      retrieveOrchestrationsForApplication("app1", _) >> rx.Observable.from(orchestrations)
-    }
+    def agent = new TopApplicationExecutionCleanupPollingNotificationAgent(
+      Mock(NotificationClusterLock),
+      executionRepository,
+      new NoopRegistry(),
+      5000,
+      2
+    )
 
     when:
     agent.tick()
 
     then:
-    1 * agent.executionRepository.delete(ORCHESTRATION, orchestrations[0].id)
+    1 * executionRepository.delete(ORCHESTRATION, orchestrations[0].id)
   }
 
-  private
-  static Collection<Execution> buildExecutions(AtomicInteger stageStartTime, int count, String configId = null) {
+  private static Collection<Execution> buildExecutions(AtomicInteger stageStartTime,
+                                                       int count,
+                                                       String configId = null) {
     (1..count).collect {
       def time = stageStartTime.incrementAndGet()
       pipeline {

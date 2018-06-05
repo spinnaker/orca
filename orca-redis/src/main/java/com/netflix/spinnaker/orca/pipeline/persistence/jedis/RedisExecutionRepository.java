@@ -10,12 +10,15 @@ import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
+import com.netflix.spinnaker.orca.notifications.scheduling.PollingAgentExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails;
 import com.netflix.spinnaker.orca.pipeline.persistence.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.BinaryClient;
 import redis.clients.jedis.Response;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
 import rx.Observable;
 import rx.Scheduler;
 import rx.functions.Func0;
@@ -42,6 +47,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Maps.filterValues;
+import static com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED;
 import static com.netflix.spinnaker.orca.config.RedisConfiguration.Clients.EXECUTION_REPOSITORY;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
@@ -57,7 +63,7 @@ import static redis.clients.jedis.BinaryClient.LIST_POSITION.BEFORE;
 
 @Component
 @ConditionalOnProperty(value = "executionRepository.redis.enabled", matchIfMissing = true)
-public class RedisExecutionRepository implements ExecutionRepository {
+public class RedisExecutionRepository implements ExecutionRepository, PollingAgentExecutionRepository {
 
   private static final TypeReference<List<Task>> LIST_OF_TASKS =
     new TypeReference<List<Task>>() {
@@ -195,6 +201,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         data.put("status", ExecutionStatus.CANCELED.name());
       }
       c.hmset(pair.getLeft(), data);
+      c.srem(allBufferedExecutionsKey(type), id);
     });
   }
 
@@ -225,6 +232,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
       }
       data.put("status", ExecutionStatus.PAUSED.toString());
       c.hmset(pair.getLeft(), data);
+      c.srem(allBufferedExecutionsKey(type), id);
     });
   }
 
@@ -257,6 +265,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         data.put("paused", mapper.writeValueAsString(pausedDetails));
         data.put("status", ExecutionStatus.RUNNING.toString());
         c.hmset(pair.getLeft(), data);
+        c.srem(allBufferedExecutionsKey(type), id);
       } catch (IOException e) {
         throw new ExecutionSerializationException("Failed converting pausedDetails to json", e);
       }
@@ -288,6 +297,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
       } else if (status.isComplete() && c.hget(key, "startTime") != null) {
         data.put("endTime", String.valueOf(currentTimeMillis()));
       }
+      if (status == BUFFERED) {
+        c.sadd(allBufferedExecutionsKey(type), id);
+      } else {
+        c.srem(allBufferedExecutionsKey(type), id);
+      }
       c.hmset(key, data);
     });
   }
@@ -304,6 +318,29 @@ public class RedisExecutionRepository implements ExecutionRepository {
   Observable<Execution> retrieve(@Nonnull ExecutionType type) {
     List<Observable<Execution>> observables = allRedisDelegates().stream()
       .map(d -> all(type, d))
+      .collect(Collectors.toList());
+    return Observable.merge(observables);
+  }
+
+  @Override
+  public
+  @Nonnull Observable<Execution> retrieve(
+    @Nonnull ExecutionType type,
+    @Nonnull ExecutionCriteria criteria
+  ) {
+    List<Observable<Execution>> observables = allRedisDelegates()
+      .stream()
+      .map(d -> {
+          Observable<Execution> observable = all(type, d);
+          if (!criteria.getStatuses().isEmpty()) {
+            observable = observable.filter(execution -> criteria.getStatuses().contains(execution.getStatus()));
+          }
+          if (criteria.getLimit() > 0) {
+            observable = observable.limit(criteria.getLimit());
+          }
+          return observable;
+        }
+      )
       .collect(Collectors.toList());
     return Observable.merge(observables);
   }
@@ -510,14 +547,87 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Override
   public @Nonnull List<Execution> retrieveBufferedExecutions() {
-    // TODO rz - This is definitely not a healthy way to do this.
-    return Observable.concat(
-        retrieve(PIPELINE),
-        retrieve(ORCHESTRATION)
-      )
-      .filter(execution -> execution.getStatus() == ExecutionStatus.BUFFERED)
+    List<Observable<Execution>> observables = allRedisDelegates().stream()
+      .map(d -> Arrays.asList(
+        retrieveObservable(PIPELINE, allBufferedExecutionsKey(PIPELINE), queryAllScheduler, d),
+        retrieveObservable(ORCHESTRATION, allBufferedExecutionsKey(ORCHESTRATION), queryAllScheduler, d)
+      ))
+      .flatMap(List::stream)
+      .collect(Collectors.toList());
+
+    return Observable.merge(observables)
+      .filter(e -> e.getStatus() == BUFFERED)
       .toList()
       .toBlocking().single();
+  }
+
+  @Nonnull
+  @Override
+  public List<String> retrieveAllApplicationNames(@Nullable ExecutionType type) {
+    return retrieveAllApplicationNames(type, 0);
+  }
+
+  @Nonnull
+  @Override
+  public List<String> retrieveAllApplicationNames(@Nullable ExecutionType type, int minExecutions) {
+    return redisClientDelegate.withMultiClient(mc -> {
+      ScanParams scanParams = new ScanParams().match(executionKeyPattern(type)).count(2000);
+      String cursor = "0";
+
+      Map<String, Long> apps = new HashMap<>();
+      while (true) {
+        String finalCursor = cursor;
+        ScanResult<String> chunk = mc.scan(finalCursor, scanParams);
+
+        if (redisClientDelegate.supportsMultiKeyPipelines()) {
+          List<ImmutablePair<String, Response<Long>>> pipelineResults = new ArrayList<>();
+          redisClientDelegate.withMultiKeyPipeline(p -> {
+            chunk.getResult().forEach(id -> {
+              String app = id.split(":")[2];
+              pipelineResults.add(new ImmutablePair<>(app, p.scard(id)));
+            });
+            p.sync();
+          });
+
+          pipelineResults
+            .forEach(p -> apps.compute(
+              p.left,
+              (app, numExecutions) -> Optional.ofNullable(numExecutions).orElse(0L) + p.right.get())
+            );
+        } else {
+          redisClientDelegate.withCommandsClient(cc -> {
+            chunk.getResult().forEach(id -> {
+              String[] parts = id.split(":");
+              String app = parts[2];
+              long cardinality = cc.scard(id);
+              apps.compute(
+                app,
+                (appKey, numExecutions) -> Optional.ofNullable(numExecutions).orElse(0L) + cardinality
+              );
+            });
+          });
+        }
+
+        cursor = chunk.getStringCursor();
+        if (cursor.equals("0")) {
+          break;
+        }
+      }
+
+      return apps.entrySet()
+        .stream()
+        .filter(e -> e.getValue().intValue() >= minExecutions)
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toList());
+    });
+  }
+
+  @Override
+  public boolean hasEntityTags(@Nonnull ExecutionType type, @NotNull String id) {
+    // TODO rz - This index exists only in Netflix-land. Should be added to OSS eventually
+    return redisClientDelegate.withCommandsClient(c -> {
+      return c.sismember("existingServerGroups:pipeline", "pipeline:" + id);
+    });
   }
 
   protected Execution buildExecution(@Nonnull Execution execution, @Nonnull Map<String, String> map, List<String> stageIds) {
@@ -742,6 +852,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         String application = c.hget(key, "application");
         String appKey = appKey(type, application);
         c.srem(appKey, id);
+        c.srem(allBufferedExecutionsKey(type), id);
 
         if (type == PIPELINE) {
           String pipelineConfigId = c.hget(key, "pipelineConfigId");
@@ -851,6 +962,22 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return format("pipeline:executions:%s", id);
   }
 
+  protected static String allBufferedExecutionsKey(ExecutionType type) {
+    return format("buffered:%s", type);
+  }
+
+  protected static String executionKeyPattern(@Nullable ExecutionType type) {
+    final String all = "*:app:*";
+    if (type == null) {
+      return all;
+    }
+    switch (type) {
+      case PIPELINE: return "pipeline:app:*";
+      case ORCHESTRATION: return "orchestration:app:*";
+      default: return all;
+    }
+  }
+
   private void storeExecutionInternal(RedisClientDelegate delegate, Execution execution) {
     String key = executionKey(execution);
     String indexKey = format("%s:stageIndex", key);
@@ -859,6 +986,12 @@ public class RedisExecutionRepository implements ExecutionRepository {
     delegate.withCommandsClient(c -> {
       c.sadd(alljobsKey(execution.getType()), execution.getId());
       c.sadd(appKey(execution.getType(), execution.getApplication()), execution.getId());
+
+      if (execution.getStatus() == BUFFERED) {
+        c.sadd(allBufferedExecutionsKey(execution.getType()), execution.getId());
+      } else {
+        c.srem(allBufferedExecutionsKey(execution.getType()), execution.getId());
+      }
 
       delegate.withTransaction(tx -> {
         tx.hdel(key, "config");

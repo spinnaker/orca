@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.config
+package com.netflix.spinnaker.orca.notifications.scheduling
 
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Configuration
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 
-@Configuration
-@ComponentScan("com.netflix.spinnaker.orca.qos")
-class QosConfiguration
+interface PollingAgentExecutionRepository : ExecutionRepository {
+
+  fun retrieveAllApplicationNames(type: ExecutionType?): List<String>
+  fun retrieveAllApplicationNames(type: ExecutionType?, minExecutions: Int): List<String>
+  fun hasEntityTags(type: ExecutionType, id: String): Boolean
+}
