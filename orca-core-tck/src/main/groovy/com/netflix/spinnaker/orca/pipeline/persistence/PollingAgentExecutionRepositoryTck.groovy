@@ -44,7 +44,7 @@ abstract class PollingAgentExecutionRepositoryTck<T extends PollingAgentExecutio
 
   abstract T createExecutionRepositoryPrevious()
 
-  def "can retrieve all application names in database"() {
+  def "can retrieve all application names in database, type: #executionType, min: #minExecutions"() {
     given:
     def execution1 = pipeline {
       application = "spindemo"
@@ -55,11 +55,15 @@ abstract class PollingAgentExecutionRepositoryTck<T extends PollingAgentExecutio
     def execution3 = orchestration {
       application = "spindemo"
     }
+    def execution4 = orchestration {
+      application = "spindemo"
+    }
 
     when:
     repository.store(execution1)
     repository.store(execution2)
     repository.store(execution3)
+    repository.store(execution4)
     def apps = repository.retrieveAllApplicationNames(executionType, minExecutions)
 
     then:
