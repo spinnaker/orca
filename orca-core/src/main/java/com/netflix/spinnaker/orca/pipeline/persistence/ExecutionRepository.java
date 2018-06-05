@@ -15,17 +15,20 @@
  */
 package com.netflix.spinnaker.orca.pipeline.persistence;
 
+import static java.util.stream.Collectors.toList;
+
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import rx.Observable;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
-
-import static java.util.stream.Collectors.toList;
+import rx.Observable;
 
 public interface ExecutionRepository {
   void store(@Nonnull Execution orchestration);
@@ -71,6 +74,10 @@ public interface ExecutionRepository {
                                                              @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
+  Observable<Execution> retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary(@Nonnull String pipelineConfigId,
+                                                                                  @Nonnull BuildTimeBoundaryExecutionCriteria criteria);
+
+  @Nonnull
   Observable<Execution> retrieveOrchestrationsForApplication(@Nonnull String application,
                                                              @Nonnull ExecutionCriteria criteria);
 
@@ -80,6 +87,9 @@ public interface ExecutionRepository {
   @Nonnull
   List<Execution> retrieveBufferedExecutions();
 
+  /**
+   * Default criteria options of Executions to query Redis for.
+   */
   final class ExecutionCriteria {
     public int getLimit() {
       return limit;
@@ -133,6 +143,66 @@ public interface ExecutionRepository {
 
     @Override public int hashCode() {
       return Objects.hash(limit, statuses, page);
+    }
+  }
+
+  /**
+   * Build time boundary criteria options of Executions to query Redis for.
+   */
+  final class BuildTimeBoundaryExecutionCriteria {
+
+    public long getBuildTimeStartBoundary() {
+      return buildTimeStartBoundary;
+    }
+
+    public @Nonnull BuildTimeBoundaryExecutionCriteria setBuildTimeStartBoundary(long buildTimeStartBoundary) {
+      this.buildTimeStartBoundary = buildTimeStartBoundary;
+      return this;
+    }
+
+    public long getBuildTimeEndBoundary() {
+      return buildTimeEndBoundary;
+    }
+
+    public @Nonnull BuildTimeBoundaryExecutionCriteria setBuildTimeEndBoundary(long buildTimeEndBoundary) {
+      this.buildTimeEndBoundary = buildTimeEndBoundary;
+      return this;
+    }
+
+    public @Nonnull Collection<ExecutionStatus> getStatuses() {
+      return statuses;
+    }
+
+    public @Nonnull BuildTimeBoundaryExecutionCriteria setStatuses(Collection<String> statuses) {
+      return setStatuses(
+        statuses
+          .stream()
+          .map(ExecutionStatus::valueOf)
+          .collect(toList())
+          .toArray(new ExecutionStatus[statuses.size()])
+      );
+    }
+
+    public @Nonnull BuildTimeBoundaryExecutionCriteria setStatuses(ExecutionStatus... statuses) {
+      this.statuses = Arrays.asList(statuses);
+      return this;
+    }
+
+    private long buildTimeStartBoundary = 0;
+    private long buildTimeEndBoundary = Long.MAX_VALUE;
+    private Collection<ExecutionStatus> statuses = new ArrayList<>();
+
+    @Override public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      BuildTimeBoundaryExecutionCriteria that = (BuildTimeBoundaryExecutionCriteria) o;
+      return buildTimeStartBoundary == that.buildTimeStartBoundary &&
+        buildTimeEndBoundary == that.buildTimeEndBoundary &&
+        Objects.equals(statuses, that.statuses);
+    }
+
+    @Override public int hashCode() {
+      return Objects.hash(buildTimeStartBoundary, buildTimeEndBoundary, statuses);
     }
   }
 }

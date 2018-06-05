@@ -1,5 +1,22 @@
 package com.netflix.spinnaker.orca.pipeline.persistence.jedis;
 
+import static com.google.common.collect.Maps.filterValues;
+import static com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED;
+import static com.netflix.spinnaker.orca.config.RedisConfiguration.Clients.EXECUTION_REPOSITORY;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.NO_TRIGGER;
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static net.logstash.logback.argument.StructuredArguments.value;
+import static redis.clients.jedis.BinaryClient.LIST_POSITION.AFTER;
+import static redis.clients.jedis.BinaryClient.LIST_POSITION.BEFORE;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,10 +28,38 @@ import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.notifications.scheduling.PollingAgentExecutionRepository;
-import com.netflix.spinnaker.orca.pipeline.model.*;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails;
-import com.netflix.spinnaker.orca.pipeline.persistence.*;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.pipeline.model.SystemNotification;
+import com.netflix.spinnaker.orca.pipeline.model.Task;
+import com.netflix.spinnaker.orca.pipeline.model.Trigger;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionSerializationException;
+import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException;
+import com.netflix.spinnaker.orca.pipeline.persistence.UnpausablePipelineException;
+import com.netflix.spinnaker.orca.pipeline.persistence.UnresumablePipelineException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.NotNull;
@@ -36,29 +81,6 @@ import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static com.google.common.collect.Maps.filterValues;
-import static com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED;
-import static com.netflix.spinnaker.orca.config.RedisConfiguration.Clients.EXECUTION_REPOSITORY;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.NO_TRIGGER;
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Collections.*;
-import static net.logstash.logback.argument.StructuredArguments.value;
-import static redis.clients.jedis.BinaryClient.LIST_POSITION.AFTER;
-import static redis.clients.jedis.BinaryClient.LIST_POSITION.BEFORE;
 
 @Component
 @ConditionalOnProperty(value = "executionRepository.redis.enabled", matchIfMissing = true)
@@ -422,6 +444,84 @@ public class RedisExecutionRepository implements ExecutionRepository, PollingAge
       List<String> previousPipelineIds = filteredPipelineIdsByDelegate.getOrDefault(previousRedisClientDelegate.get(), new ArrayList<>());
       previousPipelineIds.removeAll(currentPipelineIds);
       previousPipelineIds = previousPipelineIds.subList(0, Math.min(criteria.getLimit(), previousPipelineIds.size()));
+
+      Observable<Execution> previousObservable = retrieveObservable(
+        PIPELINE,
+        executionsByPipelineKey(pipelineConfigId),
+        fnBuilder.call(previousRedisClientDelegate.get(), previousPipelineIds),
+        queryByAppScheduler,
+        previousRedisClientDelegate.get()
+      );
+
+      // merge primary + secondary observables
+      return Observable.merge(currentObservable, previousObservable);
+    }
+
+    return currentObservable;
+  }
+
+  // TODO(joonlim): Replace logic of multiple queries to redis with a lua script.
+  @Override
+  public @Nonnull
+  Observable<Execution> retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary(@Nonnull String pipelineConfigId,
+    @Nonnull BuildTimeBoundaryExecutionCriteria criteria) {
+    /*
+     * Fetch pipeline ids from the primary redis (and secondary if configured)
+     */
+    Map<RedisClientDelegate, List<String>> filteredPipelineIdsByDelegate = new HashMap<>();
+    if (!criteria.getStatuses().isEmpty()) {
+      allRedisDelegates().forEach(d -> d.withCommandsClient(c -> {
+        List<String> pipelineKeys = new ArrayList<>(c.zrevrangeByScore(executionsByPipelineKey(pipelineConfigId), criteria.getBuildTimeEndBoundary(), criteria.getBuildTimeStartBoundary()));
+
+        if (pipelineKeys.isEmpty()) {
+          return;
+        }
+
+        Set<ExecutionStatus> allowedExecutionStatuses = new HashSet<>(criteria.getStatuses());
+        List<ExecutionStatus> statuses = fetchMultiExecutionStatus(d,
+          pipelineKeys.stream()
+            .map(key -> pipelineKey(key))
+            .collect(Collectors.toList())
+        );
+
+        AtomicInteger index = new AtomicInteger();
+        statuses.forEach(s -> {
+          if (allowedExecutionStatuses.contains(s)) {
+            filteredPipelineIdsByDelegate.computeIfAbsent(d, p -> new ArrayList<>()).add(pipelineKeys.get(index.get()));
+          }
+          index.incrementAndGet();
+        });
+      }));
+    }
+
+    Func2<RedisClientDelegate, Iterable<String>, Func1<String, Iterable<String>>> fnBuilder =
+      (RedisClientDelegate redisClientDelegate, Iterable<String> pipelineIds) ->
+        (String key) ->
+          !criteria.getStatuses().isEmpty() ? pipelineIds :
+            redisClientDelegate.withCommandsClient(p -> {
+                return p.zrevrangeByScore(key, criteria.getBuildTimeEndBoundary(), criteria.getBuildTimeStartBoundary());
+              }
+            );
+
+    /*
+     * Construct an observable that will retrieve pipelines from the primary redis
+     */
+    List<String> currentPipelineIds = filteredPipelineIdsByDelegate.getOrDefault(redisClientDelegate, new ArrayList<>());
+
+    Observable<Execution> currentObservable = retrieveObservable(
+      PIPELINE,
+      executionsByPipelineKey(pipelineConfigId),
+      fnBuilder.call(redisClientDelegate, currentPipelineIds),
+      queryByAppScheduler,
+      redisClientDelegate
+    );
+
+    if (previousRedisClientDelegate.isPresent()) {
+      /*
+       * If configured, construct an observable the will retrieve pipelines from the secondary redis
+       */
+      List<String> previousPipelineIds = filteredPipelineIdsByDelegate.getOrDefault(previousRedisClientDelegate.get(), new ArrayList<>());
+      previousPipelineIds.removeAll(currentPipelineIds);
 
       Observable<Execution> previousObservable = retrieveObservable(
         PIPELINE,
