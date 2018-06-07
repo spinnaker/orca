@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DestroyServerGroupStage
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -28,7 +29,8 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 class CreateServerGroupStageSpec extends Specification {
   @Subject
   def createServerGroupStage = new CreateServerGroupStage(
-    rollbackClusterStage: new RollbackClusterStage(null, null)
+    rollbackClusterStage: new RollbackClusterStage(null, null),
+    destroyServerGroupStage: new DestroyServerGroupStage()
   )
 
   @Unroll
@@ -67,6 +69,47 @@ class CreateServerGroupStageSpec extends Specification {
         credentials   : "test",
         cloudProvider : "aws",
         stageTimeoutMs: TimeUnit.MINUTES.toMillis(30)
+      ]
+    ]
+  }
+
+  def "should build DestroyStage when 'destroyOnFailure' is enabled"() {
+    given:
+    def stage = stage {
+      context = [
+        "deploy.server.groups": deployServerGroups,
+        "application"         : "myapplication",
+        "account"             : "test",
+        "cloudProvider"       : "aws"
+      ]
+    }
+
+    if (shouldDestroyOnFailure) {
+      stage.context.destroy = [
+        onFailure: true
+      ]
+    }
+
+    when:
+    def onFailureStageContexts = createServerGroupStage.onFailureStages(stage)*.getContext()
+
+    then:
+    onFailureStageContexts == expectedOnFailureStageContexts
+
+    where:
+    shouldDestroyOnFailure  | deployServerGroups                          || expectedOnFailureStageContexts
+    false                   | null                                        || []
+    true                    | null                                        || []
+    false                   | ["us-west-1": ["myapplication-stack-v001"]] || []
+    true                    | ["us-west-1": ["myapplication-stack-v001"]] || [
+      [
+        region            : "us-west-1",
+        serverGroupName   : "myapplication-stack-v001",
+        credentials       : "test",
+        cloudProvider     : "aws",
+        cloudProviderType : "aws",
+        cluster           : "myapplication-stack",
+        stageTimeoutMs: TimeUnit.MINUTES.toMillis(5)
       ]
     ]
   }
