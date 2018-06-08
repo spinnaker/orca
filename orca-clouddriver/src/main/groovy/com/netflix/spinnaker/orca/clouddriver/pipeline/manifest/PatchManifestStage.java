@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google, Inc.
+ * Copyright 2018 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -12,15 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.CleanupArtifactsTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeployManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestForceCacheRefreshTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PatchManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PromoteManifestKatoOutputsTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.WaitForManifestStableTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
@@ -30,17 +28,16 @@ import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifacts
 import org.springframework.stereotype.Component;
 
 @Component
-public class DeployManifestStage implements StageDefinitionBuilder {
-  public static final String PIPELINE_CONFIG_TYPE = "deployManifest";
+public class PatchManifestStage implements StageDefinitionBuilder {
+  public static final String PIPELINE_CONFIG_TYPE = "patchManifest";
 
   @Override
   public void taskGraph(Stage stage, TaskNode.Builder builder) {
-    builder.withTask(DeployManifestTask.TASK_NAME, DeployManifestTask.class)
-        .withTask("monitorDeploy", MonitorKatoTask.class)
-        .withTask(PromoteManifestKatoOutputsTask.TASK_NAME, PromoteManifestKatoOutputsTask.class)
-        .withTask(ManifestForceCacheRefreshTask.TASK_NAME, ManifestForceCacheRefreshTask.class)
-        .withTask(WaitForManifestStableTask.TASK_NAME, WaitForManifestStableTask.class)
-        .withTask(CleanupArtifactsTask.TASK_NAME, CleanupArtifactsTask.class)
-        .withTask(BindProducedArtifactsTask.TASK_NAME, BindProducedArtifactsTask.class);
+    builder.withTask(PatchManifestTask.TASK_NAME, PatchManifestTask.class)
+      .withTask("monitorPatch", MonitorKatoTask.class)
+      .withTask(PromoteManifestKatoOutputsTask.TASK_NAME, PromoteManifestKatoOutputsTask.class)
+      .withTask(ManifestForceCacheRefreshTask.TASK_NAME, ManifestForceCacheRefreshTask.class)
+      .withTask(WaitForManifestStableTask.TASK_NAME, WaitForManifestStableTask.class)
+      .withTask(BindProducedArtifactsTask.TASK_NAME, BindProducedArtifactsTask.class);
   }
 }
