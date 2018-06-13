@@ -16,46 +16,66 @@
 
 package com.netflix.spinnaker.orca.kayenta.tasks
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
-import com.netflix.spinnaker.orca.kayenta.model.CanaryConfigScope
-import com.netflix.spinnaker.orca.kayenta.model.KayentaCanaryContext
 import com.netflix.spinnaker.orca.kayenta.model.deployments
+import com.netflix.spinnaker.orca.kayenta.model.locations
+import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryClustersStage.Companion.DEPLOY_CONTROL_CLUSTER
+import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryClustersStage.Companion.DEPLOY_EXPERIMENT_CLUSTER
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 
 @Component
 class PropagateDeployedClusterScopeTask : Task {
   override fun execute(stage: Stage): TaskResult {
-    val (_, control, experiment) = stage.deployments
-    val canary = stage.parent?.mapTo<KayentaCanaryContext>("/canaryConfig")
-      ?: throw IllegalStateException("No parent stage found")
+    val deployedCanaryClusters = mutableMapOf<String, String>()
+    stage.withFirstChildOf(DEPLOY_CONTROL_CLUSTER) {
+      val location = stage.deployments.control.locations.first()
+      val serverGroup =
+        it.mapTo<DeployServerGroupContext>().deployServerGroups[location]
+          ?.first()
+          ?: throw IllegalStateException("Could not find control server group.")
 
-    val deployedClusterScope = CanaryConfigScope(
-      controlScope = control.moniker.cluster,
-      controlLocation = control.region
-        ?: control.availabilityZones.keys.firstOrNull(),
-      experimentScope = experiment.moniker.cluster,
-      experimentLocation = experiment.region
-        ?: experiment.availabilityZones.keys.firstOrNull(),
-      startTimeIso = null,
-      endTimeIso = null,
-      extendedScopeParams = mapOf("type" to "cluster")
-    )
-
-    return if (canary.scopes.find {
-        it.controlScope == deployedClusterScope.controlScope &&
-          it.controlLocation == deployedClusterScope.controlLocation &&
-          it.experimentScope == deployedClusterScope.experimentScope &&
-          it.experimentLocation == deployedClusterScope.experimentLocation
-      } == null) {
-      TaskResult(SUCCEEDED, mapOf(
-        "canaryConfig" to canary.copy(scopes = canary.scopes + deployedClusterScope)
+      deployedCanaryClusters.putAll(mapOf(
+        "controlLocation" to location,
+        "controlServerGroup" to serverGroup
       ))
-    } else {
-      TaskResult.SUCCEEDED
     }
+
+    stage.withFirstChildOf(DEPLOY_EXPERIMENT_CLUSTER) {
+      val location = stage.deployments.experiment.locations.first()
+      val serverGroup  =
+        it.mapTo<DeployServerGroupContext>().deployServerGroups[location]
+          ?.first()
+          ?: throw IllegalStateException("Could not find experiment server group.")
+
+      deployedCanaryClusters.putAll(mapOf(
+        "experimentLocation" to location,
+        "experimentServerGroup" to serverGroup
+      ))
+    }
+
+    return TaskResult(SUCCEEDED, emptyMap<String, Any>(), mapOf(
+      "deployedCanaryClusters" to deployedCanaryClusters
+    ))
   }
 }
+
+private fun Stage.withFirstChildOf(name: String, block: (Stage) -> Unit) {
+  execution.stages.find {
+    it.name == name
+      && it.topLevelStage == topLevelStage // i.e., are we looking in the same canary stage?
+  }?.let { stage ->
+    val firstChild = execution.stages.find { it.parentStageId == stage.id }
+      ?: throw IllegalStateException("Could not find first child of stage $name.")
+    block(firstChild)
+  } ?: throw IllegalStateException("Could not find stage with name $name.")
+}
+
+data class DeployServerGroupContext @JsonCreator constructor(
+  @param:JsonProperty("deploy.server.groups") val deployServerGroups: Map<String, List<String>>
+)

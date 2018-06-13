@@ -16,28 +16,22 @@
 
 package com.netflix.spinnaker.orca.kayenta.tasks
 
-import com.fasterxml.jackson.module.kotlin.convertValue
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
-import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.kayenta.model.KayentaCanaryContext
-import com.netflix.spinnaker.orca.kayenta.pipeline.CleanupCanaryClustersStage
+import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryClustersStage
 import com.netflix.spinnaker.orca.kayenta.pipeline.KayentaCanaryStage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
+import org.assertj.core.api.Assertions.*
 import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.given
+import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
-import org.jetbrains.spek.api.dsl.on
 
 internal object PropagateDeployedClusterScopeTaskTest : Spek({
 
   val subject = PropagateDeployedClusterScopeTask()
-  val mapper = OrcaObjectMapper.newInstance()
 
-  given("a canary deployment pipeline") {
+  describe("a canary deployment pipeline") {
 
     val controlClusterName = "spindemo-prestaging-prestaging-baseline"
     val controlClusterRegion = "us-west-1"
@@ -132,77 +126,63 @@ internal object PropagateDeployedClusterScopeTaskTest : Spek({
     val pipeline = pipeline {
       stage {
         refId = "1"
+        id = "top-level-canary"
         type = KayentaCanaryStage.STAGE_TYPE
         context["deployments"] = mapOf(
           "baseline" to baseline,
           "control" to controlCluster,
           "experiment" to experimentCluster
         )
-        stage {
-          refId = "1<1"
-          type = DeployCanaryClustersStage.STAGE_TYPE
-        }
-        stage {
-          refId = "1>1"
-          type = CleanupCanaryClustersStage.STAGE_TYPE
-          syntheticStageOwner = SyntheticStageOwner.STAGE_AFTER
-        }
+      }
+      stage {
+        refId = "1<1"
+        id = "deploy-canary-clusters"
+        parentStageId = "top-level-canary"
+        type = DeployCanaryClustersStage.STAGE_TYPE
+      }
+      stage {
+        refId = "1<1<1"
+        id = "deploy-control-cluster"
+        parentStageId = "deploy-canary-clusters"
+        type = ParallelDeployStage.PIPELINE_CONFIG_TYPE
+        name = "Deploy control cluster"
+      }
+      stage {
+        refId = "1<1<1<1"
+        parentStageId = "deploy-control-cluster"
+        type = CreateServerGroupStage.PIPELINE_CONFIG_TYPE
+        context["deploy.server.groups"] = mapOf(
+          controlClusterRegion to listOf("$controlClusterName-v000")
+        )
+      }
+      stage {
+        refId = "1<1<2"
+        id = "deploy-experiment-cluster"
+        parentStageId = "deploy-canary-clusters"
+        type = ParallelDeployStage.PIPELINE_CONFIG_TYPE
+        name = "Deploy experiment cluster"
+      }
+      stage {
+        refId = "1<1<2<1"
+        parentStageId = "deploy-experiment-cluster"
+        type = CreateServerGroupStage.PIPELINE_CONFIG_TYPE
+        context["deploy.server.groups"] = mapOf(
+          experimentClusterRegion to listOf("$experimentClusterName-v000")
+        )
       }
     }
-    val canaryStage = pipeline.stageByRef("1")
     val canaryDeployStage = pipeline.stageByRef("1<1")
 
-
-    given("the parent canary stage does not have a matching cluster scope") {
-      beforeGroup {
-        canaryStage.context["canaryConfig"] = mapOf(
-          "canaryConfigId" to "MySampleStackdriverCanaryConfig",
-          "scopes" to emptyList<Map<String, Any>>(),
-          "scoreThresholds" to mapOf("marginal" to 75, "pass" to 90),
-          "beginCanaryAnalysisAfterMins" to "0"
-        )
-      }
-
-      it("updates the canary context with a new scope") {
-        subject.execute(canaryDeployStage).let { result ->
-          result.context["canaryConfig"]?.let {
-            mapper.convertValue<KayentaCanaryContext>(it)
-          }?.let { updatedCanaryContext ->
-            assertThat(updatedCanaryContext.scopes.size).isEqualTo(1)
-            updatedCanaryContext.scopes.first().let { scope ->
-              assertThat(scope.controlScope).isEqualTo(controlClusterName)
-              assertThat(scope.controlLocation).isEqualTo(controlClusterRegion)
-              assertThat(scope.experimentScope).isEqualTo(experimentClusterName)
-              assertThat(scope.experimentLocation).isEqualTo(experimentClusterRegion)
-              assertThat(scope.extendedScopeParams).containsEntry("type", "cluster")
-            }
-          } ?: fail("Task should have output an updated canary context")
-        }
-      }
-    }
-
-    given("the parent canary stage has a matching cluster scope") {
-      beforeGroup {
-        canaryStage.context["canaryConfig"] = mapOf(
-          "canaryConfigId" to "MySampleStackdriverCanaryConfig",
-          "scopes" to listOf(mapOf(
-            "controlScope" to controlClusterName,
+    it("generates a summary of deployed canary clusters") {
+      subject.execute(canaryDeployStage).let {
+        assertThat(it.outputs).isEqualTo(mapOf(
+          "deployedCanaryClusters" to mapOf(
             "controlLocation" to controlClusterRegion,
-            "experimentScope" to experimentClusterName,
-            "experimentLocation" to experimentClusterRegion
-          )),
-          "scoreThresholds" to mapOf("marginal" to 75, "pass" to 90),
-          "beginCanaryAnalysisAfterMins" to "0"
-        )
-      }
-
-      on("executing the task") {
-      }
-
-      it("does not add an extra scope") {
-        subject.execute(canaryDeployStage).let { result ->
-          assertThat(result.context).isEmpty()
-        }
+            "controlServerGroup" to "$controlClusterName-v000",
+            "experimentLocation" to experimentClusterRegion,
+            "experimentServerGroup" to "$experimentClusterName-v000"
+          )
+        ))
       }
     }
   }

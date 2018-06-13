@@ -20,11 +20,12 @@ import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kayenta.CanaryExecutionRequest
+import com.netflix.spinnaker.orca.kayenta.CanaryScopes
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.kayenta.model.RunCanaryContext
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.Collections.singletonMap
 
@@ -32,11 +33,15 @@ import java.util.Collections.singletonMap
 class RunKayentaCanaryTask(
   private val kayentaService: KayentaService
 ) : Task {
-
-  private val log = LoggerFactory.getLogger(javaClass)
-
   override fun execute(stage: Stage): TaskResult {
     val context = stage.mapTo<RunCanaryContext>()
+
+    val scopes = stage.deployedCanaryClusters?.let { deployedClusters ->
+      // Assume for now that if we deployed canary clusters that
+      // we want to update all the scopes.
+      context.scopes.mapValues { it.value.from(deployedClusters) }
+    } ?: context.scopes
+
     val canaryPipelineExecutionId = kayentaService.create(
       context.canaryConfigId,
       stage.execution.application,
@@ -44,9 +49,37 @@ class RunKayentaCanaryTask(
       context.metricsAccountName,
       context.storageAccountName /* configurationAccountName */, // TODO(duftler): Propagate configurationAccountName properly.
       context.storageAccountName,
-      CanaryExecutionRequest(context.scopes, context.scoreThresholds)
+      CanaryExecutionRequest(scopes, context.scoreThresholds)
     )["canaryExecutionId"] as String
 
     return TaskResult(SUCCEEDED, singletonMap("canaryPipelineExecutionId", canaryPipelineExecutionId))
   }
 }
+
+private val Stage.deployedCanaryClusters: DeployedCanaryClusters?
+  get() = if (context["deployedCanaryClusters"] != null) {
+    OrcaObjectMapper.newInstance()
+      .convertValue(context["deployedCanaryClusters"], DeployedCanaryClusters::class.java)
+  } else {
+    null
+  }
+
+private fun CanaryScopes.from(clusters: DeployedCanaryClusters): CanaryScopes {
+  return copy(
+    controlScope = controlScope.copy(
+      scope = clusters.controlServerGroup,
+      location = clusters.controlLocation
+    ),
+    experimentScope = experimentScope.copy(
+      scope = clusters.experimentServerGroup,
+      location = clusters.experimentLocation
+    )
+  )
+}
+
+data class DeployedCanaryClusters(
+  val controlServerGroup: String,
+  val controlLocation: String,
+  val experimentServerGroup: String,
+  val experimentLocation: String
+)
