@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.orca.controllers
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.collect.Collections2
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
@@ -47,6 +49,7 @@ class TaskControllerSpec extends Specification {
   def front50Service = Mock(Front50Service)
   def executionRunner = Mock(ExecutionRunner)
   def mapper = new ObjectMapper()
+  def registry = new NoopRegistry()
 
   def clock = Clock.fixed(Instant.now(), UTC)
   int daysOfExecutionHistory = 14
@@ -63,7 +66,8 @@ class TaskControllerSpec extends Specification {
         daysOfExecutionHistory: daysOfExecutionHistory,
         numberOfOldPipelineExecutionsToInclude: numberOfOldPipelineExecutionsToInclude,
         clock: clock,
-        mapper: mapper
+        mapper: mapper,
+        registry: registry
       )
     ).build()
   }
@@ -308,7 +312,7 @@ class TaskControllerSpec extends Specification {
     ]
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should return pipelines of all types if triggerType is *'() {
+  void '/applications/{application}/pipelines/search should return pipelines of all types if triggerTypes if not provided'() {
     given:
     def app = "covfefe"
     def pipelines = [
@@ -325,7 +329,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -342,14 +346,14 @@ class TaskControllerSpec extends Specification {
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
     when:
-    def response = mockMvc.perform(get("/applications/${app}/pipelines/*")).andReturn().response
+    def response = mockMvc.perform(get("/applications/${app}/pipelines/search")).andReturn().response
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
     results.id == ['test-3', 'test-2', 'test-1']
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should only return pipelines of a given type'() {
+  void '/applications/{application}/pipelines/search should only return pipelines of given types'() {
     given:
     def app = "covfefe"
     def pipelines = [
@@ -369,7 +373,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -386,14 +390,14 @@ class TaskControllerSpec extends Specification {
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
     when:
-    def response = mockMvc.perform(get("/applications/${app}/pipelines/git")).andReturn().response
+    def response = mockMvc.perform(get("/applications/${app}/pipelines/search?triggerTypes=docker,jenkins")).andReturn().response
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
-    results.id == ['test-3', 'test-2']
+    results.id == ['test-4', 'test-1']
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should only return pipelines with a given eventId'() {
+  void '/applications/{application}/pipelines/search should only return pipelines with a given eventId'() {
     given:
     def app = "covfefe"
     def wrongEventId = "a"
@@ -415,7 +419,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -433,14 +437,14 @@ class TaskControllerSpec extends Specification {
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
     when:
-    def response = mockMvc.perform(get("/applications/${app}/pipelines/*?eventId=" + eventId)).andReturn().response
+    def response = mockMvc.perform(get("/applications/${app}/pipelines/search?eventId=" + eventId)).andReturn().response
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
     results.id == ['test-4', 'test-2']
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should only return pipelines with a given application'() {
+  void '/applications/{application}/pipelines/search should only return pipelines with a given application'() {
     given:
     def app1 = "app1"
     def app2 = "app2"
@@ -461,7 +465,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -475,32 +479,18 @@ class TaskControllerSpec extends Specification {
       return pipeline
     })
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("2", _) >> rx.Observable.from(pipelines.findAll {
-      it.pipelineConfigId == "2"
-    }.collect { config ->
-      Execution pipeline = pipeline {
-        id = config.id
-        application = app2
-        startTime = config.startTime
-        pipelineConfigId = config.pipelineConfigId
-      }
-      config.trigger.setOther(mapper.convertValue(config.trigger, Map.class))
-      pipeline.setTrigger(config.trigger)
-      return pipeline
-    })
-
     front50Service.getPipelines(app1, false) >> [[id: "1"]]
     front50Service.getPipelines(app2, false) >> [[id: "2"]]
 
     when:
-    def response = mockMvc.perform(get("/applications/${app1}/pipelines/*")).andReturn().response
+    def response = mockMvc.perform(get("/applications/${app1}/pipelines/search")).andReturn().response
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
     results.id == ['test-2', 'test-1']
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should return executions with a given pipeline name'() {
+  void '/applications/{application}/pipelines/search should return executions with a given pipeline name'() {
     given:
     def app = "covfefe"
     def pipelines = [
@@ -517,7 +507,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -535,14 +525,14 @@ class TaskControllerSpec extends Specification {
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
     when:
-    def response = mockMvc.perform(get("/applications/${app}/pipelines/*?pipelineName=pipeline2")).andReturn().response
+    def response = mockMvc.perform(get("/applications/${app}/pipelines/search?pipelineName=pipeline2")).andReturn().response
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
     results.id == ['test-2']
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should handle a trigger field that is a string'() {
+  void '/applications/{application}/pipelines/search should handle a trigger field that is a string'() {
     given:
     def app = "covfefe"
     def pipelines = [
@@ -559,7 +549,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -577,14 +567,14 @@ class TaskControllerSpec extends Specification {
 
     when:
     String encodedTriggerParams = new String(Base64.getEncoder().encode('{"account":"test-account","repository":"test-repo","tag":"1"}'.getBytes()))
-    def response = mockMvc.perform(get("/applications/${app}/pipelines/*?trigger=${encodedTriggerParams}")).andReturn().response
+    def response = mockMvc.perform(get("/applications/${app}/pipelines/search?trigger=${encodedTriggerParams}")).andReturn().response
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
     results.id == ['test-3', 'test-1']
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should handle a trigger search field that is a list of maps correctly and deterministicly'() {
+  void '/applications/{application}/pipelines/search should handle a trigger search field that is a list of maps correctly and deterministicly'() {
     given:
     def app = "covfefe"
     def pipelines = [
@@ -600,7 +590,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -618,11 +608,11 @@ class TaskControllerSpec extends Specification {
 
     when:
     String encodedTriggerParams1 = new String(Base64.getEncoder().encode('{"artifacts":[{"name":"a","version":"1"},{"name":"a"}]}'.getBytes()))
-    def response1 = mockMvc.perform(get("/applications/${app}/pipelines/docker?trigger=${encodedTriggerParams1}")).andReturn().response
+    def response1 = mockMvc.perform(get("/applications/${app}/pipelines/search?trigger=${encodedTriggerParams1}")).andReturn().response
     List results1 = new ObjectMapper().readValue(response1.contentAsString, List)
 
     String encodedTriggerParams2 = new String(Base64.getEncoder().encode('{"artifacts":[{"name":"a"},{"name":"a","version":"1"}]}'.getBytes()))
-    def response2 = mockMvc.perform(get("/applications/${app}/pipelines/docker?trigger=${encodedTriggerParams2}")).andReturn().response
+    def response2 = mockMvc.perform(get("/applications/${app}/pipelines/search?trigger=${encodedTriggerParams2}")).andReturn().response
     List results2 = new ObjectMapper().readValue(response2.contentAsString, List)
 
     then:
@@ -630,7 +620,7 @@ class TaskControllerSpec extends Specification {
     results2.id == ['test-2', 'test-1']
   }
 
-  void '/applications/{application}/pipelines/{triggerType} should handle a trigger field that is a map'() {
+  void '/applications/{application}/pipelines/search should handle a trigger field that is a map'() {
     given:
     def app = "covfefe"
     def pipelines = [
@@ -647,7 +637,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("1", _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _) >> rx.Observable.from(pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -666,10 +656,453 @@ class TaskControllerSpec extends Specification {
 
     when:
     String encodedTriggerParams = new String(Base64.getEncoder().encode('{"payload":{"a":"1","b":"2"}}'.getBytes()))
-    def response = mockMvc.perform(get("/applications/${app}/pipelines/*?trigger=${encodedTriggerParams}")).andReturn().response
+    def response = mockMvc.perform(get("/applications/${app}/pipelines/search?trigger=${encodedTriggerParams}")).andReturn().response
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
     results.id == ['test-3', 'test-2']
+  }
+
+  void 'checkObjectMatchesSubset matches identical strings'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset("this is a test", "this is a test")
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical case-insensitive strings'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset("THIS is a TEST", "this IS A test")
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches strings using regex'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset("this is a test", "this.*")
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset does not match different strings'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset("this is a test", "this is a test ")
+
+    then:
+    !result
+  }
+
+  void 'checkObjectMatchesSubset matches identical integers'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(1, 1)
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset integer object matches identical integer primitive'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(Integer.valueOf(1), 1)
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical lists'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      ["a", 1, true],
+      ["a", 1, true]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical lists in any order'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      ["a", 1, true],
+      [1, true, "a"]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset list matches subset'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      ["a", 1, true],
+      [true, "a"]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset list matches empty list'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      ["a", 1, true],
+      []
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset list does not non-list'() {
+    given:
+    def object = ["a", 1, true]
+
+    def subsets = [
+      [:],
+      "test",
+      1,
+      false
+    ]
+
+    when:
+    boolean result = subsets.every{ false == TaskController.checkObjectMatchesSubset(object, it) }
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical complex lists'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [
+        [],
+        ["a", "b", "c"],
+        [true, false],
+        [:],
+        "test",
+        [x: 1, y: 2,
+          z: [
+            q: "asdf",
+            r: [
+              "t", "u", "v"
+              ]
+          ]
+        ]
+      ],
+      [
+        [],
+        ["a", "b", "c"],
+        [true, false],
+        [:],
+        "test",
+        [x: 1, y: 2,
+         z: [
+           q: "asdf",
+           r: [
+             "t", "u", "v"
+           ]
+         ]
+        ]
+      ]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical complex lists in any order'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [
+        [],
+        ["a", "b", "c"],
+        [true, false],
+        [:],
+        "test",
+        [x: 1, y: 2,
+         z: [
+           q: "asdf",
+           r: [
+             "t", "u", "v"
+           ]
+         ]
+        ]
+      ],
+      [
+        [y: 2, x: 1,
+         z: [
+           r: [
+             "v", "u", "t"
+           ],
+           q: "asdf"
+         ]
+        ],
+        [:],
+        "test",
+        ["c", "a", "b"],
+        [false, true],
+        []
+      ]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset complex list matches subset'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [
+        [],
+        ["a", "b", "c"],
+        [true, false],
+        [:],
+        "test",
+        [x: 1, y: 2,
+         z: [
+           q: "asdf",
+           r: [
+             "t", "u", "v"
+           ]
+         ]
+        ]
+      ],
+      [
+        [z:
+          [
+            r: [
+              "t"
+            ]
+          ]
+        ],
+        "test",
+        ["c", "b"],
+        [false]
+      ]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches list inputs of all permutations'() {
+    given:
+    def object = [
+      [
+        name: "a",
+        version: 1,
+        type: "test",
+        timestamp: 1529415883467
+      ],
+      [
+        name: "a",
+        version: 1,
+        type: "test"
+      ],
+      [
+        name: "a",
+        version: 1
+      ],
+      [
+        name: "a"
+      ]
+    ]
+
+    def subsets = Collections2.permutations(object)
+
+    when:
+    boolean result = subsets.every{ TaskController.checkObjectMatchesSubset(object, it) }
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset does not match lists if subset list is larger'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      ["", "", ""],
+      ["", "", "", ""]
+    )
+
+    then:
+    !result
+  }
+
+  void 'checkObjectMatchesSubset matches identical maps'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [d: 1, e: true, f: "a"],
+      [d: 1, e: true, f: "a"]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical maps in any order'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [d: 1, e: true, f: "a"],
+      [f: "a", d: 1, e: true]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset map matches subset'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [d: 1, e: true, f: "a"],
+      [f: "a", e: true]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset map matches empty map'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [d: 1, e: true, f: "a"],
+      [:]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset map does not non-map'() {
+    given:
+    def object = [d: 1, e: true, f: "a"]
+
+    def subsets = [
+      [],
+      "test",
+      1,
+      false
+    ]
+
+    when:
+    boolean result = subsets.every{ false == TaskController.checkObjectMatchesSubset(object, it) }
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical complex maps'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [
+        g: [],
+        h: ["a", "b", "c"],
+        i: [true, false],
+        j: [:],
+        k: "test",
+        l: [x: 1, y: 2,
+         z: [
+           q: "asdf",
+           r: [
+             "t", "u", "v"
+           ]
+         ]
+        ]
+      ],
+      [
+        g: [],
+        h: ["a", "b", "c"],
+        i: [true, false],
+        j: [:],
+        k: "test",
+        l: [x: 1, y: 2,
+            z: [
+              q: "asdf",
+              r: [
+                "t", "u", "v"
+              ]
+            ]
+        ]
+      ]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset matches identical complex maps in any order'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [
+        g: [],
+        h: ["a", "b", "c"],
+        i: [true, false],
+        j: [:],
+        k: "test",
+        l: [x: 1, y: 2,
+            z: [
+              q: "asdf",
+              r: [
+                "t", "u", "v"
+              ]
+            ]
+        ]
+      ],
+      [
+        l: [y: 2, x: 1,
+         z: [
+           r: [
+             "v", "u", "t"
+           ],
+           q: "asdf"
+         ]
+        ],
+        j: [:],
+        k: "test",
+        h: ["c", "a", "b"],
+        i: [false, true],
+        g: []
+      ]
+    )
+
+    then:
+    result
+  }
+
+  void 'checkObjectMatchesSubset complex map matches subset'() {
+    when:
+    boolean result = TaskController.checkObjectMatchesSubset(
+      [
+        g: [],
+        h: ["a", "b", "c"],
+        i: [true, false],
+        j: [:],
+        k: "test",
+        l: [x: 1, y: 2,
+            z: [
+              q: "asdf",
+              r: [
+                "t", "u", "v"
+              ]
+            ]
+        ]
+      ],
+      [
+        l: [
+          z: [
+            r: [
+              "t"
+            ]
+          ]
+        ],
+        k: "test",
+        h: ["c", "b"],
+        i: [false]
+      ]
+    )
+
+    then:
+    result
   }
 }

@@ -295,48 +295,48 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     retrieved.isEmpty()
   }
 
-  def "can retrieve pipelines using buildTime boundaries"() {
+  def "can retrieve pipelines using pipelineConfigIds and buildTime boundaries"() {
     given:
     repository.store(pipeline {
-      application = "orca"
+      application = "app-1"
       pipelineConfigId = "pipeline-1"
       buildTime = 10
     })
     repository.store(pipeline {
-      application = "orca"
-      pipelineConfigId = "pipeline-1"
+      application = "app-2"
+      pipelineConfigId = "pipeline-2"
       buildTime = 11
     })
     repository.store(pipeline {
-      application = "orca"
-      pipelineConfigId = "pipeline-1"
+      application = "app-3"
+      pipelineConfigId = "pipeline-3"
       buildTime = 12
     })
 
     and:
     previousRepository.store(pipeline {
-      application = "orca"
+      application = "app-1"
       pipelineConfigId = "pipeline-1"
       buildTime = 7
     })
     previousRepository.store(pipeline {
-      application = "orca"
-      pipelineConfigId = "pipeline-1"
+      application = "app-2"
+      pipelineConfigId = "pipeline-2"
       buildTime = 8
     })
     previousRepository.store(pipeline {
-      application = "orca"
-      pipelineConfigId = "pipeline-1"
+      application = "app-3"
+      pipelineConfigId = "pipeline-3"
       buildTime = 9
     })
 
     when:
-    def retrieved = repository.retrievePipelinesForPipelineConfigIdWithBuildTimeBoundary("pipeline-1", new ExecutionRepository.BuildTimeBoundaryExecutionCriteria(buildTimeStartBoundary: 9L, buildTimeEndBoundary: 11L))
+    def retrieved = repository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(Arrays.asList("pipeline-2", "pipeline-3"), 9L, 11L)
+      .sorted({ a,b -> a.buildTime <=> b.buildTime })
       .toList().toBlocking().first()
 
     then:
-    // pipelines are stored in a sorted sets and results should be reverse buildTime ordered
-    retrieved*.buildTime == [11L, 10L, 9L]
+    retrieved*.buildTime == [9L, 11L]
   }
 
   def "can retrieve pipeline without stageIndex"() {
