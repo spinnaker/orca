@@ -520,9 +520,13 @@ class TaskController {
   private Map decodeTriggerParams(String encodedTriggerParams) {
     Map triggerParams
     if (encodedTriggerParams != null) {
-      byte[] decoded = Base64.getDecoder().decode(encodedTriggerParams)
-      String str = new String(decoded, Charset.forName("UTF-8"))
-      triggerParams = mapper.readValue(str, Map.class)
+      try {
+        byte[] decoded = Base64.getDecoder().decode(encodedTriggerParams)
+        String str = new String(decoded, Charset.forName("UTF-8"))
+        triggerParams = mapper.readValue(str, Map.class)
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to parse encoded trigger", e)
+      }
     } else {
       triggerParams = new HashMap()
     }

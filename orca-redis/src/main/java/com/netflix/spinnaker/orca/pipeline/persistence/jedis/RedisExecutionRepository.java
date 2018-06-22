@@ -75,22 +75,22 @@ public class RedisExecutionRepository implements ExecutionRepository, PollingAge
     new TypeReference<List<SystemNotification>>() {
     };
 
-  private static String GET_EXECUTIONS_FOR_PIPELINE_CONFIG_IDS_SCRIPT = "" +
-    "local executions = {}\n" +
-    "for k,pipelineConfigId in pairs(KEYS) do\n" +
-    " local pipelineConfigToExecutionsKey = 'pipeline:executions:' .. pipelineConfigId\n" +
-    " local ids = redis.call('ZRANGEBYSCORE', pipelineConfigToExecutionsKey, ARGV[1], ARGV[2])\n" +
-    " for k,id in pairs(ids) do\n" +
-    "  table.insert(executions, id)\n" +
-    "  local executionKey = 'pipeline:' .. id\n" +
-    "  local execution = redis.call('HGETALL', executionKey)\n" +
-    "  table.insert(executions, execution)\n" +
-    "  local stageIdsKey = executionKey .. ':stageIndex'\n" +
-    "  local stageIds = redis.call('LRANGE', stageIdsKey, 0, -1)\n" +
-    "  table.insert(executions, stageIds)\n" +
-    " end\n" +
-    "end\n" +
-    "return executions";
+  private static String GET_EXECUTIONS_FOR_PIPELINE_CONFIG_IDS_SCRIPT = String.join("\n",
+    "local executions = {}",
+      "for k,pipelineConfigId in pairs(KEYS) do",
+      " local pipelineConfigToExecutionsKey = 'pipeline:executions:' .. pipelineConfigId",
+      " local ids = redis.call('ZRANGEBYSCORE', pipelineConfigToExecutionsKey, ARGV[1], ARGV[2])",
+      " for k,id in pairs(ids) do",
+      "  table.insert(executions, id)",
+      "  local executionKey = 'pipeline:' .. id",
+      "  local execution = redis.call('HGETALL', executionKey)",
+      "  table.insert(executions, execution)",
+      "  local stageIdsKey = executionKey .. ':stageIndex'",
+      "  local stageIds = redis.call('LRANGE', stageIdsKey, 0, -1)",
+      "  table.insert(executions, stageIds)",
+      " end",
+      "end",
+      "return executions");
 
   private final RedisClientDelegate redisClientDelegate;
   private final Optional<RedisClientDelegate> previousRedisClientDelegate;
@@ -660,6 +660,9 @@ public class RedisExecutionRepository implements ExecutionRepository, PollingAge
   }
 
   private Map<String, String> buildExecutionMapFromRedisResponse(List<String> entries) {
+    if (entries.size() % 2 != 0) {
+      throw new RuntimeException("Failed to convert Redis response to map because the number of entries is not even");
+    }
     Map<String, String> map = new HashMap<>();
     String nextKey = null;
     for (int i = 0; i < entries.size(); i++) {
