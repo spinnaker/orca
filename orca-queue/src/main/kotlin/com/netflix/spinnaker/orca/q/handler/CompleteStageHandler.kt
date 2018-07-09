@@ -54,6 +54,12 @@ class CompleteStageHandler(
     message.withStage { stage ->
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {
         var status = stage.determineStatus()
+        if (stage.shouldFailOnFailedExpressionEvaluation()) {
+          log.warn("Stage ${stage.id} (${stage.type}) of ${stage.execution.id} " +
+            "is set to fail because of failed expressions.")
+          status = TERMINAL
+        }
+
         try {
           if (status in setOf(RUNNING, NOT_STARTED) || (status.isComplete && !status.isHalt)) {
             // check to see if this stage has any unplanned synthetic after stages
@@ -84,7 +90,7 @@ class CompleteStageHandler(
           stage.status = status
           stage.endTime = clock.millis()
         } catch (e: Exception) {
-          log.error("Failed to construct after stages", e)
+          log.error("Failed to construct after stages for $stage.id", e)
           stage.status = TERMINAL
           stage.endTime = clock.millis()
         }
@@ -209,25 +215,28 @@ class CompleteStageHandler(
         repository.removeStage(execution, stage.id)
       }
   }
+
+  private fun Stage.determineStatus(): ExecutionStatus {
+    val syntheticStatuses = syntheticStages().map(Stage::getStatus)
+    val taskStatuses = tasks.map(Task::getStatus)
+    val planningStatus = if (hasPlanningFailure()) listOf(failureStatus()) else emptyList()
+    val allStatuses = syntheticStatuses + taskStatuses + planningStatus
+    val afterStageStatuses = afterStages().map(Stage::getStatus)
+    return when {
+      allStatuses.isEmpty()                    -> NOT_STARTED
+      allStatuses.contains(TERMINAL)           -> TERMINAL
+      allStatuses.contains(STOPPED)            -> STOPPED
+      allStatuses.contains(CANCELED)           -> CANCELED
+      allStatuses.contains(FAILED_CONTINUE)    -> FAILED_CONTINUE
+      allStatuses.all { it == SUCCEEDED }      -> SUCCEEDED
+      afterStageStatuses.contains(NOT_STARTED) -> RUNNING // after stages were planned but not run yet
+      else                                     -> {
+        log.error("Unhandled condition for stage $id of $execution.id, marking as TERMINAL. syntheticStatuses=$syntheticStatuses, taskStatuses=$taskStatuses, planningStatus=$planningStatus, afterStageStatuses=$afterStageStatuses")
+        TERMINAL
+      }
+    }
+  }
 }
 
 private fun Stage.hasPlanningFailure() =
   context["beforeStagePlanningFailed"] == true
-
-private fun Stage.determineStatus(): ExecutionStatus {
-  val syntheticStatuses = syntheticStages().map(Stage::getStatus)
-  val taskStatuses = tasks.map(Task::getStatus)
-  val planningStatus = if (hasPlanningFailure()) listOf(failureStatus()) else emptyList()
-  val allStatuses = syntheticStatuses + taskStatuses + planningStatus
-  val afterStageStatuses = afterStages().map(Stage::getStatus)
-  return when {
-    allStatuses.isEmpty()                    -> NOT_STARTED
-    allStatuses.contains(TERMINAL)           -> TERMINAL
-    allStatuses.contains(STOPPED)            -> STOPPED
-    allStatuses.contains(CANCELED)           -> CANCELED
-    allStatuses.contains(FAILED_CONTINUE)    -> FAILED_CONTINUE
-    allStatuses.all { it == SUCCEEDED }      -> SUCCEEDED
-    afterStageStatuses.contains(NOT_STARTED) -> RUNNING // after stages were planned but not run yet
-    else                                     -> TERMINAL
-  }
-}

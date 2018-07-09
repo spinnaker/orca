@@ -16,12 +16,14 @@
 
 package com.netflix.spinnaker.orca.front50.spring
 
+import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.security.User
 import groovy.transform.CompileDynamic
 import groovy.util.logging.Slf4j
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
@@ -32,10 +34,14 @@ class DependentPipelineExecutionListener implements ExecutionListener {
 
   private final Front50Service front50Service
   private DependentPipelineStarter dependentPipelineStarter
+  private final FiatStatus fiatStatus
 
-  DependentPipelineExecutionListener(Front50Service front50Service, DependentPipelineStarter dependentPipelineStarter) {
+  DependentPipelineExecutionListener(Front50Service front50Service,
+                                     DependentPipelineStarter dependentPipelineStarter,
+                                     FiatStatus fiatStatus) {
     this.front50Service = front50Service
     this.dependentPipelineStarter = dependentPipelineStarter
+    this.fiatStatus = fiatStatus
   }
 
   @Override
@@ -54,7 +60,21 @@ class DependentPipelineExecutionListener implements ExecutionListener {
           trigger.pipeline == execution.pipelineConfigId &&
           trigger.status.contains(status)
         ) {
-          dependentPipelineStarter.trigger(it, execution.trigger?.user as String, execution, [:], null)
+          User authenticatedUser = null
+
+          if (fiatStatus.enabled && trigger.runAsUser) {
+            authenticatedUser = new User()
+            authenticatedUser.setEmail(trigger.runAsUser)
+          }
+
+          dependentPipelineStarter.trigger(
+            it,
+            execution.trigger?.user as String,
+            execution,
+            [:],
+            null,
+            authenticatedUser
+          )
         }
       }
     }
