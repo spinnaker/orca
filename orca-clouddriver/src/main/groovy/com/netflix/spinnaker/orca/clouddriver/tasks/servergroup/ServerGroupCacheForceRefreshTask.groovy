@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import org.codehaus.groovy.runtime.StackTraceUtils
-
 import java.time.Clock
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -57,7 +55,7 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
 
   @Override
   TaskResult execute(Stage stage) {
-    StackTraceUtils.sanitize(new Exception()).printStackTrace()
+    
     if ((clock.millis() - stage.startTime) > autoSucceedAfterMs) {
       /*
        * If an issue arises performing a refresh, wait at least 10 minutes (the default ttl of a cache record) before
