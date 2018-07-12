@@ -63,7 +63,9 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
        *
        * Under normal operations, this refresh task should complete sub-minute.
        */
-      log.warn("Force cache refresh issue arose. Shorting the circuit.")
+      log.warn("After {}ms no progress has been made with the force cache refresh. Shorting the circuit.", 
+              clock.millis() - stage.startTime
+              )
       return new TaskResult(SUCCEEDED, ["shortCircuit": true])
     }
 
@@ -157,11 +159,10 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
                                                   String cloudProvider,
                                                   StageData stageData,
                                                   Long startTime) {
-    // log.debug("Force cache refresh calling clouddriver with refresh type ${REFRESH_TYPE}")
+    
     def pendingForceCacheUpdates = cacheStatusService.pendingForceCacheUpdates(cloudProvider, REFRESH_TYPE)
     log.debug("Force cache refresh clouddriver response was: ${pendingForceCacheUpdates}.")
-    boolean pendingFound = pendingForceCacheUpdates.find { it.cacheTime >= startTime }
-    boolean isRecent = (startTime != null) ? (pendingFound != null ) ? pendingFound : false : false
+    boolean isRecent = (startTime != null) ? pendingForceCacheUpdates.find { it.cacheTime >= startTime } : false
 
     log.debug("Force cache refresh isRecent = ${isRecent}")
 
@@ -220,8 +221,6 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
 
             return false
           }
-
-          // log.debug("Force cache refresh no stale/awaiting processing conditions matched.")
         }
 
         log.info("Processed force cache refresh request in ${forceCacheUpdate.cacheTime - startTime}ms (model: ${model})")
