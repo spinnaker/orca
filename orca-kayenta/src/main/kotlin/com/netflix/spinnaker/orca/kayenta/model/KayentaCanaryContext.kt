@@ -65,8 +65,8 @@ data class CanaryConfigScope(
   // I don't love having these as separate properties but other things in Orca rely
   // on serializing Instant as epoch Millis which is not what Kayenta wants.
   @JsonIgnore
-  val startTime = if (startTimeIso == null) null else Instant.parse(startTimeIso)
+  val startTime = if (startTimeIso == null) null else Instant.parse(startTimeIso.replace("+00:00", "Z"))
 
   @JsonIgnore
-  val endTime = if (endTimeIso == null) null else Instant.parse(endTimeIso)
+  val endTime = if (endTimeIso == null) null else Instant.parse(endTimeIso.replace("+00:00", "Z"))
 }
