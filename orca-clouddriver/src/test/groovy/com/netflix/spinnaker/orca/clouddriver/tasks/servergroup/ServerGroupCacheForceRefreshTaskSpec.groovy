@@ -150,7 +150,7 @@ class ServerGroupCacheForceRefreshTaskSpec extends Specification {
     responseCodes                                   || executionStatus
     [HTTP_OK      , HTTP_OK      , HTTP_OK      ]   || SUCCEEDED
     [HTTP_ACCEPTED, HTTP_ACCEPTED, HTTP_ACCEPTED]   || RUNNING
-    [HTTP_OK      , HTTP_ACCEPTED, HTTP_OK      ]   || SUCCEEDED
+    [HTTP_OK      , HTTP_ACCEPTED, HTTP_OK      ]   || RUNNING
   }
 
 
