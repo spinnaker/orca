@@ -160,6 +160,7 @@ class RetrofitExceptionHandlerSpec extends Specification {
     }
   }
 
+  @Unroll
   def "should not retry a network error on a #httpMethod request"() {
     given:
     def client = Stub(Client) {
