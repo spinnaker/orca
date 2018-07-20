@@ -31,6 +31,7 @@ import spock.lang.Unroll
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY
 import static retrofit.RetrofitError.Kind.HTTP
 import static retrofit.RetrofitError.Kind.NETWORK
+import static retrofit.RetrofitError.Kind.UNEXPECTED
 import static retrofit.RetrofitError.httpError
 
 class RetrofitExceptionHandlerSpec extends Specification {
@@ -129,9 +130,36 @@ class RetrofitExceptionHandlerSpec extends Specification {
 
     @DELETE("/whatever")
     Response delete()
+
+    @GET("/whatever/{stuff}")
+    Response getWithArg(@Path("stuff") String stuff)
   }
 
-  @Unroll
+  def "should not retry an internal error"() {
+    given:
+    def client = Stub(Client) {
+      execute(_) >> { throw new IllegalArgumentException("Path parameter is null") }
+    }
+
+    and:
+    def api = new RestAdapter.Builder()
+      .setEndpoint("http://localhost:1337")
+      .setClient(client)
+      .build()
+      .create(DummyRetrofitApi)
+
+    when:
+    def ex = expectingException {
+      api.getWithArg(null)
+    }
+
+    then:
+    with(handler.handle("whatever", ex)) {
+      details.kind == UNEXPECTED
+      !shouldRetry
+    }
+  }
+
   def "should not retry a network error on a #httpMethod request"() {
     given:
     def client = Stub(Client) {
