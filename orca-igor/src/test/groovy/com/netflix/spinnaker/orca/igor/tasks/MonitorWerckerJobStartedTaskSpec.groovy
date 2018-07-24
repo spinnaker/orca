@@ -9,7 +9,6 @@
 package com.netflix.spinnaker.orca.igor.tasks
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -22,7 +21,6 @@ import spock.lang.Subject
 
 class MonitorWerckerJobStartedTaskSpec extends Specification {
   def environment = new MockEnvironment()
-  def buildArtifactFilter = new BuildArtifactFilter(environment: environment)
 
   @Subject
   MonitorWerckerJobStartedTask task = new MonitorWerckerJobStartedTask();
@@ -43,10 +41,10 @@ class MonitorWerckerJobStartedTaskSpec extends Specification {
     task.execute(stage).status == expectedExecutionStatus
 
     where:
-    result | buildNumber | expectedExecutionStatus
-    "not_built" | 4 | ExecutionStatus.RUNNING
-    "success" | null | ExecutionStatus.RUNNING
-    "success" | 4 | ExecutionStatus.SUCCEEDED
+    result      | buildNumber | expectedExecutionStatus
+    "not_built" | 4           | ExecutionStatus.RUNNING
+    "success"   | null        | ExecutionStatus.RUNNING
+    "success"   | 4           | ExecutionStatus.SUCCEEDED
   }
 
 }
