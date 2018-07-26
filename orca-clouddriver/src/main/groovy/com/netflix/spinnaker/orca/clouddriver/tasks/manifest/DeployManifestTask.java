@@ -82,6 +82,14 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
     Map task = new HashMap(stage.getContext());
     String artifactSource = (String) task.get("source");
     if (StringUtils.isNotEmpty(artifactSource) && artifactSource.equals("artifact")) {
+      if (task.get("manifestArtifactId") == null) {
+        throw new IllegalArgumentException("No manifest artifact was specified.");
+      }
+
+      if (task.get("manifestArtifactAccount") == null) {
+        throw new IllegalArgumentException("No manifest artifact account was specified.");
+      }
+
       Artifact manifestArtifact = artifactResolver.getBoundArtifactForId(stage, task.get("manifestArtifactId").toString());
 
       if (manifestArtifact == null) {
@@ -132,10 +140,16 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
     }
 
     List<String> requiredArtifactIds = (List<String>) task.get("requiredArtifactIds");
+    List<Artifact> requiredArtifacts = new ArrayList<>();
     requiredArtifactIds = requiredArtifactIds == null ? new ArrayList<>() : requiredArtifactIds;
-    List<Artifact> requiredArtifacts = requiredArtifactIds.stream()
-        .map(id -> artifactResolver.getBoundArtifactForId(stage, id))
-        .collect(Collectors.toList());
+    for (String id : requiredArtifactIds) {
+      Artifact requiredArtifact = artifactResolver.getBoundArtifactForId(stage, id);
+      if (requiredArtifact == null) {
+        throw new IllegalStateException("No artifact with id '" + id + "' could be found in the pipeline context.");
+      }
+
+      requiredArtifacts.add(requiredArtifact);
+    }
 
     log.info("Deploying {} artifacts within the provided manifest", requiredArtifacts);
 

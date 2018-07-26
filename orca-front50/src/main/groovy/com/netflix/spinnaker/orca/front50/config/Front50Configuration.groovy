@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.front50.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
@@ -83,9 +84,10 @@ class Front50Configuration {
   @Bean
   DependentPipelineExecutionListener dependentPipelineExecutionListener(
     Front50Service front50Service,
-    DependentPipelineStarter dependentPipelineStarter
+    DependentPipelineStarter dependentPipelineStarter,
+    FiatStatus fiatStatus
   ) {
-    new DependentPipelineExecutionListener(front50Service, dependentPipelineStarter)
+    new DependentPipelineExecutionListener(front50Service, dependentPipelineStarter, fiatStatus)
   }
 
   @Bean
