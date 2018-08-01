@@ -39,11 +39,7 @@ internal data class Deployments(
  * zones.
  */
 internal val Deployments.regions: Set<String>
-  get() = if (experiment.availabilityZones.isNotEmpty()) {
-    experiment.availabilityZones.keys + control.availabilityZones.keys
-  } else {
-    setOf(experiment.region, control.region).filterNotNull().toSet()
-  }
+  get() = experiment.locations + control.locations
 
 /**
  * The source cluster for the canary control.
@@ -65,6 +61,13 @@ internal data class ClusterSpec(
   val availabilityZones: Map<String, Set<String>>,
   val region: String?
 )
+
+internal val ClusterSpec.locations: Set<String>
+  get() = when {
+    availabilityZones.isNotEmpty() -> availabilityZones.keys
+    region != null -> setOf(region)
+    else -> throw IllegalStateException("No locations for $this")
+  }
 
 /**
  * Gets [Deployments] from the parent canary stage of this stage.
