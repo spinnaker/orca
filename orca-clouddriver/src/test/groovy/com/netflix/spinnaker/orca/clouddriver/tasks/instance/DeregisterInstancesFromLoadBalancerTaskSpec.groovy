@@ -65,6 +65,7 @@ class DeregisterInstancesFromLoadBalancerTaskSpec extends Specification {
       credentials == this.deregisterInstancesFromLoadBalancerConfig.credentials
       cloudProvider == this.deregisterInstancesFromLoadBalancerConfig.cloudProvider
     }
+    1 * task.trafficGuard.verifyInstanceTermination(null, _, ["some-instance-name"], "test-account-name", _, "abc", _)
   }
 
   def "returns a success status with the kato task id"() {
