@@ -27,8 +27,12 @@ import org.springframework.stereotype.Component
 
 @Component
 class DeregisterInstancesFromLoadBalancerTask extends AbstractInstanceLoadBalancerRegistrationTask {
-  @Autowired
   TrafficGuard trafficGuard
+
+  @Autowired
+  DeregisterInstancesFromLoadBalancerTask(TrafficGuard trafficGuard) {
+    this.trafficGuard = trafficGuard
+  }
 
   @Override
   String getAction() {
