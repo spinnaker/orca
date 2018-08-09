@@ -20,8 +20,12 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.jedis.JedisClientConfiguration;
 import com.netflix.spinnaker.kork.jedis.JedisClientDelegate;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
+import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.notifications.RedisNotificationClusterLock;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
+import com.netflix.spinnaker.orca.pipeline.persistence.jedis.RedisExecutionRepository;
+import com.netflix.spinnaker.orca.telemetry.RedisInstrumentedExecutionRepository;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.BeanCreationException;
@@ -58,6 +62,27 @@ public class RedisConfiguration {
   }
 
   @Bean
+  @ConditionalOnProperty(value = "executionRepository.redis.enabled", matchIfMissing = true)
+  public ExecutionRepository redisExecutionRepository(Registry registry,
+                                                      RedisClientSelector redisClientSelector,
+                                                      @Qualifier("queryAllScheduler") Scheduler queryAllScheduler,
+                                                      @Qualifier("queryByAppScheduler") Scheduler queryByAppScheduler,
+                                                      @Value("${chunkSize.executionRepository:75}") Integer threadPoolChunkSize,
+                                                      @Value("${keiko.queue.redis.queueName:}") String bufferedPrefix) {
+    return new RedisInstrumentedExecutionRepository(
+      new RedisExecutionRepository(
+        registry,
+        redisClientSelector,
+        queryAllScheduler,
+        queryByAppScheduler,
+        threadPoolChunkSize,
+        bufferedPrefix
+      ),
+      registry
+    );
+  }
+
+  @Bean
   public NotificationClusterLock redisNotificationClusterLock(RedisClientDelegate redisClientDelegate) {
     return new RedisNotificationClusterLock(redisClientDelegate);
   }
@@ -88,7 +113,7 @@ public class RedisConfiguration {
   @Deprecated // rz - Kept for backwards compat with old connection configs
   @Bean(name = "jedisPoolPrevious")
   @ConditionalOnProperty("redis.connectionPrevious")
-  @ConditionalOnExpression("${redis.connection} != ${redis.connectionPrevious}")
+  @ConditionalOnExpression("'${redis.connection}' != '${redis.connectionPrevious}'")
   JedisPool jedisPoolPrevious(
     @Value("${redis.connectionPrevious:#{null}}") String previousConnection,
     @Value("${redis.timeout:2000}") int timeout,

@@ -74,6 +74,7 @@ class ContextParameterProcessorSpec extends Specification {
     'support composite expression'              | 'a.${replaceMe}.b.${replaceMe}'                             | 'a.newValue.b.newValue'
     'leave unresolved expressions alone'        | 'a.${ENV1}.b.${ENV2}'                                       | 'a.${ENV1}.b.${ENV2}'
     'support partial resolution for composites' | 'a.${ENV1}.b.${replaceMe}'                                  | 'a.${ENV1}.b.newValue'
+    'can call replaceAll'                       | '${ "jeyrs!".replaceAll("\\W", "") }'                       | 'jeyrs'
   }
 
   def "should include evaluation summary errors on partially evaluated composite expression"() {
@@ -90,10 +91,11 @@ class ContextParameterProcessorSpec extends Specification {
 
 
     where:
-    value                             | evaluatedValue          | errorCount
-    'a.${ENV1}.b.${ENV2}'             | 'a.${ENV1}.b.${ENV2}'   | 1
-    'a.${ENV1}.b.${replaceMe}'        | 'a.${ENV1}.b.newValue'  | 1
-    'a.${replaceMe}.b.${replaceMe}'   | 'a.newValue.b.newValue' | 0
+    value                                        | evaluatedValue                    | errorCount
+    'a.${ENV1}.b.${ENV2}'                        | 'a.${ENV1}.b.${ENV2}'             | 1
+    'a.${ENV1}.b.${replaceMe}'                   | 'a.${ENV1}.b.newValue'            | 1
+    'a.${replaceMe}.b.${replaceMe}'              | 'a.newValue.b.newValue'           | 0
+    'a.${\'${ESCAPED_LITERAL}\'}.b.${replaceMe}' | 'a.${ESCAPED_LITERAL}.b.newValue' | 0
   }
 
   @Unroll
