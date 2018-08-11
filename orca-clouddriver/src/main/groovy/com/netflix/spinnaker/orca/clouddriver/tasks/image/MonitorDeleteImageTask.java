@@ -48,10 +48,10 @@ public class MonitorDeleteImageTask extends AbstractCloudProviderAwareTask imple
   @Override
   public TaskResult execute(@Nonnull Stage stage) {
     DeleteImageStage.DeleteImageRequest deleteImageRequest = stage.mapTo(DeleteImageStage.DeleteImageRequest.class);
-    Set<String> deleteResult = (HashSet<String>) Optional.ofNullable(stage.getOutputs().get("delete.image.ids"))
-      .orElse(new HashSet<>());
-    Map<String, Object> outputs = new HashMap<>();
+    List<String> deleteResult = (List<String>) Optional.ofNullable(stage.getOutputs().get("delete.image.ids"))
+      .orElse(new ArrayList<>());
 
+    Map<String, Object> outputs = new HashMap<>();
     deleteImageRequest
       .getImageIds()
       .forEach(imageId -> {
@@ -73,9 +73,8 @@ public class MonitorDeleteImageTask extends AbstractCloudProviderAwareTask imple
       });
 
     outputs.put("delete.image.ids", deleteResult);
-    if (deleteResult.size() == deleteImageRequest.getImageIds().size() &&
-      deleteImageRequest.getImageIds().containsAll(deleteResult)) {
-      return new TaskResult(ExecutionStatus.SUCCEEDED, outputs);
+    if (deleteResult.containsAll(deleteImageRequest.getImageIds())) {
+      return new TaskResult(ExecutionStatus.SUCCEEDED, stage.getContext(), outputs);
     }
 
     return new TaskResult(ExecutionStatus.RUNNING, stage.getContext(), outputs);
@@ -83,11 +82,11 @@ public class MonitorDeleteImageTask extends AbstractCloudProviderAwareTask imple
 
   @Override
   public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(10);
+    return TimeUnit.SECONDS.toMillis(5);
   }
 
   @Override
   public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(2);
+    return TimeUnit.MINUTES.toMillis(5);
   }
 }

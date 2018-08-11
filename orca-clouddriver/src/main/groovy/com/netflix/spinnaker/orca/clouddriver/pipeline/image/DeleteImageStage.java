@@ -21,10 +21,10 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.image.MonitorDeleteImageTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import javax.validation.constraints.NotNull;
+import java.util.Set;
 
 @Component
 public class DeleteImageStage implements StageDefinitionBuilder {
@@ -36,17 +36,17 @@ public class DeleteImageStage implements StageDefinitionBuilder {
   }
 
   public static class DeleteImageRequest {
-    @javax.validation.constraints.NotNull
+    @NotNull
     private String credentials;
 
-    @javax.validation.constraints.NotNull
+    @NotNull
     private String cloudProvider;
 
-    @javax.validation.constraints.NotNull
+    @NotNull
     private String region;
 
-    @javax.validation.constraints.NotNull
-    private List<String> imageIds;
+    @NotNull
+    private Set<String> imageIds;
 
     public String getCredentials() {
       return credentials;
@@ -72,11 +72,11 @@ public class DeleteImageStage implements StageDefinitionBuilder {
       this.region = region;
     }
 
-    public List<String> getImageIds() {
+    public Set<String> getImageIds() {
       return imageIds;
     }
 
-    public void setImageIds(List<String> imageIds) {
+    public void setImageIds(Set<String> imageIds) {
       this.imageIds = imageIds;
     }
   }
