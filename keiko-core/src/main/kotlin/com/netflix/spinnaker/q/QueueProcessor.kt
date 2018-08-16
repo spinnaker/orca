@@ -57,8 +57,7 @@ class QueueProcessor(
     ifEnabled {
       if (executor.hasCapacity()) {
         if (fillExecutorEachCycle) {
-          val availableCapacity = executor.availableCapacity()
-          availableCapacity.downTo(0).forEach {
+          while (executor.hasCapacity()) {
             pollOnce()
           }
         } else {
