@@ -125,7 +125,7 @@ class RedisQueue(
     pool.resource.use { redis ->
       redis.firstFingerprint(queueKey, message.fingerprint()).also { fingerprint ->
         if (fingerprint != null) {
-          log.warn("Re-prioritizing message as an identical one is already on the queue: " +
+          log.info("Re-prioritizing message as an identical one is already on the queue: " +
             "$fingerprint, message: $message")
           redis.zadd(queueKey, score(delay), fingerprint)
           fire(MessageDuplicate(message))
@@ -196,7 +196,7 @@ class RedisQueue(
                       zadd(queueKey, score(), fingerprint)
                       hincrBy(attemptsKey, fingerprint, 1L)
                     }
-                  log.warn("Not retrying message $fingerprint because an identical message " +
+                  log.info("Not retrying message $fingerprint because an identical message " +
                     "is already on the queue")
                   fire(MessageDuplicate(message))
                 } else {
