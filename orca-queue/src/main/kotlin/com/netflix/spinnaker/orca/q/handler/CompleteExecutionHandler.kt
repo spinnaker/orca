@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.ExecutionComplete
@@ -41,22 +42,32 @@ class CompleteExecutionHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher,
+  private val registry: Registry,
   @Value("\${queue.retry.delay.ms:30000}") retryDelayMs: Long
 ) : OrcaMessageHandler<CompleteExecution> {
 
   private val log = LoggerFactory.getLogger(javaClass)
   private val retryDelay = Duration.ofMillis(retryDelayMs)
+  private val completedId = registry.createId("executions.completed")
 
   override fun handle(message: CompleteExecution) {
     message.withExecution { execution ->
       if (execution.status.isComplete) {
         log.info("Execution ${execution.id} already completed with ${execution.status} status")
+        publisher.publishEvent(
+          ExecutionComplete(this, message.executionType, message.executionId, execution.status)
+        )
       } else {
         message.determineFinalStatus(execution) { status ->
           repository.updateStatus(execution.type, message.executionId, status)
           publisher.publishEvent(
             ExecutionComplete(this, message.executionType, message.executionId, status)
           )
+          registry.counter(completedId.withTags(
+            "status", status.name,
+            "executionType", execution.type.name,
+            "application", execution.application
+          )).increment()
           if (status != SUCCEEDED) {
             execution.topLevelStages.filter { it.status == RUNNING }.forEach {
               queue.push(CancelStage(it))

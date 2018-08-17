@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,15 +30,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import rx.Observable;
-import rx.Scheduler;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
@@ -49,8 +47,6 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
   private static final List<String> COMPLETED_STATUSES = ExecutionStatus.COMPLETED.stream().map(Enum::toString).collect(Collectors.toList());
 
   private final Logger log = LoggerFactory.getLogger(OldPipelineCleanupPollingNotificationAgent.class);
-
-  private Scheduler scheduler = Schedulers.io();
 
   private Func1<Execution, Boolean> filter = new Func1<Execution, Boolean>() {
     @Override
@@ -83,7 +79,7 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
   };
 
   private final Clock clock;
-  private final PollingAgentExecutionRepository executionRepository;
+  private final ExecutionRepository executionRepository;
   private final Registry registry;
 
   private final long pollingIntervalMs;
@@ -95,7 +91,7 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
 
   @Autowired
   public OldPipelineCleanupPollingNotificationAgent(NotificationClusterLock clusterLock,
-                                                    PollingAgentExecutionRepository executionRepository,
+                                                    ExecutionRepository executionRepository,
                                                     Clock clock,
                                                     Registry registry,
                                                     @Value("${pollers.oldPipelineCleanup.intervalMs:3600000}") long pollingIntervalMs,
@@ -124,14 +120,7 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
   }
 
   @Override
-  protected void startPolling() {
-    subscription = Observable
-      .timer(pollingIntervalMs, TimeUnit.MILLISECONDS, scheduler)
-      .repeat()
-      .subscribe(aLong -> tick());
-  }
-
-  private void tick() {
+  protected void tick() {
     LongTaskTimer timer = registry.longTaskTimer(timerId);
     long timerId = timer.start();
     try {
@@ -169,7 +158,7 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
     executions.subList(0, (executions.size() - minimumPipelineExecutions)).forEach(p -> {
       long startTime = p.startTime == null ? p.buildTime : p.startTime;
       long days = ChronoUnit.DAYS.between(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(clock.millis()));
-      if (days > thresholdDays && !executionRepository.hasEntityTags(PIPELINE, p.id)) {
+      if (days > thresholdDays) {
         log.info("Deleting pipeline execution " + p.id + ": " + p.toString());
         registry.counter(deletedId.withTag("application", p.application)).increment();
         executionRepository.delete(PIPELINE, p.id);
