@@ -82,8 +82,6 @@ class RedisQueue(
   private val unackedKey = "$queueName.unacked"
   private val messagesKey = "$queueName.messages"
   private val locksKey = "$queueName.locks"
-
-  // TODO: use AttemptsAttribute instead
   private val attemptsKey = "$queueName.attempts"
 
   // Internal ObjectMapper that enforces deterministic property ordering for use only in hashing.
@@ -91,7 +89,12 @@ class RedisQueue(
     enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
   }
 
+  private lateinit var readMessageWithLockScriptSha: String
+
   init {
+    pool.resource.use { redis ->
+      readMessageWithLockScriptSha = redis.scriptLoad(READ_MESSAGE_WITH_LOCK_SRC)
+    }
     log.info("Configured queue: $queueName")
   }
 
@@ -317,7 +320,7 @@ class RedisQueue(
   }
 
   private fun ScriptingCommands.readMessageWithLock(): Triple<String, Instant, String?>? {
-    val response = eval(READ_MESSAGE_WITH_LOCK, listOf(
+    val response = evalsha(readMessageWithLockScriptSha, listOf(
       queueKey,
       unackedKey,
       locksKey,
@@ -441,7 +444,7 @@ class RedisQueue(
   )
 }
 
-private const val READ_MESSAGE = """
+private const val READ_MESSAGE_SRC = """
   local java_scientific = function(x)
     return string.format("%.12E", x):gsub("\+", "")
   end
@@ -465,7 +468,7 @@ private const val READ_MESSAGE = """
 """
 
 /* ktlint-disable max-line-length */
-private const val READ_MESSAGE_WITH_LOCK = """
+private const val READ_MESSAGE_WITH_LOCK_SRC = """
   local queueKey = KEYS[1]
   local unackKey = KEYS[2]
   local lockKey = KEYS[3]
@@ -507,7 +510,7 @@ private const val READ_MESSAGE_WITH_LOCK = """
     return "AcquireLockFailed"
   end
 
-  $READ_MESSAGE
+  $READ_MESSAGE_SRC
 
   return {fingerprint, fingerprintScore, message}
 """
