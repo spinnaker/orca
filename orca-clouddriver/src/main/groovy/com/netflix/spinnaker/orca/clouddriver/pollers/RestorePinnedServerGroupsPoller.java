@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
-import rx.Observable;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -112,26 +111,17 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
   }
 
   @Override
+  protected TimeUnit getPollingIntervalUnit() {
+    return TimeUnit.SECONDS;
+  }
+
+  @Override
   protected String getNotificationType() {
     return "restorePinnedServerGroups";
   }
 
   @Override
-  protected void startPolling() {
-    subscription = Observable
-      .timer(getPollingInterval(), TimeUnit.SECONDS, scheduler)
-      .repeat()
-      .filter(interval -> tryAcquireLock())
-      .subscribe(interval -> {
-        try {
-          poll();
-        } catch (Exception e) {
-          log.error("Error checking for pinned server groups", e);
-        }
-      });
-  }
-
-  void poll() {
+  protected void tick() {
     log.info("Checking for pinned server groups");
 
     List<PinnedServerGroupTag> pinnedServerGroupTags = fetchPinnedServerGroupTags();
@@ -234,11 +224,9 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
                                                     Optional<ServerGroup> serverGroup,
                                                     List<Map<String, Object>> jobs) {
     String name = serverGroup.map(s -> format(
-      "Unpin Server Group: %s to %s/%s/%s",
+      "Unpin Server Group: %s (min: %s)",
       pinnedServerGroupTag.serverGroup,
-      pinnedServerGroupTag.unpinnedCapacity.min,
-      s.capacity.desired,
-      s.capacity.max
+      pinnedServerGroupTag.unpinnedCapacity.min
     )).orElseGet(() -> "Deleting tags on '" + pinnedServerGroupTag.id + "'");
 
     return ImmutableMap.<String, Object>builder()
@@ -269,17 +257,13 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
       .put("region", pinnedServerGroupTag.location)
       .put("credentials", pinnedServerGroupTag.account)
       .put("cloudProvider", pinnedServerGroupTag.cloudProvider)
-      .put("interestingHealthProviderNames", Collections.emptyList()) // no need to wait on health when only
-      .put("capacity", ImmutableMap.<String, Integer>builder()        // adjusting min capacity
+      .put("interestingHealthProviderNames", Collections.emptyList()) // no need to wait on health when only adjusting min capacity
+      .put("capacity", ImmutableMap.<String, Integer>builder()
         .put("min", pinnedServerGroupTag.unpinnedCapacity.min)
-        .put("desired", serverGroup.capacity.desired)
-        .put("max", serverGroup.capacity.max)
         .build()
       )
       .put("constraints", Collections.singletonMap("capacity", ImmutableMap.<String, Integer>builder()
-        .put("min", serverGroup.capacity.min)                         // ensure that the current capacity matches
-        .put("desired", serverGroup.capacity.desired)                 // expectations and has not changed since the
-        .put("max", serverGroup.capacity.max)                         // last caching cycle
+        .put("min", serverGroup.capacity.min)                         // ensure that the current min capacity has not been already changed
         .build())
       )
       .build();
