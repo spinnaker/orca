@@ -143,7 +143,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
         pipeline = executionLauncher().start(PIPELINE, json)
 
         Id id = registry.createId("pipelines.triggered")
-          .withTag("application", Optional.ofNullable(pipeline.getApplication()).orElse("NULL_APPLICATION"))
+          .withTag("application", Optional.ofNullable(pipeline.getApplication()).orElse("null"))
           .withTag("monitor", getClass().getSimpleName())
         registry.counter(id).increment()
 
