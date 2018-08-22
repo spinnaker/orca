@@ -58,8 +58,8 @@ class DependentPipelineStarter implements ApplicationContextAware {
     this.applicationContext = applicationContext
     this.objectMapper = objectMapper
     this.contextParameterProcessor = contextParameterProcessor
-    this.pipelinePreprocessors = pipelinePreprocessors.get()
-    this.artifactResolver = artifactResolver.get()
+    this.pipelinePreprocessors = pipelinePreprocessors.isPresent() ? pipelinePreprocessors.get() : null
+    this.artifactResolver = artifactResolver.isPresent() ? artifactResolver.get() : null
     this.registry = registry
   }
 
