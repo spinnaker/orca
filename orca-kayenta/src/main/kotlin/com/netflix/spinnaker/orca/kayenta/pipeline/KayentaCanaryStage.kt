@@ -37,10 +37,8 @@ import java.time.Duration
 import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.Instant.now
-import java.time.temporal.ChronoUnit
 import java.time.temporal.ChronoUnit.*
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 @Component
 class KayentaCanaryStage(private val clock: Clock) : StageDefinitionBuilder {
@@ -56,8 +54,8 @@ class KayentaCanaryStage(private val clock: Clock) : StageDefinitionBuilder {
   override fun beforeStages(parent: Stage, graph: StageGraphBuilder) {
     if (parent.context["deployments"] != null) {
       graph.add {
-        it.type = DeployCanaryClustersStage.STAGE_TYPE
-        it.name = "Deploy Canary Clusters"
+        it.type = DeployCanaryServerGroupsStage.STAGE_TYPE
+        it.name = "Deploy Canary Server Groups"
       }
     }
 
@@ -112,7 +110,7 @@ class KayentaCanaryStage(private val clock: Clock) : StageDefinitionBuilder {
 
       graph.append {
         it.type = RunCanaryPipelineStage.STAGE_TYPE
-        it.name = "Run Canary #$i"
+        it.name = "${RunCanaryPipelineStage.STAGE_NAME_PREFIX}$i"
         it.context.putAll(mapper.convertValue<Map<String, Any>>(runCanaryContext))
         it.context["continuePipeline"] = parent.context["continuePipeline"]
       }
