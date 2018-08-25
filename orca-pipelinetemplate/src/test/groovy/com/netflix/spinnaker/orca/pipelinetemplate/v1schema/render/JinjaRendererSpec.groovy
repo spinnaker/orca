@@ -56,7 +56,7 @@ class JinjaRendererSpec extends Specification {
     template          || expectedType | expectedResult
     '1'               || Integer      | 1
     '1.1'             || Double       | 1.1
-    'true'            || Boolean      | true
+    'true'            || String       | 'true'
     '{{ stringVar }}' || String       | 'myStringValue'
     'yes'             || String       | 'yes'
     'on'              || String       | 'on'

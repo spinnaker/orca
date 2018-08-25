@@ -28,7 +28,7 @@ import java.util.List;
 
 public class YamlRenderedValueConverter implements RenderedValueConverter {
 
-  private static final List<String> YAML_KEYWORDS = Arrays.asList("yes", "no", "on", "off");
+  private static final List<String> YAML_KEYWORDS = Arrays.asList("yes", "no", "on", "off", "true", "false");
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 

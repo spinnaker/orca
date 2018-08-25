@@ -43,8 +43,6 @@ public class JsonRenderedValueConverter implements RenderedValueConverter {
       } catch (NumberFormatException ignored) {
         return NumberUtils.createLong(rendered);
       }
-    } else if (rendered.equals("true") || rendered.equals("false")) {
-      return Boolean.parseBoolean(rendered);
     } else if (rendered.startsWith("{{") || (!rendered.startsWith("{") && !rendered.startsWith("["))) {
       return rendered;
     }
