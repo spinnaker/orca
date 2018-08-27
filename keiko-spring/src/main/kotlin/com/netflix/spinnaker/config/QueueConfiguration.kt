@@ -56,6 +56,20 @@ class QueueConfiguration {
     }
 
   @Bean
+  fun queueExecutor(messageHandlerPool: ThreadPoolTaskExecutor) =
+    object : QueueExecutor<ThreadPoolTaskExecutor>(messageHandlerPool) {
+      override fun hasCapacity() =
+        executor.threadPoolExecutor.run {
+          activeCount < maximumPoolSize
+        }
+
+      override fun availableCapacity() =
+        executor.threadPoolExecutor.run {
+          maximumPoolSize - activeCount
+        }
+    }
+
+  @Bean
   fun queueProcessor(
     queue: Queue,
     executor: QueueExecutor<*>,
