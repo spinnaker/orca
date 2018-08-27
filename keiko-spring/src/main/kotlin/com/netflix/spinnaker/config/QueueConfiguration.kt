@@ -56,6 +56,7 @@ class QueueConfiguration {
     }
 
   @Bean
+  @ConditionalOnMissingBean(QueueExecutor::class)
   fun queueExecutor(messageHandlerPool: ThreadPoolTaskExecutor) =
     object : QueueExecutor<ThreadPoolTaskExecutor>(messageHandlerPool) {
       override fun hasCapacity() =
