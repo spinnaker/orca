@@ -57,7 +57,7 @@ class QueueProcessor(
     ifEnabled {
       if (executor.hasCapacity()) {
         if (fillExecutorEachCycle) {
-          while (executor.hasCapacity()) {
+          executor.availableCapacity().downTo(1).forEach {
             pollOnce()
           }
         } else {
