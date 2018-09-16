@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.ConfigurationError
 import com.netflix.spinnaker.orca.q.InvalidExecutionId
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -37,9 +38,17 @@ class ConfigurationErrorHandler(
   override fun handle(message: ConfigurationError) {
     when (message) {
       is InvalidExecutionId ->
-        log.error("No such ${message.executionType} ${message.executionId} for ${message.application}")
+        log.error(
+          "No such ${message.executionType} {} for {}",
+          value("executionId", message.executionId),
+          value("application", message.application)
+        )
       else -> {
-        log.error("${message.javaClass.simpleName} for ${message.executionType} ${message.executionId} for ${message.application}")
+        log.error(
+          "${message.javaClass.simpleName} for ${message.executionType} {} for {}",
+          value("executionId", message.executionId),
+          value("application", message.application)
+        )
         repository.updateStatus(message.executionType, message.executionId, TERMINAL)
       }
     }

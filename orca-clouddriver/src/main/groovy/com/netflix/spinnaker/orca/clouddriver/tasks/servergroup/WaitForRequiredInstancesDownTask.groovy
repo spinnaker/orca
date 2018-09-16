@@ -23,6 +23,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Component
 @Slf4j
 class WaitForRequiredInstancesDownTask extends AbstractWaitingForInstancesTask {
@@ -50,12 +52,12 @@ class WaitForRequiredInstancesDownTask extends AbstractWaitingForInstancesTask {
         }
 
         log.debug(
-          "{} {}% of {}: {} (executionId: {})",
+          "{} {}% of {}: {} ({})",
           instancesAreDisabled ? "Disabled" : "Disabling",
           desiredPercentage,
           serverGroup.name,
           instancesToDisable.collect { it.name }.join(", "),
-          stage.execution.id
+          kv("executionId", stage.execution.id)
         )
 
         return instancesAreDisabled

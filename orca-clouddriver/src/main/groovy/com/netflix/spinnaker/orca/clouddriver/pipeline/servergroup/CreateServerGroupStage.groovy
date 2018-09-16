@@ -16,12 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
-
-import javax.annotation.Nonnull
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.moniker.Moniker
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DestroyServerGroupStage
@@ -32,13 +29,18 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.AddServerGroupEn
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CreateServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
+import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
+
 import static java.util.concurrent.TimeUnit.MINUTES
+import static net.logstash.logback.argument.StructuredArguments.kv
 
 @Slf4j
 @Component
@@ -90,7 +92,11 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
 
     if (!stageData.getServerGroup()) {
       // did not get far enough to create a new server group
-      log.warn("No server group was created, skipping rollback! (executionId: ${stage.execution.id}, stageId: ${stage.id})")
+      log.warn(
+        "No server group was created, skipping rollback! ({}, {})",
+        kv("executionId", stage.execution.id),
+        kv("stageId", stage.id)
+      )
       return
     }
 

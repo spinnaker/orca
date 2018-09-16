@@ -75,7 +75,7 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
                                                          defaultBakeAccount,
                                                          stage.context.region as String,
                                                          operation.amiName as String)]
-      log.info("Generated `allowLaunchDescription` (allowLaunchDescription: ${ops})")
+      log.info("Generated 'allowLaunchDescription' (allowLaunchDescription: ${ops})")
     }
 
     ops << [(OPERATION): operation]

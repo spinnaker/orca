@@ -19,7 +19,14 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
+import com.netflix.spinnaker.orca.ExecutionStatus.FAILED_CONTINUE
+import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.ExecutionStatus.SKIPPED
+import com.netflix.spinnaker.orca.ExecutionStatus.STOPPED
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.ext.afterStages
 import com.netflix.spinnaker.orca.ext.failureStatus
@@ -31,8 +38,15 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.CancelStage
+import com.netflix.spinnaker.orca.q.CompleteExecution
+import com.netflix.spinnaker.orca.q.CompleteStage
+import com.netflix.spinnaker.orca.q.StartStage
+import com.netflix.spinnaker.orca.q.appendAfterStages
+import com.netflix.spinnaker.orca.q.buildAfterStages
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.argument.StructuredArguments.value
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -55,8 +69,11 @@ class CompleteStageHandler(
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {
         var status = stage.determineStatus()
         if (stage.shouldFailOnFailedExpressionEvaluation()) {
-          log.warn("Stage ${stage.id} (${stage.type}) of ${stage.execution.id} " +
-            "is set to fail because of failed expressions.")
+          log.warn(
+            "Stage {} (${stage.type}) of {} is set to fail because of failed expressions.",
+            value("stageId", stage.id),
+            value("executionId", stage.execution.id)
+          )
           status = TERMINAL
         }
 
@@ -75,7 +92,11 @@ class CompleteStageHandler(
               return@withStage
             } else if (status == NOT_STARTED) {
               // stage had no synthetic stages or tasks, which is odd but whatever
-              log.warn("Stage ${stage.id} (${stage.type}) of ${stage.execution.id} had no tasks or synthetic stages!")
+              log.warn(
+                "Stage {} (${stage.type}) of {} had no tasks or synthetic stages!",
+                value("stageId", stage.id),
+                value("executionId", stage.execution.id)
+              )
               status = SKIPPED
             }
           } else if (status.isFailure) {
@@ -90,7 +111,12 @@ class CompleteStageHandler(
           stage.status = status
           stage.endTime = clock.millis()
         } catch (e: Exception) {
-          log.error("Failed to construct after stages for $stage.id", e)
+          log.error(
+            "Failed to construct after stages for {}",
+            value("stageId", stage.id),
+            kv("executionId", stage.execution.id),
+            e
+          )
           stage.status = TERMINAL
           stage.endTime = clock.millis()
         }
@@ -231,7 +257,11 @@ class CompleteStageHandler(
       allStatuses.all { it == SUCCEEDED }      -> SUCCEEDED
       afterStageStatuses.contains(NOT_STARTED) -> RUNNING // after stages were planned but not run yet
       else                                     -> {
-        log.error("Unhandled condition for stage $id of $execution.id, marking as TERMINAL. syntheticStatuses=$syntheticStatuses, taskStatuses=$taskStatuses, planningStatus=$planningStatus, afterStageStatuses=$afterStageStatuses")
+        log.error(
+          "Unhandled condition for stage {} of {}, marking as TERMINAL. syntheticStatuses=$syntheticStatuses, taskStatuses=$taskStatuses, planningStatus=$planningStatus, afterStageStatuses=$afterStageStatuses",
+          value("stageId", id),
+          value("executionId", execution.id)
+        )
         TERMINAL
       }
     }

@@ -70,7 +70,7 @@ class JarDiffsTask implements DiffTask {
   public TaskResult execute(Stage stage) {
     def retriesRemaining = stage.context.jarDiffsRetriesRemaining != null ? stage.context.jarDiffsRetriesRemaining : MAX_RETRIES
     if (retriesRemaining <= 0) {
-      log.info("retries exceeded")
+      log.info("retries exceeded, marking task as succeeded")
       return new TaskResult(ExecutionStatus.SUCCEEDED, [jarDiffsRetriesRemaining: retriesRemaining])
     }
 
@@ -139,7 +139,7 @@ class JarDiffsTask implements DiffTask {
         jarMap = objectMapper.readValue(instanceResponse.body.in().text, Map)
         return true
       } catch(Exception e) {
-        log.error("could not get a jar list from : ${key} (${hostName}:${platformPort}) - ${e.message}")
+        log.error("could not get a jar list from : ${key} (${hostName}:${platformPort}, reason: ${e.message})")
         // swallow it so we can try the next instance
         return false
       }

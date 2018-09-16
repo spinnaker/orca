@@ -119,7 +119,7 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task, D
                                                       deployOperation.amiName)]
         })
 
-        log.info("Generated `allowLaunchDescriptions` (allowLaunchDescriptions: ${descriptions})")
+        log.info("Generated 'allowLaunchDescriptions' (allowLaunchDescriptions: ${descriptions})")
       }
     }
 

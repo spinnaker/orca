@@ -141,10 +141,10 @@ public class ExecutionLauncher {
       Execution o = executionRepository.retrieveOrchestrationForCorrelationId(
         trigger.getCorrelationId()
       );
-      log.info("Found pre-existing Orchestration by correlation id (id: " +
-        o.getId() + ", correlationId: " +
-        trigger.getCorrelationId() +
-        ")");
+      log.info("Found pre-existing Orchestration by correlation id (id: {}, correlationId: {})",
+        o.getId(),
+        trigger.getCorrelationId()
+      );
       return o;
     } catch (ExecutionNotFoundException e) {
       // Swallow

@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Component
 public class MonitorFront50Task implements RetryableTask {
   private final Logger log = LoggerFactory.getLogger(getClass());
@@ -107,8 +109,8 @@ public class MonitorFront50Task implements RetryableTask {
         return TaskResult.SUCCEEDED;
       } catch (Exception e) {
         log.error(
-          "Unable to verify that pipeline has been updated (executionId: {}, pipeline: {})",
-          stage.getExecution().getId(),
+          "Unable to verify that pipeline has been updated ({}, pipeline: {})",
+          kv("executionId", stage.getExecution().getId()),
           stageData.pipelineName,
           e
         );
@@ -116,8 +118,8 @@ public class MonitorFront50Task implements RetryableTask {
       }
     } else {
       log.warn(
-        "No pipeline id found, unable to verify that pipeline has been updated (executionId: {}, pipeline: {})",
-        stage.getExecution().getId(),
+        "No pipeline id found, unable to verify that pipeline has been updated ({}, pipeline: {})",
+        kv("executionId", stage.getExecution().getId()),
         stageData.pipelineName
       );
     }

@@ -40,6 +40,8 @@ import com.netflix.spinnaker.orca.time.toDuration
 import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.argument.StructuredArguments.value
 import org.apache.commons.lang.time.DurationFormatUtils
 import org.springframework.stereotype.Component
 import java.time.Clock
@@ -126,13 +128,20 @@ class RunTaskHandler(
       } catch (e: Exception) {
         val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
         if (exceptionDetails?.shouldRetry == true) {
-          log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
+          log.warn(
+            "Error running ${message.taskType.simpleName} for ${message.executionType}[{}]",
+            value("executionId", message.executionId)
+          )
           queue.push(message, task.backoffPeriod(taskModel, stage))
           trackResult(stage, thisInvocationStartTimeMs, taskModel, RUNNING)
         } else if (e is TimeoutException && stage.context["markSuccessfulOnTimeout"] == true) {
           queue.push(CompleteTask(message, SUCCEEDED))
         } else {
-          log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
+          log.error(
+            "Error running ${message.taskType.simpleName} for ${message.executionType}[{}]",
+            value("executionId", message.executionId),
+            e
+          )
           stage.context["exception"] = exceptionDetails
           repository.storeStage(stage)
           queue.push(CompleteTask(message, stage.failureStatus()))
@@ -219,7 +228,7 @@ class RunTaskHandler(
           msg.append("elapsedTime: ${formatTimeout(elapsedTime.toMillis())},")
           msg.append("timeoutValue: ${formatTimeout(actualTimeout.toMillis())}")
 
-          log.warn(msg.toString())
+          log.warn(msg.toString(), kv("executionId", stage.execution.id))
           throw TimeoutException(msg.toString())
         }
       }

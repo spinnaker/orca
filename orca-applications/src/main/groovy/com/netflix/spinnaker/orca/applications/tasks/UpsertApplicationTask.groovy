@@ -26,6 +26,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Slf4j
 @Component
 @CompileStatic
@@ -43,10 +45,10 @@ class UpsertApplicationTask extends AbstractFront50Task {
     try {
       if (existingApplication) {
         outputs.previousState = existingApplication
-        log.info("Updating application (name: ${application.name})")
+        log.info("Updating application: {}", kv("application", application.name))
         front50Service.update(application.name, application)
       } else {
-        log.info("Creating application (name: ${application.name})")
+        log.info("Creating application: {}", kv("application", application.name))
         front50Service.create(application)
         if (application.permission?.permissions == null) {
           application.setPermissions(Permissions.EMPTY)
@@ -57,7 +59,7 @@ class UpsertApplicationTask extends AbstractFront50Task {
         front50Service.updatePermission(application.name, application.permission)
       }
     } catch (RetrofitError re) {
-      log.error("Could not create or update application permission", re)
+      log.error("Could not create or update application permission: {}", kv("application", application.name), re)
       return new TaskResult(ExecutionStatus.TERMINAL, [:], outputs)
     }
 

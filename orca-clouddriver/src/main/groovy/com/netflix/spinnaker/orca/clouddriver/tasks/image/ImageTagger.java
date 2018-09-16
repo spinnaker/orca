@@ -33,6 +33,7 @@ import java.util.Map;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 public abstract class ImageTagger {
   protected static final String OPERATION = "upsertImageTags";
@@ -82,7 +83,7 @@ public abstract class ImageTagger {
         String upstreamImageName = (String) allMatchedImages.get(0).get("imageName");
         imageNames.add(upstreamImageName);
 
-        log.info(format("Found upstream image '%s' (executionId: %s)", upstreamImageName, stage.getExecution().getId()));
+        log.info("Found upstream image '{}' ({})", upstreamImageName, kv("executionId", stage.getExecution().getId()));
       }
     }
 

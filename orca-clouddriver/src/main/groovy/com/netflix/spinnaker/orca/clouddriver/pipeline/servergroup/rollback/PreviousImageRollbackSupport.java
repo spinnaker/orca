@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 public class PreviousImageRollbackSupport {
   private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -70,7 +72,14 @@ public class PreviousImageRollbackSupport {
         );
       }, 15, 2000, false);
     } catch (Exception e) {
-      log.warn("Unable to fetch entity tags, reason: {}", e.getMessage());
+      log.warn(
+        "Unable to fetch entity tags ({}, {}, {}, {}), reason: {}",
+        kv("cloudProvider", cloudProvider),
+        kv("account", credentials),
+        kv("region", region),
+        kv("serverGroup", serverGroupName),
+        e.getMessage()
+      );
     }
 
     if (entityTags != null && entityTags.size() > 1) {

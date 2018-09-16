@@ -68,13 +68,13 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   @Override
   public CancellableStage.Result cancel(Stage stage) {
     String readableStageDetails = format("(stageId: %s, executionId: %s, context: %s)", stage.getId(), stage.getExecution().getId(), stage.getContext());
-    log.info(format("Cancelling stage %s", readableStageDetails));
+    log.info("Cancelling stage {}", readableStageDetails);
 
     try {
       String executionId = (String) stage.getContext().get("executionId");
       if (executionId != null) {
         if (executionRepository == null) {
-          log.error(format("Stage %s could not be canceled w/o front50 enabled. Please set 'front50.enabled: true' in your orca config.", readableStageDetails));
+          log.error("Stage {} could not be canceled w/o front50 enabled. Please set 'front50.enabled: true' in your orca config.", readableStageDetails);
         } else {
           Execution childPipeline = executionRepository.retrieve(PIPELINE, executionId);
           if (!childPipeline.isCanceled()) {
@@ -84,7 +84,7 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
         }
       }
     } catch (Exception e) {
-      log.error(format("Failed to cancel stage %s, e: %s", readableStageDetails, e.getMessage()), e);
+      log.error("Failed to cancel stage {}", readableStageDetails, e);
     }
 
     return new CancellableStage.Result(stage, emptyMap());

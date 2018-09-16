@@ -32,6 +32,8 @@ import org.springframework.web.client.HttpStatusCodeException
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
+import static net.logstash.logback.argument.StructuredArguments.value
+
 @Slf4j
 @Component
 class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
@@ -76,8 +78,8 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
         "Received status code {} from status endpoint {} in execution {} in stage {}",
         response.statusCode,
         statusEndpoint,
-        stage.execution.id,
-        stage.id
+        value("executionId", stage.execution.id),
+        value("stageId", stage.id)
       )
     } catch (HttpStatusCodeException  e) {
       def statusCode = e.getStatusCode()

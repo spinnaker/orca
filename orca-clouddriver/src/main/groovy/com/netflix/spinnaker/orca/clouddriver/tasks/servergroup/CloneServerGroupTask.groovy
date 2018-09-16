@@ -30,6 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Slf4j
 @Component
 class CloneServerGroupTask extends AbstractCloudProviderAwareTask implements Task, DeploymentDetailsAware {
@@ -82,7 +84,11 @@ class CloneServerGroupTask extends AbstractCloudProviderAwareTask implements Tas
   }
 
   private List<Map<String, Object>> getDescriptions(Map operation) {
-    log.info("Generating descriptions (cloudProvider: ${operation.cloudProvider}, getCloudProvider: ${getCloudProvider(operation)}, credentials: ${operation.credentials}, defaultBakeAccount: ${defaultBakeAccount}, availabilityZones: ${operation.availabilityZones})")
+    log.info(
+      "Generating descriptions ({}, {}, defaultBakeAccount: ${defaultBakeAccount}, availabilityZones: ${operation.availabilityZones})",
+      kv("cloudProvider", getCloudProvider(operation)),
+      kv("account", operation.credentials)
+    )
 
     List<Map<String, Object>> descriptions = []
     // NFLX bakes images in their test account. This rigmarole is to allow the prod account access to that image.
@@ -104,7 +110,7 @@ class CloneServerGroupTask extends AbstractCloudProviderAwareTask implements Tas
       }
       descriptions.addAll(allowLaunchDescriptions)
 
-      log.info("Generated `allowLaunchDescriptions` (allowLaunchDescriptions: ${allowLaunchDescriptions})")
+      log.info("Generated 'allowLaunchDescriptions' (allowLaunchDescriptions: ${allowLaunchDescriptions})")
     }
     descriptions.add([cloneServerGroup: operation])
     descriptions

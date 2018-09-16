@@ -25,18 +25,11 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static java.lang.String.format;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Component
 public class GoogleImageTagger extends ImageTagger implements CloudProviderAware {
@@ -75,7 +68,12 @@ public class GoogleImageTagger extends ImageTagger implements CloudProviderAware
       );
       targetImages.add(targetImage);
 
-      log.info(format("Tagging '%s' with '%s' (executionId: %s)", targetImage.imageName, targetImage.tags, stage.getExecution().getId()));
+      log.info(
+        "Tagging '{}' with '{}' ({})",
+        targetImage.imageName,
+        targetImage.tags,
+        kv("executionId", stage.getExecution().getId())
+      );
 
       // Update the tags on the image
       operations.add(

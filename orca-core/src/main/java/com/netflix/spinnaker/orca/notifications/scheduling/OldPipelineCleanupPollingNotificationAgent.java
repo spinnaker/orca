@@ -159,7 +159,7 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
       long startTime = p.startTime == null ? p.buildTime : p.startTime;
       long days = ChronoUnit.DAYS.between(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(clock.millis()));
       if (days > thresholdDays) {
-        log.info("Deleting pipeline execution " + p.id + ": " + p.toString());
+        log.info("Deleting pipeline execution {}: {}", p.id, p.toString());
         registry.counter(deletedId.withTag("application", p.application)).increment();
         executionRepository.delete(PIPELINE, p.id);
       }

@@ -16,10 +16,6 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.rollingpush;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -36,7 +32,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
+import static net.logstash.logback.argument.StructuredArguments.value;
 
 @Component
 public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -112,9 +115,9 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
     } catch (Exception e) {
       log.error(
         "Failed to clean up tags for stage {} of {} {}",
-        stage.getId(),
+        value("stageId", stage.getId()),
         stage.getExecution().getType(),
-        stage.getExecution().getId(),
+        value("executionId", stage.getExecution().getId()),
         e
       );
       return new TaskResult(SUCCEEDED);

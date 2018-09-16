@@ -31,6 +31,7 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.PinnedServerGroupTagGenerator.PINNED_CAPACITY_TAG
+import static net.logstash.logback.argument.StructuredArguments.kv
 
 /**
  * Ensure that external scaling policies do not adversely affect a server group as it is in the process of being deployed.
@@ -86,10 +87,10 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
       }
     } catch (Exception e) {
       log.warn(
-        "Unable to determine whether server group is pinned (serverGroup: {}, account: {}, region: {})",
-        stage.context.serverGroupName,
-        stage.context.credentials,
-        getRegion(stage),
+        "Unable to determine whether server group is pinned ({}, {}, {})",
+        kv("serverGroup", stage.context.serverGroupName),
+        kv("account", stage.context.credentials),
+        kv("location", getRegion(stage)),
         e
       )
 
@@ -104,10 +105,10 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
 
     if (!serverGroupName || !credentials || !region) {
       log.warn(
-        "Unable to determine whether server group is pinned (serverGroup: {}, account: {}, region: {}, stageContext: {})",
-        serverGroupName,
-        credentials,
-        region,
+        "Unable to determine whether server group is pinned ({}, {}, {}, stageContext: {})",
+        kv("serverGroup", serverGroupName),
+        kv("account", credentials),
+        kv("location", region),
         stage.context
       )
       return []

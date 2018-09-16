@@ -26,7 +26,9 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static net.logstash.logback.argument.StructuredArguments.kv
 
 @Slf4j
 @CompileStatic
@@ -65,7 +67,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         )
       }
     } catch (Exception e) {
-      log.error("Failed to send pipeline start event: ${execution?.id}")
+      log.error("Failed to send pipeline start event: {}", kv("executionId", execution?.id))
     }
   }
 
@@ -89,7 +91,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         )
       }
     } catch (Exception e) {
-      log.error("Failed to send pipeline end event: ${execution?.id}")
+      log.error("Failed to send pipeline end event: {}", kv("executionId", execution?.id))
     }
   }
 

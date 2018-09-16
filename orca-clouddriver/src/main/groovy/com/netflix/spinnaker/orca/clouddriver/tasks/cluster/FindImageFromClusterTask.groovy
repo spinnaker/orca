@@ -35,6 +35,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Component
 @Slf4j
 class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -163,7 +165,11 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
 
     if (!locationsWithMissingImageIds.isEmpty()) {
       // signifies that at least one summary was missing image details, let's retry until we see image details
-      log.warn("One or more locations are missing image details (locations: ${locationsWithMissingImageIds*.value}, cluster: ${config.cluster}, account: ${account})")
+      log.warn(
+        "One or more locations are missing image details (locations=${locationsWithMissingImageIds*.value}, {}, {})",
+        kv("cluster", config.cluster),
+        kv("account", account)
+      )
       return new TaskResult(ExecutionStatus.RUNNING)
     }
 

@@ -16,12 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -34,13 +28,16 @@ import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.Application;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.thoughtworks.xstream.mapper.Mapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import java.util.List;
-import java.util.HashMap;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Component
 public class DetermineHealthProvidersTask implements RetryableTask, CloudProviderAware {
@@ -94,7 +91,10 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
 
     String platformSpecificHealthProviderName = healthProviderNamesByPlatform.get(getCloudProvider(stage));
     if (platformSpecificHealthProviderName == null) {
-      log.warn("Unable to determine platform health provider for unknown cloud provider '{}'", getCloudProvider(stage));
+      log.warn(
+        "Unable to determine platform health provider for unknown cloud provider ({})",
+        kv("cloudProvider", getCloudProvider(stage))
+      );
       return new TaskResult(ExecutionStatus.SUCCEEDED);
     }
 
@@ -126,7 +126,12 @@ public class DetermineHealthProvidersTask implements RetryableTask, CloudProvide
         ));
       }
     } catch (Exception e) {
-      log.error("Unable to determine platform health provider (executionId: {}, stageId: {})", stage.getExecution().getId(), stage.getId(), e);
+      log.error(
+        "Unable to determine platform health provider ({}, {})",
+        kv("executionId", stage.getExecution().getId()),
+        kv("stageId", stage.getId()),
+        e
+      );
     }
 
     return new TaskResult(ExecutionStatus.SUCCEEDED);

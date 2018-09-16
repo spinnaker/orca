@@ -27,6 +27,8 @@ import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifacts
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Slf4j
 @Component
 class WebhookStage implements StageDefinitionBuilder, CancellableStage {
@@ -48,7 +50,11 @@ class WebhookStage implements StageDefinitionBuilder, CancellableStage {
 
   @Override
   CancellableStage.Result cancel(Stage stage) {
-    log.info("Cancelling stage (stageId: ${stage.id}, executionId: ${stage.execution.id}, context: ${stage.context as Map})")
+    log.info(
+      "Cancelling stage ({}, {}, context: ${stage.context as Map})",
+      kv("executionId", stage.execution.id),
+      kv("stageId", stage.id)
+    )
     return new CancellableStage.Result(stage, [:])
   }
 }

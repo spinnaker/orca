@@ -17,9 +17,14 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.CancelExecution
+import com.netflix.spinnaker.orca.q.ExecutionLevel
+import com.netflix.spinnaker.orca.q.RestartStage
+import com.netflix.spinnaker.orca.q.StartExecution
+import com.netflix.spinnaker.orca.q.StartWaitingExecutions
 import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -43,11 +48,19 @@ class StartWaitingExecutionsHandler(
           pendingExecutionService.purge(message.pipelineConfigId) { purgedMessage ->
             when (purgedMessage) {
               is StartExecution -> {
-                log.info("Dropping queued pipeline {} {}", purgedMessage.application, purgedMessage.executionId)
+                log.info(
+                  "Dropping queued pipeline {} {}",
+                  value("application", purgedMessage.application),
+                  value("executionId", purgedMessage.executionId)
+                )
                 queue.push(CancelExecution(purgedMessage))
               }
               is RestartStage -> {
-                log.info("Cancelling restart of {} {}", purgedMessage.application, purgedMessage.executionId)
+                log.info(
+                  "Cancelling restart of {} {}",
+                  value("application", purgedMessage.application),
+                  value("executionId", purgedMessage.executionId)
+                )
                 // don't need to do anything else
               }
             }
@@ -60,7 +73,10 @@ class StartWaitingExecutionsHandler(
       ?.let {
         // spoiler, it always is!
         if (it is ExecutionLevel) {
-          log.info("Starting queued pipeline {} {} {}", it.application, it.executionId)
+          log.info("Starting queued pipeline {} {}",
+            value("application", it.application),
+            value("executionId", it.executionId)
+          )
         }
         queue.push(it)
       }

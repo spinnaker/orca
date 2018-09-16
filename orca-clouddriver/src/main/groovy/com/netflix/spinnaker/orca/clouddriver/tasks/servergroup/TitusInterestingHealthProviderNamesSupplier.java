@@ -16,10 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver;
@@ -30,6 +26,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static net.logstash.logback.argument.StructuredArguments.value;
 
 @Component
 public class TitusInterestingHealthProviderNamesSupplier implements InterestingHealthProviderNamesSupplier {
@@ -89,7 +92,12 @@ public class TitusInterestingHealthProviderNamesSupplier implements InterestingH
         }
       }
     } catch (Exception e) {
-      log.error("Failed to process interesting health provider names for cloud provider {} on stage {} ", cloudProvider, stage, e);
+      log.error(
+        "Failed to process interesting health provider names for cloud provider {} on stage {}",
+        value("cloudProvider", cloudProvider),
+        value("stageId", stage.getId()),
+        e
+      );
     }
 
     return null;

@@ -121,14 +121,14 @@ public class JinjaRenderer implements Renderer {
       };
 
       if (contextVariables.keySet().stream().anyMatch(nullableUnknownToken)) {
-        log.debug("Nullable variable referenced in template '{}'. Rendering template with unknown token tolerant Jinja renderer.");
+        log.debug("Nullable variable referenced in template '{}'. Rendering template with unknown token tolerant Jinja renderer.", template);
         rendered = nullableJinja.render(template, context.getVariables());
       } else {
         log.error("Failed rendering jinja template", fte);
         throw new TemplateRenderException("failed rendering jinja template", fte, unwrapJinjaTemplateErrorException(fte, context.getLocation()));
       }
     } catch (InterpretException e) {
-      log.warn("Caught supertype InterpretException instead of " + e.getClass().getSimpleName());
+      log.warn("Caught supertype InterpretException instead of {}", e.getClass().getSimpleName());
       log.error("Failed rendering jinja template", e);
 
       throw TemplateRenderException.fromError(
@@ -142,7 +142,7 @@ public class JinjaRenderer implements Renderer {
     rendered = rendered.trim();
 
     if (!template.equals(rendered)) {
-      log.debug("rendered '" + template + "' -> '" + rendered + "'");
+      log.debug("rendered '{}' -> '{}'", template, rendered);
     }
 
     return rendered;
