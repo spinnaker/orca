@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.sql.JooqSqlCommentAppender
 import com.netflix.spinnaker.orca.sql.JooqToSpringExceptionTransformer
+import com.netflix.spinnaker.orca.sql.MigrationService
 import com.netflix.spinnaker.orca.sql.SqlHealthIndicator
 import com.netflix.spinnaker.orca.sql.SqlHealthcheckActivator
 import com.netflix.spinnaker.orca.sql.config.DataSourceConfiguration
@@ -62,21 +63,10 @@ class SqlConfiguration {
     Security.setProperty("networkaddress.cache.ttl", "0");
   }
 
-  @Bean fun liquibase(properties: SqlProperties): SpringLiquibase =
-    properties.migration
-      .run {
-        val ds = SingleConnectionDataSource(jdbcUrl, user, password, false)
-        if (driver != null) {
-          ds.setDriverClassName(driver)
-        }
-        ds
-      }
-      .let { ds ->
-        SpringLiquibase().apply {
-          changeLog = "classpath:db/changelog-master.yml"
-          dataSource = ds
-        }
-      }
+  @Bean fun migrationService(properties: SqlProperties): MigrationService =
+    MigrationService(properties).also {
+      it.migrate()
+    }
 
   @Bean fun transactionManager(dataSource: DataSource): DataSourceTransactionManager =
     DataSourceTransactionManager(dataSource)
