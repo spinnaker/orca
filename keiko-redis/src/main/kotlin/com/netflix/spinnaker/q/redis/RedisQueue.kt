@@ -130,7 +130,7 @@ class RedisQueue(
         if (fingerprint != null) {
           log.info("Re-prioritizing message as an identical one is already on the queue: " +
             "$fingerprint, message: $message")
-          redis.zadd(queueKey, score(delay), fingerprint)
+          redis.zadd(queueKey, score(delay), fingerprint, zAddParams().xx())
           fire(MessageDuplicate(message))
         } else {
           redis.queueMessage(message, delay)
