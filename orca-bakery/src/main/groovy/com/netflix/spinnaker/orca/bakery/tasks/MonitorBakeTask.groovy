@@ -28,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Slf4j
 @Component
 @CompileStatic
@@ -50,7 +52,11 @@ class MonitorBakeTask implements OverridableTimeoutRetryableTask {
     try {
       def newStatus = bakery.lookupStatus(region, previousStatus.id).toBlocking().single()
       if (isCanceled(newStatus.state) && previousStatus.state == BakeStatus.State.PENDING) {
-        log.info("Original bake was 'canceled', re-baking (executionId: ${stage.execution.id}, previousStatus: ${previousStatus.state})")
+        log.info(
+          "Original bake was 'canceled', re-baking ({}, {})",
+          kv("executionId", stage.execution.id),
+          kv("previousStatus", previousStatus.state)
+        )
         def rebakeResult = createBakeTask.execute(stage)
         return new TaskResult(ExecutionStatus.RUNNING, rebakeResult.context, rebakeResult.outputs)
       }

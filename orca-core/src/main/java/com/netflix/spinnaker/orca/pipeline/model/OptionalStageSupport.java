@@ -16,15 +16,18 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 public class OptionalStageSupport {
 
@@ -59,7 +62,12 @@ public class OptionalStageSupport {
     try {
       return !stage.mapTo("/stageEnabled", OPTIONAL_STAGE_TYPES.get(optionalType)).evaluate(stage, contextParameterProcessor);
     } catch (InvalidExpression e) {
-      log.warn("Unable to determine stage optionality, reason: {} (executionId: {}, stageId: {})", e.getMessage(), stage.getExecution().getId(), stage.getId());
+      log.warn(
+        "Unable to determine stage optionality, reason: {} ({}, {})",
+        e.getMessage(),
+        kv("executionId", stage.getExecution().getId()),
+        kv("stageId", stage.getId())
+      );
       return false;
     }
   }

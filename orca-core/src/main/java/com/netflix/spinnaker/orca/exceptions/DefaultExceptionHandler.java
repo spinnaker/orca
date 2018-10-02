@@ -16,13 +16,14 @@
 
 package com.netflix.spinnaker.orca.exceptions;
 
-import java.util.Collections;
-import java.util.Map;
 import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
-import static java.lang.String.format;
+
+import java.util.Collections;
+import java.util.Map;
+
 import static org.springframework.core.Ordered.LOWEST_PRECEDENCE;
 
 @Order(LOWEST_PRECEDENCE)
@@ -37,7 +38,7 @@ public class DefaultExceptionHandler implements ExceptionHandler {
   public ExceptionHandler.Response handle(String taskName, Exception e) {
     Map<String, Object> exceptionDetails = ExceptionHandler.responseDetails("Unexpected Task Failure", Collections.singletonList(e.getMessage()));
     exceptionDetails.put("stackTrace", Throwables.getStackTraceAsString(e));
-    log.warn(format("Error occurred during task %s", taskName), e);
+    log.warn("Error occurred during task {}", taskName, e);
     return new ExceptionHandler.Response(e.getClass().getSimpleName(), taskName, exceptionDetails, false);
   }
 }

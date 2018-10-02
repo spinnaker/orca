@@ -25,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Slf4j
 @Component
 class TerminatingInstanceSupport implements CloudProviderAware {
@@ -109,7 +111,11 @@ class TerminatingInstanceSupport implements CloudProviderAware {
       try {
         searchResult = oortHelper.getSearchResults(terminatingInstance.id, "instances", cloudProvider)
       } catch (RetrofitError e) {
-        log.warn e.message
+        log.warn(
+          "Error occurred while terminating detached server group instances ({})",
+          kv("application", stage.execution.application),
+          e.message
+        )
       }
       return !(searchResult?.getAt(0)?.totalMatches == 0)
     }

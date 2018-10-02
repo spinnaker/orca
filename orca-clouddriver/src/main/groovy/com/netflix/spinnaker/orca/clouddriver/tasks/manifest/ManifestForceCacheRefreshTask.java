@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING;
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Component
 @Slf4j
@@ -79,7 +80,10 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
       throw new IllegalStateException("Stage has no start time, cannot be executing.");
     }
     if ((System.currentTimeMillis() - startTime) > autoSucceedAfterMs) {
-      log.info("{}: Force cache refresh never finished processing... assuming the cache is in sync and continuing...", stage.getExecution().getId());
+      log.info(
+        "Force cache refresh never finished processing... assuming the cache is in sync and continuing ({})",
+        kv("executionId", stage.getExecution().getId())
+      );
       return new TaskResult(SUCCEEDED);
     }
 

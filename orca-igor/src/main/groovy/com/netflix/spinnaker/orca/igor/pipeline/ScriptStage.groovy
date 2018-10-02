@@ -29,6 +29,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Component
 @CompileStatic
 @Slf4j
@@ -59,12 +61,21 @@ class ScriptStage implements StageDefinitionBuilder, CancellableStage {
 
   @Override
   Result cancel(Stage stage) {
-    log.info("Cancelling stage (stageId: ${stage.id}, executionId: ${stage.execution.id}, context: ${stage.context as Map})")
+    log.info(
+      "Cancelling stage ({}, {}, context: ${stage.context as Map})",
+      kv("executionId", stage.execution.id),
+      kv("stageId", stage.id)
+    )
 
     try {
       stopJenkinsJobTask.execute(stage)
     } catch (Exception e) {
-      log.error("Failed to cancel stage (stageId: ${stage.id}, executionId: ${stage.execution.id}), e: ${e.message}", e)
+      log.error(
+        "Failed to cancel stage ({}, {})",
+        kv("executionId", stage.execution.id),
+        kv("stageId", stage.id),
+        e
+      )
     }
 
     return new Result(stage, [:])

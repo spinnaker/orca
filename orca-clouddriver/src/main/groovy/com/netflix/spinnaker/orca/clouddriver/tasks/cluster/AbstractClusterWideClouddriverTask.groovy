@@ -32,7 +32,11 @@ import com.netflix.spinnaker.orca.kato.pipeline.CopyLastAsgStage
 import com.netflix.spinnaker.orca.kato.pipeline.DeployStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
+import net.logstash.logback.argument.StructuredArguments
 import org.springframework.beans.factory.annotation.Autowired
+
+import static net.logstash.logback.argument.StructuredArguments.kv
+import static net.logstash.logback.argument.StructuredArguments.value
 
 /**
  * A task that operates on some subset of the ServerGroups in a cluster.
@@ -114,10 +118,13 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
 
     List<Map<String, Map>> katoOps = filteredServerGroups.collect(this.&buildOperationPayloads.curry(stage)).flatten()
 
-    log.debug("Kato ops for executionId (${stage.getExecution().getId()}): ${katoOps}")
+    log.debug("Kato ops for execution ({}): $katoOps", value("executionId", stage.execution.id))
 
     if (!katoOps) {
-      log.warn("$stage.execution.id: No server groups to operate on from $targetServerGroupsByLocation in $locations")
+      log.warn(
+        "No server groups to operate on from $targetServerGroupsByLocation in $locations ({})",
+        kv("executionId", stage.execution.id)
+      )
       return TaskResult.SUCCEEDED
     }
 

@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Component
 public class PinnedServerGroupTagGenerator implements ServerGroupEntityTagGenerator {
   private static final Logger log = LoggerFactory.getLogger(PinnedServerGroupTagGenerator.class);
@@ -62,13 +64,13 @@ public class PinnedServerGroupTagGenerator implements ServerGroupEntityTagGenera
       .build();
 
     log.debug(
-      "{}:{}:{} has been tagged with '{}' (executionId: {}, stageId: {}, value: {})",
+      "{}:{}:{} has been tagged with '{}' ({}, {}, value: {})",
       account,
       location,
       serverGroup,
       PINNED_CAPACITY_TAG,
-      stage.getExecution().getId(),
-      stage.getId(),
+      kv("executionId", stage.getExecution().getId()),
+      kv("stageId", stage.getId()),
       value
     );
 

@@ -33,6 +33,7 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.security.AuthenticatedRequest.SPINNAKER_EXECUTION_ID
 import static com.netflix.spinnaker.security.AuthenticatedRequest.SPINNAKER_USER
+import static net.logstash.logback.argument.StructuredArguments.kv
 
 /**
  * Converts execution events to Echo events.
@@ -83,13 +84,13 @@ class EchoNotifyingStageListener implements StageListener {
     // proceed but they are still failures in terms of the stage and should
     // send failure notifications
     if (stage.status == SKIPPED) {
-      log.debug("***** $stage.execution.id Echo stage $stage.name skipped v2")
+      log.debug("Echo stage $stage.name skipped v2 ({})", kv("executionId", stage.execution.id))
       recordEvent('stage', 'skipped', stage)
     } else if (stage.status == SUCCEEDED) {
-      log.debug("***** $stage.execution.id Echo stage $stage.name complete v2")
+      log.debug("Echo stage $stage.name complete v2 ({})", kv("executionId", stage.execution.id))
       recordEvent('stage', 'complete', stage)
     } else {
-      log.debug("***** $stage.execution.id Echo stage $stage.name failed v2")
+      log.debug("Echo stage $stage.name failed v2 ({})", kv("executionId", stage.execution.id))
       recordEvent('stage', 'failed', stage)
     }
   }
@@ -135,7 +136,11 @@ class EchoNotifyingStageListener implements StageListener {
         MDC.remove(SPINNAKER_USER)
       }
     } catch (Exception e) {
-      log.error("Failed to send ${type} event ${phase} ${stage.execution.id} ${maybeTask.map { Task task -> task.name }}", e)
+      log.error(
+        "Failed to send ${type} event ${phase} {} ${maybeTask.map { Task task -> task.name }}",
+        kv("executionId", stage.execution.id),
+        e
+      )
     }
   }
 

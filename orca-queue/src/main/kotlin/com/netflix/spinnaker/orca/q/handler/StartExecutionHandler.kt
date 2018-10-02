@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.q.StartExecution
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.kv
 import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -54,7 +55,12 @@ class StartExecutionHandler(
       if (execution.status == NOT_STARTED && !execution.isCanceled) {
         if (execution.shouldQueue()) {
           execution.pipelineConfigId?.let {
-            log.info("Queueing {} {} {}", execution.application, execution.name, execution.id)
+            log.info(
+              "Queueing {} {} {}",
+              value("application", execution.application),
+              execution.name,
+              value("executionId", execution.id)
+            )
             pendingExecutionService.enqueue(it, message)
           }
         } else {
@@ -68,7 +74,7 @@ class StartExecutionHandler(
 
   private fun start(execution: Execution) {
     if (execution.isAfterStartTimeExpiry()) {
-      log.warn("Execution (type ${execution.type}, id {}, application: {}) start was canceled because" +
+      log.warn("Execution (type ${execution.type}, id {}, application: {}) start was canceled because " +
         "start time would be after defined start time expiry (now: ${clock.millis()}, expiry: ${execution.startTimeExpiry})",
         value("executionId", execution.id),
         value("application", execution.application))
@@ -82,7 +88,7 @@ class StartExecutionHandler(
     } else {
       val initialStages = execution.initialStages()
       if (initialStages.isEmpty()) {
-        log.warn("No initial stages found (executionId: ${execution.id})")
+        log.warn("No initial stages found ({})", kv("executionId", execution.id))
         repository.updateStatus(execution.type, execution.id, TERMINAL)
         publisher.publishEvent(ExecutionComplete(this, execution.type, execution.id, TERMINAL))
       } else {

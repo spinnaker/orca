@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import static net.logstash.logback.argument.StructuredArguments.kv
 
 @Component
 @Slf4j
@@ -175,9 +176,9 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
         if (stageData.processedServerGroups.contains(model)) {
           // this server group has already been processed
           log.debug(
-            "Force cache refresh has been already processed (model: {}, executionId: {})",
+            "Force cache refresh has been already processed (model: {}, {})",
             model,
-            executionId
+            kv("executionId", executionId)
           )
           return true
         }
@@ -186,24 +187,24 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
           // there is no pending cache update, force it again in the event that it was missed
           stageData.removeRefreshedServerGroup(model.serverGroup, model.region, model.account)
           log.warn(
-            "Unable to find pending cache refresh request, forcing a new cache refresh (model: {}, executionId: {})",
+            "Unable to find pending cache refresh request, forcing a new cache refresh (model: {}, {})",
             model,
-            executionId
+            kv("executionId", executionId)
           )
 
           try {
             log.debug(
-              "Force immediate cache refresh POST to clouddriver (model: {}, executionId: {})",
+              "Force immediate cache refresh POST to clouddriver (model: {}, {})",
               model,
-              executionId
+              kv("executionId", executionId)
             )
             def response = cacheService.forceCacheUpdate(cloudProvider, REFRESH_TYPE, model)
             if (response.status == HttpURLConnection.HTTP_OK) {
               // cache update was applied immediately, no need to poll for completion
               log.debug(
-                "Processed force cache refresh request immediately (model: {}, executionId: {})",
+                "Processed force cache refresh request immediately (model: {}, {})",
                 model,
-                executionId
+                kv("executionId", executionId)
               )
               return true
             }
@@ -217,10 +218,10 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
         if (!isRecent) {
           // replication lag -- there are no pending force cache refreshes newer than this particular stage ... retry in 10s
           log.warn(
-            "No recent pending force cache refresh updates found, retrying in 10s (lag: {}ms, model: {}, executionId: {})",
+            "No recent pending force cache refresh updates found, retrying in 10s (lag: {}ms, model: {}, {})",
             System.currentTimeMillis() - startTime,
             model,
-            executionId
+            kv("executionId", executionId)
           )
           return false
         }
@@ -229,9 +230,9 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
           if (!forceCacheUpdate.processedTime) {
             // there is a pending cache update that is still awaiting processing
             log.warn(
-              "Awaiting processing on pending cache refresh request (model: {}, executionId: {})",
+              "Awaiting processing on pending cache refresh request (model: {}, {})",
               model,
-              executionId
+              kv("executionId", executionId)
             )
             return false
           }
@@ -240,20 +241,20 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
             // there is a stale pending cache update, force it again
             stageData.removeRefreshedServerGroup(serverGroup, region, account)
             log.warn(
-              "Found stale pending cache refresh request (request: {}, model: {}, executionId: {})",
+              "Found stale pending cache refresh request (request: {}, model: {}, {})",
               forceCacheUpdate,
               model,
-              executionId
+              kv("executionId", executionId)
             )
             return false
           }
         }
 
         log.debug(
-          "Processed force cache refresh request in {}ms (model: ${model}, executionId: {})",
+          "Processed force cache refresh request in {}ms (model: ${model}, {})",
           forceCacheUpdate.cacheTime - startTime,
           model,
-          executionId
+          kv("executionId", executionId)
         )
         return true
       }

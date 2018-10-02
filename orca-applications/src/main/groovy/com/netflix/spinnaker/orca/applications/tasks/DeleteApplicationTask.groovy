@@ -24,6 +24,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Slf4j
 @Component
 class DeleteApplicationTask extends AbstractFront50Task {
@@ -42,7 +44,7 @@ class DeleteApplicationTask extends AbstractFront50Task {
           if (re.response?.status == 404) {
             return new TaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
           }
-          log.error("Could not create or update application permission", re)
+          log.error("Could not create or update application permission: {}", kv("application", application.name), re)
           return new TaskResult(ExecutionStatus.TERMINAL, [:], outputs)
         }
       }
@@ -50,7 +52,7 @@ class DeleteApplicationTask extends AbstractFront50Task {
       if (e.response?.status == 404) {
         return new TaskResult(ExecutionStatus.SUCCEEDED, [:], [:])
       }
-      log.error("Could not create or update application permission", e)
+      log.error("Could not create or update application permission: {}", kv("application", application.name), e)
       return new TaskResult(ExecutionStatus.TERMINAL, [:], outputs)
     }
     return new TaskResult(ExecutionStatus.SUCCEEDED, [:], outputs)

@@ -16,10 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
@@ -29,8 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static net.logstash.logback.argument.StructuredArguments.value;
 
 @Component
 public class SpinnakerMetadataServerGroupTagGenerator implements ServerGroupEntityTagGenerator {
@@ -94,7 +97,14 @@ public class SpinnakerMetadataServerGroupTagGenerator implements ServerGroupEnti
       }
     } catch (Exception e) {
       // failure to populate `previousServerGroup` is not considered a fatal error that would cause this task to fail
-      log.error("Unable to determine ancestor image details for {}:{}:{}:{}", cloudProvider, account, location, cluster, e);
+      log.error(
+        "Unable to determine ancestor image details for {}:{}:{}:{}",
+        value("cloudProvider", cloudProvider),
+        value("account", account),
+        value("location", location),
+        value("cluster", cluster),
+        e
+      );
     }
 
     Map<String, Object> tag = new HashMap<>();

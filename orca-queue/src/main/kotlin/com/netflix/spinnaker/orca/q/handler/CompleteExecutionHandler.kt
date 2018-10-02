@@ -18,7 +18,14 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
+import com.netflix.spinnaker.orca.ExecutionStatus.FAILED_CONTINUE
+import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.ExecutionStatus.SKIPPED
+import com.netflix.spinnaker.orca.ExecutionStatus.STOPPED
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -30,6 +37,7 @@ import com.netflix.spinnaker.orca.q.StartWaitingExecutions
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -53,7 +61,7 @@ class CompleteExecutionHandler(
   override fun handle(message: CompleteExecution) {
     message.withExecution { execution ->
       if (execution.status.isComplete) {
-        log.info("Execution ${execution.id} already completed with ${execution.status} status")
+        log.info("Execution {} already completed with ${execution.status} status", value("executionId", execution.id))
       } else {
         message.determineFinalStatus(execution) { status ->
           repository.updateStatus(execution.type, message.executionId, status)

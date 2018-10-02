@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.q.RestartStage
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -48,7 +49,12 @@ class RestartStageHandler(
       if (stage.execution.shouldQueue()) {
         // this pipeline is already running and has limitConcurrent = true
         stage.execution.pipelineConfigId?.let {
-          log.info("Queueing restart of {} {} {}", stage.execution.application, stage.execution.name, stage.execution.id)
+          log.info(
+            "Queueing restart of {} {} {}",
+            value("application", stage.execution.application),
+            stage.execution.name,
+            value("executionId", stage.execution.id)
+          )
           pendingExecutionService.enqueue(it, message)
         }
       } else {

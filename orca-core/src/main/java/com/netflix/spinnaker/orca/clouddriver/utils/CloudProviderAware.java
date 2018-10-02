@@ -21,8 +21,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,7 +67,7 @@ public interface CloudProviderAware {
       Set<String> regions = (Set<String>) deployServerGroups.keySet();
       return ImmutableList.copyOf(regions);
     } catch (ClassCastException e) {
-      cloudProviderAwareLog.error("Failed to parse deploy.server.groups in stage context " + context, e);
+      cloudProviderAwareLog.error("Failed to parse deploy.server.groups in stage context {}", context, e);
       return ImmutableList.of();
     }
   }

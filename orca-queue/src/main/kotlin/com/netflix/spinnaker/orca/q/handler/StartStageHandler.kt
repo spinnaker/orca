@@ -22,7 +22,11 @@ import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
-import com.netflix.spinnaker.orca.ext.*
+import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
+import com.netflix.spinnaker.orca.ext.anyUpstreamStagesFailed
+import com.netflix.spinnaker.orca.ext.firstAfterStages
+import com.netflix.spinnaker.orca.ext.firstBeforeStages
+import com.netflix.spinnaker.orca.ext.firstTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
@@ -31,10 +35,18 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.CompleteExecution
+import com.netflix.spinnaker.orca.q.CompleteStage
+import com.netflix.spinnaker.orca.q.SkipStage
+import com.netflix.spinnaker.orca.q.StartStage
+import com.netflix.spinnaker.orca.q.StartTask
+import com.netflix.spinnaker.orca.q.buildBeforeStages
+import com.netflix.spinnaker.orca.q.buildTasks
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Queue
+import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.argument.StructuredArguments.value
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
@@ -65,7 +77,10 @@ class StartStageHandler(
     message.withStage { stage ->
       if (stage.anyUpstreamStagesFailed()) {
         // this only happens in restart scenarios
-        log.warn("Tried to start stage ${stage.id} but something upstream had failed (executionId: ${message.executionId})")
+        log.warn(
+          "Tried to start stage ${stage.id} but something upstream had failed ({})",
+          kv("executionId", stage.execution.id)
+        )
         queue.push(CompleteExecution(message))
       } else if (stage.allUpstreamStagesComplete()) {
         if (stage.status != NOT_STARTED) {
@@ -73,7 +88,11 @@ class StartStageHandler(
         } else if (stage.shouldSkip()) {
           queue.push(SkipStage(message))
         } else if (stage.isAfterStartTimeExpiry()) {
-          log.warn("Stage is being skipped because its start time is after TTL (stageId: ${stage.id}, executionId: ${message.executionId})")
+          log.warn(
+            "Stage is being skipped because its start time is after TTL ({}, {})",
+            kv("executionId", stage.execution.id),
+            kv("stageId", stage.id)
+          )
           queue.push(SkipStage(stage))
         } else {
           try {
@@ -93,12 +112,19 @@ class StartStageHandler(
             val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.name)
             if (exceptionDetails?.shouldRetry == true) {
               val attempts = message.getAttribute<AttemptsAttribute>()?.attempts ?: 0
-              log.warn("Error planning ${stage.type} stage for ${message.executionType}[${message.executionId}] (attempts: $attempts)")
+              log.warn(
+                "Error planning ${stage.type} stage for ${message.executionType}[{}] (attempts: $attempts)",
+                value("executionId", message.executionId)
+              )
 
               message.setAttribute(MaxAttemptsAttribute(40))
               queue.push(message, retryDelay)
             } else {
-              log.error("Error running ${stage.type} stage for ${message.executionType}[${message.executionId}]", e)
+              log.error(
+                "Error running ${stage.type} stage for ${message.executionType}[{}]",
+                value("executionId", message.executionId),
+                e
+              )
               stage.apply {
                 context["exception"] = exceptionDetails
                 context["beforeStagePlanningFailed"] = true

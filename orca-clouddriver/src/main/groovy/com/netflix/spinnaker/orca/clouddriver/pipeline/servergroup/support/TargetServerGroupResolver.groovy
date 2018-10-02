@@ -28,6 +28,8 @@ import retrofit.client.Response
 import retrofit.converter.ConversionException
 import retrofit.converter.JacksonConverter
 
+import static net.logstash.logback.argument.StructuredArguments.value
+
 @Component
 @Slf4j
 class TargetServerGroupResolver {
@@ -47,7 +49,7 @@ class TargetServerGroupResolver {
 
   List<TargetServerGroup> resolveByParams(TargetServerGroup.Params params) {
     if (!params) {
-      log.warn "No TargetServerGroup.Params to resolveByParams"
+      log.warn("No TargetServerGroup.Params to resolveByParams")
       return []
     }
 
@@ -76,7 +78,13 @@ class TargetServerGroupResolver {
       }
       return new TargetServerGroup(tsgMap)
     } catch (Exception e) {
-      log.error("Unable to locate ${params.target.name()} in $params.credentials/$location.value/$params.cluster", e)
+      log.error(
+        "Unable to locate ${params.target.name()} in {}/{}/{}",
+        value("account", params.credentials),
+        value("location", location.value),
+        value("cluster", params.cluster),
+        e
+      )
       throw e
     }
   }

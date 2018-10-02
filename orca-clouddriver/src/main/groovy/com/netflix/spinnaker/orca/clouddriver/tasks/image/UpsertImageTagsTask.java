@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
@@ -30,6 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Component
 public class UpsertImageTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -62,7 +65,12 @@ public class UpsertImageTagsTask extends AbstractCloudProviderAwareTask implemen
       );
     } catch (ImageTagger.ImageNotFound e) {
       if (e.shouldRetry) {
-        log.error(String.format("Retrying... (reason: %s, executionId: %s, stageId: %s)", e.getMessage(), stage.getExecution().getId(), stage.getId()));
+        log.error(
+          "Retrying... (reason: {}, {}, {})",
+          e.getMessage(),
+          kv("executionId", stage.getExecution().getId()),
+          kv("stageId", stage.getId())
+        );
         return new TaskResult(ExecutionStatus.RUNNING);
       }
 

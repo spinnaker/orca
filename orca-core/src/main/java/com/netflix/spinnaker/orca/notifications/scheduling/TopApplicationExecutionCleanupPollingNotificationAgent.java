@@ -46,6 +46,7 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.
 import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Comparator.comparing;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Component
 @ConditionalOnExpression("${pollers.topApplicationExecutionCleanup.enabled:false} && !${executionRepository.sql.enabled:false}")
@@ -108,7 +109,7 @@ public class TopApplicationExecutionCleanupPollingNotificationAgent extends Abst
     log.info("Starting cleanup");
     try {
       executionRepository.retrieveAllApplicationNames(ORCHESTRATION, threshold).forEach(app -> {
-        log.info("Cleaning up orchestration executions (application: {}, threshold: {})", app, threshold);
+        log.info("Cleaning up orchestration executions ({}, threshold: {})", kv("application", app), threshold);
 
         ExecutionCriteria executionCriteria = new ExecutionCriteria();
         executionCriteria.setLimit(Integer.MAX_VALUE);

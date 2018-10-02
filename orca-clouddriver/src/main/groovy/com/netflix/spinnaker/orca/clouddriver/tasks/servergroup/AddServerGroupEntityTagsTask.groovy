@@ -29,6 +29,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Component
 @Slf4j
 class AddServerGroupEntityTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -56,7 +58,12 @@ class AddServerGroupEntityTagsTask extends AbstractCloudProviderAwareTask implem
         }
       })
     } catch (Exception e) {
-      log.error("Failed to tag deployed server groups (stageId: ${stage.id}, executionId: ${stage.execution.id})", e)
+      log.error(
+        "Failed to tag deployed server groups ({}, {})",
+        kv("executionId", stage.execution.id),
+        kv("stageId", stage.id),
+        e
+      )
       return new TaskResult(ExecutionStatus.FAILED_CONTINUE)
     }
   }
@@ -77,9 +84,9 @@ class AddServerGroupEntityTagsTask extends AbstractCloudProviderAwareTask implem
           []
 
         log.debug(
-          "Generated entity tags (executionId: {}, serverGroup: {}, tagCount: {}, tags: {})",
-          stage.execution.id,
-          serverGroup,
+          "Generated entity tags ({}, {}, tagCount: {}, tags: {})",
+          kv("executionId", stage.execution.id),
+          kv("serverGroup", serverGroup),
           tags.size(),
           tags
         )

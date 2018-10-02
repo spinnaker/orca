@@ -37,6 +37,7 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor.StageDefinition
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
+import static net.logstash.logback.argument.StructuredArguments.kv
 
 @Slf4j
 abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareStage {
@@ -94,7 +95,12 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
           try {
             builder.withTask(getDiffTaskName(diffTask.class.simpleName), diffTask.class)
           } catch (Exception e) {
-            log.error("Unable to build diff task (name: ${diffTask.class.simpleName}: executionId: ${stage.execution.id})", e)
+            log.error(
+              "Unable to build diff task ({}, {})",
+              kv("taskClass", diffTask.class.simpleName),
+              kv("executionId", stage.execution.id),
+              e
+            )
           }
         }
       }

@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.getType
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static net.logstash.logback.argument.StructuredArguments.kv
 
 @Slf4j
 @Component
@@ -78,14 +79,17 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
         ]
       }
 
-      log.info("Restoring min capacity of ${context.region}/${targetServerGroup.name} to ${minCapacity} (currentMin: ${targetServerGroup.capacity.min}, snapshotMin: ${sourceServerGroupCapacitySnapshot.min})")
+      log.info("Restoring min capacity of ${context.region}/${targetServerGroup.name} to " +
+        "$minCapacity (currentMin: ${targetServerGroup.capacity.min}, " +
+        "snapshotMin: ${sourceServerGroupCapacitySnapshot.min})",
+      )
 
       return context
     } catch (CannotFindAncestorStage e) {
-      log.warn("Unable to apply source server group capacity (executionId: ${stage.execution.id})")
+      log.warn("Unable to apply source server group capacity ({})", kv("executionId", stage.execution.id))
       return null
     } catch (Exception e) {
-      log.error("Unable to apply source server group capacity (executionId: ${stage.execution.id})", e)
+      log.error("Unable to apply source server group capacity ({})", kv("executionId", stage.execution.id), e)
       return null
     }
   }

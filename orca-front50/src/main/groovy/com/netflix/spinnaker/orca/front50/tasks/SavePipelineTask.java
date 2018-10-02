@@ -72,7 +72,7 @@ public class SavePipelineTask implements RetryableTask {
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException("pipeline must be encoded as base64", e);
     }
-    log.info("Expanded encoded pipeline:" + new String(pipelineData));
+    log.info("Expanded encoded pipeline: " + new String(pipelineData));
 
     Map<String, Object> pipeline = (Map<String, Object>) stage.decodeBase64("/pipeline", Map.class);
 
@@ -110,7 +110,7 @@ public class SavePipelineTask implements RetryableTask {
       );
       outputs.put("pipeline.id", savedPipeline.get("id"));
     } catch (Exception e) {
-      log.error("Unable to deserialize saved pipeline, reason: ", e.getMessage());
+      log.error("Unable to deserialize saved pipeline", e);
 
       if (pipeline.containsKey("id")) {
         outputs.put("pipeline.id", pipeline.get("id"));

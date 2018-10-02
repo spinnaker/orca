@@ -151,10 +151,10 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
           if (!runningTask) {
             throw new IllegalStateException("Unable to find currently running task. This is likely a problem with Spinnaker itself.")
           } else if (now - runningTask.startTime > serverGroupWaitTime) {
-            log.info "Waited over ${TimeUnit.MILLISECONDS.toMinutes(serverGroupWaitTime)} minutes for the server group to appear."
+            log.info("Waited over ${TimeUnit.MILLISECONDS.toMinutes(serverGroupWaitTime)} minutes for the server group to appear.")
             throw e
           }
-          log.info "Waiting for server group to show up, ignoring error: $e.message"
+          log.info("Waiting for server group to show up, ignoring error: $e.message")
           return new TaskResult(ExecutionStatus.RUNNING)
         } else {
           throw e

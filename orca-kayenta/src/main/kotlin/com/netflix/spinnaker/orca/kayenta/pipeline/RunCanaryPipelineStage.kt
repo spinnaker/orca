@@ -24,9 +24,9 @@ import com.netflix.spinnaker.orca.kayenta.tasks.RunKayentaCanaryTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import net.logstash.logback.argument.StructuredArguments.kv
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.lang.String.format
 import java.util.Collections.emptyMap
 
 @Component
@@ -51,15 +51,30 @@ class RunCanaryPipelineStage(
     val canaryPipelineExecutionId = context["canaryPipelineExecutionId"] as String?
 
     if (canaryPipelineExecutionId != null) {
-      log.info(format("Cancelling stage (stageId: %s: executionId: %s, canaryPipelineExecutionId: %s, context: %s)", stage.id, stage.execution.id, canaryPipelineExecutionId, stage.context))
-
+      log.info(
+        "Cancelling stage ({}, {}, canaryPipelineExecutionId: {}, context: {})",
+        kv("executionId", stage.execution.id),
+        kv("stageId", stage.id),
+        canaryPipelineExecutionId,
+        stage.context
+      )
       try {
         kayentaService.cancelPipelineExecution(canaryPipelineExecutionId, "")
       } catch (e: Exception) {
-        log.error(format("Failed to cancel stage (stageId: %s, executionId: %s), e: %s", stage.id, stage.execution.id, e.message), e)
+        log.error(
+          "Failed to cancel stage ({}, {})",
+          kv("executionId", stage.execution.id),
+          kv("stageId", stage.id),
+          e
+        )
       }
     } else {
-      log.info(format("Not cancelling stage (stageId: %s: executionId: %s, context: %s) since no canary pipeline execution id exists", stage.id, stage.execution.id, stage.context))
+      log.info(
+        "Not cancelling stage ({}, {}, context: {}) since no canary pipeline execution id exists",
+        kv("executionId", stage.execution.id),
+        kv("stageId", stage.id),
+        stage.context
+      )
     }
 
     return CancellableStage.Result(stage, emptyMap<Any, Any>())

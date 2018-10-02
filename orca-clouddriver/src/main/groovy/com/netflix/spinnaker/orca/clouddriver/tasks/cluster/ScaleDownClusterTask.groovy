@@ -24,6 +24,8 @@ import groovy.transform.Canonical
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Component
 @Slf4j
 class ScaleDownClusterTask extends AbstractClusterWideClouddriverTask {
@@ -76,7 +78,10 @@ class ScaleDownClusterTask extends AbstractClusterWideClouddriverTask {
     //result will be sorted in priority order to retain
     def prioritized = filteredGroups.sort(false, new CompositeComparator(comparators))
 
-    log.info("$stage.execution.id: Retained $prioritized from $serverGroups, will drop $dropCount")
+    log.info(
+      "Retained $prioritized from $serverGroups, will drop $dropCount ({})",
+      kv("executionId", stage.execution.id)
+    )
 
     return prioritized.drop(dropCount)
   }

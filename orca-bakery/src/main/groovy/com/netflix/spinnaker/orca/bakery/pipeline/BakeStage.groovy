@@ -107,7 +107,7 @@ class BakeStage implements StageDefinitionBuilder {
       }.flatten())
     }
 
-    log.info("Preparing package `${stage.context.package}` for bake in ${deployRegions.join(", ")}")
+    log.info("Preparing package '${stage.context.package}' for bake in ${deployRegions.join(", ")}")
     if (!stage.context.amiSuffix) {
       stage.context.amiSuffix = now().format("yyyyMMddHHmmss", TimeZone.getTimeZone("UTC"))
     }

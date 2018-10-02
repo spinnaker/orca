@@ -50,6 +50,7 @@ import java.util.stream.Stream;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Component
@@ -77,7 +78,11 @@ public class ArtifactResolver {
           .collect(Collectors.toList()))
         .orElse(emptyList());
     } else {
-      log.warn("Unable to read artifacts from unknown context type: {} ({})", stage.getContext().getClass(), stage.getExecution().getId());
+      log.warn(
+        "Unable to read artifacts from unknown context type: {} ({})",
+        stage.getContext().getClass(),
+        kv("executionId", stage.getExecution().getId())
+      );
       return emptyList();
     }
   }
@@ -122,7 +127,11 @@ public class ArtifactResolver {
           .collect(Collectors.toList()))
         .orElse(emptyList());
     } else {
-      log.warn("Unable to read resolved expected artifacts from unknown context type: {} ({})", stage.getContext().getClass(), stage.getExecution().getId());
+      log.warn(
+        "Unable to read resolved expected artifacts from unknown context type: {} ({})",
+        stage.getContext().getClass(),
+        kv("executionId", stage.getExecution().getId())
+      );
       expectedArtifacts = new ArrayList<>();
     }
 

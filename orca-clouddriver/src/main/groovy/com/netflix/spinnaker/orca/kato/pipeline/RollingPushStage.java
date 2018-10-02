@@ -15,7 +15,6 @@
  */
 package com.netflix.spinnaker.orca.kato.pipeline;
 
-import java.util.Map;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
@@ -34,7 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static java.lang.String.format;
+
+import java.util.Map;
+
+import static net.logstash.logback.argument.StructuredArguments.value;
 
 @Component
 public class RollingPushStage implements StageDefinitionBuilder {
@@ -90,12 +92,12 @@ public class RollingPushStage implements StageDefinitionBuilder {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Override public TaskResult execute(Stage stage) {
-      log.info(format(
-        "Rolling Push completed for %s in %s / %s",
-        stage.getContext().get("asgName"),
-        stage.getContext().get("account"),
-        stage.getContext().get("region")
-      ));
+      log.info(
+        "Rolling Push completed for {}/{}/{}",
+        value("serverGroup", stage.getContext().get("asgName")),
+        value("account", stage.getContext().get("account")),
+        value("location", stage.getContext().get("region"))
+      );
       return TaskResult.SUCCEEDED;
     }
   }

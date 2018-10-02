@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 
 import static com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.PinnedServerGroupTagGenerator.PINNED_CAPACITY_TAG;
 import static java.lang.String.format;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Slf4j
 @Component
@@ -178,7 +179,7 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
 
         triggeredCounter.increment();
       } catch (Exception e) {
-        log.error("Failed to unpin server group (serverGroup: {})", pinnedServerGroupTag.serverGroup, e);
+        log.error("Failed to unpin server group ({})", kv("serverGroup", pinnedServerGroupTag.serverGroup), e);
         errorsCounter.increment();
       }
     }
@@ -221,7 +222,7 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
     } catch (ExecutionNotFoundException e) {
       return true;
     } catch (Exception e) {
-      log.warn("Unable to determine status of execution (executionId: {})", pinnedServerGroupTag.executionId, e);
+      log.warn("Unable to determine status of execution ({})", kv("executionId", pinnedServerGroupTag.executionId), e);
       errorsCounter.increment();
       return false;
     }

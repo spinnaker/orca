@@ -28,6 +28,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import static net.logstash.logback.argument.StructuredArguments.kv
+
 @Component
 class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage {
 
@@ -106,7 +108,11 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
           try {
             it.notify(echoService, stage, notificationState)
           } catch (Exception e) {
-            log.error("Unable to send notification (executionId: ${stage.execution.id}, address: ${it.address}, type: ${it.type})", e)
+            log.error(
+              "Unable to send notification ({}, address: ${it.address}, type: ${it.type})",
+              kv("executionId", stage.execution.id),
+              e
+            )
           }
         }
 
