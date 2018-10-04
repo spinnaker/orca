@@ -589,7 +589,7 @@ class TaskController {
     def aStartTime = a.startTime ?: 0
     def bStartTime = b.startTime ?: 0
 
-    return aStartTime <=> bStartTime ?: b.id <=> a.id
+    return aStartTime <=> bStartTime ?: a.id <=> b.id
   }
 
   private OrchestrationViewModel convert(Execution orchestration) {
