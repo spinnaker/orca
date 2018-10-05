@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DestroyServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.AbstractDeployStrategyStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
@@ -49,6 +50,9 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
 
   @Autowired
   private RollbackClusterStage rollbackClusterStage
+
+  @Autowired
+  private DestroyServerGroupStage destroyServerGroupStage
 
   CreateServerGroupStage() {
     super(PIPELINE_CONFIG_TYPE)
@@ -76,15 +80,17 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
 
   @Override
   void onFailureStages(@Nonnull Stage stage, StageGraphBuilder graph) {
-    super.onFailureStages(stage, graph)
-
     def stageData = stage.mapTo(StageData)
     if (!stageData.rollback?.onFailure) {
+      super.onFailureStages(stage, graph)
+
       // rollback on failure is not enabled
       return
     }
 
     if (!stageData.getServerGroup()) {
+      super.onFailureStages(stage, graph)
+
       // did not get far enough to create a new server group
       log.warn("No server group was created, skipping rollback! (executionId: ${stage.execution.id}, stageId: ${stage.id})")
       return
@@ -119,6 +125,25 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
         ]
       }
     }
+
+    if (stageData.rollback?.destroyLatest) {
+      graph.add {
+        it.type = destroyServerGroupStage.type
+        it.name = "Destroy ${stageData.serverGroup}"
+        it.context = [
+          "cloudProvider"     : stageData.cloudProvider,
+          "cloudProviderType" : stageData.cloudProvider,
+          "cluster"           : stageData.cluster,
+          "credentials"       : stageData.credentials,
+          "region"            : stageData.region,
+          "serverGroupName"   : stageData.serverGroup,
+          "stageTimeoutMs"    : MINUTES.toMillis(5) // timebox a destroy to 5 minutes
+        ]
+      }
+    }
+
+    // any on-failure stages from the parent should be executed _after_ the rollback completes
+    super.onFailureStages(stage, graph)
   }
 
   private static class StageData {
@@ -153,5 +178,6 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
 
   private static class Rollback {
     Boolean onFailure
+    Boolean destroyLatest
   }
 }

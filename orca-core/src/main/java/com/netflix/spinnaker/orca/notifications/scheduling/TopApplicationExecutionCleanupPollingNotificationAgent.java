@@ -23,6 +23,7 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
 import static java.lang.String.format;
@@ -48,7 +48,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Comparator.comparing;
 
 @Component
-@ConditionalOnExpression(value = "${pollers.topApplicationExecutionCleanup.enabled:false}")
+@ConditionalOnExpression("${pollers.topApplicationExecutionCleanup.enabled:false} && !${executionRepository.sql.enabled:false}")
 public class TopApplicationExecutionCleanupPollingNotificationAgent extends AbstractPollingNotificationAgent {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
@@ -66,7 +66,7 @@ public class TopApplicationExecutionCleanupPollingNotificationAgent extends Abst
     return builder;
   };
 
-  private final PollingAgentExecutionRepository executionRepository;
+  private final ExecutionRepository executionRepository;
   private final Registry registry;
   private final long pollingIntervalMs;
   private final int threshold;
@@ -76,7 +76,7 @@ public class TopApplicationExecutionCleanupPollingNotificationAgent extends Abst
 
   @Autowired
   public TopApplicationExecutionCleanupPollingNotificationAgent(NotificationClusterLock clusterLock,
-                                                                PollingAgentExecutionRepository executionRepository,
+                                                                ExecutionRepository executionRepository,
                                                                 Registry registry,
                                                                 @Value("${pollers.topApplicationExecutionCleanup.intervalMs:3600000}") long pollingIntervalMs,
                                                                 @Value("${pollers.topApplicationExecutionCleanup.threshold:2500}") int threshold) {
@@ -100,15 +100,8 @@ public class TopApplicationExecutionCleanupPollingNotificationAgent extends Abst
     return TopApplicationExecutionCleanupPollingNotificationAgent.class.getSimpleName();
   }
 
-  protected void startPolling() {
-    subscription = Observable
-      .timer(pollingIntervalMs, TimeUnit.MILLISECONDS, scheduler)
-      .repeat()
-      .subscribe(interval -> tick());
-  }
-
   @VisibleForTesting
-  void tick() {
+  protected void tick() {
     LongTaskTimer timer = registry.longTaskTimer(timerId);
     long timerId = timer.start();
 

@@ -16,11 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster;
 
+import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage;
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.DetermineRollbackCandidatesTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.WaitStage;
+import com.netflix.spinnaker.orca.clouddriver.utils.ClusterLockHelper;
+import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard;
+import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties;
+import com.netflix.spinnaker.orca.pipeline.*;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,15 +40,14 @@ import java.util.stream.Collectors;
 public class RollbackClusterStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "rollbackCluster";
 
-  private final RollbackServerGroupStage rollbackServerGroupStage;
-
-  private final WaitStage waitStage;
+  private final TrafficGuard trafficGuard;
+  private final LockingConfigurationProperties lockingConfigurationProperties;
 
   @Autowired
-  public RollbackClusterStage(RollbackServerGroupStage rollbackServerGroupStage,
-                              WaitStage waitStage) {
-    this.rollbackServerGroupStage = rollbackServerGroupStage;
-    this.waitStage = waitStage;
+  public RollbackClusterStage(TrafficGuard trafficGuard,
+                              LockingConfigurationProperties lockingConfigurationProperties) {
+    this.trafficGuard = trafficGuard;
+    this.lockingConfigurationProperties = lockingConfigurationProperties;
   }
 
   @Override
@@ -71,6 +73,21 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
       .collect(Collectors.toList());
 
     for (String region : regionsToRollback) {
+      boolean addLocking = false;
+      String lockName;
+      if (lockingConfigurationProperties.isEnabled()) {
+        final Location location = Location.region(region);
+        addLocking = trafficGuard.hasDisableLock(stageData.moniker, stageData.credentials, location);
+        lockName = ClusterLockHelper.clusterLockName(stageData.moniker, stageData.credentials, location);
+        if (addLocking) {
+          graph.append(stage -> {
+            stage.setType(AcquireLockStage.PIPELINE_TYPE);
+            stage.getContext().put("lock", Collections.singletonMap("lockName", lockName));
+          });
+        }
+      } else {
+        lockName = null;
+      }
       Map<String, Object> context = new HashMap<>();
       context.put(
         "rollbackType",
@@ -83,7 +100,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
       }
 
       context.put("rollbackContext", rollbackContext);
-      context.put("type", rollbackServerGroupStage.getType());
+      context.put("type", RollbackServerGroupStage.PIPELINE_CONFIG_TYPE);
       context.put("region", region);
       context.put("credentials", stageData.credentials);
       context.put("cloudProvider", stageData.cloudProvider);
@@ -92,15 +109,22 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
       context.putAll(propagateParentStageContext(parent.getParent()));
 
       graph.append((it) -> {
-        it.setType(rollbackServerGroupStage.getType());
+        it.setType(RollbackServerGroupStage.PIPELINE_CONFIG_TYPE);
         it.setName("Rollback " + region);
         it.setContext(context);
       });
 
+      if (addLocking) {
+        graph.append(stage -> {
+          stage.setType(ReleaseLockStage.PIPELINE_TYPE);
+          stage.getContext().put("lock", Collections.singletonMap("lockName", lockName));
+        });
+      }
+
       if (stageData.waitTimeBetweenRegions != null && regionsToRollback.indexOf(region) < regionsToRollback.size() - 1) {
         // only add the waitStage if we're not the very last region!
         graph.append((it) -> {
-          it.setType(waitStage.getType());
+          it.setType(WaitStage.STAGE_TYPE);
           it.setName("Wait after " + region);
           it.setContext(Collections.singletonMap("waitTime", stageData.waitTimeBetweenRegions));
         });
@@ -133,6 +157,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
   static class StageData {
     public String credentials;
     public String cloudProvider;
+    public Moniker moniker;
 
     public List<String> regions;
     public Long waitTimeBetweenRegions;

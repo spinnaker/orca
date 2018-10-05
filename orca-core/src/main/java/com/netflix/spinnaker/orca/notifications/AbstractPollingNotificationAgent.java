@@ -19,12 +19,16 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.context.ApplicationListener;
+import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
 
 import javax.annotation.PreDestroy;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.appinfo.InstanceInfo.InstanceStatus.UP;
 
@@ -36,18 +40,41 @@ abstract public class AbstractPollingNotificationAgent implements ApplicationLis
   protected Scheduler scheduler = Schedulers.io();
   protected Subscription subscription;
 
+  public static final String AGENT_MDC_KEY = "agentClass";
+
   public AbstractPollingNotificationAgent(NotificationClusterLock clusterLock) {
     this.clusterLock = clusterLock;
   }
 
   protected abstract long getPollingInterval();
 
+  protected TimeUnit getPollingIntervalUnit() {
+    return TimeUnit.MILLISECONDS;
+  }
+
   protected abstract String getNotificationType();
 
-  protected abstract void startPolling();
+  protected abstract void tick();
+
+  protected void startPolling() {
+    subscription = Observable
+      .timer(getPollingInterval(), getPollingIntervalUnit(), scheduler)
+      .repeat()
+      .filter(interval -> tryAcquireLock())
+      .subscribe(interval -> {
+        try {
+          MDC.put(AGENT_MDC_KEY, this.getClass().getSimpleName());
+          tick();
+        } catch (Exception e) {
+          log.error("Error running agent tick", e);
+        } finally {
+          MDC.remove(AGENT_MDC_KEY);
+        }
+      });
+  }
 
   protected boolean tryAcquireLock() {
-    return clusterLock.tryAcquireLock(getNotificationType(), getPollingInterval());
+    return clusterLock.tryAcquireLock(getNotificationType(), getPollingIntervalUnit().toSeconds(getPollingInterval()));
   }
 
   @PreDestroy

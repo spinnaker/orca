@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
@@ -51,7 +52,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 
 @Component
 @Slf4j
-public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTask implements Task {
+public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTask implements Task, ManifestAware {
   private final static String REFRESH_TYPE = "manifest";
   public final static String TASK_NAME = "forceCacheRefresh";
 
@@ -85,6 +86,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     String cloudProvider = getCloudProvider(stage);
     String account = getCredentials(stage);
     StageData stageData = fromStage(stage);
+    stageData.manifestNamesByNamespace = manifestNamesByNamespace(stage);
 
     if (refreshManifests(cloudProvider, account, stageData)) {
       return new TaskResult(SUCCEEDED, toContext(stageData));
@@ -116,13 +118,23 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
         Optional<PendingRefresh> pendingRefresh = pendingRefreshes.stream()
             .filter(pr -> pr.getDetails() != null)
             .filter(pr -> account.equals(pr.getDetails().getAccount()) &&
-                location.equals(pr.getDetails().getLocation()) &&
+                (location.equals(pr.getDetails().getLocation()) || StringUtils.isNotEmpty(location) && StringUtils.isEmpty(pr.getDetails().getLocation())) &&
                 name.equals(pr.getDetails().getName())
             )
             .findAny();
 
         if (pendingRefresh.isPresent()) {
-          if (!pendingRefreshProcessed(pendingRefresh.get(), refreshedManifests, startTime)) {
+          PendingRefresh refresh = pendingRefresh.get();
+          // it's possible the resource isn't supposed to have a namespace -- clouddriver reports this by removing it
+          // in the response. in this case, we make sure to set it to match between clouddriver and orca
+          if (StringUtils.isEmpty(refresh.getDetails().getLocation())) {
+            refresh.getDetails().setLocation(location);
+          }
+          if (pendingRefreshProcessed(refresh, refreshedManifests, startTime)) {
+            log.debug("Pending manifest refresh of {} in {} completed", id, account);
+            processedManifests.add(id);
+          } else {
+            log.debug("Pending manifest refresh of {} in {} still pending", id, account);
             allProcessed = false;
           }
         } else {
@@ -252,7 +264,6 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
 
   @Data
   static private class StageData {
-    @JsonProperty("outputs.manifestNamesByNamespace")
     Map<String, List<String>> manifestNamesByNamespace = new HashMap<>();
 
     @JsonProperty("refreshed.manifests")

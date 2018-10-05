@@ -36,9 +36,9 @@ import groovy.util.logging.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
-import rx.Observable;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +59,8 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
   private final ExecutionLauncher executionLauncher;
   private final ExecutionRepository executionRepository;
 
+  private final String username;
+
   private final PollerSupport pollerSupport;
 
   private final Counter errorsCounter;
@@ -71,7 +73,8 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
                                          RetrySupport retrySupport,
                                          Registry registry,
                                          ExecutionLauncher executionLauncher,
-                                         ExecutionRepository executionRepository) {
+                                         ExecutionRepository executionRepository,
+                                         @Value("${pollers.restorePinnedServerGroups.username:spinnaker}") String username) {
     this(
       notificationClusterLock,
       objectMapper,
@@ -80,6 +83,7 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
       registry,
       executionLauncher,
       executionRepository,
+      username,
       new PollerSupport(objectMapper, retrySupport, oortService)
     );
   }
@@ -92,6 +96,7 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
                                   Registry registry,
                                   ExecutionLauncher executionLauncher,
                                   ExecutionRepository executionRepository,
+                                  String username,
                                   PollerSupport pollerSupport) {
     super(notificationClusterLock);
 
@@ -100,6 +105,7 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
     this.retrySupport = retrySupport;
     this.executionLauncher = executionLauncher;
     this.executionRepository = executionRepository;
+    this.username = username;
     this.pollerSupport = pollerSupport;
 
     this.errorsCounter = registry.counter("poller.restorePinnedServerGroups.errors");
@@ -112,26 +118,17 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
   }
 
   @Override
+  protected TimeUnit getPollingIntervalUnit() {
+    return TimeUnit.SECONDS;
+  }
+
+  @Override
   protected String getNotificationType() {
     return "restorePinnedServerGroups";
   }
 
   @Override
-  protected void startPolling() {
-    subscription = Observable
-      .timer(getPollingInterval(), TimeUnit.SECONDS, scheduler)
-      .repeat()
-      .filter(interval -> tryAcquireLock())
-      .subscribe(interval -> {
-        try {
-          poll();
-        } catch (Exception e) {
-          log.error("Error checking for pinned server groups", e);
-        }
-      });
-  }
-
-  void poll() {
+  protected void tick() {
     log.info("Checking for pinned server groups");
 
     List<PinnedServerGroupTag> pinnedServerGroupTags = fetchPinnedServerGroupTags();
@@ -152,11 +149,15 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
         List<Map<String, Object>> jobs = new ArrayList<>();
         jobs.add(buildDeleteEntityTagsOperation(pinnedServerGroupTag));
 
-        Optional<ServerGroup> serverGroup = pollerSupport.fetchServerGroup(
+        User systemUser = new User();
+        systemUser.setUsername(username);
+        systemUser.setAllowedAccounts(Collections.singletonList(pinnedServerGroupTag.account));
+
+        Optional<ServerGroup> serverGroup = AuthenticatedRequest.propagate(() -> pollerSupport.fetchServerGroup(
           pinnedServerGroupTag.account,
           pinnedServerGroupTag.location,
           pinnedServerGroupTag.serverGroup
-        );
+        ), systemUser).call();
 
         serverGroup.ifPresent(s -> {
           if (s.capacity.min.equals(pinnedServerGroupTag.pinnedCapacity.min)) {
@@ -169,10 +170,6 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
 
         Map<String, Object> cleanupOperation = buildCleanupOperation(pinnedServerGroupTag, serverGroup, jobs);
         log.info((String) cleanupOperation.get("name"));
-
-        User systemUser = new User();
-        systemUser.setUsername("spinnaker");
-        systemUser.setAllowedAccounts(Collections.singletonList(pinnedServerGroupTag.account));
 
         AuthenticatedRequest.propagate(() -> executionLauncher.start(
           Execution.ExecutionType.ORCHESTRATION,
@@ -234,11 +231,9 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
                                                     Optional<ServerGroup> serverGroup,
                                                     List<Map<String, Object>> jobs) {
     String name = serverGroup.map(s -> format(
-      "Unpin Server Group: %s to %s/%s/%s",
+      "Unpin Server Group: %s (min: %s)",
       pinnedServerGroupTag.serverGroup,
-      pinnedServerGroupTag.unpinnedCapacity.min,
-      s.capacity.desired,
-      s.capacity.max
+      pinnedServerGroupTag.unpinnedCapacity.min
     )).orElseGet(() -> "Deleting tags on '" + pinnedServerGroupTag.id + "'");
 
     return ImmutableMap.<String, Object>builder()
@@ -269,17 +264,13 @@ class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
       .put("region", pinnedServerGroupTag.location)
       .put("credentials", pinnedServerGroupTag.account)
       .put("cloudProvider", pinnedServerGroupTag.cloudProvider)
-      .put("interestingHealthProviderNames", Collections.emptyList()) // no need to wait on health when only
-      .put("capacity", ImmutableMap.<String, Integer>builder()        // adjusting min capacity
+      .put("interestingHealthProviderNames", Collections.emptyList()) // no need to wait on health when only adjusting min capacity
+      .put("capacity", ImmutableMap.<String, Integer>builder()
         .put("min", pinnedServerGroupTag.unpinnedCapacity.min)
-        .put("desired", serverGroup.capacity.desired)
-        .put("max", serverGroup.capacity.max)
         .build()
       )
       .put("constraints", Collections.singletonMap("capacity", ImmutableMap.<String, Integer>builder()
-        .put("min", serverGroup.capacity.min)                         // ensure that the current capacity matches
-        .put("desired", serverGroup.capacity.desired)                 // expectations and has not changed since the
-        .put("max", serverGroup.capacity.max)                         // last caching cycle
+        .put("min", serverGroup.capacity.min)                         // ensure that the current min capacity has not been already changed
         .build())
       )
       .build();

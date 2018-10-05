@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.front50
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
@@ -26,9 +27,9 @@ import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
-import com.netflix.spinnaker.security.AuthenticatedRequest
 import com.netflix.spinnaker.security.User
 import org.slf4j.MDC
+import org.springframework.context.ApplicationContext
 import org.springframework.context.support.StaticApplicationContext
 import spock.lang.Specification
 import spock.lang.Subject
@@ -66,13 +67,15 @@ class DependentPipelineStarterSpec extends Specification {
         }
       }
     }
-    def applicationContext = new StaticApplicationContext()
+    ApplicationContext applicationContext = new StaticApplicationContext()
     applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
     dependentPipelineStarter = new DependentPipelineStarter(
-      objectMapper: mapper,
-      applicationContext: applicationContext,
-      contextParameterProcessor: new ContextParameterProcessor(),
-      artifactResolver: artifactResolver
+      applicationContext,
+      mapper,
+      new ContextParameterProcessor(),
+      Optional.of([]),
+      Optional.of(artifactResolver),
+      new NoopRegistry()
     )
 
     when:
@@ -120,10 +123,12 @@ class DependentPipelineStarterSpec extends Specification {
     def applicationContext = new StaticApplicationContext()
     applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
     dependentPipelineStarter = new DependentPipelineStarter(
-      objectMapper: mapper,
-      applicationContext: applicationContext,
-      contextParameterProcessor: new ContextParameterProcessor(),
-      artifactResolver: artifactResolver
+      applicationContext,
+      mapper,
+      new ContextParameterProcessor(),
+      Optional.of([]),
+      Optional.of(artifactResolver),
+      new NoopRegistry()
     )
 
     and:
@@ -176,10 +181,12 @@ class DependentPipelineStarterSpec extends Specification {
     def applicationContext = new StaticApplicationContext()
     applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
     dependentPipelineStarter = new DependentPipelineStarter(
-      objectMapper: mapper,
-      applicationContext: applicationContext,
-      contextParameterProcessor: new ContextParameterProcessor(),
-      artifactResolver: artifactResolver
+      applicationContext,
+      mapper,
+      new ContextParameterProcessor(),
+      Optional.of([]),
+      Optional.of(artifactResolver),
+      new NoopRegistry()
     )
 
     and:
@@ -246,10 +253,12 @@ class DependentPipelineStarterSpec extends Specification {
     def applicationContext = new StaticApplicationContext()
     applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
     dependentPipelineStarter = new DependentPipelineStarter(
-      objectMapper: mapper,
-      applicationContext: applicationContext,
-      contextParameterProcessor: new ContextParameterProcessor(),
-      artifactResolver: artifactResolver
+      applicationContext,
+      mapper,
+      new ContextParameterProcessor(),
+      Optional.of([]),
+      Optional.of(artifactResolver),
+      new NoopRegistry()
     )
 
     and:
@@ -310,10 +319,12 @@ class DependentPipelineStarterSpec extends Specification {
     def applicationContext = new StaticApplicationContext()
     applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
     dependentPipelineStarter = new DependentPipelineStarter(
-      objectMapper: mapper,
-      applicationContext: applicationContext,
-      contextParameterProcessor: new ContextParameterProcessor(),
-      artifactResolver: artifactResolver
+      applicationContext,
+      mapper,
+      new ContextParameterProcessor(),
+      Optional.of([]),
+      Optional.of(artifactResolver),
+      new NoopRegistry()
     )
 
     and:
@@ -359,10 +370,12 @@ class DependentPipelineStarterSpec extends Specification {
     def applicationContext = new StaticApplicationContext()
     applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
     dependentPipelineStarter = new DependentPipelineStarter(
-      objectMapper: mapper,
-      applicationContext: applicationContext,
-      contextParameterProcessor: new ContextParameterProcessor(),
-      artifactResolver: artifactResolver
+      applicationContext,
+      mapper,
+      new ContextParameterProcessor(),
+      Optional.of([]),
+      Optional.of(artifactResolver),
+      new NoopRegistry()
     )
 
     and:
@@ -393,5 +406,47 @@ class DependentPipelineStarterSpec extends Specification {
     authenticatedUser.setAllowedAccounts(allowedAccounts)
 
     return authenticatedUser
+  }
+
+  def "should resolve expressions in trigger using the context of the trigger"() {
+    given:
+    def triggeredPipelineConfig = [name: "triggered", id: "triggered", parameterConfig: [[name: 'a', default: '${trigger.type}']]]
+    def parentPipeline = pipeline {
+      name = "parent"
+      trigger = new DefaultTrigger("manual", null, "fzlem@netflix.com", [:], [], [], false, true)
+      authentication = new Execution.AuthenticationDetails("parentUser", "acct1", "acct2")
+    }
+    def executionLauncher = Mock(ExecutionLauncher)
+    def applicationContext = new StaticApplicationContext()
+    applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
+    dependentPipelineStarter = new DependentPipelineStarter(
+      applicationContext,
+      mapper,
+      new ContextParameterProcessor(),
+      Optional.of([]),
+      Optional.of(artifactResolver),
+      new NoopRegistry()
+    )
+
+    and:
+    executionLauncher.start(*_) >> {
+      def p = mapper.readValue(it[1], Map)
+      return pipeline {
+        trigger = mapper.convertValue(p.trigger, Trigger)
+      }
+    }
+
+    when:
+    def result = dependentPipelineStarter.trigger(
+      triggeredPipelineConfig,
+      null /*user*/,
+      parentPipeline,
+      [:],
+      null,
+      buildAuthenticatedUser("user", [])
+    )
+
+    then:
+    result.trigger.parameters.a == "pipeline"
   }
 }

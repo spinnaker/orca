@@ -20,12 +20,20 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideC
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractWaitForClusterWideClouddriverTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.DisableClusterTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.WaitForClusterDisableTask;
+import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard;
+import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DisableClusterStage extends AbstractClusterWideClouddriverOperationStage {
 
   public static final String STAGE_TYPE = "disableCluster";
+
+  @Autowired
+  public DisableClusterStage(TrafficGuard trafficGuard, LockingConfigurationProperties lockingConfigurationProperties) {
+    super(trafficGuard, lockingConfigurationProperties);
+  }
 
   @Override
   protected Class<? extends AbstractClusterWideClouddriverTask> getClusterOperationTask() {

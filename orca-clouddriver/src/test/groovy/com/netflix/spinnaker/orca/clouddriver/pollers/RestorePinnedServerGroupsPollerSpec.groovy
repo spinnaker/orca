@@ -89,13 +89,14 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
       registry,
       executionLauncher,
       executionRepository,
+      "spinnaker",
       pollerSupport
     ]
   )
 
   def "should only unpin server group if corresponding execution is complete"() {
     when:
-    restorePinnedServerGroupsAgent.poll()
+    restorePinnedServerGroupsAgent.tick()
 
     then:
     1 * restorePinnedServerGroupsAgent.fetchPinnedServerGroupTags() >> {
@@ -124,7 +125,7 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
     true
 
     when:
-    restorePinnedServerGroupsAgent.poll()
+    restorePinnedServerGroupsAgent.tick()
 
     then:
     1 * restorePinnedServerGroupsAgent.fetchPinnedServerGroupTags() >> {

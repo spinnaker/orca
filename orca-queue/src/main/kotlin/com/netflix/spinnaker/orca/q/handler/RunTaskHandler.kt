@@ -41,6 +41,7 @@ import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
 import org.apache.commons.lang.time.DurationFormatUtils
+import org.slf4j.MDC
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
@@ -59,15 +60,20 @@ class RunTaskHandler(
   private val tasks: Collection<Task>,
   private val clock: Clock,
   private val exceptionHandlers: List<ExceptionHandler>,
+  private val taskExecutionInterceptors: List<TaskExecutionInterceptor>,
   private val registry: Registry
 ) : OrcaMessageHandler<RunTask>, ExpressionAware, AuthenticationAware {
 
   override fun handle(message: RunTask) {
-    message.withTask { stage, taskModel, task ->
-      val execution = stage.execution
+    message.withTask { origStage, taskModel, task ->
+      var stage = origStage
+
       val thisInvocationStartTimeMs = clock.millis()
+      val execution = stage.execution
 
       try {
+        taskExecutionInterceptors.forEach { t -> stage = t.beforeTaskExecution(task, stage) }
+
         if (execution.isCanceled) {
           task.onCancel(stage)
           queue.push(CompleteTask(message, CANCELED))
@@ -87,31 +93,35 @@ class RunTaskHandler(
           }
 
           stage.withAuth {
-            task.execute(stage.withMergedContext()).let { result: TaskResult ->
-              // TODO: rather send this data with CompleteTask message
-              stage.processTaskOutput(result)
-              when (result.status) {
-                RUNNING                              -> {
-                  queue.push(message, task.backoffPeriod(taskModel, stage))
-                  trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
+            stage.withLoggingContext(taskModel) {
+              var taskResult = task.execute(stage.withMergedContext())
+              taskExecutionInterceptors.forEach { t -> taskResult = t.afterTaskExecution(task, stage, taskResult) }
+              taskResult.let { result: TaskResult ->
+                // TODO: rather send this data with CompleteTask message
+                stage.processTaskOutput(result)
+                when (result.status) {
+                  RUNNING -> {
+                    queue.push(message, task.backoffPeriod(taskModel, stage))
+                    trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
+                  }
+                  SUCCEEDED, REDIRECT, FAILED_CONTINUE, STOPPED -> {
+                    queue.push(CompleteTask(message, result.status))
+                    trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
+                  }
+                  CANCELED -> {
+                    task.onCancel(stage)
+                    val status = stage.failureStatus(default = result.status)
+                    queue.push(CompleteTask(message, status, result.status))
+                    trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
+                  }
+                  TERMINAL -> {
+                    val status = stage.failureStatus(default = result.status)
+                    queue.push(CompleteTask(message, status, result.status))
+                    trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
+                  }
+                  else ->
+                    TODO("Unhandled task status ${result.status}")
                 }
-                SUCCEEDED, REDIRECT, FAILED_CONTINUE -> {
-                  queue.push(CompleteTask(message, result.status))
-                  trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
-                }
-                CANCELED                             -> {
-                  task.onCancel(stage)
-                  val status = stage.failureStatus(default = result.status)
-                  queue.push(CompleteTask(message, status, result.status))
-                  trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
-                }
-                TERMINAL                             -> {
-                  val status = stage.failureStatus(default = result.status)
-                  queue.push(CompleteTask(message, status, result.status))
-                  trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
-                }
-                else                                 ->
-                  TODO("Unhandled task status ${result.status}")
               }
             }
           }
@@ -134,6 +144,12 @@ class RunTaskHandler(
       }
     }
   }
+
+  private fun maxBackoff(): Long =
+    taskExecutionInterceptors.fold(Long.MAX_VALUE) {
+      backoff, interceptor ->
+      Math.min(backoff, interceptor.maxTaskBackoff())
+    }
 
   private fun trackResult(stage: Stage, thisInvocationStartTimeMs: Long, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
     val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
@@ -168,8 +184,8 @@ class RunTaskHandler(
   private fun Task.backoffPeriod(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: Stage): TemporalAmount =
     when (this) {
       is RetryableTask -> Duration.ofMillis(
-        getDynamicBackoffPeriod(stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime
-          ?: 0)))
+        Math.min(getDynamicBackoffPeriod(stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime
+          ?: 0))), maxBackoff())
       )
       else             -> Duration.ofSeconds(1)
     }
@@ -179,8 +195,12 @@ class RunTaskHandler(
   }
 
   private fun Task.checkForTimeout(stage: Stage, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, message: Message) {
-    checkForStageTimeout(stage)
-    checkForTaskTimeout(taskModel, stage, message)
+    if (stage.type == RestrictExecutionDuringTimeWindow.TYPE) {
+      return
+    } else {
+      checkForStageTimeout(stage)
+      checkForTaskTimeout(taskModel, stage, message)
+    }
   }
 
   private fun Task.checkForTaskTimeout(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: Stage, message: Message) {
@@ -277,6 +297,18 @@ class RunTaskHandler(
       context.putAll(result.context)
       outputs.putAll(filteredOutputs)
       repository.storeStage(this)
+    }
+  }
+
+  private fun Stage.withLoggingContext(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, block: () -> Unit) {
+    try {
+      MDC.put("stageType", type)
+      MDC.put("taskType", taskModel.implementingClass)
+
+      block.invoke()
+    } finally {
+      MDC.remove("stageType")
+      MDC.remove("taskType")
     }
   }
 }

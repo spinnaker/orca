@@ -21,9 +21,15 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwar
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
+import com.netflix.spinnaker.orca.clouddriver.utils.ClusterLockHelper
+import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
+import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
+import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
+import com.netflix.spinnaker.orca.pipeline.AcquireLockStage
+import com.netflix.spinnaker.orca.pipeline.ReleaseLockStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -47,6 +53,12 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
 
   @Autowired(required = false)
   List<DeployStagePreProcessor> deployStagePreProcessors = []
+
+  @Autowired
+  TrafficGuard trafficGuard
+
+  @Autowired
+  LockingConfigurationProperties lockingConfigurationProperties
 
   AbstractDeployStrategyStage(String name) {
     super(name)
@@ -94,16 +106,30 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  def List<Stage> aroundStages(Stage stage) {
+  List<Stage> aroundStages(Stage stage) {
     correctContext(stage)
     Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
       it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
     })
 
     def preProcessors = deployStagePreProcessors.findAll { it.supports(stage) }
-    def stages = strategy.composeFlow(stage)
-
     def stageData = stage.mapTo(StageData)
+    def stages = []
+    boolean addLocking = false
+    String lockName = null
+    if (lockingConfigurationProperties.isEnabled()) {
+      def moniker = stageData.moniker?.cluster ? stageData.moniker : MonikerHelper.friggaToMoniker(stageData.cluster)
+      def location = TargetServerGroup.Support.locationFromStageData(stageData)
+      lockName = ClusterLockHelper.clusterLockName(moniker, stageData.account, location)
+      addLocking = trafficGuard.hasDisableLock(moniker, stageData.account, location)
+      if (addLocking) {
+        def lockCtx = [lock: [lockName: lockName]]
+        def lockStage = newStage(stage.execution, AcquireLockStage.PIPELINE_TYPE, "acquireLock", lockCtx, stage, SyntheticStageOwner.STAGE_BEFORE)
+        stages << lockStage
+      }
+    }
+    stages.addAll(strategy.composeFlow(stage))
+
     preProcessors.each {
       def defaultContext = [
         credentials  : stageData.account,
@@ -129,6 +155,16 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
           SyntheticStageOwner.STAGE_AFTER
         )
       }
+    }
+    if (addLocking) {
+      stages << newStage(
+        stage.execution,
+        ReleaseLockStage.PIPELINE_TYPE,
+        'releaseLock',
+        [lock: [lockName: lockName]],
+        stage,
+        SyntheticStageOwner.STAGE_AFTER
+      )
     }
 
     return stages

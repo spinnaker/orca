@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.front50
 
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Registry
+
 import java.util.concurrent.Callable
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
@@ -39,18 +42,26 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.
 @Slf4j
 class DependentPipelineStarter implements ApplicationContextAware {
   private ApplicationContext applicationContext
-
-  @Autowired
   ObjectMapper objectMapper
+  ContextParameterProcessor contextParameterProcessor
+  List<PipelinePreprocessor> pipelinePreprocessors
+  ArtifactResolver artifactResolver
+  Registry registry
 
   @Autowired
-  ContextParameterProcessor contextParameterProcessor
-
-  @Autowired(required = false)
-  List<PipelinePreprocessor> pipelinePreprocessors
-
-  @Autowired(required = false)
-  ArtifactResolver artifactResolver
+  DependentPipelineStarter(ApplicationContext applicationContext,
+                           ObjectMapper objectMapper,
+                           ContextParameterProcessor contextParameterProcessor,
+                           Optional<List<PipelinePreprocessor>> pipelinePreprocessors,
+                           Optional<ArtifactResolver> artifactResolver,
+                           Registry registry) {
+    this.applicationContext = applicationContext
+    this.objectMapper = objectMapper
+    this.contextParameterProcessor = contextParameterProcessor
+    this.pipelinePreprocessors = pipelinePreprocessors.orElse(null)
+    this.artifactResolver = artifactResolver.orElse(null)
+    this.registry = registry
+  }
 
   Execution trigger(Map pipelineConfig,
                     String user,
@@ -85,19 +96,22 @@ class DependentPipelineStarter implements ApplicationContextAware {
       }
     }
 
+    def trigger = pipelineConfig.trigger
+    //keep the trigger as the preprocessor removes it.
+    def expectedArtifacts = pipelineConfig.expectedArtifacts
+
+    for (PipelinePreprocessor preprocessor : (pipelinePreprocessors ?: [])) {
+      pipelineConfig = preprocessor.process(pipelineConfig)
+    }
+
     if (parentPipelineStageId != null) {
       pipelineConfig.receivedArtifacts = artifactResolver?.getArtifacts(parentPipeline.stageById(parentPipelineStageId))
     } else {
       pipelineConfig.receivedArtifacts = artifactResolver?.getAllArtifacts(parentPipeline)
     }
 
-    def trigger = pipelineConfig.trigger
-    //keep the trigger as the preprocessor removes it.
-
-    for (PipelinePreprocessor preprocessor : (pipelinePreprocessors ?: [])) {
-      pipelineConfig = preprocessor.process(pipelineConfig)
-    }
     pipelineConfig.trigger = trigger
+    pipelineConfig.expectedArtifacts = expectedArtifacts
 
     def artifactError = null
     try {
@@ -108,7 +122,7 @@ class DependentPipelineStarter implements ApplicationContextAware {
 
     // Process the raw trigger to resolve any expressions before converting it to a Trigger object, which will not be
     // processed by the contextParameterProcessor (it only handles Maps, Lists, and Strings)
-    Map processedTrigger = contextParameterProcessor.process([trigger: pipelineConfig.trigger], [:], false).trigger
+    Map processedTrigger = contextParameterProcessor.process([trigger: pipelineConfig.trigger], [trigger: pipelineConfig.trigger], false).trigger
     pipelineConfig.trigger = objectMapper.readValue(objectMapper.writeValueAsString(processedTrigger), Trigger.class)
     if (parentPipeline.trigger.dryRun) {
       pipelineConfig.trigger.dryRun = true
@@ -130,6 +144,12 @@ class DependentPipelineStarter implements ApplicationContextAware {
       callable = AuthenticatedRequest.propagate({
         log.debug("Destination thread user: " + AuthenticatedRequest.getAuthenticationHeaders())
         pipeline = executionLauncher().start(PIPELINE, json)
+
+        Id id = registry.createId("pipelines.triggered")
+          .withTag("application", Optional.ofNullable(pipeline.getApplication()).orElse("null"))
+          .withTag("monitor", "DependentPipelineStarter")
+        registry.counter(id).increment()
+
       } as Callable<Void>, true, principal)
     } else {
       callable = AuthenticatedRequest.propagate({

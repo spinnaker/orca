@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Pivotal, Inc.
+ * Copyright 2018 Pivotal, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,27 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf
 
-import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import spock.lang.Specification
+
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class CloudFoundryServerGroupCreatorSpec extends Specification {
 
-  def "should get operations"() {
+  def "should get operations when an artifact is specified as the deployable"() {
     given:
     def ctx = [
+      application      : "abc",
       account          : "abc",
-      zone             : "north-pole-1",
+      region           : "org > space",
       deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
+      artifact         : [type: "artifact", account: "count-von-count", reference: "some-reference"],
+      manifest      : [
+        type     : "artifact",
+        account  : "dracula",
+        reference: "https://example.com/mani-pedi.yml"
+      ],
+      startApplication : true,
     ]
     def stage = stage {
       context.putAll(ctx)
@@ -38,61 +47,267 @@ class CloudFoundryServerGroupCreatorSpec extends Specification {
 
     then:
     ops == [
-        [
-            "createServerGroup": [
-              account          : "abc",
-              credentials      : "abc",
-              image            : "testImageId",
-              zone             : "north-pole-1",
-              trigger          : stage.execution.trigger,
-              deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
-            ],
+      [
+        "createServerGroup": [
+          application   : "abc",
+          credentials   : "abc",
+          manifest      : null,
+          region        : "org > space",
+          startApplication: true,
+          artifactSource: [
+            type     : "artifact",
+            account  : "count-von-count",
+            reference: "some-reference"
+          ],
+          manifest      : [
+            type     : "artifact",
+            account  : "dracula",
+            reference: "https://example.com/mani-pedi.yml"
+          ],
         ]
+      ]
     ]
+  }
 
-    when: "fallback to non-zone matching image"
-    ctx.zone = "south-pole-1"
-    stage = ExecutionBuilder.stage {
+  def "should get operations when a triggered artifact is specified as the deployable"() {
+    given:
+    def ctx = [
+      application      : "abc",
+      account          : "abc",
+      region           : "org > space",
+      deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
+      artifact         : [type: "trigger", account: "count-von-count", pattern: "that_s.*a.*m.ore.*.jar"],
+      manifest      : [
+        type     : "artifact",
+        account  : "dracula",
+        reference: "https://example.com/mani-pedi.yml"
+      ],
+      startApplication : true,
+    ]
+    JenkinsTrigger.BuildInfo info = new JenkinsTrigger.BuildInfo(
+      "my-name",
+      0,
+      "https://example.com/",
+      [new JenkinsTrigger.JenkinsArtifact("that_s_father_m_oregon_to_you.jar", "sister_path/that_s_father_m_oregon_to_you.jar")],
+      [],
+      false,
+      ""
+    )
+    JenkinsTrigger trig = new JenkinsTrigger("master", "job", 1, "propertyfile")
+    trig.buildInfo = info
+    def stage = stage {
       context.putAll(ctx)
+      execution.trigger = trig
     }
-    ops = new CloudFoundryServerGroupCreator().getOperations(stage)
+
+    when:
+    def ops = new CloudFoundryServerGroupCreator().getOperations(stage)
 
     then:
     ops == [
       [
         "createServerGroup": [
-          account          : "abc",
-          credentials      : "abc",
-          image            : "testImageId",
-          zone             : "south-pole-1",
-          trigger          : stage.execution.trigger,
-          deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
+          application   : "abc",
+          credentials   : "abc",
+          manifest      : [
+            type     : "artifact",
+            account  : "dracula",
+            reference: "https://example.com/mani-pedi.yml"
+          ],
+          region        : "org > space",
+          startApplication: true,
+          artifactSource: [
+            type     : "artifact",
+            account  : "count-von-count",
+            reference: "https://example.com/artifact/sister_path/that_s_father_m_oregon_to_you.jar"
+          ]
         ],
       ]
     ]
+  }
 
-    when: "throw error if >1 image"
-    ctx.deploymentDetails = [[imageId: "testImageId-1", zone: "east-pole-1"],
-                             [imageId: "testImageId-2", zone: "west-pole-1"]]
-    stage = ExecutionBuilder.stage {
+  def "should get operations when a package artifact is specified as the deployable"() {
+    given:
+    def ctx = [
+      application      : "abc",
+      account          : "abc",
+      region           : "org > space",
+      deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
+      artifact         : [type: "package",
+                          cluster: [name: "my-cloister"],
+                          serverGroupName: "s-club-7",
+                          account: "my-account",
+                          region: "saar-region",
+                         ],
+      startApplication: true,
+    ]
+    def stage = stage {
       context.putAll(ctx)
     }
-    ops = new CloudFoundryServerGroupCreator().getOperations(stage)
+
+    when:
+    def ops = new CloudFoundryServerGroupCreator().getOperations(stage)
 
     then:
-    IllegalStateException ise = thrown()
-    ise.message.startsWith("Ambiguous choice of deployment images")
+    ops == [
+      [
+        "createServerGroup": [
+          application   : "abc",
+          credentials   : "abc",
+          manifest      : null,
+          region        : "org > space",
+          startApplication: true,
+          artifactSource: [type: "package",
+                           cluster: [name: "my-cloister"],
+                           serverGroupName: "s-club-7",
+                           account: "my-account",
+                           region: "saar-region",
+          ]
+        ]
+      ]
+    ]
+  }
 
-    when: "throw error if no image found"
-    ctx.deploymentDetails = []
-    stage = ExecutionBuilder.stage {
+  def "should get operations when an artifact is specified as the configuration"() {
+    given:
+    def ctx = [
+      application      : "abc",
+      account          : "abc",
+      region           : "org > space",
+      deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
+      artifact         : [type: "artifact", account: "count-von-count", reference: "some-reference"],
+      manifest         : [type: "artifact", account: "dracula", reference: "https://example.com/mani-pedi.yml"],
+      startApplication : true,
+    ]
+    def stage = stage {
       context.putAll(ctx)
     }
-    ops = new CloudFoundryServerGroupCreator().getOperations(stage)
+
+    when:
+    def ops = new CloudFoundryServerGroupCreator().getOperations(stage)
 
     then:
-    ise = thrown()
-    ise.message == "Neither an image nor a repository/artifact could be found in south-pole-1."
+    ops == [
+      [
+        "createServerGroup": [
+          application   : "abc",
+          credentials   : "abc",
+          manifest      : [
+            type     : "artifact",
+            account  : "dracula",
+            reference: "https://example.com/mani-pedi.yml"
+          ],
+          region        : "org > space",
+          startApplication: true,
+          artifactSource: [
+            type     : "artifact",
+            account  : "count-von-count",
+            reference: "some-reference"
+          ]
+        ]
+      ]
+    ]
+  }
+
+  def "should get operations when a triggered manifest regex is specified as the configuration"() {
+    given:
+    def ctx = [
+      application      : "abc",
+      account          : "abc",
+      region           : "org > space",
+      deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
+      artifact         : [type: "artifact", account: "count-von-count", reference: "some-reference"],
+      manifest         : [type: "trigger", account: "count-von-count", pattern: ".*.yml"],
+      startApplication : true,
+    ]
+    JenkinsTrigger.BuildInfo info = new JenkinsTrigger.BuildInfo(
+      "my-name",
+      0,
+      "https://example.com/",
+      [new JenkinsTrigger.JenkinsArtifact("deploy.yml", "deployment/deploy.yml")],
+      [],
+      false,
+      ""
+    )
+    JenkinsTrigger trig = new JenkinsTrigger("master", "job", 1, "propertyfile")
+    trig.buildInfo = info
+
+    def stage = stage {
+      context.putAll(ctx)
+      execution.trigger = trig
+    }
+
+    when:
+    def ops = new CloudFoundryServerGroupCreator().getOperations(stage)
+
+    then:
+    ops == [
+      [
+        "createServerGroup": [
+          application      : "abc",
+          credentials      : "abc",
+          manifest      : [
+            type     : "artifact",
+            account  : "count-von-count",
+            reference: "https://example.com/artifact/deployment/deploy.yml"
+          ],
+          region           : "org > space",
+          startApplication : true,
+          artifactSource: [
+            type     : "artifact",
+            account  : "count-von-count",
+            reference: "some-reference"
+          ]
+        ],
+      ]
+    ]
+  }
+
+  def "should get operations when a direct attributes are specified as the configuration"() {
+    given:
+    def ctx = [
+      application      : "abc",
+      account          : "abc",
+      region           : "org > space",
+      deploymentDetails: [[imageId: "testImageId", zone: "north-pole-1"]],
+      artifact         : [type: "artifact", account: "count-von-count", reference: "some-reference"],
+      manifest         : [
+        type: "direct",
+        memory: "1024M",
+        diskQuota: "1024M",
+        instances: "1"
+      ],
+      startApplication : true,
+    ]
+    def stage = stage {
+      context.putAll(ctx)
+    }
+
+    when:
+    def ops = new CloudFoundryServerGroupCreator().getOperations(stage)
+
+    then:
+    ops == [
+      [
+        "createServerGroup": [
+          application      : "abc",
+          credentials      : "abc",
+          manifest         : [
+            type: "direct",
+            memory: "1024M",
+            diskQuota: "1024M",
+            instances: "1"
+          ],
+          region           : "org > space",
+          startApplication : true,
+          artifactSource: [
+            type     : "artifact",
+            account  : "count-von-count",
+            reference: "some-reference"
+          ]
+        ]
+      ]
+    ]
   }
 
 }

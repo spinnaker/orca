@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Pivotal, Inc.
+ * Copyright 2018 Pivotal, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
@@ -26,57 +27,47 @@ import org.springframework.stereotype.Component
 class CloudFoundryServerGroupCreator implements ServerGroupCreator {
 
   boolean katoResultExpected = false
-  String cloudProvider = "cf"
+  String cloudProvider = "cloudfoundry"
 
   @Override
   List<Map> getOperations(Stage stage) {
-    def operation = [:]
+    def operation = [
+      application: stage.context.application,
+      credentials: stage.context.account,
+      manifest: stage.context.manifest,
+      region: stage.context.region,
+      startApplication: stage.context.startApplication,
+      artifactSource: stage.context.artifact
+    ]
 
-    if (stage.context.containsKey("cluster")) {
-      operation.putAll(stage.context.cluster as Map)
-    } else {
-      operation.putAll(stage.context)
-    }
+    stage.context.stack?.with { operation.stack = it }
+    stage.context.freeFormDetails?.with { operation.detail = it }
 
-    if (operation.account && !operation.credentials) {
-      operation.credentials = operation.account
-    }
-
-    if (stage.execution.hasProperty('trigger')) {
-      operation.trigger = stage.execution.trigger
-    }
-
-    // If this is a stage in a pipeline, look in the context for the baked image.
-    def deploymentDetails = (stage.context.deploymentDetails ?: []) as List<Map>
-
-    if (!operation.image && deploymentDetails) {
-      // Bakery ops are keyed off cloudProviderType
-      operation.image = deploymentDetails.find { it.cloudProviderType == 'cf' }?.imageId
-
-      // Alternatively, FindImage ops distinguish between server groups deployed to different zones.
-      // This is partially because AWS images are only available regionally.
-      if (!operation.image && stage.context.zone) {
-        operation.image = deploymentDetails.find { it.zone == stage.context.zone }?.imageId
+    if(stage.execution.trigger instanceof JenkinsTrigger) {
+      JenkinsTrigger jenkins = stage.execution.trigger as JenkinsTrigger
+      def artifact = stage.context.artifact
+      if(artifact.type == 'trigger') {
+        operation.artifactSource = getArtifactFromJenkinsTrigger(jenkins, artifact.account, artifact.pattern)
       }
-
-      // Lastly, fall back to any image within deploymentDetails, so long as it's unambiguous.
-      if (!operation.image) {
-        if (deploymentDetails.size() != 1) {
-          throw new IllegalStateException("Ambiguous choice of deployment images found for deployment to " +
-                  "'${stage.context.zone}'. Images found from cluster in " +
-                  "${deploymentDetails.collect{it.zone}.join(",") } - " +
-                  "only 1 should be available.")
-        }
-        operation.image = deploymentDetails[0].imageId
+      def manifest = stage.context.manifest
+      if(manifest.type == 'trigger') {
+        operation.manifest = getArtifactFromJenkinsTrigger(jenkins, manifest.account, manifest.pattern)
       }
     }
 
-    if (!operation.image && !operation.repository && !operation.artifact) {
-      throw new IllegalStateException("Neither an image nor a repository/artifact could be found in ${stage.context.zone}.")
+    return [[(OPERATION): operation]]
+  }
+
+  private Map getArtifactFromJenkinsTrigger(JenkinsTrigger jenkinsTrigger, String account, String regex) {
+    def matchingArtifact = jenkinsTrigger.buildInfo.artifacts.find { it.fileName ==~ regex }
+    if(!matchingArtifact) {
+      throw new IllegalStateException("No Jenkins artifacts matched the pattern '${regex}'.")
     }
-
-
-    return [[(ServerGroupCreator.OPERATION): operation]]
+    return [
+      type: 'artifact',
+      account: account,
+      reference: jenkinsTrigger.buildInfo.url + 'artifact/' + matchingArtifact.relativePath
+    ]
   }
 
   @Override

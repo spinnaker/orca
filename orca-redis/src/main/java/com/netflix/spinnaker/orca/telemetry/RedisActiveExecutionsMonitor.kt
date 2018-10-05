@@ -19,12 +19,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
+import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -52,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong
 @ConditionalOnProperty("monitor.activeExecutions.redis", matchIfMissing = true)
 class RedisActiveExecutionsMonitor(
   private val executionRepository: ExecutionRepository,
-  @Qualifier("redisClientDelegate") private val redisClientDelegate: RedisClientDelegate,
+  redisClientSelector: RedisClientSelector,
   private val objectMapper: ObjectMapper,
   private val registry: Registry,
   @Value("\${monitor.activeExecutions.refresh.frequency.ms:60000}") refreshFrequencyMs: Long,
@@ -62,6 +64,7 @@ class RedisActiveExecutionsMonitor(
 
   private val log = LoggerFactory.getLogger(javaClass)
 
+  private val redisClientDelegate = redisClientSelector.primary("default")
   private val snapshot: MutableMap<Id, AtomicLong> = ConcurrentHashMap()
 
   private val executor = Executors.newScheduledThreadPool(2)
@@ -140,6 +143,9 @@ class RedisActiveExecutionsMonitor(
         try {
           execution = executionRepository.retrieve(it.type, it.id)
         } catch (e: ExecutionNotFoundException) {
+          return@map it.id
+        } catch (e: StageSerializationException) {
+          log.error("Failed to deserialize ${it.type}:${it.id}, removing from active execution index", e)
           return@map it.id
         }
         return@map if (execution.status.isComplete) it.id else null
