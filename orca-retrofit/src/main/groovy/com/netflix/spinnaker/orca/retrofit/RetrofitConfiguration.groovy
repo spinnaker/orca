@@ -93,11 +93,6 @@ class RetrofitConfiguration {
         chain.proceed(req)
       }
     })
-    cfg.interceptors().add(
-      new OkHttpMetricsInterceptor(registry)
-    )
-    cfg.setConnectionPool(new com.squareup.okhttp.ConnectionPool(maxIdleConnections, keepAliveDurationMs))
-    cfg.retryOnConnectionFailure = retryOnConnectionFailure
 
     new OkClient(cfg)
   }
