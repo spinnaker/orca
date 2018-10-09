@@ -95,7 +95,8 @@ public class HttpClientUtils {
     String proxyHostname = System.getProperty(JVM_HTTP_PROXY_HOST);
     if (proxyHostname != null) {
       int proxyPort = System.getProperty(JVM_HTTP_PROXY_PORT) != null ? Integer.parseInt(System.getProperty(JVM_HTTP_PROXY_PORT)) : 8080;
-      LOGGER.info("Found system properties for proxy configuration. Setting up http client to use proxy with hostname {} and port {}", proxyHostname, proxyPort );
+      LOGGER.info("Found system properties for proxy configuration. Setting up http client to use proxy with " +
+        "hostname {} and port {}", proxyHostname, proxyPort );
       httpClientBuilder.setProxy(new HttpHost(proxyHostname, proxyPort, "http"));
     }
 
