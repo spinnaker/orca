@@ -55,7 +55,7 @@ public class WaitTask implements RetryableTask {
 
     if (context.isSkipRemainingWait()) {
       return new TaskResult(SUCCEEDED);
-    } else if (context.getStartTime() == null) {
+    } else if (context.getStartTime() == null || context.getStartTime() == Instant.MIN) {
       return new TaskResult(RUNNING, singletonMap("startTime", now));
     } else if (context.getStartTime().plus(context.getWaitDuration()).isBefore(now)) {
       return new TaskResult(SUCCEEDED);
