@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import javafx.util.Duration
 import org.springframework.stereotype.Component
 
 import java.time.Instant
@@ -37,8 +38,7 @@ class CheckForRemainingTerminationsTask implements Task {
 
     return new TaskResult(ExecutionStatus.REDIRECT, [
       skipRemainingWait: false,
-      waitTaskState: [:],
-      startTime: Instant.MIN
+      startTime: Instant.EPOCH
     ])
   }
 }
