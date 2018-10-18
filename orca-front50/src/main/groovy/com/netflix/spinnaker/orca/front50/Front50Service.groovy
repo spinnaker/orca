@@ -68,6 +68,7 @@ interface Front50Service {
   @GET("/pipelines?restricted=false")
   List<Map<String, Object>> getAllPipelines()
 
+  // pipeline template related
   @GET("/pipelineTemplates")
   List<Map<String, Object>> getPipelineTemplates(@Query("scopes") List<String> scopes)
 
@@ -85,6 +86,16 @@ interface Front50Service {
 
   @GET("/pipelineTemplates/{pipelineTemplateId}/dependentPipelines")
   List<Map<String, Object>> getPipelineTemplateDependents(@Path("pipelineTemplateId") String pipelineTemplateId, @Query("recursive") boolean recursive)
+
+  // v2
+  @POST("/v2/pipelineTemplates")
+  Response saveV2PipelineTemplate(@Body Map pipelineTemplate)
+
+  @GET("/v2/pipelineTemplates/{pipelineTemplateId}/dependentPipelines")
+  List<Map<String, Object>> getDependentPipelinesForTemplate(@Path("pipelineTemplateId") String pipelineTemplateId)
+
+  @PUT("/v2/pipelineTemplates/{pipelineTemplateId}")
+  Response updateV2PipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId, @Body Map pipelineTemplate)
 
   @GET("/strategies")
   List<Map<String, Object>> getAllStrategies()
