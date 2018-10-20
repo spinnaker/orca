@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google, Inc.
+ * Copyright 2018 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,16 @@
  *
  */
 
-package com.netflix.spinnaker.orca.clouddriver.model;
+package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
-import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import lombok.Data;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
+@Component
+public class DisableManifestTask extends GenericUpdateManifestTask {
+  public static final String TASK_NAME = "disableManifest";
 
-@Data
-public class Manifest {
-  private Map<String, Object> manifest;
-  private List<Artifact> artifacts;
-  private Status status;
-  private String name;
-  private List warnings;
-
-  @Data
-  public static class Status {
-    Condition stable;
-    Condition failed;
-  }
-
-  @Data
-  public static class Condition {
-    boolean state;
-    String message;
+  @Override
+  protected String taskName() {
+    return TASK_NAME;
   }
 }
