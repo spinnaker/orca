@@ -16,8 +16,9 @@
 
 package com.netflix.spinnaker.orca.controllers;
 
-import com.netflix.spinnaker.orca.pipelinetemplate.PipelineTemplateService;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2.V2PipelineTemplateService;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
 import groovy.util.logging.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -31,15 +32,12 @@ import java.util.Map;
 public class V2PipelineTemplateController {
 
   @Autowired
-  private PipelineTemplateService pipelineTemplateService;
+  private V2PipelineTemplateService v2PipelineTemplateService;
 
   // TODO(jacobkiefer): Add fiat authz
-  // TODO(jacobkiefer): Un-stub
   @RequestMapping(value = "/v2/pipelineTemplate", method = RequestMethod.GET)
-  PipelineTemplate getV2PipelineTemplate(@RequestParam Map template,
-                                         @RequestParam(required = false) String executionId,
-                                         @RequestParam(required = false) String pipelineConfigId) {
-    return null;
+  V2PipelineTemplate getV2PipelineTemplate(@RequestParam String source) {
+    return v2PipelineTemplateService.resolveTemplate(new TemplateConfiguration.TemplateSource(source));
   }
 
   @RequestMapping(value = "/v2/convertPipelineToTemplate", method = RequestMethod.POST)
