@@ -44,6 +44,7 @@ public class V2HttpTemplateSchemeLoader implements V2TemplateSchemeLoader {
   private final OkHttpClient okHttpClient;
 
   // TODO(jacobkiefer): Figure out a way to secure these calls.
+  // TODO(jacobkiefer): Use Artifact resolution instead of custom template loaders.
   @Autowired
   public V2HttpTemplateSchemeLoader(ObjectMapper pipelineTemplateObjectMapper) {
     this.objectMapper = pipelineTemplateObjectMapper;

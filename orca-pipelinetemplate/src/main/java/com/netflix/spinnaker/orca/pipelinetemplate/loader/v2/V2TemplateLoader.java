@@ -32,6 +32,7 @@ import static java.lang.String.format;
 public class V2TemplateLoader {
   private Collection<V2TemplateSchemeLoader> schemeLoaders;
 
+  // TODO(jacobkiefer): Use Artifact resolution instead of custom template loaders.
   @Autowired
   public V2TemplateLoader(Collection<V2TemplateSchemeLoader> schemeLoaders) {
     this.schemeLoaders = schemeLoaders;

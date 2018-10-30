@@ -31,6 +31,7 @@ import java.net.URI;
 public class V2FileTemplateSchemeLoader implements V2TemplateSchemeLoader {
   private final ObjectMapper objectMapper;
 
+  // TODO(jacobkiefer): Use Artifact resolution instead of custom template loaders.
   @Autowired
   public V2FileTemplateSchemeLoader(ObjectMapper pipelineTemplateObjectMapper) {
     this.objectMapper = pipelineTemplateObjectMapper;

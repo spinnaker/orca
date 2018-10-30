@@ -33,6 +33,7 @@ public class V2Front50SchemeLoader implements V2TemplateSchemeLoader {
 
   private final ObjectMapper objectMapper;
 
+  // TODO(jacobkiefer): Use Artifact resolution instead of custom template loaders.
   @Autowired
   public V2Front50SchemeLoader(Optional<Front50Service> front50Service, ObjectMapper pipelineTemplateObjectMapper) {
     this.front50Service = front50Service.orElse(null);
