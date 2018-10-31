@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import com.netflix.spinnaker.orca.ExecutionStatus
+
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -23,9 +25,13 @@ import java.time.format.DateTimeFormatter
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
+import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
+
+import java.util.concurrent.TimeUnit
+
 import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.SuspendExecutionDuringTimeWindowTask
 import static com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow.SuspendExecutionDuringTimeWindowTask.TimeWindow
 
@@ -35,7 +41,7 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
   def builder = Spy(new TaskNode.Builder(TaskNode.GraphType.FULL))
 
   @Subject
-  restrictExecutionDuringTimeWindow = new RestrictExecutionDuringTimeWindow()
+    restrictExecutionDuringTimeWindow = new RestrictExecutionDuringTimeWindow()
 
   void 'stage should be scheduled at #expectedTime when triggered at #scheduledTime with time windows #timeWindows'() {
     when:
@@ -102,15 +108,15 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
     result.equals(expectedTime)
 
     where:
-    scheduledTime           | timeWindows                                        | days            || expectedTime
+    scheduledTime          | timeWindows                                        | days                  || expectedTime
 
-    date("02/25 01:00:00")  | [window(hourMinute("22:00"), hourMinute("05:00"))] | [1,2,3,4,5,6,7] || date("02/25 01:00:00")
-    date("02/25 21:45:00")  | [window(hourMinute("06:00"), hourMinute("10:00"))] | []              || date("02/26 06:00:00")
-    date("02/25 21:45:00")  | [window(hourMinute("06:00"), hourMinute("10:00"))] | [4]             || date("02/26 06:00:00")
-    date("02/25 21:45:00")  | [window(hourMinute("06:00"), hourMinute("10:00"))] | [5]             || date("02/27 06:00:00")
-    date("02/25 21:45:00")  | [window(hourMinute("06:00"), hourMinute("10:00"))] | [3]             || date("03/04 06:00:00")
-    date("02/25 21:45:00")  | [window(hourMinute("06:00"), hourMinute("10:00"))] | [3,4,5]         || date("02/26 06:00:00")
-    date("02/25 21:45:00")  | [window(hourMinute("06:00"), hourMinute("10:00"))] | [3,5]           || date("02/27 06:00:00")
+    date("02/25 01:00:00") | [window(hourMinute("22:00"), hourMinute("05:00"))] | [1, 2, 3, 4, 5, 6, 7] || date("02/25 01:00:00")
+    date("02/25 21:45:00") | [window(hourMinute("06:00"), hourMinute("10:00"))] | []                    || date("02/26 06:00:00")
+    date("02/25 21:45:00") | [window(hourMinute("06:00"), hourMinute("10:00"))] | [4]                   || date("02/26 06:00:00")
+    date("02/25 21:45:00") | [window(hourMinute("06:00"), hourMinute("10:00"))] | [5]                   || date("02/27 06:00:00")
+    date("02/25 21:45:00") | [window(hourMinute("06:00"), hourMinute("10:00"))] | [3]                   || date("03/04 06:00:00")
+    date("02/25 21:45:00") | [window(hourMinute("06:00"), hourMinute("10:00"))] | [3, 4, 5]             || date("02/26 06:00:00")
+    date("02/25 21:45:00") | [window(hourMinute("06:00"), hourMinute("10:00"))] | [3, 5]                || date("02/27 06:00:00")
   }
 
   void 'stage should be scheduled at #expectedTime when triggered at #scheduledTime with time windows #stage in stage context'() {
@@ -171,12 +177,12 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
     result.equals(expectedTime)
 
     where:
-    scheduledTime           | timeWindows                                        | days            || expectedTime
+    scheduledTime          | timeWindows | days                  || expectedTime
 
-    date("02/25 01:00:00")  | [] | [1,2,3,4,5,6,7] || date("02/25 01:00:00")
-    date("02/25 00:00:00")  | [] | [1,2,3,4,5,6,7] || date("02/25 00:00:00")
-    date("02/25 23:59:00")  | [] | [1,2,3,4,5,6,7] || date("02/25 23:59:00")
-    date("02/25 01:00:00")  | [] | [1]             || date("03/02 00:00:00")
+    date("02/25 01:00:00") | []          | [1, 2, 3, 4, 5, 6, 7] || date("02/25 01:00:00")
+    date("02/25 00:00:00") | []          | [1, 2, 3, 4, 5, 6, 7] || date("02/25 00:00:00")
+    date("02/25 23:59:00") | []          | [1, 2, 3, 4, 5, 6, 7] || date("02/25 23:59:00")
+    date("02/25 01:00:00") | []          | [1]                   || date("03/02 00:00:00")
   }
 
   @Unroll
@@ -207,6 +213,35 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
     true          | null | null | 0
     false         | 60   | 600  | 0
     false         | null | null | 0
+  }
+
+  @Unroll
+  void 'windowStartTimeMs restricts execution if set to a future time'() {
+    given:
+    def restrictedStage = ExecutionBuilder.stage {
+      type = "restrictExecutionDuringTimeWindow"
+      name = "execution window"
+      context = [
+        restrictedExecutionWindow        : [
+          windowStartTimeMs: windowStartTimeMs
+        ],
+        restrictExecutionDuringTimeWindow: true
+      ]
+    }
+
+    SuspendExecutionDuringTimeWindowTask windowTask = new SuspendExecutionDuringTimeWindowTask()
+
+    when:
+    def result = windowTask.execute(restrictedStage)
+
+    then:
+    result.status == status
+    restrictedStage.scheduledTime == scheduledTime
+
+    where:
+    windowStartTimeMs                  | scheduledTime                      | status
+    TimeUnit.DAYS.toMillis(365 * 2100) | TimeUnit.DAYS.toMillis(365 * 2100) | ExecutionStatus.RUNNING
+    TimeUnit.DAYS.toMillis(365)        | null                               | ExecutionStatus.SUCCEEDED
   }
 
   private hourMinute(String hourMinuteStr) {

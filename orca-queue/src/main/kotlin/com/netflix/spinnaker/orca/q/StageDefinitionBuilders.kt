@@ -160,9 +160,12 @@ private fun Execution.injectStage(index: Int, stage: Stage) {
 
 private fun Stage.sanitizeContext() {
   if (type != RestrictExecutionDuringTimeWindow.TYPE) {
-    context.apply {
-      remove("restrictExecutionDuringTimeWindow")
-      remove("restrictedExecutionWindow")
+    when {
+      context.containsKey("injectedRestrictedExecutionWindow") -> context.remove("injectedRestrictedExecutionWindow")
+      else -> context.apply {
+        remove("restrictExecutionDuringTimeWindow")
+        remove("restrictedExecutionWindow")
+      }
     }
   }
 }

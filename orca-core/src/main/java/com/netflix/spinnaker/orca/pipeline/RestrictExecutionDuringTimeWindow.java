@@ -125,7 +125,7 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
     }
 
     @Override public long getTimeout() {
-      return TimeUnit.DAYS.toMillis(7);
+      return TimeUnit.DAYS.toMillis(14);
     }
 
     private static final int DAY_START_HOUR = 0;
@@ -171,6 +171,7 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
     static class ExecutionWindowConfig {
       private List<TimeWindowConfig> whitelist = new ArrayList<>();
       private List<Integer> days = new ArrayList<>();
+      private Long windowStartTimeMs;
 
       public List<TimeWindowConfig> getWhitelist() {
         return whitelist;
@@ -186,6 +187,14 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
 
       public void setDays(List<Integer> days) {
         this.days = days;
+      }
+
+      public Long getWindowStartTimeMs() {
+        return windowStartTimeMs;
+      }
+
+      public void setWindowStartTimeMs(Long windowStartTimeMs) {
+        this.windowStartTimeMs = windowStartTimeMs;
       }
 
       @Override public String toString() {
@@ -248,6 +257,14 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
       // Passing in the current date to allow unit testing
       try {
         RestrictedExecutionWindowConfig config = stage.mapTo(RestrictedExecutionWindowConfig.class);
+        if (config.restrictedExecutionWindow.windowStartTimeMs != null) {
+          log.info(
+            "Scheduling execution of {} at {}",
+            stage.getId(),
+            config.restrictedExecutionWindow.windowStartTimeMs
+          );
+          return Instant.ofEpochMilli(config.restrictedExecutionWindow.windowStartTimeMs);
+        }
         List<TimeWindow> whitelistWindows = new ArrayList<>();
         log.info("Calculating scheduled time for {}; {}", stage.getId(), config.restrictedExecutionWindow);
         for (TimeWindowConfig timeWindow : config.restrictedExecutionWindow.whitelist) {
