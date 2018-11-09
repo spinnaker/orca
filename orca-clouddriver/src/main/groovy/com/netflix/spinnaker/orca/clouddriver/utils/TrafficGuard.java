@@ -119,37 +119,36 @@ public class TrafficGuard {
   private void verifyOtherServerGroupsAreTakingTraffic(String serverGroupName, Moniker serverGroupMoniker, Location location, String account, String cloudProvider, String operationDescriptor) {
     // TODO rz - Expose traffic guards endpoint in clouddriver
     Optional<Map> cluster = oortHelper.getCluster(serverGroupMoniker.getApp(), account, serverGroupMoniker.getCluster(), cloudProvider);
-
     if (!cluster.isPresent()) {
       throw new TrafficGuardException(format("Could not find cluster '%s' in %s/%s with traffic guard configured.", serverGroupMoniker.getCluster(), account, location.getValue()));
     }
+
     List<TargetServerGroup> targetServerGroups = ((List<Map<String, Object>>) cluster.get().get("serverGroups"))
       .stream()
       .map(TargetServerGroup::new)
       .filter(tsg -> location.equals(tsg.getLocation()))
       .collect(Collectors.toList());
 
-    List<TargetServerGroup> otherTargetServerGroups = targetServerGroups
+    Map<String, Integer> capacityByServerGroupName = targetServerGroups
       .stream()
-      .filter(tsg -> !serverGroupName.equalsIgnoreCase(tsg.getName()))
-      .collect(Collectors.toList());
+      .collect(Collectors.toMap(TargetServerGroup::getName, this::getServerGroupCapacity));
 
-    boolean hasOtherEnabledServerGroups = otherTargetServerGroups
-      .stream()
-      .anyMatch(tsg -> (tsg.getInstances().stream().filter(i -> "Up".equals(i.get("healthState"))).count()) > 0);
+    int totalCapacity = capacityByServerGroupName.values().stream().reduce(0, Integer::sum);
+    int serverGroupCapacity = capacityByServerGroupName.get(serverGroupName);
+    int futureCapacity = totalCapacity - serverGroupCapacity;
 
-    if (!hasOtherEnabledServerGroups) {
-      // TODO rz - Context can be empty; could use a stand-in message in log
-      List<Map> context = otherTargetServerGroups.stream().map(tsg -> ImmutableMap.builder()
-        .put("name", tsg.getName())
-        .put("disabled", tsg.isDisabled())
-        .put("instances", tsg.getInstances())
-        .build()
-      ).collect(Collectors.toList());
+    if (futureCapacity == 0) {
+      List<Map> context = targetServerGroups.stream()
+        .map(tsg -> ImmutableMap.builder()
+          .put("name", tsg.getName())
+          .put("disabled", tsg.isDisabled())
+          .put("instances", tsg.getInstances())
+          .build())
+        .collect(Collectors.toList());
 
       String message = format(
         "This cluster ('%s' in %s/%s) has traffic guards enabled. " +
-        "%s %s would leave the cluster with no instances taking traffic.",
+          "%s %s would leave the cluster with no instances taking traffic.",
         serverGroupMoniker.getCluster(), account, location.getValue(), operationDescriptor, serverGroupName
       );
 
@@ -162,6 +161,12 @@ public class TrafficGuard {
 
       throw new TrafficGuardException(message);
     }
+  }
+
+  private int getServerGroupCapacity(TargetServerGroup serverGroup) {
+    return (int) serverGroup.getInstances().stream()
+      .filter(instance -> "Up".equals(instance.get("healthState")))
+      .count();
   }
 
   public boolean hasDisableLock(Moniker clusterMoniker, String account, Location location) {

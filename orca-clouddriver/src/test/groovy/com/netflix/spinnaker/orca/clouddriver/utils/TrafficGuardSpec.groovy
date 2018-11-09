@@ -59,7 +59,8 @@ class TrafficGuardSpec extends Specification {
       account: "test",
       region : "us-east-1",
       name   : "app-foo-v001",
-      moniker: [app: "app", stack: "foo", sequence: 1, cluster: "app-foo"]
+      moniker: [app: "app", stack: "foo", sequence: 1, cluster: "app-foo"],
+      isDisabled: false
     ]
     otherServerGroup = [
       account   : "test",
