@@ -117,6 +117,21 @@ class TrafficGuardSpec extends Specification {
     ]
   }
 
+  void "should not throw exception when cluster has no active instances"() {
+    given:
+    addGuard([account: "test", location: "us-east-1", stack: "foo"])
+
+    when:
+    trafficGuard.verifyTrafficRemoval(targetName, moniker, "test", location, "aws", "x")
+
+    then:
+    noExceptionThrown()
+    1 * front50Service.get("app") >> application
+    1 * oortHelper.getCluster("app", "test", "app-foo", "aws") >> [
+      serverGroups: [makeServerGroup(targetName, 0, 1)]
+    ]
+  }
+
   void "should validate existence of cluster"() {
     given:
     addGuard([account: "test", location: "us-east-1", stack: "foo"])

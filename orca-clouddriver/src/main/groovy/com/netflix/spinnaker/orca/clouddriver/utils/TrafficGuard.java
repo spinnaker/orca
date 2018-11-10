@@ -137,22 +137,20 @@ public class TrafficGuard {
     int serverGroupCapacity = capacityByServerGroupName.get(serverGroupName);
     int futureCapacity = totalCapacity - serverGroupCapacity;
 
-    if (futureCapacity == 0) {
-      List<Map> context = targetServerGroups.stream()
-        .map(tsg -> ImmutableMap.builder()
-          .put("name", tsg.getName())
-          .put("disabled", tsg.isDisabled())
-          .put("instances", tsg.getInstances())
-          .build())
-        .collect(Collectors.toList());
+    if (totalCapacity == 0) {
+      log.debug("Bypassing traffic guard check for '{}' in {}/{} with no instances Up. Context: {}",
+        serverGroupMoniker.getCluster(), account, location.getValue(), generateContext(targetServerGroups));
+      return;
+    }
 
+    if (futureCapacity == 0) {
       String message = format(
         "This cluster ('%s' in %s/%s) has traffic guards enabled. " +
           "%s %s would leave the cluster with no instances taking traffic.",
         serverGroupMoniker.getCluster(), account, location.getValue(), operationDescriptor, serverGroupName
       );
 
-      log.debug("{} Context: {}", message, context);
+      log.debug("{} Context: {}", message, generateContext(targetServerGroups));
 
       registry.counter(savesId.withTags(
         "application", serverGroupMoniker.getApp(),
@@ -161,6 +159,16 @@ public class TrafficGuard {
 
       throw new TrafficGuardException(message);
     }
+  }
+
+  private List<Map> generateContext(List<TargetServerGroup> targetServerGroups) {
+    return targetServerGroups.stream()
+      .map(tsg -> ImmutableMap.builder()
+        .put("name", tsg.getName())
+        .put("disabled", tsg.isDisabled())
+        .put("instances", tsg.getInstances())
+        .build())
+      .collect(Collectors.toList());
   }
 
   private int getServerGroupCapacity(TargetServerGroup serverGroup) {
