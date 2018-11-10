@@ -85,6 +85,24 @@ class TrafficGuardSpec extends Specification {
     ]
   }
 
+  void "should throw exception when target server group holds most of the capacity"() {
+    given:
+    addGuard([account: "test", location: "us-east-1", stack: "foo"])
+
+    when:
+    trafficGuard.verifyTrafficRemoval(targetName, moniker, "test", location, "aws", "x")
+
+    then:
+    thrown(TrafficGuardException)
+    1 * front50Service.get("app") >> application
+    1 * oortHelper.getCluster("app", "test", "app-foo", "aws") >> [
+      serverGroups: [
+        makeServerGroup(targetName, 2),
+        makeServerGroup(otherName, 1)
+      ]
+    ]
+  }
+
   void "should throw exception when target server group is the only one in cluster"() {
     given:
     addGuard([account: "test", location: "us-east-1", stack: "foo"])

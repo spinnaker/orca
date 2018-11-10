@@ -133,22 +133,24 @@ public class TrafficGuard {
       .stream()
       .collect(Collectors.toMap(TargetServerGroup::getName, this::getServerGroupCapacity));
 
-    int totalCapacity = capacityByServerGroupName.values().stream().reduce(0, Integer::sum);
+    int currentCapacity = capacityByServerGroupName.values().stream().reduce(0, Integer::sum);
     int serverGroupCapacity = capacityByServerGroupName.get(serverGroupName);
-    int futureCapacity = totalCapacity - serverGroupCapacity;
+    int futureCapacity = currentCapacity - serverGroupCapacity;
 
-    if (totalCapacity == 0) {
+    if (currentCapacity == 0) {
       log.debug("Bypassing traffic guard check for '{}' in {}/{} with no instances Up. Context: {}",
         serverGroupMoniker.getCluster(), account, location.getValue(), generateContext(targetServerGroups));
       return;
     }
 
-    if (futureCapacity == 0) {
-      String message = format(
-        "This cluster ('%s' in %s/%s) has traffic guards enabled. " +
-          "%s %s would leave the cluster with no instances taking traffic.",
-        serverGroupMoniker.getCluster(), account, location.getValue(), operationDescriptor, serverGroupName
-      );
+    double futureCapacityRatio = ((double) futureCapacity) / currentCapacity;
+    if (futureCapacityRatio < 0.4) {
+      String message = format("This cluster ('%s' in %s/%s) has traffic guards enabled. %s %s would leave the cluster ",
+        serverGroupMoniker.getCluster(), account, location.getValue(), operationDescriptor, serverGroupName);
+
+      message += (futureCapacity == 0) ? "with no instances taking traffic."
+        : format("with %d instances up (%.2f%% of %d instances currently up)",
+            futureCapacity, futureCapacityRatio * 100, currentCapacity);
 
       log.debug("{} Context: {}", message, generateContext(targetServerGroups));
 
