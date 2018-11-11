@@ -21,7 +21,7 @@ buildscript {
     maven { url "https://plugins.gradle.org/m2/" }
   }
   dependencies {
-    classpath "com.netflix.spinnaker.gradle:spinnaker-dev-plugin:5.1.4"
+    classpath "com.netflix.spinnaker.gradle:spinnaker-dev-plugin:5.2.1"
     classpath "com.netflix.nebula:nebula-kotlin-plugin:$kotlinVersion"
     classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlinVersion"
   }
@@ -33,7 +33,7 @@ allprojects {
   group = "com.netflix.spinnaker.orca"
 
   ext {
-    spinnakerDependenciesVersion = '1.2.9'
+    spinnakerDependenciesVersion = '1.6.1'
     if (project.hasProperty('spinnakerDependenciesVersion')) {
       spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
     }
