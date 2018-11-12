@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.utils
 
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location.Type
@@ -34,10 +35,9 @@ import spock.lang.Unroll
 class TrafficGuardSpec extends Specification {
 
   OortHelper oortHelper = Mock(OortHelper)
-
   Front50Service front50Service = Mock(Front50Service)
-
   Registry registry = new NoopRegistry()
+  DynamicConfigService dynamicConfigService = Mock(DynamicConfigService)
 
   Application application = Stub(Application) {
     details() >> applicationDetails
@@ -50,7 +50,7 @@ class TrafficGuardSpec extends Specification {
   @Shared Map<String, Object> applicationDetails = [:]
 
   @Subject
-  TrafficGuard trafficGuard = new TrafficGuard(oortHelper, new Optional<>(front50Service), registry)
+  TrafficGuard trafficGuard = new TrafficGuard(oortHelper, new Optional<>(front50Service), registry, dynamicConfigService)
 
   void setup() {
     applicationDetails.clear()
@@ -85,7 +85,7 @@ class TrafficGuardSpec extends Specification {
     ]
   }
 
-  void "should throw exception when target server group holds most of the capacity"() {
+  void "should throw exception when capacity ratio less than configured minimum"() {
     given:
     addGuard([account: "test", location: "us-east-1", stack: "foo"])
 
@@ -101,6 +101,30 @@ class TrafficGuardSpec extends Specification {
         makeServerGroup(otherName, 1)
       ]
     ]
+
+    // configure a minimum desired ratio of 40%, which means going from 3 to 1 instances (33%) is not ok
+    1 * dynamicConfigService.getConfig(Double.class, TrafficGuard.MIN_CAPACITY_RATIO, 0d) >> 0.4d
+  }
+
+  void "should not throw exception when capacity ratio more than configured minimum"() {
+    given:
+    addGuard([account: "test", location: "us-east-1", stack: "foo"])
+
+    when:
+    trafficGuard.verifyTrafficRemoval(targetName, moniker, "test", location, "aws", "x")
+
+    then:
+    notThrown(TrafficGuardException)
+    1 * front50Service.get("app") >> application
+    1 * oortHelper.getCluster("app", "test", "app-foo", "aws") >> [
+      serverGroups: [
+        makeServerGroup(targetName, 2),
+        makeServerGroup(otherName, 1)
+      ]
+    ]
+
+    // configure a minimum desired ratio of 25%, which means going from 3 to 1 instances (33%) is ok
+    1 * dynamicConfigService.getConfig(Double.class, TrafficGuard.MIN_CAPACITY_RATIO, 0d) >> 0.25d
   }
 
   void "should throw exception when target server group is the only one in cluster"() {
