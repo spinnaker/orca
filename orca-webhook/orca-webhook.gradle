@@ -21,6 +21,7 @@ dependencies {
   compile project(':orca-core')
   compile spinnaker.dependency('kork')
   compile spinnaker.dependency('bootAutoConfigure')
+  compile spinnaker.dependency('lombok')
   compile('com.jayway.jsonpath:json-path:2.2.0')
 //  testCompile project(':orca-test')
   testCompile spinnaker.dependency("springTest")
