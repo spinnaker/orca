@@ -38,9 +38,14 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 
 class WebhookServiceSpec extends Specification {
+  @Shared
+  def webhookConfiguration = new WebhookConfiguration()
 
   @Shared
-  def restTemplate = new WebhookConfiguration().restTemplate();
+  def requestFactory = webhookConfiguration.webhookRequestFactory()
+
+  @Shared
+  def restTemplate = webhookConfiguration.restTemplate(requestFactory)
 
   @Shared
   def userConfiguredUrlRestrictions = new UserConfiguredUrlRestrictions.Builder().withRejectLocalhost(false).build()

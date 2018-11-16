@@ -17,17 +17,24 @@
 
 package com.netflix.spinnaker.orca.webhook.config;
 
+import okhttp3.OkHttpClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.OkHttp3ClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
+import javax.net.ssl.*;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 @Configuration
@@ -37,14 +44,43 @@ import java.util.List;
 public class WebhookConfiguration {
   @Bean
   @ConditionalOnMissingBean(RestTemplate.class)
-  public RestTemplate restTemplate() {
-    RestTemplate restTemplate = new RestTemplate();
+  public RestTemplate restTemplate(ClientHttpRequestFactory webhookRequestFactory) {
+    RestTemplate restTemplate = new RestTemplate(webhookRequestFactory);
+
     List<HttpMessageConverter<?>> converters = restTemplate.getMessageConverters();
     converters.add(new ObjectStringHttpMessageConverter());
     restTemplate.setMessageConverters(converters);
-    HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-    restTemplate.setRequestFactory(requestFactory);
+
     return restTemplate;
+  }
+
+  @Bean
+  public ClientHttpRequestFactory webhookRequestFactory() {
+    X509TrustManager trustManager = getTrustManager(null);
+    SSLSocketFactory sslSocketFactory = getSSLSocketFactory(trustManager);
+    OkHttpClient client = new OkHttpClient.Builder().sslSocketFactory(sslSocketFactory, trustManager).build();
+    return new OkHttp3ClientHttpRequestFactory(client);
+  }
+
+  private SSLSocketFactory getSSLSocketFactory(X509TrustManager trustManager) {
+    try {
+      SSLContext sslContext = SSLContext.getInstance("TLS");
+      sslContext.init(null, new X509TrustManager[]{trustManager}, null);
+      return sslContext.getSocketFactory();
+    } catch (KeyManagementException | NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private X509TrustManager getTrustManager(KeyStore keyStore) {
+    try {
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init(keyStore);
+      TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+      return (X509TrustManager) trustManagers[0];
+    } catch (KeyStoreException | NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public class ObjectStringHttpMessageConverter extends StringHttpMessageConverter {
