@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @ConfigurationProperties("webhook")
 @Data
 @Slf4j
-public class PreconfiguredWebhookProperties {
+public class WebhookProperties {
   private static List<String> IGNORE_FIELDS = Arrays.asList("props", "enabled", "label", "description", "type", "parameters", "parameterValues", "permissions");
   private static List<Field> ALL_FIELDS = Arrays.stream(PreconfiguredWebhook.class.getDeclaredFields())
     .filter(f -> !f.isSynthetic())
@@ -38,6 +38,14 @@ public class PreconfiguredWebhookProperties {
     .collect(Collectors.toList());
 
   private List<PreconfiguredWebhook> preconfigured = new ArrayList<>();
+  private TrustSettings trust;
+
+  @Data
+  @NoArgsConstructor
+  public static class TrustSettings {
+    private String trustStore;
+    private String trustStorePassword;
+  }
 
   @Data
   @NoArgsConstructor

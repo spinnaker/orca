@@ -17,7 +17,10 @@
 
 package com.netflix.spinnaker.orca.webhook.config;
 
+import com.netflix.spinnaker.orca.webhook.util.UnionX509TrustManager;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -31,17 +34,29 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.*;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Configuration
 @ConditionalOnProperty(prefix = "webhook.stage", value = "enabled", matchIfMissing = true)
 @ComponentScan("com.netflix.spinnaker.orca.webhook")
-@EnableConfigurationProperties(PreconfiguredWebhookProperties.class)
+@EnableConfigurationProperties(WebhookProperties.class)
 public class WebhookConfiguration {
+  private final WebhookProperties webhookProperties;
+
+  @Autowired
+  public WebhookConfiguration(WebhookProperties webhookProperties) {
+    this.webhookProperties = webhookProperties;
+  }
+
   @Bean
   @ConditionalOnMissingBean(RestTemplate.class)
   public RestTemplate restTemplate(ClientHttpRequestFactory webhookRequestFactory) {
@@ -56,16 +71,25 @@ public class WebhookConfiguration {
 
   @Bean
   public ClientHttpRequestFactory webhookRequestFactory() {
-    X509TrustManager trustManager = getTrustManager(null);
+    X509TrustManager trustManager = webhookX509TrustManager();
     SSLSocketFactory sslSocketFactory = getSSLSocketFactory(trustManager);
     OkHttpClient client = new OkHttpClient.Builder().sslSocketFactory(sslSocketFactory, trustManager).build();
     return new OkHttp3ClientHttpRequestFactory(client);
   }
 
+  private X509TrustManager webhookX509TrustManager() {
+    List<X509TrustManager> trustManagers = new ArrayList<>();
+
+    trustManagers.add(getTrustManager(null));
+    getCustomKeyStore().ifPresent(keyStore -> trustManagers.add(getTrustManager(keyStore)));
+
+    return new UnionX509TrustManager(trustManagers);
+  }
+
   private SSLSocketFactory getSSLSocketFactory(X509TrustManager trustManager) {
     try {
       SSLContext sslContext = SSLContext.getInstance("TLS");
-      sslContext.init(null, new X509TrustManager[]{trustManager}, null);
+      sslContext.init(null, new X509TrustManager[]{ trustManager }, null);
       return sslContext.getSocketFactory();
     } catch (KeyManagementException | NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
@@ -81,6 +105,28 @@ public class WebhookConfiguration {
     } catch (KeyStoreException | NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private Optional<KeyStore> getCustomKeyStore() {
+    WebhookProperties.TrustSettings trustSettings = webhookProperties.getTrust();
+    if (trustSettings == null || StringUtils.isEmpty(trustSettings.getTrustStore())) {
+      return Optional.empty();
+    }
+
+    KeyStore keyStore;
+    try {
+      keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    } catch (KeyStoreException e) {
+      throw new RuntimeException(e);
+    }
+
+    try (FileInputStream file = new FileInputStream(trustSettings.getTrustStore())) {
+      keyStore.load(file, trustSettings.getTrustStorePassword().toCharArray());
+    } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
+
+    return Optional.of(keyStore);
   }
 
   public class ObjectStringHttpMessageConverter extends StringHttpMessageConverter {
