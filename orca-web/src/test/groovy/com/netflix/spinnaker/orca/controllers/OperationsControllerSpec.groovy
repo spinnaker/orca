@@ -25,7 +25,6 @@ import com.netflix.spinnaker.fiat.shared.FiatStatus
 import javax.servlet.http.HttpServletResponse
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
-import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
@@ -36,7 +35,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.PipelineTemplateService
-import com.netflix.spinnaker.orca.webhook.config.PreconfiguredWebhookProperties
+import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.json.JsonSlurper
@@ -44,7 +43,6 @@ import org.apache.log4j.MDC
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
-import org.springframework.mock.env.MockEnvironment
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import rx.Observable
 import spock.lang.Specification
@@ -76,14 +74,10 @@ class OperationsControllerSpec extends Specification {
     _ * isEnabled() >> { return false }
   }
 
-  def env = new MockEnvironment()
-  def buildArtifactFilter = new BuildArtifactFilter(environment: env)
-
   @Subject
     controller = new OperationsController(
       objectMapper: mapper,
       buildService: buildService,
-      buildArtifactFilter: buildArtifactFilter,
       executionRepository: executionRepository,
       pipelineTemplateService: pipelineTemplateService,
       executionLauncher: executionLauncher,
@@ -490,7 +484,6 @@ class OperationsControllerSpec extends Specification {
     def tempController = new OperationsController(
         objectMapper: mapper,
         buildService: buildService,
-        buildArtifactFilter: buildArtifactFilter,
         executionRepository: executionRepository,
         pipelineTemplateService: pipelineTemplateService,
         executionLauncher: executionLauncher,
@@ -536,65 +529,6 @@ class OperationsControllerSpec extends Specification {
 
     then:
     startedPipeline.getTrigger().resolvedExpectedArtifacts[0].boundArtifact.reference == reference
-  }
-
-  @Unroll
-  def 'limits artifacts in buildInfo based on environment configuration'() {
-    given:
-    env.withProperty(BuildArtifactFilter.MAX_ARTIFACTS_PROP, maxArtifacts.toString())
-    env.withProperty(BuildArtifactFilter.PREFERRED_ARTIFACTS_PROP, preferredArtifacts)
-    Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
-      startedPipeline.id = UUID.randomUUID().toString()
-      startedPipeline
-    }
-    buildService.getBuild(buildNumber, master, job) >> buildInfo
-
-    when:
-    controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
-
-    then:
-    with(startedPipeline) {
-      trigger.type == requestedPipeline.trigger.type
-      trigger instanceof JenkinsTrigger
-      trigger.master == master
-      trigger.job == job
-      trigger.buildNumber == buildNumber
-      trigger.buildInfo.artifacts.fileName == expectedArtifacts
-    }
-
-    where:
-    maxArtifacts | preferredArtifacts | expectedArtifacts
-    1            | 'deb'              | ['foo1.deb']
-    2            | 'deb'              | ['foo1.deb', 'foo2.rpm']
-    2            | 'deb,properties'   | ['foo1.deb', 'foo3.properties']
-    2            | 'properties,rpm'   | ['foo3.properties', 'foo2.rpm']
-    1            | 'nupkg'            | ['foo8.nupkg']
-
-
-    master = "master"
-    job = "job"
-    buildNumber = 1337
-    requestedPipeline = [
-      trigger: [
-        type       : "jenkins",
-        master     : master,
-        job        : job,
-        buildNumber: buildNumber,
-        user       : 'foo'
-      ]
-    ]
-    buildInfo = [name: job, number: buildNumber, url: "http://jenkins", result: "SUCCESS", artifacts: [
-      [fileName: 'foo1.deb', relativePath: "."],
-      [fileName: 'foo2.rpm', relativePath: "."],
-      [fileName: 'foo3.properties', relativePath: "."],
-      [fileName: 'foo4.yml', relativePath: "."],
-      [fileName: 'foo5.json', relativePath: "."],
-      [fileName: 'foo6.xml', relativePath: "."],
-      [fileName: 'foo7.txt', relativePath: "."],
-      [fileName: 'foo8.nupkg', relativePath: "."],
-    ]]
   }
 
   def "should not start pipeline when truthy plan pipeline attribute is present"() {
@@ -779,14 +713,14 @@ class OperationsControllerSpec extends Specification {
     ]
   }
 
-  static PreconfiguredWebhookProperties.PreconfiguredWebhook createPreconfiguredWebhook(
+  static WebhookProperties.PreconfiguredWebhook createPreconfiguredWebhook(
     def label, def description, def type, def permissions) {
     def customHeaders = new HttpHeaders()
     customHeaders.put("header", ["value1"])
-    return new PreconfiguredWebhookProperties.PreconfiguredWebhook(
+    return new WebhookProperties.PreconfiguredWebhook(
       label: label, description: description, type: type,
       url: "a", customHeaders: customHeaders, method: HttpMethod.POST, payload: "b",
-      waitForCompletion: true, statusUrlResolution: PreconfiguredWebhookProperties.StatusUrlResolution.webhookResponse,
+      waitForCompletion: true, statusUrlResolution: WebhookProperties.StatusUrlResolution.webhookResponse,
       statusUrlJsonPath: "c", statusJsonPath: "d", progressJsonPath: "e", successStatuses: "f", canceledStatuses: "g", terminalStatuses: "h", parameters: null,
       permissions: permissions
     )
