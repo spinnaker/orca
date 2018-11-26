@@ -24,6 +24,8 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.bakery.api.BakeRequest
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
+import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import com.netflix.spinnaker.orca.pipeline.util.OperatingSystem
@@ -31,6 +33,8 @@ import com.netflix.spinnaker.orca.pipeline.util.PackageInfo
 import com.netflix.spinnaker.orca.pipeline.util.PackageType
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -48,7 +52,11 @@ class CreateBakeTask implements RetryableTask {
 
   @Autowired(required = false)
   BakeryService bakery
+
   @Autowired ObjectMapper mapper
+
+  @Autowired(required = false)
+  Front50Service front50Service
 
   @Value('${bakery.extractBuildDetails:false}')
   boolean extractBuildDetails
@@ -59,11 +67,32 @@ class CreateBakeTask implements RetryableTask {
   @Value('${bakery.allowMissingPackageInstallation:false}')
   boolean allowMissingPackageInstallation
 
+  private final Logger log = LoggerFactory.getLogger(getClass())
+
   @Override
   TaskResult execute(Stage stage) {
     String region = stage.context.region
     if (!bakery) {
       throw new UnsupportedOperationException("You have not enabled baking for this orca instance. Set bakery.enabled: true")
+    }
+
+    // If application exists, we should pass the owner of the application as the user to the bakery
+    try {
+      if (front50Service != null) {
+        String appName = stage.execution.application
+        Application application = front50Service.get(appName)
+        if (application) {
+          String user = application.email
+          if (user != null && user != "") {
+            stage.context.user = user
+          }
+        }
+      }
+    } catch (Exception e) {
+      // ignore exception, we will just use the owner passed to us
+      if (!e.message.contains("404")) {
+        log.warn("Error retrieving application from front50, ignoring.", e)
+      }
     }
 
     try {
