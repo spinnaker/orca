@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.bakery.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -67,6 +68,8 @@ class CreateBakeTask implements RetryableTask {
   @Value('${bakery.allowMissingPackageInstallation:false}')
   boolean allowMissingPackageInstallation
 
+  RetrySupport retrySupport
+
   private final Logger log = LoggerFactory.getLogger(getClass())
 
   @Override
@@ -80,18 +83,16 @@ class CreateBakeTask implements RetryableTask {
     try {
       if (front50Service != null) {
         String appName = stage.execution.application
-        Application application = front50Service.get(appName)
-        if (application) {
-          String user = application.email
-          if (user != null && user != "") {
-            stage.context.user = user
-          }
+        Application application = retrySupport.retry({return front50Service.get(appName)}, 5, 2000, false)
+        String user = application.email
+        if (user != null && user != "") {
+          stage.context.user = user
         }
       }
-    } catch (Exception e) {
+    } catch (RetrofitError e) {
       // ignore exception, we will just use the owner passed to us
       if (!e.message.contains("404")) {
-        log.warn("Error retrieving application from front50, ignoring.", e)
+        log.warn("Error retrieving application {} from front50, ignoring.", stage.execution.application, e)
       }
     }
 
