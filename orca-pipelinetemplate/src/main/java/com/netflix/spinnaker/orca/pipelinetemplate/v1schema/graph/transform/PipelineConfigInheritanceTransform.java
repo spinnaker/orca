@@ -17,14 +17,15 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform;
 
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate.Configuration;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-public class PipelineConfigInheritanceTransform implements PipelineTemplateVisitor {
+public class PipelineConfigInheritanceTransform implements PipelineTemplateVisitor, V2PipelineTemplateVisitor {
 
   TemplateConfiguration templateConfiguration;
 
@@ -35,7 +36,7 @@ public class PipelineConfigInheritanceTransform implements PipelineTemplateVisit
   @Override
   public void visitPipelineTemplate(PipelineTemplate pipelineTemplate) {
     List<String> inherit = templateConfiguration.getConfiguration().getInherit();
-    Configuration pc = pipelineTemplate.getConfiguration();
+    PipelineTemplate.Configuration pc = pipelineTemplate.getConfiguration();
 
     if (!inherit.contains("concurrentExecutions")) {
       pc.setConcurrentExecutions(new HashMap<>());
@@ -51,6 +52,28 @@ public class PipelineConfigInheritanceTransform implements PipelineTemplateVisit
     }
     if (!inherit.contains("notifications")) {
       pc.setNotifications(Collections.emptyList());
+    }
+  }
+
+  @Override
+  public void visitPipelineTemplate(V2PipelineTemplate pipelineTemplate) {
+    List<String> inherit = templateConfiguration.getConfiguration().getInherit();
+    V2PipelineTemplate.Configuration pc = pipelineTemplate.getConfiguration();
+
+    if (!inherit.contains("concurrentExecutions")) {
+      pc.put("concurrentExecutions", new HashMap<>());
+    }
+    if (!inherit.contains("triggers")) {
+      pc.put("triggers", Collections.emptyList());
+    }
+    if (!inherit.contains("parameters")) {
+      pc.put("parameters", Collections.emptyList());
+    }
+    if (!inherit.contains("expectedArtifacts")) {
+      pc.put("expectedArtifacts", Collections.emptyList());
+    }
+    if (!inherit.contains("notifications")) {
+      pc.put("notifications", Collections.emptyList());
     }
   }
 }

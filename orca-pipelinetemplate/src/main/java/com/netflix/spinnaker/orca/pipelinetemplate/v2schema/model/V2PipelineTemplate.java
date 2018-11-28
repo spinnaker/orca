@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.NamedContent;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.StageDefinition;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.validator.VersionedSchema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -112,5 +113,13 @@ public class V2PipelineTemplate implements VersionedSchema {
 
   public List<StageDefinition> getStages() {
     return Optional.ofNullable(stages).orElse(Collections.emptyList());
+  }
+
+  public void accept(V2PipelineTemplateVisitor visitor) {
+    visitor.visitPipelineTemplate(this);
+  }
+
+  public List<Variable> getVariables() {
+    return Optional.ofNullable(variables).orElse(Collections.emptyList());
   }
 }
