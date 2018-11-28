@@ -21,19 +21,20 @@ import com.netflix.spinnaker.fiat.model.UserPermission;
 import com.netflix.spinnaker.fiat.model.resources.Role;
 import com.netflix.spinnaker.fiat.model.resources.ServiceAccount;
 import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator;
+import com.netflix.spinnaker.fiat.shared.FiatService;
 import com.netflix.spinnaker.fiat.shared.FiatStatus;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,6 +61,9 @@ public class SaveServiceAccountTask implements RetryableTask {
 
   @Autowired(required = false)
   private FiatPermissionEvaluator fiatPermissionEvaluator;
+
+  @Autowired(required = false)
+  private FiatService fiatService;
 
   @Override
   public long getBackoffPeriod() {
@@ -125,6 +129,10 @@ public class SaveServiceAccountTask implements RetryableTask {
 
     if (response.getStatus() != HttpStatus.OK.value()) {
       return new TaskResult(ExecutionStatus.TERMINAL);
+    }
+
+    if (fiatService != null) {
+      fiatService.sync();
     }
 
     return new TaskResult(
