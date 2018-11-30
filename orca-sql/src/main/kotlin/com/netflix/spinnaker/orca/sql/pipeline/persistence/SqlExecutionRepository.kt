@@ -70,7 +70,8 @@ class SqlExecutionRepository(
   private val partitionName: String?,
   private val jooq: DSLContext,
   private val mapper: ObjectMapper,
-  private val transactionRetryProperties: TransactionRetryProperties
+  private val transactionRetryProperties: TransactionRetryProperties,
+  private val batchReadSize: Int = 10
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -284,10 +285,11 @@ class SqlExecutionRepository(
 
         val startTime = criteria.startTimeCutoff
         if (startTime != null) {
-          // This may look like a bug, but it isn't. Start time isn't always set (NOT_STARTED status). We
-          // don't want to exclude Executions that haven't started, but we also want to still reduce the result set.
           where
-            .and(field("build_time").greaterThan(startTime.toEpochMilli()))
+            .and(
+              field("start_time").greaterThan(startTime.toEpochMilli())
+                .or(field("start_time").isNull)
+            )
             .statusIn(criteria.statuses)
         } else {
           where.statusIn(criteria.statuses)
@@ -295,7 +297,7 @@ class SqlExecutionRepository(
       },
       seek = {
         val ordered = when (sorter) {
-          START_TIME_OR_ID -> it.orderBy(field("start_time").desc(), field("id").desc())
+          START_TIME_OR_ID -> it.orderBy(field("start_time").desc().nullsFirst(), field("id").desc())
           REVERSE_BUILD_TIME -> it.orderBy(field("build_time").asc(), field("id").asc())
           else -> it.orderBy(field("id").desc())
         }
@@ -405,19 +407,21 @@ class SqlExecutionRepository(
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds: MutableList<String>,
                                                                              buildTimeStartBoundary: Long,
-                                                                             buildTimeEndBoundary: Long): Observable<Execution> {
+                                                                             buildTimeEndBoundary: Long,
+                                                                             limit: Int): Observable<Execution> {
     val select = jooq.selectExecutions(
-      ORCHESTRATION,
+      PIPELINE,
       conditions = {
-        it.where(field("config_id").`in`(pipelineConfigIds.toTypedArray()))
+        val inClause = "config_id IN (${pipelineConfigIds.joinToString(",") { "'$it'" }})"
+        it.where(inClause)
           .and(field("build_time").gt(buildTimeStartBoundary))
           .and(field("build_time").lt(buildTimeEndBoundary))
       },
       seek = {
         it.orderBy(field("id").desc())
+        it.limit(limit)
       }
     )
-
     return Observable.from(select.fetchExecutions())
   }
 
@@ -492,7 +496,7 @@ class SqlExecutionRepository(
       )
 
       when (execution.type) {
-        PIPELINE      -> upsert(
+        PIPELINE -> upsert(
           ctx,
           execution.type.tableName,
           insertPairs.plus(field("config_id") to execution.pipelineConfigId),
@@ -562,7 +566,7 @@ class SqlExecutionRepository(
   private fun storeCorrelationIdInternal(ctx: DSLContext, execution: Execution) {
     if (execution.trigger.correlationId != null && !execution.status.isComplete) {
       val executionIdField = when (execution.type) {
-        PIPELINE      -> field("pipeline_id")
+        PIPELINE -> field("pipeline_id")
         ORCHESTRATION -> field("orchestration_id")
       }
 
@@ -682,10 +686,10 @@ class SqlExecutionRepository(
                                           fields: List<Field<Any>> = selectFields(),
                                           conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
                                           seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>) =
-      select(fields)
-        .from(type.tableName)
-        .let { conditions(it) }
-        .let { seek(it) }
+    select(fields)
+      .from(type.tableName)
+      .let { conditions(it) }
+      .let { seek(it) }
 
   private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectFields()) =
     select(fields)
@@ -700,11 +704,10 @@ class SqlExecutionRepository(
   private fun SelectForUpdateStep<out Record>.fetchExecution() =
     fetchExecutions().firstOrNull()
 
-  // TODO rz - Need to make pageSize configurable; doubtful that 10 is the right size.
   private fun fetchExecutions(nextPage: (Int, String?) -> Iterable<Execution>) =
     object : Iterable<Execution> {
       override fun iterator(): Iterator<Execution> =
-        PagedIterator(10, Execution::getId, nextPage)
+        PagedIterator(batchReadSize, Execution::getId, nextPage)
     }
 
   class SyntheticStageRequired : IllegalArgumentException("Only synthetic stages can be inserted ad-hoc")
