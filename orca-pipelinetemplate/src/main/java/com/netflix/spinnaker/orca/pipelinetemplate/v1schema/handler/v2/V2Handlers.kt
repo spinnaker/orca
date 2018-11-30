@@ -53,7 +53,6 @@ class V2SchemaHandlerGroup
 }
 
 class V2ConfigurationValidationHandler : Handler {
-  private val log = LoggerFactory.getLogger(V2ConfigurationValidationHandler::class.java)
   override fun handle(chain: HandlerChain, context: PipelineTemplateContext) {
     val errors = Errors()
 
@@ -62,7 +61,7 @@ class V2ConfigurationValidationHandler : Handler {
       ctx.configuration,
       errors,
       V2TemplateConfigurationSchemaValidator.SchemaValidatorContext(
-        ctx.template.stages.stream().map { it.id }.collect(Collectors.toList())
+        ctx.template.stages.stream().map { it["id"].toString() }.collect(Collectors.toList())
       )
     )
     if (errors.hasErrors(context.getRequest().plan)) {

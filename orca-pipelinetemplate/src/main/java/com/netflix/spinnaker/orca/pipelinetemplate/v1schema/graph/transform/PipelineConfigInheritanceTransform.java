@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemp
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PipelineConfigInheritanceTransform implements PipelineTemplateVisitor, V2PipelineTemplateVisitor {
 
@@ -58,22 +59,19 @@ public class PipelineConfigInheritanceTransform implements PipelineTemplateVisit
   @Override
   public void visitPipelineTemplate(V2PipelineTemplate pipelineTemplate) {
     List<String> inherit = templateConfiguration.getConfiguration().getInherit();
-    V2PipelineTemplate.Configuration pc = pipelineTemplate.getConfiguration();
+    Map<String, Object> pipeline = pipelineTemplate.getPipeline();
 
-    if (!inherit.contains("concurrentExecutions")) {
-      pc.put("concurrentExecutions", new HashMap<>());
-    }
     if (!inherit.contains("triggers")) {
-      pc.put("triggers", Collections.emptyList());
+      pipeline.put("triggers", Collections.emptyList());
     }
-    if (!inherit.contains("parameters")) {
-      pc.put("parameters", Collections.emptyList());
+    if (!inherit.contains("parameterConfig")) {
+      pipeline.put("parameterConfig", Collections.emptyList());
     }
     if (!inherit.contains("expectedArtifacts")) {
-      pc.put("expectedArtifacts", Collections.emptyList());
+      pipeline.put("expectedArtifacts", Collections.emptyList());
     }
     if (!inherit.contains("notifications")) {
-      pc.put("notifications", Collections.emptyList());
+      pipeline.put("notifications", Collections.emptyList());
     }
   }
 }

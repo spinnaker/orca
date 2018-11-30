@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.NamedContent;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.StageDefinition;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.validator.VersionedSchema;
 import lombok.AllArgsConstructor;
@@ -43,8 +42,11 @@ public class V2PipelineTemplate implements VersionedSchema {
    */
   private Boolean protect = false;
   private List<Variable> variables = new ArrayList<>();
-  private Configuration configuration;
-  private List<StageDefinition> stages;
+
+  /**
+   * pipeline is a possibly SpEL-templated pipeline definition.
+   */
+  private Map<String, Object> pipeline;
 
   @Data
   public static class Metadata {
@@ -99,20 +101,18 @@ public class V2PipelineTemplate implements VersionedSchema {
     }
   }
 
-  public static class Configuration extends HashMap<String, Object> {}
-
   @Override
   @JsonIgnore
   public String getSchemaVersion() {
     return schema;
   }
 
-  public Configuration getConfiguration() {
-    return Optional.ofNullable(configuration).orElse(new Configuration());
+  public Map<String, Object> getPipeline() {
+    return Optional.ofNullable(pipeline).orElse(Collections.EMPTY_MAP);
   }
 
-  public List<StageDefinition> getStages() {
-    return Optional.ofNullable(stages).orElse(Collections.emptyList());
+  public List<Map<String, Object>> getStages() {
+    return (List<Map<String, Object>>) pipeline.get("stages");
   }
 
   public void accept(V2PipelineTemplateVisitor visitor) {

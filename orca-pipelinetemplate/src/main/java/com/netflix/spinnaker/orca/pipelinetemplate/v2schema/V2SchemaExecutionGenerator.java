@@ -30,7 +30,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
 
   @Override
   public Map<String, Object> generate(V2PipelineTemplate template, TemplateConfiguration configuration, TemplatedPipelineRequest request) {
-    Map<String, Object> pipeline = new HashMap<>();
+    Map<String, Object> pipeline = template.getPipeline();
     pipeline.put("id", Optional.ofNullable(request.getId()).orElse(Optional.ofNullable(configuration.getPipeline().getPipelineConfigId()).orElse("unknown")));
     pipeline.put("application", configuration.getPipeline().getApplication());
     if (request.getExecutionId() != null) {
@@ -38,35 +38,18 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
     }
     pipeline.put("name", Optional.ofNullable(configuration.getPipeline().getName()).orElse("Unnamed Execution"));
 
-    V2PipelineTemplate.Configuration c = template.getConfiguration();
-    Map<String, Object> concurrentExecutions = (Map<String, Object>) c.get("concurrentExecutions");
-    if (concurrentExecutions == null || concurrentExecutions.isEmpty()) {
+    if (!pipeline.containsKey("limitConcurrent")) {
       pipeline.put("limitConcurrent", request.isLimitConcurrent());
+    }
+    if (!pipeline.containsKey("keepWaitingPipelines")) {
       pipeline.put("keepWaitingPipelines", request.isKeepWaitingPipelines());
-    } else {
-      pipeline.put("limitConcurrent", concurrentExecutions.getOrDefault("limitConcurrent", request.isLimitConcurrent()));
-      pipeline.put("keepWaitingPipelines", concurrentExecutions.getOrDefault("keepWaitingPipelines", request.isKeepWaitingPipelines()));
     }
 
     addNotifications(pipeline, template, configuration);
     addParameters(pipeline, template, configuration);
     addTriggers(pipeline, template, configuration);
-
     pipeline.put("templateVariables", configuration.getPipeline().getVariables());
 
-    pipeline.put("stages", template.getStages()
-      .stream()
-      .map(s -> {
-        Map<String, Object> stage = new HashMap<>();
-        stage.put("id", UUID.randomUUID().toString());
-        stage.put("refId", s.getId());
-        stage.put("type", s.getType());
-        stage.put("name", s.getName());
-        stage.put("requisiteStageRefIds", s.getRequisiteStageRefIds());
-        stage.putAll(s.getConfigAsMap());
-        return stage;
-      })
-      .collect(Collectors.toList()));
     if (request.getTrigger() != null && !request.getTrigger().isEmpty()) {
       pipeline.put("trigger", request.getTrigger());
     }
@@ -79,7 +62,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
         "notifications",
         TemplateMerge.mergeDistinct(
-          (List<HashMap<String, Object>>) template.getConfiguration().get("notifications"),
+          (List<HashMap<String, Object>>) template.getPipeline().get("notifications"),
           castAllToHashMap(configuration.getConfiguration().getNotifications())
         )
       );
@@ -96,7 +79,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
         "parameterConfig",
         TemplateMerge.mergeDistinct(
-          (List<HashMap<String, Object>>) template.getConfiguration().get("parameters"),
+          (List<HashMap<String, Object>>) template.getPipeline().get("parameterConfig"),
           castAllToHashMap(configuration.getConfiguration().getParameters())
         )
       );
@@ -115,7 +98,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
         "triggers",
         TemplateMerge.mergeDistinct(
-          (List<HashMap<String, Object>>) template.getConfiguration().get("triggers"),
+          (List<HashMap<String, Object>>) template.getPipeline().get("triggers"),
           castAllToHashMap(configuration.getConfiguration().getTriggers())
         )
       );

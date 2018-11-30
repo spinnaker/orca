@@ -17,9 +17,7 @@
 package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2;
 
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.PipelineConfigInheritanceTransform;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.transform.V2ConfigStageInjectionTransform;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.transform.V2DefaultVariableAssignmentTransform;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.transform.V2TrimConditionalsTransform;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
@@ -34,8 +32,7 @@ public class V2GraphMutator {
   public V2GraphMutator(TemplateConfiguration configuration) {
     visitors.add(new V2DefaultVariableAssignmentTransform(configuration));
     visitors.add(new PipelineConfigInheritanceTransform(configuration));
-    visitors.add(new V2ConfigStageInjectionTransform(configuration));
-    visitors.add(new V2TrimConditionalsTransform());
+//    visitors.add(new V2ConfigStageInjectionTransform(configuration));
   }
 
   public void mutate(V2PipelineTemplate template) {
