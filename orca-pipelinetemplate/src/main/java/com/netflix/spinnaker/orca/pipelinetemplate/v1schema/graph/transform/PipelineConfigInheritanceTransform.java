@@ -18,17 +18,14 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
-import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
-import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class PipelineConfigInheritanceTransform implements PipelineTemplateVisitor, V2PipelineTemplateVisitor {
+public class PipelineConfigInheritanceTransform implements PipelineTemplateVisitor {
 
-  TemplateConfiguration templateConfiguration;
+  private TemplateConfiguration templateConfiguration;
 
   public PipelineConfigInheritanceTransform(TemplateConfiguration templateConfiguration) {
     this.templateConfiguration = templateConfiguration;
@@ -53,25 +50,6 @@ public class PipelineConfigInheritanceTransform implements PipelineTemplateVisit
     }
     if (!inherit.contains("notifications")) {
       pc.setNotifications(Collections.emptyList());
-    }
-  }
-
-  @Override
-  public void visitPipelineTemplate(V2PipelineTemplate pipelineTemplate) {
-    List<String> inherit = templateConfiguration.getConfiguration().getInherit();
-    Map<String, Object> pipeline = pipelineTemplate.getPipeline();
-
-    if (!inherit.contains("triggers")) {
-      pipeline.put("triggers", Collections.emptyList());
-    }
-    if (!inherit.contains("parameterConfig")) {
-      pipeline.put("parameterConfig", Collections.emptyList());
-    }
-    if (!inherit.contains("expectedArtifacts")) {
-      pipeline.put("expectedArtifacts", Collections.emptyList());
-    }
-    if (!inherit.contains("notifications")) {
-      pipeline.put("notifications", Collections.emptyList());
     }
   }
 }

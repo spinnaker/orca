@@ -19,24 +19,22 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v2schema;
 import com.netflix.spinnaker.orca.pipelinetemplate.TemplatedPipelineRequest;
 import com.netflix.spinnaker.orca.pipelinetemplate.generator.V2ExecutionGenerator;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.TemplateMerge;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.NamedHashMap;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2TemplateConfiguration;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
 
   @Override
-  public Map<String, Object> generate(V2PipelineTemplate template, TemplateConfiguration configuration, TemplatedPipelineRequest request) {
+  public Map<String, Object> generate(V2PipelineTemplate template, V2TemplateConfiguration configuration, TemplatedPipelineRequest request) {
     Map<String, Object> pipeline = template.getPipeline();
-    pipeline.put("id", Optional.ofNullable(request.getId()).orElse(Optional.ofNullable(configuration.getPipeline().getPipelineConfigId()).orElse("unknown")));
-    pipeline.put("application", configuration.getPipeline().getApplication());
+    pipeline.put("id", Optional.ofNullable(request.getId()).orElse(Optional.ofNullable(configuration.getPipelineConfigId()).orElse("unknown")));
+    pipeline.put("application", configuration.getApplication());
     if (request.getExecutionId() != null) {
       pipeline.put("executionId", request.getExecutionId());
     }
-    pipeline.put("name", Optional.ofNullable(configuration.getPipeline().getName()).orElse("Unnamed Execution"));
+    pipeline.put("name", Optional.ofNullable(configuration.getName()).orElse("Unnamed Execution"));
 
     if (!pipeline.containsKey("limitConcurrent")) {
       pipeline.put("limitConcurrent", request.isLimitConcurrent());
@@ -48,7 +46,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
     addNotifications(pipeline, template, configuration);
     addParameters(pipeline, template, configuration);
     addTriggers(pipeline, template, configuration);
-    pipeline.put("templateVariables", configuration.getPipeline().getVariables());
+    pipeline.put("templateVariables", configuration.getVariables());
 
     if (request.getTrigger() != null && !request.getTrigger().isEmpty()) {
       pipeline.put("trigger", request.getTrigger());
@@ -57,62 +55,56 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
     return pipeline;
   }
 
-  private void addNotifications(Map<String, Object> pipeline, V2PipelineTemplate template, TemplateConfiguration configuration) {
-    if (configuration.getConfiguration().getInherit().contains("notifications")) {
+  private void addNotifications(Map<String, Object> pipeline, V2PipelineTemplate template, V2TemplateConfiguration configuration) {
+    if (configuration.getInherit().contains("notifications")) {
       pipeline.put(
         "notifications",
         TemplateMerge.mergeDistinct(
           (List<HashMap<String, Object>>) template.getPipeline().get("notifications"),
-          castAllToHashMap(configuration.getConfiguration().getNotifications())
+          configuration.getNotifications()
         )
       );
     } else {
       pipeline.put(
         "notifications",
-        Optional.ofNullable(configuration.getConfiguration().getNotifications()).orElse(Collections.emptyList())
+        Optional.ofNullable(configuration.getNotifications()).orElse(Collections.emptyList())
       );
     }
   }
 
-  private void addParameters(Map<String, Object> pipeline, V2PipelineTemplate template, TemplateConfiguration configuration) {
-    if (configuration.getConfiguration().getInherit().contains("parameters")) {
+  private void addParameters(Map<String, Object> pipeline, V2PipelineTemplate template, V2TemplateConfiguration configuration) {
+    if (configuration.getInherit().contains("parameters")) {
       pipeline.put(
         "parameterConfig",
         TemplateMerge.mergeDistinct(
           (List<HashMap<String, Object>>) template.getPipeline().get("parameterConfig"),
-          castAllToHashMap(configuration.getConfiguration().getParameters())
+          configuration.getParameters()
         )
       );
     } else {
       pipeline.put(
         "parameterConfig",
-        Optional.ofNullable(configuration.getConfiguration().getParameters()).orElse(Collections.emptyList())
+        Optional.ofNullable(configuration.getParameters()).orElse(Collections.emptyList())
       );
     }
   }
 
   private void addTriggers(Map<String, Object> pipeline,
                            V2PipelineTemplate template,
-                           TemplateConfiguration configuration) {
-    if (configuration.getConfiguration().getInherit().contains("triggers")) {
+                           V2TemplateConfiguration configuration) {
+    if (configuration.getInherit().contains("triggers")) {
       pipeline.put(
         "triggers",
         TemplateMerge.mergeDistinct(
           (List<HashMap<String, Object>>) template.getPipeline().get("triggers"),
-          castAllToHashMap(configuration.getConfiguration().getTriggers())
+          configuration.getTriggers()
         )
       );
     } else {
       pipeline.put(
         "triggers",
-        Optional.ofNullable(configuration.getConfiguration().getTriggers()).orElse(Collections.emptyList())
+        Optional.ofNullable(configuration.getTriggers()).orElse(Collections.emptyList())
       );
     }
-  }
-
-  // TODO(jacobkiefer): Consider adding a v2 context class to simplify processing in the V2SchemaExecutionGenerator.
-  // This results in a TemplateContext class with overly-concrete attributes that complicate things.
-  private List<HashMap<String, Object>> castAllToHashMap(List<NamedHashMap> namedHashMaps) {
-    return namedHashMaps.stream().map(nhm -> (HashMap<String, Object>) nhm).collect(Collectors.toList());
   }
 }

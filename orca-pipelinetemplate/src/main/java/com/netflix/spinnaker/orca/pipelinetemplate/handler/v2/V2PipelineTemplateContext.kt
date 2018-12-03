@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.pipelinetemplate.handler.v2
 
 import com.netflix.spinnaker.orca.pipelinetemplate.handler.PipelineTemplateSchemaContext
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2TemplateConfiguration
 
 data class V2PipelineTemplateContext(
-  val configuration: TemplateConfiguration,
+  val configuration: V2TemplateConfiguration,
   val template: V2PipelineTemplate
 ) : PipelineTemplateSchemaContext

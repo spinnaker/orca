@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.IllegalTemplateCon
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2TemplateConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
@@ -30,9 +31,9 @@ import java.util.stream.Collectors;
 
 public class V2DefaultVariableAssignmentTransform implements V2PipelineTemplateVisitor {
 
-  private TemplateConfiguration templateConfiguration;
+  private V2TemplateConfiguration templateConfiguration;
 
-  public V2DefaultVariableAssignmentTransform(TemplateConfiguration templateConfiguration) {
+  public V2DefaultVariableAssignmentTransform(V2TemplateConfiguration templateConfiguration) {
     this.templateConfiguration = templateConfiguration;
   }
 
@@ -43,8 +44,8 @@ public class V2DefaultVariableAssignmentTransform implements V2PipelineTemplateV
       return;
     }
 
-    Map<String, Object> configVars = templateConfiguration.getPipeline().getVariables() != null
-      ? templateConfiguration.getPipeline().getVariables()
+    Map<String, Object> configVars = templateConfiguration.getVariables() != null
+      ? templateConfiguration.getVariables()
       : new HashMap<>();
 
     // if the config is missing vars and the template defines a default value, assign those values from the config

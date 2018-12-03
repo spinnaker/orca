@@ -16,11 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2;
 
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.PipelineConfigInheritanceTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.transform.V2ConfigStageInjectionTransform;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.transform.V2DefaultVariableAssignmentTransform;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.graph.V2PipelineConfigInheritanceTransform;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
+import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2TemplateConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +30,10 @@ public class V2GraphMutator {
 
   private List<V2PipelineTemplateVisitor> visitors = new ArrayList<>();
 
-  public V2GraphMutator(TemplateConfiguration configuration) {
+  public V2GraphMutator(V2TemplateConfiguration configuration) {
     visitors.add(new V2DefaultVariableAssignmentTransform(configuration));
-    visitors.add(new PipelineConfigInheritanceTransform(configuration));
-//    visitors.add(new V2ConfigStageInjectionTransform(configuration));
+    visitors.add(new V2PipelineConfigInheritanceTransform(configuration));
+    visitors.add(new V2ConfigStageInjectionTransform(configuration));
   }
 
   public void mutate(V2PipelineTemplate template) {
