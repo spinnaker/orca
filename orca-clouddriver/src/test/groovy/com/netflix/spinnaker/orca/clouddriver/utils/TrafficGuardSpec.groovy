@@ -75,7 +75,8 @@ class TrafficGuardSpec extends Specification {
     trafficGuard.verifyTrafficRemoval(targetName, moniker, "test", location, "aws", "x")
 
     then:
-    thrown(TrafficGuardException)
+    def e = thrown(TrafficGuardException)
+    e.message.startsWith("This cluster ('app-foo' in test/us-east-1) has traffic guards enabled.")
     1 * front50Service.get("app") >> application
     1 * oortHelper.getCluster("app", "test", "app-foo", "aws") >> [
       serverGroups: [

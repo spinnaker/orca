@@ -205,15 +205,9 @@ public class TrafficGuard {
     double futureCapacityRatio = ((double) futureCapacity) / currentCapacity;
     double minCapacityRatio = getMinCapacityRatio();
     if (futureCapacityRatio <= minCapacityRatio) {
-      String message = format("This cluster ('%s' in %s/%s) has traffic guards enabled. %s [%s] would leave the cluster ",
-        cluster, account, location.getValue(), operationDescriptor, String.join(",", namesOfServerGroupsGoingAway));
-
-      message += (futureCapacity == 0)
-        ? "with no instances taking traffic."
-        : format("with %d instances up (%.1f%% of %d instances currently up). The configured minimum is %.1f%%.",
-            futureCapacity, futureCapacityRatio * 100, currentCapacity, minCapacityRatio * 100);
-
-      log.debug("{} Context: {}", message, generateContext(currentServerGroups));
+      String message = generateUserFacingMessage(cluster, account, location, operationDescriptor,
+        namesOfServerGroupsGoingAway, futureCapacity, currentCapacity, futureCapacityRatio, minCapacityRatio);
+      log.debug("{}\nContext: {}", message, generateContext(currentServerGroups));
 
       registry.counter(savesId.withTags(
         "application", someServerGroup.getMoniker().getApp(),
@@ -222,6 +216,22 @@ public class TrafficGuard {
 
       throw new TrafficGuardException(message);
     }
+  }
+
+  private String generateUserFacingMessage(String cluster, String account, Location location, String operationDescriptor,
+                                           Set<String> namesOfServerGroupsGoingAway,
+                                           int futureCapacity, int currentCapacity,
+                                           double futureCapacityRatio, double minCapacityRatio) {
+    String message = format("This cluster ('%s' in %s/%s) has traffic guards enabled. %s [%s] would leave the cluster ",
+      cluster, account, location.getValue(), operationDescriptor, String.join(",", namesOfServerGroupsGoingAway));
+
+    if (futureCapacity == 0) {
+      return message + "with no instances up.";
+    }
+
+    String withInstances = (futureCapacity == 1) ? "with 1 instance up " : format("with %d instances up ", futureCapacity);
+    return message + withInstances + format("(%.1f%% of %d instances currently up). The configured minimum is %.1f%%.",
+      futureCapacityRatio * 100, currentCapacity, minCapacityRatio * 100);
   }
 
   private double getMinCapacityRatio() {

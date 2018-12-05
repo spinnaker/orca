@@ -153,7 +153,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
 
     for (Location location: locations) {
       trafficGuard.verifyTrafficRemoval(filteredServerGroupsByLocation[location], serverGroupsByLocation[location],
-        credentials, getClouddriverOperation())
+        credentials, String.format("Running %s on", getClouddriverOperation()))
     }
   }
 
