@@ -22,6 +22,7 @@ import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
@@ -74,6 +75,9 @@ class OperationsController {
   WebhookService webhookService
 
   @Autowired(required = false)
+  JobService jobService
+
+  @Autowired(required = false)
   ArtifactResolver artifactResolver
 
   @Autowired
@@ -100,7 +104,10 @@ class OperationsController {
       return pipeline
     }
 
-    def augmentedContext = [trigger: pipeline.trigger]
+    def augmentedContext = [
+      trigger: pipeline.trigger,
+      templateVariables: pipeline.templateVariables ?: [:]
+    ]
     def processedPipeline = contextParameterProcessor.process(pipeline, augmentedContext, false)
     processedPipeline.trigger = objectMapper.convertValue(processedPipeline.trigger, Trigger)
 
@@ -249,6 +256,22 @@ class OperationsController {
         waitForCompletion: it.waitForCompletion,
         preconfiguredProperties: it.preconfiguredProperties,
         noUserConfigurableFields: it.noUserConfigurableFields(),
+        parameters: it.parameters,
+      ]
+    }
+  }
+
+  @RequestMapping(value = "/jobs/preconfigured")
+  List<Map<String, Object>> preconfiguredJob() {
+    if (!jobService) {
+      return []
+    }
+    return jobService?.getPreconfiguredStages().collect{
+      [ label: it.label,
+        description: it.description,
+        type: it.type,
+        waitForCompletion: it.waitForCompletion,
+        noUserConfigurableFields: true,
         parameters: it.parameters,
       ]
     }
