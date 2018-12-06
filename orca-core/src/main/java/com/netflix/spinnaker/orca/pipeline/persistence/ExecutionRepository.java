@@ -23,6 +23,7 @@ import rx.Observable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -73,11 +74,18 @@ public interface ExecutionRepository {
   @Nonnull
   Observable<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(@Nonnull List<String> pipelineConfigIds,
                                                                                       long buildTimeStartBoundary,
-                                                                                      long buildTimeEndBoundary);
+                                                                                      long buildTimeEndBoundary,
+                                                                                      int limit);
 
+  @Deprecated // Use the non-rx interface instead
   @Nonnull
   Observable<Execution> retrieveOrchestrationsForApplication(@Nonnull String application,
                                                              @Nonnull ExecutionCriteria criteria);
+
+  @Nonnull
+  List<Execution> retrieveOrchestrationsForApplication(@Nonnull String application,
+                                                       @Nonnull ExecutionCriteria criteria,
+                                                       @Nullable ExecutionComparator sorter);
 
   @Nonnull
   Execution retrieveOrchestrationForCorrelationId(@Nonnull String correlationId) throws ExecutionNotFoundException;
@@ -92,10 +100,15 @@ public interface ExecutionRepository {
   List<String> retrieveAllApplicationNames(@Nullable ExecutionType executionType, int minExecutions);
 
   boolean hasExecution(@Nonnull ExecutionType type, @Nonnull String id);
-  
+
   List<String> retrieveAllExecutionIds(@Nonnull ExecutionType type);
 
   final class ExecutionCriteria {
+    private int limit = 3500;
+    private Collection<ExecutionStatus> statuses = new ArrayList<>();
+    private int page;
+    private Instant startTimeCutoff;
+
     public int getLimit() {
       return limit;
     }
@@ -133,9 +146,14 @@ public interface ExecutionRepository {
       return this;
     }
 
-    private int limit;
-    private Collection<ExecutionStatus> statuses = new ArrayList<>();
-    private int page;
+    public @Nullable Instant getStartTimeCutoff() {
+      return startTimeCutoff;
+    }
+
+    public ExecutionCriteria setStartTimeCutoff(Instant startTimeCutoff) {
+      this.startTimeCutoff = startTimeCutoff;
+      return this;
+    }
 
     @Override public boolean equals(Object o) {
       if (this == o) return true;
@@ -149,5 +167,53 @@ public interface ExecutionRepository {
     @Override public int hashCode() {
       return Objects.hash(limit, statuses, page);
     }
+  }
+
+  enum ExecutionComparator implements Comparator<Execution> {
+
+    NATURAL {
+      @Override
+      public int compare(Execution a, Execution b) {
+        return b.getId().compareTo(a.getId());
+      }
+    },
+
+    /**
+     * Sort executions nulls first, then by startTime descending, breaking ties by lexicographically descending IDs.
+     */
+    START_TIME_OR_ID {
+      @Override
+      public int compare(Execution a, Execution b) {
+        Long aStartTime = a.getStartTime();
+        Long bStartTime = b.getStartTime();
+
+        if (aStartTime == null) {
+          return -1;
+        }
+        if (bStartTime == null) {
+          return 0;
+        }
+
+        int startCompare = bStartTime.compareTo(aStartTime);
+        if (startCompare == 0) {
+          return b.getId().compareTo(a.getId());
+        }
+        return startCompare;
+      }
+    },
+
+    REVERSE_BUILD_TIME {
+      @Override
+      public int compare(Execution a, Execution b) {
+        Long aBuildTime = Optional.ofNullable(a.getBuildTime()).orElse(0L);
+        Long bBuildTime = Optional.ofNullable(b.getBuildTime()).orElse(0L);
+
+        int buildCompare = bBuildTime.compareTo(aBuildTime);
+        if (buildCompare == 0) {
+          return b.getId().compareTo(a.getId());
+        }
+        return buildCompare;
+      }
+    };
   }
 }

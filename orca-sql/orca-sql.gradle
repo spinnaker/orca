@@ -15,7 +15,7 @@
  */
 
 apply from: "$rootDir/gradle/kotlin.gradle"
-apply from: "$rootDir/gradle/spek.gradle"
+apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
   compile project(":orca-core")
@@ -29,6 +29,23 @@ dependencies {
   compile "org.liquibase:liquibase-core:3.6.1"
   compile 'com.zaxxer:HikariCP:2.5.1'
 
-  testCompile project(":orca-core-tck")
   testCompile "com.h2database:h2:1.4.197"
+  testCompile project(":orca-core-tck")
+  testCompile project(":orca-test-groovy")
+
+  testCompile "io.strikt:strikt-core:0.11.5"
+  testCompile "org.assertj:assertj-core:3.9.0"
+  testCompile "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+  testCompile "com.oneeyedmen:minutest:+"
+  testCompile "com.nhaarman:mockito-kotlin:1.5.0"
+
+  testRuntime "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
+  testRuntime "org.junit.platform:junit-platform-launcher:$junitVersion"
+  testRuntime "org.junit.vintage:junit-vintage-engine:$junitLegacyVersion"
+}
+
+test {
+  useJUnitPlatform {
+    includeEngines "junit-vintage", "junit-jupiter"
+  }
 }

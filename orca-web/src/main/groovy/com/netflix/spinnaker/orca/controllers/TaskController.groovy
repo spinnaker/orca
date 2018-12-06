@@ -29,6 +29,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -41,17 +42,24 @@ import org.springframework.security.access.prepost.PostAuthorize
 import org.springframework.security.access.prepost.PostFilter
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.access.prepost.PreFilter
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 import rx.schedulers.Schedulers
 
 import java.nio.charset.Charset
 import java.time.Clock
+import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
-import static java.time.ZoneOffset.UTC
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 
 @Slf4j
 @RestController
@@ -101,25 +109,19 @@ class TaskController {
       .setPage(page)
       .setLimit(limit)
       .setStatuses(statuses.split(",") as Collection)
+      .setStartTimeCutoff(
+        clock
+          .instant()
+          .atZone(ZoneOffset.UTC)
+          .minusDays(daysOfExecutionHistory)
+          .toInstant()
+      )
 
-    def startTimeCutoff = clock
-      .instant()
-      .atZone(UTC)
-      .minusDays(daysOfExecutionHistory)
-      .toInstant()
-      .toEpochMilli()
-
-    def orchestrations = executionRepository
-      .retrieveOrchestrationsForApplication(application, executionCriteria)
-      .filter({ Execution orchestration -> !orchestration.startTime || (orchestration.startTime > startTimeCutoff) })
-      .map({ Execution orchestration -> convert(orchestration) })
-      .subscribeOn(Schedulers.io())
-      .toList()
-      .toBlocking()
-      .single()
-      .sort(startTimeOrId)
-
-    orchestrations.subList(0, Math.min(orchestrations.size(), limit))
+    executionRepository.retrieveOrchestrationsForApplication(
+      application,
+      executionCriteria,
+      START_TIME_OR_ID
+    ).collect { convert(it) }
   }
 
   @PreAuthorize("@fiatPermissionEvaluator.storeWholePermission()")
@@ -177,23 +179,70 @@ class TaskController {
     }
   }
 
+/**
+ * Retrieves an ad-hoc collection of executions based on a number of user-supplied parameters. Either executionIds or
+ * pipelineConfigIds must be supplied in order to return any results. If both are supplied, an IllegalArgumentException
+ * will be thrown.
+ * @param pipelineConfigIds A comma-separated list of pipeline config ids
+ * @param executionIds A comma-separated list of execution ids; if specified, limit and statuses parameters will be
+ * ignored
+ * @param limit (optional) Number of most recent executions to retrieve per pipeline config; defaults to 1, ignored if
+ * executionIds is specified
+ * @param statuses (optional) Execution statuses to filter results by; defaults to all, ignored if executionIds is
+ * specified
+ * @param expand (optional) Expands each execution object in the resulting list. If this value is missing,
+ * it is defaulted to true.
+ * @return
+ */
+  @PostFilter("hasPermission(filterObject.application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/pipelines", method = RequestMethod.GET)
-  List<Execution> listLatestPipelines(
-    @RequestParam(value = "pipelineConfigIds") String pipelineConfigIds,
+  List<Execution> listSubsetOfPipelines(
+    @RequestParam(value = "pipelineConfigIds", required = false) String pipelineConfigIds,
+    @RequestParam(value = "executionIds", required = false) String executionIds,
     @RequestParam(value = "limit", required = false) Integer limit,
-    @RequestParam(value = "statuses", required = false) String statuses) {
+    @RequestParam(value = "statuses", required = false) String statuses,
+    @RequestParam(value = "expand", defaultValue = "true") boolean expand) {
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
     limit = limit ?: 1
-    def executionCriteria = new ExecutionRepository.ExecutionCriteria(
+    ExecutionRepository.ExecutionCriteria executionCriteria = new ExecutionRepository.ExecutionCriteria(
       limit: limit,
       statuses: (statuses.split(",") as Collection)
     )
 
-    def ids = pipelineConfigIds.split(',')
+    if (!pipelineConfigIds && !executionIds) {
+      return []
+    }
 
-    def allPipelines = rx.Observable.merge(ids.collect {
+    if (pipelineConfigIds && executionIds) {
+      throw new IllegalArgumentException("Only pipelineConfigIds OR executionIds can be specified")
+    }
+
+    if (executionIds) {
+      List<String> ids = executionIds.split(',')
+
+      List<Execution> executions = rx.Observable.from(ids.collect {
+        try {
+          executionRepository.retrieve(PIPELINE, it)
+        } catch (ExecutionNotFoundException e) {
+          null
+        }
+      }).subscribeOn(Schedulers.io()).toList().toBlocking().single().findAll()
+
+      if (!expand) {
+        unexpandPipelineExecutions(executions)
+      }
+
+      return executions
+    }
+    List<String> ids = pipelineConfigIds.split(',')
+
+    List<Execution> allPipelines = rx.Observable.merge(ids.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
     }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
+
+    if (!expand) {
+      unexpandPipelineExecutions(allPipelines)
+    }
 
     return filterPipelinesByHistoryCutoff(allPipelines, limit)
   }
@@ -271,9 +320,11 @@ class TaskController {
     Set<String> statusesAsSet = (statuses && statuses != "*") ? statuses.split(",") as Set : null // null means all statuses
 
     // Filter by application
-    List<String> pipelineConfigIds = application == "*" ? getPipelineConfigIdsOfReadableApplications() : front50Service.getPipelines(application, false)*.id as List<String>
+    List<String> pipelineConfigIds = application == "*" ?
+    getPipelineConfigIdsOfReadableApplications() :
+    front50Service.getPipelines(application, false)*.id as List<String>
 
-    List<Execution> pipelineExecutions = executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds, triggerTimeStartBoundary, triggerTimeEndBoundary)
+    List<Execution> pipelineExecutions = executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds, triggerTimeStartBoundary, triggerTimeEndBoundary, size)
       .subscribeOn(Schedulers.io())
       .filter{
         // Filter by pipeline name

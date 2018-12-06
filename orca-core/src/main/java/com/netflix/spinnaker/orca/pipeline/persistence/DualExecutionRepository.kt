@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -181,17 +182,20 @@ class DualExecutionRepository(
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds: MutableList<String>,
                                                                              buildTimeStartBoundary: Long,
-                                                                             buildTimeEndBoundary: Long): Observable<Execution> {
+                                                                             buildTimeEndBoundary: Long,
+                                                                             limit: Int): Observable<Execution> {
     return Observable.merge(
       primary.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
-        buildTimeEndBoundary
+        buildTimeEndBoundary,
+        limit
       ),
       previous.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
-        buildTimeEndBoundary
+        buildTimeEndBoundary,
+        limit
       )
     )
   }
@@ -202,6 +206,21 @@ class DualExecutionRepository(
       primary.retrieveOrchestrationsForApplication(application, criteria),
       previous.retrieveOrchestrationsForApplication(application, criteria)
     )
+  }
+
+  override fun retrieveOrchestrationsForApplication(application: String,
+                                                    criteria: ExecutionCriteria,
+                                                    sorter: ExecutionComparator?): MutableList<Execution> {
+    val result = Observable.merge(
+      Observable.from(primary.retrieveOrchestrationsForApplication(application, criteria, sorter)),
+      Observable.from(previous.retrieveOrchestrationsForApplication(application, criteria, sorter))
+    ).toList().toBlocking().single().toMutableList()
+
+    return if (sorter != null) {
+      result.asSequence().sortedWith(sorter as Comparator<in Execution>).toMutableList()
+    } else {
+      result
+    }
   }
 
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): Execution {

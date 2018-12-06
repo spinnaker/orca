@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.DelegatingExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.RedisExecutionRepository
 import rx.Observable
 import java.util.concurrent.TimeUnit
@@ -167,6 +168,14 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
+  override fun retrieveOrchestrationsForApplication(application: String,
+                                                    criteria: ExecutionRepository.ExecutionCriteria,
+                                                    sorter: ExecutionComparator?): MutableList<Execution> {
+    return withMetrics("retrieveOrchestrationsForApplication3") {
+      executionRepository.retrieveOrchestrationsForApplication(application, criteria, sorter)
+    }
+  }
+
   override fun retrievePipelinesForApplication(application: String): Observable<Execution> {
     return withMetrics("retrievePipelinesForApplication") {
       executionRepository.retrievePipelinesForApplication(application)
@@ -200,12 +209,14 @@ class RedisInstrumentedExecutionRepository(
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds: MutableList<String>,
                                                                              buildTimeStartBoundary: Long,
-                                                                             buildTimeEndBoundary: Long): Observable<Execution> {
+                                                                             buildTimeEndBoundary: Long,
+                                                                             limit: Int): Observable<Execution> {
     return withMetrics("retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary") {
       executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
-        buildTimeEndBoundary
+        buildTimeEndBoundary,
+        limit
       )
     }
   }

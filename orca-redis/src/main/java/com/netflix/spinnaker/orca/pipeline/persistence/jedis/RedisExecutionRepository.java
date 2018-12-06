@@ -453,10 +453,15 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   /*
    * There is no guarantee that the returned results will be sorted.
+   * @param limit is only implemented in SqlExecutionRepository
    */
   @Override
   public @Nonnull
-  Observable<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(@Nonnull List<String> pipelineConfigIds, long buildTimeStartBoundary, long buildTimeEndBoundary) {
+  Observable<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    @Nonnull List<String> pipelineConfigIds,
+    long buildTimeStartBoundary,
+    long buildTimeEndBoundary,
+    int limit) {
     List<Observable<Execution>> observables = allRedisDelegates().stream()
       .map(d -> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(d, pipelineConfigIds, buildTimeStartBoundary, buildTimeEndBoundary))
       .collect(Collectors.toList());
@@ -464,8 +469,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull
-  Observable<Execution> retrieveOrchestrationsForApplication(@Nonnull String application, @Nonnull ExecutionCriteria criteria) {
+  public @Nonnull Observable<Execution> retrieveOrchestrationsForApplication(@Nonnull String application,
+                                                                             @Nonnull ExecutionCriteria criteria) {
     String allOrchestrationsKey = appKey(ORCHESTRATION, application);
 
     /*
@@ -543,6 +548,31 @@ public class RedisExecutionRepository implements ExecutionRepository {
     }
 
     return currentObservable;
+  }
+
+  @Nonnull
+  @Override
+  public List<Execution> retrieveOrchestrationsForApplication(@Nonnull String application,
+                                                              @Nonnull ExecutionCriteria criteria,
+                                                              @Nullable ExecutionComparator sorter) {
+    List<Execution> executions = retrieveOrchestrationsForApplication(application, criteria)
+      .filter((orchestration) -> {
+        if (criteria.getStartTimeCutoff() != null) {
+          long startTime = Optional.ofNullable(orchestration.getStartTime()).orElse(0L);
+          return startTime == 0 || (startTime > criteria.getStartTimeCutoff().toEpochMilli());
+        }
+        return true;
+      })
+      .subscribeOn(Schedulers.io())
+      .toList()
+      .toBlocking()
+      .single();
+
+    if (sorter != null) {
+      executions.sort(sorter);
+    }
+
+    return executions.subList(0, Math.min(executions.size(), criteria.getLimit()));
   }
 
   @Override

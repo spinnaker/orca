@@ -17,8 +17,9 @@
 
 package com.netflix.spinnaker.orca.webhook.service
 
+import com.netflix.spinnaker.okhttp.OkHttpClientConfigurationProperties
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions
-import com.netflix.spinnaker.orca.webhook.config.PreconfiguredWebhookProperties
+import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.config.WebhookConfiguration
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
@@ -38,14 +39,25 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 
 class WebhookServiceSpec extends Specification {
+  @Shared
+  def webhookProperties = new WebhookProperties()
 
   @Shared
-  def restTemplate = new WebhookConfiguration().restTemplate();
+  def okHttpClientConfigurationProperties = new OkHttpClientConfigurationProperties()
+
+  @Shared
+  def webhookConfiguration = new WebhookConfiguration(webhookProperties)
+
+  @Shared
+  def requestFactory = webhookConfiguration.webhookRequestFactory(okHttpClientConfigurationProperties)
+
+  @Shared
+  def restTemplate = webhookConfiguration.restTemplate(requestFactory)
 
   @Shared
   def userConfiguredUrlRestrictions = new UserConfiguredUrlRestrictions.Builder().withRejectLocalhost(false).build()
 
-  def preconfiguredWebhookProperties = new PreconfiguredWebhookProperties()
+  def preconfiguredWebhookProperties = new WebhookProperties()
 
   def server = MockRestServiceServer.createServer(restTemplate)
 
@@ -120,9 +132,9 @@ class WebhookServiceSpec extends Specification {
 
   def "Preconfigured webhooks should only include enabled webhooks"() {
     setup:
-    def webhook1 = new PreconfiguredWebhookProperties.PreconfiguredWebhook(label: "1", enabled: true)
-    def webhook2 = new PreconfiguredWebhookProperties.PreconfiguredWebhook(label: "2", enabled: false)
-    def webhook3 = new PreconfiguredWebhookProperties.PreconfiguredWebhook(label: "3", enabled: true)
+    def webhook1 = new WebhookProperties.PreconfiguredWebhook(label: "1", enabled: true)
+    def webhook2 = new WebhookProperties.PreconfiguredWebhook(label: "2", enabled: false)
+    def webhook3 = new WebhookProperties.PreconfiguredWebhook(label: "3", enabled: true)
     preconfiguredWebhookProperties.preconfigured << webhook1
     preconfiguredWebhookProperties.preconfigured << webhook2
     preconfiguredWebhookProperties.preconfigured << webhook3
@@ -153,6 +165,27 @@ class WebhookServiceSpec extends Specification {
     server.verify()
     responseEntity.statusCode == HttpStatus.OK
     responseEntity.body == 'This is text/plain'
+  }
+
+  def "Should accept PATCH request"() {
+    setup:
+    def responseActions = server.expect(requestTo("https://localhost/v1/test"))
+      .andExpect(method(HttpMethod.PATCH))
+    responseActions.andRespond(withSuccess())
+
+    when:
+    webhookService
+    def responseEntity = webhookService.exchange(
+      HttpMethod.PATCH,
+      "https://localhost/v1/test",
+      null,
+      null
+    )
+
+    then:
+    noExceptionThrown()
+    server.verify()
+    responseEntity.statusCode == HttpStatus.OK
   }
 
 }

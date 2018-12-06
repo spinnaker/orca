@@ -22,8 +22,8 @@ import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor
-import com.netflix.spinnaker.orca.igor.BuildArtifactFilter
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
@@ -69,13 +69,13 @@ class OperationsController {
   ContextParameterProcessor contextParameterProcessor
 
   @Autowired(required = false)
-  BuildArtifactFilter buildArtifactFilter
-
-  @Autowired(required = false)
   List<PipelinePreprocessor> pipelinePreprocessors
 
   @Autowired(required = false)
   WebhookService webhookService
+
+  @Autowired(required = false)
+  JobService jobService
 
   @Autowired(required = false)
   ArtifactResolver artifactResolver
@@ -104,7 +104,10 @@ class OperationsController {
       return pipeline
     }
 
-    def augmentedContext = [trigger: pipeline.trigger]
+    def augmentedContext = [
+      trigger: pipeline.trigger,
+      templateVariables: pipeline.templateVariables ?: [:]
+    ]
     def processedPipeline = contextParameterProcessor.process(pipeline, augmentedContext, false)
     processedPipeline.trigger = objectMapper.convertValue(processedPipeline.trigger, Trigger)
 
@@ -191,24 +194,16 @@ class OperationsController {
       }
     }
 
-    if (!pipeline.plan) {
-      artifactResolver?.resolveArtifacts(pipeline)
-    }
+    artifactResolver?.resolveArtifacts(pipeline)
   }
 
   private void getBuildInfo(Map trigger) {
     if (trigger.master && trigger.job && trigger.buildNumber) {
       def buildInfo = buildService.getBuild(trigger.buildNumber, trigger.master, trigger.job)
       if (buildInfo?.artifacts) {
-        if (!buildArtifactFilter) {
-          log.warn("Igor is not enabled, unable to lookup build artifacts. Fix this by setting igor.enabled: true")
-        } else {
-          buildInfo.artifacts = buildArtifactFilter.filterArtifacts(buildInfo.artifacts)
-          if (trigger.type == "manual") {
-            trigger.artifacts = buildInfo.artifacts
-          }
+        if (trigger.type == "manual") {
+          trigger.artifacts = buildInfo.artifacts
         }
-
       }
       trigger.buildInfo = buildInfo
       if (trigger.propertyFile) {
@@ -266,6 +261,22 @@ class OperationsController {
     }
   }
 
+  @RequestMapping(value = "/jobs/preconfigured")
+  List<Map<String, Object>> preconfiguredJob() {
+    if (!jobService) {
+      return []
+    }
+    return jobService?.getPreconfiguredStages().collect{
+      [ label: it.label,
+        description: it.description,
+        type: it.type,
+        waitForCompletion: it.waitForCompletion,
+        noUserConfigurableFields: true,
+        parameters: it.parameters,
+      ]
+    }
+  }
+
   private void convertLinearToParallel(Map<String, Serializable> pipelineConfig) {
     def stages = (List<Map<String, Object>>) pipelineConfig.stages
     stages.eachWithIndex { Map<String, Object> stage, int index ->
@@ -291,7 +302,7 @@ class OperationsController {
   private Map<String, String> markPipelineFailed(Map config, Exception e) {
     injectPipelineOrigin(config)
     def json = objectMapper.writeValueAsString(config)
-    log.info('requested pipeline: {}', json)
+    log.warn('requested pipeline marked as failed: {}', json)
 
     def pipeline = executionLauncher.fail(PIPELINE, json, e)
 

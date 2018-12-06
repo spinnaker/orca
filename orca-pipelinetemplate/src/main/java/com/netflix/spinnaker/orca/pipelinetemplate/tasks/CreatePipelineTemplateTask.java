@@ -55,7 +55,7 @@ public class CreatePipelineTemplateTask implements RetryableTask, SavePipelineTe
       throw new IllegalArgumentException("'pipelineTemplate' context key must be a base64-encoded string: Ensure you're on the most recent version of gate");
     }
 
-    PipelineTemplate pipelineTemplate = (PipelineTemplate) stage.decodeBase64(
+    PipelineTemplate pipelineTemplate = stage.decodeBase64(
       "/pipelineTemplate",
       PipelineTemplate.class,
       pipelineTemplateObjectMapper
