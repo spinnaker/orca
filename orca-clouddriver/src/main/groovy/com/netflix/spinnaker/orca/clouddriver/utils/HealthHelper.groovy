@@ -17,7 +17,9 @@
 package com.netflix.spinnaker.orca.clouddriver.utils
 
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.util.logging.Slf4j
 
+@Slf4j
 class HealthHelper {
   /**
    * If stage.context.interestingHealthProviderNames is not null, return it. Otherwise, return
@@ -67,6 +69,7 @@ class HealthHelper {
     Map platformHealth = findPlatformHealth(healths)
 
     if (platformHealth && healths.size() == 1 && healths[0].type == platformHealth.type && healths[0].state == "Unknown") {
+      log.info "*** About to return true from isDownConsideringPlatformHealth()..."
       return true
     }
 
@@ -86,6 +89,8 @@ class HealthHelper {
 
     List<Map> healths = filterHealths(instance, interestingHealthProviderNames)
 
+    log.info "*** healths=$healths"
+
     if (!interestingHealthProviderNames && !healths) {
       // No health indications (and no specific providers to check), consider instance to be down.
       return true
@@ -98,6 +103,10 @@ class HealthHelper {
     // no health indicators is indicative of being down
     boolean someAreDown = !healths || healths.any { it.state == 'Down' || it.state == 'OutOfService' }
     boolean noneAreUp = !healths.any { it.state == 'Up' }
+
+    log.info "*** someAreDown=$someAreDown"
+
+    log.info "*** noneAreUp=$noneAreUp"
 
     return someAreDown && noneAreUp
   }

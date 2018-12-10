@@ -28,11 +28,17 @@ import org.springframework.stereotype.Component
 class WaitForRequiredInstancesDownTask extends AbstractWaitingForInstancesTask {
   @Override
   protected boolean hasSucceeded(Stage stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
+    log.info "*** interestingHealthProviderNames=$interestingHealthProviderNames"
+
     if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {
       return true
     }
 
+    log.info "*** instances=$instances"
+
     def targetDesiredSize = instances.size()
+
+    log.info "*** targetDesiredSize=$targetDesiredSize"
 
     // During a rolling red/black we want a percentage of instances to be disabled.
     def desiredPercentage = stage.context.desiredPercentage
