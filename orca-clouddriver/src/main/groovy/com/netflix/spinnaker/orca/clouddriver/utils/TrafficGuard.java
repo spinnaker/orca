@@ -125,14 +125,19 @@ public class TrafficGuard {
     List<TargetServerGroup> targetServerGroups = ((List<Map<String, Object>>) cluster.get().get("serverGroups"))
       .stream()
       .map(TargetServerGroup::new)
-      .filter(tsg -> location.equals(tsg.getLocation()))
+      .filter(tsg -> location.equals(tsg.getLocation(location.getType())))
       .collect(Collectors.toList());
 
     TargetServerGroup serverGroupGoingAway = targetServerGroups.stream()
       .filter(sg -> serverGroupName.equals(sg.getName()))
       .findFirst()
-      .orElseThrow(() -> new TrafficGuardException(format("Could not find server group '%s' in %s/%s with traffic guard configured.",
-        serverGroupName, account, location.getValue())));
+      .orElseThrow(() -> {
+        String message = format("Could not find server group '%s' in %s/%s, found [%s]",
+          serverGroupName, account, location,
+          String.join(", ", targetServerGroups.stream().map(TargetServerGroup::getName).collect(Collectors.toSet())));
+        log.error("{}\nContext: {}", message, generateContext(targetServerGroups));
+        return new TrafficGuardException(message);
+      });
 
     verifyTrafficRemoval(serverGroupGoingAway, targetServerGroups, account, operationDescriptor);
   }
@@ -151,7 +156,10 @@ public class TrafficGuard {
                                    Collection<TargetServerGroup> currentServerGroups,
                                    String account,
                                    String operationDescriptor) {
-    Preconditions.checkArg(!serverGroupsGoingAway.isEmpty(), "serverGroupsGoingAway must not be empty");
+    if (serverGroupsGoingAway == null || serverGroupsGoingAway.isEmpty()) {
+      return;
+    }
+
     Preconditions.checkArg(!currentServerGroups.isEmpty(), "currentServerGroups must not be empty");
 
     // make sure all server groups are in the same location
