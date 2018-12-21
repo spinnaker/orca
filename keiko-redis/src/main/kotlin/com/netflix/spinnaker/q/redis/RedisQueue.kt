@@ -61,6 +61,7 @@ import java.time.Duration
 import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.temporal.TemporalAmount
+import java.util.Locale
 import java.util.Optional
 
 @KotlinOpen
@@ -329,8 +330,8 @@ class RedisQueue(
       score().toString(),
       10.toString(), // TODO rz - make this configurable.
       lockTtlSeconds.toString(),
-      format("%f", score(ackTimeout)),
-      format("%f", score())
+      format(Locale.US, "%f", score(ackTimeout)),
+      format(Locale.US, "%f", score())
     ))
     if (response is List<*>) {
       return Triple(
