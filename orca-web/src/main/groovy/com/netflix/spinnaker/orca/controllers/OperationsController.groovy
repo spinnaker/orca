@@ -44,6 +44,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
+import retrofit.http.Query
 
 import javax.servlet.http.HttpServletResponse
 
@@ -104,6 +105,17 @@ class OperationsController {
     planOrOrchestratePipeline(pipelineConfig)
   }
 
+  @RequestMapping(value = "/plan/{pipelineConfigId}", method = RequestMethod.POST)
+  Map<String, Object> plan(@RequestBody Map pipeline, @Query("resolveArtifacts") boolean resolveArtifacts, HttpServletResponse response) {
+    planPipeline(pipeline, resolveArtifacts)
+  }
+
+  @RequestMapping(value = "/plan", method = RequestMethod.POST)
+  Map<String, Object> planPipelineConfig(@PathVariable String pipelineConfigId, @Query("resolveArtifacts") boolean resolveArtifacts, @RequestBody Map trigger) {
+    Map pipelineConfig = buildPipelineConfig(pipelineConfigId, trigger)
+    planPipeline(pipelineConfig, resolveArtifacts)
+  }
+
   private Map buildPipelineConfig(String pipelineConfigId, Map trigger) {
     if (front50Service == null) {
       throw new UnsupportedOperationException("Front50 is not enabled, no way to retrieve pipeline configs. Fix this by setting front50.enabled: true")
@@ -120,15 +132,15 @@ class OperationsController {
 
   private Map planOrOrchestratePipeline(Map pipeline) {
     if (pipeline.plan) {
-      planPipeline(pipeline)
+      planPipeline(pipeline, false)
     } else {
       orchestratePipeline(pipeline)
     }
   }
 
-  private Map<String, Object> planPipeline(Map pipeline) {
+  private Map<String, Object> planPipeline(Map pipeline, boolean resolveArtifacts) {
     log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
-    return parseAndValidatePipeline(pipeline)
+    return parseAndValidatePipeline(pipeline, resolveArtifacts)
   }
 
   private Map<String, Object> orchestratePipeline(Map pipeline) {
@@ -155,7 +167,11 @@ class OperationsController {
   }
 
   public Map parseAndValidatePipeline(Map pipeline) {
-    parsePipelineTrigger(executionRepository, buildService, pipeline)
+    return parseAndValidatePipeline(pipeline, true)
+  }
+
+  public Map parseAndValidatePipeline(Map pipeline, boolean resolveArtifacts) {
+    parsePipelineTrigger(executionRepository, buildService, pipeline, resolveArtifacts)
 
     for (PipelinePreprocessor preprocessor : (pipelinePreprocessors ?: [])) {
       pipeline = preprocessor.process(pipeline)
@@ -179,7 +195,7 @@ class OperationsController {
     return pipeline
   }
 
-  private void parsePipelineTrigger(ExecutionRepository executionRepository, BuildService buildService, Map pipeline) {
+  private void parsePipelineTrigger(ExecutionRepository executionRepository, BuildService buildService, Map pipeline, boolean resolveArtifacts) {
     if (!(pipeline.trigger instanceof Map)) {
       pipeline.trigger = [:]
       if (pipeline.plan && pipeline.type == "templatedPipeline" && pipelineTemplateService != null) {
@@ -235,7 +251,9 @@ class OperationsController {
       }
     }
 
-    artifactResolver?.resolveArtifacts(pipeline)
+    if (resolveArtifacts) {
+      artifactResolver?.resolveArtifacts(pipeline)
+    }
   }
 
   private void decorateBuildInfo(Map trigger) {
@@ -265,14 +283,14 @@ class OperationsController {
   @RequestMapping(value = "/ops", method = RequestMethod.POST)
   Map<String, String> ops(@RequestBody List<Map> input) {
     def execution = [application: null, name: null, stages: input]
-    parsePipelineTrigger(executionRepository, buildService, execution)
+    parsePipelineTrigger(executionRepository, buildService, execution, true)
     startTask(execution)
   }
 
   @RequestMapping(value = "/ops", consumes = "application/context+json", method = RequestMethod.POST)
   Map<String, String> ops(@RequestBody Map input) {
     def execution = [application: input.application, name: input.description, stages: input.job, trigger: input.trigger ?: [:]]
-    parsePipelineTrigger(executionRepository, buildService, execution)
+    parsePipelineTrigger(executionRepository, buildService, execution, true)
     startTask(execution)
   }
 
