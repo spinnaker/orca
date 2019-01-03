@@ -95,11 +95,16 @@ class OperationsController {
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
-    orchestratePipeline(pipeline)
+    planOrOrchestratePipeline(pipeline)
   }
 
   @RequestMapping(value = "/orchestrate/{pipelineConfigId}", method = RequestMethod.POST)
   Map<String, Object> orchestratePipelineConfig(@PathVariable String pipelineConfigId, @RequestBody Map trigger) {
+    Map pipelineConfig = buildPipelineConfig(pipelineConfigId, trigger)
+    planOrOrchestratePipeline(pipelineConfig)
+  }
+
+  private Map buildPipelineConfig(String pipelineConfigId, Map trigger) {
     if (front50Service == null) {
       throw new UnsupportedOperationException("Front50 is not enabled, no way to retrieve pipeline configs. Fix this by setting front50.enabled: true")
     }
@@ -110,25 +115,28 @@ class OperationsController {
     }
     Map pipelineConfig = history[0]
     pipelineConfig.trigger = trigger
+    return pipelineConfig
+  }
 
-    orchestratePipeline(pipelineConfig)
+  private Map planOrOrchestratePipeline(Map pipeline) {
+    if (pipeline.plan) {
+      planPipeline(pipeline)
+    } else {
+      orchestratePipeline(pipeline)
+    }
+  }
+
+  private Map<String, Object> planPipeline(Map pipeline) {
+    log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
+    return parseAndValidatePipeline(pipeline)
   }
 
   private Map<String, Object> orchestratePipeline(Map pipeline) {
     Exception pipelineError = null
-    boolean plan = pipeline.plan ?: false
     try {
       pipeline = parseAndValidatePipeline(pipeline)
     } catch (Exception e) {
       pipelineError = e
-    }
-
-    if (plan) {
-      log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
-      if (pipelineError != null) {
-        throw pipelineError
-      }
-      return pipeline
     }
 
     def augmentedContext = [
