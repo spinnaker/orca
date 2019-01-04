@@ -84,22 +84,29 @@ class OperationsController {
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
+    planOrOrchestratePipeline(pipeline)
+  }
+
+  private Map planOrOrchestratePipeline(Map pipeline) {
+    if (pipeline.plan) {
+      planPipeline(pipeline)
+    } else {
+      orchestratePipeline(pipeline)
+    }
+  }
+
+  private Map<String, Object> planPipeline(Map pipeline) {
+    log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
+    return parseAndValidatePipeline(pipeline)
+  }
+
+  private Map<String, Object> orchestratePipeline(Map pipeline) {
     Exception pipelineError = null
-    boolean plan = pipeline.plan ?: false
     try {
       pipeline = parseAndValidatePipeline(pipeline)
     } catch (Exception e) {
       pipelineError = e
     }
-
-    if (plan) {
-      log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
-      if (pipelineError != null) {
-        throw pipelineError
-      }
-      return pipeline
-    }
-
     def augmentedContext = [trigger: pipeline.trigger]
     def processedPipeline = contextParameterProcessor.process(pipeline, augmentedContext, false)
     processedPipeline.trigger = objectMapper.convertValue(processedPipeline.trigger, Trigger)
