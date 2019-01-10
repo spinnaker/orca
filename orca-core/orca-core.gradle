@@ -40,6 +40,8 @@ dependencies {
   compile "com.fasterxml.jackson.module:jackson-module-kotlin:${spinnaker.version('jackson')}"
   compile "org.apache.commons:commons-lang3:3.7"
   compile "de.huxhorn.sulky:de.huxhorn.sulky.ulid:8.1.1"
+  compile "org.springframework.security:spring-security-web:4.2.10.RELEASE"
+  compile "javax.servlet:javax.servlet-api:4.0.1"
 
   compileOnly spinnaker.dependency("lombok")
 
