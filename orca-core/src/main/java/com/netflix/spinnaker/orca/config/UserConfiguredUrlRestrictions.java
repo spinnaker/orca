@@ -21,9 +21,11 @@ import java.net.NetworkInterface;
 import java.net.URI;
 import java.util.*;
 import java.util.regex.Pattern;
+import lombok.Data;
 import org.springframework.security.web.util.matcher.IpAddressMatcher;
 
 public class UserConfiguredUrlRestrictions {
+  @Data
   public static class Builder {
     private String allowedHostnamesRegex = ".*";
     private List<String> allowedSchemes = new ArrayList<>(Arrays.asList("http", "https"));
@@ -31,25 +33,9 @@ public class UserConfiguredUrlRestrictions {
     private boolean rejectLinkLocal = true;
     private List<String> rejectedIps = new ArrayList<>(); // can contain IP addresses and/or IP ranges (CIDR block)
 
-    public String getAllowedHostnamesRegex() {
-      return allowedHostnamesRegex;
-    }
-
-    public void setAllowedHostnamesRegex(String allowedHostnamesRegex) {
-      this.allowedHostnamesRegex = allowedHostnamesRegex;
-    }
-
     public Builder withAllowedHostnamesRegex(String allowedHostnamesRegex) {
       setAllowedHostnamesRegex(allowedHostnamesRegex);
       return this;
-    }
-
-    public List<String> getAllowedSchemes() {
-      return allowedSchemes;
-    }
-
-    public void setAllowedSchemes(List<String> allowedSchemes) {
-      this.allowedSchemes = allowedSchemes;
     }
 
     public Builder withAllowedSchemes(List<String> allowedSchemes) {
@@ -57,38 +43,14 @@ public class UserConfiguredUrlRestrictions {
       return this;
     }
 
-    public boolean isRejectLocalhost() {
-      return rejectLocalhost;
-    }
-
-    public void setRejectLocalhost(boolean rejectLocalhost) {
-      this.rejectLocalhost = rejectLocalhost;
-    }
-
     public Builder withRejectLocalhost(boolean rejectLocalhost) {
       setRejectLocalhost(rejectLocalhost);
       return this;
     }
 
-    public boolean isRejectLinkLocal() {
-      return rejectLinkLocal;
-    }
-
-    public void setRejectLinkLocal(boolean rejectLinkLocal) {
-      this.rejectLinkLocal = rejectLinkLocal;
-    }
-
     public Builder withRejectLinkLocal(boolean rejectLinkLocal) {
       setRejectLinkLocal(rejectLinkLocal);
       return this;
-    }
-
-    public List<String> getRejectedIps() {
-      return rejectedIps;
-    }
-
-    public void setRejectedIps(List<String> rejectedIps) {
-      this.rejectedIps = rejectedIps;
     }
 
     public Builder withRejectedIps(List<String> rejectedIpRanges) {
@@ -142,8 +104,9 @@ public class UserConfiguredUrlRestrictions {
 
       for (String ip : rejectedIps) {
         IpAddressMatcher ipMatcher = new IpAddressMatcher(ip);
-        if (ipMatcher.matches(u.getHost())) {
-          throw new IllegalArgumentException("address " + u.getHost() + " is within blacklist: " + ip);
+
+        if (ipMatcher.matches(InetAddress.getByName(u.getHost()).getHostAddress())) {
+          throw new IllegalArgumentException("address " + u.getHost() + " is within rejected IPs: " + ip);
         }
       }
 

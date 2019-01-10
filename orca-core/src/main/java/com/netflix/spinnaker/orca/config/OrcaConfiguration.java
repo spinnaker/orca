@@ -116,8 +116,8 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  UserConfiguredUrlRestrictions userConfiguredUrlRestrictions(UserConfiguredUrlRestrictions.Builder userConfiguredUrlRestrictionProperties, @Value("${urlRestrictions.rejectedIps:}") String[] rejectedIps) {
-    return userConfiguredUrlRestrictionProperties.withRejectedIps(Arrays.asList(rejectedIps)).build();
+  UserConfiguredUrlRestrictions userConfiguredUrlRestrictions(UserConfiguredUrlRestrictions.Builder userConfiguredUrlRestrictionProperties) {
+    return userConfiguredUrlRestrictionProperties.build();
   }
 
   @Bean
