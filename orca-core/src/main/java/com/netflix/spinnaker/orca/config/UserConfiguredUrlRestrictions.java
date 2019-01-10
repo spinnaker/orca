@@ -105,7 +105,7 @@ public class UserConfiguredUrlRestrictions {
       for (String ip : rejectedIps) {
         IpAddressMatcher ipMatcher = new IpAddressMatcher(ip);
 
-        if (ipMatcher.matches(InetAddress.getByName(u.getHost()).getHostAddress())) {
+        if (ipMatcher.matches(u.getHost())) {
           throw new IllegalArgumentException("address " + u.getHost() + " is within rejected IPs: " + ip);
         }
       }
