@@ -405,24 +405,69 @@ class SqlExecutionRepository(
     )
   }
 
-  override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds: MutableList<String>,
-                                                                             buildTimeStartBoundary: Long,
-                                                                             buildTimeEndBoundary: Long,
-                                                                             limit: Int): Observable<Execution> {
+  override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    pipelineConfigIds: MutableList<String>,
+    buildTimeStartBoundary: Long,
+    buildTimeEndBoundary: Long,
+    executionCriteria: ExecutionCriteria,
+    offset: Int,
+    limit: Int
+  ): List<Execution> {
     val select = jooq.selectExecutions(
       PIPELINE,
       conditions = {
         val inClause = "config_id IN (${pipelineConfigIds.joinToString(",") { "'$it'" }})"
-        it.where(inClause)
+        val timeCondition = it.where(inClause)
           .and(field("build_time").gt(buildTimeStartBoundary))
           .and(field("build_time").lt(buildTimeEndBoundary))
+        var conditions = timeCondition
+        if (executionCriteria.statuses.isNotEmpty()) {
+          conditions = timeCondition.and("status IN (${executionCriteria.statuses.joinToString(",") { "'$it'" }})")
+        }
+        conditions
       },
       seek = {
-        it.orderBy(field("id").desc())
-        it.limit(limit)
+        val seek = when (executionCriteria.sortType) {
+          ExecutionComparator.BUILD_TIME -> it.orderBy(field("build_time").asc())
+          ExecutionComparator.REVERSE_BUILD_TIME -> it.orderBy(field("build_time").desc())
+          ExecutionComparator.START_TIME_OR_ID -> it.orderBy(field("start_time").desc())
+          ExecutionComparator.NATURAL -> it.orderBy(field("id").desc())
+          else -> it.orderBy(field("id").asc())
+        }
+        seek.limit(executionCriteria.limit).offset(offset)
       }
     )
-    return Observable.from(select.fetchExecutions())
+
+    return select.fetchExecutions().toList()
+  }
+
+  override fun retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    pipelineConfigIds: MutableList<String>,
+    buildTimeStartBoundary: Long,
+    buildTimeEndBoundary: Long,
+    executionCriteria: ExecutionCriteria
+  ): List<Execution> {
+    val allExecutions = mutableListOf<Execution>()
+    var page = 0
+    val limit = executionCriteria.limit
+    var moreResults = true
+
+    while (moreResults) {
+      val results = retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+        pipelineConfigIds,
+        buildTimeStartBoundary,
+        buildTimeEndBoundary,
+        executionCriteria,
+        page,
+        limit
+      )
+      moreResults = results.size == limit
+      page += 1
+
+      allExecutions.addAll(results)
+    }
+
+    return allExecutions
   }
 
   override fun hasExecution(type: ExecutionType, id: String): Boolean {

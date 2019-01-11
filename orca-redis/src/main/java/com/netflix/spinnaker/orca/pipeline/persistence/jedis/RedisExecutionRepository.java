@@ -469,19 +469,58 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   /*
    * There is no guarantee that the returned results will be sorted.
-   * @param limit is only implemented in SqlExecutionRepository
+   * @param limit and the param @offset are only implemented in SqlExecutionRepository
    */
   @Override
   public @Nonnull
-  Observable<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+  List<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
     @Nonnull List<String> pipelineConfigIds,
     long buildTimeStartBoundary,
     long buildTimeEndBoundary,
-    int limit) {
-    List<Observable<Execution>> observables = allRedisDelegates().stream()
-      .map(d -> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(d, pipelineConfigIds, buildTimeStartBoundary, buildTimeEndBoundary))
+    ExecutionCriteria executionCriteria,
+    int offset,
+    int limit
+  ) {
+    List<Execution> executions = new ArrayList<>();
+    allRedisDelegates()
+      .forEach(d -> {
+        List<Execution> pipelines = getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(
+          d,
+          pipelineConfigIds,
+          buildTimeStartBoundary,
+          buildTimeEndBoundary
+        );
+        executions.addAll(pipelines);
+      });
+    return executions.stream()
+      .filter( it ->  {
+        if (executionCriteria.getStatuses().isEmpty()) {
+          return true;
+        } else {
+          return executionCriteria.getStatuses().contains(it.getStatus());
+        }
+      })
       .collect(Collectors.toList());
-    return Observable.merge(observables);
+  }
+
+  @Override
+  public List<Execution> retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    @Nonnull List<String> pipelineConfigIds,
+    long buildTimeStartBoundary,
+    long buildTimeEndBoundary,
+    ExecutionCriteria executionCriteria
+  ) {
+    List<Execution> executions = retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+      pipelineConfigIds,
+      buildTimeStartBoundary,
+      buildTimeEndBoundary,
+      executionCriteria,
+      0, //ignored
+      0 //ignored
+    );
+
+    executions.sort(executionCriteria.getSortType());
+    return executions;
   }
 
   @Override
@@ -945,7 +984,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     });
   }
 
-  private Observable<Execution> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(RedisClientDelegate redisClientDelegate, List<String> pipelineConfigIds, long buildTimeStartBoundary, long buildTimeEndBoundary) {
+  private List<Execution> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(RedisClientDelegate redisClientDelegate, List<String> pipelineConfigIds, long buildTimeStartBoundary, long buildTimeEndBoundary) {
     List<Execution> executions = new ArrayList<>();
 
     redisClientDelegate.withScriptingClient(c -> {
@@ -985,7 +1024,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         executions.add(buildExecution(execution, map, stageIds));
       }
     });
-    return Observable.from(executions);
+    return executions;
   }
 
   protected Observable<Execution> all(ExecutionType type, RedisClientDelegate redisClientDelegate) {

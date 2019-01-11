@@ -72,10 +72,29 @@ public interface ExecutionRepository {
                                                              @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
-  Observable<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(@Nonnull List<String> pipelineConfigIds,
-                                                                                      long buildTimeStartBoundary,
-                                                                                      long buildTimeEndBoundary,
-                                                                                      int limit);
+  List<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    @Nonnull List<String> pipelineConfigIds,
+    long buildTimeStartBoundary,
+    long buildTimeEndBoundary,
+    ExecutionCriteria executionCriteria,
+    int offset,
+    int limit
+  );
+
+  /**
+   * Returns all executions in the time boundary
+   * @param executionCriteria
+   *  if there are statuses, only those will be returned
+   *  if there is a limit, that will be used as the page size
+   *  if there is a sort type that will be used to sort the results
+   */
+  @Nonnull
+  List<Execution> retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    @Nonnull List<String> pipelineConfigIds,
+    long buildTimeStartBoundary,
+    long buildTimeEndBoundary,
+    ExecutionCriteria executionCriteria
+  );
 
   @Deprecated // Use the non-rx interface instead
   @Nonnull
@@ -108,6 +127,7 @@ public interface ExecutionRepository {
     private Collection<ExecutionStatus> statuses = new ArrayList<>();
     private int page;
     private Instant startTimeCutoff;
+    private ExecutionComparator sortType;
 
     public int getLimit() {
       return limit;
@@ -155,6 +175,15 @@ public interface ExecutionRepository {
       return this;
     }
 
+    public ExecutionComparator getSortType() {
+      return sortType;
+    }
+
+    public ExecutionCriteria setSortType(ExecutionComparator sortType) {
+      this.sortType = sortType;
+      return this;
+    }
+
     @Override public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
@@ -175,6 +204,13 @@ public interface ExecutionRepository {
       @Override
       public int compare(Execution a, Execution b) {
         return b.getId().compareTo(a.getId());
+      }
+    },
+
+    REVERSE_NATURAL {
+      @Override
+      public int compare(Execution a, Execution b) {
+        return a.getId().compareTo(b.getId());
       }
     },
 
@@ -211,6 +247,20 @@ public interface ExecutionRepository {
         int buildCompare = bBuildTime.compareTo(aBuildTime);
         if (buildCompare == 0) {
           return b.getId().compareTo(a.getId());
+        }
+        return buildCompare;
+      }
+    },
+
+    BUILD_TIME {
+      @Override
+      public int compare(Execution a, Execution b) {
+        Long aBuildTime = Optional.ofNullable(a.getBuildTime()).orElse(0L);
+        Long bBuildTime = Optional.ofNullable(b.getBuildTime()).orElse(0L);
+
+        int buildCompare = aBuildTime.compareTo(bBuildTime);
+        if (buildCompare == 0) {
+          return a.getId().compareTo(b.getId());
         }
         return buildCompare;
       }

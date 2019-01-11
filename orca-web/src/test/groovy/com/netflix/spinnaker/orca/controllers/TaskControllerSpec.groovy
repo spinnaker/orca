@@ -36,7 +36,6 @@ import java.time.Clock
 import java.time.Instant
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
 import static java.time.temporal.ChronoUnit.DAYS
@@ -160,7 +159,7 @@ class TaskControllerSpec extends Specification {
     def response = mockMvc.perform(get("/applications/$app/tasks")).andReturn().response
 
     then:
-    1 * executionRepository.retrieveOrchestrationsForApplication(app, _, START_TIME_OR_ID) >> []
+    1 * executionRepository.retrieveOrchestrationsForApplication(app, _, _) >> []
 
     where:
     app = "test"
@@ -313,19 +312,20 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
-      it.pipelineConfigId == "1"
-    }.collect { config ->
-      Execution pipeline = pipeline {
-        id = config.id
-        application = app
-        startTime = config.startTime
-        pipelineConfigId = config.pipelineConfigId
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _ ) >> pipelines.findAll {
+        it.pipelineConfigId == "1"
+      }.collect { config ->
+        Execution pipeline = pipeline {
+          id = config.id
+          application = app
+          startTime = config.startTime
+          pipelineConfigId = config.pipelineConfigId
+        }
+        config.trigger.setOther(mapper.convertValue(config.trigger, Map.class))
+        pipeline.setTrigger(config.trigger)
+        return pipeline
       }
-      config.trigger.setOther(mapper.convertValue(config.trigger, Map.class))
-      pipeline.setTrigger(config.trigger)
-      return pipeline
-    })
+
 
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
@@ -334,7 +334,7 @@ class TaskControllerSpec extends Specification {
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
-    results.id == ['test-3', 'test-2', 'test-1']
+    results.id == ['test-1', 'test-2', 'test-3']
   }
 
   void '/applications/{application}/pipelines/search should only return pipelines of given types'() {
@@ -357,7 +357,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -369,7 +369,7 @@ class TaskControllerSpec extends Specification {
       config.trigger.setOther(mapper.convertValue(config.trigger, Map.class))
       pipeline.setTrigger(config.trigger)
       return pipeline
-    })
+    }
 
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
@@ -378,7 +378,7 @@ class TaskControllerSpec extends Specification {
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
-    results.id == ['test-4', 'test-1']
+    results.id == ['test-1', 'test-4']
   }
 
   void '/applications/{application}/pipelines/search should only return pipelines with a given eventId'() {
@@ -403,7 +403,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -416,7 +416,7 @@ class TaskControllerSpec extends Specification {
       config.trigger.other.put("eventId", config.eventId)
       pipeline.setTrigger(config.trigger)
       return pipeline
-    })
+    }
 
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
@@ -425,7 +425,7 @@ class TaskControllerSpec extends Specification {
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
-    results.id == ['test-4', 'test-2']
+    results.id == ['test-2', 'test-4']
   }
 
   void '/applications/{application}/pipelines/search should only return pipelines with a given application'() {
@@ -449,7 +449,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -461,7 +461,7 @@ class TaskControllerSpec extends Specification {
       config.trigger.setOther(mapper.convertValue(config.trigger, Map.class))
       pipeline.setTrigger(config.trigger)
       return pipeline
-    })
+    }
 
     front50Service.getPipelines(app1, false) >> [[id: "1"]]
     front50Service.getPipelines(app2, false) >> [[id: "2"]]
@@ -471,7 +471,7 @@ class TaskControllerSpec extends Specification {
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
-    results.id == ['test-2', 'test-1']
+    results.id == ['test-1', 'test-2']
   }
 
   void '/applications/{application}/pipelines/search should return executions with a given pipeline name'() {
@@ -481,18 +481,18 @@ class TaskControllerSpec extends Specification {
       [name: "pipeline1", pipelineConfigId: "1", id: "test-1", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
        trigger: new DockerTrigger("test-account", "test-repo", "1")
       ],
-      [name: "pipeline2", pipelineConfigId: "1", id: "test-2", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
+      [name: "pipeline2", pipelineConfigId: "2", id: "test-2", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
        trigger: new GitTrigger("c681a6af-1096-4727-ac9e-70d3b2460228", "github", "spinnaker", "no-match", "orca")
       ],
-      [name: "pipeline3", pipelineConfigId: "1", id: "test-3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
+      [name: "pipeline3", pipelineConfigId: "3", id: "test-3", startTime: clock.instant().minus(daysOfExecutionHistory, DAYS).minus(2, HOURS).toEpochMilli(),
        trigger: new JenkinsTrigger("master", "job", 1, "test-property-file")
       ]
     ]
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
-      it.pipelineConfigId == "1"
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["2"], _, _, _) >> pipelines.findAll {
+      it.pipelineConfigId == "2"
     }.collect { config ->
       Execution pipeline = pipeline {
         id = config.id
@@ -504,9 +504,9 @@ class TaskControllerSpec extends Specification {
       pipeline.setTrigger(config.trigger)
       pipeline.setName(config.name)
       return pipeline
-    })
+    }
 
-    front50Service.getPipelines(app, false) >> [[id: "1"]]
+    front50Service.getPipelines(app, false) >> [[id: "2", name: "pipeline2"]]
 
     when:
     def response = mockMvc.perform(get("/applications/${app}/pipelines/search?pipelineName=pipeline2")).andReturn().response
@@ -533,7 +533,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -545,7 +545,7 @@ class TaskControllerSpec extends Specification {
       config.trigger.setOther(mapper.convertValue(config.trigger, Map.class))
       pipeline.setTrigger(config.trigger)
       return pipeline
-    })
+    }
 
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
@@ -555,7 +555,7 @@ class TaskControllerSpec extends Specification {
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
-    results.id == ['test-3', 'test-1']
+    results.id == ['test-1', 'test-3']
   }
 
   void '/applications/{application}/pipelines/search should handle a trigger search field that is a list of maps correctly and deterministicly'() {
@@ -574,7 +574,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -586,7 +586,7 @@ class TaskControllerSpec extends Specification {
       config.trigger.setOther(mapper.convertValue(config.trigger, Map.class))
       pipeline.setTrigger(config.trigger)
       return pipeline
-    })
+    }
 
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
@@ -600,8 +600,8 @@ class TaskControllerSpec extends Specification {
     List results2 = new ObjectMapper().readValue(response2.contentAsString, List)
 
     then:
-    results1.id == ['test-2', 'test-1']
-    results2.id == ['test-2', 'test-1']
+    results1.id == ['test-1', 'test-2']
+    results2.id == ['test-1', 'test-2']
   }
 
   void '/applications/{application}/pipelines/search should handle a trigger field that is a map'() {
@@ -621,7 +621,7 @@ class TaskControllerSpec extends Specification {
 
     ObjectMapper mapper = new ObjectMapper()
 
-    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> rx.Observable.from(pipelines.findAll {
+    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       Execution pipeline = pipeline {
@@ -634,7 +634,7 @@ class TaskControllerSpec extends Specification {
       config.trigger.other.put("payload", config.payload)
       pipeline.setTrigger(config.trigger)
       return pipeline
-    })
+    }
 
     front50Service.getPipelines(app, false) >> [[id: "1"]]
 
@@ -644,7 +644,7 @@ class TaskControllerSpec extends Specification {
     List results = new ObjectMapper().readValue(response.contentAsString, List)
 
     then:
-    results.id == ['test-3', 'test-2']
+    results.id == ['test-2', 'test-3']
   }
 
   void 'checkObjectMatchesSubset matches identical strings'() {
