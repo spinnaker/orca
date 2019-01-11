@@ -181,7 +181,7 @@ class DualExecutionRepository(
   }
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-    pipelineConfigIds: MutableList<String>,
+    pipelineConfigIds: List<String>,
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria,
@@ -208,7 +208,7 @@ class DualExecutionRepository(
   }
 
   override fun retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-    pipelineConfigIds: MutableList<String>,
+    pipelineConfigIds: List<String>,
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria

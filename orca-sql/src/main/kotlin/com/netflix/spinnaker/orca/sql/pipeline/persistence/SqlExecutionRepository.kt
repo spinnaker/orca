@@ -406,7 +406,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-    pipelineConfigIds: MutableList<String>,
+    pipelineConfigIds: List<String>,
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria,
@@ -442,7 +442,7 @@ class SqlExecutionRepository(
   }
 
   override fun retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-    pipelineConfigIds: MutableList<String>,
+    pipelineConfigIds: List<String>,
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria
