@@ -108,7 +108,7 @@ class TaskController {
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
     def executionCriteria = new ExecutionCriteria()
       .setPage(page)
-      .setLimit(limit)
+      .setPageSize(limit)
       .setStatuses(statuses.split(",") as Collection)
       .setStartTimeCutoff(
         clock
@@ -204,7 +204,7 @@ class TaskController {
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
     limit = limit ?: 1
     ExecutionCriteria executionCriteria = new ExecutionCriteria(
-      limit: limit,
+      pageSize: limit,
       statuses: (statuses.split(",") as Collection)
     )
 
@@ -540,7 +540,7 @@ class TaskController {
 
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
     def executionCriteria = new ExecutionCriteria(
-      limit: limit,
+      pageSize: limit,
       statuses: (statuses.split(",") as Collection)
     )
 

@@ -218,21 +218,17 @@ class SqlInstrumentedExecutionRepository(
   }
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-    pipelineConfigIds: List<String>,
+    pipelineConfigIds: MutableList<String>,
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
-    executionCriteria: ExecutionCriteria,
-    offset: Int,
-    limit: Int
+    executionCriteria: ExecutionCriteria
   ): List<Execution> {
     return withMetrics("retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary") {
       executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
         buildTimeEndBoundary,
-        executionCriteria,
-        offset,
-        limit)
+        executionCriteria)
     }
   }
 

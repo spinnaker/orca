@@ -282,7 +282,7 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
 
   def "no specified page retrieves first page"() {
     given:
-    def criteria = new ExecutionCriteria().setLimit(limit)
+    def criteria = new ExecutionCriteria().setPageSize(limit)
 
     and:
     (limit + 1).times { i ->
@@ -304,7 +304,7 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
 
     then:
     with(results) {
-      size() == criteria.limit
+      size() == criteria.pageSize
       first().name == "Orchestration #${limit + 1}"
       last().name == "Orchestration #2"
     }
@@ -315,7 +315,7 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
 
   def "out of range page retrieves empty result set"() {
     given:
-    def criteria = new ExecutionCriteria().setLimit(limit).setPage(3)
+    def criteria = new ExecutionCriteria().setPageSize(limit).setPage(3)
 
     and:
     (limit + 1).times { i ->
@@ -342,7 +342,7 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
 
   def "page param > 1 retrieves the relevant page"() {
     given:
-    def criteria = new ExecutionCriteria().setLimit(limit).setPage(2)
+    def criteria = new ExecutionCriteria().setPageSize(limit).setPage(2)
 
     and:
     (limit + 1).times { i ->
@@ -375,7 +375,7 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
   @Unroll
   def "page size param restricts the number of results"() {
     given:
-    def criteria = new ExecutionCriteria().setLimit(limit).setPage(page)
+    def criteria = new ExecutionCriteria().setPageSize(limit).setPage(page)
 
     and:
     executions.times { i ->
@@ -433,9 +433,7 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
       ["foo1", "foo2"],
       0L,
       6L,
-      new ExecutionCriteria(),
-      0,
-      retrieveLimit * 2
+      new ExecutionCriteria()
     )
 
     then:
@@ -472,14 +470,14 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
       ["foo1", "foo2"],
       0L,
       5L,
-      new ExecutionCriteria().setLimit(1).setSortType(BUILD_TIME)
+      new ExecutionCriteria().setPageSize(1).setSortType(BUILD_TIME)
     )
     List<Execution> backwardsResults = repository
       .retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
       ["foo1", "foo2"],
       0L,
       5L,
-      new ExecutionCriteria().setLimit(1).setSortType(REVERSE_BUILD_TIME)
+      new ExecutionCriteria().setPageSize(1).setSortType(REVERSE_BUILD_TIME)
     )
 
     then:

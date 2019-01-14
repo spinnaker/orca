@@ -181,29 +181,23 @@ class DualExecutionRepository(
   }
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-    pipelineConfigIds: List<String>,
+    pipelineConfigIds: MutableList<String>,
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
-    executionCriteria: ExecutionCriteria,
-    offset: Int,
-    limit: Int
+    executionCriteria: ExecutionCriteria
   ): List<Execution> {
     return primary
       .retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
         buildTimeEndBoundary,
-        executionCriteria,
-        offset,
-        limit
+        executionCriteria
       )
       .plus(previous.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
         buildTimeEndBoundary,
-        executionCriteria,
-        offset,
-        limit)
+        executionCriteria)
       )
   }
 

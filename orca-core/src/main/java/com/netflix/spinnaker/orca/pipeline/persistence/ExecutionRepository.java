@@ -71,21 +71,27 @@ public interface ExecutionRepository {
   Observable<Execution> retrievePipelinesForPipelineConfigId(@Nonnull String pipelineConfigId,
                                                              @Nonnull ExecutionCriteria criteria);
 
+  /**
+   * Returns executions in the time boundary. Redis impl does not respect pageSize or offset params,
+   *  and returns all executions. Sql impl respects these params.
+   * @param executionCriteria use this param to specify:
+   *  if there are statuses, only those will be returned
+   *  if there is a sort type that will be used to sort the results
+   *  use pageSize and page to control pagination
+   */
   @Nonnull
   List<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
     @Nonnull List<String> pipelineConfigIds,
     long buildTimeStartBoundary,
     long buildTimeEndBoundary,
-    ExecutionCriteria executionCriteria,
-    int offset,
-    int limit
+    ExecutionCriteria executionCriteria
   );
 
   /**
    * Returns all executions in the time boundary
    * @param executionCriteria
    *  if there are statuses, only those will be returned
-   *  if there is a limit, that will be used as the page size
+   *  if there is a pageSize, that will be used as the page size
    *  if there is a sort type that will be used to sort the results
    */
   @Nonnull
@@ -123,18 +129,18 @@ public interface ExecutionRepository {
   List<String> retrieveAllExecutionIds(@Nonnull ExecutionType type);
 
   final class ExecutionCriteria {
-    private int limit = 3500;
+    private int pageSize = 3500;
     private Collection<ExecutionStatus> statuses = new ArrayList<>();
     private int page;
     private Instant startTimeCutoff;
     private ExecutionComparator sortType;
 
-    public int getLimit() {
-      return limit;
+    public int getPageSize() {
+      return pageSize;
     }
 
-    public @Nonnull ExecutionCriteria setLimit(int limit) {
-      this.limit = limit;
+    public @Nonnull ExecutionCriteria setPageSize(int pageSize) {
+      this.pageSize = pageSize;
       return this;
     }
 
@@ -188,13 +194,13 @@ public interface ExecutionRepository {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       ExecutionCriteria that = (ExecutionCriteria) o;
-      return limit == that.limit &&
+      return pageSize == that.pageSize &&
         Objects.equals(statuses, that.statuses) &&
         page == that.page;
     }
 
     @Override public int hashCode() {
-      return Objects.hash(limit, statuses, page);
+      return Objects.hash(pageSize, statuses, page);
     }
   }
 

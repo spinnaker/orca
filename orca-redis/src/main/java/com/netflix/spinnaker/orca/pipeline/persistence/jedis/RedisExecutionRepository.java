@@ -363,8 +363,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
           if (!criteria.getStatuses().isEmpty()) {
             observable = observable.filter(execution -> criteria.getStatuses().contains(execution.getStatus()));
           }
-          if (criteria.getLimit() > 0) {
-            observable = observable.limit(criteria.getLimit());
+          if (criteria.getPageSize() > 0) {
+            observable = observable.limit(criteria.getPageSize());
           }
           return observable;
         }
@@ -426,7 +426,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         (String key) ->
           !criteria.getStatuses().isEmpty() ? pipelineIds :
             redisClientDelegate.withCommandsClient(p -> {
-                return p.zrevrange(key, 0, (criteria.getLimit() - 1));
+                return p.zrevrange(key, 0, (criteria.getPageSize() - 1));
               }
             );
 
@@ -434,7 +434,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
      * Construct an observable that will retrieve pipelines from the primary redis
      */
     List<String> currentPipelineIds = filteredPipelineIdsByDelegate.getOrDefault(redisClientDelegate, new ArrayList<>());
-    currentPipelineIds = currentPipelineIds.subList(0, Math.min(criteria.getLimit(), currentPipelineIds.size()));
+    currentPipelineIds = currentPipelineIds.subList(0, Math.min(criteria.getPageSize(), currentPipelineIds.size()));
 
     Observable<Execution> currentObservable = retrieveObservable(
       PIPELINE,
@@ -450,7 +450,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
        */
       List<String> previousPipelineIds = filteredPipelineIdsByDelegate.getOrDefault(previousRedisClientDelegate.get(), new ArrayList<>());
       previousPipelineIds.removeAll(currentPipelineIds);
-      previousPipelineIds = previousPipelineIds.subList(0, Math.min(criteria.getLimit(), previousPipelineIds.size()));
+      previousPipelineIds = previousPipelineIds.subList(0, Math.min(criteria.getPageSize(), previousPipelineIds.size()));
 
       Observable<Execution> previousObservable = retrieveObservable(
         PIPELINE,
@@ -477,9 +477,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     @Nonnull List<String> pipelineConfigIds,
     long buildTimeStartBoundary,
     long buildTimeEndBoundary,
-    ExecutionCriteria executionCriteria,
-    int offset,
-    int limit
+    ExecutionCriteria executionCriteria
   ) {
     List<Execution> executions = new ArrayList<>();
     allRedisDelegates()
@@ -514,9 +512,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
       pipelineConfigIds,
       buildTimeStartBoundary,
       buildTimeEndBoundary,
-      executionCriteria,
-      0, //ignored
-      0 //ignored
+      executionCriteria
     );
 
     executions.sort(executionCriteria.getSortType());
@@ -565,14 +561,14 @@ public class RedisExecutionRepository implements ExecutionRepository {
               return orchestrationIds;
             }
             List<String> unfiltered = new ArrayList<>(c.smembers(key));
-            return unfiltered.subList(0, Math.min(criteria.getLimit(), unfiltered.size()));
+            return unfiltered.subList(0, Math.min(criteria.getPageSize(), unfiltered.size()));
           }));
 
     /*
      * Construct an observable that will retrieve orchestrations frcm the primary redis
      */
     List<String> currentOrchestrationIds = filteredOrchestrationIdsByDelegate.getOrDefault(redisClientDelegate, new ArrayList<>());
-    currentOrchestrationIds = currentOrchestrationIds.subList(0, Math.min(criteria.getLimit(), currentOrchestrationIds.size()));
+    currentOrchestrationIds = currentOrchestrationIds.subList(0, Math.min(criteria.getPageSize(), currentOrchestrationIds.size()));
 
     Observable<Execution> currentObservable = retrieveObservable(
       ORCHESTRATION,
@@ -588,7 +584,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
        */
       List<String> previousOrchestrationIds = filteredOrchestrationIdsByDelegate.getOrDefault(previousRedisClientDelegate.get(), new ArrayList<>());
       previousOrchestrationIds.removeAll(currentOrchestrationIds);
-      previousOrchestrationIds = previousOrchestrationIds.subList(0, Math.min(criteria.getLimit(), previousOrchestrationIds.size()));
+      previousOrchestrationIds = previousOrchestrationIds.subList(0, Math.min(criteria.getPageSize(), previousOrchestrationIds.size()));
 
       Observable<Execution> previousObservable = retrieveObservable(
         ORCHESTRATION,
@@ -627,7 +623,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
       executions.sort(sorter);
     }
 
-    return executions.subList(0, Math.min(executions.size(), criteria.getLimit()));
+    return executions.subList(0, Math.min(executions.size(), criteria.getPageSize()));
   }
 
   @Override

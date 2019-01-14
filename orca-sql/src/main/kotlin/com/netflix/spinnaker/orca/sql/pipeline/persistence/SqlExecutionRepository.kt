@@ -230,8 +230,8 @@ class SqlExecutionRepository(
       seek = {
         it.orderBy(field("id").desc())
           .run {
-            if (criteria.limit > 0) {
-              limit(criteria.limit)
+            if (criteria.pageSize > 0) {
+              limit(criteria.pageSize)
             } else {
               this
             }
@@ -259,7 +259,7 @@ class SqlExecutionRepository(
           .statusIn(criteria.statuses)
       },
       seek = {
-        it.orderBy(field("id").desc()).limit(criteria.limit)
+        it.orderBy(field("id").desc()).limit(criteria.pageSize)
       }
     )
 
@@ -302,7 +302,7 @@ class SqlExecutionRepository(
           else -> it.orderBy(field("id").desc())
         }
 
-        ordered.offset((criteria.page - 1) * criteria.limit).limit(criteria.limit)
+        ordered.offset((criteria.page - 1) * criteria.pageSize).limit(criteria.pageSize)
       }
     ).fetchExecutions().toMutableList()
   }
@@ -409,9 +409,7 @@ class SqlExecutionRepository(
     pipelineConfigIds: List<String>,
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
-    executionCriteria: ExecutionCriteria,
-    offset: Int,
-    limit: Int
+    executionCriteria: ExecutionCriteria
   ): List<Execution> {
     val select = jooq.selectExecutions(
       PIPELINE,
@@ -434,7 +432,9 @@ class SqlExecutionRepository(
           ExecutionComparator.NATURAL -> it.orderBy(field("id").desc())
           else -> it.orderBy(field("id").asc())
         }
-        seek.limit(executionCriteria.limit).offset(offset)
+        seek
+          .limit(executionCriteria.pageSize)
+          .offset((executionCriteria.page - 1) * executionCriteria.pageSize)
       }
     )
 
@@ -448,8 +448,8 @@ class SqlExecutionRepository(
     executionCriteria: ExecutionCriteria
   ): List<Execution> {
     val allExecutions = mutableListOf<Execution>()
-    var page = 0
-    val limit = executionCriteria.limit
+    var page = 1
+    val pageSize = executionCriteria.pageSize
     var moreResults = true
 
     while (moreResults) {
@@ -457,11 +457,9 @@ class SqlExecutionRepository(
         pipelineConfigIds,
         buildTimeStartBoundary,
         buildTimeEndBoundary,
-        executionCriteria,
-        page,
-        limit
+        executionCriteria.setPage(page)
       )
-      moreResults = results.size == limit
+      moreResults = results.size >= pageSize
       page += 1
 
       allExecutions.addAll(results)

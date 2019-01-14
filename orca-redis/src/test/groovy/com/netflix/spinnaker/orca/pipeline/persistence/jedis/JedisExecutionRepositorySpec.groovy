@@ -146,7 +146,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     }
 
     when:
-    def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(limit: limit))
+    def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(pageSize: limit))
       .toList().toBlocking().first()
 
     then:
@@ -257,7 +257,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
 
     when:
     // TODO-AJ limits are current applied to each backing redis
-    def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(limit: 2))
+    def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(pageSize: 2))
       .toList().toBlocking().first()
 
     then:
@@ -282,7 +282,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
 
     when:
     repository.delete(orchestration1.type, orchestration1.id)
-    def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(limit: 2))
+    def retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(pageSize: 2))
       .toList().toBlocking().first()
 
     then:
@@ -290,7 +290,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
 
     when:
     repository.delete(orchestration2.type, orchestration2.id)
-    retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(limit: 2))
+    retrieved = repository.retrieveOrchestrationsForApplication("orca", new ExecutionCriteria(pageSize: 2))
       .toList().toBlocking().first()
 
     then:
@@ -337,9 +337,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
       Arrays.asList("pipeline-2", "pipeline-3"),
       9L,
       11L,
-      new ExecutionCriteria(),
-      1,
-      10
+      new ExecutionCriteria()
     )
     retrieved.sort(BUILD_TIME)
 
@@ -408,7 +406,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
 
     when:
     // TODO-AJ limits are current applied to each backing redis
-    def retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionCriteria(limit: 2))
+    def retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionCriteria(pageSize: 2))
       .toList().toBlocking().first()
 
     then:
@@ -435,7 +433,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
 
     when:
     repository.delete(pipeline1.type, pipeline1.id)
-    def retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionCriteria(limit: 2))
+    def retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionCriteria(pageSize: 2))
       .toList().toBlocking().first()
 
     then:
@@ -443,7 +441,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
 
     when:
     repository.delete(pipeline2.type, pipeline2.id)
-    retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionCriteria(limit: 2))
+    retrieved = repository.retrievePipelinesForPipelineConfigId("pipeline-1", new ExecutionCriteria(pageSize: 2))
       .toList().toBlocking().first()
 
     then:
