@@ -33,8 +33,8 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.REVERSE_BUILD_TIME
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL_ASC
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_DESC
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.pipeline.persistence.UnpausablePipelineException
@@ -270,7 +270,7 @@ class SqlExecutionRepository(
     application: String,
     criteria: ExecutionCriteria
   ): Observable<Execution> {
-    return Observable.from(retrieveOrchestrationsForApplication(application, criteria, NATURAL))
+    return Observable.from(retrieveOrchestrationsForApplication(application, criteria, NATURAL_ASC))
   }
 
   override fun retrieveOrchestrationsForApplication(
@@ -298,7 +298,7 @@ class SqlExecutionRepository(
       seek = {
         val ordered = when (sorter) {
           START_TIME_OR_ID -> it.orderBy(field("start_time").desc().nullsFirst(), field("id").desc())
-          REVERSE_BUILD_TIME -> it.orderBy(field("build_time").asc(), field("id").asc())
+          BUILD_TIME_DESC -> it.orderBy(field("build_time").asc(), field("id").asc())
           else -> it.orderBy(field("id").desc())
         }
 
@@ -426,10 +426,10 @@ class SqlExecutionRepository(
       },
       seek = {
         val seek = when (executionCriteria.sortType) {
-          ExecutionComparator.BUILD_TIME -> it.orderBy(field("build_time").asc())
-          ExecutionComparator.REVERSE_BUILD_TIME -> it.orderBy(field("build_time").desc())
+          ExecutionComparator.BUILD_TIME_ASC -> it.orderBy(field("build_time").asc())
+          ExecutionComparator.BUILD_TIME_DESC -> it.orderBy(field("build_time").desc())
           ExecutionComparator.START_TIME_OR_ID -> it.orderBy(field("start_time").desc())
-          ExecutionComparator.NATURAL -> it.orderBy(field("id").desc())
+          ExecutionComparator.NATURAL_ASC -> it.orderBy(field("id").desc())
           else -> it.orderBy(field("id").asc())
         }
         seek

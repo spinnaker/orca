@@ -35,7 +35,7 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL_ASC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
@@ -161,7 +161,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     def orchestrations = repository.retrieveOrchestrationsForApplication(
       runningExecution.application,
       new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"]),
-      NATURAL
+      NATURAL_ASC
     )
 
     then:
@@ -173,7 +173,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     orchestrations = repository.retrieveOrchestrationsForApplication(
       runningExecution.application,
       new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING"]),
-      NATURAL
+      NATURAL_ASC
     )
 
     then:
@@ -183,7 +183,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     orchestrations = repository.retrieveOrchestrationsForApplication(
       runningExecution.application,
       new ExecutionCriteria(pageSize: 5, statuses: ["TERMINAL"]),
-      NATURAL
+      NATURAL_ASC
     )
 
     then:

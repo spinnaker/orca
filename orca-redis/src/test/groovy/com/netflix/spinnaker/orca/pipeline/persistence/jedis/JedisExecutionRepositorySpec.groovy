@@ -339,7 +339,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
       11L,
       new ExecutionCriteria()
     )
-    retrieved.sort(BUILD_TIME)
+    retrieved.sort(BUILD_TIME_ASC)
 
     then:
     retrieved*.buildTime == [9L, 11L]

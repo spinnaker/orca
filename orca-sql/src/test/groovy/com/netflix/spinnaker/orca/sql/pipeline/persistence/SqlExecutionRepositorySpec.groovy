@@ -470,14 +470,14 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
       ["foo1", "foo2"],
       0L,
       5L,
-      new ExecutionCriteria().setPageSize(1).setSortType(BUILD_TIME)
+      new ExecutionCriteria().setPageSize(1).setSortType(BUILD_TIME_ASC)
     )
     List<Execution> backwardsResults = repository
       .retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
       ["foo1", "foo2"],
       0L,
       5L,
-      new ExecutionCriteria().setPageSize(1).setSortType(REVERSE_BUILD_TIME)
+      new ExecutionCriteria().setPageSize(1).setSortType(BUILD_TIME_DESC)
     )
 
     then:

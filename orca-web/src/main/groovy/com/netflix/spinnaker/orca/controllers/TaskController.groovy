@@ -313,6 +313,11 @@ class TaskController {
   ) {
     validateSearchForPipelinesByTriggerParameters(triggerTimeStartBoundary, triggerTimeEndBoundary, startIndex, size)
 
+    ExecutionComparator sortType = BUILD_TIME_DESC
+    if (reverse) {
+      sortType = BUILD_TIME_ASC
+    }
+
     // Returned map will be empty if encodedTriggerParams is null
     final Map triggerParams = decodeTriggerParams(encodedTriggerParams)
 
@@ -337,7 +342,7 @@ class TaskController {
     }
 
     ExecutionCriteria executionCriteria =  new ExecutionCriteria()
-      .setSortType( reverse ? REVERSE_BUILD_TIME : BUILD_TIME )
+      .setSortType( sortType )
     if (statuses != null && statuses != "") {
       executionCriteria.setStatuses(statuses.split(",").toList())
     }

@@ -36,6 +36,7 @@ import java.time.Clock
 import java.time.Instant
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
 import static java.time.temporal.ChronoUnit.DAYS
@@ -159,7 +160,7 @@ class TaskControllerSpec extends Specification {
     def response = mockMvc.perform(get("/applications/$app/tasks")).andReturn().response
 
     then:
-    1 * executionRepository.retrieveOrchestrationsForApplication(app, _, _) >> []
+    1 * executionRepository.retrieveOrchestrationsForApplication(app, _, START_TIME_OR_ID) >> []
 
     where:
     app = "test"

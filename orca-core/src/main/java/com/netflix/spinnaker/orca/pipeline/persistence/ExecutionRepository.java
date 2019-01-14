@@ -152,7 +152,7 @@ public interface ExecutionRepository {
       return setStatuses(
         statuses
           .stream()
-          .map(ExecutionStatus::valueOf)
+          .map(it -> ExecutionStatus.valueOf(it.toUpperCase()))
           .collect(toList())
           .toArray(new ExecutionStatus[statuses.size()])
       );
@@ -206,14 +206,14 @@ public interface ExecutionRepository {
 
   enum ExecutionComparator implements Comparator<Execution> {
 
-    NATURAL {
+    NATURAL_ASC {
       @Override
       public int compare(Execution a, Execution b) {
         return b.getId().compareTo(a.getId());
       }
     },
 
-    REVERSE_NATURAL {
+    NATURAL_DESC {
       @Override
       public int compare(Execution a, Execution b) {
         return a.getId().compareTo(b.getId());
@@ -244,7 +244,7 @@ public interface ExecutionRepository {
       }
     },
 
-    REVERSE_BUILD_TIME {
+    BUILD_TIME_DESC {
       @Override
       public int compare(Execution a, Execution b) {
         Long aBuildTime = Optional.ofNullable(a.getBuildTime()).orElse(0L);
@@ -258,7 +258,7 @@ public interface ExecutionRepository {
       }
     },
 
-    BUILD_TIME {
+    BUILD_TIME_ASC {
       @Override
       public int compare(Execution a, Execution b) {
         Long aBuildTime = Optional.ofNullable(a.getBuildTime()).orElse(0L);
