@@ -51,7 +51,12 @@ public class DelegatingMortService
   }
 
   @Override
-  public Map getAccountDetails(String account) {
+  public AccountDetails getAccountDetails(String account) {
     return getService().getAccountDetails(account);
+  }
+
+  @Override
+  public List<AccountDetails> getAllAccountDetails() {
+    return getService().getAllAccountDetails();
   }
 }

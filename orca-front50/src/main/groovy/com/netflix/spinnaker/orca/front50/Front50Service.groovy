@@ -23,9 +23,6 @@ import retrofit.client.Response
 import retrofit.http.*
 
 interface Front50Service {
-  @GET("/credentials")
-  List<Front50Credential> getCredentials()
-
   @GET("/v2/applications/{applicationName}")
   Application get(@Path("applicationName") String applicationName)
 

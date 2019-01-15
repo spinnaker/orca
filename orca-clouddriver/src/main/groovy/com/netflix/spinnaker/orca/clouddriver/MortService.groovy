@@ -17,6 +17,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter
+import com.fasterxml.jackson.annotation.JsonAnySetter
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonRawValue
 import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.databind.JsonNode
@@ -50,7 +54,37 @@ interface MortService {
                                       @Query("type") String type)
 
   @GET("/credentials/{account}")
-  Map getAccountDetails(@Path("account") String account)
+  AccountDetails getAccountDetails(@Path("account") String account)
+
+  @GET("/credentials?expand=true")
+  List<AccountDetails> getAllAccountDetails()
+
+  @JsonIgnoreProperties(ignoreUnknown = false)
+  static class AccountDetails {
+    String name
+    String accountId
+    String type
+    String providerVersion
+    Collection<String> requiredGroupMembership = []
+    String skin
+    Map<String, Collection<String>> permissions
+    String accountType
+    String environment
+    Boolean challengeDestructiveActions
+    Boolean primaryAccount
+    String cloudProvider
+    private Map<String, Object> details = new HashMap<String, Object>()
+
+    @JsonAnyGetter
+    public Map<String,Object> details() {
+      return details
+    }
+
+    @JsonAnySetter
+    public void set(String name, Object value) {
+      details.put(name, value)
+    }
+  }
 
   static class SearchResult {
     int totalMatches
