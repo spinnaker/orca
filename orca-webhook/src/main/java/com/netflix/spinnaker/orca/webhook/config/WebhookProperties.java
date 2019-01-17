@@ -58,6 +58,7 @@ public class WebhookProperties {
     public String description;
     public String type;
     public List<PreconfiguredStageParameter> parameters;
+    public Map<String, Map<String, String>> parameterData;
 
     // Stage configuration fields (all optional):
     public String url;
