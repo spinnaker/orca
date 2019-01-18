@@ -51,7 +51,7 @@ class CreateWebhookTask implements RetryableTask {
     Map<String, ?> outputsDeprecated = [deprecationWarning: "All webhook information will be moved beneath the key 'webhook', " +
       "and the keys 'statusCode', 'buildInfo', 'statusEndpoint' and 'error' will be removed. Please migrate today."]
 
-    StageData stageData = stage.mapTo(null, StageData.class)
+    StageData stageData = stage.mapTo(StageData)
 
     def response
     try {
@@ -143,7 +143,7 @@ class CreateWebhookTask implements RetryableTask {
     public String url
     public Object payload
     public Object customHeaders
-    public int[] failFastStatusCodes
+    public List<Integer> failFastStatusCodes
     public Boolean waitForCompletion
     public WebhookProperties.StatusUrlResolution statusUrlResolution
     public String statusUrlJsonPath
