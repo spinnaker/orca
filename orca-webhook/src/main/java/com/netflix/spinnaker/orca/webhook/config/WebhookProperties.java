@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @Data
 @Slf4j
 public class WebhookProperties {
-  private static List<String> IGNORE_FIELDS = Arrays.asList("props", "enabled", "label", "description", "type", "parameters", "parameterValues", "permissions");
+  private static List<String> IGNORE_FIELDS = Arrays.asList("props", "enabled", "label", "description", "type", "parameters", "parameterValues", "permissions", "parameterData");
   private static List<Field> ALL_FIELDS = Arrays.stream(PreconfiguredWebhook.class.getDeclaredFields())
     .filter(f -> !f.isSynthetic())
     .filter(f -> !IGNORE_FIELDS.contains(f.getName()))
@@ -58,12 +58,12 @@ public class WebhookProperties {
     public String description;
     public String type;
     public List<PreconfiguredStageParameter> parameters;
-    public Map<String, Map<String, String>> parameterData;
 
     // Stage configuration fields (all optional):
     public String url;
     public Map<String, List<String>> customHeaders;
     public Map<String, String> parameterValues;
+    public Map<String, Map<String, String>> parameterData;
     public HttpMethod method;
     public String payload;
     public Boolean waitForCompletion;
