@@ -134,7 +134,7 @@ class CreateWebhookTask implements RetryableTask {
       }
       return new TaskResult(ExecutionStatus.SUCCEEDED, outputsDeprecated + outputs)
     } else {
-      outputs.webhook << [error: "The request returned an HTTP status code that couldn't be processed"]
+      outputs.webhook << [error: "The webhook request failed"]
       return new TaskResult(ExecutionStatus.TERMINAL, outputsDeprecated + outputs)
     }
   }

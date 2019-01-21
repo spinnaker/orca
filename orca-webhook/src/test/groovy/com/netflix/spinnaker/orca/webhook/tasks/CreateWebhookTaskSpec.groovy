@@ -148,7 +148,7 @@ class CreateWebhookTaskSpec extends Specification {
         statusCode: HttpStatus.BAD_REQUEST,
         statusCodeValue: HttpStatus.BAD_REQUEST.value(),
         body: [error: bodyString],
-        error: "The request returned an HTTP status code that couldn't be processed"
+        error: "The webhook request failed"
       ]
     ]
   }
