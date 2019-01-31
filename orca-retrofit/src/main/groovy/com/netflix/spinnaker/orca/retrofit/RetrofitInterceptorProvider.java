@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-apply from: "$rootDir/gradle/groovy.gradle"
+package com.netflix.spinnaker.orca.retrofit;
 
-dependencies {
-  compile project(":orca-clouddriver")
-  compile project(":orca-front50")
-  compile project(":orca-retrofit")
-  compile spinnaker.dependency('lombok')
-  testCompile project(":orca-test-groovy")
+import java.util.List;
+
+public interface RetrofitInterceptorProvider {
+  List<okhttp3.Interceptor> getInterceptors();
+  List<com.squareup.okhttp.Interceptor> getLegacyInterceptors();
 }
