@@ -20,17 +20,17 @@ import static java.lang.String.format;
 
 import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
+import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvider;
-import com.netflix.spinnaker.orca.pipeline.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,11 +38,9 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
   // Static because it's needed during expression eval (which is a static)
   private static Front50Service front50Service = null;
 
-  @Autowired
   PipelineExpressionFunctionProvider(Optional<Front50Service> front50Service) {
-    if (front50Service.isPresent()) {
-      PipelineExpressionFunctionProvider.front50Service = front50Service.get();
-    }
+    front50Service.ifPresent(
+        service -> PipelineExpressionFunctionProvider.front50Service = service);
   }
 
   @Nullable
@@ -54,7 +52,7 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
   @NotNull
   @Override
   public Collection<FunctionDefinition> getFunctions() {
-    return Arrays.asList(
+    return Collections.singletonList(
         new FunctionDefinition(
             "pipelineId",
             Arrays.asList(

@@ -23,8 +23,8 @@ import static java.util.Collections.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider.FunctionDefinition;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvider.FunctionDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;

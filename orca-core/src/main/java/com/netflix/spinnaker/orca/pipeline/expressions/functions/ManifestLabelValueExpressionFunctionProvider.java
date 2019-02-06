@@ -19,9 +19,9 @@ import static java.lang.String.format;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
+import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
+import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvider;
-import com.netflix.spinnaker.orca.pipeline.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;

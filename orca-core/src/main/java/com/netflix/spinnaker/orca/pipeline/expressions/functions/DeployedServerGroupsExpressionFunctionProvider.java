@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.pipeline.expressions.functions;
 import static java.util.Collections.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;
