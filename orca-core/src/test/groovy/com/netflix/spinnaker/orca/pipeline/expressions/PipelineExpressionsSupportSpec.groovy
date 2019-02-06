@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.expressions
 
+import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -24,7 +25,7 @@ import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage;
 
-class ExpressionsSupportSpec extends Specification {
+class PipelineExpressionsSupportSpec extends Specification {
   @Shared
   def pipeline = pipeline {
     stage {
@@ -103,7 +104,7 @@ class ExpressionsSupportSpec extends Specification {
   @Unroll
   def "stage() should match on #matchedAttribute"() {
     expect:
-    ExpressionsSupport.stage(pipeline, stageCriteria).context.region == expectedRegion
+    PipelineExpressionsSupport.stage(pipeline, stageCriteria).context.region == expectedRegion
 
     where:
     stageCriteria     || matchedAttribute || expectedRegion
@@ -114,13 +115,13 @@ class ExpressionsSupportSpec extends Specification {
 
   def "stage() should raise exception if stage not found"() {
     when:
-    ExpressionsSupport.stage(pipeline, "does_not_exist")
+    PipelineExpressionsSupport.stage(pipeline, "does_not_exist")
 
     then:
     thrown(SpelHelperFunctionException)
 
     when:
-    ExpressionsSupport.stage("not_an_expression", "does_not_matter")
+    PipelineExpressionsSupport.stage("not_an_expression", "does_not_matter")
 
     then:
     // raise exception when not passed an Execution
@@ -129,7 +130,7 @@ class ExpressionsSupportSpec extends Specification {
 
   def "stageExists() returns whether a stage exists or not"() {
     when:
-    def exists = ExpressionsSupport.stageExists(pipeline, id)
+    def exists = PipelineExpressionsSupport.stageExists(pipeline, id)
 
     then:
     exists == real
@@ -146,7 +147,7 @@ class ExpressionsSupportSpec extends Specification {
 
   def "deployedServerGroup should resolve for valid stage type"() {
     when:
-    def map = ExpressionsSupport.deployedServerGroups(pipeline)
+    def map = PipelineExpressionsSupport.deployedServerGroups(pipeline)
 
     then: "(deploy|createServerGroup|cloneServerGroup|rollingPush)"
     map.serverGroup == ["app-test-v001"]

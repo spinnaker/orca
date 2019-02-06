@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
+import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary
+import com.netflix.spinnaker.kork.expressions.ExpressionTransform
+import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluationSummary
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionTransform
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionsSupport
-import com.netflix.spinnaker.orca.pipeline.expressions.SpelHelperFunctionException
+import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionsSupport
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
@@ -764,7 +764,7 @@ class ContextParameterProcessorSpec extends Specification {
   @Unroll
   def 'json reader returns a list if the item passed starts with a ['() {
     expect:
-    expectedClass.isInstance(ExpressionsSupport.readJson(json))
+    expectedClass.isInstance(PipelineExpressionsSupport.readJson(json))
 
     where:
     json               | expectedClass

@@ -16,33 +16,57 @@
 
 package com.netflix.spinnaker.orca.pipeline.expressions;
 
-import com.netflix.spinnaker.orca.pipeline.util.ContextFunctionConfiguration;
+import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
+import com.netflix.spinnaker.kork.expressions.ExpressionTransform;
+import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.ParserContext;
+import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-public class PipelineExpressionEvaluator extends ExpressionsSupport implements ExpressionEvaluator {
+public class PipelineExpressionEvaluator {
   public static final String SUMMARY = "expressionEvaluationSummary";
   public static final String ERROR = "Failed Expression Evaluation";
 
+  private static final List<String> EXECUTION_AWARE_FUNCTIONS = Arrays.asList("judgment", "judgement", "stage", "stageExists", "deployedServerGroups");
+  private static final List<String> EXECUTION_AWARE_ALIASES = Collections.singletonList("deployedServerGroups");
+
   private final ExpressionParser parser = new SpelExpressionParser();
+  private final ParserContext parserContext = new TemplateParserContext("${", "}");
+  private final PipelineExpressionsSupport support;
 
-  public interface ExpressionEvaluationVersion {
-    String V2 = "v2";
+  private final Function<String, String> includeExecutionParameter = e -> {
+    String expression = e;
+    for (String fn : EXECUTION_AWARE_FUNCTIONS) {
+      if (expression.contains("#" + fn) && !expression.contains("#" + fn + "( #root.execution, ")) {
+        expression = expression.replaceAll("#" + fn + "\\(", "#" + fn + "( #root.execution, ");
+      }
+    }
+
+    for (String a : EXECUTION_AWARE_ALIASES) {
+      if (expression.contains(a) && !expression.contains("#" + a + "( #root.execution, ")) {
+        expression = expression.replaceAll(a, "#" + a + "( #root.execution)");
+      }
+    }
+
+    return expression;
+  };
+
+  public PipelineExpressionEvaluator(UserConfiguredUrlRestrictions urlRestrictions) {
+    this.support = new PipelineExpressionsSupport(urlRestrictions);
   }
 
-  public PipelineExpressionEvaluator(final ContextFunctionConfiguration contextFunctionConfiguration) {
-    super(contextFunctionConfiguration);
-  }
-
-  @Override
   public Map<String, Object> evaluate(Map<String, Object> source, Object rootObject, ExpressionEvaluationSummary summary, boolean allowUnknownKeys) {
-    StandardEvaluationContext evaluationContext = newEvaluationContext(rootObject, allowUnknownKeys);
-    return new ExpressionTransform(parserContext, parser).transformMap(source, evaluationContext, summary);
+    StandardEvaluationContext evaluationContext = support.buildEvaluationContext(rootObject, allowUnknownKeys);
+    return new ExpressionTransform(parserContext, parser, includeExecutionParameter, ExecutionStatus.class)
+      .transformMap(source, evaluationContext, summary);
   }
 }
-
-
-

@@ -30,11 +30,9 @@ import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
-import com.netflix.spinnaker.orca.pipeline.util.ContextFunctionConfiguration;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -46,12 +44,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.EventListenerFactory;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import rx.Notification;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
@@ -89,7 +85,7 @@ public class OrcaConfiguration {
     return OrcaObjectMapper.newInstance();
   }
 
-  @Bean @Order(Ordered.LOWEST_PRECEDENCE)
+  @Bean @Order
   public DefaultExceptionHandler defaultExceptionHandler() {
     return new DefaultExceptionHandler();
   }
@@ -104,7 +100,7 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(value = "jarDiffs.enabled", matchIfMissing = false)
+  @ConditionalOnProperty(value = "jarDiffs.enabled")
   public ComparableLooseVersion comparableLooseVersion() {
     return new DefaultComparableLooseVersion();
   }
@@ -121,15 +117,8 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  public ContextFunctionConfiguration contextFunctionConfiguration(UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
-                                                                   @Value("${spelEvaluator:v2}")
-                                                                     String spelEvaluator) {
-    return new ContextFunctionConfiguration(userConfiguredUrlRestrictions, spelEvaluator);
-  }
-
-  @Bean
-  public ContextParameterProcessor contextParameterProcessor(ContextFunctionConfiguration contextFunctionConfiguration) {
-    return new ContextParameterProcessor(contextFunctionConfiguration);
+  public ContextParameterProcessor contextParameterProcessor(UserConfiguredUrlRestrictions urlRestrictions) {
+    return new ContextParameterProcessor(urlRestrictions);
   }
 
   @Bean

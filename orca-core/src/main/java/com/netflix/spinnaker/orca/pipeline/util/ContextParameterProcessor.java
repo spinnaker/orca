@@ -18,10 +18,9 @@ package com.netflix.spinnaker.orca.pipeline.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluationSummary;
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluator;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger;
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.BuildInfo;
@@ -36,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ExpressionEvaluationVersion.V2;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyList;
@@ -51,14 +49,14 @@ public class ContextParameterProcessor {
 
   private final static ObjectMapper mapper = OrcaObjectMapper.newInstance();
 
-  private ExpressionEvaluator expressionEvaluator;
+  private PipelineExpressionEvaluator expressionEvaluator;
 
   public ContextParameterProcessor() {
-    this(new ContextFunctionConfiguration(new UserConfiguredUrlRestrictions.Builder().build(), V2));
+    this(new UserConfiguredUrlRestrictions.Builder().build());
   }
 
-  public ContextParameterProcessor(ContextFunctionConfiguration contextFunctionConfiguration) {
-    expressionEvaluator = new PipelineExpressionEvaluator(contextFunctionConfiguration);
+  public ContextParameterProcessor(UserConfiguredUrlRestrictions urlRestrictions) {
+    expressionEvaluator = new PipelineExpressionEvaluator(urlRestrictions);
   }
 
   public Map<String, Object> process(Map<String, Object> source, Map<String, Object> context, boolean allowUnknownKeys) {
