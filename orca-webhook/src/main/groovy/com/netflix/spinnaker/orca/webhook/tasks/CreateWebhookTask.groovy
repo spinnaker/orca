@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
+import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.apache.http.HttpHeaders
 import org.springframework.beans.factory.annotation.Autowired
@@ -61,7 +62,15 @@ class CreateWebhookTask implements RetryableTask {
 
       outputs.webhook << [statusCode: statusCode, statusCodeValue: statusCode.value()]
       if (e.responseBodyAsString) {
-        outputs.webhook << [body: e.responseBodyAsString]
+        def body = e.responseBodyAsString
+        try {
+          body = new JsonSlurper().parseText(body)
+        }
+        catch (IllegalArgumentException) {
+          // Just leave body as string
+        }
+
+        outputs.webhook << [body: body]
       }
 
       if ((stageData.failFastStatusCodes != null) &&
@@ -80,7 +89,11 @@ class CreateWebhookTask implements RetryableTask {
 
         return new TaskResult(ExecutionStatus.RUNNING, outputs)
       }
-      throw e
+
+      String errorMessage = "Error submitting webhook for pipeline ${stage.execution.id} to ${stageData.url} with status code ${statusCode}."
+      outputs.webhook << [error: errorMessage]
+
+      return new TaskResult(ExecutionStatus.TERMINAL, outputs)
     }
 
     def statusCode = response.statusCode
