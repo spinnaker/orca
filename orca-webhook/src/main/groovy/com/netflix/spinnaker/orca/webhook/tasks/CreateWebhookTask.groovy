@@ -18,6 +18,9 @@
 package com.netflix.spinnaker.orca.webhook.tasks
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.JsonMappingException
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.PathNotFoundException
 import com.jayway.jsonpath.internal.JsonContext
@@ -27,7 +30,6 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
-import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.apache.http.HttpHeaders
 import org.springframework.beans.factory.annotation.Autowired
@@ -62,12 +64,18 @@ class CreateWebhookTask implements RetryableTask {
 
       outputs.webhook << [statusCode: statusCode, statusCodeValue: statusCode.value()]
       if (e.responseBodyAsString) {
+        // Best effort parse of body in case it's JSON
         def body = e.responseBodyAsString
         try {
-          body = new JsonSlurper().parseText(body)
-        }
-        catch (IllegalArgumentException) {
-          // Just leave body as string
+          ObjectMapper objectMapper = new ObjectMapper()
+
+          if (body.startsWith("{")) {
+            body = objectMapper.readValue(body, Map.class)
+          } else if (body.startsWith("[")) {
+            body = objectMapper.readValue(body, List.class)
+          }
+        } catch (JsonParseException | JsonMappingException ex) {
+          // Just leave body as string, probs not JSON
         }
 
         outputs.webhook << [body: body]
