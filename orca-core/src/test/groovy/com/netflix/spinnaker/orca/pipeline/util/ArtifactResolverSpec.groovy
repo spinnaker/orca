@@ -22,14 +22,52 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import rx.Observable
 import spock.lang.Specification
 import spock.lang.Unroll
+
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class ArtifactResolverSpec extends Specification {
   def makeArtifactResolver() {
-    return new ArtifactResolver(new ObjectMapper(), Mock(ExecutionRepository))
+    return new ArtifactResolver(new ObjectMapper(), Mock(ExecutionRepository), new ContextParameterProcessor())
+  }
+
+  def "should resolve expressions in expected artifacts"() {
+    setup:
+    def executionRepository = Mock(ExecutionRepository)
+    executionRepository.retrievePipelinesForPipelineConfigId(_, _) >> Observable.empty()
+
+    def artifactResolver = new ArtifactResolver(new ObjectMapper(), executionRepository, new ContextParameterProcessor())
+
+    def pipeline = [
+      trigger          : [
+        buildNumber: 100,
+        artifacts  : [
+          [
+            type: 'http/file',
+            name: 'build/libs/my-jar-100.jar',
+          ]
+        ]
+      ],
+      expectedArtifacts: [
+        [
+          matchArtifact     : [
+            type: 'http/file',
+            name: '''build/libs/my-jar-${trigger['buildNumber']}.jar'''
+          ],
+          usePriorArtifact  : false,
+          useDefaultArtifact: false
+        ]
+      ]
+    ]
+
+    when:
+    artifactResolver.resolveArtifacts(pipeline)
+
+    then:
+    pipeline.trigger.resolvedExpectedArtifacts[0]?.matchArtifact?.name == 'build/libs/my-jar-100.jar'
   }
 
   def "should find upstream artifacts in small pipeline"() {

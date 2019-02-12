@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.Execu
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
@@ -37,14 +36,7 @@ import rx.schedulers.Schedulers;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,11 +52,12 @@ public class ArtifactResolver {
 
   private final ObjectMapper objectMapper;
   private final ExecutionRepository executionRepository;
+  private final ContextParameterProcessor contextParameterProcessor;
 
-  @Autowired
-  public ArtifactResolver(ObjectMapper objectMapper, ExecutionRepository executionRepository) {
+  public ArtifactResolver(ObjectMapper objectMapper, ExecutionRepository executionRepository, ContextParameterProcessor contextParameterProcessor) {
     this.objectMapper = objectMapper;
     this.executionRepository = executionRepository;
+    this.contextParameterProcessor = contextParameterProcessor;
   }
 
   public @Nonnull
@@ -153,11 +146,16 @@ public class ArtifactResolver {
     return execution == null ? Collections.emptyList() : getAllArtifacts(execution);
   }
 
-  public void resolveArtifacts(@Nonnull Map pipeline) {
+  public void resolveArtifacts(@Nonnull Map<String, Object> pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
+
     List<ExpectedArtifact> expectedArtifacts = Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
-      .map(list -> list.stream().map(it -> objectMapper.convertValue(it, ExpectedArtifact.class)).collect(toList()))
+      .map(list -> list.stream()
+        .map(artifact -> contextParameterProcessor.process((Map<String, Object>) artifact, pipeline, true))
+        .map(artifact -> objectMapper.convertValue(artifact, ExpectedArtifact.class))
+        .collect(toList()))
       .orElse(emptyList());
+
     List<Artifact> receivedArtifactsFromPipeline = Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
       .map(list -> list.stream().map(it -> objectMapper.convertValue(it, Artifact.class)).collect(toList()))
       .orElse(emptyList());
