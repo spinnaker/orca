@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.clouddriver.utils.ClusterNameValidator
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -48,7 +49,10 @@ class CreateServerGroupTask extends AbstractCloudProviderAwareTask implements Re
     if (!creator) {
       throw new IllegalStateException("ServerGroupCreator not found for cloudProvider $cloudProvider")
     }
-
+    def validationError = new ClusterNameValidator().validateClusterName(stage, cloudProvider)
+    if (validationError) {
+      throw new IllegalStateException("Cluster name validation failed : $validationError")
+    }
     def ops = creator.getOperations(stage)
     def taskId = kato.requestOperations(cloudProvider, ops).toBlocking().first()
 

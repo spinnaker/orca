@@ -54,6 +54,12 @@ class CreateServerGroupTaskSpec extends Specification {
     getOperations(_) >> [["cOp": "baz"]]
   }
   @Shared
+  ServerGroupCreator awsCreator = Stub(ServerGroupCreator) {
+    getCloudProvider() >> "aws"
+    isKatoResultExpected() >> true
+    getOperations(_) >> [["awsOp": "fizz"]]
+  }
+  @Shared
   TaskId taskId = new TaskId(UUID.randomUUID().toString())
 
   @Shared
@@ -91,6 +97,61 @@ class CreateServerGroupTaskSpec extends Specification {
     "aCloud"      | [["aOp": "foo"]] || baseOutput + ["kato.result.expected": false]
     "bCloud"      | [["bOp": "bar"]] || baseOutput + ["kato.result.expected": false]
     "cCloud"      | [["cOp": "baz"]] || baseOutput + ["kato.result.expected": true]
+  }
+
+  @Unroll
+  def "should fail to create server group"() {
+    given:
+    KatoService katoService = Mock(KatoService)
+    def task = new CreateServerGroupTask(kato: katoService, serverGroupCreators: [awsCreator])
+    def stage = ExecutionBuilder.stage {
+      type = "whatever"
+      context["credentials"] = "abc"
+      context["cloudProvider"] = cloudProvider
+      context["moniker"] = ["app": "applicationundertest",
+                            "stack": "integrationenvironment",
+                            "detail": "applicationdetailsundertest"]
+    }
+
+    when:
+    def result = task.execute(stage)
+
+    then:
+    thrown IllegalStateException
+
+    where:
+    cloudProvider | ops                 || outputs
+    "aws"         | [["awsOp": "fizz"]] || baseOutput + ["kato.result.expected": false]
+  }
+
+  @Unroll
+  def "should create server group"() {
+    given:
+    KatoService katoService = Mock(KatoService)
+    def task = new CreateServerGroupTask(kato: katoService, serverGroupCreators: [aCreator])
+    def stage = ExecutionBuilder.stage {
+      type = "whatever"
+      context["credentials"] = "abc"
+      context["cloudProvider"] = cloudProvider
+      context["moniker"] = ["app": "applicationundertest",
+                            "stack": "integrationenvironment",
+                            "detail": "applicationdetailsundertest"]
+    }
+
+    when:
+    def result = task.execute(stage)
+
+    then:
+    1 * katoService.requestOperations(cloudProvider, ops) >> {
+      Observable.from(taskId)
+    }
+
+    result
+    result.context == outputs
+
+    where:
+    cloudProvider | ops              || outputs
+    "aCloud"      | [["aOp": "foo"]] || baseOutput + ["kato.result.expected": false]
   }
 
   @Unroll
