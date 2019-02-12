@@ -423,6 +423,40 @@ public class Stage implements Serializable {
   }
 
   /**
+   * Recursively get all stages that are children of the current one
+   */
+  public List<Stage> allDownstreamStages() {
+    List<Stage> children = new ArrayList<>();
+
+    if (execution != null) {
+      HashSet<String> visited = new HashSet<>();
+      LinkedList<Stage> queue = new LinkedList<>();
+
+      queue.push(this);
+      boolean first = true;
+
+      while (!queue.isEmpty()) {
+        Stage stage = queue.pop();
+        if (!first) {
+          children.add(stage);
+        }
+
+        first = false;
+        visited.add(stage.refId);
+
+        List<Stage> childStages = stage.downstreamStages();
+
+        childStages
+          .stream()
+          .filter(s -> !visited.contains(s.refId))
+          .forEach(s -> queue.add(s));
+      }
+    }
+
+    return children;
+  }
+
+  /**
    * Maps the stage's context to a typed object
    */
   public <O> O mapTo(Class<O> type) {
