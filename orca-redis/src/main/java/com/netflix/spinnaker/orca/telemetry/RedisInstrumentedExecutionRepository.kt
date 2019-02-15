@@ -189,9 +189,21 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
+  override fun retrieveByCorrelationId(executionType: Execution.ExecutionType, correlationId: String): Execution {
+    return withMetrics("retrieveByCorrelationId") {
+      executionRepository.retrieveByCorrelationId(executionType, correlationId)
+    }
+  }
+
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): Execution {
     return withMetrics("retrieveOrchestrationForCorrelationId") {
       executionRepository.retrieveOrchestrationForCorrelationId(correlationId)
+    }
+  }
+
+  override fun retrievePipelineForCorrelationId(correlationId: String): Execution {
+    return withMetrics("retrievePipelineForCorrelationId") {
+      executionRepository.retrievePipelineForCorrelationId(correlationId)
     }
   }
 
@@ -207,17 +219,33 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds: MutableList<String>,
-                                                                             buildTimeStartBoundary: Long,
-                                                                             buildTimeEndBoundary: Long,
-                                                                             limit: Int): Observable<Execution> {
+  override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    pipelineConfigIds: MutableList<String>,
+    buildTimeStartBoundary: Long,
+    buildTimeEndBoundary: Long,
+    executionCriteria: ExecutionRepository.ExecutionCriteria
+  ): List<Execution> {
     return withMetrics("retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary") {
       executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
         buildTimeEndBoundary,
-        limit
-      )
+        executionCriteria)
+    }
+  }
+
+  override fun retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    pipelineConfigIds: List<String>,
+    buildTimeStartBoundary: Long,
+    buildTimeEndBoundary: Long,
+    executionCriteria: ExecutionRepository.ExecutionCriteria
+  ): List<Execution> {
+    return withMetrics("retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary") {
+      executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+        pipelineConfigIds,
+        buildTimeStartBoundary,
+        buildTimeEndBoundary,
+        executionCriteria)
     }
   }
 

@@ -43,7 +43,7 @@ public class ExpressionTransform {
   private final ParserContext parserContext;
   private final ExpressionParser parser;
 
-  ExpressionTransform(ParserContext parserContext, ExpressionParser parser) {
+  public ExpressionTransform(ParserContext parserContext, ExpressionParser parser) {
     this.parserContext = parserContext;
     this.parser = parser;
   }
@@ -80,7 +80,7 @@ public class ExpressionTransform {
     return result;
   }
 
-  private List transformList(List source,
+  public List transformList(List source,
                              EvaluationContext evaluationContext,
                              ExpressionEvaluationSummary summary,
                              Map<String, Object> additionalContext) {
@@ -104,7 +104,7 @@ public class ExpressionTransform {
     return result;
   }
 
-  private Object transformString(Object source,
+  public Object transformString(Object source,
                                  EvaluationContext evaluationContext,
                                  ExpressionEvaluationSummary summary,
                                  Map<String, Object> additionalContext) {

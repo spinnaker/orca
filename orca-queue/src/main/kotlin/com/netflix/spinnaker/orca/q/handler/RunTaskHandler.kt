@@ -107,7 +107,7 @@ class RunTaskHandler(
                     queue.push(message, task.backoffPeriod(taskModel, stage))
                     trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
                   }
-                  SUCCEEDED, REDIRECT, FAILED_CONTINUE, STOPPED -> {
+                  SUCCEEDED, REDIRECT, SKIPPED, FAILED_CONTINUE, STOPPED -> {
                     queue.push(CompleteTask(message, result.status))
                     trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
                   }
@@ -305,13 +305,20 @@ class RunTaskHandler(
 
   private fun Stage.withLoggingContext(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, block: () -> Unit) {
     try {
+      MDC.put("application", this.execution.application)
       MDC.put("stageType", type)
       MDC.put("taskType", taskModel.implementingClass)
+
+      if (taskModel.startTime != null) {
+        MDC.put("taskStartTime", taskModel.startTime.toString())
+      }
 
       block.invoke()
     } finally {
       MDC.remove("stageType")
       MDC.remove("taskType")
+      MDC.remove("taskStartTime")
+      MDC.remove("application")
     }
   }
 }

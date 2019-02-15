@@ -363,8 +363,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
           if (!criteria.getStatuses().isEmpty()) {
             observable = observable.filter(execution -> criteria.getStatuses().contains(execution.getStatus()));
           }
-          if (criteria.getLimit() > 0) {
-            observable = observable.limit(criteria.getLimit());
+          if (criteria.getPageSize() > 0) {
+            observable = observable.limit(criteria.getPageSize());
           }
           return observable;
         }
@@ -426,7 +426,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         (String key) ->
           !criteria.getStatuses().isEmpty() ? pipelineIds :
             redisClientDelegate.withCommandsClient(p -> {
-                return p.zrevrange(key, 0, (criteria.getLimit() - 1));
+                return p.zrevrange(key, 0, (criteria.getPageSize() - 1));
               }
             );
 
@@ -434,7 +434,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
      * Construct an observable that will retrieve pipelines from the primary redis
      */
     List<String> currentPipelineIds = filteredPipelineIdsByDelegate.getOrDefault(redisClientDelegate, new ArrayList<>());
-    currentPipelineIds = currentPipelineIds.subList(0, Math.min(criteria.getLimit(), currentPipelineIds.size()));
+    currentPipelineIds = currentPipelineIds.subList(0, Math.min(criteria.getPageSize(), currentPipelineIds.size()));
 
     Observable<Execution> currentObservable = retrieveObservable(
       PIPELINE,
@@ -450,7 +450,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
        */
       List<String> previousPipelineIds = filteredPipelineIdsByDelegate.getOrDefault(previousRedisClientDelegate.get(), new ArrayList<>());
       previousPipelineIds.removeAll(currentPipelineIds);
-      previousPipelineIds = previousPipelineIds.subList(0, Math.min(criteria.getLimit(), previousPipelineIds.size()));
+      previousPipelineIds = previousPipelineIds.subList(0, Math.min(criteria.getPageSize(), previousPipelineIds.size()));
 
       Observable<Execution> previousObservable = retrieveObservable(
         PIPELINE,
@@ -469,19 +469,54 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   /*
    * There is no guarantee that the returned results will be sorted.
-   * @param limit is only implemented in SqlExecutionRepository
+   * @param limit and the param @offset are only implemented in SqlExecutionRepository
    */
   @Override
   public @Nonnull
-  Observable<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+  List<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
     @Nonnull List<String> pipelineConfigIds,
     long buildTimeStartBoundary,
     long buildTimeEndBoundary,
-    int limit) {
-    List<Observable<Execution>> observables = allRedisDelegates().stream()
-      .map(d -> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(d, pipelineConfigIds, buildTimeStartBoundary, buildTimeEndBoundary))
+    ExecutionCriteria executionCriteria
+  ) {
+    List<Execution> executions = new ArrayList<>();
+    allRedisDelegates()
+      .forEach(d -> {
+        List<Execution> pipelines = getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(
+          d,
+          pipelineConfigIds,
+          buildTimeStartBoundary,
+          buildTimeEndBoundary
+        );
+        executions.addAll(pipelines);
+      });
+    return executions.stream()
+      .filter( it ->  {
+        if (executionCriteria.getStatuses().isEmpty()) {
+          return true;
+        } else {
+          return executionCriteria.getStatuses().contains(it.getStatus());
+        }
+      })
       .collect(Collectors.toList());
-    return Observable.merge(observables);
+  }
+
+  @Override
+  public List<Execution> retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    @Nonnull List<String> pipelineConfigIds,
+    long buildTimeStartBoundary,
+    long buildTimeEndBoundary,
+    ExecutionCriteria executionCriteria
+  ) {
+    List<Execution> executions = retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+      pipelineConfigIds,
+      buildTimeStartBoundary,
+      buildTimeEndBoundary,
+      executionCriteria
+    );
+
+    executions.sort(executionCriteria.getSortType());
+    return executions;
   }
 
   @Override
@@ -526,14 +561,14 @@ public class RedisExecutionRepository implements ExecutionRepository {
               return orchestrationIds;
             }
             List<String> unfiltered = new ArrayList<>(c.smembers(key));
-            return unfiltered.subList(0, Math.min(criteria.getLimit(), unfiltered.size()));
+            return unfiltered.subList(0, Math.min(criteria.getPageSize(), unfiltered.size()));
           }));
 
     /*
      * Construct an observable that will retrieve orchestrations frcm the primary redis
      */
     List<String> currentOrchestrationIds = filteredOrchestrationIdsByDelegate.getOrDefault(redisClientDelegate, new ArrayList<>());
-    currentOrchestrationIds = currentOrchestrationIds.subList(0, Math.min(criteria.getLimit(), currentOrchestrationIds.size()));
+    currentOrchestrationIds = currentOrchestrationIds.subList(0, Math.min(criteria.getPageSize(), currentOrchestrationIds.size()));
 
     Observable<Execution> currentObservable = retrieveObservable(
       ORCHESTRATION,
@@ -549,7 +584,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
        */
       List<String> previousOrchestrationIds = filteredOrchestrationIdsByDelegate.getOrDefault(previousRedisClientDelegate.get(), new ArrayList<>());
       previousOrchestrationIds.removeAll(currentOrchestrationIds);
-      previousOrchestrationIds = previousOrchestrationIds.subList(0, Math.min(criteria.getLimit(), previousOrchestrationIds.size()));
+      previousOrchestrationIds = previousOrchestrationIds.subList(0, Math.min(criteria.getPageSize(), previousOrchestrationIds.size()));
 
       Observable<Execution> previousObservable = retrieveObservable(
         ORCHESTRATION,
@@ -588,7 +623,17 @@ public class RedisExecutionRepository implements ExecutionRepository {
       executions.sort(sorter);
     }
 
-    return executions.subList(0, Math.min(executions.size(), criteria.getLimit()));
+    return executions.subList(0, Math.min(executions.size(), criteria.getPageSize()));
+  }
+
+  @Nonnull
+  @Override
+  public Execution retrieveByCorrelationId(@Nonnull ExecutionType executionType,
+                                           @Nonnull String correlationId) throws ExecutionNotFoundException {
+    if (executionType == PIPELINE) {
+      return retrievePipelineForCorrelationId(correlationId);
+    }
+    return retrieveOrchestrationForCorrelationId(correlationId);
   }
 
   @Override
@@ -601,7 +646,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
       if (orchestrationId != null) {
         Execution orchestration = retrieveInternal(
-          getRedisDelegateForOrchestrationId(orchestrationId),
+          getRedisDelegate(orchestrationKey(orchestrationId)),
           ORCHESTRATION,
           orchestrationId);
         if (!orchestration.getStatus().isComplete()) {
@@ -611,6 +656,30 @@ public class RedisExecutionRepository implements ExecutionRepository {
       }
       throw new ExecutionNotFoundException(
         format("No Orchestration found for correlation ID %s", correlationId)
+      );
+    });
+  }
+
+  @Nonnull
+  @Override
+  public Execution retrievePipelineForCorrelationId(@Nonnull String correlationId) throws ExecutionNotFoundException {
+    String key = format("pipelineCorrelation:%s", correlationId);
+    return getRedisDelegate(key).withCommandsClient(correlationRedis -> {
+      String pipelineId = correlationRedis.get(key);
+
+      if (pipelineId != null) {
+        Execution pipeline = retrieveInternal(
+          getRedisDelegate(pipelineKey(pipelineId)),
+          PIPELINE,
+          pipelineId
+        );
+        if (!pipeline.getStatus().isComplete()) {
+          return pipeline;
+        }
+        correlationRedis.del(key);
+      }
+      throw new ExecutionNotFoundException(
+        format("No Pipeline found for correlation ID %s", correlationId)
       );
     });
   }
@@ -945,7 +1014,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     });
   }
 
-  private Observable<Execution> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(RedisClientDelegate redisClientDelegate, List<String> pipelineConfigIds, long buildTimeStartBoundary, long buildTimeEndBoundary) {
+  private List<Execution> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(RedisClientDelegate redisClientDelegate, List<String> pipelineConfigIds, long buildTimeStartBoundary, long buildTimeEndBoundary) {
     List<Execution> executions = new ArrayList<>();
 
     redisClientDelegate.withScriptingClient(c -> {
@@ -985,7 +1054,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         executions.add(buildExecution(execution, map, stageIds));
       }
     });
-    return Observable.from(executions);
+    return executions;
   }
 
   protected Observable<Execution> all(ExecutionType type, RedisClientDelegate redisClientDelegate) {
@@ -1274,7 +1343,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   private RedisClientDelegate getRedisDelegate(String key) {
-    if (StringUtils.isBlank(key) || !previousRedisClientDelegate.isPresent()) {
+    if (Strings.isNullOrEmpty(key) || !previousRedisClientDelegate.isPresent()) {
       return redisClientDelegate;
     }
 
@@ -1289,32 +1358,6 @@ public class RedisExecutionRepository implements ExecutionRepository {
     if (delegate == null) {
       delegate = previousRedisClientDelegate.get().withCommandsClient(c -> {
         if (c.exists(key)) {
-          return previousRedisClientDelegate.get();
-        } else {
-          return null;
-        }
-      });
-    }
-
-    return (delegate == null) ? redisClientDelegate : delegate;
-  }
-
-  private RedisClientDelegate getRedisDelegateForOrchestrationId(String id) {
-    if (Strings.isNullOrEmpty(id) || !previousRedisClientDelegate.isPresent()) {
-      return redisClientDelegate;
-    }
-
-    RedisClientDelegate delegate = redisClientDelegate.withCommandsClient(c -> {
-      if (c.exists(orchestrationKey(id))) {
-        return redisClientDelegate;
-      } else {
-        return null;
-      }
-    });
-
-    if (delegate == null) {
-      delegate = previousRedisClientDelegate.get().withCommandsClient(c -> {
-        if (c.exists(orchestrationKey(id))) {
           return previousRedisClientDelegate.get();
         } else {
           return null;

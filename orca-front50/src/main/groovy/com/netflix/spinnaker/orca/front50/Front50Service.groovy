@@ -68,6 +68,12 @@ interface Front50Service {
   @GET("/pipelines?restricted=false")
   List<Map<String, Object>> getAllPipelines()
 
+  @POST('/actions/pipelines/reorder')
+  Response reorderPipelines(@Body ReorderPipelinesCommand reorderPipelinesCommand)
+
+  @POST('/actions/strategies/reorder')
+  Response reorderPipelineStrategies(@Body ReorderPipelinesCommand reorderPipelinesCommand)
+
   // pipeline template related
   @GET("/pipelineTemplates")
   List<Map<String, Object>> getPipelineTemplates(@Query("scopes") List<String> scopes)
@@ -89,16 +95,18 @@ interface Front50Service {
 
   // v2
   @POST("/v2/pipelineTemplates")
-  Response saveV2PipelineTemplate(@Body Map pipelineTemplate)
+  Response saveV2PipelineTemplate(@Query("version") String version, @Body Map pipelineTemplate)
 
   @GET("/v2/pipelineTemplates/{pipelineTemplateId}/dependentPipelines")
   List<Map<String, Object>> getDependentPipelinesForTemplate(@Path("pipelineTemplateId") String pipelineTemplateId)
 
   @PUT("/v2/pipelineTemplates/{pipelineTemplateId}")
-  Response updateV2PipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId, @Body Map pipelineTemplate)
+  Response updateV2PipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId, @Query("version") String version, @Body Map pipelineTemplate)
 
   @DELETE("/v2/pipelineTemplates/{pipelineTemplateId}")
-  Response deleteV2PipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId)
+  Response deleteV2PipelineTemplate(@Path("pipelineTemplateId") String pipelineTemplateId,
+                                    @Query("version") String version,
+                                    @Query("digest") String digest)
 
   @GET("/strategies")
   List<Map<String, Object>> getAllStrategies()
@@ -134,6 +142,16 @@ interface Front50Service {
     static class PipelineConfig {
       String application
       String pipelineConfigId
+    }
+  }
+
+  static class ReorderPipelinesCommand {
+    Map<String, Integer> idsToIndices
+    String application
+
+    ReorderPipelinesCommand(Map<String, Integer> idsToIndices, String application) {
+      this.idsToIndices = idsToIndices
+      this.application = application
     }
   }
 }

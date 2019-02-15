@@ -24,9 +24,13 @@ import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications.Notification
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.security.AuthenticatedRequest
+import org.slf4j.MDC
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
+
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 class EchoNotifyingExecutionListenerSpec extends Specification {
 
@@ -172,5 +176,51 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
     1 * front50Service.getApplicationNotifications("myapp") >> null
     1 * echoService.recordEvent(_)
     0 * _
+  }
+
+  def "propagates authentication details to front50"() {
+    given:
+    def pipeline = new Execution(PIPELINE, "myapp")
+    pipeline.setAuthentication(new Execution.AuthenticationDetails("user@schibsted.com", "someAccount", "anotherAccount"))
+
+    when:
+    echoListener.beforeExecution(null, pipeline)
+
+    then:
+    pipeline.notifications == [slackPipes]
+
+    1 * front50Service.getApplicationNotifications("myapp") >> {
+      assert MDC.get(AuthenticatedRequest.SPINNAKER_USER) == "user@schibsted.com"
+      assert MDC.get(AuthenticatedRequest.SPINNAKER_ACCOUNTS) == "someAccount,anotherAccount"
+      return notifications
+    }
+    1 * echoService.recordEvent(_)
+  }
+
+  def "handles cases with multiple notifications of the same type"() {
+    given:
+    def notification1 = new Notification([
+      address: "test-notify-1",
+      level  : "application",
+      type   : "slack",
+      when   : ["pipeline.starting", "pipeline.complete", "pipeline.failed"]
+    ])
+    def notification2 = new Notification([
+      address: "test-notify-2",
+      level  : "application",
+      type   : "slack",
+      when   : ["pipeline.starting", "pipeline.complete", "pipeline.failed"]
+    ])
+    notifications.set("slack", [notification1, notification2])
+    def pipeline = new Execution(PIPELINE, "myapp")
+
+    when:
+    echoListener.beforeExecution(null, pipeline)
+
+    then:
+    pipeline.notifications == [notification1, notification2]
+
+    1 * front50Service.getApplicationNotifications("myapp") >> notifications
+    1 * echoService.recordEvent(_)
   }
 }
