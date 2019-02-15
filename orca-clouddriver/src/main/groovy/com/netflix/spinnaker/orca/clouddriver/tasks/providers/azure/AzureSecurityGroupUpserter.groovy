@@ -35,8 +35,16 @@ class AzureSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvider
   @Override
   SecurityGroupUpserter.OperationContext getOperationContext(Stage stage) {
     def ops = [[(SecurityGroupUpserter.OPERATION): stage.context]]
+
+    // We used to get the `name` directly from the `context` which works
+    // tasks but not pipelines because orca will remove `name` from the context
+    // before it passes it on to stages/tasks.
+    // We switch to using `securityGroupName` field but for backwards compat we will support
+    // both for while all services deploy and queues drain with old field
+    String securityGroupName = stage.context.securityGroupName ?: stage.context.name
+
     def targets = [
-      new MortService.SecurityGroup(name: stage.context.name,
+      new MortService.SecurityGroup(name: securityGroupName,
         region: stage.context.region,
         accountName: getCredentials(stage))
     ]
