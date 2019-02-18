@@ -46,7 +46,7 @@ class UpsertSecurityGroupTask extends AbstractCloudProviderAwareTask {
     // before it passes it on to stages/tasks.
     // Switch to using `securityGroupName` field but for backwards compat we will support
     // both while all services deploy and queues drain with the old field
-    if (stage.context.securityGroupName == null) {
+    if (!stage.context.securityGroupName) {
       stage.context.securityGroupName = stage.context.name
     }
 
