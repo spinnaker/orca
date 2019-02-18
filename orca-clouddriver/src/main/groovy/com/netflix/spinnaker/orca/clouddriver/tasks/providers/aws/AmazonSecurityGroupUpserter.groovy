@@ -53,16 +53,9 @@ class AmazonSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
         ).id
       }
 
-      // We used to get the `name` directly from the `context` which works
-      // tasks but not pipelines because orca will remove `name` from the context
-      // before it passes it on to stages/tasks.
-      // We switch to using `securityGroupName` field but for backwards compat we will support
-      // both for while all services deploy and queues drain with old field
-      String securityGroupName = operation.securityGroupName ?: operation.name
-
       return [
           (SecurityGroupUpserter.OPERATION): [
-              name                : securityGroupName,
+              name                : operation.securityGroupName,
               credentials         : getCredentials(stage),
               region              : region,
               vpcId               : vpcId,
