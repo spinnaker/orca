@@ -1,4 +1,4 @@
-package com.netflix.spinnaker.orca.gremlin.config;
+package com.netflix.spinnaker.orca.config;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -7,6 +7,7 @@ import com.netflix.spinnaker.orca.gremlin.GremlinService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import retrofit.RestAdapter
 import retrofit.client.Client
 
 @Configuration
+@ConditionalOnProperty("integrations.gremlin.enabled")
 @ComponentScan(
   "com.netflix.spinnaker.orca.gremlin.pipeline",
   "com.netflix.spinnaker.orca.gremlin.tasks"
@@ -25,7 +27,7 @@ class GremlinConfiguration {
 
   @Bean
   fun gremlinEndpoint(
-    @Value("\${gremlin.baseUrl}") gremlinBaseUrl: String): Endpoint {
+    @Value("\${integrations.gremlin.baseUrl}") gremlinBaseUrl: String): Endpoint {
     return Endpoints.newFixedEndpoint(gremlinBaseUrl)
   }
 
@@ -44,7 +46,7 @@ class GremlinConfiguration {
       .setRequestInterceptor(spinnakerRequestInterceptor)
       .setEndpoint(gremlinEndpoint)
       .setClient(retrofitClient)
-      .setLogLevel(RestAdapter.LogLevel.FULL)
+      .setLogLevel(RestAdapter.LogLevel.BASIC)
       .setLog(RetrofitSlf4jLog(GremlinService::class.java))
       .setConverter(GremlinConverter(mapper))
       .build()

@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.applications.config.ApplicationConfig
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.ClouddriverJobConfiguration
+import com.netflix.spinnaker.orca.config.GremlinConfiguration
 import com.netflix.spinnaker.orca.config.KeelConfiguration
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.config.PipelineTemplateConfiguration
@@ -33,7 +34,6 @@ import com.netflix.spinnaker.orca.echo.config.EchoConfiguration
 import com.netflix.spinnaker.orca.eureka.DiscoveryPollingConfiguration
 import com.netflix.spinnaker.orca.flex.config.FlexConfiguration
 import com.netflix.spinnaker.orca.front50.config.Front50Configuration
-import com.netflix.spinnaker.orca.gremlin.config.GremlinConfiguration
 import com.netflix.spinnaker.orca.igor.config.IgorConfiguration
 import com.netflix.spinnaker.orca.kayenta.config.KayentaConfiguration
 import com.netflix.spinnaker.orca.mine.config.MineConfiguration
