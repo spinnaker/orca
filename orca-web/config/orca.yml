@@ -50,7 +50,7 @@ logging:
 
 integrations:
   gremlin:
-    enabled: true
+    enabled: false
     baseUrl: https://api.gremlin.com/v1
 
 # This configuration lets you configure Webhook stages that will appear as native stages in the Deck UI.
