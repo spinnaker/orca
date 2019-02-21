@@ -15,6 +15,6 @@ public class UpsertDeliveryConfigStage implements StageDefinitionBuilder {
   public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("upsertDeliveryConfig", UpsertDeliveryConfigTask.class)
-      .withTask("monitorSave", MonitorFront50Task.class);
+      .withTask("monitorUpsert", MonitorFront50Task.class);
   }
 }

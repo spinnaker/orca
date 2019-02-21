@@ -3,7 +3,7 @@ package com.netflix.spinnaker.orca.front50.tasks;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.RetryableTask;
+import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.DeliveryConfig;
@@ -11,30 +11,26 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import retrofit.client.Response;
+import retrofit.RetrofitError;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Component
-public class UpsertDeliveryConfigTask implements RetryableTask {
+public class UpsertDeliveryConfigTask implements Task {
 
   private Logger log = LoggerFactory.getLogger(getClass());
 
   private Front50Service front50Service;
   private ObjectMapper objectMapper;
-  private DeliveryConfigUtils deliveryConfigUtils;
 
   @Autowired
   public UpsertDeliveryConfigTask(Front50Service front50Service, ObjectMapper objectMapper) {
     this.front50Service = front50Service;
     this.objectMapper = objectMapper;
-    deliveryConfigUtils = new DeliveryConfigUtils(front50Service, objectMapper);
   }
 
   @Nonnull
@@ -48,39 +44,33 @@ public class UpsertDeliveryConfigTask implements RetryableTask {
     DeliveryConfig deliveryConfig = objectMapper
       .convertValue(stage.getContext().get("delivery"), new TypeReference<DeliveryConfig>(){});
 
-    log.debug("Received delivery config: " + deliveryConfig);
-
-    Response response;
-    if (deliveryConfigUtils.configExists(deliveryConfig.getId())) {
-      response = front50Service.updateDeliveryConfig(deliveryConfig.getId(), deliveryConfig);
+    DeliveryConfig savedConfig;
+    if (configExists(deliveryConfig.getId())) {
+      savedConfig = front50Service.updateDeliveryConfig(deliveryConfig.getId(), deliveryConfig);
     } else {
-      response = front50Service.createDeliveryConfig(deliveryConfig);
+      savedConfig = front50Service.createDeliveryConfig(deliveryConfig);
     }
 
     Map<String, Object> outputs = new HashMap<>();
     outputs.put("application", deliveryConfig.getApplication());
+    outputs.put("deliveryConfig", savedConfig);
 
-    DeliveryConfig savedConfig;
-    try {
-      savedConfig = objectMapper.readValue(response.getBody().in(), DeliveryConfig.class);
-      outputs.put("deliveryConfig", savedConfig);
-    } catch (IOException e) {
-      log.error("Unable to deserialize saved delivery config, reason: ", e.getMessage());
+    return new TaskResult(ExecutionStatus.SUCCEEDED, outputs);
+  }
+
+  private boolean configExists(String id) {
+    if (id == null) {
+      return false;
     }
-
-    return new TaskResult(
-      (response.getStatus() == HttpStatus.OK.value()) ? ExecutionStatus.SUCCEEDED : ExecutionStatus.TERMINAL,
-      outputs
-    );
-  }
-
-  @Override
-  public long getBackoffPeriod() {
-    return 1000;
-  }
-
-  @Override
-  public long getTimeout() {
-    return TimeUnit.SECONDS.toMillis(30);
+    try {
+      front50Service.getDeliveryConfig(id);
+      return true;
+    } catch (RetrofitError e) {
+      if (e.getResponse() != null && Arrays.asList(404, 403, 401).contains(e.getResponse().getStatus())) {
+        return false;
+      } else {
+        throw e;
+      }
+    }
   }
 }

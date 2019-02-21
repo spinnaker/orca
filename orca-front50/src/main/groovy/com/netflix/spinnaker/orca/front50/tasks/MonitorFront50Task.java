@@ -29,8 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import retrofit.RetrofitError;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,7 +47,6 @@ public class MonitorFront50Task implements RetryableTask {
   private final int successThreshold;
   private final int gracePeriodMs;
 
-  private final DeliveryConfigUtils deliveryConfigUtils;
   private final ObjectMapper objectMapper;
 
   @Autowired
@@ -60,7 +61,6 @@ public class MonitorFront50Task implements RetryableTask {
     // some storage providers round the last modified time to the nearest second, this allows for a configurable
     // grace period when comparing against a stage start time (always at millisecond granularity).
     this.gracePeriodMs = gracePeriodMs;
-    this.deliveryConfigUtils = new DeliveryConfigUtils(front50Service.get(), objectMapper);
   }
 
   @Override
@@ -163,8 +163,17 @@ public class MonitorFront50Task implements RetryableTask {
 
   @SuppressWarnings("unchecked")
   private Optional<Map<String, Object>> getDeliveryConfig(String id) {
-    Optional<DeliveryConfig> c = deliveryConfigUtils.getDeliveryConfig(id);
-    return c.map(deliveryConfig -> objectMapper.convertValue(deliveryConfig, Map.class));
+    try {
+      DeliveryConfig deliveryConfig = front50Service.getDeliveryConfig(id);
+      return Optional.of(objectMapper.convertValue(deliveryConfig, Map.class));
+    } catch (RetrofitError e) {
+      //ignore an unknown (404) or unauthorized (403, 401)
+      if (e.getResponse() != null && Arrays.asList(404, 403, 401).contains(e.getResponse().getStatus())) {
+        return Optional.empty();
+      } else {
+        throw e;
+      }
+    }
   }
 
   private static class StageData {
@@ -176,7 +185,6 @@ public class MonitorFront50Task implements RetryableTask {
     @JsonProperty("pipeline.name")
     public String pipelineName;
 
-    @JsonProperty("deliveryConfig")
     public DeliveryConfig deliveryConfig;
   }
 }

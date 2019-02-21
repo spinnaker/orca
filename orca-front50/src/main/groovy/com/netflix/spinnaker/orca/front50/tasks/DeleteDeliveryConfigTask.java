@@ -1,6 +1,5 @@
 package com.netflix.spinnaker.orca.front50.tasks;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -13,12 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import retrofit.client.Response;
+import retrofit.RetrofitError;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 import java.util.Optional;
-
-import static org.springframework.http.HttpStatus.*;
 
 @Component
 public class DeleteDeliveryConfigTask implements Task {
@@ -27,13 +25,11 @@ public class DeleteDeliveryConfigTask implements Task {
 
   private Front50Service front50Service;
   private ObjectMapper objectMapper;
-  private DeliveryConfigUtils deliveryConfigUtils;
 
   @Autowired
   public DeleteDeliveryConfigTask(Front50Service front50Service, ObjectMapper objectMapper) {
     this.front50Service = front50Service;
     this.objectMapper = objectMapper;
-    deliveryConfigUtils = new DeliveryConfigUtils(front50Service, objectMapper);
   }
 
   @Nonnull
@@ -45,7 +41,7 @@ public class DeleteDeliveryConfigTask implements Task {
       throw new IllegalArgumentException("Key 'deliveryConfigId' must be provided.");
     }
 
-    Optional<DeliveryConfig> config = deliveryConfigUtils.getDeliveryConfig(stageData.deliveryConfigId);
+    Optional<DeliveryConfig> config = getDeliveryConfig(stageData.deliveryConfigId);
 
     if (!config.isPresent()) {
       log.debug("Config {} does not exist, considering deletion successful.", stageData.deliveryConfigId);
@@ -55,16 +51,26 @@ public class DeleteDeliveryConfigTask implements Task {
     try {
       log.debug("Deleting delivery config: " + objectMapper.writeValueAsString(config.get()));
     } catch (JsonProcessingException e) {
-      log.warn("Error serializing delivery config object: ", e);
-      log.debug("Deleting malformed delivery config:" + config.get());
+      // ignore
     }
-    Response response = front50Service.deleteDeliveryConfig(config.get().getApplication(), stageData.deliveryConfigId);
 
-    ExecutionStatus taskStatus = (response.getStatus() == NO_CONTENT.value() || response.getStatus() == OK.value())
-      ? ExecutionStatus.SUCCEEDED
-      : ExecutionStatus.TERMINAL;
+    front50Service.deleteDeliveryConfig(config.get().getApplication(), stageData.deliveryConfigId);
 
-    return new TaskResult(taskStatus);
+    return new TaskResult(ExecutionStatus.SUCCEEDED);
+  }
+
+  public Optional<DeliveryConfig> getDeliveryConfig(String id) {
+    try {
+      DeliveryConfig deliveryConfig = front50Service.getDeliveryConfig(id);
+      return Optional.of(deliveryConfig);
+    } catch (RetrofitError e) {
+      //ignore an unknown (404) or unauthorized (403, 401)
+      if (e.getResponse() != null && Arrays.asList(404, 403, 401).contains(e.getResponse().getStatus())) {
+        return Optional.empty();
+      } else {
+        throw e;
+      }
+    }
   }
 
   private static class StageData {

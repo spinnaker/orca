@@ -131,13 +131,13 @@ interface Front50Service {
   Response saveServiceAccount(@Body ServiceAccount serviceAccount)
 
   @GET("/deliveries/{id}")
-  Response getDeliveryConfig(@Path("id") String id)
+  DeliveryConfig getDeliveryConfig(@Path("id") String id)
 
   @POST("/deliveries")
-  Response createDeliveryConfig(@Body DeliveryConfig deliveryConfig)
+  DeliveryConfig createDeliveryConfig(@Body DeliveryConfig deliveryConfig)
 
   @PUT("/deliveries/{id}")
-  Response updateDeliveryConfig(@Path("id") String id, @Body DeliveryConfig deliveryConfig)
+  DeliveryConfig updateDeliveryConfig(@Path("id") String id, @Body DeliveryConfig deliveryConfig)
 
   @DELETE("/applications/{application}/deliveries/{id}")
   Response deleteDeliveryConfig(@Path("application") String application, @Path("id") String id)
