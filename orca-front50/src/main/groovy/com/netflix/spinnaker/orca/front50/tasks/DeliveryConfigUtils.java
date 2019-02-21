@@ -27,8 +27,8 @@ public class DeliveryConfigUtils {
       DeliveryConfig deliveryConfig = readResponse(front50Service.getDeliveryConfig(id));
       return deliveryConfig == null ? Optional.empty() : Optional.of(deliveryConfig);
     } catch (RetrofitError e) {
-      //ignore an unknown (404) or unauthorized (403)
-      if (e.getResponse() != null && Arrays.asList(404, 403).contains(e.getResponse().getStatus())) {
+      //ignore an unknown (404) or unauthorized (403, 401)
+      if (e.getResponse() != null && Arrays.asList(404, 403, 401).contains(e.getResponse().getStatus())) {
         return Optional.empty();
       } else {
         throw e;

@@ -1,5 +1,6 @@
 package com.netflix.spinnaker.orca.front50.tasks;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -38,29 +39,35 @@ public class DeleteDeliveryConfigTask implements Task {
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull Stage stage) {
-    if (!stage.getContext().containsKey("deliveryConfigId")) {
+    StageData stageData = stage.mapTo(StageData.class);
+
+    if (stageData.deliveryConfigId == null) {
       throw new IllegalArgumentException("Key 'deliveryConfigId' must be provided.");
     }
 
-    String configId = stage.getContext().get("deliveryConfigId").toString();
-    Optional<DeliveryConfig> config = deliveryConfigUtils.getDeliveryConfig(configId);
+    Optional<DeliveryConfig> config = deliveryConfigUtils.getDeliveryConfig(stageData.deliveryConfigId);
 
     if (!config.isPresent()) {
-      log.debug("Config {} does not exist, considering deletion successful.", configId);
+      log.debug("Config {} does not exist, considering deletion successful.", stageData.deliveryConfigId);
       return new TaskResult(ExecutionStatus.SUCCEEDED);
     }
 
     try {
       log.debug("Deleting delivery config: " + objectMapper.writeValueAsString(config.get()));
     } catch (JsonProcessingException e) {
+      log.warn("Error serializing delivery config object: ", e);
       log.debug("Deleting malformed delivery config:" + config.get());
     }
-    Response response = front50Service.deleteDeliveryConfig(config.get().getApplication(), configId);
+    Response response = front50Service.deleteDeliveryConfig(config.get().getApplication(), stageData.deliveryConfigId);
 
     ExecutionStatus taskStatus = (response.getStatus() == NO_CONTENT.value() || response.getStatus() == OK.value())
       ? ExecutionStatus.SUCCEEDED
       : ExecutionStatus.TERMINAL;
 
     return new TaskResult(taskStatus);
+  }
+
+  private static class StageData {
+    public String deliveryConfigId;
   }
 }
