@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Google, Inc.
+ * Copyright 2019 Pivotal, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipelinetemplate.loader.v2;
+package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 
-import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
+import org.springframework.stereotype.Component;
 
-import java.net.URI;
-
-public interface V2TemplateSchemeLoader {
-  boolean supports(URI uri);
-  V2PipelineTemplate load(URI uri);
+@Component
+public class UnmapLoadBalancersTask extends AbstractLoadBalancerRegistrationTask {
+  @Override
+  public String getAction() {
+    return "unmapLoadBalancers";
+  }
 }

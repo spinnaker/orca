@@ -36,7 +36,11 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+
+import javax.annotation.Nonnull
+
 import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor.StageDefinition
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup.Support.locationFromStageData
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Slf4j
@@ -105,13 +109,17 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
     }
   }
 
+  private Strategy getStrategy(Stage stage) {
+    return (Strategy) strategies.findResult(noStrategy, {
+      it.name.equalsIgnoreCase(stage.context.strategy as String) ? it : null
+    })
+
+  }
+
   @Override
   List<Stage> aroundStages(Stage stage) {
     correctContext(stage)
-    Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
-      it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
-    })
-
+    Strategy strategy = getStrategy(stage)
     def preProcessors = deployStagePreProcessors.findAll { it.supports(stage) }
     def stageData = stage.mapTo(StageData)
     def stages = []
@@ -219,7 +227,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
     }
 
     static CleanupConfig fromStage(StageData stageData) {
-      def loc = TargetServerGroup.Support.locationFromStageData(stageData)
+      def loc = locationFromStageData(stageData)
       new CleanupConfig(
         account: stageData.account,
         cluster: stageData.cluster,

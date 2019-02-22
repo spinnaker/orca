@@ -20,12 +20,15 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.AbstractDeployStrategyStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nullable
 
 import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.getSource
 
@@ -60,12 +63,19 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   List<StageDefinition> beforeStageDefinitions(Stage stage) {
     def stageData = stage.mapTo(StageData)
     if (shouldPinSourceServerGroup(stageData.strategy)) {
-      def resizeContext = getResizeContext(stageData)
+      def optionalResizeContext = getResizeContext(stageData)
+      if (!optionalResizeContext.isPresent()) {
+        // this means we don't need to resize anything
+        // happens in particular when there is no pre-existing source server group
+        return []
+      }
+
+      def resizeContext = optionalResizeContext.get()
       resizeContext.pinMinimumCapacity = true
 
       return [
         new StageDefinition(
-          name: "Pin ${resizeContext.serverGroupName}".toString(),
+          name: "Pin ${resizeContext.serverGroupName}",
           stageDefinitionBuilder: resizeServerGroupStage,
           context: resizeContext
         )
@@ -88,7 +98,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
       )
     }
 
-    def unpinServerGroupStage = buildUnpinServerGroupStage(stageData)
+    def unpinServerGroupStage = buildUnpinServerGroupStage(stageData, false)
     if (unpinServerGroupStage) {
       stageDefinitions << unpinServerGroupStage
     }
@@ -101,7 +111,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
     def stageData = stage.mapTo(StageData)
     def stageDefinitions = []
 
-    def unpinServerGroupStage = buildUnpinServerGroupStage(stageData)
+    def unpinServerGroupStage = buildUnpinServerGroupStage(stageData, true)
     if (unpinServerGroupStage) {
       stageDefinitions << unpinServerGroupStage
     }
@@ -120,7 +130,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
     return strategy == "rollingredblack"
   }
 
-  private Map<String, Object> getResizeContext(StageData stageData) {
+  private Optional<Map<String, Object>> getResizeContext(StageData stageData) {
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stageData)
     def baseContext = [
       (cleanupConfig.location.singularType()): cleanupConfig.location.value,
@@ -130,22 +140,41 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
       cloudProvider                          : cleanupConfig.cloudProvider,
     ]
 
-    def source = getSource(targetServerGroupResolver, stageData, baseContext)
-    baseContext.putAll([
-      serverGroupName   : source.serverGroupName,
-      action            : ResizeStrategy.ResizeAction.scale_to_server_group,
-      source            : source,
-      useNameAsLabel    : true     // hint to deck that it should _not_ override the name
-    ])
-    return baseContext
+    try {
+      def source = getSource(targetServerGroupResolver, stageData, baseContext)
+      if (!source) {
+        return Optional.empty()
+      }
+
+      baseContext.putAll([
+        serverGroupName   : source.serverGroupName,
+        action            : ResizeStrategy.ResizeAction.scale_to_server_group,
+        source            : source,
+        useNameAsLabel    : true     // hint to deck that it should _not_ override the name
+      ])
+      return Optional.of(baseContext)
+    } catch(TargetServerGroup.NotFoundException e) {
+      return Optional.empty()
+    }
   }
 
-  private StageDefinition buildUnpinServerGroupStage(StageData stageData) {
+  private StageDefinition buildUnpinServerGroupStage(StageData stageData, boolean deployFailed) {
     if (!shouldPinSourceServerGroup(stageData.strategy)) {
       return null;
     }
 
-    def resizeContext = getResizeContext(stageData)
+    if (stageData.scaleDown && !deployFailed) {
+      // source server group has been scaled down, no need to unpin if deploy was successful
+      return null
+    }
+
+    def optionalResizeContext = getResizeContext(stageData)
+    if (!optionalResizeContext.isPresent()) {
+      // no source server group, no need to unpin anything
+      return null
+    }
+
+    def resizeContext = optionalResizeContext.get()
     resizeContext.unpinMinimumCapacity = true
 
     return new StageDefinition(

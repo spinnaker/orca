@@ -24,8 +24,10 @@ import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Slf4j
@@ -65,7 +67,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         )
       }
     } catch (Exception e) {
-      log.error("Failed to send pipeline start event: ${execution?.id}")
+      log.error("Failed to send pipeline start event: ${execution?.id}", e)
     }
   }
 
@@ -89,7 +91,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         )
       }
     } catch (Exception e) {
-      log.error("Failed to send pipeline end event: ${execution?.id}")
+      log.error("Failed to send pipeline end event: ${execution?.id}", e)
     }
   }
 
@@ -102,7 +104,15 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
    * @param pipeline
    */
   private void addApplicationNotifications(Execution pipeline) {
-    ApplicationNotifications notifications = front50Service.getApplicationNotifications(pipeline.application)
+    def user = pipeline.getAuthentication()?.toKorkUser()
+    ApplicationNotifications notifications
+    if (user?.isPresent()) {
+      notifications = AuthenticatedRequest.propagate({
+        front50Service.getApplicationNotifications(pipeline.application)
+      }, user.get()).call()
+    } else {
+      notifications = front50Service.getApplicationNotifications(pipeline.application)
+    }
 
     if (notifications) {
       notifications.getPipelineNotifications().each { appNotification ->
@@ -111,7 +121,11 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         appNotification = contextParameterProcessor.process(appNotification, executionMap, true)
 
         Map<String, Object> targetMatch = pipeline.notifications.find { pipelineNotification ->
-          pipelineNotification.address == appNotification.address && pipelineNotification.type == appNotification.type
+          def addressMatches = appNotification.address && pipelineNotification.address && pipelineNotification.address == appNotification.address
+          def publisherMatches = appNotification.publisherName && pipelineNotification.publisherName && pipelineNotification.publisherName == appNotification.publisherName
+          def typeMatches = appNotification.type && pipelineNotification.type && pipelineNotification.type == appNotification.type
+
+          return (addressMatches || publisherMatches) && typeMatches
         }
         if (!targetMatch) {
           pipeline.notifications.push(appNotification)

@@ -180,24 +180,45 @@ class DualExecutionRepository(
     )
   }
 
-  override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(pipelineConfigIds: MutableList<String>,
-                                                                             buildTimeStartBoundary: Long,
-                                                                             buildTimeEndBoundary: Long,
-                                                                             limit: Int): Observable<Execution> {
-    return Observable.merge(
-      primary.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+  override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    pipelineConfigIds: MutableList<String>,
+    buildTimeStartBoundary: Long,
+    buildTimeEndBoundary: Long,
+    executionCriteria: ExecutionCriteria
+  ): List<Execution> {
+    return primary
+      .retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
         buildTimeStartBoundary,
         buildTimeEndBoundary,
-        limit
-      ),
-      previous.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-        pipelineConfigIds,
-        buildTimeStartBoundary,
-        buildTimeEndBoundary,
-        limit
+        executionCriteria
       )
-    )
+      .plus(previous.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+        pipelineConfigIds,
+        buildTimeStartBoundary,
+        buildTimeEndBoundary,
+        executionCriteria)
+      )
+  }
+
+  override fun retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    pipelineConfigIds: List<String>,
+    buildTimeStartBoundary: Long,
+    buildTimeEndBoundary: Long,
+    executionCriteria: ExecutionCriteria
+  ): List<Execution> {
+    return primary
+      .retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+        pipelineConfigIds,
+        buildTimeStartBoundary,
+        buildTimeEndBoundary,
+        executionCriteria
+      ).plus(previous.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+        pipelineConfigIds,
+        buildTimeStartBoundary,
+        buildTimeEndBoundary,
+        executionCriteria)
+      )
   }
 
   override fun retrieveOrchestrationsForApplication(application: String,
@@ -223,11 +244,27 @@ class DualExecutionRepository(
     }
   }
 
+  override fun retrieveByCorrelationId(executionType: Execution.ExecutionType, correlationId: String): Execution {
+    return try {
+      primary.retrieveByCorrelationId(executionType, correlationId)
+    } catch (e: ExecutionNotFoundException) {
+      previous.retrieveByCorrelationId(executionType, correlationId)
+    }
+  }
+
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): Execution {
     return try {
       primary.retrieveOrchestrationForCorrelationId(correlationId)
     } catch (e: ExecutionNotFoundException) {
       previous.retrieveOrchestrationForCorrelationId(correlationId)
+    }
+  }
+
+  override fun retrievePipelineForCorrelationId(correlationId: String): Execution {
+    return try {
+      primary.retrievePipelineForCorrelationId(correlationId)
+    } catch (e: ExecutionNotFoundException) {
+      previous.retrievePipelineForCorrelationId(correlationId)
     }
   }
 
