@@ -113,7 +113,8 @@ public class SaveServiceAccountTask implements RetryableTask {
     String serviceAccountName = generateSvcAcctName(pipeline);
     if (!pipelineRolesChanged(serviceAccountName, roles)) {
       log.debug("Skipping managed service account creation/updatimg since roles have not changed.");
-      return new TaskResult(ExecutionStatus.SUCCEEDED);
+      return new TaskResult(
+        ExecutionStatus.SUCCEEDED, ImmutableMap.of("pipeline.serviceAccount", serviceAccountName));
     }
 
     if (!isUserAuthorized(user, roles)) {

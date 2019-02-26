@@ -91,7 +91,7 @@ class SaveServiceAccountTaskSpec extends Specification {
     }
     0 * front50Service.saveServiceAccount(_)
     result.status == ExecutionStatus.SUCCEEDED
-
+    result.context == ImmutableMap.of('pipeline.serviceAccount', serviceAccount)
   }
 
   def "should create a serviceAccount with correct roles"() {
