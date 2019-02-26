@@ -119,18 +119,33 @@ inline fun <reified O> Stage.mapTo(pointer: String): O = mapTo(pointer, O::class
 
 inline fun <reified O> Stage.mapTo(): O = mapTo(O::class.java)
 
-fun Stage.shouldFailPipeline(): Boolean =
-  context["failPipeline"] in listOf(null, true)
+fun Stage.failureStatus(default: ExecutionStatus = TERMINAL): ExecutionStatus {
+  // Look for `continuePipeline` or `failPipeline` attributes on parent stages in the event
+  // that they were not explicitly passed down as part of the synthetic stage context.
+  // Note: a value in a parent stage overrides non-existent value in synthetic child stage
+  fun getFromParent(param: String, defaultIfNotPresent: Boolean): Boolean {
+    var stage: Stage? = this
 
-fun Stage.shouldContinueOnFailure(): Boolean =
-  context["continuePipeline"] == true
+    while (stage != null) {
+      if (stage.context[param] != null) {
+        return (stage.context[param] == true)
+      }
 
-fun Stage.failureStatus(default: ExecutionStatus = TERMINAL) =
-  when {
-    shouldContinueOnFailure() -> FAILED_CONTINUE
-    shouldFailPipeline()      -> default
-    else                      -> STOPPED
+      stage = if (stage.syntheticStageOwner != null) stage.parent() else null
+    }
+
+    return defaultIfNotPresent
   }
+
+  var shouldContinueOnFailure = getFromParent("continuePipeline", false)
+  var shouldFailPipeline = getFromParent("failPipeline", true)
+
+  return when {
+    shouldContinueOnFailure -> FAILED_CONTINUE
+    shouldFailPipeline -> default
+    else -> STOPPED
+  }
+}
 
 fun Stage.isManuallySkipped(): Boolean {
   return context["manualSkip"] == true || parent?.isManuallySkipped() == true
