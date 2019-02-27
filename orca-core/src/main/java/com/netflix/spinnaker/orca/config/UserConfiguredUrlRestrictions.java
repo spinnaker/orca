@@ -32,6 +32,7 @@ public class UserConfiguredUrlRestrictions {
     private boolean rejectLocalhost = true;
     private boolean rejectLinkLocal = true;
     private List<String> rejectedIps = new ArrayList<>(); // can contain IP addresses and/or IP ranges (CIDR block)
+    private List<String> allowedDomains = new ArrayList<String>();
 
     public Builder withAllowedHostnamesRegex(String allowedHostnamesRegex) {
       setAllowedHostnamesRegex(allowedHostnamesRegex);
@@ -58,8 +59,13 @@ public class UserConfiguredUrlRestrictions {
       return this;
     }
 
+    public Builder withWhitelistedDomains(List<String> allowedDomains) {
+      setAllowedDomains(allowedDomains);
+      return this;
+    }
+
     public UserConfiguredUrlRestrictions build() {
-      return new UserConfiguredUrlRestrictions(Pattern.compile(allowedHostnamesRegex), allowedSchemes, rejectLocalhost, rejectLinkLocal, rejectedIps);
+      return new UserConfiguredUrlRestrictions(Pattern.compile(allowedHostnamesRegex), allowedSchemes, rejectLocalhost, rejectLinkLocal, rejectedIps, allowedDomains);
     }
   }
 
@@ -68,13 +74,15 @@ public class UserConfiguredUrlRestrictions {
   private final boolean rejectLocalhost;
   private final boolean rejectLinkLocal;
   private final Set<String> rejectedIps;
+  private final List<String> whitelistedDomains;
 
-  public UserConfiguredUrlRestrictions(Pattern allowedHostnames, Collection<String> allowedSchemes, boolean rejectLocalhost, boolean rejectLinkLocal, Collection<String> rejectedIps) {
+  public UserConfiguredUrlRestrictions(Pattern allowedHostnames, Collection<String> allowedSchemes, boolean rejectLocalhost, boolean rejectLinkLocal, Collection<String> rejectedIps, List<String> whitelistedDomains) {
     this.allowedHostnames = allowedHostnames;
     this.allowedSchemes = allowedSchemes == null ? Collections.emptySet() : Collections.unmodifiableSet(new HashSet<>(allowedSchemes));
     this.rejectLocalhost = rejectLocalhost;
     this.rejectLinkLocal = rejectLinkLocal;
     this.rejectedIps = rejectedIps == null ? Collections.emptySet() : Collections.unmodifiableSet(new HashSet<>(rejectedIps));
+    this.whitelistedDomains = whitelistedDomains;
   }
 
   public URI validateURI(String url) throws IllegalArgumentException {
@@ -86,10 +94,9 @@ public class UserConfiguredUrlRestrictions {
       if (!allowedSchemes.contains(u.getScheme().toLowerCase())) {
         throw new IllegalArgumentException("unsupported URI scheme " + url);
       }
-      if (!allowedHostnames.matcher(u.getHost()).matches()) {
-        throw new IllegalArgumentException("Host not allowed " + u.getHost() + ". Host much match " + allowedHostnames.toString() + ".");
+      if (!allowedHostnames.matcher(u.getHost()).matches() && !whitelistedDomains.contains(u.getHost())) {
+        throw new IllegalArgumentException("Host not allowed " + u.getHost() + ". Host much match " + allowedHostnames.toString() + " or must be in whitelist " + whitelistedDomains);
       }
-
       if (rejectLocalhost || rejectLinkLocal) {
         InetAddress addr = InetAddress.getByName(u.getHost());
         if (rejectLocalhost) {
@@ -133,4 +140,7 @@ public class UserConfiguredUrlRestrictions {
   public boolean isRejectLinkLocal() {
     return rejectLinkLocal;
   }
+
+  public List<String> getWhitelistedDomains() { return whitelistedDomains; }
+
 }
