@@ -23,6 +23,7 @@ import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
+import com.netflix.spinnaker.orca.exceptions.OperationFailedException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator
@@ -271,9 +272,9 @@ class OperationsController {
         buildInfo = buildService.getBuild(trigger.buildNumber, trigger.master, trigger.job)
       } catch (RetrofitError e) {
         if (e.response?.status == 404) {
-          throw new IllegalStateException("Build " + trigger.buildNumber + " for " + trigger.master + "/" + trigger.job + " not found")
+          throw new IllegalStateException("Build ${trigger.buildNumber} of ${trigger.master}/${trigger.job} not found")
         } else {
-          throw e
+          throw new OperationFailedException("Failed to get build ${trigger.buildNumber} of ${trigger.master}/${trigger.job}", e)
         }
       }
       if (buildInfo?.artifacts) {
@@ -294,7 +295,7 @@ class OperationsController {
           if (e.response?.status == 404) {
             throw new IllegalStateException("Expected properties file " + trigger.propertyFile + " (configured on trigger), but it was missing")
           } else {
-            throw e
+            throw new OperationFailedException("Failed to get properties file ${trigger.propertyFile}", e)
           }
         }
       }
