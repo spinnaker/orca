@@ -266,7 +266,16 @@ class OperationsController {
 
   private void decorateBuildInfo(Map trigger) {
     if (trigger.master && trigger.job && trigger.buildNumber) {
-      def buildInfo = buildService.getBuild(trigger.buildNumber, trigger.master, trigger.job)
+      def buildInfo
+      try {
+        buildInfo = buildService.getBuild(trigger.buildNumber, trigger.master, trigger.job)
+      } catch (RetrofitError e) {
+        if (e.response?.status == 404) {
+          throw new IllegalStateException("Build " + trigger.buildNumber + " for " + trigger.master + "/" + trigger.job + " not found")
+        } else {
+          throw e
+        }
+      }
       if (buildInfo?.artifacts) {
         if (trigger.type == "manual") {
           trigger.artifacts = buildInfo.artifacts
