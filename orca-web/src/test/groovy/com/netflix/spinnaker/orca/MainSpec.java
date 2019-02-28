@@ -1,9 +1,9 @@
 package com.netflix.spinnaker.orca;
 
-import com.netflix.spinnaker.orca.bakery.api.BakeryService;
-import com.netflix.spinnaker.orca.echo.EchoService;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.igor.IgorService;
+import com.netflix.spinnaker.orca.locks.LockManager;
+import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,13 +21,13 @@ public class MainSpec {
   Front50Service front50Service;
 
   @MockBean
-  IgorService igorService;
+  ExecutionRepository executionRepository;
 
   @MockBean
-  BakeryService bakeryService;
+  LockManager lockManager;
 
   @MockBean
-  EchoService echoService;
+  NotificationClusterLock notificationClusterLock;
 
   @Test
   public void startupTest() {

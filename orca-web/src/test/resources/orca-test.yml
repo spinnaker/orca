@@ -1,14 +1,19 @@
-redis:
-  connection: redis://localhost:6379
-
 front50:
   baseUrl: http://localhost:8080
 
 igor:
-  baseUrl: http://localhost:8088
+  enabled: false
 
 bakery:
-  baseUrl: http://localhost:8087
+  enabled: false
 
 echo:
-  baseUrl: http://localhost:8089
+  enabled: false
+
+monitor:
+  activeExecutions:
+    redis: false
+
+executionRepository:
+  redis:
+    enabled: false
