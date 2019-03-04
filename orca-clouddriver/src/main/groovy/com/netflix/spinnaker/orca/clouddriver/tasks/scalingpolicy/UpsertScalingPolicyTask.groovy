@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.scalingpolicy
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
@@ -26,10 +26,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class UpsertScalingPolicyTask extends AbstractCloudProviderAwareTask implements Task {
+class UpsertScalingPolicyTask extends AbstractCloudProviderAwareTask implements RetryableTask {
 
   @Autowired
   KatoService kato
+
+  long backoffPeriod = 2000
+  long timeout = 600000
 
   @Override
   TaskResult execute(Stage stage) {
