@@ -125,10 +125,6 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
               true
           );
 
-          if (manifestWrapper.containsKey("expressionEvaluationSummary")) {
-            throw new IllegalStateException("Failure evaluating manifest expressions: " + manifestWrapper.get("expressionEvaluationSummary"));
-          }
-
           return manifestWrapper.get("manifests");
         } catch (Exception e) {
           log.warn("Failure fetching/parsing manifests from {}", manifestArtifact, e);
