@@ -29,6 +29,7 @@ class ExpressionsSupportSpec extends Specification {
   def pipeline = pipeline {
     stage {
       id = "1"
+      refId = "1"
       name = "My First Stage"
       context = [
         "region": "us-east-1",
@@ -37,6 +38,7 @@ class ExpressionsSupportSpec extends Specification {
 
     stage {
       id = "2"
+      refId = "2"
       name = "My Second Stage"
       context = [
         "region": "us-west-1",
@@ -45,6 +47,7 @@ class ExpressionsSupportSpec extends Specification {
 
     stage {
       id = "3"
+      refId = "3"
       status = SUCCEEDED
       type = "createServerGroup"
       name = "Deploy in us-east-1"
@@ -73,6 +76,7 @@ class ExpressionsSupportSpec extends Specification {
 
     stage {
       id = "4"
+      refId = "4"
       status = SUCCEEDED
       type = "disableServerGroup"
       name = "disable server group"
@@ -140,6 +144,31 @@ class ExpressionsSupportSpec extends Specification {
   }
 
   def "stage() should raise exception if stage not found"() {
+    when:
+    ExpressionsSupport.stage(pipeline, "does_not_exist")
+
+    then:
+    thrown(SpelHelperFunctionException)
+
+    when:
+    ExpressionsSupport.stage("not_an_expression", "does_not_matter")
+
+    then:
+    // raise exception when not passed an Execution
+    thrown(SpelHelperFunctionException)
+  }
+
+  def "stageByRefId() should match on #matchedAttribute"() {
+    expect:
+    ExpressionsSupport.stageByRefId(pipeline, stageCriteria).context.region == expectedRegion
+
+    where:
+    stageCriteria     || matchedAttribute || expectedRegion
+    "1"               || "refId"             || "us-east-1"
+    "2"               || "refId"             || "us-west-1"
+  }
+
+  def "stageByRefId() should raise exception if stage not found"() {
     when:
     ExpressionsSupport.stage(pipeline, "does_not_exist")
 

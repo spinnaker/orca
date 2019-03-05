@@ -16,13 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline.expressions;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -40,6 +33,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+
+import static java.lang.String.format;
 
 /**
  * Provides utility support for SPEL integration
@@ -99,6 +102,7 @@ public class ExpressionsSupport {
         registerFunction(evaluationContext, "jsonFromUrl", String.class);
         registerFunction(evaluationContext, "propertiesFromUrl", String.class);
         registerFunction(evaluationContext, "stage", Object.class, String.class);
+        registerFunction(evaluationContext, "stageByRefId", Object.class, String.class);
         registerFunction(evaluationContext, "stageExists", Object.class, String.class);
         registerFunction(evaluationContext, "judgment", Object.class, String.class);
         registerFunction(evaluationContext, "judgement", Object.class, String.class);
@@ -185,7 +189,7 @@ public class ExpressionsSupport {
 
       return converted;
     } catch (Exception e) {
-      throw new SpelHelperFunctionException(String.format("#toJson(%s) failed", o.toString()), e);
+      throw new SpelHelperFunctionException(format("#toJson(%s) failed", o.toString()), e);
     }
   }
 
@@ -199,7 +203,7 @@ public class ExpressionsSupport {
       URL u = helperFunctionConfigurationAtomicReference.get().getUrlRestrictions().validateURI(url).toURL();
       return HttpClientUtils.httpGetAsString(u.toString());
     } catch (Exception e) {
-      throw new SpelHelperFunctionException(String.format("#from(%s) failed", url), e);
+      throw new SpelHelperFunctionException(format("#from(%s) failed", url), e);
     }
   }
 
@@ -216,7 +220,7 @@ public class ExpressionsSupport {
 
       return mapper.readValue(text, Map.class);
     } catch (Exception e) {
-      throw new SpelHelperFunctionException(String.format("#readJson(%s) failed", text), e);
+      throw new SpelHelperFunctionException(format("#readJson(%s) failed", text), e);
     }
   }
 
@@ -238,7 +242,7 @@ public class ExpressionsSupport {
     try {
       return readProperties(fromUrl(url));
     } catch (Exception e) {
-      throw new SpelHelperFunctionException(String.format("#propertiesFromUrl(%s) failed", url), e);
+      throw new SpelHelperFunctionException(format("#propertiesFromUrl(%s) failed", url), e);
     }
   }
 
@@ -271,12 +275,41 @@ public class ExpressionsSupport {
         .findFirst()
         .orElseThrow(
           () -> new SpelHelperFunctionException(
-            String.format("Unable to locate [%s] using #stage(%s) in execution %s", id, id, execution.getId())
+            format("Unable to locate [%s] using #stage(%s) in execution %s", id, id, execution.getId())
           )
         );
     }
 
-    throw new SpelHelperFunctionException(String.format("Invalid first param to #stage(%s). must be an execution", id));
+    throw new SpelHelperFunctionException(format("Invalid first param to #stage(%s). must be an execution", id));
+  }
+
+  /**
+   * Finds a Stage by refId. This function should only be used by programmatic pipeline generators, as refIds are
+   * fragile and may change from execution-to-execution.
+   * @param obj #root.execution
+   * @param refId the stage reference ID
+   * @return a stage specified by refId
+   */
+  static Object stageByRefId(Object obj, String refId) {
+    if (obj instanceof Execution) {
+      Execution execution = (Execution) obj;
+      if (refId == null) {
+        throw new SpelHelperFunctionException(format(
+          "Stage refId must not be null in #stageByRefId in execution %s", execution.getId()
+        ));
+      }
+      return execution.getStages()
+        .stream()
+        .filter(s -> refId.equals(s.getRefId()))
+        .findFirst()
+        .orElseThrow(() -> new SpelHelperFunctionException(format(
+          "Unable to locate [%1$s] using #stageByRefId(%1$s) in execution %2$s", refId, execution.getId()
+        )));
+    }
+
+    throw new SpelHelperFunctionException(format(
+      "Invalid first param to #stageRefById(%s). Must be an execution", refId
+    ));
   }
 
   /**
@@ -293,7 +326,7 @@ public class ExpressionsSupport {
         .anyMatch(i -> id != null && (id.equals(i.getName()) || id.equals(i.getId())));
     }
 
-    throw new SpelHelperFunctionException(String.format("Invalid first param to #stage(%s). must be an execution", id));
+    throw new SpelHelperFunctionException(format("Invalid first param to #stage(%s). must be an execution", id));
   }
 
   /**
@@ -311,7 +344,7 @@ public class ExpressionsSupport {
         .findFirst()
         .orElseThrow(
           () -> new SpelHelperFunctionException(
-            String.format("Unable to locate manual Judgment stage [%s] using #judgment(%s) in execution %s. " +
+            format("Unable to locate manual Judgment stage [%s] using #judgment(%s) in execution %s. " +
               "Stage doesn't exist or doesn't contain judgmentInput in its context ",
               id, id, execution.getId()
             )
@@ -322,7 +355,7 @@ public class ExpressionsSupport {
     }
 
     throw new SpelHelperFunctionException(
-      String.format("Invalid first param to #judgment(%s). must be an execution", id)
+      format("Invalid first param to #judgment(%s). must be an execution", id)
     );
   }
 
