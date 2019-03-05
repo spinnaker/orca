@@ -21,6 +21,7 @@ import com.netflix.spectator.api.histogram.BucketCounter
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
@@ -42,6 +43,7 @@ class CompleteStageHandler(
   override val repository: ExecutionRepository,
   @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher,
   private val clock: Clock,
+  private val exceptionHandlers: List<ExceptionHandler>,
   override val contextParameterProcessor: ContextParameterProcessor,
   private val registry: Registry,
   override val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory
@@ -87,7 +89,10 @@ class CompleteStageHandler(
           stage.status = status
           stage.endTime = clock.millis()
         } catch (e: Exception) {
-          log.error("Failed to construct after stages for $stage.id", e)
+          log.error("Failed to construct after stages for ${stage.name} ${stage.id}", e)
+
+          val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.name + ":ConstructAfterStages")
+          stage.context["exception"] = exceptionDetails
           stage.status = TERMINAL
           stage.endTime = clock.millis()
         }
@@ -221,7 +226,7 @@ class CompleteStageHandler(
     val afterStageStatuses = afterStages().map(Stage::getStatus)
     return when {
       allStatuses.isEmpty()                    -> NOT_STARTED
-      allStatuses.contains(TERMINAL)           -> TERMINAL
+      allStatuses.contains(TERMINAL)           -> failureStatus() // handle configured 'if stage fails' options correctly
       allStatuses.contains(STOPPED)            -> STOPPED
       allStatuses.contains(CANCELED)           -> CANCELED
       allStatuses.contains(FAILED_CONTINUE)    -> FAILED_CONTINUE
