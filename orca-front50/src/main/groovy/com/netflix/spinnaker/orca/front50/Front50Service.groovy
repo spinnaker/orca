@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.front50
 import com.netflix.spinnaker.fiat.model.resources.ServiceAccount
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
+import com.netflix.spinnaker.orca.front50.model.DeliveryConfig
 import com.netflix.spinnaker.orca.front50.model.Front50Credential
 import retrofit.client.Response
 import retrofit.http.*
@@ -67,6 +68,12 @@ interface Front50Service {
 
   @GET("/pipelines?restricted=false")
   List<Map<String, Object>> getAllPipelines()
+
+  @POST('/actions/pipelines/reorder')
+  Response reorderPipelines(@Body ReorderPipelinesCommand reorderPipelinesCommand)
+
+  @POST('/actions/strategies/reorder')
+  Response reorderPipelineStrategies(@Body ReorderPipelinesCommand reorderPipelinesCommand)
 
   // pipeline template related
   @GET("/pipelineTemplates")
@@ -123,6 +130,18 @@ interface Front50Service {
   @POST("/serviceAccounts")
   Response saveServiceAccount(@Body ServiceAccount serviceAccount)
 
+  @GET("/deliveries/{id}")
+  DeliveryConfig getDeliveryConfig(@Path("id") String id)
+
+  @POST("/deliveries")
+  DeliveryConfig createDeliveryConfig(@Body DeliveryConfig deliveryConfig)
+
+  @PUT("/deliveries/{id}")
+  DeliveryConfig updateDeliveryConfig(@Path("id") String id, @Body DeliveryConfig deliveryConfig)
+
+  @DELETE("/applications/{application}/deliveries/{id}")
+  Response deleteDeliveryConfig(@Path("application") String application, @Path("id") String id)
+
   static class Project {
     String id
     String name
@@ -136,6 +155,16 @@ interface Front50Service {
     static class PipelineConfig {
       String application
       String pipelineConfigId
+    }
+  }
+
+  static class ReorderPipelinesCommand {
+    Map<String, Integer> idsToIndices
+    String application
+
+    ReorderPipelinesCommand(Map<String, Integer> idsToIndices, String application) {
+      this.idsToIndices = idsToIndices
+      this.application = application
     }
   }
 }
