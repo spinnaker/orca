@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.scalingpolicy
 
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -33,8 +34,8 @@ class UpsertScalingPolicyTask extends AbstractCloudProviderAwareTask implements 
   @Autowired
   KatoService kato
 
-  long backoffPeriod = 5000
-  long timeout = 100000
+  long backoffPeriod = TimeUnit.SECONDS.toMillis(5)
+  long timeout = TimeUnit.SECONDS.toMillis(100)
 
   @Override
   TaskResult execute(Stage stage) {
