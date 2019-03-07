@@ -40,11 +40,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.util.logging.Slf4j
 import javassist.NotFoundException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import retrofit.RetrofitError
 import retrofit.http.Query
 
@@ -182,6 +178,9 @@ class OperationsController {
     for (PipelinePreprocessor preprocessor : (pipelinePreprocessors ?: [])) {
       pipeline = preprocessor.process(pipeline)
     }
+
+    // Explicitly resolve artifacts after preprocessing to support artifacts in templated pipelines.
+    artifactResolver?.resolveArtifacts(pipeline)
 
     def json = objectMapper.writeValueAsString(pipeline)
     log.info('received pipeline {}:{}', value("pipelineId", pipeline.id), json)
