@@ -43,7 +43,7 @@ class UpsertScalingPolicyTask extends AbstractCloudProviderAwareTask implements 
       def taskId = kato.requestOperations(getCloudProvider(stage), [[upsertScalingPolicy: stage.context]])
         .toBlocking()
         .first()
-      new TaskResult(ExecutionStatus.SUCCEEDED, [
+      return new TaskResult(ExecutionStatus.SUCCEEDED, [
         "deploy.account.name" : stage.context.credentials,
         "kato.last.task.id"   : taskId,
         "deploy.server.groups": [(stage.context.region): [stage.context.serverGroupName]]
