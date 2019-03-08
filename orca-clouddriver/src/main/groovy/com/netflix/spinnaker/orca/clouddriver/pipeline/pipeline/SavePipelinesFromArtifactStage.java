@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SavePipelinesStage implements StageDefinitionBuilder {
+public class SavePipelinesFromArtifactStage implements StageDefinitionBuilder {
 
   @Override
   public void taskGraph(Stage stage, Builder builder) {
