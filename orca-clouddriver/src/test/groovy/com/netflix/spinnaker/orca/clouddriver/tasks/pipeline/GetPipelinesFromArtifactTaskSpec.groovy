@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
@@ -30,19 +31,13 @@ import spock.lang.Subject
 
 class GetPipelinesFromArtifactTaskSpec extends Specification {
 
+  final Front50Service front50Service = Mock()
+  final OortService oortService = Mock()
+  final ArtifactResolver artifactResolver = Mock()
+  final ObjectMapper objectMapper = OrcaObjectMapper.newInstance()
+
   @Subject
-  final task = new GetPipelinesFromArtifactTask()
-
-  Front50Service front50Service = Mock()
-  OortService oortService = Mock()
-  ArtifactResolver artifactResolver = Mock()
-
-  void setup() {
-    task.front50Service = front50Service
-    task.oort = oortService
-    task.artifactResolver = artifactResolver
-    task.objectMapper = OrcaObjectMapper.newInstance()
-  }
+  final task = new GetPipelinesFromArtifactTask(front50Service, oortService, objectMapper, artifactResolver)
 
   void 'extract pipelines JSON from artifact'() {
     when:

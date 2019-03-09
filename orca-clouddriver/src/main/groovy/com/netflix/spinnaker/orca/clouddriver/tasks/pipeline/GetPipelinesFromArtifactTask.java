@@ -33,7 +33,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
 
@@ -45,20 +44,22 @@ import java.util.stream.Collectors;
 public class GetPipelinesFromArtifactTask implements Task {
 
   private Logger log = LoggerFactory.getLogger(getClass());
-
-  @Autowired
-  private Front50Service front50Service;
-
-  @Autowired
-  private OortService oort;
-
-  @Autowired
-  ObjectMapper objectMapper;
-
-  @Autowired
-  ArtifactResolver artifactResolver;
-
   RetrySupport retrySupport = new RetrySupport();
+
+  private final Front50Service front50Service;
+  private final OortService oort;
+  private final ObjectMapper objectMapper;
+  private final ArtifactResolver artifactResolver;
+
+  public GetPipelinesFromArtifactTask(Front50Service front50Service,
+                                      OortService oort,
+                                      ObjectMapper objectMapper,
+                                      ArtifactResolver artifactResolver) {
+    this.front50Service = front50Service;
+    this.oort = oort;
+    this.objectMapper = objectMapper;
+    this.artifactResolver = artifactResolver;
+  }
 
   @Getter
   @NoArgsConstructor

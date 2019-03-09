@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
@@ -36,8 +35,11 @@ public class PreparePipelineToSaveTask implements Task {
 
   private Logger log = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
+
+  public PreparePipelineToSaveTask(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public TaskResult execute(Stage stage) {

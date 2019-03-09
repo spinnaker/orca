@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -24,12 +25,10 @@ import spock.lang.Subject
 
 class PreparePipelineToSaveTaskSpec extends Specification {
 
-  @Subject
-  final task = new PreparePipelineToSaveTask()
+  final ObjectMapper objectMapper = OrcaObjectMapper.newInstance()
 
-  void setup() {
-    task.objectMapper = OrcaObjectMapper.newInstance()
-  }
+  @Subject
+  final task = new PreparePipelineToSaveTask(objectMapper)
 
   void 'prepare pipeline for save pipeline task'() {
     when:

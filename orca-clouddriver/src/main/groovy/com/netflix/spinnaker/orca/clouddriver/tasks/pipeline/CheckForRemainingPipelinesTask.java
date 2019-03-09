@@ -20,14 +20,16 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CheckForRemainingPipelinesTask implements Task {
 
-  @Autowired
-  ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
+
+  public CheckForRemainingPipelinesTask(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public TaskResult execute(Stage stage) {
