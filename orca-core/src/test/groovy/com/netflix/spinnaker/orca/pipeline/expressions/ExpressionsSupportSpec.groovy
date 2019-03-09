@@ -32,6 +32,7 @@ class ExpressionsSupportSpec extends Specification {
   def pipeline = pipeline {
     stage {
       id = "1"
+      refId = "1"
       name = "My First Stage"
       context = [
         "region": "us-east-1",
@@ -40,6 +41,7 @@ class ExpressionsSupportSpec extends Specification {
 
     stage {
       id = "2"
+      refId = "2"
       name = "My Second Stage"
       context = [
         "region": "us-west-1",
@@ -48,6 +50,7 @@ class ExpressionsSupportSpec extends Specification {
 
     stage {
       id = "3"
+      refId = "3"
       status = SUCCEEDED
       type = "createServerGroup"
       name = "Deploy in us-east-1"
@@ -76,6 +79,7 @@ class ExpressionsSupportSpec extends Specification {
 
     stage {
       id = "4"
+      refId = "4"
       status = SUCCEEDED
       type = "disableServerGroup"
       name = "disable server group"

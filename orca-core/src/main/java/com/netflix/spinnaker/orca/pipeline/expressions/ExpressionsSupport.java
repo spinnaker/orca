@@ -293,7 +293,7 @@ public class ExpressionsSupport {
 
     throw new SpelHelperFunctionException(format("Invalid first param to #stage(%s). must be an execution", id));
   }
-
+  
   /**
    * Checks existence of a Stage by id
    * @param obj #root.execution
