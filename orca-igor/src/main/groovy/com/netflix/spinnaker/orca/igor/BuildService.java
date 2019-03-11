@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.igor;
 
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
@@ -54,6 +55,10 @@ public class BuildService {
 
   public Map<String, Object> getPropertyFile(Integer buildNumber, String fileName, String master, String job) {
     return igorService.getPropertyFile(buildNumber, fileName, master, encode(job));
+  }
+
+  public List<Artifact> getArtifacts(Integer buildNumber, String fileName, String master, String job) {
+    return igorService.getArtifacts(buildNumber, fileName, master, encode(job));
   }
 
   public List compareCommits(String repoType, String projectKey, String repositorySlug, Map<String, String> requestParams) {

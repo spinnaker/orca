@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.igor;
 
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import retrofit.http.*;
 
 import java.util.List;
@@ -38,4 +39,10 @@ public interface IgorService {
 
   @GET("/{repoType}/{projectKey}/{repositorySlug}/compareCommits")
   public abstract List compareCommits(@Path("repoType") String repoType, @Path("projectKey") String projectKey, @Path("repositorySlug") String repositorySlug, @QueryMap Map<String, String> requestParams);
+
+  @GET("/builds/artifacts/{buildNumber}/{master}/{job}")
+  List<Artifact> getArtifacts(@Path("buildNumber") Integer buildNumber,
+                              @Query("propertyFile") String propertyFile,
+                              @Path("master") String master,
+                              @Path(value = "job", encode = false) String job);
 }

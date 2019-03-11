@@ -17,10 +17,7 @@ package com.netflix.spinnaker.orca.igor.pipeline;
 
 import com.netflix.spinnaker.orca.CancellableStage;
 import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask;
-import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask;
-import com.netflix.spinnaker.orca.igor.tasks.StartJenkinsJobTask;
-import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask;
+import com.netflix.spinnaker.orca.igor.tasks.*;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
@@ -47,6 +44,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
 
     if (waitForCompletion(stage)) {
       builder.withTask(String.format("monitor%sJob", jobType), MonitorJenkinsJobTask.class);
+      builder.withTask("getBuildArtifacts", GetBuildArtifactsTask.class);
     }
     if (stage.getContext().containsKey("expectedArtifacts")) {
       builder.withTask(BindProducedArtifactsTask.TASK_NAME, BindProducedArtifactsTask.class);
