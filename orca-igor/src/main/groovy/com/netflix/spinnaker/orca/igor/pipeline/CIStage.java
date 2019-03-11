@@ -69,7 +69,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
   public void prepareStageForRestart(@Nonnull Stage stage) {
     Object buildInfo = stage.getContext().get("buildInfo");
     if (buildInfo != null) {
-      Map<String, Object> restartDetails =(Map<String, Object>) stage.getContext()
+      Map<String, Object> restartDetails = (Map<String, Object>) stage.getContext()
         .computeIfAbsent("restartDetails", k -> new HashMap<String, Object>());
       restartDetails.put("previousBuildInfo", buildInfo);
     }

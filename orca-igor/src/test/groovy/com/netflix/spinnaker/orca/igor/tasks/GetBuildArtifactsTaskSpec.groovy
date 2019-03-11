@@ -50,7 +50,7 @@ class GetBuildArtifactsTaskSpec extends Specification {
     artifacts.get(0).getName() == "my-artifact"
   }
 
-  def "handles an emtpy artifact list"() {
+  def "handles an empty artifact list"() {
     given:
     def stage = createStage(PROPERTY_FILE)
 

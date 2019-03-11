@@ -29,6 +29,8 @@ public class CIJobRequest {
   private final Integer buildNumber;
   private final int consecutiveErrors;
 
+  // There does not seem to be a way to auto-generate a constructor using our current version of Lombok (1.16.20) that
+  // Jackson can use to deserialize.
   public CIJobRequest(
     @JsonProperty("master") String master,
     @JsonProperty("job") String job,

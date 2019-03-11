@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public abstract class RetryableIgorTask implements RetryableTask {
   public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(2);
+    return TimeUnit.SECONDS.toMillis(5);
   }
 
   public long getTimeout() {
