@@ -44,6 +44,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
 
     if (waitForCompletion(stage)) {
       builder.withTask(String.format("monitor%sJob", jobType), MonitorJenkinsJobTask.class);
+      builder.withTask("getBuildProperties", GetBuildPropertiesTask.class);
       builder.withTask("getBuildArtifacts", GetBuildArtifactsTask.class);
     }
     if (stage.getContext().containsKey("expectedArtifacts")) {
