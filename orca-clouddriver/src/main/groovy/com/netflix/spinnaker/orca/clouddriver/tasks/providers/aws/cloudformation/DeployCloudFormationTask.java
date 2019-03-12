@@ -80,13 +80,14 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
       try {
         String template = CharStreams.toString(new InputStreamReader(response.getBody().in()));
         log.debug("Fetched template from artifact {}: {}", artifact.getReference(), template);
-        task.put("templateBody", objectMapper.readValue(template, Map.class));
+        task.put("templateBody", template);
       } catch (IOException e) {
-        throw new IllegalArgumentException("Failed to read template from artifact definition "+ artifact, e);
+        throw new IllegalArgumentException("Failed to read template from artifact definition " + artifact, e);
       }
     }
 
-    Map templateBody = (Map) task.get("templateBody");
+
+    String templateBody = (String) task.get("templateBody");
     if (templateBody == null || templateBody.isEmpty()) {
       throw new IllegalArgumentException(
         "Invalid stage format, missing artifact or templateBody field: " + templateBody + ", " + stage.getContext());
