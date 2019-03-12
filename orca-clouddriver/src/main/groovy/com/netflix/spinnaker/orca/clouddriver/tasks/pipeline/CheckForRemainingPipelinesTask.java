@@ -15,7 +15,6 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -25,16 +24,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class CheckForRemainingPipelinesTask implements Task {
 
-  private final ObjectMapper objectMapper;
-
-  public CheckForRemainingPipelinesTask(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
-
   @Override
   public TaskResult execute(Stage stage) {
-    final SavePipelinesData input = stage.mapTo(SavePipelinesData.class);
-    if (input.getPipelinesToSave() == null || input.getPipelinesToSave().isEmpty()) {
+    final SavePipelinesData savePipelines = stage.mapTo(SavePipelinesData.class);
+    if (savePipelines.getPipelinesToSave() == null || savePipelines.getPipelinesToSave().isEmpty()) {
       return new TaskResult(ExecutionStatus.SUCCEEDED);
     }
     return new TaskResult(ExecutionStatus.REDIRECT);

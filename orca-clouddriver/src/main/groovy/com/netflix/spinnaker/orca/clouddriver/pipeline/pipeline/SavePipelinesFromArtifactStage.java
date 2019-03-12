@@ -15,17 +15,12 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.pipeline;
 
-import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.CheckForRemainingPipelinesTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.GetPipelinesFromArtifactTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.PreparePipelineToSaveTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.*;
 import com.netflix.spinnaker.orca.front50.tasks.MonitorFront50Task;
 import com.netflix.spinnaker.orca.front50.tasks.SavePipelineTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -41,19 +36,10 @@ public class SavePipelinesFromArtifactStage implements StageDefinitionBuilder {
           .withTask("preparePipelineToSaveTask", PreparePipelineToSaveTask.class)
           .withTask("savePipeline", SavePipelineTask.class)
           .withTask("waitForPipelineSave", MonitorFront50Task.class)
+          .withTask("checkPipelineResults", CheckPipelineResultsTask.class)
           .withTask("checkForRemainingPipelines", CheckForRemainingPipelinesTask.class);
       })
       .withTask("savePipelinesCompleteTask", SavePipelinesCompleteTask.class);
   }
 
-  @Component
-  public static class SavePipelinesCompleteTask implements com.netflix.spinnaker.orca.Task {
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    @Override public TaskResult execute(Stage stage) {
-      log.info("Save Pipelines completed");
-      return TaskResult.SUCCEEDED;
-    }
-  }
 }
