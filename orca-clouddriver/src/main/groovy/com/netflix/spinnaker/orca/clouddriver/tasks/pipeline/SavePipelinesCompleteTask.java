@@ -32,8 +32,9 @@ public class SavePipelinesCompleteTask implements Task {
 
   @Override public TaskResult execute(Stage stage) {
     final SavePipelineResultsData savePipelineResults = stage.mapTo(SavePipelineResultsData.class);
-    logResults(savePipelineResults.getSavePipelineFailures(), "Failed to save pipelines: ");
-    logResults(savePipelineResults.getSavePipelineSuccesses(), "Successfully saved pipelines: ");
+    logResults(savePipelineResults.getPipelinesFailedToSave(), "Failed to save pipelines: ");
+    logResults(savePipelineResults.getPipelinesCreated(), "Created pipelines: ");
+    logResults(savePipelineResults.getPipelinesUpdated(), "Updated pipelines: ");
     return TaskResult.SUCCEEDED;
   }
 

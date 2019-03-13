@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class CheckPipelineResultsTask implements Task {
@@ -39,22 +40,32 @@ public class CheckPipelineResultsTask implements Task {
   @Override
   public TaskResult execute(Stage stage) {
     final SavePipelineResultsData previousSavePipelineResults = stage.mapTo(SavePipelineResultsData.class);
-    final List<PipelineReferenceData> previousSuccesses = previousSavePipelineResults.getSavePipelineSuccesses();
-    final List<PipelineReferenceData> previousFailures = previousSavePipelineResults.getSavePipelineFailures();
+    final SavePipelinesData savePipelinesData = stage.mapTo(SavePipelinesData.class);
+    final List<PipelineReferenceData> previousCreated = previousSavePipelineResults.getPipelinesCreated();
+    final List<PipelineReferenceData> previousUpdated = previousSavePipelineResults.getPipelinesUpdated();
+    final List<PipelineReferenceData> previousFailedToSave = previousSavePipelineResults.getPipelinesFailedToSave();
     final SavePipelineResultsData savePipelineResults = new SavePipelineResultsData(
-      previousSuccesses == null ? new ArrayList() : previousSuccesses,
-      previousFailures == null ? new ArrayList() : previousFailures
+      previousCreated == null ? new ArrayList() : previousCreated,
+      previousUpdated == null ? new ArrayList() : previousUpdated,
+      previousFailedToSave == null ? new ArrayList() : previousFailedToSave
     );
 
     stage.getTasks().stream().filter( task -> task.getName().equals("savePipeline")).findFirst()
       .ifPresent(savePipelineTask -> {
         final String application = (String) stage.getContext().get("application");
         final String pipelineName = (String) stage.getContext().get("pipeline.name");
-        final PipelineReferenceData ref = new PipelineReferenceData(application, pipelineName);
+        final String pipelineId = (String) stage.getContext().get("pipeline.id");
+        final PipelineReferenceData ref = new PipelineReferenceData(application, pipelineName, pipelineId);
         if (savePipelineTask.getStatus().isSuccessful()) {
-          savePipelineResults.getSavePipelineSuccesses().add(ref);
+          final Boolean isExistingPipeline = (Boolean) Optional.ofNullable(stage.getContext().get("isExistingPipeline"))
+            .orElse(false);
+          if (isExistingPipeline) {
+            savePipelineResults.getPipelinesUpdated().add(ref);
+          } else {
+            savePipelineResults.getPipelinesCreated().add(ref);
+          }
         } else {
-          savePipelineResults.getSavePipelineFailures().add(ref);
+          savePipelineResults.getPipelinesFailedToSave().add(ref);
         }
       });
 

@@ -57,9 +57,10 @@ public class PreparePipelineToSaveTask implements Task {
     }
     final String encodedPipeline = Base64.getEncoder().encodeToString(pipelineString.getBytes());
     final List<Map> remainingPipelinesToSave = input.getPipelinesToSave().subList(1, input.getPipelinesToSave().size());
-    final SavePipelinesData output = new SavePipelinesData(encodedPipeline, remainingPipelinesToSave);
-    return new TaskResult(ExecutionStatus.SUCCEEDED,
-      objectMapper.convertValue(output, new TypeReference<Map<String, Object>>() {}));
+    final SavePipelinesData outputSavePipelinesData = new SavePipelinesData(encodedPipeline, remainingPipelinesToSave);
+    final Map output = objectMapper.convertValue(outputSavePipelinesData, new TypeReference<Map<String, Object>>() {});
+    output.put("isExistingPipeline", pipelineData.get("id") != null);
+    return new TaskResult(ExecutionStatus.SUCCEEDED, output);
   }
 
 }

@@ -25,6 +25,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SavePipelineResultsData {
-  private List<PipelineReferenceData> savePipelineSuccesses;
-  private List<PipelineReferenceData> savePipelineFailures;
+  private List<PipelineReferenceData> pipelinesCreated;
+  private List<PipelineReferenceData> pipelinesUpdated;
+  private List<PipelineReferenceData> pipelinesFailedToSave;
 }

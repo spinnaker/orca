@@ -31,7 +31,7 @@ class CheckPipelineResultsTaskSpec extends Specification {
   @Subject
   final task = new CheckPipelineResultsTask(objectMapper)
 
-  void 'add saved pipeline success to context'() {
+  void 'add created pipeline success to context'() {
     when:
     def context = [
       application: 'app1',
@@ -50,8 +50,34 @@ class CheckPipelineResultsTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.context.get("savePipelineSuccesses") == [[application: 'app1', name: 'pipeline1']]
-    result.context.get("savePipelineFailures") == []
+    result.context.get("pipelinesCreated") == [[application: 'app1', name: 'pipeline1']]
+    result.context.get("pipelinesUpdated") == []
+    result.context.get("pipelinesFailedToSave") == []
+  }
+
+  void 'add updated pipeline success to context'() {
+    when:
+    def context = [
+      application: 'app1',
+      'pipeline.name': 'pipeline1',
+      'isExistingPipeline': true
+    ]
+    final Task savePipelineTask = new Task().with {
+      setName('savePipeline')
+      setStatus(ExecutionStatus.SUCCEEDED)
+      return it
+    }
+    final Stage stage = new Stage(Execution.newPipeline("orca"), "whatever", context).with {
+      setTasks([savePipelineTask])
+      return it
+    }
+    def result = task.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.SUCCEEDED
+    result.context.get("pipelinesCreated") == []
+    result.context.get("pipelinesUpdated") == [[application: 'app1', name: 'pipeline1']]
+    result.context.get("pipelinesFailedToSave") == []
   }
 
   void 'add saved pipeline failure to context'() {
@@ -73,8 +99,9 @@ class CheckPipelineResultsTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.SUCCEEDED
-    result.context.get("savePipelineSuccesses") == []
-    result.context.get("savePipelineFailures") == [[application: 'app1', name: 'pipeline1']]
+    result.context.get("pipelinesCreated") == []
+    result.context.get("pipelinesUpdated") == []
+    result.context.get("pipelinesFailedToSave") == [[application: 'app1', name: 'pipeline1']]
   }
 
 }

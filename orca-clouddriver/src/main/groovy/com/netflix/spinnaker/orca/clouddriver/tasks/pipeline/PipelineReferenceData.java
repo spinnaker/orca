@@ -25,4 +25,5 @@ import lombok.NoArgsConstructor;
 public class PipelineReferenceData {
   private String application;
   private String name;
+  private String id;
 }
