@@ -23,26 +23,49 @@ import java.util.Map;
 
 public interface IgorService {
   @PUT("/masters/{name}/jobs/{jobName}")
-  public abstract String build(@Path("name") String master, @Path(encode = false, value = "jobName") String jobName, @QueryMap Map<String, String> queryParams, @Body String ignored);
+  String build(
+    @Path("name") String master,
+    @Path(encode = false, value = "jobName") String jobName,
+    @QueryMap Map<String, String> queryParams,
+    @Body String ignored);
 
   @PUT("/masters/{name}/jobs/{jobName}/stop/{queuedBuild}/{buildNumber}")
-  public abstract String stop(@Path("name") String master, @Path(encode = false, value = "jobName") String jobName, @Path(encode = false, value = "queuedBuild") String queuedBuild, @Path(encode = false, value = "buildNumber") Integer buildNumber, @Body String ignored);
+  String stop(
+    @Path("name") String master,
+    @Path(encode = false, value = "jobName") String jobName,
+    @Path(encode = false, value = "queuedBuild") String queuedBuild,
+    @Path(encode = false, value = "buildNumber") Integer buildNumber,
+    @Body String ignored);
 
   @GET("/builds/queue/{master}/{item}")
-  public abstract Map queuedBuild(@Path("master") String master, @Path("item") String item);
+  Map queuedBuild(
+    @Path("master") String master,
+    @Path("item") String item);
 
   @GET("/builds/status/{buildNumber}/{master}/{job}")
-  public abstract Map<String, Object> getBuild(@Path("buildNumber") Integer buildNumber, @Path("master") String master, @Path(encode = false, value = "job") String job);
+  Map<String, Object> getBuild(
+    @Path("buildNumber") Integer buildNumber,
+    @Path("master") String master,
+    @Path(encode = false, value = "job") String job);
 
   @GET("/builds/properties/{buildNumber}/{fileName}/{master}/{job}")
-  public abstract Map<String, Object> getPropertyFile(@Path("buildNumber") Integer buildNumber, @Path("fileName") String fileName, @Path("master") String master, @Path(encode = false, value = "job") String job);
+  Map<String, Object> getPropertyFile(
+    @Path("buildNumber") Integer buildNumber,
+    @Path("fileName") String fileName,
+    @Path("master") String master,
+    @Path(encode = false, value = "job") String job);
 
   @GET("/{repoType}/{projectKey}/{repositorySlug}/compareCommits")
-  public abstract List compareCommits(@Path("repoType") String repoType, @Path("projectKey") String projectKey, @Path("repositorySlug") String repositorySlug, @QueryMap Map<String, String> requestParams);
+  List compareCommits(
+    @Path("repoType") String repoType,
+    @Path("projectKey") String projectKey,
+    @Path("repositorySlug") String repositorySlug,
+    @QueryMap Map<String, String> requestParams);
 
   @GET("/builds/artifacts/{buildNumber}/{master}/{job}")
-  List<Artifact> getArtifacts(@Path("buildNumber") Integer buildNumber,
-                              @Query("propertyFile") String propertyFile,
-                              @Path("master") String master,
-                              @Path(value = "job", encode = false) String job);
+  List<Artifact> getArtifacts(
+    @Path("buildNumber") Integer buildNumber,
+    @Query("propertyFile") String propertyFile,
+    @Path("master") String master,
+    @Path(value = "job", encode = false) String job);
 }
