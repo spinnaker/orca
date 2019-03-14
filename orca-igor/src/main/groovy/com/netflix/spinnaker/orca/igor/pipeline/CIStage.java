@@ -53,11 +53,14 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
   }
 
   private boolean waitForCompletion(Stage stage) {
-    String waitForCompletion = (String) stage.getContext().get("waitForCompletion");
-    if (waitForCompletion != null && waitForCompletion.equals("false")) {
-      return false;
+    Object contextValue = stage.getContext().get("waitForCompletion");
+    Boolean waitForCompletion = false;
+    if (contextValue instanceof String) {
+      waitForCompletion = Boolean.parseBoolean((String) contextValue);
+    } else if (contextValue instanceof Boolean) {
+      waitForCompletion = (Boolean) contextValue;
     }
-    return true;
+    return waitForCompletion;
   }
 
   protected Class<? extends Task> waitForJobStartTaskClass() {
