@@ -18,8 +18,10 @@ package com.netflix.spinnaker.orca.clouddriver.config;
 
 import com.netflix.spinnaker.orca.config.PreconfiguredStageParameter;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class PreconfiguredJobStageParameter extends PreconfiguredStageParameter {
 
   String mapping;

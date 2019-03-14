@@ -158,7 +158,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
         return [(location): summaries]
       } catch (RetrofitError e) {
         if (e.response?.status == 404) {
-          final Map reason
+          Map reason = null
           try {
             reason = objectMapper.readValue(e.response.body.in(), new TypeReference<Map<String, Object>>() {})
           } catch (Exception ignored) {
