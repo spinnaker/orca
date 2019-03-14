@@ -25,19 +25,19 @@ dependencies {
 
   compile "org.springframework:spring-jdbc:${spinnaker.version("spring")}"
   compile "org.springframework:spring-tx:${spinnaker.version("spring")}"
-  compile "org.jooq:jooq:3.9.6"
-  compile "org.liquibase:liquibase-core:3.6.1"
-  compile 'com.zaxxer:HikariCP:2.5.1'
+  compile spinnaker.dependency("jooq")
+  compile spinnaker.dependency("liquibaseCore")
+  compile spinnaker.dependency("hikari")
 
   testCompile "com.h2database:h2:1.4.197"
   testCompile project(":orca-core-tck")
   testCompile project(":orca-test-groovy")
 
   testCompile "io.strikt:strikt-core:0.11.5"
-  testCompile "org.assertj:assertj-core:3.9.0"
+  testCompile spinnaker.dependency("assertj")
   testCompile "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
   testCompile "dev.minutest:minutest:0.45.0"
-  testCompile "com.nhaarman:mockito-kotlin:1.5.0"
+  testCompile spinnaker.dependency("mockitoKotlin")
 
   testRuntime "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
   testRuntime "org.junit.platform:junit-platform-launcher:$junitVersion"

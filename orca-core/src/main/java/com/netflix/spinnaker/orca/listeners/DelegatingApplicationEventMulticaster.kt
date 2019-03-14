@@ -33,12 +33,12 @@ class DelegatingApplicationEventMulticaster(
   private val asyncApplicationEventMulticaster: ApplicationEventMulticaster
 ) : ApplicationEventMulticaster, BeanFactoryAware, BeanClassLoaderAware {
 
-  override fun multicastEvent(event: ApplicationEvent?) {
+  override fun multicastEvent(event: ApplicationEvent) {
     asyncApplicationEventMulticaster.multicastEvent(event)
     syncApplicationEventMulticaster.multicastEvent(event)
   }
 
-  override fun multicastEvent(event: ApplicationEvent?, eventType: ResolvableType?) {
+  override fun multicastEvent(event: ApplicationEvent, eventType: ResolvableType?) {
     asyncApplicationEventMulticaster.multicastEvent(event, eventType)
     syncApplicationEventMulticaster.multicastEvent(event, eventType)
   }
