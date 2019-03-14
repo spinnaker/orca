@@ -23,14 +23,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import groovy.transform.CompileStatic
-import groovy.transform.Immutable
-
 /**
  * A request to bake a new image.
  *
  * @see BakeryService#createBake
  */
-@Immutable(copyWith = true)
 @CompileStatic
 class BakeRequest {
   private static final PropertyNamingStrategy.LowerCaseWithUnderscoresStrategy lowerCaseWithUnderscoresStrategy =

@@ -34,6 +34,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 import javax.annotation.Nonnull
+import java.time.Clock
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 
@@ -44,8 +47,14 @@ class BakeStage implements StageDefinitionBuilder {
 
   public static final String PIPELINE_CONFIG_TYPE = "bake"
 
+  private final RegionCollector regionCollector
+  private final Clock clock
+
   @Autowired
-  RegionCollector regionCollector
+  BakeStage(RegionCollector regionCollector, Clock clock) {
+    this.regionCollector = regionCollector
+    this.clock = clock
+  }
 
   @Override
   void taskGraph(Stage stage, TaskNode.Builder builder) {
@@ -91,7 +100,7 @@ class BakeStage implements StageDefinitionBuilder {
 
     log.info("Preparing package `${stage.context.package}` for bake in ${deployRegions.join(", ")}")
     if (!stage.context.amiSuffix) {
-      stage.context.amiSuffix = now().format("yyyyMMddHHmmss", TimeZone.getTimeZone("UTC"))
+      stage.context.amiSuffix = formattedDate()
     }
     return deployRegions.collect {
       stage.context - ["regions": stage.context.regions] + ([
@@ -130,7 +139,8 @@ class BakeStage implements StageDefinitionBuilder {
     }
   }
 
-  protected Date now() {
-    return new Date()
+  protected String formattedDate() {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuuMMddHHmmss")
+    return formatter.format(LocalDateTime.now(clock))
   }
 }
