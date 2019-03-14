@@ -26,6 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
@@ -87,6 +88,13 @@ public class SavePipelineTask implements RetryableTask {
       updateServiceAccount(pipeline, serviceAccount);
     }
 
+    if (stage.getContext().get("pipeline.id") != null && pipeline.get("id") == null) {
+      pipeline.put("id", stage.getContext().get("pipeline.id"));
+
+      // We need to tell front50 to regenerate cron trigger id's
+      pipeline.put("regenerateCronTriggerIds", true);
+    }
+
     pipelineModelMutators.stream().filter(m -> m.supports(pipeline)).forEach(m -> m.mutate(pipeline));
 
     Response response = front50Service.savePipeline(pipeline);
@@ -139,7 +147,12 @@ public class SavePipelineTask implements RetryableTask {
     }
 
     // Managed Service account exists and roles are set; Update triggers
-    triggers.forEach(t -> t.putIfAbsent("runAsUser", serviceAccount));
+    triggers.stream()
+      .filter(t -> {
+        String runAsUser = (String) t.get("runAsUser");
+        return runAsUser == null || runAsUser.endsWith("@managed-service-account");
+      })
+      .forEach(t -> t.put("runAsUser", serviceAccount));
   }
 
   private Map<String, Object> fetchExistingPipeline(Map<String, Object> newPipeline) {
