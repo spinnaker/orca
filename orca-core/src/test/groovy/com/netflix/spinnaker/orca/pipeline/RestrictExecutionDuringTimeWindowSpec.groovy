@@ -180,8 +180,20 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
   }
 
   @Unroll
-  void 'stage should optionally configure WaitTask based on restrictedExecutionWindow.jitter'() {
+  void 'stage should optionally configure WaitTask based on restrictedExecutionWindow.jitter'(boolean jitterEnabled,
+                                                                                              Integer min,
+                                                                                              Integer max,
+                                                                                              int waitTaskCount) {
     when:
+    // HACK(rz): Some weird behavior in Spock & Groovy not handling data table type correctly
+    if (min == -1) {
+      min = null
+    }
+    if (max == -1) {
+      max = null
+    }
+    // END HACK(rz)
+
     def jitterContext = [
       enabled : jitterEnabled,
       maxDelay: max,
@@ -201,12 +213,12 @@ class RestrictExecutionDuringTimeWindowSpec extends Specification {
     waitTaskCount * builder.withTask("waitForJitter", WaitTask)
 
     where:
-    jitterEnabled | min  | max  | waitTaskCount
-    true          | 60   | 600  | 1
-    true          | null | 600  | 1
-    true          | null | null | 0
-    false         | 60   | 600  | 0
-    false         | null | null | 0
+    jitterEnabled | min | max | waitTaskCount
+    true          | 60  | 600 | 1
+    true          | -1  | 600 | 1
+    true          | -1  | -1  | 0
+    false         | 60  | 600 | 0
+    false         | -1  | -1  | 0
   }
 
   private hourMinute(String hourMinuteStr) {
