@@ -130,8 +130,8 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         if (!targetMatch) {
           pipeline.notifications.push(appNotification)
         } else {
-          Collection<String> appWhen = ((Collection<String>) appNotification.when)
-          Collection<String> pipelineWhen = (Collection<String>) targetMatch.when
+          Collection<String> appWhen = ((Collection<String>) appNotification.when).sort()
+          Collection<String> pipelineWhen = ((Collection<String>) targetMatch.when).sort()
           appWhen.removeAll(pipelineWhen)
           if (!appWhen.isEmpty()) {
             pipeline.notifications.push(appNotification)
