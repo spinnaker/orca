@@ -76,7 +76,7 @@ class MigratePipelineClustersTaskSpec extends Specification {
     then:
     1 * front50Service.getPipelines('theapp') >> [pipeline]
     1 * katoService.requestOperations('aws', {
-      it[0].migrateClusterConfigurations.sources.cluster.id == [1,2,3,4]
+      it[0].migrateClusterConfigurations.sources.cluster.id == [1,2,5,6]
       it[0].migrateClusterConfigurations.regionMapping == ['us-east-1': 'us-west-1']
     }) >> rx.Observable.from([new TaskId(id: "1")])
     result.context['source.pipeline'] == pipeline
