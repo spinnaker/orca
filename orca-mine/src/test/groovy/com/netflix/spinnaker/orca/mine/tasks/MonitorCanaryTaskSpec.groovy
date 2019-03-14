@@ -175,11 +175,11 @@ class MonitorCanaryTaskSpec extends Specification {
     then:
     1 * mineService.getCanary(stage.context.canary.id) >> canaryConf
     1 * katoService.requestOperations('aws', { ops ->
-      ops.size() == 2 &&
-      ops.find { it.resizeServerGroup.asgName == 'foo--cfieber-canary-v000' } &&
-      ops.find { it.resizeServerGroup.asgName == 'foo--cfieber-baseline-v000' } &&
-      ops.every { it.resizeServerGroup.capacity == [min:3, max: 3, desired: 3]}
-      }) >> rx.Observable.just(new TaskId('blah'))
+      ops.size() == 2
+      ops.find { it.resizeServerGroup.asgName == 'foo--cfieber-canary-v000' } != null
+      ops.find { it.resizeServerGroup.asgName == 'foo--cfieber-baseline-v000' } != null
+      ops.every { it.resizeServerGroup.capacity == [min: 3, max: 3, desired: 3] } == true
+    }) >> rx.Observable.just(new TaskId('blah'))
   }
 
   def 'should disable unhealthy canary'() {
@@ -239,9 +239,10 @@ class MonitorCanaryTaskSpec extends Specification {
     then:
     1 * mineService.getCanary(canaryConf.id) >> canaryConf
     1 * katoService.requestOperations('aws', { ops ->
-      ops.size() == 2 &&
-      ops.find { it.disableServerGroup.asgName == 'foo--cfieber-canary-v000' }
-      ops.find { it.disableServerGroup.asgName == 'foo--cfieber-baseline-v000' } }) >> rx.Observable.just(new TaskId('blah'))
+      ops.size() == 2
+      ops.find { it.disableServerGroup.asgName == 'foo--cfieber-canary-v000' } != null
+      ops.find { it.disableServerGroup.asgName == 'foo--cfieber-baseline-v000' } != null
+    }) >> rx.Observable.just(new TaskId('blah'))
   }
 
 }

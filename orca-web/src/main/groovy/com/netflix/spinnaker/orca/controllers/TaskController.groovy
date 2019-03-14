@@ -54,6 +54,7 @@ import rx.schedulers.Schedulers
 import java.nio.charset.Charset
 import java.time.Clock
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
@@ -625,7 +626,7 @@ class TaskController {
 
   private List<Execution> filterPipelinesByHistoryCutoff(List<Execution> pipelines, int limit) {
     // TODO-AJ The eventual goal is to return `allPipelines` without the need to group + filter below (WIP)
-    def cutoffTime = (new Date(clock.millis()) - daysOfExecutionHistory).time
+    def cutoffTime = clock.instant().minus((long) daysOfExecutionHistory, ChronoUnit.DAYS).toEpochMilli()
 
     def pipelinesSatisfyingCutoff = []
     pipelines.groupBy {
