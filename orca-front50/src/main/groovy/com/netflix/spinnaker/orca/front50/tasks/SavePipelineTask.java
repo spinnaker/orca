@@ -89,6 +89,10 @@ public class SavePipelineTask implements RetryableTask {
       updateServiceAccount(pipeline, serviceAccount);
     }
 
+    if (stage.getContext().get("pipeline.id") != null && pipeline.get("id") == null) {
+      pipeline.put("id", stage.getContext().get("pipeline.id"));
+    }
+
     pipelineModelMutators.stream().filter(m -> m.supports(pipeline)).forEach(m -> m.mutate(pipeline));
 
     Response response = front50Service.savePipeline(pipeline);
