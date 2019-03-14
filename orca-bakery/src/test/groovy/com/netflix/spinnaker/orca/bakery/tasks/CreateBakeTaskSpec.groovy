@@ -42,7 +42,7 @@ import static java.util.UUID.randomUUID
 class CreateBakeTaskSpec extends Specification {
 
   @Subject
-    task = new CreateBakeTask()
+  def task = new CreateBakeTask()
   Stage bakeStage
   def mapper = OrcaObjectMapper.newInstance()
 

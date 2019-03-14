@@ -39,7 +39,11 @@ class BakeryServiceSpec extends Specification {
   @Subject BakeryService bakery
 
   final region = "us-west-1"
-  final bake = BakeRequest.Default.copyWith(user: "rfletcher", packageName: "orca")
+  final bake = BakeRequest.Default.with {
+    user = "rfletcher"
+    packageName = "orca"
+    it
+  }
   final bakePath = "/api/v1/$region/bake"
   final statusPath = "/api/v1/$region/status"
   final bakeId = "b-123456789"
