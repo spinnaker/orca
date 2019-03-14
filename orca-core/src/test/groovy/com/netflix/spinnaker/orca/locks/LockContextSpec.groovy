@@ -50,33 +50,28 @@ class LockContextSpec extends Specification {
 
   def "builder traverses up the hierarchy when execution is triggered by a PipelineTrigger"() {
     given:
-    def builder = new LockContext.LockContextBuilder.LockValueBuilder(application, type, explicitId, stage)
+    def application = 'app'
+    def type = 'pipeline'
+    def explicitId = null
 
-    expect:
-    builder.build() == expected
-
-    where:
-    application = 'app'
-    type = 'pipeline'
-    explicitId = null
-
-    parentStage = ExecutionBuilder.stage {
+    def parentStage = ExecutionBuilder.stage {
       type = 'pipeline'
     }
 
-
-    exec = ExecutionBuilder.pipeline {
+    def exec = ExecutionBuilder.pipeline {
       trigger = makeTrigger(parentStage)
       ExecutionBuilder.stage {
         type = 'acquireLock'
       }
     }
 
-    stage = exec.stages[0]
+    def stage = exec.stages[0]
 
-    expectedId = parentStage.execution.id
-    expected = new LockManager.LockValue(application, type, expectedId)
+    def expectedId = parentStage.execution.id
+    def expected = new LockManager.LockValue(application, type, expectedId)
 
+    expect:
+    new LockContext.LockContextBuilder.LockValueBuilder(application, type, explicitId, stage).build() == expected
   }
 
   def "builder traverses up the hierarchy multiple levels when execution is triggered by a PipelineTrigger"() {
@@ -91,8 +86,6 @@ class LockContextSpec extends Specification {
     type = 'pipeline'
     explicitId = null
 
-
-
     grandParentStage = ExecutionBuilder.stage {
       type = 'pipeline'
     }
@@ -104,7 +97,6 @@ class LockContextSpec extends Specification {
 
     expectedId = grandParentStage.execution.id
     expected = new LockManager.LockValue(application, type, expectedId)
-
   }
 
   private PipelineTrigger makeTrigger(Stage parentStage) {
