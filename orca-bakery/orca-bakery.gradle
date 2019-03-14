@@ -23,5 +23,5 @@ dependencies {
   compile spinnaker.dependency('jacksonGuava')
   compileOnly spinnaker.dependency('lombok')
   testCompile project(":orca-test-groovy")
-  testCompile "com.github.tomakehurst:wiremock:2.15.0"
+  testCompile spinnaker.dependency("wiremock")
 }

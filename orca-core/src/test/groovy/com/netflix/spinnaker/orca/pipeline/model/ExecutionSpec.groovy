@@ -17,8 +17,9 @@
 package com.netflix.spinnaker.orca.pipeline.model
 
 import com.netflix.spinnaker.security.AuthenticatedRequest
-import org.apache.log4j.MDC
+import org.slf4j.MDC
 import spock.lang.Specification
+
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 

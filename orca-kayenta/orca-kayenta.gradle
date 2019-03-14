@@ -23,5 +23,5 @@ dependencies {
   compile project(":orca-clouddriver")
 
   testCompile project(":orca-test-kotlin")
-  testCompile "com.github.tomakehurst:wiremock:2.15.0"
+  testCompile spinnaker.dependency("wiremock")
 }

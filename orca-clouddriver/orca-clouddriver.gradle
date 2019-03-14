@@ -34,11 +34,12 @@ dependencies {
 
   testCompile project(":orca-test")
   testCompile project(":orca-test-groovy")
-  testCompile "com.github.tomakehurst:wiremock:2.15.0"
+  testCompile spinnaker.dependency("wiremock")
   testCompile spinnaker.dependency('springTest')
   testCompile spinnaker.dependency("junitJupiterApi")
   testCompile spinnaker.dependency("assertj")
-  testCompile "org.mockito:mockito-core:2.25.0"
+  testCompile spinnaker.dependency("mockito")
+//  testCompile "org.mockito:mockito-core:2.25.0"
 
   testRuntime spinnaker.dependency("junitJupiterEngine")
   testRuntime "org.junit.vintage:junit-vintage-engine:${spinnaker.version('jupiter')}"

@@ -45,10 +45,13 @@ dependencies {
   compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${spinnaker.version('jackson')}"
   compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${spinnaker.version('jackson')}"
   compile "com.fasterxml.jackson.module:jackson-module-kotlin:${spinnaker.version('jackson')}"
-  compile "org.apache.commons:commons-lang3:3.7"
-  compile "de.huxhorn.sulky:de.huxhorn.sulky.ulid:8.1.1"
+  compile spinnaker.dependency("commonsLang")
+//  compile "org.apache.commons:commons-lang3:3.7"
+  compile spinnaker.dependency("ulid")
+//  compile "de.huxhorn.sulky:de.huxhorn.sulky.ulid:8.1.1"
   compile "javax.servlet:javax.servlet-api:4.0.1"
-  compile('com.jayway.jsonpath:json-path:2.2.0')
+  compile spinnaker.dependency("jsonPath")
+//  compile('com.jayway.jsonpath:json-path:2.2.0')
 
   compileOnly spinnaker.dependency("lombok")
 
