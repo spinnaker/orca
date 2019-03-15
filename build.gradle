@@ -36,7 +36,7 @@ allprojects {
   group = "com.netflix.spinnaker.orca"
 
   ext {
-    spinnakerDependenciesVersion = '1.9.0-SNAPSHOT'
+    spinnakerDependenciesVersion = '2.0.0-rc.22-springBoot2'
     if (project.hasProperty('spinnakerDependenciesVersion')) {
       spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
     }
