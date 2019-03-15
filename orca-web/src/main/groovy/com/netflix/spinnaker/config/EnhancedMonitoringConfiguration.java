@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.config;
 
-import com.google.common.collect.Lists;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -38,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Configuration
 @EnableConfigurationProperties(EnhancedMonitoringConfigurationProperties.class)
-@ConditionalOnExpression(value = "${pollers.enhancedMonitoring.enabled:false}")
+@ConditionalOnExpression(value = "${pollers.enhanced-monitoring.enabled:false}")
 public class EnhancedMonitoringConfiguration {
   private final Logger log = LoggerFactory.getLogger(getClass());
 

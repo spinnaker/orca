@@ -90,10 +90,10 @@ class TaskController {
   @Autowired
   StageDefinitionBuilderFactory stageDefinitionBuilderFactory
 
-  @Value('${tasks.daysOfExecutionHistory:14}')
+  @Value('${tasks.days-of-execution-history:14}')
   int daysOfExecutionHistory
 
-  @Value('${tasks.numberOfOldPipelineExecutionsToInclude:2}')
+  @Value('${tasks.number-of-old-pipeline-executions-to-include:2}')
   int numberOfOldPipelineExecutionsToInclude
 
   Clock clock = Clock.systemUTC()

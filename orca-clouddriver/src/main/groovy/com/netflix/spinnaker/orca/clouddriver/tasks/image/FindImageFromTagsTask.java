@@ -16,14 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
@@ -36,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.*;
+
 @Component
 public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
   @Autowired
@@ -44,7 +38,7 @@ public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implem
   @Autowired
   List<ImageFinder> imageFinders;
 
-  @Value("${tasks.findImageFromTagsTimeoutMillis:600000}")
+  @Value("${tasks.find-image-from-tags-timeout-millis:600000}")
   private Long findImageFromTagsTimeoutMillis;
 
   @Override

@@ -26,8 +26,7 @@ import retrofit.client.Client
 class GremlinConfiguration {
 
   @Bean
-  fun gremlinEndpoint(
-    @Value("\${integrations.gremlin.baseUrl}") gremlinBaseUrl: String): Endpoint {
+  fun gremlinEndpoint(@Value("\${integrations.gremlin.base-url}") gremlinBaseUrl: String): Endpoint {
     return Endpoints.newFixedEndpoint(gremlinBaseUrl)
   }
 

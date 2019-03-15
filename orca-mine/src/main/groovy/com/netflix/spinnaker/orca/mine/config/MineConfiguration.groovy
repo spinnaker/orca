@@ -40,7 +40,7 @@ import static retrofit.Endpoints.newFixedEndpoint
   "com.netflix.spinnaker.orca.mine.pipeline",
   "com.netflix.spinnaker.orca.mine.tasks"
 ])
-@ConditionalOnProperty(value = 'mine.baseUrl')
+@ConditionalOnProperty(value = 'mine.base-url')
 class MineConfiguration {
 
   @Autowired
@@ -52,8 +52,7 @@ class MineConfiguration {
   ObjectMapper objectMapper
 
   @Bean
-  Endpoint mineEndpoint(
-    @Value('${mine.baseUrl}') String mineBaseUrl) {
+  Endpoint mineEndpoint(@Value('${mine.base-url}') String mineBaseUrl) {
     newFixedEndpoint(mineBaseUrl)
   }
 
