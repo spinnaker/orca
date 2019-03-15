@@ -45,10 +45,10 @@ import java.util.Optional
 class RedisQueueShovelConfiguration {
 
   @Bean
-  @ConditionalOnProperty("redis.connectionPrevious")
+  @ConditionalOnProperty("redis.connection-previous")
   fun previousQueueJedisPool(
     @Value("\${redis.connection:redis://localhost:6379}") mainConnection: String,
-    @Value("\${redis.connectionPrevious:#{null}}") previousConnection: String?,
+    @Value("\${redis.connection-previous:#{null}}") previousConnection: String?,
     @Value("\${redis.timeout:2000}") timeout: Int,
     redisPoolConfig: GenericObjectPoolConfig,
     registry: Registry): Pool<Jedis> {

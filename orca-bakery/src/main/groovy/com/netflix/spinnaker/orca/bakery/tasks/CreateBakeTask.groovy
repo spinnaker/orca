@@ -59,13 +59,13 @@ class CreateBakeTask implements RetryableTask {
   @Autowired(required = false)
   Front50Service front50Service
 
-  @Value('${bakery.extractBuildDetails:false}')
+  @Value('${bakery.extract-build-details:false}')
   boolean extractBuildDetails
 
-  @Value('${bakery.roscoApisEnabled:false}')
+  @Value('${bakery.rosco-apis-enabled:false}')
   boolean roscoApisEnabled
 
-  @Value('${bakery.allowMissingPackageInstallation:false}')
+  @Value('${bakery.allow-missing-package-installation:false}')
   boolean allowMissingPackageInstallation
 
   RetrySupport retrySupport = new RetrySupport()

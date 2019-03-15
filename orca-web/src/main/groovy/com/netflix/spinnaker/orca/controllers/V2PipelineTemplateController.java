@@ -18,8 +18,6 @@ package com.netflix.spinnaker.orca.controllers;
 
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,7 +31,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping(value = "/v2/pipelineTemplates")
-@ConditionalOnExpression("${pipelineTemplates.enabled:true}")
+@ConditionalOnExpression("${pipeline-templates.enabled:true}")
 @Slf4j
 public class V2PipelineTemplateController {
 

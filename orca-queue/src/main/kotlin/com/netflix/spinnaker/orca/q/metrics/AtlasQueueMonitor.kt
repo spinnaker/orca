@@ -67,9 +67,9 @@ class AtlasQueueMonitor
   private val clock: Clock,
   private val activators: List<Activator>,
   private val conch: NotificationClusterLock,
-  @Value("\${queue.zombieCheck.enabled:false}")private val zombieCheckEnabled: Boolean,
+  @Value("\${queue.zombie-check.enabled:false}")private val zombieCheckEnabled: Boolean,
   @Qualifier("scheduler") private val zombieCheckScheduler: Optional<Scheduler>,
-  @Value("\${queue.zombieCheck.cutoffMinutes:10}") private val zombieCheckCutoffMinutes: Long
+  @Value("\${queue.zombie-check.cutoff-minutes:10}") private val zombieCheckCutoffMinutes: Long
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)

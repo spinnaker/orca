@@ -47,8 +47,7 @@ class IgorConfiguration {
   @Autowired ObjectMapper objectMapper
 
   @Bean
-  Endpoint igorEndpoint(
-    @Value('${igor.baseUrl}') String igorBaseUrl) {
+  Endpoint igorEndpoint(@Value('${igor.base-url}') String igorBaseUrl) {
     newFixedEndpoint(igorBaseUrl)
   }
 

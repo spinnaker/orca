@@ -15,10 +15,8 @@
  */
 package com.netflix.spinnaker.orca.config;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -34,21 +32,17 @@ public class JedisConfiguration {
   }
 
   @Bean
-  public Scheduler queryAllScheduler(
-    @Qualifier("QueryAll") ThreadPoolTaskExecutor executor) {
+  public Scheduler queryAllScheduler(@Qualifier("QueryAll") ThreadPoolTaskExecutor executor) {
     return Schedulers.from(executor);
   }
 
   @Bean("QueryByApp")
-  public ThreadPoolTaskExecutor queryByApp(
-    @Value("${threadPool.executionRepository:150}") int threadPoolSize
-  ) {
+  public ThreadPoolTaskExecutor queryByApp(@Value("${thread-pool.execution-repository:150}") int threadPoolSize) {
     return newFixedThreadPool(threadPoolSize);
   }
 
   @Bean
-  public Scheduler queryByAppScheduler(
-    @Qualifier("QueryByApp") ThreadPoolTaskExecutor executor) {
+  public Scheduler queryByAppScheduler(@Qualifier("QueryByApp") ThreadPoolTaskExecutor executor) {
     return Schedulers.from(executor);
   }
 

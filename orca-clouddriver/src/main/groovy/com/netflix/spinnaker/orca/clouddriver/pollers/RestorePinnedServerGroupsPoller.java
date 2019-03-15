@@ -49,7 +49,7 @@ import static java.lang.String.format;
 
 @Slf4j
 @Component
-@ConditionalOnExpression(value = "${pollers.restorePinnedServerGroups.enabled:false}")
+@ConditionalOnExpression(value = "${pollers.restore-pinned-server-groups.enabled:false}")
 public class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
   private static final Logger log = LoggerFactory.getLogger(RestorePinnedServerGroupsPoller.class);
 
@@ -74,7 +74,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
                                          Registry registry,
                                          ExecutionLauncher executionLauncher,
                                          ExecutionRepository executionRepository,
-                                         @Value("${pollers.restorePinnedServerGroups.username:spinnaker}") String username) {
+                                         @Value("${pollers.restore-pinned-server-groups.username:spinnaker}") String username) {
     this(
       notificationClusterLock,
       objectMapper,

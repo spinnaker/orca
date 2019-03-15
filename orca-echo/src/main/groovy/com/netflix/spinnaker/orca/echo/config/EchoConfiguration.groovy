@@ -55,8 +55,7 @@ class EchoConfiguration {
   @Autowired ObjectMapper objectMapper
 
   @Bean
-  Endpoint echoEndpoint(
-    @Value('${echo.baseUrl}') String echoBaseUrl) {
+  Endpoint echoEndpoint(@Value('${echo.base-url}') String echoBaseUrl) {
     newFixedEndpoint(echoBaseUrl)
   }
 

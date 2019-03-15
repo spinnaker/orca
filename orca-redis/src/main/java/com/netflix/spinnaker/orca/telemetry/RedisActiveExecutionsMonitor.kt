@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.telemetry
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionEvent
@@ -28,7 +27,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundExceptio
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationListener
@@ -51,15 +49,15 @@ import java.util.concurrent.atomic.AtomicLong
  * TODO rz - Add cloudProviders, accounts as tags
  */
 @Component
-@ConditionalOnProperty("monitor.activeExecutions.redis", matchIfMissing = true)
+@ConditionalOnProperty("monitor.active-executions.redis", matchIfMissing = true)
 class RedisActiveExecutionsMonitor(
   private val executionRepository: ExecutionRepository,
   redisClientSelector: RedisClientSelector,
   private val objectMapper: ObjectMapper,
   private val registry: Registry,
-  @Value("\${monitor.activeExecutions.refresh.frequency.ms:60000}") refreshFrequencyMs: Long,
-  @Value("\${monitor.activeExecutions.cleanup.frequency.ms:300000}") cleanupFrequencyMs: Long,
-  @Value("\${monitor.activeExecutions.key:monitor.activeExecutions}") val redisKey: String
+  @Value("\${monitor.active-executions.refresh.frequency.ms:60000}") refreshFrequencyMs: Long,
+  @Value("\${monitor.active-executions.cleanup.frequency.ms:300000}") cleanupFrequencyMs: Long,
+  @Value("\${monitor.active-executions.key:monitor.activeExecutions}") val redisKey: String
 ) : ApplicationListener<ExecutionEvent> {
 
   private val log = LoggerFactory.getLogger(javaClass)

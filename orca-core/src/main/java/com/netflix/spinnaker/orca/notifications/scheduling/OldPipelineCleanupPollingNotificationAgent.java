@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
 @Component
-@ConditionalOnExpression("${pollers.oldPipelineCleanup.enabled:false} && !${executionRepository.sql.enabled:false}")
+@ConditionalOnExpression("${pollers.old-pipeline-cleanup.enabled:false} && !${execution-repository.sql.enabled:false}")
 public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingNotificationAgent {
 
   private static final List<String> COMPLETED_STATUSES = ExecutionStatus.COMPLETED.stream().map(Enum::toString).collect(Collectors.toList());
@@ -94,9 +94,9 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
                                                     ExecutionRepository executionRepository,
                                                     Clock clock,
                                                     Registry registry,
-                                                    @Value("${pollers.oldPipelineCleanup.intervalMs:3600000}") long pollingIntervalMs,
-                                                    @Value("${pollers.oldPipelineCleanup.thresholdDays:30}") int thresholdDays,
-                                                    @Value("${pollers.oldPipelineCleanup.minimumPipelineExecutions:5}") int minimumPipelineExecutions) {
+                                                    @Value("${pollers.old-pipeline-cleanup.interval-ms:3600000}") long pollingIntervalMs,
+                                                    @Value("${pollers.old-pipeline-cleanup.threshold-days:30}") int thresholdDays,
+                                                    @Value("${pollers.old-pipeline-cleanup.minimum-pipeline-executions:5}") int minimumPipelineExecutions) {
     super(clusterLock);
     this.executionRepository = executionRepository;
     this.clock = clock;
