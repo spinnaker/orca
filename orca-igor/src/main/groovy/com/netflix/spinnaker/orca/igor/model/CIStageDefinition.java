@@ -17,8 +17,11 @@
 package com.netflix.spinnaker.orca.igor.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import lombok.Getter;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Getter
@@ -27,6 +30,8 @@ public class CIStageDefinition {
   private final String job;
   private final String propertyFile;
   private final Integer buildNumber;
+  private final boolean waitForCompletion;
+  private final List<ExpectedArtifact> expectedArtifacts;
   private final int consecutiveErrors;
 
   // There does not seem to be a way to auto-generate a constructor using our current version of Lombok (1.16.20) that
@@ -36,12 +41,18 @@ public class CIStageDefinition {
     @JsonProperty("job") String job,
     @JsonProperty("property") String propertyFile,
     @JsonProperty("buildNumber") Integer buildNumber,
+    @JsonProperty("waitForCompletion") Boolean waitForCompletion,
+    @JsonProperty("expectedArtifacts") List<ExpectedArtifact> expectedArtifacts,
     @JsonProperty("consecutiveErrors") Integer consecutiveErrors
   ) {
     this.master = master;
     this.job = job;
     this.propertyFile = propertyFile;
     this.buildNumber = buildNumber;
+    this.waitForCompletion = Optional.ofNullable(waitForCompletion).orElse(true);
+    this.expectedArtifacts = Collections.unmodifiableList(
+      Optional.ofNullable(expectedArtifacts).orElse(Collections.emptyList())
+    );
     this.consecutiveErrors = Optional.ofNullable(consecutiveErrors).orElse(0);
   }
 }
