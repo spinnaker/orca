@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.igor.tasks;
+package com.netflix.spinnaker.orca.igor.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
@@ -22,7 +22,7 @@ import lombok.Getter;
 import java.util.Optional;
 
 @Getter
-public class CIJobRequest {
+public class CIStageDefinition {
   private final String master;
   private final String job;
   private final String propertyFile;
@@ -31,7 +31,7 @@ public class CIJobRequest {
 
   // There does not seem to be a way to auto-generate a constructor using our current version of Lombok (1.16.20) that
   // Jackson can use to deserialize.
-  public CIJobRequest(
+  public CIStageDefinition(
     @JsonProperty("master") String master,
     @JsonProperty("job") String job,
     @JsonProperty("property") String propertyFile,
