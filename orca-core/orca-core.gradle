@@ -17,6 +17,12 @@
 apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spock.gradle"
 
+test {
+  useJUnitPlatform {
+    includeEngines "junit-vintage", "junit-jupiter"
+  }
+}
+
 dependencies {
   compile project(":orca-extensionpoint")
   compile spinnaker.dependency('guava')
@@ -42,9 +48,15 @@ dependencies {
   compile "org.apache.commons:commons-lang3:3.7"
   compile "de.huxhorn.sulky:de.huxhorn.sulky.ulid:8.1.1"
   compile "javax.servlet:javax.servlet-api:4.0.1"
+  compile('com.jayway.jsonpath:json-path:2.2.0')
 
   compileOnly spinnaker.dependency("lombok")
 
   testCompile project(":orca-test")
   testCompile project(":orca-test-groovy")
+  testCompile spinnaker.dependency("junitJupiterApi")
+  testCompile spinnaker.dependency("assertj")
+
+  testRuntime spinnaker.dependency("junitJupiterEngine")
+  testRuntime "org.junit.vintage:junit-vintage-engine:${spinnaker.version('jupiter')}"
 }

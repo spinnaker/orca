@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline.model
 
 import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
@@ -41,34 +40,31 @@ data class JenkinsTrigger
 
   override var other: Map<String, Any> = mutableMapOf()
   override var resolvedExpectedArtifacts: List<ExpectedArtifact> = mutableListOf()
-  var buildInfo: BuildInfo? = null
+  var buildInfo: JenkinsBuildInfo? = null
   var properties: Map<String, Any> = mutableMapOf()
+}
 
-  data class BuildInfo
-  @JsonCreator constructor(
-    @param:JsonProperty("name") val name: String,
-    @param:JsonProperty("number") val number: Int,
-    @param:JsonProperty("url") val url: String,
-    @JsonProperty("artifacts") val artifacts: List<JenkinsArtifact>? = emptyList(),
-    @JsonProperty("scm") val scm: List<SourceControl>? = emptyList(),
-    @param:JsonProperty("building") val isBuilding: Boolean,
-    @param:JsonProperty("result") val result: String?
-  ) {
-    @get:JsonIgnore
-    val fullDisplayName: String
-      get() = name + " #" + number
-  }
+class JenkinsArtifact
+@JsonCreator
+constructor(@param:JsonProperty("fileName") val fileName: String,
+            @param:JsonProperty("relativePath") val relativePath: String)
 
-  data class SourceControl
-  @JsonCreator constructor(
-    @param:JsonProperty("name") val name: String,
-    @param:JsonProperty("branch") val branch: String,
-    @param:JsonProperty("sha1") val sha1: String
-  )
+class JenkinsBuildInfo
+@JsonCreator
+constructor(@param:JsonProperty("name") override val name: String?,
+            @param:JsonProperty("number") override val number: Int,
+            @param:JsonProperty("url") override val url: String?,
+            @param:JsonProperty("result") override val result: String?,
+            @param:JsonProperty("artifacts") override val artifacts: List<JenkinsArtifact>?,
+            @param:JsonProperty("scm") override val scm: List<SourceControl>?,
+            @param:JsonProperty("building") override var building: Boolean = false)
+    : BuildInfo<JenkinsArtifact>(name, number, url, result, artifacts, scm, building) {
 
-  data class JenkinsArtifact
-  @JsonCreator constructor(
-    @param:JsonProperty("fileName") val fileName: String,
-    @param:JsonProperty("relativePath") val relativePath: String
-  )
+    @JvmOverloads
+    constructor(name: String,
+                number: Int,
+                url: String,
+                result: String,
+                artifacts: List<JenkinsArtifact> = emptyList(),
+                scm: List<SourceControl> = emptyList()): this(name, number, url, result, artifacts, scm, false)
 }

@@ -46,6 +46,20 @@ internal class TriggerDeserializer
           get("repository").textValue(),
           get("tag").textValue()
         )
+        looksLikeConcourse() -> ConcourseTrigger(
+                get("type").textValue(),
+                get("correlationId")?.textValue(),
+                get("user")?.textValue() ?: "[anonymous]",
+                get("parameters")?.mapValue(parser) ?: mutableMapOf(),
+                get("artifacts")?.listValue(parser) ?: mutableListOf(),
+                get("notifications")?.listValue(parser) ?: mutableListOf(),
+                get("rebake")?.booleanValue() == true,
+                get("dryRun")?.booleanValue() == true,
+                get("strategy")?.booleanValue() == true
+        ).apply {
+          buildInfo = get("buildInfo")?.parseValue(parser)
+          properties = get("properties")?.parseValue(parser) ?: mutableMapOf()
+        }
         looksLikeJenkins() -> JenkinsTrigger(
           get("type").textValue(),
           get("correlationId")?.textValue(),
@@ -76,6 +90,18 @@ internal class TriggerDeserializer
           get("strategy")?.booleanValue() == true,
           get("parentExecution").parseValue<Execution>(parser),
           get("parentPipelineStageId")?.textValue()
+        )
+        looksLikeArtifactory() -> ArtifactoryTrigger(
+          get("type").textValue(),
+          get("correlationId")?.textValue(),
+          get("user")?.textValue() ?: "[anonymous]",
+          get("parameters")?.mapValue(parser) ?: mutableMapOf(),
+          get("artifacts")?.listValue(parser) ?: mutableListOf(),
+          get("notifications")?.listValue(parser) ?: mutableListOf(),
+          get("rebake")?.booleanValue() == true,
+          get("dryRun")?.booleanValue() == true,
+          get("strategy")?.booleanValue() == true,
+          get("artifactorySearchName").textValue()
         )
         looksLikeGit() -> GitTrigger(
           get("type").textValue(),
@@ -124,8 +150,13 @@ internal class TriggerDeserializer
   private fun JsonNode.looksLikeJenkins() =
     hasNonNull("master") && hasNonNull("job") && hasNonNull("buildNumber")
 
+  private fun JsonNode.looksLikeConcourse() = get("type")?.textValue() == "concourse"
+
   private fun JsonNode.looksLikePipeline() =
     hasNonNull("parentExecution")
+
+  private fun JsonNode.looksLikeArtifactory() =
+    hasNonNull("artifactorySearchName")
 
   private fun JsonNode.looksLikeCustom() =
     customTriggerSuppliers.any { it.predicate.invoke(this) }

@@ -26,15 +26,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -87,6 +84,13 @@ public class SavePipelineTask implements RetryableTask {
       updateServiceAccount(pipeline, serviceAccount);
     }
 
+    if (stage.getContext().get("pipeline.id") != null && pipeline.get("id") == null) {
+      pipeline.put("id", stage.getContext().get("pipeline.id"));
+
+      // We need to tell front50 to regenerate cron trigger id's
+      pipeline.put("regenerateCronTriggerIds", true);
+    }
+
     pipelineModelMutators.stream().filter(m -> m.supports(pipeline)).forEach(m -> m.mutate(pipeline));
 
     Response response = front50Service.savePipeline(pipeline);
@@ -109,10 +113,19 @@ public class SavePipelineTask implements RetryableTask {
       }
     }
 
-    return new TaskResult(
-      (response.getStatus() == HttpStatus.OK.value()) ? ExecutionStatus.SUCCEEDED : ExecutionStatus.TERMINAL,
-      outputs
-    );
+    final ExecutionStatus status;
+    if (response.getStatus() == HttpStatus.OK.value()) {
+      status = ExecutionStatus.SUCCEEDED;
+    } else {
+      final Boolean isSavingMultiplePipelines = (Boolean) Optional
+        .ofNullable(stage.getContext().get("isSavingMultiplePipelines")).orElse(false);
+      if (isSavingMultiplePipelines) {
+        status = ExecutionStatus.FAILED_CONTINUE;
+      } else {
+        status = ExecutionStatus.TERMINAL;
+      }
+    }
+    return new TaskResult(status, outputs);
   }
 
   @Override
@@ -139,7 +152,12 @@ public class SavePipelineTask implements RetryableTask {
     }
 
     // Managed Service account exists and roles are set; Update triggers
-    triggers.forEach(t -> t.putIfAbsent("runAsUser", serviceAccount));
+    triggers.stream()
+      .filter(t -> {
+        String runAsUser = (String) t.get("runAsUser");
+        return runAsUser == null || runAsUser.endsWith("@managed-service-account");
+      })
+      .forEach(t -> t.put("runAsUser", serviceAccount));
   }
 
   private Map<String, Object> fetchExistingPipeline(Map<String, Object> newPipeline) {

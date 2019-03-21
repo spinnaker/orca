@@ -17,19 +17,52 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import rx.Observable
 import spock.lang.Specification
 import spock.lang.Unroll
+
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class ArtifactResolverSpec extends Specification {
+  ObjectMapper objectMapper = new ObjectMapper()
+  def executionRepository = Stub(ExecutionRepository) {
+    retrievePipelinesForPipelineConfigId(*_) >> Observable.empty();
+  }
+
   def makeArtifactResolver() {
-    return new ArtifactResolver(new ObjectMapper(), Mock(ExecutionRepository))
+    return new ArtifactResolver(new ObjectMapper(), executionRepository,
+      new ContextParameterProcessor())
+  }
+
+  def "should resolve expressions in stage-inlined artifacts"() {
+    setup:
+    def execution = pipeline {
+      stage {
+        name = "upstream stage"
+        type = "stage1"
+        refId = "1"
+      }
+    }
+
+    execution.trigger = new DefaultTrigger('manual')
+    execution.trigger.other['buildNumber'] = 100
+    execution.trigger.artifacts.add(Artifact.builder().type('http/file').name('build/libs/my-jar-100.jar').build())
+
+    when:
+    def artifact = makeArtifactResolver().getBoundArtifactForStage(execution.stages[0], null, Artifact.builder()
+      .type('http/file')
+      .name('build/libs/my-jar-${trigger[\'buildNumber\']}.jar')
+      .build())
+
+    then:
+    artifact.name == 'build/libs/my-jar-100.jar'
   }
 
   def "should find upstream artifacts in small pipeline"() {
@@ -45,28 +78,28 @@ class ArtifactResolverSpec extends Specification {
     artifacts.find { it.type == "extra" } != null
 
     where:
-      execution = pipeline {
-        stage {
-          name = "upstream stage"
-          type = "stage1"
-          refId = "1"
-          outputs.artifacts = [new Artifact(type: "1")]
-        }
-        stage {
-          name = "upstream stage"
-          type = "stage2"
-          refId = "2"
-          requisiteStageRefIds = ["1"]
-          outputs.artifacts = [new Artifact(type: "2"), new Artifact(type: "extra")]
-        }
-        stage {
-          name = "desired"
-          requisiteStageRefIds = ["2"]
-        }
+    execution = pipeline {
+      stage {
+        name = "upstream stage"
+        type = "stage1"
+        refId = "1"
+        outputs.artifacts = [new Artifact(type: "1")]
       }
+      stage {
+        name = "upstream stage"
+        type = "stage2"
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+        outputs.artifacts = [new Artifact(type: "2"), new Artifact(type: "extra")]
+      }
+      stage {
+        name = "desired"
+        requisiteStageRefIds = ["2"]
+      }
+    }
   }
 
-  def "should find upstream artifacts only" () {
+  def "should find upstream artifacts only"() {
     when:
     def desired = execution.getStages().find { it.name == "desired" }
     def artifactResolver = makeArtifactResolver()
@@ -98,7 +131,7 @@ class ArtifactResolverSpec extends Specification {
     }
   }
 
-  def "should find artifacts from trigger and upstream stages" () {
+  def "should find artifacts from trigger and upstream stages"() {
     when:
     def execution = pipeline {
       stage {
@@ -124,7 +157,7 @@ class ArtifactResolverSpec extends Specification {
     artifacts.find { it.type == "trigger" } != null
   }
 
-  def "should find no artifacts" () {
+  def "should find no artifacts"() {
     when:
     def execution = pipeline {
       stage {
@@ -146,7 +179,7 @@ class ArtifactResolverSpec extends Specification {
     artifacts.size == 0
   }
 
-  def "should find a bound artifact from upstream stages" () {
+  def "should find a bound artifact from upstream stages"() {
     when:
     def execution = pipeline {
       stage {
@@ -154,8 +187,8 @@ class ArtifactResolverSpec extends Specification {
         type = "stage1"
         refId = "1"
         outputs.resolvedExpectedArtifacts = [
-            new ExpectedArtifact(id: "1", boundArtifact: new Artifact(type: "correct")),
-            new ExpectedArtifact(id: "2", boundArtifact: new Artifact(type: "incorrect"))
+          new ExpectedArtifact(id: "1", boundArtifact: new Artifact(type: "correct")),
+          new ExpectedArtifact(id: "2", boundArtifact: new Artifact(type: "incorrect"))
         ]
       }
       stage {
@@ -175,7 +208,7 @@ class ArtifactResolverSpec extends Specification {
     artifact.type == "correct"
   }
 
-  def "should find a bound artifact from a trigger" () {
+  def "should find a bound artifact from a trigger"() {
     when:
     def execution = pipeline {
       stage {
@@ -183,7 +216,7 @@ class ArtifactResolverSpec extends Specification {
         type = "stage1"
         refId = "1"
         outputs.resolvedExpectedArtifacts = [
-            new ExpectedArtifact(id: "2", boundArtifact: new Artifact(type: "incorrect"))
+          new ExpectedArtifact(id: "2", boundArtifact: new Artifact(type: "incorrect"))
         ]
       }
       stage {
@@ -237,7 +270,7 @@ class ArtifactResolverSpec extends Specification {
     new ExpectedArtifact(matchArtifact: new Artifact(type: "docker/.*", name: "none")) | [new Artifact(type: "docker/image", name: "bad"), new Artifact(type: "docker/image", name: "image")]
   }
 
-  def "should find all artifacts from an execution, in reverse order" () {
+  def "should find all artifacts from an execution, in reverse order"() {
     when:
     def execution = pipeline {
       stage {
@@ -280,5 +313,83 @@ class ArtifactResolverSpec extends Specification {
     [new ExpectedArtifact(matchArtifact: new Artifact(type: "docker/.*"), useDefaultArtifact: true, defaultArtifact: new Artifact(type: "google/image"))]                                                                                               | [new Artifact(type: "bad")]                                 | null                                 || [new Artifact(type: "google/image")]
     [new ExpectedArtifact(matchArtifact: new Artifact(type: "docker/.*"), usePriorArtifact: true)]                                                                                                                                                      | [new Artifact(type: "bad")]                                 | [new Artifact(type: "docker/image")] || [new Artifact(type: "docker/image")]
     [new ExpectedArtifact(matchArtifact: new Artifact(type: "google/.*"), usePriorArtifact: true), new ExpectedArtifact(matchArtifact: new Artifact(type: "docker/.*"), useDefaultArtifact: true, defaultArtifact: new Artifact(type: "docker/image"))] | [new Artifact(type: "bad"), new Artifact(type: "more bad")] | [new Artifact(type: "google/image")] || [new Artifact(type: "docker/image"), new Artifact(type: "google/image")]
+  }
+
+  def "resolveArtifacts sets the bound artifact on an expected artifact"() {
+    given:
+    def matchArtifact = Artifact.builder().type("docker/.*").build()
+    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
+    def receivedArtifact = Artifact.builder().name("my-artifact").type("docker/image").build()
+    def pipeline = [
+      id: "abc",
+      trigger: [:],
+      expectedArtifacts: [expectedArtifact],
+      receivedArtifacts: [receivedArtifact],
+    ]
+    def artifactResolver = makeArtifactResolver()
+
+    when:
+    artifactResolver.resolveArtifacts(pipeline)
+
+    then:
+    pipeline.expectedArtifacts.size() == 1
+    pipeline.expectedArtifacts[0].boundArtifact == receivedArtifact
+  }
+
+  def "resolveArtifacts adds received artifacts to the trigger, skipping duplicates"() {
+    given:
+    def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
+    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
+    def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
+    def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
+    def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
+    def pipeline = [
+      id: "abc",
+      trigger: [
+          artifacts: [triggerArtifact, bothArtifact]
+      ],
+      expectedArtifacts: [expectedArtifact],
+      receivedArtifacts: [receivedArtifact, bothArtifact],
+    ]
+    def artifactResolver = makeArtifactResolver()
+
+    when:
+    artifactResolver.resolveArtifacts(pipeline)
+
+    then:
+    List<Artifact> triggerArtifacts = extractTriggerArtifacts(pipeline.trigger)
+    triggerArtifacts.size() == 3
+    triggerArtifacts == [receivedArtifact, bothArtifact, triggerArtifact]
+  }
+
+  def "resolveArtifacts is idempotent"() {
+    given:
+    def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
+    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
+    def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
+    def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
+    def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
+    def pipeline = [
+      id: "abc",
+      trigger: [
+        artifacts: [triggerArtifact, bothArtifact]
+      ],
+      expectedArtifacts: [expectedArtifact],
+      receivedArtifacts: [receivedArtifact, bothArtifact],
+    ]
+    def artifactResolver = makeArtifactResolver()
+
+    when:
+    artifactResolver.resolveArtifacts(pipeline)
+    List<Artifact> initialArtifacts = extractTriggerArtifacts(pipeline.trigger)
+    artifactResolver.resolveArtifacts(pipeline)
+    List<Artifact> finalArtifacts = extractTriggerArtifacts(pipeline.trigger)
+
+    then:
+    initialArtifacts == finalArtifacts
+  }
+
+  private List<Artifact> extractTriggerArtifacts(Map<String, Object> trigger) {
+    return objectMapper.convertValue(trigger.artifacts, new TypeReference<List<Artifact>>(){});
   }
 }

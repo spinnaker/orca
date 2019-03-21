@@ -24,11 +24,12 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
+import com.netflix.spinnaker.orca.pipeline.CheckPreconditionsStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
-import javax.annotation.Nullable
+import java.util.concurrent.TimeUnit
 
 import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.getSource
 
@@ -42,6 +43,9 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
 
   @Autowired
   TargetServerGroupResolver targetServerGroupResolver
+
+  @Autowired
+  CheckPreconditionsStage checkPreconditionsStage
 
   @Override
   List<StepDefinition> additionalSteps(Stage stage) {
@@ -62,27 +66,47 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   @Override
   List<StageDefinition> beforeStageDefinitions(Stage stage) {
     def stageData = stage.mapTo(StageData)
+    def stageDefinitions = []
+
+    if (shouldCheckServerGroupsPreconditions(stageData)) {
+      stageDefinitions << new StageDefinition(
+        name: "Check Deploy Preconditions",
+        stageDefinitionBuilder: checkPreconditionsStage,
+        context: [
+          preconditionType: "clusterSize",
+          context: [
+            onlyEnabledServerGroups: true,
+            comparison: '<=',
+            expected: stageData.maxInitialAsgs,
+            regions: [ stageData.region ],
+            cluster: stageData.cluster,
+            application: stageData.application,
+            credentials: stageData.getAccount(),
+            moniker: stageData.moniker
+          ]
+        ]
+      )
+    }
+
     if (shouldPinSourceServerGroup(stageData.strategy)) {
       def optionalResizeContext = getResizeContext(stageData)
       if (!optionalResizeContext.isPresent()) {
         // this means we don't need to resize anything
         // happens in particular when there is no pre-existing source server group
-        return []
+        return stageDefinitions
       }
 
       def resizeContext = optionalResizeContext.get()
       resizeContext.pinMinimumCapacity = true
 
-      return [
-        new StageDefinition(
-          name: "Pin ${resizeContext.serverGroupName}",
-          stageDefinitionBuilder: resizeServerGroupStage,
-          context: resizeContext
-        )
-      ]
+      stageDefinitions << new StageDefinition(
+        name: "Pin ${resizeContext.serverGroupName}",
+        stageDefinitionBuilder: resizeServerGroupStage,
+        context: resizeContext
+      )
     }
 
-    return []
+    return stageDefinitions
   }
 
   @Override
@@ -128,6 +152,11 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   private static boolean shouldPinSourceServerGroup(String strategy) {
     // TODO-AJ consciously only enabling for rolling red/black -- will add support for other strategies after it's working
     return strategy == "rollingredblack"
+  }
+
+  private static boolean shouldCheckServerGroupsPreconditions(StageData stageData) {
+    // TODO(dreynaud): enabling cautiously for RRB only for testing, but we would ideally roll this out to other strategies
+    return stageData.strategy in ["rollingredblack"] && stageData.maxInitialAsgs != -1
   }
 
   private Optional<Map<String, Object>> getResizeContext(StageData stageData) {
@@ -177,8 +206,13 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
     def resizeContext = optionalResizeContext.get()
     resizeContext.unpinMinimumCapacity = true
 
+    if (deployFailed) {
+      // we want to specify a new timeout explicitly here, in case the deploy itself failed because of a timeout
+      resizeContext.stageTimeoutMs = TimeUnit.MINUTES.toMillis(20)
+    }
+
     return new StageDefinition(
-      name: "Unpin ${resizeContext.serverGroupName}".toString(),
+      name: "Unpin ${resizeContext.serverGroupName} (deployFailed=${deployFailed})".toString(),
       stageDefinitionBuilder: resizeServerGroupStage,
       context: resizeContext
     )

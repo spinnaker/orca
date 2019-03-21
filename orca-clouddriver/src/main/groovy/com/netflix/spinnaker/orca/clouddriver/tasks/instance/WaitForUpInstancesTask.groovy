@@ -20,7 +20,10 @@ import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper.HealthCountSnapshot
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
+import org.slf4j.MDC
 import org.springframework.stereotype.Component
+
+import java.util.concurrent.TimeUnit
 
 @Component
 @Slf4j
@@ -201,20 +204,50 @@ class WaitForUpInstancesTask extends AbstractWaitingForInstancesTask {
   private static Map<String, Integer> getServerGroupCapacity(Stage stage, Map serverGroup) {
     def serverGroupCapacity = serverGroup.capacity as Map<String, Integer>
 
+    def cloudProvider = stage.context.cloudProvider
+
+    Optional<String> taskStartTime = Optional.ofNullable(MDC.get("taskStartTime"));
+    if (taskStartTime.isPresent()) {
+      if (System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(10) > Long.valueOf(taskStartTime.get())) {
+        // expectation is reconciliation has happened within 10 minutes and that the
+        // current server group capacity should be preferred
+        log.error(
+            "Short circuiting initial target capacity determination after 10 minutes (serverGroup: {}, executionId: {})",
+            "${cloudProvider}:${serverGroup.region}:${serverGroup.name}",
+            stage.execution.id
+        )
+        return serverGroupCapacity
+      }
+    }
+
     def initialTargetCapacity = getInitialTargetCapacity(stage, serverGroup)
     if (!initialTargetCapacity) {
+      log.debug(
+          "Unable to determine initial target capacity (serverGroup: {}, executionId: {})",
+          "${cloudProvider}:${serverGroup.region}:${serverGroup.name}",
+          stage.execution.id
+      )
       return serverGroupCapacity
     }
 
-    if (serverGroup.capacity.max == 0 && initialTargetCapacity.max != 0) {
+    if ((serverGroup.capacity.max == 0 && initialTargetCapacity.max != 0) ||
+        (serverGroup.capacity.desired == 0 && initialTargetCapacity.desired > 0)) {
       log.info(
           "Overriding server group capacity (serverGroup: {}, initialTargetCapacity: {}, executionId: {})",
-          "${serverGroup.region}:${serverGroup.name}",
+          "${cloudProvider}:${serverGroup.region}:${serverGroup.name}",
           initialTargetCapacity,
           stage.execution.id
       )
       serverGroupCapacity = initialTargetCapacity
     }
+
+    log.debug(
+        "Determined server group capacity (serverGroup: {}, serverGroupCapacity: {}, initialTargetCapacity: {}, executionId: {}",
+        "${cloudProvider}:${serverGroup.region}:${serverGroup.name}",
+        serverGroupCapacity,
+        initialTargetCapacity,
+        stage.execution.id
+    )
 
     return serverGroupCapacity
   }
