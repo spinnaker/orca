@@ -73,13 +73,13 @@ public class FindArtifactFromExecutionTask implements Task {
 
   @Data
   private static class ExecutionOptions {
-    boolean succeeded;
+    boolean successful;
     boolean terminal;
     boolean running;
 
     ExecutionCriteria toCriteria() {
       List<String> statuses = new ArrayList<>();
-      if (succeeded) {
+      if (successful) {
         statuses.add("SUCCEEDED");
       }
 
