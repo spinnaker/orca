@@ -51,13 +51,13 @@ public class DeleteSnapshotTask extends AbstractCloudProviderAwareTask implement
       .getSnapshotIds()
       .stream()
       .map(snapshotId -> {
-        Map<String, Object> operation = new HashMap<>();
-        operation.put("credentials", deleteSnapshotRequest.getCredentials());
-        operation.put("region", deleteSnapshotRequest.getRegion());
-        operation.put("snapshotId", snapshotId);
-        Map<String,Map> tmp =  Collections.singletonMap("deleteSnapshot", operation);
-        return tmp;
-      }).collect(toList());
+          Map<String, Object> operation = new HashMap<>();
+          operation.put("credentials", deleteSnapshotRequest.getCredentials());
+          operation.put("region", deleteSnapshotRequest.getRegion());
+          operation.put("snapshotId", snapshotId);
+          return Collections.<String, Map>singletonMap("deleteSnapshot", operation);
+        }
+      ).collect(toList());
 
     TaskId taskId = katoService
       .requestOperations(deleteSnapshotRequest.getCloudProvider(), operations).toBlocking().first();
@@ -69,7 +69,6 @@ public class DeleteSnapshotTask extends AbstractCloudProviderAwareTask implement
     outputs.put("delete.account.name", deleteSnapshotRequest.getCredentials());
 
     return new TaskResult(ExecutionStatus.SUCCEEDED, outputs);
-
   }
 
   @Override
