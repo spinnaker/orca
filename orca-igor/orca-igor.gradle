@@ -22,7 +22,7 @@ dependencies {
   compile project(":orca-front50")
   compile spinnaker.dependency('kork')
   compile spinnaker.dependency('bootAutoConfigure')
-  compile 'com.google.apis:google-api-services-cloudbuild:v1-rev836-1.25.0'
+  compile spinnaker.dependency('googleCloudBuild')
   testCompile project(":orca-test-groovy")
   testCompile spinnaker.dependency("springTest")
 }
