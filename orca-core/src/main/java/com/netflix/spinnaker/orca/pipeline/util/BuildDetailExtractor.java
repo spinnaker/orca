@@ -18,8 +18,9 @@ package com.netflix.spinnaker.orca.pipeline.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.BuildInfo;
-import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger.SourceControl;
+import com.netflix.spinnaker.orca.pipeline.model.BuildInfo;
+import com.netflix.spinnaker.orca.pipeline.model.JenkinsBuildInfo;
+import com.netflix.spinnaker.orca.pipeline.model.SourceControl;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -37,7 +38,7 @@ public class BuildDetailExtractor {
     this.detailExtractors = Arrays.asList(new DefaultDetailExtractor(), new LegacyJenkinsUrlDetailExtractor());
   }
 
-  public boolean tryToExtractBuildDetails(BuildInfo buildInfo, Map<String, Object> request) {
+  public boolean tryToExtractBuildDetails(BuildInfo<?> buildInfo, Map<String, Object> request) {
     // The first strategy to succeed ends the loop. That is: the DefaultDetailExtractor is trying first
     // if it can not succeed the Legacy parser will be applied
     return detailExtractors.stream().anyMatch(it ->
@@ -46,9 +47,9 @@ public class BuildDetailExtractor {
   }
 
   @Deprecated
-  public boolean tryToExtractBuildDetails(Map<String, Object> buildInfo, Map<String, Object> request) {
+  public boolean tryToExtractJenkinsBuildDetails(Map<String, Object> buildInfo, Map<String, Object> request) {
     try {
-      return tryToExtractBuildDetails(mapper.convertValue(buildInfo, BuildInfo.class), request);
+      return tryToExtractBuildDetails(mapper.convertValue(buildInfo, JenkinsBuildInfo.class), request);
     } catch (IllegalArgumentException e) {
       return false;
     }
@@ -59,7 +60,7 @@ public class BuildDetailExtractor {
   private static class LegacyJenkinsUrlDetailExtractor implements DetailExtractor {
 
     @Override
-    public boolean tryToExtractBuildDetails(BuildInfo buildInfo, Map<String, Object> request) {
+    public boolean tryToExtractBuildDetails(BuildInfo<?> buildInfo, Map<String, Object> request) {
       if (buildInfo == null || request == null) {
         return false;
       }
@@ -104,7 +105,7 @@ public class BuildDetailExtractor {
   private static class DefaultDetailExtractor implements DetailExtractor {
 
     @Override
-    public boolean tryToExtractBuildDetails(BuildInfo buildInfo, Map<String, Object> request) {
+    public boolean tryToExtractBuildDetails(BuildInfo<?> buildInfo, Map<String, Object> request) {
 
       if (buildInfo == null || request == null) {
         return false;
@@ -133,9 +134,9 @@ public class BuildDetailExtractor {
   //Common trait for DetailExtractor
   private interface DetailExtractor {
 
-    boolean tryToExtractBuildDetails(BuildInfo buildInfo, Map<String, Object> request);
+    boolean tryToExtractBuildDetails(BuildInfo<?> buildInfo, Map<String, Object> request);
 
-    default void extractCommitHash(BuildInfo buildInfo, Map<String, Object> request) {
+    default void extractCommitHash(BuildInfo<?> buildInfo, Map<String, Object> request) {
       // buildInfo.scm contains a list of maps. Each map contains these keys: name, sha1, branch.
       // If the list contains more than one entry, prefer the first one that is not master and is not develop.
       String commitHash = null;
