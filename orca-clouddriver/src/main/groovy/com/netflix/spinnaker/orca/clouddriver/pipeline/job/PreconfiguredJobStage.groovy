@@ -48,7 +48,9 @@ class PreconfiguredJobStage extends RunJobStage {
   }
 
   private Map<String, Object> overrideIfNotSetInContextAndOverrideDefault(Map<String, Object> context, PreconfiguredJobStageProperties preconfiguredJob) {
-    fields.each {
+    def fieldsToCheck = fields.collect()
+    fieldsToCheck.addAll(preconfiguredJob.getAdditionalFields())
+    fieldsToCheck.each {
       if (context[it] == null || preconfiguredJob[it] != null) {
         context[it] = preconfiguredJob[it]
       }

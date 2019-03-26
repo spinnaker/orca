@@ -24,7 +24,7 @@ import java.util.Map;
 
 @Data
 
-public class PreconfiguredJobStageProperties {
+public abstract class PreconfiguredJobStageProperties {
 
   // Fields are public as job stages use reflection to access these directly from outside the class
   public boolean enabled = true;
@@ -37,6 +37,8 @@ public class PreconfiguredJobStageProperties {
   public String credentials;
   public String region;
   public String propertyFile;
-  public Map<String, Object> cluster = new HashMap<>();
+//  public Map<String, Object> cluster = new HashMap<>();
+
+  public abstract List<String> getAdditionalFields();
 
 }

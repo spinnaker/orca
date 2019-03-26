@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,16 @@
 package com.netflix.spinnaker.orca.clouddriver.config;
 
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.util.List;
+import java.lang.reflect.Array;
+import java.util.*;
 
-@ConfigurationProperties("job.preconfigured")
 @Data
-public class JobConfigurationProperties {
-  List<TitusPreconfiguredJobProperties> titus;
-  List<KubernetesPreconfiguredJobProperties> kubernetes;
+public class TitusPreconfiguredJobProperties extends PreconfiguredJobStageProperties {
+
+  public Map<String, Object> cluster = new HashMap<>();
+
+  public List<String> getAdditionalFields() {
+    return new ArrayList<>(Arrays.asList("cluster"));
+  }
 }

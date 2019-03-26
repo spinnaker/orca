@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,22 @@
 
 package com.netflix.spinnaker.orca.clouddriver.config;
 
+import io.kubernetes.client.models.V1Job;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-@ConfigurationProperties("job.preconfigured")
 @Data
-public class JobConfigurationProperties {
-  List<TitusPreconfiguredJobProperties> titus;
-  List<KubernetesPreconfiguredJobProperties> kubernetes;
+public class KubernetesPreconfiguredJobProperties extends PreconfiguredJobStageProperties {
+
+  public String account;
+  public String application;
+  public V1Job manifest;
+
+  public List<String> getAdditionalFields() {
+    return new ArrayList<>(Arrays.asList("account", "manifest", "application"));
+  }
+
 }
