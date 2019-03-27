@@ -43,6 +43,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.EventListenerFactory;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
@@ -74,6 +75,7 @@ import static org.springframework.context.annotation.AnnotationConfigUtils.EVENT
   "com.netflix.spinnaker.orca.telemetry",
   "com.netflix.spinnaker.orca.notifications.scheduling"
 })
+@Import(DefaultApplicationConfiguration.class)
 @EnableConfigurationProperties
 public class OrcaConfiguration {
   @Bean public Clock clock() {

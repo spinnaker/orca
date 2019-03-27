@@ -23,6 +23,7 @@ import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
+import com.netflix.spinnaker.orca.config.DefaultApplicationConfigurationProperties
 import com.netflix.spinnaker.orca.exceptions.OperationFailedException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -99,6 +100,9 @@ class OperationsController {
 
   @Autowired(required = false)
   Front50Service front50Service
+
+  @Autowired
+  DefaultApplicationConfigurationProperties defaultApplicationConfigurationProperties
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
@@ -379,6 +383,7 @@ class OperationsController {
 
   private String startPipeline(Map config) {
     injectPipelineOrigin(config)
+    shimDefaultApplication(config)
     def json = objectMapper.writeValueAsString(config)
     def pipeline = executionLauncher.start(PIPELINE, json)
     return pipeline.id
@@ -386,6 +391,7 @@ class OperationsController {
 
   private String markPipelineFailed(Map config, Exception e) {
     injectPipelineOrigin(config)
+    shimDefaultApplication(config)
     def json = objectMapper.writeValueAsString(config)
     def pipeline = executionLauncher.fail(PIPELINE, json, e)
     return pipeline.id
@@ -397,6 +403,7 @@ class OperationsController {
       applyStageRefIds(config)
     }
     injectPipelineOrigin(config)
+    shimDefaultApplication(config)
     def json = objectMapper.writeValueAsString(config)
     log.info('requested task:{}', json)
     def pipeline = executionLauncher.start(ORCHESTRATION, json)
@@ -406,6 +413,15 @@ class OperationsController {
   private void injectPipelineOrigin(Map pipeline) {
     if (!pipeline.origin) {
       pipeline.origin = AuthenticatedRequest.spinnakerUserOrigin.orElse('unknown')
+    }
+  }
+
+  /**
+   * TODO(rz): Refactor this into a preprocessor; add generic ExecutionPreprocessor
+   */
+  private void shimDefaultApplication(Map config) {
+    if (!config.containsKey("application")) {
+      config["application"] = defaultApplicationConfigurationProperties.defaultApplicationName
     }
   }
 }
