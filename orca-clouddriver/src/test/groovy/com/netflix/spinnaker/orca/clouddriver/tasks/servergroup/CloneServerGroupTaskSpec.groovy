@@ -19,8 +19,10 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 import com.fasterxml.jackson.datatype.guava.GuavaModule
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryServerGroupCloner
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import rx.Observable
 import spock.lang.Specification
@@ -249,5 +251,70 @@ class CloneServerGroupTaskSpec extends Specification {
     operations.size() == 2
     operations[0].allowLaunchDescription.region == "eu-west-1"
 
+  }
+
+  def "cf executes ServerGroupCloner if found"() {
+    given:
+    def cfCloneServerGroupConfig = [
+      application  : "cfApplication",
+      credentials  : "cfCredential",
+      cloudProvider: "cloudfoundry",
+      manifest     : [
+        direct: [
+          buildpacks             : ["java"],
+          diskQuota              : "1024M",
+          environment            : [
+            [key: "foo", value: "bar"],
+          ],
+          healthCheckHttpEndpoint: "http://health.point",
+          healthCheckType        : "http",
+          instances              : 1,
+          memory                 : "1024M",
+          routes                 : ["route"],
+          services               : ["service"],
+        ],
+      ],
+    ]
+
+    stage.context = cfCloneServerGroupConfig
+
+    def operations
+    task.kato = Mock(KatoService) {
+      1 * requestOperations(_, _) >> {
+        operations = it[1]
+        Observable.from(taskId)
+      }
+    }
+
+    def mockArtifactResolver = Mock(ArtifactResolver)
+    CloudFoundryServerGroupCloner cfServerGroupCloner = new CloudFoundryServerGroupCloner(mapper, mockArtifactResolver)
+    task.serverGroupCloners = [cfServerGroupCloner]
+
+    when:
+    task.execute(stage)
+
+    then:
+    operations.size() == 1
+    operations[0].cloneServerGroup.cloudProvider == "cloudfoundry"
+    operations[0].cloneServerGroup.manifest.name == "manifest"
+    new String(((String) operations[0].cloneServerGroup.manifest.reference).decodeBase64()) ==
+      "---\n" +
+      "applications:\n" +
+      " -\n" +
+      "  name: app\n" +
+      "  buildpacks:\n" +
+      "   - java\n" +
+      "  health-check-type: http\n" +
+      "  health-check-http-endpoint: http://health.point\n" +
+      "  env:\n" +
+      "    foo: bar\n" +
+      "  routes:\n" +
+      "   -\n" +
+      "    route: route\n" +
+      "  services:\n" +
+      "   - service\n" +
+      "  instances: 1\n" +
+      "  memory: 1024M\n" +
+      "  disk_quota: 1024M\n"
   }
 }

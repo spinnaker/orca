@@ -43,26 +43,36 @@ class CloneServerGroupTask extends AbstractCloudProviderAwareTask implements Tas
   @Value('${default.bake.account:default}')
   String defaultBakeAccount
 
+  @Autowired
+  List<ServerGroupCloner> serverGroupCloners
+
   @Override
   TaskResult execute(Stage stage) {
-    def operation = [:]
-    operation.putAll(stage.context)
-    String targetRegion = operation.region ?: operation.availabilityZones?.keySet()?.getAt(0) ?: operation.source?.region
+    def katoOps;
     String cloudProvider = getCloudProvider(stage)
-    withImageFromPrecedingStage(stage, targetRegion, cloudProvider) {
-      operation.amiName = operation.amiName ?: it.amiName
-      operation.imageId = operation.imageId ?: it.imageId
-      operation.image = operation.image ?: it.imageId
-    }
+    ServerGroupCloner cloner = serverGroupCloners.find { it.cloudProvider == cloudProvider }
+    if (cloner) {
+      katoOps = cloner.getOperations(stage)
+    }else {
+      def operation = [:]
+      operation.putAll(stage.context)
+      String targetRegion = operation.region ?: operation.availabilityZones?.keySet()?.getAt(0) ?: operation.source?.region
+      withImageFromPrecedingStage(stage, targetRegion, cloudProvider) {
+        operation.amiName = operation.amiName ?: it.amiName
+        operation.imageId = operation.imageId ?: it.imageId
+        operation.image = operation.image ?: it.imageId
+      }
 
-    withImageFromDeploymentDetails(stage, targetRegion, cloudProvider) {
-      operation.amiName = operation.amiName ?: it.amiName
-      operation.imageId = operation.imageId ?: it.imageId
-      operation.image = operation.image ?: it.imageId
+      withImageFromDeploymentDetails(stage, targetRegion, cloudProvider) {
+        operation.amiName = operation.amiName ?: it.amiName
+        operation.imageId = operation.imageId ?: it.imageId
+        operation.image = operation.image ?: it.imageId
+      }
+      katoOps = getDescriptions(operation)
     }
 
     String credentials = getCredentials(stage)
-    def taskId = kato.requestOperations(cloudProvider, getDescriptions(operation)).toBlocking().first()
+    def taskId = kato.requestOperations(cloudProvider, katoOps).toBlocking().first()
 
     def outputs = [
       "notification.type"   : "createcopylastasg",

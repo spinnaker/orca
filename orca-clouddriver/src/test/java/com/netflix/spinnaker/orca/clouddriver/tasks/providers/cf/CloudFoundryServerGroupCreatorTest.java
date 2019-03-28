@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class CloudFoundryServerGroupCreatorTest {
+class CloudFoundryServerGroupOpsTest {
   @Test
   void generateCloudFoundryManifestFromDirectInput() throws IOException {
     String manifestPipelineJson = "{\n" +
@@ -47,8 +47,8 @@ class CloudFoundryServerGroupCreatorTest {
 
     ObjectMapper mapper = new ObjectMapper();
 
-    CloudFoundryServerGroupCreator.DirectManifest direct = mapper.readValue(manifestPipelineJson,
-      CloudFoundryServerGroupCreator.Manifest.class).getDirect();
+    Manifest.DirectManifest direct = mapper.readValue(manifestPipelineJson,
+      Manifest.class).getDirect();
 
     assertThat(direct).isNotNull();
     assertThat(direct.toManifestYml()).isEqualTo(
