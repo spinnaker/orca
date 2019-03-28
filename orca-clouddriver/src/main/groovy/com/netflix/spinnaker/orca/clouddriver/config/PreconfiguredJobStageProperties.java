@@ -15,9 +15,6 @@
  */
 
 package com.netflix.spinnaker.orca.clouddriver.config;
-
-import com.google.common.collect.ImmutableList;
-import jdk.nashorn.internal.ir.annotations.Immutable;
 import lombok.Data;
 
 import java.util.*;
