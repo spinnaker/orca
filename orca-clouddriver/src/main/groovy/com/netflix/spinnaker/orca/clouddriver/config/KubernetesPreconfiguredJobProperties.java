@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -17,33 +17,26 @@
 package com.netflix.spinnaker.orca.clouddriver.config;
 
 import com.google.common.collect.ImmutableList;
-import jdk.nashorn.internal.ir.annotations.Immutable;
+import io.kubernetes.client.models.V1Job;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Data
-public abstract class PreconfiguredJobStageProperties {
+@EqualsAndHashCode(callSuper = true)
+public class KubernetesPreconfiguredJobProperties extends PreconfiguredJobStageProperties {
 
-  private boolean enabled = true;
-  private String label;
-  private String description;
-  private String type;
-  private List<PreconfiguredJobStageParameter> parameters;
-  private boolean waitForCompletion = true;
-  private String cloudProvider;
-  private String credentials;
-  private String region;
-  private String propertyFile;
+  private String account;
+  private String application;
+  private V1Job manifest;
 
   public List<String> getOverridableFields() {
-    return Arrays.asList(
-      "cloudProvider",
-      "credentials",
-      "region",
-      "propertyFile",
-      "waitForCompletion"
-    );
+    List<String> overrideableFields = new ArrayList<>(Arrays.asList("account", "manifest", "application"));
+    overrideableFields.addAll(super.getOverridableFields());
+    return overrideableFields;
   }
 
 }
