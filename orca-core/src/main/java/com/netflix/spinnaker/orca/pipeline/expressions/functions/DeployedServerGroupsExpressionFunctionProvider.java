@@ -25,6 +25,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.*;
 
 @Component
 public class DeployedServerGroupsExpressionFunctionProvider implements ExpressionFunctionProvider {
@@ -42,7 +45,7 @@ public class DeployedServerGroupsExpressionFunctionProvider implements Expressio
   @NotNull
   @Override
   public Collection<FunctionDefinition> getFunctions() {
-    return Collections.singletonList(
+    return singletonList(
       new FunctionDefinition("deployedServerGroups", Arrays.asList(
         new FunctionParameter(Execution.class, "execution", "The execution to search for stages within"),
         new FunctionParameter(String[].class, "ids", "A list of stage name or stage IDs to search")
@@ -82,6 +85,15 @@ public class DeployedServerGroupsExpressionFunctionProvider implements Expressio
           if (serverGroups != null) {
             deployDetails.put("serverGroup", serverGroups.get(0));
           }
+
+          List<Map<String, List<Map<String, List<Map<String, Object>>>>>> katoTasks =
+            (List<Map<String, List<Map<String, List<Map<String, Object>>>>>>) Optional
+              .ofNullable(stage.getContext().get("kato.tasks")).orElse(emptyList());
+          List<Map<String, Object>> deployments = katoTasks.stream()
+            .flatMap(task -> Optional.ofNullable(task.get("resultObjects")).orElse(emptyList()).stream())
+            .flatMap(result -> Optional.ofNullable(result.get("deployments")).orElse(emptyList()).stream())
+            .collect(Collectors.toList());
+          deployDetails.put("deployments", deployments);
 
           deployedServerGroups.add(deployDetails);
         }
