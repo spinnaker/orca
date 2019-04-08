@@ -75,6 +75,7 @@ interface ResizeStrategy {
     String serverGroupName
     String credentials
     String cloudProvider
+    String accountName
 
     public String getLocation() {
       def location = region ?: (regions ? regions[0] : null)

@@ -21,6 +21,9 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+
+import java.util.function.Consumer
+
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
@@ -36,10 +39,10 @@ trait DeploymentDetailsAware {
   private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.getInstance()
 
   void withImageFromPrecedingStage(
-    Stage stage,
-    String targetRegion,
-    String targetCloudProvider,
-    Closure callback) {
+          Stage stage,
+          String targetRegion,
+          String targetCloudProvider,
+          Consumer<Map> callback) {
     Stage previousStage = getPreviousStageWithImage(stage, targetRegion, targetCloudProvider)
     def result = [:]
     if (previousStage && isCloudProviderEqual(stage, previousStage)) {
@@ -102,7 +105,7 @@ trait DeploymentDetailsAware {
     Stage stage,
     String targetRegion,
     String targetCloudProvider,
-    Closure callback) {
+    Consumer<Map> callback) {
     def result = [:]
     def deploymentDetails = (stage.context.deploymentDetails ?: []) as List<Map>
 

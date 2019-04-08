@@ -16,8 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster;
 
-import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage.RollbackType.*;
-import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollbackSupport.*;
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage.RollbackType.EXPLICIT;
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage.RollbackType.PREVIOUS_IMAGE;
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollbackSupport.ImageDetails;
 import static java.lang.String.format;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -68,6 +69,7 @@ import retrofit.client.Response;
 @Component
 public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareTask
     implements RetryableTask {
+
   private static final Logger logger =
       LoggerFactory.getLogger(DetermineRollbackCandidatesTask.class);
 
@@ -389,6 +391,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   }
 
   private static class StageData {
+
     public String credentials;
     public String cloudProvider;
     public String serverGroup;
@@ -401,6 +404,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   }
 
   private static class ServerGroup {
+
     public String name;
     public String region;
     public Long createdTime;
@@ -420,25 +424,30 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   }
 
   public static class Capacity {
+
     public Integer min;
     public Integer max;
     public Integer desired;
   }
 
   private static class Image {
+
     public String imageId;
     public String name;
   }
 
   private static class BuildInfo {
+
     public Jenkins jenkins;
 
     private static class Jenkins {
+
       public String number;
     }
   }
 
   private static class RollbackDetails {
+
     RollbackServerGroupStage.RollbackType rollbackType;
     Map<String, String> rollbackContext;
 
@@ -459,6 +468,23 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
     RollbackDetails(String imageName, String buildNumber) {
       this.imageName = imageName;
       this.buildNumber = buildNumber;
+    }
+
+    public String toString() {
+      String content =
+          rollbackContext.entrySet().stream()
+              .map(e -> e.getKey() + "=\"" + e.getValue() + "\"")
+              .collect(Collectors.joining(", "));
+      return "RollbackDetails{"
+          + "rollbackType:"
+          + rollbackType
+          + "|rollbackContext:"
+          + content
+          + "|imageName:"
+          + ((imageName != null) ? imageName : "null")
+          + "|buildNumber:"
+          + ((buildNumber != null) ? buildNumber : "null")
+          + "}";
     }
   }
 }
