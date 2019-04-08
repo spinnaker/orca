@@ -148,6 +148,16 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
 
     task.put("requiredArtifacts", requiredArtifacts);
     task.put("optionalArtifacts", artifacts);
+
+    if (context.getTrafficManagement() != null && context.getTrafficManagement().isEnabled()) {
+      task.put("services", context.getTrafficManagement().getOptions().getServices());
+      task.put("enableTraffic", context.getTrafficManagement().getOptions().isEnableTraffic());
+    } else {
+      // For backwards compatibility, traffic is always enabled to new server groups when the new traffic management
+      // features are not enabled.
+      task.put("enableTraffic", true);
+    }
+
     Map<String, Map> operation = new ImmutableMap.Builder<String, Map>()
         .put(TASK_NAME, task)
         .build();
