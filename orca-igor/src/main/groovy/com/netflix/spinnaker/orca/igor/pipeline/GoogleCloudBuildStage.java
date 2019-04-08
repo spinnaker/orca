@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2019 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.orca.igor.pipeline;
 
-package com.netflix.spinnaker.orca.clouddriver.pipeline.loadbalancer;
-
-import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.MigrateLoadBalancerTask;
+import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
+import com.netflix.spinnaker.orca.igor.tasks.StartGoogleCloudBuildTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Nonnull;
+
 @Component
-public class MigrateLoadBalancerStage implements StageDefinitionBuilder {
-
-  public static final String PIPELINE_CONFIG_TYPE = "migrateLoadBalancer";
-
+@RequiredArgsConstructor
+@Slf4j
+public class GoogleCloudBuildStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+    GoogleCloudBuildStageDefinition stageDefinition = stage.mapTo(GoogleCloudBuildStageDefinition.class);
     builder
-      .withTask("migrateLoadBalancer", MigrateLoadBalancerTask.class)
-      .withTask("monitorMigration", MonitorKatoTask.class);
+      .withTask("startGoogleCloudBuildTask", StartGoogleCloudBuildTask.class);
   }
 }

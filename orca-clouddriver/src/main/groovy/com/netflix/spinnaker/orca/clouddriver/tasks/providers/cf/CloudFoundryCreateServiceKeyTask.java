@@ -1,7 +1,7 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2019 Pivotal, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup;
+package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 
-import com.netflix.spinnaker.orca.clouddriver.tasks.MigrateTask;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MigrateSecurityGroupTask extends MigrateTask {
+public class CloudFoundryCreateServiceKeyTask extends AbstractCloudFoundryServiceTask {
+  public CloudFoundryCreateServiceKeyTask(KatoService kato) {
+    super(kato);
+  }
 
   @Override
-  public String getCloudOperationType() {
-    return "migrateSecurityGroup";
+  String getStageName() {
+    return "createServiceKey";
   }
 }

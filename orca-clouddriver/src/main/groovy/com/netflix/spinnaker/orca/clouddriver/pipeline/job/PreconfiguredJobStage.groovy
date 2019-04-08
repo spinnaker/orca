@@ -22,21 +22,19 @@ import com.netflix.spinnaker.orca.clouddriver.exception.PreconfiguredJobNotFound
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 class PreconfiguredJobStage extends RunJobStage {
 
-  @Autowired(required=false)
   private JobService jobService
 
-  def fields = PreconfiguredJobStageProperties.declaredFields.findAll {
-    !it.synthetic && !['props', 'enabled', 'label', 'description', 'type', 'parameters'].contains(it.name)
-  }.collect { it.name }
+  public PreconfiguredJobStage(Optional<JobService> optionalJobService) {
+    this.jobService = optionalJobService.orElse(null)
+  }
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(Stage stage, TaskNode.Builder builder) {
     def preconfiguredJob = jobService.getPreconfiguredStages().find { stage.type == it.type }
 
     if (!preconfiguredJob) {
@@ -48,7 +46,7 @@ class PreconfiguredJobStage extends RunJobStage {
   }
 
   private Map<String, Object> overrideIfNotSetInContextAndOverrideDefault(Map<String, Object> context, PreconfiguredJobStageProperties preconfiguredJob) {
-    fields.each {
+    preconfiguredJob.getOverridableFields().each {
       if (context[it] == null || preconfiguredJob[it] != null) {
         context[it] = preconfiguredJob[it]
       }

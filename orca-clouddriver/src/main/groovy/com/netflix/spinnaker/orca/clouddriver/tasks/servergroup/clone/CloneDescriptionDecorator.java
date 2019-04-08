@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2019 Pivotal, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer;
+package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.clone;
 
-import com.netflix.spinnaker.orca.clouddriver.tasks.MigrateTask;
-import org.springframework.stereotype.Component;
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
 
-@Component
-public class MigrateLoadBalancerTask extends MigrateTask {
+import java.util.List;
+import java.util.Map;
 
-  @Override
-  public String getCloudOperationType() {
-    return "migrateLoadBalancer";
-  }
+public interface CloneDescriptionDecorator extends CloudProviderAware {
+  boolean shouldDecorate(Map<String, Object> operation);
+
+  void decorate(Map<String, Object> operation, List<Map<String, Object>> descriptions, Stage stage);
 }

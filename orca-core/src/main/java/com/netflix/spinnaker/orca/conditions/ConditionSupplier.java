@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
+package com.netflix.spinnaker.orca.conditions;
 
-import com.netflix.spinnaker.orca.clouddriver.tasks.MigrateTask;
-import org.springframework.stereotype.Component;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import java.util.List;
 
-@Component
-public class MigrateServerGroupTask extends MigrateTask {
-
-  @Override
-  public String getCloudOperationType() {
-    return "migrateServerGroup";
-  }
+/**
+ * A provider of unmet conditions leading to a paused execution
+ */
+public interface ConditionSupplier {
+  /**
+   * returns a list of currently unmet conditions.
+   */
+  List<Condition> getConditions(Stage stage);
 }
