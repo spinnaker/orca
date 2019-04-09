@@ -109,14 +109,14 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       }
 
       it("updates the stage status") {
-        verify(repository).storeStage(check {
+        verify(repository, times(2)).storeStage(check {
           assertThat(it.status).isEqualTo(RUNNING)
           assertThat(it.startTime).isEqualTo(clock.millis())
         })
       }
 
       it("attaches tasks to the stage") {
-        verify(repository).storeStage(check {
+        verify(repository, times(2)).storeStage(check {
           assertThat(it.tasks.size).isEqualTo(1)
           it.tasks.first().apply {
             assertThat(id).isEqualTo("1")
@@ -163,7 +163,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("updates the stage status") {
-          verify(repository).storeStage(check {
+          verify(repository, times(2)).storeStage(check {
             assertThat(it.status).isEqualTo(RUNNING)
             assertThat(it.startTime).isEqualTo(clock.millis())
           })
@@ -204,7 +204,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("updates the stage status") {
-          verify(repository).storeStage(check {
+          verify(repository, times(2)).storeStage(check {
             assertThat(it.status).isEqualTo(RUNNING)
             assertThat(it.startTime).isEqualTo(clock.millis())
           })
@@ -245,7 +245,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       afterGroup(::resetMocks)
 
       it("attaches tasks to the stage") {
-        verify(repository).storeStage(check {
+        verify(repository, times(2)).storeStage(check {
           assertThat(it.tasks.size).isEqualTo(3)
           it.tasks[0].apply {
             assertThat(id).isEqualTo("1")
@@ -583,7 +583,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       }
 
       it("starts the stage") {
-        verify(repository).storeStage(check {
+        verify(repository, times(2)).storeStage(check {
           assertThat(it.type).isEqualTo("bar")
           assertThat(it.status).isEqualTo(RUNNING)
           assertThat(it.startTime).isEqualTo(clock.millis())
@@ -591,7 +591,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       }
 
       it("attaches a task to the stage") {
-        verify(repository).storeStage(check {
+        verify(repository, times(2)).storeStage(check {
           assertThat(it.tasks.size).isEqualTo(1)
           it.tasks.first().apply {
             assertThat(id).isEqualTo("1")
@@ -668,7 +668,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
           }
 
           it("attaches the exception to the stage context") {
-            verify(repository).storeStage(check {
+            verify(repository, times(2)).storeStage(check {
               assertThat(it.context["exception"]).isEqualTo(exceptionDetails)
             })
           }
@@ -698,13 +698,13 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
           }
 
           it("attaches the exception to the stage context") {
-            verify(repository).storeStage(check {
+            verify(repository, times(2)).storeStage(check {
               assertThat(it.context["exception"]).isEqualTo(exceptionDetails)
             })
           }
 
           it("attaches flag to the stage context to indicate that before stage planning failed") {
-            verify(repository).storeStage(check {
+            verify(repository, times(2)).storeStage(check {
               assertThat(it.context["beforeStagePlanningFailed"]).isEqualTo(true)
             })
           }
@@ -734,13 +734,13 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
           }
 
           it("attaches the exception to the stage context") {
-            verify(repository).storeStage(check {
+            verify(repository, times(2)).storeStage(check {
               assertThat(it.context["exception"]).isEqualTo(exceptionDetails)
             })
           }
 
           it("attaches flag to the stage context to indicate that before stage planning failed") {
-            verify(repository).storeStage(check {
+            verify(repository, times(2)).storeStage(check {
               assertThat(it.context["beforeStagePlanningFailed"]).isEqualTo(true)
             })
           }
