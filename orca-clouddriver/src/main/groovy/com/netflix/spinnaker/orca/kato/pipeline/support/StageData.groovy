@@ -44,6 +44,7 @@ class StageData {
   Boolean useSourceCapacity
   Boolean preferSourceCapacity
   Source source
+  Destination destination
 
   @Deprecated
   long delayBeforeDisableSec
@@ -65,9 +66,6 @@ class StageData {
   }
 
   String getAccount() {
-    if (account && credentials && account != credentials) {
-      throw new IllegalStateException("Cannot specify different values for 'account' and 'credentials' (${application})")
-    }
     return account ?: credentials
   }
 
@@ -113,6 +111,12 @@ class StageData {
     String serverGroupName
     Boolean useSourceCapacity
     Boolean preferSourceCapacity
+  }
+
+  @EqualsAndHashCode
+  @ToString
+  static class Destination {
+    String region
   }
 
   static class PipelineBeforeCleanup {

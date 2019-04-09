@@ -72,7 +72,6 @@ class StageDataSpec extends Specification {
 
     where:
       account | credentials || expectedAccount
-      "test"  | "prod"      || "IllegalStateException"
       "test"  | null        || "test"
       null    | "test"      || "test"
   }

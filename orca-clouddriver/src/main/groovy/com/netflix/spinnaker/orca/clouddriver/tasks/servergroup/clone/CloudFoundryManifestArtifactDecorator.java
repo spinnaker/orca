@@ -50,7 +50,7 @@ public class CloudFoundryManifestArtifactDecorator implements CloneDescriptionDe
       .name(op.getSource().getAsgName())
       .build());
     operation.put("manifest", op.getManifest().toArtifact(artifactResolver, stage));
-    operation.put("credentials", op.getDestination().getAccount());
+    operation.put("credentials", op.getAccount());
     operation.put("region", op.getDestination().getRegion());
 
     operation.remove("source");
@@ -59,6 +59,7 @@ public class CloudFoundryManifestArtifactDecorator implements CloneDescriptionDe
 
   @Data
   private static class CloudFoundryCloneServerGroupOperation {
+    private String account;
     private Manifest manifest;
     private Source source;
     private Destination destination;
@@ -72,7 +73,6 @@ public class CloudFoundryManifestArtifactDecorator implements CloneDescriptionDe
 
     @Data
     static class Destination {
-      String account;
       String region;
     }
   }

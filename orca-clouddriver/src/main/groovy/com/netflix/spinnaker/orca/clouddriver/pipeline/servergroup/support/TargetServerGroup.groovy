@@ -169,7 +169,8 @@ class TargetServerGroup {
     static Location locationFromStageData(StageData stageData) {
       try {
         List zones = stageData.availabilityZones?.values()?.flatten()?.toArray()
-        return resolveLocation(stageData.namespace, stageData.region, zones?.getAt(0))
+        String region = stageData.destination?.region?:stageData.region
+        return resolveLocation(stageData.namespace, region, zones?.getAt(0))
       } catch (e) {
         throw new IllegalArgumentException("Incorrect location specified for ${stageData}: ${e.message}")
       }
