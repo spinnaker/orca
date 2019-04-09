@@ -29,6 +29,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
@@ -57,6 +58,9 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
 
   @Autowired
   MortService mortService
+
+  @Autowired
+  StageDefinitionBuilderFactory stageDefinitionBuilderFactory
 
   @Override
   String getType() {
@@ -227,12 +231,12 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @Override
-  @CompileDynamic
   CancellableStage.Result cancel(Stage stage) {
-    def canary = stage.ancestors { Stage s, StageDefinitionBuilder stageBuilder ->
-      stageBuilder instanceof CanaryStage
-    } first()
-    return ((CanaryStage) canary.stageBuilder).cancel(canary.stage)
+    def canary = stage.ancestors().find({ Stage s ->
+      stageDefinitionBuilderFactory.builderFor(s) instanceof CanaryStage
+    })
+
+    return ((CanaryStage)stageDefinitionBuilderFactory.builderFor(canary)).cancel(canary)
   }
 }
 
