@@ -81,7 +81,7 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
 
       // Once the legacy artifacts feature is removed, all trigger expected artifacts will be required to define
       // an account up front.
-      if(context.getManifestArtifactId() != null && manifestArtifact.getArtifactAccount() == null) {
+      if(context.getManifestArtifactAccount() != null) {
         manifestArtifact.setArtifactAccount(context.getManifestArtifactAccount());
       }
 
