@@ -81,7 +81,7 @@ public class ContextParameterProcessor {
 
     Map<String, Object> result = expressionEvaluator.evaluate(
       source,
-      precomputeValues(context),
+      precomputeValues(context, summary),
       summary,
       allowUnknownKeys
     );
@@ -117,7 +117,7 @@ public class ContextParameterProcessor {
     return isNotEmpty(value) && value.contains("${");
   }
 
-  private Map<String, Object> precomputeValues(Map<String, Object> context) {
+  private Map<String, Object> precomputeValues(Map<String, Object> context, ExpressionEvaluationSummary summary) {
     Object rawTrigger = context.get("trigger");
     Trigger trigger;
     if (rawTrigger != null && !(rawTrigger instanceof Trigger)) {
@@ -127,7 +127,9 @@ public class ContextParameterProcessor {
     }
 
     if (trigger != null && !trigger.getParameters().isEmpty()) {
-      context.put("parameters", trigger.getParameters());
+      // Eval trigger.parameters in case they have SpEL expressions
+      context.put("parameters",
+        expressionEvaluator.evaluate(trigger.getParameters(), context, summary, true));
     } else {
       if(!context.containsKey("parameters")) {
         context.put("parameters", EMPTY_MAP);
