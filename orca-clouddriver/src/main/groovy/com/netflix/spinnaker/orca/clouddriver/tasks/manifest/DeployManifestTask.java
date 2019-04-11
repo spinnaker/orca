@@ -146,7 +146,13 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
 
     // resolve SpEL expressions in artifacts defined inline in the stage
     for (DeployManifestContext.BindArtifact artifact : Optional.ofNullable(context.getRequiredArtifacts()).orElse(emptyList())) {
-      requiredArtifacts.add(artifactResolver.getBoundArtifactForStage(stage, artifact.getExpectedArtifactId(), artifact.getArtifact()));
+      Artifact requiredArtifact = artifactResolver.getBoundArtifactForStage(stage, artifact.getExpectedArtifactId(), artifact.getArtifact());
+
+      if (requiredArtifact == null) {
+        throw new IllegalStateException("No artifact with id '" + artifact.getExpectedArtifactId() + "' could be found in the pipeline context.");
+      }
+
+      requiredArtifacts.add(requiredArtifact);
     }
 
     log.info("Deploying {} artifacts within the provided manifest", requiredArtifacts);
