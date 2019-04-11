@@ -157,7 +157,8 @@ class ExplicitRollback implements Rollback {
         serverGroupName: restoreServerGroupName,
         region         : source.region,
         account        : source.credentials,
-        cloudProvider  : source.cloudProvider
+        cloudProvider  : source.cloudProvider,
+        accountName    : source.accountName
       ]
     ]
     return newStage(

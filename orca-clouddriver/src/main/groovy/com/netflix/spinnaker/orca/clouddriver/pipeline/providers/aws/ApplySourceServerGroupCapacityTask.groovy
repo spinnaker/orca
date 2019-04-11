@@ -116,7 +116,8 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
           region         : targetServerGroupCoordinates.region,
           asgName        : targetServerGroupCoordinates.serverGroupName,
           serverGroupName: targetServerGroupCoordinates.serverGroupName,
-          cloudProvider  : targetServerGroupCoordinates.cloudProvider
+          cloudProvider  : targetServerGroupCoordinates.cloudProvider,
+          accountName    : targetServerGroupCoordinates.accountName
         ],
         sourceServerGroupCapacitySnapshot: ancestorCaptureStage.context.sourceServerGroupCapacitySnapshot as Map<String, Long>
       )
@@ -199,6 +200,7 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
     String serverGroupName
     String account
     String cloudProvider
+    String accountName
 
     String getAsgName() {
       return getServerGroupName()
