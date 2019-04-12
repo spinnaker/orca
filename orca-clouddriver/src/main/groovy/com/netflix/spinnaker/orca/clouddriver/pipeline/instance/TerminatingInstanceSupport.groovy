@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.instance
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
@@ -37,6 +38,9 @@ class TerminatingInstanceSupport implements CloudProviderAware {
 
   @Autowired
   OortHelper oortHelper
+
+  @Autowired
+  ObjectMapper objectMapper
 
   /**
    * Some platforms kill instances within server groups and recreate them with different IDs - for these, we just
@@ -83,9 +87,12 @@ class TerminatingInstanceSupport implements CloudProviderAware {
     String location = stage.context.region
 
     def tsg = oortHelper.getTargetServerGroup(account, serverGroupName, location, cloudProvider)
+    log.info("Target Server Group from oort : {}", objectMapper.writeValueAsString(tsg))
     return tsg.map { TargetServerGroup sg ->
       return terminatingInstances.findResults { TerminatingInstance terminatingInstance ->
+        log.info("Terminating instance id : {}", terminatingInstance.id)
         def sgInst = sg.instances.find { it.name == terminatingInstance.id }
+        log.info("Server group instance : {} ", sgInst)
         if (sgInst) {
           // During the first iteration (most of the time in the Stage portion of the execution), we don't have the
           // launchTime yet. We'll need it later, so it should be saved. If it needs to be saved, that means
