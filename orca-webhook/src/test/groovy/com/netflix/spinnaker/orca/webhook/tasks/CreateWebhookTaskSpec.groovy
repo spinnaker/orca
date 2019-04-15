@@ -188,6 +188,51 @@ class CreateWebhookTaskSpec extends Specification {
     ]
   }
 
+  def "should retry on name resolution failure"() {
+    setup:
+    def stage = new Stage(pipeline, "webhook", "My webhook", [:])
+
+    createWebhookTask.webhookService = Stub(WebhookService) {
+      exchange(_, _, _, _) >> {
+        // throwing it like UserConfiguredUrlRestrictions::validateURI does
+        throw new IllegalArgumentException("Invalid URL", new UnknownHostException("Temporary failure in name resolution"))
+      }
+    }
+
+    when:
+    def result = createWebhookTask.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.RUNNING
+    (result.context as Map) == [
+      webhook: [
+        error: "name resolution failure in webhook for pipeline ${stage.execution.id} to ${stage.context.url}, will retry."
+      ]
+    ]
+  }
+
+  def "should return TERMINAL on URL validation failure"() {
+    setup:
+    def stage = new Stage(pipeline, "webhook", "My webhook", [url: "wrong://my-service.io/api/"])
+
+    createWebhookTask.webhookService = Stub(WebhookService) {
+      exchange(_, _, _, _) >> {
+        throw new IllegalArgumentException("Invalid URL")
+      }
+    }
+
+    when:
+    def result = createWebhookTask.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.TERMINAL
+    (result.context as Map) == [
+      webhook: [
+        error: "an exception occurred in webhook to wrong://my-service.io/api/: java.lang.IllegalArgumentException: Invalid URL"
+      ]
+    ]
+  }
+
   def "should parse response correctly on failure"() {
     setup:
     def stage = new Stage(pipeline, "webhook", "My webhook", [

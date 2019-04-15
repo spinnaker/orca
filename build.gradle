@@ -36,7 +36,7 @@ allprojects {
   group = "com.netflix.spinnaker.orca"
 
   ext {
-    spinnakerDependenciesVersion = '2.0.0-rc.22-springBoot2'
+    spinnakerDependenciesVersion = '2.0.0-rc.25-springBoot2'
     if (project.hasProperty('spinnakerDependenciesVersion')) {
       spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
     }
@@ -102,11 +102,13 @@ subprojects {
     }
   }
 
-  //c&p this because NetflixOss reverts it to 1.7 and ends up getting applied last..
-  project.plugins.withType(JavaBasePlugin) {
-    JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
-    convention.sourceCompatibility = JavaVersion.VERSION_1_8
-    convention.targetCompatibility = JavaVersion.VERSION_1_8
+  project.afterEvaluate {
+    //c&p this because NetflixOss reverts it to 1.7 and ends up getting applied last..
+    project.plugins.withType(JavaBasePlugin) {
+      JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
+      convention.sourceCompatibility = JavaVersion.VERSION_1_8
+      convention.targetCompatibility = JavaVersion.VERSION_1_8
+    }
   }
 }
 

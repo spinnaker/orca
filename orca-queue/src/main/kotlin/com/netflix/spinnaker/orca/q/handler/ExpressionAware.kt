@@ -16,7 +16,10 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -33,6 +36,11 @@ import org.slf4j.LoggerFactory
 interface ExpressionAware {
 
   val contextParameterProcessor: ContextParameterProcessor
+
+  companion object {
+    val mapper: ObjectMapper = OrcaObjectMapper.newInstance()
+  }
+
   val log: Logger
     get() = LoggerFactory.getLogger(javaClass)
 
@@ -128,9 +136,13 @@ interface ExpressionAware {
     )
     )
 
+  // TODO (mvulfson): Ideally, we opt out of this method and use ContextParameterProcessor.buildExecutionContext
+  // but that doesn't generate StageContext preventing us from doing recursive lookups... An investigation for another day
   private fun StageContext.augmentContext(execution: Execution): StageContext =
     if (execution.type == PIPELINE) {
-      this + mapOf("trigger" to execution.trigger, "execution" to execution)
+      this + mapOf(
+        "trigger" to mapper.convertValue<Map<String, Any>>(execution.trigger),
+        "execution" to execution)
     } else {
       this
     }

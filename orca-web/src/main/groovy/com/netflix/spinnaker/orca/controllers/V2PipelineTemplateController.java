@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca.controllers;
 
+import com.netflix.spinnaker.orca.extensionpoint.pipeline.PipelinePreprocessor;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
+import com.netflix.spinnaker.orca.pipelinetemplate.V2Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -25,8 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -36,18 +37,13 @@ import java.util.Map;
 public class V2PipelineTemplateController {
 
   @Autowired
-  private OperationsController operationsController;
+  private ContextParameterProcessor contextParameterProcessor;
 
   @Autowired
-  ContextParameterProcessor contextParameterProcessor;
+  private List<PipelinePreprocessor> pipelinePreprocessors;
 
   @RequestMapping(value = "/plan", method = RequestMethod.POST)
-  Map<String, Object> orchestrate(@RequestBody Map<String, Object> pipeline) {
-    pipeline = operationsController.parseAndValidatePipeline(pipeline);
-
-    Map<String, Object> augmentedContext = new HashMap<>();
-    augmentedContext.put("trigger", pipeline.get("trigger"));
-    augmentedContext.put("templateVariables", pipeline.getOrDefault("templateVariables", Collections.EMPTY_MAP));
-    return contextParameterProcessor.process(pipeline, augmentedContext, false);
+  Map<String, Object> plan(@RequestBody Map<String, Object> pipeline) {
+    return V2Util.planPipeline(contextParameterProcessor, pipelinePreprocessors, pipeline);
   }
 }

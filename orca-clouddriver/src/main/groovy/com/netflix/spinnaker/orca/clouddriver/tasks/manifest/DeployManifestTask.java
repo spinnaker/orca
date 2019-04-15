@@ -31,45 +31,33 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTa
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import retrofit.client.Response;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static java.util.Collections.emptyList;
+
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class DeployManifestTask extends AbstractCloudProviderAwareTask implements Task {
-  @Autowired
-  KatoService kato;
-
-  @Autowired
-  OortService oort;
-
-  @Autowired
-  ArtifactResolver artifactResolver;
-
-  @Autowired
-  ObjectMapper objectMapper;
+  private final KatoService kato;
+  private final OortService oort;
+  private final ArtifactResolver artifactResolver;
+  private final ObjectMapper objectMapper;
+  private final ContextParameterProcessor contextParameterProcessor;
 
   private static final ThreadLocal<Yaml> yamlParser = ThreadLocal.withInitial(() -> new Yaml(new SafeConstructor()));
-
-  @Autowired
-  ContextParameterProcessor contextParameterProcessor;
-
-  RetrySupport retrySupport = new RetrySupport();
+  private final RetrySupport retrySupport = new RetrySupport();
 
   public static final String TASK_NAME = "deployManifest";
 
@@ -84,25 +72,25 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
     Map<String, Object> task = new HashMap<>(context);
     String artifactSource = context.getSource();
     if (StringUtils.isNotEmpty(artifactSource) && artifactSource.equals("artifact")) {
-      String manifestArtifactId = context.getManifestArtifactId();
-      if (manifestArtifactId == null) {
+      Artifact manifestArtifact = artifactResolver.getBoundArtifactForStage(stage, context.getManifestArtifactId(),
+        context.getManifestArtifact());
+
+      if (manifestArtifact == null) {
         throw new IllegalArgumentException("No manifest artifact was specified.");
       }
 
-      String manifestArtifactAccount = context.getManifestArtifactAccount();
-      if (manifestArtifactAccount == null) {
-        throw new IllegalArgumentException("No manifest artifact account was specified.");
+      // Once the legacy artifacts feature is removed, all trigger expected artifacts will be required to define
+      // an account up front.
+      if(context.getManifestArtifactAccount() != null) {
+        manifestArtifact.setArtifactAccount(context.getManifestArtifactAccount());
       }
 
-      Artifact manifestArtifact = artifactResolver.getBoundArtifactForId(stage, manifestArtifactId);
-
-      if (manifestArtifact == null) {
-        throw new IllegalArgumentException("No artifact could be bound to '" + manifestArtifactId + "'");
+      if (manifestArtifact.getArtifactAccount() == null) {
+        throw new IllegalArgumentException("No manifest artifact account was specified.");
       }
 
       log.info("Using {} as the manifest to be deployed", manifestArtifact);
 
-      manifestArtifact.setArtifactAccount(manifestArtifactAccount);
       Object parsedManifests = retrySupport.retry(() -> {
         try {
           Response manifestText = oort.fetchArtifact(manifestArtifact);
@@ -146,13 +134,22 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
       task.put("source", "text");
     }
 
-    List<String> requiredArtifactIds = context.getRequiredArtifactIds();
     List<Artifact> requiredArtifacts = new ArrayList<>();
-    requiredArtifactIds = requiredArtifactIds == null ? new ArrayList<>() : requiredArtifactIds;
-    for (String id : requiredArtifactIds) {
+    for (String id : Optional.ofNullable(context.getRequiredArtifactIds()).orElse(emptyList())) {
       Artifact requiredArtifact = artifactResolver.getBoundArtifactForId(stage, id);
       if (requiredArtifact == null) {
         throw new IllegalStateException("No artifact with id '" + id + "' could be found in the pipeline context.");
+      }
+
+      requiredArtifacts.add(requiredArtifact);
+    }
+
+    // resolve SpEL expressions in artifacts defined inline in the stage
+    for (DeployManifestContext.BindArtifact artifact : Optional.ofNullable(context.getRequiredArtifacts()).orElse(emptyList())) {
+      Artifact requiredArtifact = artifactResolver.getBoundArtifactForStage(stage, artifact.getExpectedArtifactId(), artifact.getArtifact());
+
+      if (requiredArtifact == null) {
+        throw new IllegalStateException("No artifact with id '" + artifact.getExpectedArtifactId() + "' could be found in the pipeline context.");
       }
 
       requiredArtifacts.add(requiredArtifact);
@@ -162,6 +159,16 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
 
     task.put("requiredArtifacts", requiredArtifacts);
     task.put("optionalArtifacts", artifacts);
+
+    if (context.getTrafficManagement() != null && context.getTrafficManagement().isEnabled()) {
+      task.put("services", context.getTrafficManagement().getOptions().getServices());
+      task.put("enableTraffic", context.getTrafficManagement().getOptions().isEnableTraffic());
+    } else {
+      // For backwards compatibility, traffic is always enabled to new server groups when the new traffic management
+      // features are not enabled.
+      task.put("enableTraffic", true);
+    }
+
     Map<String, Map> operation = new ImmutableMap.Builder<String, Map>()
         .put(TASK_NAME, task)
         .build();

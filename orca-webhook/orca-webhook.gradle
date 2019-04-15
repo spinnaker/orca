@@ -24,6 +24,7 @@ dependencies {
   compile spinnaker.dependency('bootAutoConfigure')
   compile spinnaker.dependency('lombok')
   compile spinnaker.dependency("jsonPath")
+  annotationProcessor spinnaker.dependency("lombok")
   compile spinnaker.dependency("okHttp3")
   compile spinnaker.dependency('retrofit1okHttp3Client')
 //  testCompile project(':orca-test')
