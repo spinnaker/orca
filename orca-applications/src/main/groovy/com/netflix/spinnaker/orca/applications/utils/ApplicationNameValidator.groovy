@@ -30,7 +30,11 @@ trait ApplicationNameValidator {
     'gce'       : new NameConstraint(63, '^([a-zA-Z][a-zA-Z0-9]*)?$'),
     'kubernetes': new NameConstraint(63, '^([a-zA-Z][a-zA-Z0-9-]*)$'),
     'openstack' : new NameConstraint(250, '^[a-zA-Z_0-9.]*$'),
-    'titus'     : new NameConstraint(250, '^[a-zA-Z_0-9.]*$')
+    'titus'     : new NameConstraint(250, '^[a-zA-Z_0-9.]*$'),
+    // Tencent auto-scaling group name support 55 characters at most
+    // But spinnaker will add about 5 characters of version info behind app name to construct AS name
+    // So we leave 50 characters here
+    'tencent'   : new NameConstraint(50, '^[a-zA-Z_0-9.\u4e00-\u9fa5-]*$')
   ]
 
   /**
