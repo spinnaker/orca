@@ -46,7 +46,30 @@ class TencentServerGroupCreator implements ServerGroupCreator, DeploymentDetails
     def operation = [:]
     def context = stage.context
 
-    operation.putAll(context)
+    if (context.containsKey("cluster")) {
+      operation.putAll(context.cluster as Map)
+    } else {
+      operation.putAll(context)
+    }
+
+    def targetRegion = operation.region ?: (operation.availabilityZones as Map<String, Object>).keySet()[0]
+    withImageFromPrecedingStage(stage, targetRegion, cloudProvider) {
+      operation.amiName = operation.amiName ?: it.amiName
+      operation.imageId = operation.imageId ?: it.imageId
+    }
+
+    withImageFromDeploymentDetails(stage, targetRegion, cloudProvider) {
+      operation.amiName = operation.amiName ?: it.amiName
+      operation.imageId = operation.imageId ?: it.imageId
+    }
+
+    if (!operation.imageId) {
+      def deploymentDetails = (context.deploymentDetails ?: []) as List<Map>
+      if (deploymentDetails) {
+        // Because docker image ids are not region or cloud provider specific
+        operation.imageId = deploymentDetails[0]?.imageId
+      }
+    }
 
     if (!operation.containsKey("application")) {
       throw new IllegalStateException("No application could be found in ${context}.")
