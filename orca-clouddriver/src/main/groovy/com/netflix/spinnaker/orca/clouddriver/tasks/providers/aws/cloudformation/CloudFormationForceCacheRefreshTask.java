@@ -42,7 +42,7 @@ public class CloudFormationForceCacheRefreshTask extends AbstractCloudProviderAw
     String cloudProvider = getCloudProvider(stage);
 
     Map<String, Object> data = new HashMap<>();
-    List<String> regions = getRegions(stage);
+    List<String> regions = (List<String>) stage.getContext().get("regions");
     String credentials = getCredentials(stage);
     if (credentials != null) {
       data.put("credentials", credentials);
