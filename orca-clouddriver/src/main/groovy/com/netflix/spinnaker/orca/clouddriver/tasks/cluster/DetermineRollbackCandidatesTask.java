@@ -423,5 +423,18 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       this.imageName = imageName;
       this.buildNumber = buildNumber;
     }
+
+    public String toString() {
+      String content = rollbackContext.entrySet()
+                          .stream()
+                          .map(e -> e.getKey() + "=\"" + e.getValue() + "\"")
+                          .collect(Collectors.joining(", "));
+      return "RollbackDetails{" +
+        "rollbackType:" + rollbackType +
+        "|rollbackContext:" + content +
+        "|imageName:" + ((imageName != null) ? imageName : "null") +
+        "|buildNumber:" + ((buildNumber != null) ? buildNumber : "null") +
+        "}";
+    }
   }
 }
