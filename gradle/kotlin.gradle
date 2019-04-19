@@ -29,11 +29,12 @@ configurations.all {
 
 compileKotlin {
   kotlinOptions {
-    languageVersion = "1.2"
+    languageVersion = "1.3"
     jvmTarget = "1.8"
   }
 }
 
-kapt {
-  mapDiagnosticLocations = true
-}
+//TODO: Ask Fletch
+//kapt {
+//  mapDiagnosticLocations = true
+//}
