@@ -104,6 +104,8 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
       context.put("region", region);
       context.put("credentials", stageData.credentials);
       context.put("cloudProvider", stageData.cloudProvider);
+      context.put("reason", stageData.reason);
+      context.put("accountName", stageData.accountName);
 
       // propagate any attributes of the parent stage that are relevant to this rollback
       context.putAll(propagateParentStageContext(parent.getParent()));
@@ -163,5 +165,8 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
     public Long waitTimeBetweenRegions;
 
     public Map<String, Object> additionalRollbackContext;
+
+    public String reason;
+    public String accountName;
   }
 }
