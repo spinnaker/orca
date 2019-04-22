@@ -51,6 +51,7 @@ dependencies {
   compile project(":orca-sql")
   compile project(":orca-sql-mysql")
   compile project(":orca-integrations-gremlin")
+  compile project(":orca-integrations-cloudfoundry")
 
   runtime spinnaker.dependency("kork")
   compile spinnaker.dependency('korkExceptions')
