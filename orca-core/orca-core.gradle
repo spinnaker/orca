@@ -64,5 +64,4 @@ dependencies {
 
   testRuntime("org.junit.jupiter:junit-jupiter-engine")
   testRuntime("org.junit.vintage:junit-vintage-engine")
-  testRuntime("org.slf4j:slf4j-simple")
 }
