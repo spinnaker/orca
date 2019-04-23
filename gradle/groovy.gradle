@@ -21,7 +21,7 @@
 apply plugin: "groovy"
 
 dependencies {
-  compile "org.codehaus.groovy:groovy-all"
+  implementation "org.codehaus.groovy:groovy-all"
 
   testImplementation "org.spockframework:spock-core"
   testImplementation "cglib:cglib-nodep"

@@ -15,6 +15,10 @@
  */
 
 buildscript {
+  ext {
+    korkVersion = "4.0.2"
+    keikoVersion = "2.9.8"
+  }
   repositories {
     jcenter()
     maven { url "https://spinnaker.bintray.com/gradle" }
@@ -65,13 +69,11 @@ subprojects {
     }
   }
 
-  project.afterEvaluate {
-    //c&p this because NetflixOss reverts it to 1.7 and ends up getting applied last..
-    project.plugins.withType(JavaBasePlugin) {
-      JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
-      convention.sourceCompatibility = JavaVersion.VERSION_1_8
-      convention.targetCompatibility = JavaVersion.VERSION_1_8
-    }
+  //c&p this because NetflixOss reverts it to 1.7 and ends up getting applied last..
+  project.plugins.withType(JavaPlugin) {
+    JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
+    convention.sourceCompatibility = JavaVersion.VERSION_1_8
+    convention.targetCompatibility = JavaVersion.VERSION_1_8
   }
   repositories {
     jcenter()

@@ -28,9 +28,10 @@ dependencies {
   implementation(project(":orca-front50"))
   implementation(project(":orca-retrofit"))
 
-  annotationProcessor("org.projectlombok:lombok")
   compileOnly("org.projectlombok:lombok")
+  annotationProcessor("org.projectlombok:lombok")
+  testAnnotationProcessor("org.projectlombok:lombok")
 
-  testImplementation("org.springframework:spring-test:1.5.17.RELEASE")
+  testImplementation("org.springframework:spring-test")
   testImplementation(project(":orca-test-groovy"))
 }

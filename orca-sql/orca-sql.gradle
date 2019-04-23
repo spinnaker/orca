@@ -31,22 +31,18 @@ dependencies {
 
   implementation(project(":orca-core"))
 
-  testImplementation("com.h2database:h2:1.4.197")
-  testImplementation("com.nhaarman:mockito-kotlin:1.5.0")
-  testImplementation("dev.minutest:minutest:0.45.0") {
-    force = true
-  }
-  testImplementation("io.strikt:strikt-core:0.11.5") {
-    force = true
-  }
+  testImplementation("com.h2database:h2")
+  testImplementation("com.nhaarman:mockito-kotlin")
+  testImplementation("dev.minutest:minutest")
+  testImplementation("io.strikt:strikt-core")
   testImplementation("org.assertj:assertj-core")
-  testImplementation("org.junit.jupiter:junit-jupiter-api:$jupiterVersion")
+  testImplementation("org.junit.jupiter:junit-jupiter-api")
   testImplementation(project(":orca-core-tck"))
   testImplementation(project(":orca-test-groovy"))
 
-  testRuntime "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
-  testRuntime "org.junit.platform:junit-platform-launcher:$junitVersion"
-  testRuntime "org.junit.vintage:junit-vintage-engine:$junitLegacyVersion"
+  testRuntime "org.junit.jupiter:junit-jupiter-engine"
+  testRuntime "org.junit.platform:junit-platform-launcher"
+  testRuntime "org.junit.vintage:junit-vintage-engine"
 }
 
 test {

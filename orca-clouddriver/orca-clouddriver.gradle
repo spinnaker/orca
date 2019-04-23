@@ -37,16 +37,17 @@ dependencies {
   implementation "com.netflix.spinnaker.kork:kork-exceptions"
   implementation "com.netflix.spinnaker.kork:kork-security"
   implementation "com.netflix.spinnaker.kork:kork-artifacts"
-  implementation "javax.validation:validation-api:1.1.0.Final"
+  implementation "javax.validation:validation-api"
 
   compileOnly "org.projectlombok:lombok"
   annotationProcessor "org.projectlombok:lombok"
+  testAnnotationProcessor "org.projectlombok:lombok"
 
   testImplementation project(":orca-test")
   testImplementation project(":orca-test-groovy")
   testImplementation "com.github.tomakehurst:wiremock:2.15.0"
   testImplementation "org.springframework:spring-test"
-  testImplementation "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core"
   testImplementation "org.mockito:mockito-core"
 

@@ -28,6 +28,7 @@ dependencies {
 
   compileOnly "org.projectlombok:lombok"
   annotationProcessor "org.projectlombok:lombok"
+  testAnnotationProcessor "org.projectlombok:lombok"
 
   testImplementation project(":orca-test-groovy")
   testImplementation "com.github.tomakehurst:wiremock:2.15.0"

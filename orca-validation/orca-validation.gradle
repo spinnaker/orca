@@ -1,7 +1,7 @@
 apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
-  implementation(group: "com.github.fge", name: "json-schema-validator", version: "2.2.6")
+  implementation("com.github.fge:json-schema-validator:2.2.6")
 
   implementation(project(":orca-core"))
 }
