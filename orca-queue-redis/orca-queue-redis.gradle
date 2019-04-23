@@ -31,4 +31,5 @@ dependencies {
   testImplementation(project(":orca-test-redis"))
   testImplementation("org.springframework:spring-test")
   testImplementation("org.springframework.boot:spring-boot-test")
+  testRuntime "com.fasterxml.jackson.module:jackson-module-kotlin"
 }
