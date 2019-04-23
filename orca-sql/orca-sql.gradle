@@ -18,6 +18,8 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
+  implementation(project(":orca-core"))
+
   implementation('com.zaxxer:HikariCP')
   implementation("com.netflix.spectator:spectator-api")
   implementation("com.netflix.spinnaker.keiko:keiko-spring:$keikoVersion")
@@ -29,16 +31,14 @@ dependencies {
   implementation("org.springframework:spring-tx")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
 
-  implementation(project(":orca-core"))
-
+  testImplementation(project(":orca-core-tck"))
+  testImplementation(project(":orca-test-groovy"))
   testImplementation("com.h2database:h2")
   testImplementation("com.nhaarman:mockito-kotlin")
   testImplementation("dev.minutest:minutest")
   testImplementation("io.strikt:strikt-core")
   testImplementation("org.assertj:assertj-core")
   testImplementation("org.junit.jupiter:junit-jupiter-api")
-  testImplementation(project(":orca-core-tck"))
-  testImplementation(project(":orca-test-groovy"))
 
   testRuntime "org.junit.jupiter:junit-jupiter-engine"
   testRuntime "org.junit.platform:junit-platform-launcher"

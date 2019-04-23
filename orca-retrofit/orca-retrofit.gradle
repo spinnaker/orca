@@ -24,10 +24,10 @@ dependencies {
   api("com.squareup.retrofit:converter-jackson")
   api("com.squareup.retrofit:retrofit")
 
+  implementation(project(":orca-core"))
+
   implementation("com.netflix.spinnaker.kork:kork-web")
   implementation("io.reactivex:rxjava")
-
-  implementation(project(":orca-core"))
 
   testImplementation("com.squareup.retrofit:retrofit-mock")
 }

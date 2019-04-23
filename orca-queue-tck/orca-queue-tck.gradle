@@ -17,6 +17,12 @@
 apply from: "$rootDir/gradle/kotlin.gradle"
 
 dependencies {
+  implementation(project(":orca-core"))
+  implementation(project(":orca-kotlin"))
+  implementation(project(":orca-queue"))
+  implementation(project(":orca-test-kotlin"))
+  implementation(project(":orca-test"))
+
   implementation("com.netflix.eureka:eureka-client:1.9.2")
   implementation("com.netflix.spinnaker.keiko:keiko-mem:$keikoVersion")
   implementation("com.netflix.spinnaker.keiko:keiko-spring:$keikoVersion")
@@ -26,10 +32,4 @@ dependencies {
   implementation("org.assertj:assertj-core")
   implementation("org.springframework:spring-test")
   implementation("org.springframework.boot:spring-boot-test")
-
-  implementation(project(":orca-core"))
-  implementation(project(":orca-kotlin"))
-  implementation(project(":orca-queue"))
-  implementation(project(":orca-test-kotlin"))
-  implementation(project(":orca-test"))
 }

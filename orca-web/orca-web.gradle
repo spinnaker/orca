@@ -28,16 +28,6 @@ run {
 mainClassName = "com.netflix.spinnaker.orca.Main"
 
 dependencies {
-  implementation("com.netflix.spinnaker.kork:kork-artifacts")
-  implementation("com.netflix.spinnaker.kork:kork-core")
-  implementation("com.netflix.spinnaker.kork:kork-exceptions")
-  implementation("com.netflix.spinnaker.kork:kork-stackdriver")
-  implementation("com.netflix.spinnaker.kork:kork-web")
-  implementation("net.logstash.logback:logstash-logback-encoder")
-  implementation("net.logstash.logback:logstash-logback-encoder")
-  implementation("org.springframework.boot:spring-boot-starter-actuator")
-  implementation("org.springframework.boot:spring-boot-starter-web")
-
   implementation(project(":orca-applications"))
   implementation(project(":orca-bakery"))
   implementation(project(":orca-clouddriver"))
@@ -62,9 +52,20 @@ dependencies {
   implementation(project(":orca-sql"))
   implementation(project(":orca-webhook"))
 
+  implementation("com.netflix.spinnaker.kork:kork-artifacts")
+  implementation("com.netflix.spinnaker.kork:kork-core")
+  implementation("com.netflix.spinnaker.kork:kork-exceptions")
+  implementation("com.netflix.spinnaker.kork:kork-stackdriver")
+  implementation("com.netflix.spinnaker.kork:kork-web")
+  implementation("net.logstash.logback:logstash-logback-encoder")
+  implementation("net.logstash.logback:logstash-logback-encoder")
+  implementation("org.springframework.boot:spring-boot-starter-actuator")
+  implementation("org.springframework.boot:spring-boot-starter-web")
+
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
 
+  testImplementation(project(":orca-test-groovy"))
   testImplementation("cglib:cglib-nodep")
   testImplementation("com.netflix.spinnaker.keiko:keiko-mem:$keikoVersion")
   testImplementation("junit:junit")
@@ -74,5 +75,4 @@ dependencies {
   testImplementation("org.spockframework:spock-spring")
   testImplementation("org.springframework:spring-test")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
-  testImplementation(project(":orca-test-groovy"))
 }

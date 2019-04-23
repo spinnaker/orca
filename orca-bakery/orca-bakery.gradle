@@ -32,5 +32,4 @@ dependencies {
 
   testImplementation project(":orca-test-groovy")
   testImplementation "com.github.tomakehurst:wiremock:2.15.0"
-//  testImplementation "org.spockframework:spock-core:${versions.spock}"
 }

@@ -18,6 +18,9 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
+  implementation(project(":orca-core"))
+  implementation(project(":orca-kotlin"))
+
   implementation("com.netflix.spinnaker.keiko:keiko-spring:$keikoVersion")
   implementation("com.netflix.spinnaker.kork:kork-exceptions")
   implementation("com.netflix.spinnaker.kork:kork-security")
@@ -26,10 +29,7 @@ dependencies {
   implementation("org.funktionale:funktionale-partials")
   implementation("org.threeten:threeten-extra")
 
-  implementation(project(":orca-core"))
-  implementation(project(":orca-kotlin"))
-
-  testImplementation("org.assertj:assertj-core")
   testImplementation(project(":orca-queue-tck"))
   testImplementation(project(":orca-test-kotlin"))
+  testImplementation("org.assertj:assertj-core")
 }

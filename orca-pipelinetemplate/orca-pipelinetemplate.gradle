@@ -2,6 +2,12 @@ apply from: "$rootDir/gradle/spock.gradle"
 apply from: "$rootDir/gradle/kotlin.gradle"
 
 dependencies {
+  implementation(project(":orca-clouddriver"))
+  implementation(project(":orca-core"))
+  implementation(project(":orca-extensionpoint"))
+  implementation(project(":orca-front50"))
+  implementation(project(":orca-retrofit"))
+
   implementation("com.hubspot.jinjava:jinjava:2.2.3") {
     force = true
   }
@@ -16,12 +22,6 @@ dependencies {
   implementation("org.slf4j:slf4j-api")
   implementation("org.springframework:spring-context")
   implementation("org.springframework.boot:spring-boot-autoconfigure")
-
-  implementation(project(":orca-clouddriver"))
-  implementation(project(":orca-core"))
-  implementation(project(":orca-extensionpoint"))
-  implementation(project(":orca-front50"))
-  implementation(project(":orca-retrofit"))
 
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")

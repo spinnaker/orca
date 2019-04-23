@@ -23,8 +23,3 @@ compileKotlin {
     jvmTarget = "1.8"
   }
 }
-
-//TODO: Ask Fletch
-//kapt {
-//  mapDiagnosticLocations = true
-//}
