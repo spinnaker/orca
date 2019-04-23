@@ -16,6 +16,7 @@
 
 dependencies {
   implementation(project(":orca-core"))
+
   implementation("com.netflix.spectator:spectator-api")
   implementation("org.springframework.security:spring-security-web")
 }

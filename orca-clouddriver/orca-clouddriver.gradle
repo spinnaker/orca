@@ -32,7 +32,6 @@ dependencies {
   implementation "com.netflix.spinnaker.moniker:moniker:0.2.0"
   implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
   implementation "io.kubernetes:client-java:1.0.0-beta1"
-
   implementation "com.netflix.spinnaker.kork:kork-core"
   implementation "com.netflix.spinnaker.kork:kork-exceptions"
   implementation "com.netflix.spinnaker.kork:kork-security"
@@ -52,5 +51,5 @@ dependencies {
   testImplementation "org.mockito:mockito-core"
 
   testRuntime "org.junit.jupiter:junit-jupiter-engine"
-  testRuntime "org.junit.vintage:junit-vintage-engine" // should add to kork?
+  testRuntime "org.junit.vintage:junit-vintage-engine"
 }
