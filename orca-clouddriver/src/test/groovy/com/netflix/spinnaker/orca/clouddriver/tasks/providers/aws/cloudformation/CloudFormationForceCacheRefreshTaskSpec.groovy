@@ -44,7 +44,7 @@ class CloudFormationForceCacheRefreshTaskSpec extends Specification {
     task.cacheService = Mock(CloudDriverCacheService)
     def stage = stage()
     stage.context.put("credentials", credentials)
-    stage.context.put("region", region)
+    stage.context.put("regions", regions)
 
 
     when:
@@ -54,11 +54,11 @@ class CloudFormationForceCacheRefreshTaskSpec extends Specification {
     1 * task.cacheService.forceCacheUpdate('aws', CloudFormationForceCacheRefreshTask.REFRESH_TYPE, data)
 
     where:
-    credentials   | region        | data
+    credentials   | regions       | data
     null          | null          | [:]
     "credentials" | null          | [credentials: "credentials"]
-    null          | "eu-west-1"   | [region: ["eu-west-1"]]
-    "credentials" | "eu-west-1"   | [credentials: "credentials", region: ["eu-west-1"]]
+    null          | ["eu-west-1"] | [region: ["eu-west-1"]]
+    "credentials" | ["eu-west-1"] | [credentials: "credentials", region: ["eu-west-1"]]
 
 
   }
