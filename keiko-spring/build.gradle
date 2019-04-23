@@ -1,11 +1,12 @@
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
-  compile project(":keiko-core")
-  compile "org.springframework.boot:spring-boot-autoconfigure:${spinnaker.version("springBoot")}"
-  compile("com.netflix.spinnaker.kork:kork-core:${spinnaker.version("kork")}") {
+  api project(":keiko-core")
+  api "org.springframework.boot:spring-boot-autoconfigure"
+  api("com.netflix.spinnaker.kork:kork-core") {
     exclude(module: "logback-classic")
   }
+  api "com.netflix.eureka:eureka-client"
 
-  testCompile project(":keiko-test-common")
+  testImplementation project(":keiko-test-common")
 }

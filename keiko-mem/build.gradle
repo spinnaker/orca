@@ -1,9 +1,9 @@
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
-  compile project(":keiko-core")
-  compile "org.threeten:threeten-extra:1.0"
+  api project(":keiko-core")
+  api "org.threeten:threeten-extra"
 
-  testCompile project(":keiko-tck")
-  testCompile "org.funktionale:funktionale-partials:1.1"
+  testImplementation project(":keiko-tck")
+  testImplementation "org.funktionale:funktionale-partials"
 }

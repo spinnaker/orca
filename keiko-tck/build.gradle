@@ -3,6 +3,6 @@ repositories {
 }
 
 dependencies {
-  compile project(":keiko-core")
-  compile project(":keiko-test-common")
+  api project(":keiko-core")
+  api project(":keiko-test-common")
 }

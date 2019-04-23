@@ -1,6 +1,6 @@
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
-  compile project(":keiko-mem")
-  compile project(":keiko-spring")
+  api project(":keiko-mem")
+  api project(":keiko-spring")
 }

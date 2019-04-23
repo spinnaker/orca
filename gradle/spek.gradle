@@ -16,10 +16,10 @@
 
 dependencies {
   // only needed to run tests in IntelliJ
-  testCompile "org.junit.platform:junit-platform-runner:$junitVersion"
+  testImplementation "org.junit.platform:junit-platform-runner"
 
-  testRuntime "org.junit.platform:junit-platform-launcher:$junitVersion"
-  testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
+  testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+  testRuntimeOnly "org.jetbrains.spek:spek-junit-platform-engine"
 }
 
 test {

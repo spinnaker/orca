@@ -1,9 +1,9 @@
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
-  compile "com.fasterxml.jackson.core:jackson-annotations:${spinnaker.version("jackson")}"
-  compile "com.fasterxml.jackson.core:jackson-databind:${spinnaker.version("jackson")}"
-  compile "org.springframework:spring-context:${spinnaker.version("spring")}"
+  api "com.fasterxml.jackson.core:jackson-annotations"
+  api "com.fasterxml.jackson.core:jackson-databind"
+  api "org.springframework:spring-context"
 
-  testCompile project(":keiko-test-common")
+  testImplementation project(":keiko-test-common")
 }

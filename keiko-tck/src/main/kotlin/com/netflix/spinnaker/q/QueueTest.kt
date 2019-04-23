@@ -261,7 +261,7 @@ abstract class QueueTest<out Q : Queue>(
         }
       }
 
-      it ("retries the message") {
+      it("retries the message") {
         verify(callback).invoke(eq(message), any())
       }
     }
