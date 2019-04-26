@@ -106,16 +106,15 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     }
 
     String cloudProvider = getCloudProvider(stage);
-    String account = getCredentials(stage);
     StageData stageData = fromStage(stage);
     stageData.deployedManifests = getDeployedManifests(stage);
 
-    if (refreshManifests(cloudProvider, account, stageData)) {
+    if (refreshManifests(cloudProvider, stageData)) {
       registry.timer(durationTimerId.withTags("success", "true", "outcome", "complete"))
         .record(duration, TimeUnit.MILLISECONDS);
       return new TaskResult(SUCCEEDED, toContext(stageData));
     } else {
-      TaskResult taskResult = checkPendingRefreshes(cloudProvider, account, stageData, startTime);
+      TaskResult taskResult = checkPendingRefreshes(cloudProvider, stageData, startTime);
 
       // ignoring any non-success, non-failure statuses
       if (taskResult.getStatus().isSuccessful()) {
@@ -129,7 +128,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     }
   }
 
-  private TaskResult checkPendingRefreshes(String provider, String account, StageData stageData, long startTime) {
+  private TaskResult checkPendingRefreshes(String provider, StageData stageData, long startTime) {
     Collection<PendingRefresh> pendingRefreshes = objectMapper.convertValue(
         cacheStatusService.pendingForceCacheUpdates(provider, REFRESH_TYPE),
         new TypeReference<Collection<PendingRefresh>>() { }
@@ -141,6 +140,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     boolean allProcessed = true;
 
     for (ScopedManifest manifest : deployedManifests) {
+      String account = manifest.account;
       String location = manifest.location;
       String name = manifest.name;
 
@@ -149,30 +149,24 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
         continue;
       }
 
-      Optional<PendingRefresh> pendingRefresh = pendingRefreshes.stream()
-        .filter(pr -> pr.getDetails() != null)
-        .filter(pr -> account.equals(pr.getDetails().getAccount()) &&
-          (location.equals(pr.getDetails().getLocation()) || StringUtils.isNotEmpty(location) && StringUtils.isEmpty(pr.getDetails().getLocation())) &&
-          name.equals(pr.getDetails().getName())
-        )
+      Optional<RefreshStatus> refreshStatus = pendingRefreshes.stream()
+        .filter(pr -> pr.getScopedManifest() != null)
+        .filter(pr -> refreshMatches(pr.getScopedManifest(), manifest))
+        .map(pr -> getRefreshStatus(pr, startTime))
+        .filter(status -> status != RefreshStatus.INVALID)
         .findAny();
 
-      if (pendingRefresh.isPresent()) {
-        PendingRefresh refresh = pendingRefresh.get();
-        // it's possible the resource isn't supposed to have a namespace -- clouddriver reports this by removing it
-        // in the response. in this case, we make sure to set it to match between clouddriver and orca
-        if (StringUtils.isEmpty(refresh.getDetails().getLocation())) {
-          refresh.getDetails().setLocation(location);
-        }
-        if (pendingRefreshProcessed(refresh, refreshedManifests, startTime)) {
+      if (refreshStatus.isPresent()) {
+        RefreshStatus status = refreshStatus.get();
+        if (status == RefreshStatus.PROCESSED) {
           log.debug("Pending manifest refresh of {} in {} completed", id, account);
           processedManifests.add(id);
-        } else {
+        } else if (status == RefreshStatus.PENDING) {
           log.debug("Pending manifest refresh of {} in {} still pending", id, account);
           allProcessed = false;
         }
       } else {
-        log.warn("No pending refresh of {} in {}", id, account);
+        log.warn("No valid pending refresh of {} in {}", id, account);
         allProcessed = false;
         refreshedManifests.remove(id);
       }
@@ -181,21 +175,25 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     return new TaskResult(allProcessed ? SUCCEEDED : RUNNING, toContext(stageData));
   }
 
-  private boolean pendingRefreshProcessed(PendingRefresh pendingRefresh, Set<String> refreshedManifests, long startTime) {
-    PendingRefresh.Details details = pendingRefresh.getDetails();
-    if (pendingRefresh.cacheTime == null || pendingRefresh.processedTime == null || details == null) {
+  private boolean refreshMatches(ScopedManifest refresh, ScopedManifest manifest) {
+    return manifest.account.equals(refresh.account)
+      && (manifest.location.equals(refresh.location) || StringUtils.isEmpty(refresh.location))
+      && manifest.name.equals(refresh.name);
+  }
+
+  private RefreshStatus getRefreshStatus(PendingRefresh pendingRefresh, long startTime) {
+    ScopedManifest scopedManifest = pendingRefresh.getScopedManifest();
+    if (pendingRefresh.cacheTime == null || pendingRefresh.processedTime == null || scopedManifest == null) {
       log.warn("Pending refresh of {} is missing cache metadata", pendingRefresh);
-      refreshedManifests.remove(toManifestIdentifier(details.getLocation(), details.getName()));
-      return false;
+      return RefreshStatus.INVALID;
     } else if (pendingRefresh.cacheTime < startTime) {
       log.warn("Pending refresh of {} is stale", pendingRefresh);
-      refreshedManifests.remove(toManifestIdentifier(details.getLocation(), details.getName()));
-      return false;
+      return RefreshStatus.INVALID;
     } else if (pendingRefresh.processedTime < startTime) {
       log.info("Pending refresh of {} was cached as a part of this request, but not processed", pendingRefresh);
-      return false;
+      return RefreshStatus.PENDING;
     } else {
-      return true;
+      return RefreshStatus.PROCESSED;
     }
   }
 
@@ -212,20 +210,21 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   }
 
   private List<ScopedManifest> getDeployedManifests(Stage stage) {
+    String account = getCredentials(stage);
     Map<String, List<String>> deployedManifests = manifestNamesByNamespace(stage);
     return deployedManifests.entrySet().stream()
-      .flatMap(e -> e.getValue().stream().map(v -> new ScopedManifest(e.getKey(), v)))
+      .flatMap(e -> e.getValue().stream().map(v -> new ScopedManifest(account, e.getKey(), v)))
       .collect(Collectors.toList());
   }
 
-  private boolean refreshManifests(String provider, String account, StageData stageData) {
+  private boolean refreshManifests(String provider, StageData stageData) {
     List<ScopedManifest> manifests = manifestsNeedingRefresh(stageData);
 
     boolean allRefreshesSucceeded = true;
     for (ScopedManifest manifest : manifests) {
       String id = toManifestIdentifier(manifest.location, manifest.name);
       Map<String, String> request = new ImmutableMap.Builder<String, String>()
-        .put("account", account)
+        .put("account", manifest.account)
         .put("name", manifest.name)
         .put("location", manifest.location)
         .build();
@@ -233,7 +232,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
       try {
         Response response = cacheService.forceCacheUpdate(provider, REFRESH_TYPE, request);
         if (response.getStatus() == HTTP_OK) {
-          log.info("Refresh of {} in {} succeeded immediately", id, account);
+          log.info("Refresh of {} in {} succeeded immediately", id, manifest.account);
           stageData.getProcessedManifests().add(id);
         } else {
           allRefreshesSucceeded = false;
@@ -276,17 +275,11 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
 
   @Data
   static private class PendingRefresh {
-    Details details;
+    @JsonProperty("details")
+    ScopedManifest scopedManifest;
     Long processedTime;
     Long cacheTime;
     Long processedCount;
-
-    @Data
-    static private class Details {
-      String account;
-      String location;
-      String name;
-    }
   }
 
   @Data
@@ -305,15 +298,24 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
 
   @Value
   private static class ScopedManifest {
+    final String account;
     final String location;
     final String name;
 
     ScopedManifest(
+      @JsonProperty("account") String account,
       @JsonProperty("location") String location,
       @JsonProperty("name") String name
     ) {
+      this.account = account;
       this.location = location;
       this.name = name;
     }
+  }
+
+  private enum RefreshStatus {
+    PROCESSED,
+    PENDING,
+    INVALID
   }
 }
