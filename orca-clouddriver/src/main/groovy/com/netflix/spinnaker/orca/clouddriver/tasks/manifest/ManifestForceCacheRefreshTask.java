@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.RetryableTask;
@@ -135,17 +134,12 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     );
 
     List<ScopedManifest> deployedManifests = stageData.getDeployedManifests();
-    Set<String> refreshedManifests = stageData.getRefreshedManifests();
-    Set<String> processedManifests = stageData.getProcessedManifests();
+    Set<ScopedManifest> refreshedManifests = stageData.getRefreshedManifests();
+    Set<ScopedManifest> processedManifests = stageData.getProcessedManifests();
     boolean allProcessed = true;
 
     for (ScopedManifest manifest : deployedManifests) {
-      String account = manifest.account;
-      String location = manifest.location;
-      String name = manifest.name;
-
-      String id = toManifestIdentifier(location, name);
-      if (processedManifests.contains(id)) {
+      if (processedManifests.contains(manifest)) {
         continue;
       }
 
@@ -154,21 +148,22 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
         .filter(pr -> refreshMatches(pr.getScopedManifest(), manifest))
         .map(pr -> getRefreshStatus(pr, startTime))
         .filter(status -> status != RefreshStatus.INVALID)
-        .findAny();
+        .sorted()
+        .findFirst();
 
       if (refreshStatus.isPresent()) {
         RefreshStatus status = refreshStatus.get();
         if (status == RefreshStatus.PROCESSED) {
-          log.debug("Pending manifest refresh of {} in {} completed", id, account);
-          processedManifests.add(id);
+          log.debug("Pending manifest refresh of {} completed", manifest);
+          processedManifests.add(manifest);
         } else if (status == RefreshStatus.PENDING) {
-          log.debug("Pending manifest refresh of {} in {} still pending", id, account);
+          log.debug("Pending manifest refresh of {} still pending", manifest);
           allProcessed = false;
         }
       } else {
-        log.warn("No valid pending refresh of {} in {}", id, account);
+        log.warn("No valid pending refresh of {}", manifest);
         allProcessed = false;
-        refreshedManifests.remove(id);
+        refreshedManifests.remove(manifest);
       }
     }
 
@@ -199,13 +194,13 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
 
   private List<ScopedManifest> manifestsNeedingRefresh(StageData stageData) {
     List<ScopedManifest> deployedManifests = stageData.getDeployedManifests();
-    Set<String> refreshedManifests = stageData.getRefreshedManifests();
+    Set<ScopedManifest> refreshedManifests = stageData.getRefreshedManifests();
     if (deployedManifests.isEmpty()) {
       log.warn("No manifests were deployed, nothing to refresh...");
     }
 
     return deployedManifests.stream()
-      .filter(m -> !refreshedManifests.contains(toManifestIdentifier(m.location, m.name)))
+      .filter(m -> !refreshedManifests.contains(m))
       .collect(Collectors.toList());
   }
 
@@ -222,25 +217,19 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
 
     boolean allRefreshesSucceeded = true;
     for (ScopedManifest manifest : manifests) {
-      String id = toManifestIdentifier(manifest.location, manifest.name);
-      Map<String, String> request = new ImmutableMap.Builder<String, String>()
-        .put("account", manifest.account)
-        .put("name", manifest.name)
-        .put("location", manifest.location)
-        .build();
-
+      Map<String, String> request = objectMapper.convertValue(manifest, new TypeReference<Map<String, String>>() {});
       try {
         Response response = cacheService.forceCacheUpdate(provider, REFRESH_TYPE, request);
         if (response.getStatus() == HTTP_OK) {
-          log.info("Refresh of {} in {} succeeded immediately", id, manifest.account);
-          stageData.getProcessedManifests().add(id);
+          log.info("Refresh of {} succeeded immediately", manifest);
+          stageData.getProcessedManifests().add(manifest);
         } else {
           allRefreshesSucceeded = false;
         }
 
-        stageData.getRefreshedManifests().add(id);
+        stageData.getRefreshedManifests().add(manifest);
       } catch (Exception e) {
-        log.warn("Failed to refresh {}: ", id, e);
+        log.warn("Failed to refresh {}: ", manifest, e);
         allRefreshesSucceeded = false;
         stageData.errors.add(e.getMessage());
       }
@@ -255,10 +244,6 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     }
 
     return allRefreshesSucceeded && allRefreshesProcessed;
-  }
-
-  private String toManifestIdentifier(String namespace, String name) {
-    return namespace + ":" + name;
   }
 
   private StageData fromStage(Stage stage) {
@@ -287,11 +272,11 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   static private class StageData {
     List<ScopedManifest> deployedManifests = Collections.emptyList();
 
-    @JsonProperty("refreshed.manifests")
-    Set<String> refreshedManifests = new HashSet<>();
+    @JsonProperty("refreshed.scopedManifests")
+    Set<ScopedManifest> refreshedManifests = new HashSet<>();
 
-    @JsonProperty("processed.manifests")
-    Set<String> processedManifests = new HashSet<>();
+    @JsonProperty("processed.scopedManifests")
+    Set<ScopedManifest> processedManifests = new HashSet<>();
 
     Set<String> errors = new HashSet<>();
   }
