@@ -17,6 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -300,6 +301,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   }
 
   @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
   static private class StageData {
     Map<String, List<String>> manifestNamesByNamespace = new HashMap<>();
 
