@@ -215,7 +215,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   }
 
   /**
-   * Requests and on-demand cache refresh for any manifest without an refresh requests that is either pending or
+   * Requests an on-demand cache refresh for any manifest without a refresh requests that is either pending or
    * processed. Adds each manifest to refreshedManifests; if the request to clouddriver was immediately processed,
    * also adds the manifest to processedManifests.
    */
