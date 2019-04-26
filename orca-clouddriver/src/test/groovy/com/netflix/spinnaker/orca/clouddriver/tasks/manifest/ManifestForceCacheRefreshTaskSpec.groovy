@@ -92,7 +92,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [pendingRefresh(refreshDetails)]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING
@@ -152,7 +151,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [pendingRefresh(refreshDetails)]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING
@@ -203,7 +201,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [pendingRefresh(refreshDetails)]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING
@@ -219,6 +216,7 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
       processedRefresh(refreshDetails + [location: noMatch]),
       processedRefresh(refreshDetails + [name: noMatch])
     ]
+    1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING
   }
@@ -247,7 +245,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> []
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING
@@ -258,7 +255,7 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [pendingRefresh(refreshDetails)]
+    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> []
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING
@@ -305,7 +302,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [pendingRefresh(deploymentRefreshDetails)]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, replicaSetRefreshDetails) >> mockResponse(HTTP_OK)
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, deploymentRefreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
@@ -363,10 +359,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [
-      pendingRefresh(replicaSetRefreshDetails),
-      pendingRefresh(deploymentRefreshDetails)
-    ]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, replicaSetRefreshDetails) >> mockResponse(HTTP_ACCEPTED)
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, deploymentRefreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
@@ -430,9 +422,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [
-      pendingRefresh(replicaSetRefreshDetails)
-    ]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, replicaSetRefreshDetails) >> mockResponse(HTTP_ACCEPTED)
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, deploymentRefreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
@@ -498,10 +487,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [
-      pendingRefresh(replicaSetRefreshDetails),
-      pendingRefresh(deploymentRefreshDetails)
-    ]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, replicaSetRefreshDetails) >> mockResponse(HTTP_ACCEPTED)
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, deploymentRefreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
@@ -558,7 +543,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [pendingRefresh(refreshDetails)]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING
@@ -613,7 +597,6 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     def taskResult = task.execute(stage)
 
     then:
-    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE) >> [pendingRefresh(refreshResponseDetails)]
     1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
     0 * cacheService._
     taskResult.getStatus() == ExecutionStatus.RUNNING

@@ -108,9 +108,9 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     StageData stageData = fromStage(stage);
     stageData.deployedManifests = getDeployedManifests(stage);
 
-    refreshManifests(cloudProvider, stageData);
-
     checkPendingRefreshes(cloudProvider, stageData, startTime);
+
+    refreshManifests(cloudProvider, stageData);
 
     if (allManifestsProcessed(stageData)) {
       registry.timer(durationTimerId.withTags("success", "true", "outcome", "complete"))
