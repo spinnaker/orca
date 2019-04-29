@@ -122,16 +122,18 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
 
     Set<String> imageNames = []
     Map<Location, String> imageIds = [:]
-
-    // Supplement config with regions from subsequent deploy/canary stages:
-    def deployRegions = regionCollector.getRegionsFromChildStages(stage)
     Set<String> inferredRegions = new HashSet<>()
 
-    deployRegions.forEach {
-      if (!config.regions.contains(it)) {
-        config.regions.add(it)
-        inferredRegions.add(it)
-        log.info("Inferred and added region ($it) from deploy stage to FindImageFromClusterTask (executionId: ${stage.execution.id})")
+    if (cloudProvider == 'aws') {
+      // Supplement config with regions from subsequent deploy/canary stages:
+      def deployRegions = regionCollector.getRegionsFromChildStages(stage)
+
+      deployRegions.forEach {
+        if (!config.regions.contains(it)) {
+          config.regions.add(it)
+          inferredRegions.add(it)
+          log.info("Inferred and added region ($it) from deploy stage to FindImageFromClusterTask (executionId: ${stage.execution.id})")
+        }
       }
     }
 
