@@ -57,6 +57,17 @@ class RetryableIgorTaskSpec extends Specification {
     result.context.get("consecutiveErrors") == 1
   }
 
+  def "should return RUNNING status when a network error is thrown"() {
+    when:
+    def result = task.execute(stage)
+
+    then:
+    1 * task.tryExecute(jobRequest) >> { throw stubRetrofitNetworkError() }
+    jobRequest.getConsecutiveErrors() >> 0
+    result.status == ExecutionStatus.RUNNING
+    result.context.get("consecutiveErrors") == 1
+  }
+
   def "should propagate the error if a non-retryable exception is thrown"() {
     when:
     def result = task.execute(stage)
@@ -100,7 +111,14 @@ class RetryableIgorTaskSpec extends Specification {
 
   def stubRetrofitError(int statusCode) {
     return Stub(RetrofitError) {
+      getKind() >> RetrofitError.Kind.HTTP
       getResponse() >> new Response("", statusCode, "", Collections.emptyList(), null)
+    }
+  }
+
+  def stubRetrofitNetworkError() {
+    return Stub(RetrofitError) {
+      getKind() >> RetrofitError.Kind.NETWORK
     }
   }
 }

@@ -54,9 +54,7 @@ public abstract class RetryableIgorTask<T extends RetryableStageDefinition> impl
       TaskResult result = tryExecute(stageDefinition);
       return resetErrorCount(result);
     } catch (RetrofitError e) {
-      int status = e.getResponse().getStatus();
-      if (stageDefinition.getConsecutiveErrors() < getMaxConsecutiveErrors() && isRetryable(status)) {
-        log.warn(String.format("Received HTTP %s response from igor, retrying...", status));
+      if (stageDefinition.getConsecutiveErrors() < getMaxConsecutiveErrors() && isRetryable(e)) {
         return new TaskResult(ExecutionStatus.RUNNING, errorContext(errors + 1));
       }
       throw e;
@@ -79,7 +77,17 @@ public abstract class RetryableIgorTask<T extends RetryableStageDefinition> impl
     return Collections.singletonMap("consecutiveErrors", errors);
   }
 
-  private boolean isRetryable(int statusCode) {
-    return statusCode == 500 || statusCode == 503;
+  private boolean isRetryable(RetrofitError retrofitError) {
+    if (retrofitError.getKind() == RetrofitError.Kind.NETWORK) {
+      log.warn("Failed to communicate with igor, retrying...");
+      return true;
+    }
+
+    int status = retrofitError.getResponse().getStatus();
+    if (status == 500 || status == 503) {
+      log.warn(String.format("Received HTTP %s response from igor, retrying...", status));
+      return true;
+    }
+    return false;
   }
 }
