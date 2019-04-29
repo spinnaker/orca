@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.igor.model.CIStageDefinition;
+import com.netflix.spinnaker.orca.igor.model.RetryableStageDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @Slf4j
-public abstract class RetryableIgorTask implements RetryableTask {
+public abstract class RetryableIgorTask<T extends RetryableStageDefinition> implements RetryableTask {
   public long getBackoffPeriod() {
     return TimeUnit.SECONDS.toMillis(5);
   }
@@ -48,7 +48,7 @@ public abstract class RetryableIgorTask implements RetryableTask {
 
   @Override
   public @Nonnull TaskResult execute(@Nonnull Stage stage) {
-    CIStageDefinition stageDefinition = stage.mapTo(CIStageDefinition.class);
+    T stageDefinition = mapStage(stage);
     int errors = stageDefinition.getConsecutiveErrors();
     try {
       TaskResult result = tryExecute(stageDefinition);
@@ -63,7 +63,9 @@ public abstract class RetryableIgorTask implements RetryableTask {
     }
   }
 
-  abstract protected @Nonnull TaskResult tryExecute(@Nonnull CIStageDefinition stageDefinition);
+  abstract protected @Nonnull TaskResult tryExecute(@Nonnull T stageDefinition);
+
+  abstract protected @Nonnull T mapStage(@Nonnull Stage stage);
 
   private TaskResult resetErrorCount(TaskResult result) {
     Map<String, Object> newContext = ImmutableMap.<String, Object>builder()
