@@ -122,11 +122,11 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
 
     Set<String> imageNames = []
     Map<Location, String> imageIds = [:]
+    Set<String> inferredRegions = new HashSet<>()
 
     if (cloudProvider == 'aws') {
       // Supplement config with regions from subsequent deploy/canary stages:
       def deployRegions = regionCollector.getRegionsFromChildStages(stage)
-      Set<String> inferredRegions = new HashSet<>()
 
       deployRegions.forEach {
         if (!config.regions.contains(it)) {
@@ -160,13 +160,13 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
         return [(location): summaries]
       } catch (RetrofitError e) {
         if (e.response?.status == 404) {
-          Map reason
+          final Map reason
           try {
             reason = objectMapper.readValue(e.response.body.in(), new TypeReference<Map<String, Object>>() {})
           } catch (Exception ignored) {
             throw new IllegalStateException("Unexpected response from API")
           }
-          if (reason?.error?.contains("target.fail.strategy")){
+          if (reason.error?.contains("target.fail.strategy")){
             throw new IllegalStateException("Multiple possible server groups present in ${location.value}")
           }
           if (config.resolveMissingLocations) {
