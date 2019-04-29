@@ -83,8 +83,14 @@ class MonitorGoogleCloudBuildTaskSpec extends Specification {
     TaskResult result = task.execute(stage)
 
     then:
-    1 * igorService.getGoogleCloudBuild(ACCOUNT, BUILD_ID) >> { throw Mock(RetrofitError) }
+    1 * igorService.getGoogleCloudBuild(ACCOUNT, BUILD_ID) >> { throw stubRetrofitError() }
     0 * igorService._
     result.getStatus() == ExecutionStatus.RUNNING
+  }
+
+  def stubRetrofitError() {
+    return Stub(RetrofitError) {
+      getKind() >> RetrofitError.Kind.NETWORK
+    }
   }
 }
