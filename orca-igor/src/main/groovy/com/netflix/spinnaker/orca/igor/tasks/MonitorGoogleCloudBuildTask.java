@@ -13,29 +13,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.igor.pipeline;
 
+package com.netflix.spinnaker.orca.igor.tasks;
+
+import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.Task;
+import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.igor.IgorService;
+import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
-import com.netflix.spinnaker.orca.igor.tasks.MonitorGoogleCloudBuildTask;
-import com.netflix.spinnaker.orca.igor.tasks.StartGoogleCloudBuildTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import retrofit.RetrofitError;
 
 import javax.annotation.Nonnull;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class GoogleCloudBuildStage implements StageDefinitionBuilder {
+public class MonitorGoogleCloudBuildTask implements Task {
+  private final IgorService igorService;
+
   @Override
-  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  @Nonnull public TaskResult execute(@Nonnull Stage stage) {
     GoogleCloudBuildStageDefinition stageDefinition = stage.mapTo(GoogleCloudBuildStageDefinition.class);
-    builder
-      .withTask("startGoogleCloudBuildTask", StartGoogleCloudBuildTask.class)
-      .withTask("monitorGoogleCloudBuildTask", MonitorGoogleCloudBuildTask.class);
+    try {
+      GoogleCloudBuild build = igorService.getGoogleCloudBuild(
+        stageDefinition.getAccount(),
+        stageDefinition.getBuildInfo().getId()
+      );
+      return new TaskResult(build.getStatus().getExecutionStatus());
+    } catch (RetrofitError e) {
+      // Log and retry the task
+      log.info("Error fetching Google Cloud Build status from igor: {}", e.getMessage());
+      return new TaskResult(ExecutionStatus.RUNNING);
+    }
   }
 }

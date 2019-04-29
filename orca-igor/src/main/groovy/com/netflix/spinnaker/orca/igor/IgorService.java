@@ -74,4 +74,9 @@ public interface IgorService {
   GoogleCloudBuild createGoogleCloudBuild(
     @Path("account") String account,
     @Body Map<String, Object> job);
+
+  @GET("/gcb/builds/{account}/{buildId}")
+  GoogleCloudBuild getGoogleCloudBuild(
+    @Path("account") String account,
+    @Path("buildId") String buildId);
 }
