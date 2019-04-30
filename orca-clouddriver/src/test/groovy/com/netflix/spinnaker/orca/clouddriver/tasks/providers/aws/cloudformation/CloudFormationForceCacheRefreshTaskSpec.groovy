@@ -51,14 +51,14 @@ class CloudFormationForceCacheRefreshTaskSpec extends Specification {
     task.execute(stage)
 
     then:
-    1 * task.cacheService.forceCacheUpdate('aws', CloudFormationForceCacheRefreshTask.REFRESH_TYPE, data)
+    1 * task.cacheService.forceCacheUpdate('aws', CloudFormationForceCacheRefreshTask.REFRESH_TYPE, expectedData)
 
     where:
-    credentials   | regions       | data
-    null          | null          | [:]
-    "credentials" | null          | [credentials: "credentials"]
-    null          | ["eu-west-1"] | [region: ["eu-west-1"]]
-    "credentials" | ["eu-west-1"] | [credentials: "credentials", region: ["eu-west-1"]]
+    credentials   | regions       || expectedData
+    null          | null          || [:]
+    "credentials" | null          || [credentials: "credentials"]
+    null          | ["eu-west-1"] || [region: ["eu-west-1"]]
+    "credentials" | ["eu-west-1"] || [credentials: "credentials", region: ["eu-west-1"]]
 
 
   }
