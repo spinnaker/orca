@@ -26,7 +26,7 @@ public class CloudFoundryCreateServiceKeyTask extends AbstractCloudFoundryServic
   }
 
   @Override
-  String getStageName() {
+  protected String getNotificationType() {
     return "createServiceKey";
   }
 }
