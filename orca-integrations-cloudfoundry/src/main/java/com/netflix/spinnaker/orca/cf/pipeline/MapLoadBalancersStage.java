@@ -1,11 +1,11 @@
 /*
  * Copyright 2019 Pivotal, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,22 +16,28 @@
 
 package com.netflix.spinnaker.orca.cf.pipeline;
 
-import com.netflix.spinnaker.orca.cf.tasks.CloudFoundryDeleteServiceKeyTask;
-import com.netflix.spinnaker.orca.cf.tasks.CloudFoundryMonitorKatoServicesTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
+import com.netflix.spinnaker.orca.cf.tasks.MapLoadBalancersTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import groovy.transform.CompileStatic;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
 
+@Slf4j
 @Component
-class DeleteServiceKeyStage implements StageDefinitionBuilder, CloudProviderAware {
+@CompileStatic
+class MapLoadBalancersStage implements StageDefinitionBuilder, CloudProviderAware {
   @Override
   public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
     builder
-      .withTask("deleteServiceKey", CloudFoundryDeleteServiceKeyTask.class)
-      .withTask("monitorDeleteServiceKey", CloudFoundryMonitorKatoServicesTask.class);
+      .withTask("mapLoadBalancers", MapLoadBalancersTask.class)
+      .withTask("monitorTask", MonitorKatoTask.class)
+      .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask.class);
   }
 }

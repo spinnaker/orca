@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.cf.pipeline;
 
-import com.netflix.spinnaker.orca.cf.tasks.CloudFoundryDeleteServiceKeyTask;
+import com.netflix.spinnaker.orca.cf.tasks.CloudFoundryCreateServiceKeyTask;
 import com.netflix.spinnaker.orca.cf.tasks.CloudFoundryMonitorKatoServicesTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
@@ -27,11 +27,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Nonnull;
 
 @Component
-class DeleteServiceKeyStage implements StageDefinitionBuilder, CloudProviderAware {
+class CreateServiceKeyStage implements StageDefinitionBuilder, CloudProviderAware {
   @Override
   public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
     builder
-      .withTask("deleteServiceKey", CloudFoundryDeleteServiceKeyTask.class)
-      .withTask("monitorDeleteServiceKey", CloudFoundryMonitorKatoServicesTask.class);
+      .withTask("createServiceKey", CloudFoundryCreateServiceKeyTask.class)
+      .withTask("monitorCreateServiceKey", CloudFoundryMonitorKatoServicesTask.class);
   }
 }
