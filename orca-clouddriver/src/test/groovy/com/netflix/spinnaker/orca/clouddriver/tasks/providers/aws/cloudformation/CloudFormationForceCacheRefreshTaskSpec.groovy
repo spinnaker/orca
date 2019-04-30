@@ -27,7 +27,7 @@ class CloudFormationForceCacheRefreshTaskSpec extends Specification {
   @Subject task = new CloudFormationForceCacheRefreshTask()
 
   void "should force cache refresh cloud formations via mort"() {
-    setup:
+    given:
     def stage = stage()
     task.cacheService = Mock(CloudDriverCacheService)
 
@@ -40,12 +40,13 @@ class CloudFormationForceCacheRefreshTaskSpec extends Specification {
 
   @Unroll
   void "should add scoping data if available"() {
-    setup:
+    given:      
     task.cacheService = Mock(CloudDriverCacheService)
+    
+    and:
     def stage = stage()
     stage.context.put("credentials", credentials)
     stage.context.put("regions", regions)
-
 
     when:
     task.execute(stage)
