@@ -16,21 +16,29 @@
 
 package com.netflix.spinnaker.orca.igor.tasks;
 
+import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class MonitorGoogleCloudBuildTask extends RetryableIgorTask<GoogleCloudBuildStageDefinition> {
+public class MonitorGoogleCloudBuildTask extends RetryableIgorTask<GoogleCloudBuildStageDefinition> implements OverridableTimeoutRetryableTask {
+  @Getter
+  protected long backoffPeriod = 10000;
+  @Getter
+  protected long timeout = TimeUnit.HOURS.toMillis(2);
+
   private final IgorService igorService;
 
   @Override
