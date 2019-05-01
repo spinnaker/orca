@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.igor.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.Getter;
 
 import java.util.Map;
@@ -27,6 +28,10 @@ public class GoogleCloudBuildStageDefinition implements RetryableStageDefinition
   private final String account;
   private final GoogleCloudBuild buildInfo;
   private final Map<String, Object> buildDefinition;
+  private final String buildDefinitionSource;
+  private final String buildDefinitionArtifactAccount;
+  private final Artifact buildDefinitionArtifact;
+  private final String buildDefinitionArtifactId;
   private final int consecutiveErrors;
 
   // There does not seem to be a way to auto-generate a constructor using our current version of Lombok (1.16.20) that
@@ -35,11 +40,19 @@ public class GoogleCloudBuildStageDefinition implements RetryableStageDefinition
     @JsonProperty("account") String account,
     @JsonProperty("buildInfo") GoogleCloudBuild build,
     @JsonProperty("buildDefinition") Map<String, Object> buildDefinition,
+    @JsonProperty("buildDefinitionSource") String buildDefinitionSource,
+    @JsonProperty("buildDefinitionArtifactAccount") String buildDefinitionArtifactAccount,
+    @JsonProperty("buildDefinitionArtifact") Artifact buildDefinitionArtifact,
+    @JsonProperty("buildDefinitionArtifactId") String buildDefinitionArtifactId,
     @JsonProperty("consecutiveErrors") Integer consecutiveErrors
   ) {
     this.account = account;
     this.buildInfo = build;
     this.buildDefinition = buildDefinition;
+    this.buildDefinitionSource = buildDefinitionSource;
+    this.buildDefinitionArtifactAccount = buildDefinitionArtifactAccount;
+    this.buildDefinitionArtifact = buildDefinitionArtifact;
+    this.buildDefinitionArtifactId = buildDefinitionArtifactId;
     this.consecutiveErrors = Optional.ofNullable(consecutiveErrors).orElse(0);
   }
 }
