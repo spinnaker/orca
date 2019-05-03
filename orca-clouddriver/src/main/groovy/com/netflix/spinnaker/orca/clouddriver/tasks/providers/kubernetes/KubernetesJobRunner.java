@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
@@ -27,13 +28,18 @@ import java.util.*;
 @Component
 @Data
 public class KubernetesJobRunner implements JobRunner {
-  public boolean katoResultExpected = false;
-  public String cloudProvider = "kubernetes";
 
-  public ArtifactResolver artifactResolver;
 
-  public KubernetesJobRunner(ArtifactResolver artifactResolver) {
+  private boolean katoResultExpected = false;
+  private String cloudProvider = "kubernetes";
+
+  private ArtifactResolver artifactResolver;
+  private ObjectMapper objectMapper;
+
+
+  public KubernetesJobRunner(ArtifactResolver artifactResolver, ObjectMapper objectMapper) {
     this.artifactResolver = artifactResolver;
+    this.objectMapper = objectMapper;
   }
 
   public List<Map> getOperations(Stage stage) {
@@ -53,6 +59,21 @@ public class KubernetesJobRunner implements JobRunner {
   }
 
   public Map<String, Object> getAdditionalOutputs(Stage stage, List<Map> operations) {
-    return new HashMap<>();
+    Map<String, Object> outputs = new HashMap<>();
+    Map<String, Object> execution = new HashMap<>();
+
+    // if the manifest contains the template annotation put it into the context
+    if (stage.getContext().containsKey("manifest")) {
+      Manifest manifest = objectMapper.convertValue(stage.getContext().get("manifest"), Manifest.class);
+      String logTemplate = ManifestAnnotationExtractor.logs(manifest);
+      if (logTemplate != null) {
+        execution.put("logs", logTemplate);
+        outputs.put("execution", execution);
+      }
+    }
+
+    return outputs;
   }
+
+
 }
