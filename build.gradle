@@ -7,7 +7,7 @@ buildscript {
   dependencies {
     classpath("com.netflix.spinnaker.gradle:spinnaker-dev-plugin:6.0.0")
     if (Boolean.valueOf(enablePublishing)) {
-      classpath "com.netflix.spinnaker.gradle:spinnaker-gradle-project:6.0.0"
+      classpath("com.netflix.spinnaker.gradle:spinnaker-gradle-project:6.0.0")
     }
   }
 
@@ -23,17 +23,17 @@ plugins {
 }
 
 allprojects {
-  apply plugin: "spinnaker.base-project"
+  apply(plugin: "spinnaker.base-project")
   if (Boolean.valueOf(enablePublishing)) {
-    apply plugin: "spinnaker.project"
+    apply(plugin: "spinnaker.project")
   }
 
   group = "com.netflix.spinnaker.keiko"
 }
 
 subprojects {
-  apply from: "$rootDir/gradle/kotlin.gradle"
-  apply from: "$rootDir/gradle/dokka.gradle"
+  apply(from: "$rootDir/gradle/kotlin.gradle")
+  apply(from: "$rootDir/gradle/dokka.gradle")
 
   repositories {
     jcenter()
@@ -41,8 +41,8 @@ subprojects {
 
   dependencies {
     implementation(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
-    implementation "org.slf4j:slf4j-api"
-    testRuntimeOnly "org.slf4j:slf4j-nop"
+    implementation("org.slf4j:slf4j-api")
+    testRuntimeOnly("org.slf4j:slf4j-nop")
   }
 
   sourceCompatibility = 1.8
@@ -55,6 +55,6 @@ subprojects {
 //  }
 }
 
-apply from: "$rootDir/gradle/ktlint-root.gradle"
+apply(from: "$rootDir/gradle/ktlint-root.gradle")
 
 defaultTasks "build"
