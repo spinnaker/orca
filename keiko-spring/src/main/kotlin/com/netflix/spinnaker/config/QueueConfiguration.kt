@@ -37,7 +37,7 @@ import java.time.Clock
 import java.time.Duration
 
 @Configuration
-@EnableConfigurationProperties(QueueProperties::class)
+@EnableConfigurationProperties(QueueProperties::class, ObjectMapperSubtypeProperties::class)
 @ComponentScan(basePackages = ["com.netflix.spinnaker.q"])
 @EnableScheduling
 class QueueConfiguration {

@@ -17,7 +17,7 @@ package com.netflix.spinnaker.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties("keiko.objectMapper")
+@ConfigurationProperties("keiko.object-mapper")
 class ObjectMapperSubtypeProperties {
   var messageRootType: String = "com.netflix.spinnaker.q.Message"
   var messagePackages: List<String> = listOf("com.netflix.spinnaker.q")

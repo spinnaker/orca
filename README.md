@@ -1,6 +1,6 @@
 # Keiko
 
-Keiko is a simple queueing library originally built for Spinnaker's Orca 
+Keiko is a simple queueing library originally built for Spinnaker's Orca
 µservice.
 
 ## Concepts
@@ -10,7 +10,7 @@ Keiko consists of a number of components:
 ### The `Queue`
 
 The queue itself accepts unique messages with an associated delivery time/
-By default the delivery time is immediate but messages may be pushed for delivery at any point in the future. 
+By default the delivery time is immediate but messages may be pushed for delivery at any point in the future.
 
 ### The `QueueProcessor`
 
@@ -40,7 +40,7 @@ Kotlin data classes, Java classes annotated with Lombok's `@Value`, or just simp
 Messages should be processed quickly.
 If processing time exceeds the `ackTimeout` value specified on the queue or an unhandled exception prevents the handler from returning normally, the message will get re-queued.
 
-Handlers may re-push the same message they are processing in order to implement polling workflows. 
+Handlers may re-push the same message they are processing in order to implement polling workflows.
 
 ## Configuring the queue in Spring Boot
 

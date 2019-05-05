@@ -61,6 +61,7 @@ class SpringObjectMapperConfigurer(
       .apply { addIncludeFilter(AssignableTypeFilter(clazz)) }
       .findCandidateComponents(pkg)
       .map {
+        check(it.beanClassName != null)
         val cls = ClassUtils.resolveClassName(it.beanClassName, ClassUtils.getDefaultClassLoader())
 
         // Enforce all implementing types to have a JsonTypeName class
