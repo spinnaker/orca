@@ -44,14 +44,14 @@ import java.util.Optional
 class RedisQueueConfiguration {
 
   @Bean @ConditionalOnMissingBean(GenericObjectPoolConfig::class)
-  fun redisPoolConfig() = GenericObjectPoolConfig()
+  fun redisPoolConfig() = GenericObjectPoolConfig<Any>()
 
   @Bean
   @ConditionalOnMissingBean(name = ["queueRedisPool"])
   fun queueRedisPool(
     @Value("\${redis.connection:redis://localhost:6379}") connection: String,
     @Value("\${redis.timeout:2000}") timeout: Int,
-    redisPoolConfig: GenericObjectPoolConfig
+    redisPoolConfig: GenericObjectPoolConfig<Any>
   ) =
     URI.create(connection).let { cx ->
       val port = if (cx.port == -1) Protocol.DEFAULT_PORT else cx.port
