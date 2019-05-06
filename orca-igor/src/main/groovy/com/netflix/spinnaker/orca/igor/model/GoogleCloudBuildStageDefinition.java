@@ -29,9 +29,7 @@ public class GoogleCloudBuildStageDefinition implements RetryableStageDefinition
   private final GoogleCloudBuild buildInfo;
   private final Map<String, Object> buildDefinition;
   private final String buildDefinitionSource;
-  private final String buildDefinitionArtifactAccount;
-  private final Artifact buildDefinitionArtifact;
-  private final String buildDefinitionArtifactId;
+  private final GoogleCloudBuildDefinitionArtifact buildDefinitionArtifact;
   private final int consecutiveErrors;
 
   // There does not seem to be a way to auto-generate a constructor using our current version of Lombok (1.16.20) that
@@ -41,18 +39,32 @@ public class GoogleCloudBuildStageDefinition implements RetryableStageDefinition
     @JsonProperty("buildInfo") GoogleCloudBuild build,
     @JsonProperty("buildDefinition") Map<String, Object> buildDefinition,
     @JsonProperty("buildDefinitionSource") String buildDefinitionSource,
-    @JsonProperty("buildDefinitionArtifactAccount") String buildDefinitionArtifactAccount,
-    @JsonProperty("buildDefinitionArtifact") Artifact buildDefinitionArtifact,
-    @JsonProperty("buildDefinitionArtifactId") String buildDefinitionArtifactId,
+    @JsonProperty("buildDefinitionArtifact") GoogleCloudBuildDefinitionArtifact buildDefinitionArtifact,
     @JsonProperty("consecutiveErrors") Integer consecutiveErrors
   ) {
     this.account = account;
     this.buildInfo = build;
     this.buildDefinition = buildDefinition;
     this.buildDefinitionSource = buildDefinitionSource;
-    this.buildDefinitionArtifactAccount = buildDefinitionArtifactAccount;
-    this.buildDefinitionArtifact = buildDefinitionArtifact;
-    this.buildDefinitionArtifactId = buildDefinitionArtifactId;
+    this.buildDefinitionArtifact = Optional.ofNullable(buildDefinitionArtifact)
+      .orElse(new GoogleCloudBuildDefinitionArtifact(null, null, null));
     this.consecutiveErrors = Optional.ofNullable(consecutiveErrors).orElse(0);
+  }
+
+  @Getter
+  public static class GoogleCloudBuildDefinitionArtifact {
+    private final Artifact artifact;
+    private final String artifactAccount;
+    private final String artifactId;
+
+    public GoogleCloudBuildDefinitionArtifact(
+      @JsonProperty("artifact") Artifact artifact,
+      @JsonProperty("artifactAccount") String artifactAccount,
+      @JsonProperty("artifactId") String artifactId
+    ) {
+      this.artifact = artifact;
+      this.artifactAccount = artifactAccount;
+      this.artifactId = artifactId;
+    }
   }
 }

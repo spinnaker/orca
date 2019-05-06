@@ -66,15 +66,15 @@ public class StartGoogleCloudBuildTask implements Task {
   }
 
   private Map<String, Object> getBuildDefinitionFromArtifact(@Nonnull Stage stage, GoogleCloudBuildStageDefinition stageDefinition) {
-    Artifact buildDefinitionArtifact = artifactResolver.getBoundArtifactForStage(stage, stageDefinition.getBuildDefinitionArtifactId(),
-      stageDefinition.getBuildDefinitionArtifact());
+    Artifact buildDefinitionArtifact = artifactResolver.getBoundArtifactForStage(stage, stageDefinition.getBuildDefinitionArtifact().getArtifactId(),
+      stageDefinition.getBuildDefinitionArtifact().getArtifact());
 
     if (buildDefinitionArtifact == null) {
       throw new IllegalArgumentException("No manifest artifact was specified.");
     }
 
-    if(stageDefinition.getBuildDefinitionArtifactAccount() != null) {
-      buildDefinitionArtifact.setArtifactAccount(stageDefinition.getBuildDefinitionArtifactAccount());
+    if(stageDefinition.getBuildDefinitionArtifact().getArtifactAccount() != null) {
+      buildDefinitionArtifact.setArtifactAccount(stageDefinition.getBuildDefinitionArtifact().getArtifactAccount());
     }
 
     if (buildDefinitionArtifact.getArtifactAccount() == null) {
