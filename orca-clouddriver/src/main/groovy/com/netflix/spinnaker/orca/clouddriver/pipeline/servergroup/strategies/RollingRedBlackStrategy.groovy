@@ -31,9 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
+import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.getSource
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
-
-import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.*
 
 @Slf4j
 @Component

@@ -17,11 +17,8 @@ package com.netflix.spinnaker.orca.pipeline.persistence
 
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import spock.lang.Specification
-
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.*
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL_ASC
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_DESC
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
 
 class ExecutionComparatorSpec extends Specification {
 

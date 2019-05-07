@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.pipeline.util
 
+import java.util.regex.Pattern
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.pipeline.model.*
@@ -22,9 +23,6 @@ import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import java.util.regex.Pattern
-
 import static com.netflix.spinnaker.orca.pipeline.util.PackageType.DEB
 import static com.netflix.spinnaker.orca.pipeline.util.PackageType.RPM
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline

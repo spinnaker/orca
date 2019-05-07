@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.pipeline.persistence
 
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -26,11 +29,6 @@ import rx.schedulers.Schedulers
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION

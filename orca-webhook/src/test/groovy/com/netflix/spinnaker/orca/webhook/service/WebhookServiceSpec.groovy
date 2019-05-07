@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.webhook.service
 
 import com.netflix.spinnaker.okhttp.OkHttpClientConfigurationProperties
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions
-import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.config.WebhookConfiguration
+import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
@@ -31,11 +31,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.header
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 
 class WebhookServiceSpec extends Specification {

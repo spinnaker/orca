@@ -25,11 +25,7 @@ import retrofit.converter.JacksonConverter
 import retrofit.mime.TypedInput
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import static com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup.SecurityGroupIngress
-import static com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup.applyMappings
-import static com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup.filterForSecurityGroupIngress
-import static com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup.findById
+import static com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup.*
 import static com.netflix.spinnaker.orca.clouddriver.MortService.VPC.findForRegionAndAccount
 
 class MortServiceSpec extends Specification {

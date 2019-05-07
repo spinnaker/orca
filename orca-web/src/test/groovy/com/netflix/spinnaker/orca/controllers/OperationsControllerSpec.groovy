@@ -16,17 +16,15 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import javax.servlet.http.HttpServletResponse
 import com.netflix.spinnaker.fiat.model.UserPermission
 import com.netflix.spinnaker.fiat.model.resources.Account
 import com.netflix.spinnaker.fiat.model.resources.Role
 import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
-
-import com.netflix.spinnaker.orca.front50.Front50Service
-
-import javax.servlet.http.HttpServletResponse
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
@@ -41,7 +39,7 @@ import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.json.JsonSlurper
-import org.apache.log4j.MDC
+import org.slf4j.MDC
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType

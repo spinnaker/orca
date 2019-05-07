@@ -16,12 +16,11 @@
 
 package com.netflix.spinnaker.orca.webhook.util
 
-import spock.lang.Specification
-import spock.lang.Unroll
-
-import javax.net.ssl.X509TrustManager
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import javax.net.ssl.X509TrustManager
+import spock.lang.Specification
+import spock.lang.Unroll
 
 class UnionX509TrustManagerSpec extends Specification {
   static TRUST_ALL = new X509TrustManager() {

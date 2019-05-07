@@ -16,14 +16,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper.HealthCountSnapshot
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.slf4j.MDC
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
 
 @Component
 @Slf4j

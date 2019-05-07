@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
 import spock.lang.Shared
 import spock.lang.Specification
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class RollbackServerGroupStageSpec extends Specification {

@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import java.time.Clock
+import java.time.Instant
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.Collections2
 import com.netflix.spectator.api.NoopRegistry
@@ -32,12 +34,8 @@ import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Specification
-
-import java.time.Clock
-import java.time.Instant
-
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
 import static java.time.temporal.ChronoUnit.DAYS

@@ -34,7 +34,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 
 class GetCommitsTaskSpec extends Specification {

@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.bakery.config
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
-
 import java.text.SimpleDateFormat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategy.LowerCaseWithUnderscoresStrategy
@@ -28,6 +26,7 @@ import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -55,7 +54,7 @@ class BakeryConfiguration {
   @Autowired LogLevel retrofitLogLevel
 
   @Bean
-  Endpoint bakeryEndpoint(@Value('${bakery.baseUrl}') String bakeryBaseUrl) {
+  Endpoint bakeryEndpoint(@Value('${bakery.base-url}') String bakeryBaseUrl) {
     newFixedEndpoint(bakeryBaseUrl)
   }
 

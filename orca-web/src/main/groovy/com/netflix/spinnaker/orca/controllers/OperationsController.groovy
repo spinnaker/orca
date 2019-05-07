@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import javax.servlet.http.HttpServletResponse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.fiat.model.UserPermission
 import com.netflix.spinnaker.fiat.model.resources.Role
@@ -42,16 +43,9 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.util.logging.Slf4j
 import javassist.NotFoundException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import retrofit.RetrofitError
 import retrofit.http.Query
-
-import javax.servlet.http.HttpServletResponse
-
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static net.logstash.logback.argument.StructuredArguments.value

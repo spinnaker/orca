@@ -17,8 +17,6 @@
 
 package com.netflix.spinnaker.orca.echo.tasks
 
-import com.fasterxml.jackson.databind.ObjectMapper
-
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult

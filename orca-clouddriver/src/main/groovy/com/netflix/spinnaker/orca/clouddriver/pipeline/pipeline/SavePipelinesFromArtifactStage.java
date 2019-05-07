@@ -15,7 +15,11 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.pipeline;
 
-import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.*;
+import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.CheckForRemainingPipelinesTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.CheckPipelineResultsTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.GetPipelinesFromArtifactTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.PreparePipelineToSaveTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.SavePipelinesCompleteTask;
 import com.netflix.spinnaker.orca.front50.tasks.MonitorFront50Task;
 import com.netflix.spinnaker.orca.front50.tasks.SavePipelineTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
@@ -30,16 +34,16 @@ public class SavePipelinesFromArtifactStage implements StageDefinitionBuilder {
   public void taskGraph(Stage stage, Builder builder) {
 
     builder
-      .withTask("getPipelinesFromArtifact", GetPipelinesFromArtifactTask.class)
-      .withLoop(subGraph -> {
-        subGraph
-          .withTask("preparePipelineToSaveTask", PreparePipelineToSaveTask.class)
-          .withTask("savePipeline", SavePipelineTask.class)
-          .withTask("waitForPipelineSave", MonitorFront50Task.class)
-          .withTask("checkPipelineResults", CheckPipelineResultsTask.class)
-          .withTask("checkForRemainingPipelines", CheckForRemainingPipelinesTask.class);
-      })
-      .withTask("savePipelinesCompleteTask", SavePipelinesCompleteTask.class);
+        .withTask("getPipelinesFromArtifact", GetPipelinesFromArtifactTask.class)
+        .withLoop(
+            subGraph -> {
+              subGraph
+                  .withTask("preparePipelineToSaveTask", PreparePipelineToSaveTask.class)
+                  .withTask("savePipeline", SavePipelineTask.class)
+                  .withTask("waitForPipelineSave", MonitorFront50Task.class)
+                  .withTask("checkPipelineResults", CheckPipelineResultsTask.class)
+                  .withTask("checkForRemainingPipelines", CheckForRemainingPipelinesTask.class);
+            })
+        .withTask("savePipelinesCompleteTask", SavePipelinesCompleteTask.class);
   }
-
 }

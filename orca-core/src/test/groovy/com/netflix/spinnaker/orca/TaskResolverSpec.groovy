@@ -16,13 +16,12 @@
 
 package com.netflix.spinnaker.orca
 
+import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import javax.annotation.Nonnull;
 
 class TaskResolverSpec extends Specification {
   @Subject

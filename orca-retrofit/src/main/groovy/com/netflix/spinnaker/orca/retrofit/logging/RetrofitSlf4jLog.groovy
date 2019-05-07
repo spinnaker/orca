@@ -16,11 +16,10 @@
 
 package com.netflix.spinnaker.orca.retrofit.logging
 
+import java.lang.reflect.Method
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import retrofit.RestAdapter
-
-import java.lang.reflect.Method
 
 class RetrofitSlf4jLog implements RestAdapter.Log {
   private final Logger logger

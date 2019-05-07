@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.igor.tasks
 
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
@@ -26,8 +27,6 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
-
-import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Component

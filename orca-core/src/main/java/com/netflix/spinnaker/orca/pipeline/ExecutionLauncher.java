@@ -16,6 +16,14 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.AuthenticationDetails;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.String.format;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -26,27 +34,17 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.Trigger;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
-import com.netflix.spinnaker.security.AuthenticatedRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.AuthenticationDetails;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
-import static java.lang.Boolean.parseBoolean;
-import static java.lang.String.format;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
 
 @Component
 public class ExecutionLauncher {
@@ -62,13 +60,14 @@ public class ExecutionLauncher {
   private final ApplicationEventPublisher applicationEventPublisher;
 
   @Autowired
-  public ExecutionLauncher(ObjectMapper objectMapper,
-                           ExecutionRepository executionRepository,
-                           ExecutionRunner executionRunner,
-                           Clock clock,
-                           ApplicationEventPublisher applicationEventPublisher,
-                           Optional<PipelineValidator> pipelineValidator,
-                           Optional<Registry> registry) {
+  public ExecutionLauncher(
+      ObjectMapper objectMapper,
+      ExecutionRepository executionRepository,
+      ExecutionRunner executionRunner,
+      Clock clock,
+      ApplicationEventPublisher applicationEventPublisher,
+      Optional<PipelineValidator> pipelineValidator,
+      Optional<Registry> registry) {
     this.objectMapper = objectMapper;
     this.executionRepository = executionRepository;
     this.executionRunner = executionRunner;
@@ -134,14 +133,17 @@ public class ExecutionLauncher {
     Trigger trigger = execution.getTrigger();
 
     try {
-      Execution o = executionRepository.retrieveByCorrelationId(
-        execution.getType(),
-        trigger.getCorrelationId()
-      );
-      log.info("Found pre-existing " + execution.getType() + " by correlation id (id: " +
-        o.getId() + ", correlationId: " +
-        trigger.getCorrelationId() +
-        ")");
+      Execution o =
+          executionRepository.retrieveByCorrelationId(
+              execution.getType(), trigger.getCorrelationId());
+      log.info(
+          "Found pre-existing "
+              + execution.getType()
+              + " by correlation id (id: "
+              + o.getId()
+              + ", correlationId: "
+              + trigger.getCorrelationId()
+              + ")");
       return o;
     } catch (ExecutionNotFoundException e) {
       // Swallow
@@ -173,17 +175,20 @@ public class ExecutionLauncher {
     // TODO: can we not just annotate the class properly to avoid all this?
     Map<String, Serializable> config = objectMapper.readValue(configJson, Map.class);
     return new PipelineBuilder(getString(config, "application"))
-      .withName(getString(config, "name"))
-      .withPipelineConfigId(getString(config, "id"))
-      .withTrigger(objectMapper.convertValue(config.get("trigger"), Trigger.class))
-      .withStages((List<Map<String, Object>>) config.get("stages"))
-      .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
-      .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
-      .withNotifications((List<Map<String, Object>>) config.get("notifications"))
-      .withOrigin(getString(config, "origin"))
-      .withStartTimeExpiry(getString(config, "startTimeExpiry"))
-      .withSource((config.get("source") == null) ? null : objectMapper.convertValue(config.get("source"), Execution.PipelineSource.class))
-      .build();
+        .withName(getString(config, "name"))
+        .withPipelineConfigId(getString(config, "id"))
+        .withTrigger(objectMapper.convertValue(config.get("trigger"), Trigger.class))
+        .withStages((List<Map<String, Object>>) config.get("stages"))
+        .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
+        .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
+        .withNotifications((List<Map<String, Object>>) config.get("notifications"))
+        .withOrigin(getString(config, "origin"))
+        .withStartTimeExpiry(getString(config, "startTimeExpiry"))
+        .withSource(
+            (config.get("source") == null)
+                ? null
+                : objectMapper.convertValue(config.get("source"), Execution.PipelineSource.class))
+        .build();
   }
 
   private Execution parseOrchestration(String configJson) throws IOException {
@@ -215,16 +220,15 @@ public class ExecutionLauncher {
     }
 
     orchestration.setBuildTime(clock.millis());
-    orchestration.setAuthentication(AuthenticationDetails.build().orElse(new AuthenticationDetails()));
+    orchestration.setAuthentication(
+        AuthenticationDetails.build().orElse(new AuthenticationDetails()));
     orchestration.setOrigin((String) config.getOrDefault("origin", "unknown"));
     orchestration.setStartTimeExpiry((Long) config.get("startTimeExpiry"));
 
     return orchestration;
   }
 
-  /**
-   * Persist the initial execution configuration.
-   */
+  /** Persist the initial execution configuration. */
   private void persistExecution(Execution execution) {
     applicationEventPublisher.publishEvent(new BeforeInitialExecutionPersist(this, execution));
     executionRepository.store(execution);

@@ -27,7 +27,6 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
-
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN
 
 @Component

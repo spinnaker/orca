@@ -15,6 +15,7 @@
  */
 package com.netflix.spinnaker.orca.pipeline.persistence.jedis
 
+import java.util.concurrent.CountDownLatch
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
@@ -31,9 +32,6 @@ import redis.clients.util.Pool
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Unroll
-
-import java.util.concurrent.CountDownLatch
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
@@ -41,8 +39,8 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.*
-import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_ASC
+import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.util.concurrent.TimeUnit.SECONDS
 

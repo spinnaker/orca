@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
+import java.time.Clock
+import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
@@ -25,10 +27,6 @@ import retrofit.mime.TypedString
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import java.time.Clock
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage

@@ -17,15 +17,14 @@
 package com.netflix.spinnaker.orca.pipeline.expressions.functions
 
 import com.netflix.spinnaker.orca.ExecutionContext
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionsSupport
 import com.netflix.spinnaker.orca.pipeline.expressions.SpelHelperFunctionException
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import static com.netflix.spinnaker.orca.pipeline.expressions.functions.StageExpressionFunctionProvider.*
+import static com.netflix.spinnaker.orca.pipeline.expressions.functions.StageExpressionFunctionProvider.currentStage
+import static com.netflix.spinnaker.orca.pipeline.expressions.functions.StageExpressionFunctionProvider.stageByRefId
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
-import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage;
+import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class StageExpressionFunctionProviderSpec extends Specification {
   @Shared

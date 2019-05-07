@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
-import java.lang.RuntimeException
 
 val singleTaskStage = object : StageDefinitionBuilder {
   override fun getType() = "singleTaskStage"

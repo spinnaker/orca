@@ -16,7 +16,6 @@
 package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.converter
 
 import groovy.json.JsonSlurper
-import spock.lang.Ignore
 import spock.lang.Specification
 
 class PipelineTemplateConverterSpec extends Specification {

@@ -10,7 +10,6 @@ package com.netflix.spinnaker.orca.igor.pipeline
 
 import com.netflix.spinnaker.orca.igor.tasks.MonitorWerckerJobStartedTask
 import spock.lang.Specification
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class WerckerStageSpec extends Specification {

@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class CloudFormationForceCacheRefreshTaskSpec extends Specification {

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.front50
 
+import java.util.concurrent.Callable
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
@@ -34,9 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.Callable
-
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 @Component

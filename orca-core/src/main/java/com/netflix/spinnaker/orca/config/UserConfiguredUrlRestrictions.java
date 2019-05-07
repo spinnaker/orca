@@ -19,7 +19,14 @@ package com.netflix.spinnaker.orca.config;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.Data;
 import org.springframework.security.web.util.matcher.IpAddressMatcher;
@@ -31,7 +38,8 @@ public class UserConfiguredUrlRestrictions {
     private List<String> allowedSchemes = new ArrayList<>(Arrays.asList("http", "https"));
     private boolean rejectLocalhost = true;
     private boolean rejectLinkLocal = true;
-    private List<String> rejectedIps = new ArrayList<>(); // can contain IP addresses and/or IP ranges (CIDR block)
+    private List<String> rejectedIps =
+        new ArrayList<>(); // can contain IP addresses and/or IP ranges (CIDR block)
 
     public Builder withAllowedHostnamesRegex(String allowedHostnamesRegex) {
       setAllowedHostnamesRegex(allowedHostnamesRegex);
@@ -59,7 +67,12 @@ public class UserConfiguredUrlRestrictions {
     }
 
     public UserConfiguredUrlRestrictions build() {
-      return new UserConfiguredUrlRestrictions(Pattern.compile(allowedHostnamesRegex), allowedSchemes, rejectLocalhost, rejectLinkLocal, rejectedIps);
+      return new UserConfiguredUrlRestrictions(
+          Pattern.compile(allowedHostnamesRegex),
+          allowedSchemes,
+          rejectLocalhost,
+          rejectLinkLocal,
+          rejectedIps);
     }
   }
 
@@ -69,12 +82,23 @@ public class UserConfiguredUrlRestrictions {
   private final boolean rejectLinkLocal;
   private final Set<String> rejectedIps;
 
-  public UserConfiguredUrlRestrictions(Pattern allowedHostnames, Collection<String> allowedSchemes, boolean rejectLocalhost, boolean rejectLinkLocal, Collection<String> rejectedIps) {
+  public UserConfiguredUrlRestrictions(
+      Pattern allowedHostnames,
+      Collection<String> allowedSchemes,
+      boolean rejectLocalhost,
+      boolean rejectLinkLocal,
+      Collection<String> rejectedIps) {
     this.allowedHostnames = allowedHostnames;
-    this.allowedSchemes = allowedSchemes == null ? Collections.emptySet() : Collections.unmodifiableSet(new HashSet<>(allowedSchemes));
+    this.allowedSchemes =
+        allowedSchemes == null
+            ? Collections.emptySet()
+            : Collections.unmodifiableSet(new HashSet<>(allowedSchemes));
     this.rejectLocalhost = rejectLocalhost;
     this.rejectLinkLocal = rejectLinkLocal;
-    this.rejectedIps = rejectedIps == null ? Collections.emptySet() : Collections.unmodifiableSet(new HashSet<>(rejectedIps));
+    this.rejectedIps =
+        rejectedIps == null
+            ? Collections.emptySet()
+            : Collections.unmodifiableSet(new HashSet<>(rejectedIps));
   }
 
   public URI validateURI(String url) throws IllegalArgumentException {
@@ -87,13 +111,19 @@ public class UserConfiguredUrlRestrictions {
         throw new IllegalArgumentException("unsupported URI scheme " + url);
       }
       if (!allowedHostnames.matcher(u.getHost()).matches()) {
-        throw new IllegalArgumentException("Host not allowed " + u.getHost() + ". Host much match " + allowedHostnames.toString() + ".");
+        throw new IllegalArgumentException(
+            "Host not allowed "
+                + u.getHost()
+                + ". Host much match "
+                + allowedHostnames.toString()
+                + ".");
       }
 
       if (rejectLocalhost || rejectLinkLocal) {
         InetAddress addr = InetAddress.getByName(u.getHost());
         if (rejectLocalhost) {
-          if (addr.isLoopbackAddress() || Optional.ofNullable(NetworkInterface.getByInetAddress(addr)).isPresent()) {
+          if (addr.isLoopbackAddress()
+              || Optional.ofNullable(NetworkInterface.getByInetAddress(addr)).isPresent()) {
             throw new IllegalArgumentException("invalid address for " + u.getHost());
           }
         }
@@ -106,7 +136,8 @@ public class UserConfiguredUrlRestrictions {
         IpAddressMatcher ipMatcher = new IpAddressMatcher(ip);
 
         if (ipMatcher.matches(u.getHost())) {
-          throw new IllegalArgumentException("address " + u.getHost() + " is within rejected IPs: " + ip);
+          throw new IllegalArgumentException(
+              "address " + u.getHost() + " is within rejected IPs: " + ip);
         }
       }
 

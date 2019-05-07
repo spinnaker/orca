@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.pipeline.tasks
 
 import spock.lang.Specification
 import spock.lang.Subject
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class EvaluateVariablesTaskSpec extends Specification {

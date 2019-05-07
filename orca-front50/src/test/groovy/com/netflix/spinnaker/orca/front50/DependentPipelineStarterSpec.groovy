@@ -33,7 +33,6 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.support.StaticApplicationContext
 import spock.lang.Specification
 import spock.lang.Subject
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 

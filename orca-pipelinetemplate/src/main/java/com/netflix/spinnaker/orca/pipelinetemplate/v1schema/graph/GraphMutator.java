@@ -17,11 +17,18 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph;
 
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.PipelineTemplateVisitor;
-import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.*;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.ConditionalStanzaTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.ConfigModuleReplacementTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.ConfigPartialReplacementTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.ConfigStageInjectionTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.DefaultVariableAssignmentTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.PipelineConfigInheritanceTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.RenderTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.StageInheritanceControlTransform;
+import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.transform.TrimConditionalsTransform;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.TemplateConfiguration;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.render.Renderer;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +37,11 @@ public class GraphMutator {
 
   List<PipelineTemplateVisitor> visitors = new ArrayList<>();
 
-  public GraphMutator(TemplateConfiguration configuration, Renderer renderer, Registry registry, Map<String, Object> trigger) {
+  public GraphMutator(
+      TemplateConfiguration configuration,
+      Renderer renderer,
+      Registry registry,
+      Map<String, Object> trigger) {
     visitors.add(new DefaultVariableAssignmentTransform(configuration));
     visitors.add(new ConfigModuleReplacementTransform(configuration));
     visitors.add(new ConfigPartialReplacementTransform(configuration));
@@ -45,5 +56,4 @@ public class GraphMutator {
   public void mutate(PipelineTemplate template) {
     visitors.forEach(template::accept);
   }
-
 }

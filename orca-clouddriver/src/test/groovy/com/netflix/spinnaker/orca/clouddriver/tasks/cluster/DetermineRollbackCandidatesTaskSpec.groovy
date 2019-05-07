@@ -25,10 +25,8 @@ import retrofit.mime.TypedByteArray
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static DetermineRollbackCandidatesTask.determineTargetHealthyRollbackPercentage
-
-import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage;
+import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class DetermineRollbackCandidatesTaskSpec extends Specification {
   def objectMapper = new ObjectMapper()

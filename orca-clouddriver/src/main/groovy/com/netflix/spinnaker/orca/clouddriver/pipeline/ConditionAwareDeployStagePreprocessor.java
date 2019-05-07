@@ -22,6 +22,13 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditi
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,12 +36,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 @Component
 @ConditionalOnBean(ConditionSupplier.class)
-@ConditionalOnExpression("${tasks.evaluateCondition.enabled:false}")
+@ConditionalOnExpression("${tasks.evaluate-condition.enabled:false}")
 public class ConditionAwareDeployStagePreprocessor implements DeployStagePreProcessor {
   private final Logger log = LoggerFactory.getLogger(ConditionAwareDeployStagePreprocessor.class);
   private final WaitForConditionStage waitForConditionStage;
@@ -42,9 +46,7 @@ public class ConditionAwareDeployStagePreprocessor implements DeployStagePreProc
 
   @Autowired
   public ConditionAwareDeployStagePreprocessor(
-    WaitForConditionStage waitForConditionStage,
-    List<ConditionSupplier> conditionSuppliers
-  ) {
+      WaitForConditionStage waitForConditionStage, List<ConditionSupplier> conditionSuppliers) {
     this.waitForConditionStage = waitForConditionStage;
     this.conditionSuppliers = conditionSuppliers;
   }
@@ -58,14 +60,16 @@ public class ConditionAwareDeployStagePreprocessor implements DeployStagePreProc
   public List<StageDefinition> beforeStageDefinitions(Stage stage) {
     try {
       final StageData stageData = stage.mapTo(StageData.class);
-      Set<Condition> conditions = conditionSuppliers
-        .stream()
-        .flatMap(supplier -> supplier.getConditions(
-          stageData.getCluster(),
-          stageData.getRegion(),
-          stageData.getAccount()
-        ).stream()).filter(Objects::nonNull)
-        .collect(Collectors.toSet());
+      Set<Condition> conditions =
+          conditionSuppliers.stream()
+              .flatMap(
+                  supplier ->
+                      supplier
+                          .getConditions(
+                              stageData.getCluster(), stageData.getRegion(), stageData.getAccount())
+                          .stream())
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
       if (conditions.isEmpty()) {
         // do no inject the stage if there are no active conditions
         return Collections.emptyList();
@@ -82,7 +86,9 @@ public class ConditionAwareDeployStagePreprocessor implements DeployStagePreProc
       stageDefinition.stageDefinitionBuilder = waitForConditionStage;
       return Collections.singletonList(stageDefinition);
     } catch (Exception e) {
-      log.error("Error determining active conditions. Proceeding with execution {}", stage.getExecution().getId());
+      log.error(
+          "Error determining active conditions. Proceeding with execution {}",
+          stage.getExecution().getId());
     }
 
     return Collections.emptyList();

@@ -16,12 +16,10 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks
 
+import java.time.Duration
 import com.netflix.spinnaker.orca.time.MutableClock
 import spock.lang.Specification
 import spock.lang.Subject
-
-import java.time.Duration
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage

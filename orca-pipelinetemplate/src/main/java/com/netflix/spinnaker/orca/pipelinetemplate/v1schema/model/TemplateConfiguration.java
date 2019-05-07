@@ -17,11 +17,16 @@ package com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.netflix.spinnaker.orca.pipelinetemplate.validator.VersionedSchema;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.*;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data

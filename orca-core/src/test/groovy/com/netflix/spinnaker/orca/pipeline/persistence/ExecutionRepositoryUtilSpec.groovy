@@ -16,7 +16,6 @@
 package com.netflix.spinnaker.orca.pipeline.persistence
 
 import spock.lang.Specification
-
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.orchestration

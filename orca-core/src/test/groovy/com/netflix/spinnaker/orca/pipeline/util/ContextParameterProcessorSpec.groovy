@@ -27,7 +27,6 @@ import org.springframework.expression.spel.SpelEvaluationException
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage

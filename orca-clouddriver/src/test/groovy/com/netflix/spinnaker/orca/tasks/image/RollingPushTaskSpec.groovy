@@ -1,12 +1,10 @@
 package com.netflix.spinnaker.orca.tasks.image
 
+import java.time.Instant
 import com.netflix.spinnaker.orca.kato.tasks.rollingpush.CheckForRemainingTerminationsTask
 import com.netflix.spinnaker.orca.time.MutableClock
 import spock.lang.Specification
 import spock.lang.Subject
-
-import java.time.Instant
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class RollingPushTaskSpec extends Specification {

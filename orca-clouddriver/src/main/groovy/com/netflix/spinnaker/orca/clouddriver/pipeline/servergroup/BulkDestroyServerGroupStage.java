@@ -18,7 +18,11 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.*;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.BulkDestroyServerGroupTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.BulkDisableServerGroupTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.BulkWaitForDestroyedServerGroupTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForAllInstancesNotUpTask;
 import com.netflix.spinnaker.orca.kato.pipeline.Nameable;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
@@ -39,24 +43,24 @@ public class BulkDestroyServerGroupStage implements StageDefinitionBuilder, Name
 
   @Override
   public void taskGraph(Stage stage, TaskNode.Builder builder) {
-    //TODO(cfieber): how to do locking here...
+    // TODO(cfieber): how to do locking here...
     // inject an acquire lock stage per distinct cluster in the operation?
     // break into several parallel bulk ops based on cluster and lock/unlock around those?
     // question: do traffic guard checks actually even work in the bulk disable/destroy tasks?
 
     builder
-      .withTask("bulkDisableServerGroup", BulkDisableServerGroupTask.class)
-      .withTask("monitorServerGroups", MonitorKatoTask.class)
-      .withTask("waitForNotUpInstances", WaitForAllInstancesNotUpTask.class);
+        .withTask("bulkDisableServerGroup", BulkDisableServerGroupTask.class)
+        .withTask("monitorServerGroups", MonitorKatoTask.class)
+        .withTask("waitForNotUpInstances", WaitForAllInstancesNotUpTask.class);
 
     if (isForceCacheRefreshEnabled(dynamicConfigService)) {
       builder.withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask.class);
     }
 
     builder
-      .withTask("bulkDestroyServerGroup", BulkDestroyServerGroupTask.class)
-      .withTask("monitorServerGroups", MonitorKatoTask.class)
-      .withTask("waitForDestroyedServerGroup", BulkWaitForDestroyedServerGroupTask.class);
+        .withTask("bulkDestroyServerGroup", BulkDestroyServerGroupTask.class)
+        .withTask("monitorServerGroups", MonitorKatoTask.class)
+        .withTask("waitForDestroyedServerGroup", BulkWaitForDestroyedServerGroupTask.class);
   }
 
   @Override

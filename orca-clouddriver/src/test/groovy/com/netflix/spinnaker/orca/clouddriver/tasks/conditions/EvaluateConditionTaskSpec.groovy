@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.conditions
 
+import java.time.Duration
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.Condition
@@ -25,11 +26,9 @@ import com.netflix.spinnaker.orca.time.MutableClock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import java.time.Duration
-
-import static com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage.*
-import static com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage.WaitForConditionContext.Status.*
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage.STAGE_TYPE
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage.WaitForConditionContext.Status.SKIPPED
+import static com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage.WaitForConditionContext.Status.WAITING
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class EvaluateConditionTaskSpec extends Specification {

@@ -31,7 +31,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.bakery.api.BakeStatus.State.COMPLETED
 import static com.netflix.spinnaker.orca.bakery.api.BakeStatus.State.RUNNING
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline

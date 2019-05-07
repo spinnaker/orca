@@ -16,14 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.discovery.converters.Auto
-import com.netflix.spectator.api.Id
-import com.netflix.spectator.api.Registry
-
 import java.time.Clock
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spectator.api.Id
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService

@@ -15,6 +15,9 @@
  */
 package com.netflix.spinnaker.orca.config;
 
+import static java.time.temporal.ChronoUnit.MINUTES;
+import static org.springframework.context.annotation.AnnotationConfigUtils.EVENT_LISTENER_FACTORY_BEAN_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.core.RetrySupport;
@@ -28,7 +31,11 @@ import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.libdiffs.ComparableLooseVersion;
 import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion;
-import com.netflix.spinnaker.orca.listeners.*;
+import com.netflix.spinnaker.orca.listeners.DelegatingApplicationEventMulticaster;
+import com.netflix.spinnaker.orca.listeners.ExecutionCleanupListener;
+import com.netflix.spinnaker.orca.listeners.ExecutionListener;
+import com.netflix.spinnaker.orca.listeners.InspectableEventListenerFactory;
+import com.netflix.spinnaker.orca.listeners.MetricsExecutionListener;
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
@@ -36,6 +43,12 @@ import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionFunctionProvide
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.util.ContextFunctionConfiguration;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -58,16 +71,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static java.time.temporal.ChronoUnit.MINUTES;
-import static org.springframework.context.annotation.AnnotationConfigUtils.EVENT_LISTENER_FACTORY_BEAN_NAME;
-
 @Configuration
 @ComponentScan({
   "com.netflix.spinnaker.orca.locks",
@@ -81,71 +84,81 @@ import static org.springframework.context.annotation.AnnotationConfigUtils.EVENT
 @Import(PreprocessorConfiguration.class)
 @EnableConfigurationProperties
 public class OrcaConfiguration {
-  @Bean public Clock clock() {
+  @Bean
+  public Clock clock() {
     return Clock.systemDefaultZone();
   }
 
-  @Bean public Duration minInactivity() {
+  @Bean
+  public Duration minInactivity() {
     return Duration.of(3, MINUTES);
   }
 
-  @Bean(destroyMethod = "") public Scheduler scheduler() {
+  @Bean(destroyMethod = "")
+  public Scheduler scheduler() {
     return Schedulers.io();
   }
 
-  @Bean public ObjectMapper mapper() {
+  @Bean
+  public ObjectMapper mapper() {
     return OrcaObjectMapper.newInstance();
   }
 
-  @Bean @Order(Ordered.LOWEST_PRECEDENCE)
+  @Bean
+  @Order(Ordered.LOWEST_PRECEDENCE)
   public DefaultExceptionHandler defaultExceptionHandler() {
     return new DefaultExceptionHandler();
   }
 
-  @Bean public ExecutionCleanupListener executionCleanupListener() {
+  @Bean
+  public ExecutionCleanupListener executionCleanupListener() {
     return new ExecutionCleanupListener();
   }
 
   @Bean
-  public ApplicationListener<ExecutionEvent> executionCleanupListenerAdapter(ExecutionListener executionCleanupListener, ExecutionRepository repository) {
+  public ApplicationListener<ExecutionEvent> executionCleanupListenerAdapter(
+      ExecutionListener executionCleanupListener, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(executionCleanupListener, repository);
   }
 
   @Bean
-  @ConditionalOnProperty(value = "jarDiffs.enabled", matchIfMissing = false)
+  @ConditionalOnProperty(value = "jar-diffs.enabled", matchIfMissing = false)
   public ComparableLooseVersion comparableLooseVersion() {
     return new DefaultComparableLooseVersion();
   }
 
   @Bean
-  @ConfigurationProperties("userConfiguredUrlRestrictions")
+  @ConfigurationProperties("user-configured-url-restrictions")
   public UserConfiguredUrlRestrictions.Builder userConfiguredUrlRestrictionProperties() {
     return new UserConfiguredUrlRestrictions.Builder();
   }
 
   @Bean
-  UserConfiguredUrlRestrictions userConfiguredUrlRestrictions(UserConfiguredUrlRestrictions.Builder userConfiguredUrlRestrictionProperties) {
+  UserConfiguredUrlRestrictions userConfiguredUrlRestrictions(
+      UserConfiguredUrlRestrictions.Builder userConfiguredUrlRestrictionProperties) {
     return userConfiguredUrlRestrictionProperties.build();
   }
 
   @Bean
-  public ContextFunctionConfiguration contextFunctionConfiguration(UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
-                                                                   Optional<List<ExpressionFunctionProvider>> expressionFunctionProviders,
-                                                                   @Value("${spelEvaluator:v2}") String spelEvaluator) {
+  public ContextFunctionConfiguration contextFunctionConfiguration(
+      UserConfiguredUrlRestrictions userConfiguredUrlRestrictions,
+      Optional<List<ExpressionFunctionProvider>> expressionFunctionProviders,
+      @Value("${spel-evaluator:v2}") String spelEvaluator) {
     return new ContextFunctionConfiguration(
-      userConfiguredUrlRestrictions,
-      expressionFunctionProviders.orElse(Collections.emptyList()),
-      spelEvaluator
-    );
+        userConfiguredUrlRestrictions,
+        expressionFunctionProviders.orElse(Collections.emptyList()),
+        spelEvaluator);
   }
 
   @Bean
-  public ContextParameterProcessor contextParameterProcessor(ContextFunctionConfiguration contextFunctionConfiguration) {
+  public ContextParameterProcessor contextParameterProcessor(
+      ContextFunctionConfiguration contextFunctionConfiguration) {
     return new ContextParameterProcessor(contextFunctionConfiguration);
   }
 
   @Bean
-  public ApplicationListener<ExecutionEvent> onCompleteMetricExecutionListenerAdapter(Registry registry, ExecutionRepository repository) {
+  public ApplicationListener<ExecutionEvent> onCompleteMetricExecutionListenerAdapter(
+      Registry registry, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(new MetricsExecutionListener(registry), repository);
   }
 
@@ -161,7 +174,8 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  public ApplicationEventMulticaster applicationEventMulticaster(@Qualifier("applicationEventTaskExecutor") ThreadPoolTaskExecutor taskExecutor) {
+  public ApplicationEventMulticaster applicationEventMulticaster(
+      @Qualifier("applicationEventTaskExecutor") ThreadPoolTaskExecutor taskExecutor) {
     // TODO rz - Add error handlers
     SimpleApplicationEventMulticaster async = new SimpleApplicationEventMulticaster();
     async.setTaskExecutor(taskExecutor);
@@ -203,8 +217,8 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  public ForceExecutionCancellationCommand forceExecutionCancellationCommand(ExecutionRepository executionRepository,
-                                                                             Clock clock) {
+  public ForceExecutionCancellationCommand forceExecutionCancellationCommand(
+      ExecutionRepository executionRepository, Clock clock) {
     return new ForceExecutionCancellationCommand(executionRepository, clock);
   }
 }

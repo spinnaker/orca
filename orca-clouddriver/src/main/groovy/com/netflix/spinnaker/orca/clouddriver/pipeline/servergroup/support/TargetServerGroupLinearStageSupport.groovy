@@ -16,21 +16,20 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
+import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.clouddriver.utils.ClusterLockHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
+import com.netflix.spinnaker.orca.kato.pipeline.Nameable
 import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.AcquireLockStage
 import com.netflix.spinnaker.orca.pipeline.ReleaseLockStage
-import groovy.transform.stc.ClosureParams
-import groovy.transform.stc.SimpleType
-
-import javax.annotation.Nonnull
-import com.netflix.spinnaker.orca.kato.pipeline.Nameable
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import groovy.transform.stc.ClosureParams
+import groovy.transform.stc.SimpleType
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup.isDynamicallyBound

@@ -42,7 +42,6 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import spock.lang.Specification
 import spock.lang.Unroll
-
 import static org.unitils.reflectionassert.ReflectionAssert.assertReflectionEquals
 
 class V1SchemaIntegrationSpec extends Specification {

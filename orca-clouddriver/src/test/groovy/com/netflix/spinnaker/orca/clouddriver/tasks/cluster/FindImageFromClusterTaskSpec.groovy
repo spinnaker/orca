@@ -408,14 +408,16 @@ class FindImageFromClusterTaskSpec extends Specification {
 
     Response response = new Response("http://oort", 404, "NOT_FOUND", [], new TypedString(oortResponse))
 
+    and:
+    oortService.getServerGroupSummary("foo", "test", "foo-test", "cloudProvider", location.value,
+      "FAIL", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
+      throw new RetrofitError(null, null, response, null, null, null, null)
+    }
+
     when:
     task.execute(stage)
 
     then:
-    1 * oortService.getServerGroupSummary("foo", "test", "foo-test", "cloudProvider", location.value,
-      "FAIL", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
-      throw new RetrofitError(null, null, response, null, null, null, null)
-    }
     IllegalStateException ise = thrown()
     ise.message == "Multiple possible server groups present in ${location.value}".toString()
 

@@ -17,6 +17,8 @@
 
 package com.netflix.spinnaker.orca.webhook.tasks
 
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.PathNotFoundException
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -28,9 +30,6 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpStatusCodeException
-
-import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Component

@@ -16,14 +16,13 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
+import java.util.concurrent.atomic.AtomicInteger
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.Capacity
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
-
-import java.util.concurrent.atomic.AtomicInteger
 
 class ScaleToClusterResizeStrategySpec extends Specification {
 

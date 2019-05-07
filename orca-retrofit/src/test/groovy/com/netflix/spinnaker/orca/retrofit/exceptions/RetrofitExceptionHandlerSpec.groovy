@@ -30,9 +30,7 @@ import spock.lang.Subject
 import spock.lang.Unroll
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE
-import static retrofit.RetrofitError.Kind.HTTP
-import static retrofit.RetrofitError.Kind.NETWORK
-import static retrofit.RetrofitError.Kind.UNEXPECTED
+import static retrofit.RetrofitError.Kind.*
 import static retrofit.RetrofitError.httpError
 
 class RetrofitExceptionHandlerSpec extends Specification {

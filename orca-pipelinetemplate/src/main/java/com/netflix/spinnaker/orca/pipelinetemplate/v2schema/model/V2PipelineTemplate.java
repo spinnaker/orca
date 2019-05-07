@@ -22,12 +22,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.NamedContent;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2PipelineTemplateVisitor;
 import com.netflix.spinnaker.orca.pipelinetemplate.validator.VersionedSchema;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.*;
 
 @Data
 public class V2PipelineTemplate implements VersionedSchema {
@@ -39,15 +42,12 @@ public class V2PipelineTemplate implements VersionedSchema {
   private String id;
   private Metadata metadata = new Metadata();
 
-  /**
-   * protect specifies whether a pipeline template's stage graph is mutable by configurations.
-   */
+  /** protect specifies whether a pipeline template's stage graph is mutable by configurations. */
   private Boolean protect = false;
+
   private List<Variable> variables = new ArrayList<>();
 
-  /**
-   * pipeline is a possibly SpEL-templated pipeline definition.
-   */
+  /** pipeline is a possibly SpEL-templated pipeline definition. */
   private Map<String, Object> pipeline;
 
   @Data
@@ -90,10 +90,18 @@ public class V2PipelineTemplate implements VersionedSchema {
       } catch (CloneNotSupportedException e) {
         throw new RuntimeException("Could not clone Variable", e);
       }
-      if (overlay.description != null) { v.description = overlay.description; }
-      if (overlay.type != null) { v.type = overlay.type; }
-      if (overlay.defaultValue != null) { v.defaultValue = overlay.defaultValue; }
-      if (overlay.example != null) { v.example = overlay.example; }
+      if (overlay.description != null) {
+        v.description = overlay.description;
+      }
+      if (overlay.type != null) {
+        v.type = overlay.type;
+      }
+      if (overlay.defaultValue != null) {
+        v.defaultValue = overlay.defaultValue;
+      }
+      if (overlay.example != null) {
+        v.example = overlay.example;
+      }
       return v;
     }
 

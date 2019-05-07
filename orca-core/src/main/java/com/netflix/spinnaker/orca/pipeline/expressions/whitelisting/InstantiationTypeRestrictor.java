@@ -20,29 +20,33 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 public interface InstantiationTypeRestrictor {
-  Set<Class<?>> allowedTypes = Collections.unmodifiableSet(
-    new HashSet<>(
-      Arrays.asList(
-        String.class,
-        Date.class,
-        Integer.class,
-        Long.class,
-        Double.class,
-        Byte.class,
-        SimpleDateFormat.class,
-        Math.class,
-        Random.class,
-        UUID.class,
-        Boolean.class,
-        LocalDate.class,
-        Instant.class,
-        ChronoUnit.class
-      )
-    )
-  );
+  Set<Class<?>> allowedTypes =
+      Collections.unmodifiableSet(
+          new HashSet<>(
+              Arrays.asList(
+                  String.class,
+                  Date.class,
+                  Integer.class,
+                  Long.class,
+                  Double.class,
+                  Byte.class,
+                  SimpleDateFormat.class,
+                  Math.class,
+                  Random.class,
+                  UUID.class,
+                  Boolean.class,
+                  LocalDate.class,
+                  Instant.class,
+                  ChronoUnit.class)));
 
   static boolean supports(Class<?> type) {
     return allowedTypes.contains(type);

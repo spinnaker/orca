@@ -20,7 +20,6 @@ package com.netflix.spinnaker.orca.front50.model
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import spock.lang.Specification
 import spock.lang.Subject
-import spock.lang.Unroll
 
 class ApplicationSpec extends Specification {
   @Subject

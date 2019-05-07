@@ -31,20 +31,18 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Component
-import java.time.Clock
 import java.util.concurrent.atomic.AtomicInteger
 
-
 @Component
-@ConditionalOnExpression("\${pollers.topApplicationExecutionCleanup.enabled:false} && !\${executionRepository.redis.enabled:false}")
+@ConditionalOnExpression("\${pollers.top-application-execution-cleanup.enabled:false} && !\${execution-repository.redis.enabled:false}")
 class TopApplicationExecutionCleanupPollingNotificationAgent(
   clusterLock: NotificationClusterLock,
   private val jooq: DSLContext,
   private val registry: Registry,
   private val retrySupport: RetrySupport,
-  @Value("\${pollers.topApplicationExecutionCleanup.intervalMs:3600000}") private val pollingIntervalMs: Long,
-  @Value("\${pollers.topApplicationExecutionCleanup.threshold:2000}") private val threshold: Int,
-  @Value("\${pollers.topApplicationExecutionCleanup.chunkSize:1}") private val chunkSize: Int
+  @Value("\${pollers.top-application-execution-cleanup.interval-ms:3600000}") private val pollingIntervalMs: Long,
+  @Value("\${pollers.top-application-execution-cleanup.threshold:2000}") private val threshold: Int,
+  @Value("\${pollers.top-application-execution-cleanup.chunk-size:1}") private val chunkSize: Int
 ) : AbstractPollingNotificationAgent(clusterLock) {
 
   private val log = LoggerFactory.getLogger(TopApplicationExecutionCleanupPollingNotificationAgent::class.java)
@@ -111,7 +109,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgent(
         )
       } catch (e: Exception) {
         log.error("Failed to cleanup old orchestrations for $application", e)
-        errorsCounter.increment();
+        errorsCounter.increment()
       }
     }
   }
@@ -119,7 +117,7 @@ class TopApplicationExecutionCleanupPollingNotificationAgent(
   /**
    * An application can have at most [threshold] completed orchestrations.
    */
-  private fun performCleanup(application: String) : Int {
+  private fun performCleanup(application: String): Int {
     val deletedExecutionCount = AtomicInteger()
 
     val executionsToRemove = jooq

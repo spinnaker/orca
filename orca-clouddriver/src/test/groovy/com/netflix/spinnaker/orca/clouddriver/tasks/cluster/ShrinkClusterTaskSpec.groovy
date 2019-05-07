@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
-import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-
 import java.util.concurrent.atomic.AtomicInteger
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.OortService
@@ -29,6 +27,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideC
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask.InstanceCount
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask.IsActive
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
+import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification

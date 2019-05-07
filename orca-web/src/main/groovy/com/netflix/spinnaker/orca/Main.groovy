@@ -25,12 +25,7 @@ import com.netflix.spinnaker.orca.applications.config.ApplicationConfig
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.ClouddriverJobConfiguration
-import com.netflix.spinnaker.orca.config.CloudFoundryConfiguration
-import com.netflix.spinnaker.orca.config.GremlinConfiguration
-import com.netflix.spinnaker.orca.config.KeelConfiguration
-import com.netflix.spinnaker.orca.config.OrcaConfiguration
-import com.netflix.spinnaker.orca.config.PipelineTemplateConfiguration
-import com.netflix.spinnaker.orca.config.RedisConfiguration
+import com.netflix.spinnaker.orca.config.*
 import com.netflix.spinnaker.orca.echo.config.EchoConfiguration
 import com.netflix.spinnaker.orca.eureka.DiscoveryPollingConfiguration
 import com.netflix.spinnaker.orca.flex.config.FlexConfiguration
@@ -45,7 +40,7 @@ import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
 import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.builder.SpringApplicationBuilder
-import org.springframework.boot.web.support.SpringBootServletInitializer
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import

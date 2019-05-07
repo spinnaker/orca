@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class SaveServiceAccountTaskSpec extends Specification {

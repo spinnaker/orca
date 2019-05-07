@@ -16,10 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
-import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.kork.core.RetrySupport
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.entitytags.DeleteEntityTagsStage

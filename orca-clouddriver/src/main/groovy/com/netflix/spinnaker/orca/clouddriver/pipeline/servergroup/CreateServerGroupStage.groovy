@@ -16,13 +16,11 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
-import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
-
 import javax.annotation.Nonnull
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.moniker.Moniker
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.AbstractDeployStrategyStage
@@ -32,13 +30,13 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.AddServerGroupEn
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CreateServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
+import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
 import static java.util.concurrent.TimeUnit.MINUTES
 
 @Slf4j

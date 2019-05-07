@@ -17,8 +17,6 @@
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.RollingRedBlackStageData
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
@@ -26,7 +24,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.Capacity
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Component
 
 @Component
 @Slf4j

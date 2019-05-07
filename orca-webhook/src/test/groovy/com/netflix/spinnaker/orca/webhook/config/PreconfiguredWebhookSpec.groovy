@@ -21,7 +21,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import spock.lang.Specification
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.webhook.config.WebhookProperties.StatusUrlResolution.*
 
 class PreconfiguredWebhookSpec extends Specification {

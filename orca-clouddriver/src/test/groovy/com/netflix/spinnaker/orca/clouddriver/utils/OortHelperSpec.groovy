@@ -26,8 +26,6 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND
-
 class OortHelperSpec extends Specification {
   @Subject oortHelper = Spy(OortHelper)
   OortService oortService = Mock(OortService)

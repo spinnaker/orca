@@ -22,7 +22,6 @@ import org.springframework.expression.EvaluationContext
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage

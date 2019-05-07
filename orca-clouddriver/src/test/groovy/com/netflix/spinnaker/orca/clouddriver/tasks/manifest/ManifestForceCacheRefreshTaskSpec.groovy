@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest
 
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -26,12 +30,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
-
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneId
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static java.net.HttpURLConnection.HTTP_ACCEPTED
 import static java.net.HttpURLConnection.HTTP_OK

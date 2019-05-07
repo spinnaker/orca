@@ -16,10 +16,8 @@
 
 package com.netflix.spinnaker.orca.igor.pipeline
 
-
 import com.netflix.spinnaker.orca.igor.tasks.StartGoogleCloudBuildTask
 import spock.lang.Specification
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class GoogleCloudBuildStageSpec extends Specification {

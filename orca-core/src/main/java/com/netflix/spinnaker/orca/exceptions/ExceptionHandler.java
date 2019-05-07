@@ -16,11 +16,13 @@
 
 package com.netflix.spinnaker.orca.exceptions;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-/**
- * ExceptionHandler.
- */
+/** ExceptionHandler. */
 public interface ExceptionHandler {
   boolean handles(Exception e);
 
@@ -33,7 +35,11 @@ public interface ExceptionHandler {
     private final Map<String, Object> details;
     private final boolean shouldRetry;
 
-    public Response(String exceptionType, String operation, Map<String, Object> responseDetails, boolean shouldRetry) {
+    public Response(
+        String exceptionType,
+        String operation,
+        Map<String, Object> responseDetails,
+        boolean shouldRetry) {
       this.exceptionType = exceptionType;
       this.operation = operation;
       this.details = responseDetails == null ? new HashMap<>() : new HashMap<>(responseDetails);
@@ -66,14 +72,19 @@ public interface ExceptionHandler {
 
     @Override
     public String toString() {
-      return "Response{" +
-          "timestamp=" + timestamp +
-          ", exceptionType='" + exceptionType + '\'' +
-          ", operation='" + operation + '\'' +
-          ", details=" + details +
-          '}';
+      return "Response{"
+          + "timestamp="
+          + timestamp
+          + ", exceptionType='"
+          + exceptionType
+          + '\''
+          + ", operation='"
+          + operation
+          + '\''
+          + ", details="
+          + details
+          + '}';
     }
-
   }
 
   static Map<String, Object> responseDetails(String error) {
@@ -86,5 +97,4 @@ public interface ExceptionHandler {
     details.put("errors", errors == null ? Collections.emptyList() : errors);
     return details;
   }
-
 }

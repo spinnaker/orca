@@ -37,7 +37,6 @@ import org.unitils.reflectionassert.ReflectionComparatorMode
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static org.unitils.reflectionassert.ReflectionAssert.assertReflectionEquals
 
 class PipelineTemplatePipelinePreprocessorSpec extends Specification {

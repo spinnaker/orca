@@ -2,7 +2,6 @@ package com.netflix.spinnaker.orca.pipeline.util
 
 import spock.lang.Specification
 import spock.lang.Subject
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 

@@ -28,8 +28,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage;
+import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class ExplicitRollbackSpec extends Specification {
   @Shared

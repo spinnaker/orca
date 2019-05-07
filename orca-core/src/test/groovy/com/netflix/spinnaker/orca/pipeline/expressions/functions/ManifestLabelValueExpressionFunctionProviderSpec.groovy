@@ -15,12 +15,10 @@
  */
 package com.netflix.spinnaker.orca.pipeline.expressions.functions
 
-
 import com.netflix.spinnaker.orca.pipeline.expressions.SpelHelperFunctionException
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.expressions.functions.ManifestLabelValueExpressionFunctionProvider.manifestLabelValue
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline

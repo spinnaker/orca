@@ -25,9 +25,7 @@ import retrofit.http.RestMethod
 import retrofit.mime.TypedByteArray
 import static java.net.HttpURLConnection.*
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE
-import static retrofit.RetrofitError.Kind.HTTP
-import static retrofit.RetrofitError.Kind.NETWORK
-import static retrofit.RetrofitError.Kind.UNEXPECTED
+import static retrofit.RetrofitError.Kind.*
 
 @Order(HIGHEST_PRECEDENCE)
 class RetrofitExceptionHandler implements ExceptionHandler {

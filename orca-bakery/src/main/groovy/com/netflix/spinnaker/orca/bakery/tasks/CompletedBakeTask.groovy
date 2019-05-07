@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.bakery.tasks
 
-import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult

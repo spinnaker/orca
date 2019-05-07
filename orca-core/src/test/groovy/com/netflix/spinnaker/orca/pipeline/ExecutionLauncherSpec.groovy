@@ -16,14 +16,13 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
-import org.springframework.context.ApplicationEventPublisher
-
 import java.time.Clock
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.test.TestConfiguration
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification

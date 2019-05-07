@@ -17,11 +17,7 @@
 package com.netflix.spinnaker.orca.igor.pipeline
 
 import com.netflix.spinnaker.orca.CancellableStage
-import com.netflix.spinnaker.orca.igor.tasks.GetBuildPropertiesTask
-import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
-import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
-import com.netflix.spinnaker.orca.igor.tasks.StartScriptTask
-import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask
+import com.netflix.spinnaker.orca.igor.tasks.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage

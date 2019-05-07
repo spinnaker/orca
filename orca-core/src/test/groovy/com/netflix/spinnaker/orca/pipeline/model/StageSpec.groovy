@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.pipeline.model
 
 import spock.lang.Specification
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.pipeline.model.Stage.topologicalSort
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.*
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
+import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 import static java.util.stream.Collectors.toList

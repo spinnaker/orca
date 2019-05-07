@@ -25,8 +25,7 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage;
+import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class PreviousImageRollbackSpec extends Specification {
   def objectMapper = new ObjectMapper()

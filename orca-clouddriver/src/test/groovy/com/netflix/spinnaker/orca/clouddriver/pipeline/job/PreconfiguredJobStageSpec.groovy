@@ -16,11 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.job
 
+import com.netflix.spinnaker.orca.clouddriver.config.KubernetesPreconfiguredJobProperties
 import com.netflix.spinnaker.orca.clouddriver.config.PreconfiguredJobStageParameter
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
-import com.netflix.spinnaker.orca.clouddriver.config.KubernetesPreconfiguredJobProperties
 import spock.lang.Specification
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class PreconfiguredJobStageSpec extends Specification {

@@ -19,12 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import retrofit.client.Response
-import retrofit.http.Body
-import retrofit.http.DELETE
-import retrofit.http.GET
-import retrofit.http.POST
-import retrofit.http.Path
-import retrofit.http.Query
+import retrofit.http.*
 
 /**
  * An interface to the Kato REST API for Amazon cloud. See {@link http://kato.test.netflix.net:7001/manual/index.html}.

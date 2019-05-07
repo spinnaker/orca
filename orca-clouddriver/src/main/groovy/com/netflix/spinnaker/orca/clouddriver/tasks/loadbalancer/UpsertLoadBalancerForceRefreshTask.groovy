@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer
 
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.core.RetrySupport
@@ -31,9 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
-
-import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Component

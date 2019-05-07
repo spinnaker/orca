@@ -17,6 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.AbstractDeployStrategyStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor
@@ -28,9 +29,6 @@ import com.netflix.spinnaker.orca.pipeline.CheckPreconditionsStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.getSource
 
 @Component

@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.webhook.tasks
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import java.nio.charset.Charset
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -29,7 +29,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.client.HttpServerErrorException
 import spock.lang.Specification
 import spock.lang.Subject
-import java.nio.charset.Charset
 
 class CreateWebhookTaskSpec extends Specification {
 

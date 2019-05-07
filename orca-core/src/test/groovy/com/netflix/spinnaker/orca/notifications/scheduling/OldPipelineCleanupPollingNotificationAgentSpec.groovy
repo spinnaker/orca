@@ -15,6 +15,9 @@
  */
 package com.netflix.spinnaker.orca.notifications.scheduling
 
+import java.time.Clock
+import java.time.Duration
+import java.util.concurrent.atomic.AtomicInteger
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
@@ -22,11 +25,6 @@ import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
-
-import java.time.Clock
-import java.time.Duration
-import java.util.concurrent.atomic.AtomicInteger
-
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage

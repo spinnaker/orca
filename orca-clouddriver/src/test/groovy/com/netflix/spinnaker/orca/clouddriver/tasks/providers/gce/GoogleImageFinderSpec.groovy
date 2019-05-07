@@ -16,12 +16,11 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce
 
+import java.util.stream.Collectors
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import spock.lang.Specification
 import spock.lang.Subject
-
-import java.util.stream.Collectors
 
 class GoogleImageFinderSpec extends Specification {
   def objectMapper = new ObjectMapper()

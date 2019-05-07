@@ -18,7 +18,10 @@ package com.netflix.spinnaker.orca.echo.pipeline
 
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
-import com.netflix.spinnaker.orca.*
+import com.netflix.spinnaker.orca.AuthenticatedStage
+import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode

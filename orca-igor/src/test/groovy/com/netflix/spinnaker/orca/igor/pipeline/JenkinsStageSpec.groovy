@@ -4,7 +4,6 @@ import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import spock.lang.Specification
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class JenkinsStageSpec extends Specification {

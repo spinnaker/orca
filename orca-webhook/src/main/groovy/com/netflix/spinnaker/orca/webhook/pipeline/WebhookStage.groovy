@@ -21,9 +21,9 @@ import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.webhook.tasks.CreateWebhookTask
 import com.netflix.spinnaker.orca.webhook.tasks.MonitorWebhookTask
-import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 

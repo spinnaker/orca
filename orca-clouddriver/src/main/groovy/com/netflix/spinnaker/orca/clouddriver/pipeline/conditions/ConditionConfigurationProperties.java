@@ -17,15 +17,14 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.conditions;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 @Component
-@ConfigurationProperties("tasks.evaluateCondition")
+@ConfigurationProperties("tasks.evaluate-condition")
 public class ConditionConfigurationProperties {
   private final DynamicConfigService configService;
   private boolean enabled = false;
@@ -48,7 +47,8 @@ public class ConditionConfigurationProperties {
   }
 
   public Long getBackoffWaitMs() {
-    return configService.getConfig(Long.class, "tasks.evaluateCondition.backoffWaitMs", backoffWaitMs);
+    return configService.getConfig(
+        Long.class, "tasks.evaluateCondition.backoffWaitMs", backoffWaitMs);
   }
 
   public void setBackoffWaitMs(Long backoffWaitMs) {
@@ -56,7 +56,8 @@ public class ConditionConfigurationProperties {
   }
 
   public long getWaitTimeoutMs() {
-    return configService.getConfig(Long.class, "tasks.evaluateCondition.waitTimeoutMs", waitTimeoutMs);
+    return configService.getConfig(
+        Long.class, "tasks.evaluateCondition.waitTimeoutMs", waitTimeoutMs);
   }
 
   public void setWaitTimeoutMs(long waitTimeoutMs) {
@@ -68,7 +69,8 @@ public class ConditionConfigurationProperties {
   }
 
   public List<String> getActiveConditions() {
-    return configService.getConfig(List.class, "tasks.evaluateCondition.activeConditions", activeConditions);
+    return configService.getConfig(
+        List.class, "tasks.evaluateCondition.activeConditions", activeConditions);
   }
 
   public void setClusters(List<String> clusters) {

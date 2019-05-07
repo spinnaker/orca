@@ -19,10 +19,10 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import rx.Observable
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-import rx.Observable
 
 class UpsertScalingPolicyTaskSpec extends Specification {
 

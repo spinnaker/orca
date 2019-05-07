@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
+import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
@@ -27,9 +28,6 @@ import retrofit.mime.TypedString
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class WaitForUpInstancesTaskSpec extends Specification {

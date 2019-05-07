@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks
 
+import java.time.Clock
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
@@ -31,9 +32,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
-import java.time.Clock
-import java.util.concurrent.TimeUnit
-
 @Component
 @CompileStatic
 class MonitorKatoTask implements RetryableTask {
@@ -43,7 +41,7 @@ class MonitorKatoTask implements RetryableTask {
    *
    * Allows for replication lag if reading tasks from a read-replica of the clouddriver main redis.
    */
-  @Value('${tasks.monitorKatoTask.taskNotFoundTimeoutMs:120000}')
+  @Value('${tasks.monitor-kato-task.task-not-found-timeout-ms:120000}')
   long taskNotFoundTimeoutMs
 
   private final Clock clock

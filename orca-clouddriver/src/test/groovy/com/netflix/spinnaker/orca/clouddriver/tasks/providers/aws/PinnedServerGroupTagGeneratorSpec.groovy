@@ -17,11 +17,9 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.PinnedServerGroupTagGenerator
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
-import spock.lang.Unroll;
-
+import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class PinnedServerGroupTagGeneratorSpec extends Specification {

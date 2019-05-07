@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-
 import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.getSource
 
 @Component

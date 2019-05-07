@@ -34,9 +34,6 @@ import retrofit.RequestInterceptor
 import retrofit.RestAdapter
 import retrofit.client.Client
 import retrofit.converter.JacksonConverter
-
-import java.util.regex.Pattern
-
 import static retrofit.Endpoints.newFixedEndpoint
 
 @Configuration

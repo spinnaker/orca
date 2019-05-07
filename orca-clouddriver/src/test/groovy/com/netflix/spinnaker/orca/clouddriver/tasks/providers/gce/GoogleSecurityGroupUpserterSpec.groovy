@@ -24,7 +24,6 @@ import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 
 class GoogleSecurityGroupUpserterSpec extends Specification {

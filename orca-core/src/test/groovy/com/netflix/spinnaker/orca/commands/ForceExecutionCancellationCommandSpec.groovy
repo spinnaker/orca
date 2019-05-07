@@ -15,14 +15,12 @@
  */
 package com.netflix.spinnaker.orca.commands
 
-import com.netflix.spinnaker.orca.pipeline.model.Task
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import spock.lang.Specification
-
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
-
+import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import spock.lang.Specification
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
