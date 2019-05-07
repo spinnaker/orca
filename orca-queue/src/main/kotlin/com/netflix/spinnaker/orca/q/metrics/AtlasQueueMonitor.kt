@@ -111,7 +111,7 @@ class AtlasQueueMonitor
     _lastState.set(queue.readState())
   }
 
-  @Scheduled(fixedDelayString = "\${queue.zombieCheck.intervalMs:3600000}")
+  @Scheduled(fixedDelayString = "\${queue.zombie-check.interval-ms:3600000}")
   fun checkForZombies() {
     if (!zombieCheckEnabled || activators.none { it.enabled } || !conch.tryAcquireLock("zombie", TimeUnit.MINUTES.toSeconds(5))) return
 
