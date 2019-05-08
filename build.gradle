@@ -56,6 +56,14 @@ allprojects {
 }
 
 subprojects {
+  def useLocalMaven = korkVersion.endsWith("-SNAPSHOT")
+  if (useLocalMaven) {
+    logger.info("Enabling mavenLocal")
+    repositories {
+      mavenLocal()
+    }
+  }
+
   dependencies {
     implementation(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
     annotationProcessor(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
