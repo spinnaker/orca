@@ -31,7 +31,7 @@ public class UpsertDisruptionBudgetStage implements StageDefinitionBuilder {
   public void taskGraph(@NotNull Stage stage, @NotNull TaskNode.Builder builder) {
     builder
       .withTask("upsertDisruptionBudget", UpsertDisruptionBudgetTask.class)
-      .withTask("upsertDisruptionBudget", MonitorKatoTask.class)
+      .withTask("monitorUpsertDisruptionBudget", MonitorKatoTask.class)
       .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask.class);
   }
 }
