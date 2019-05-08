@@ -35,17 +35,10 @@ allprojects {
   if (Boolean.valueOf(enablePublishing)) {
     apply plugin: "spinnaker.project"
   }
-  apply plugin: "java-library"
   group = "com.netflix.spinnaker.orca"
 
   ext {
     korkVersion = "5.2.3"
-  }
-
-  test {
-    testLogging {
-      exceptionFormat = 'full'
-    }
   }
 
   tasks.withType(JavaExec) {
@@ -56,6 +49,8 @@ allprojects {
 }
 
 subprojects {
+  apply plugin: "java-library"
+
   def useLocalMaven = korkVersion.endsWith("-SNAPSHOT")
   if (useLocalMaven) {
     logger.info("Enabling mavenLocal")
@@ -69,6 +64,16 @@ subprojects {
     annotationProcessor(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
     testAnnotationProcessor(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
     implementation("org.slf4j:slf4j-api")
+  }
+
+  configurations.all {
+    exclude group: "javax.servlet", module: "servlet-api"
+  }
+
+  test {
+    testLogging {
+      exceptionFormat = "full"
+    }
   }
 
   def licenseExtension = project.extensions.findByName('license')
