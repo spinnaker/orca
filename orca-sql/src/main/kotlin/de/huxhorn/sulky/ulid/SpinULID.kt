@@ -1,6 +1,6 @@
 package de.huxhorn.sulky.ulid
 
-import java.util.*
+import java.util.Random
 
 class SpinULID(random: Random): ULID(random) {
   val _random: Random? = random

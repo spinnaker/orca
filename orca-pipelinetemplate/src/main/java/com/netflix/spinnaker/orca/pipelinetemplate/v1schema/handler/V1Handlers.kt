@@ -60,7 +60,7 @@ class V1ConfigurationValidationHandler : Handler {
       ctx.configuration,
       errors,
       V1TemplateConfigurationSchemaValidator.SchemaValidatorContext(
-       ctx.template.stages.stream().map { it.id }.collect(Collectors.toList())
+        ctx.template.stages.stream().map { it.id }.collect(Collectors.toList())
       )
     )
     if (errors.hasErrors(context.getRequest().plan)) {
