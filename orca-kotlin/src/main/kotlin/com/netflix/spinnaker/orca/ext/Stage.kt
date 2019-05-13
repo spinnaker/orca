@@ -134,8 +134,8 @@ fun Stage.shouldContinueOnFailure(): Boolean =
 fun Stage.failureStatus(default: ExecutionStatus = TERMINAL) =
   when {
     shouldContinueOnFailure() -> FAILED_CONTINUE
-    shouldFailPipeline()      -> default
-    else                      -> STOPPED
+    shouldFailPipeline() -> default
+    else -> STOPPED
   }
 
 fun Stage.isManuallySkipped(): Boolean {

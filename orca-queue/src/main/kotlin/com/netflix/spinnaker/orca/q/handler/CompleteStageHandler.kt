@@ -256,14 +256,14 @@ class CompleteStageHandler(
     val allStatuses = syntheticStatuses + taskStatuses + planningStatus
     val afterStageStatuses = afterStages().map(Stage::getStatus)
     return when {
-      allStatuses.isEmpty()                    -> NOT_STARTED
-      allStatuses.contains(TERMINAL)           -> failureStatus() // handle configured 'if stage fails' options correctly
-      allStatuses.contains(STOPPED)            -> STOPPED
-      allStatuses.contains(CANCELED)           -> CANCELED
-      allStatuses.contains(FAILED_CONTINUE)    -> FAILED_CONTINUE
-      allStatuses.all { it == SUCCEEDED }      -> SUCCEEDED
+      allStatuses.isEmpty() -> NOT_STARTED
+      allStatuses.contains(TERMINAL) -> failureStatus() // handle configured 'if stage fails' options correctly
+      allStatuses.contains(STOPPED) -> STOPPED
+      allStatuses.contains(CANCELED) -> CANCELED
+      allStatuses.contains(FAILED_CONTINUE) -> FAILED_CONTINUE
+      allStatuses.all { it == SUCCEEDED } -> SUCCEEDED
       afterStageStatuses.contains(NOT_STARTED) -> RUNNING // after stages were planned but not run yet
-      else                                     -> {
+      else -> {
         log.error("Unhandled condition for stage $id of $execution.id, marking as TERMINAL. syntheticStatuses=$syntheticStatuses, taskStatuses=$taskStatuses, planningStatus=$planningStatus, afterStageStatuses=$afterStageStatuses")
         TERMINAL
       }

@@ -35,7 +35,6 @@ import com.netflix.spinnaker.orca.q.CancelStage
 import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.StartWaitingExecutions
 import com.netflix.spinnaker.q.AttemptsAttribute
-import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Queue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier

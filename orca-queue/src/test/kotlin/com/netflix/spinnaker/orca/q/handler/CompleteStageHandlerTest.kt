@@ -1007,7 +1007,6 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           afterGroup(::resetMocks)
 
-
           on("receiving the message") {
             subject.handle(message)
           }

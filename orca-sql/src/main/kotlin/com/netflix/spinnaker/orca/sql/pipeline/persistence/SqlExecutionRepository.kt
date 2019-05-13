@@ -359,7 +359,6 @@ class SqlExecutionRepository(
     }
 
     throw ExecutionNotFoundException("No Pipeline found for correlation ID $correlationId")
-
   }
 
   override fun retrieveBufferedExecutions(): MutableList<Execution> =
@@ -518,10 +517,12 @@ class SqlExecutionRepository(
    * - When id is not a ULID but exists in the table, fetches ulid and returns: [fetched_ulid, id]
    * - When id is not a ULID and does not exist, creates new_ulid and returns: [new_ulid, id]
    */
-  private fun mapLegacyId(ctx: DSLContext,
-                          table: Table<Record>,
-                          id: String,
-                          timestamp: Long? = null): Pair<String, String?> {
+  private fun mapLegacyId(
+    ctx: DSLContext,
+    table: Table<Record>,
+    id: String,
+    timestamp: Long? = null
+  ): Pair<String, String?> {
     if (isULID(id)) return Pair(id, null)
 
     val ts = (timestamp ?: System.currentTimeMillis())
@@ -660,11 +661,13 @@ class SqlExecutionRepository(
     }
   }
 
-  private fun upsert(ctx: DSLContext,
-                     table: Table<Record>,
-                     insertPairs: Map<Field<Any?>, Any?>,
-                     updatePairs: Map<Field<Any>, Any?>,
-                     updateId: String) {
+  private fun upsert(
+    ctx: DSLContext,
+    table: Table<Record>,
+    insertPairs: Map<Field<Any?>, Any?>,
+    updatePairs: Map<Field<Any>, Any?>,
+    updateId: String
+  ) {
     // MySQL & PG support upsert concepts. A nice little efficiency here, we
     // can avoid a network call if the dialect supports it, otherwise we need
     // to do a select for update first.
@@ -709,10 +712,12 @@ class SqlExecutionRepository(
     }
   }
 
-  private fun selectExecution(ctx: DSLContext,
-                              type: ExecutionType,
-                              id: String,
-                              forUpdate: Boolean = false): Execution? {
+  private fun selectExecution(
+    ctx: DSLContext,
+    type: ExecutionType,
+    id: String,
+    forUpdate: Boolean = false
+  ): Execution? {
     val select = ctx.selectExecution(type).where(id.toWhereCondition())
     if (forUpdate) {
       select.forUpdate()
@@ -759,10 +764,12 @@ class SqlExecutionRepository(
     }, transactionRetryProperties.maxRetries, transactionRetryProperties.backoffMs, false)
   }
 
-  private fun DSLContext.selectExecutions(type: ExecutionType,
-                                          fields: List<Field<Any>> = selectFields(),
-                                          conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
-                                          seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>) =
+  private fun DSLContext.selectExecutions(
+    type: ExecutionType,
+    fields: List<Field<Any>> = selectFields(),
+    conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
+    seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
+  ) =
     select(fields)
       .from(type.tableName)
       .let { conditions(it) }

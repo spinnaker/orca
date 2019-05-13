@@ -39,10 +39,10 @@ class V1SchemaHandlerGroup
   private val renderer: Renderer,
   private val objectMapper: ObjectMapper,
   private val registry: Registry
-): HandlerGroup {
+) : HandlerGroup {
 
-  override fun getHandlers(): List<Handler>
-    = listOf(
+  override fun getHandlers(): List<Handler> =
+    listOf(
       V1TemplateLoaderHandler(templateLoader, renderer, objectMapper),
       V1ConfigurationValidationHandler(),
       V1TemplateValidationHandler(),

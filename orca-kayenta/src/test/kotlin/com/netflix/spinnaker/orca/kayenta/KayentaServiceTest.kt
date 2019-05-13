@@ -41,10 +41,8 @@ import retrofit.Endpoints.newFixedEndpoint
 import retrofit.RequestInterceptor
 import retrofit.RestAdapter.LogLevel
 import retrofit.client.OkClient
-import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit.HOURS
 import java.util.UUID.randomUUID
 

@@ -30,8 +30,8 @@ import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 
-internal class TriggerDeserializer
-  : StdDeserializer<Trigger>(Trigger::class.java) {
+internal class TriggerDeserializer :
+  StdDeserializer<Trigger>(Trigger::class.java) {
 
   companion object {
     val customTriggerSuppliers: MutableList<CustomTriggerDeserializerSupplier> = mutableListOf()

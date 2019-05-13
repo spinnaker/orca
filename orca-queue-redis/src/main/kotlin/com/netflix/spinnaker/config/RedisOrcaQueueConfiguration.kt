@@ -47,9 +47,11 @@ import java.util.Optional
 class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
 
   @Autowired
-  fun redisQueueObjectMapper(mapper: ObjectMapper,
-                             objectMapperSubtypeProperties: ObjectMapperSubtypeProperties,
-                             taskResolver: TaskResolver) {
+  fun redisQueueObjectMapper(
+    mapper: ObjectMapper,
+    objectMapperSubtypeProperties: ObjectMapperSubtypeProperties,
+    taskResolver: TaskResolver
+  ) {
     mapper.apply {
       registerModule(KotlinModule())
       registerModule(

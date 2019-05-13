@@ -65,7 +65,6 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
     }
     afterGroup(::resetMocks)
 
-
     given("buffer state is INACTIVE") {
       val execution = pipeline {
         application = "spintest"

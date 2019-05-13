@@ -220,7 +220,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
               .doesNotContainKey("stageTimeoutMs")
           })
         }
-
       }
     }
 
@@ -652,7 +651,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         it("marks the task as failed but continue") {
           verify(queue).push(CompleteTask(message, FAILED_CONTINUE))
         }
-
       }
 
       given("the execution is marked to succeed on timeout") {
@@ -1083,12 +1081,12 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
               stage {
                 type = "whatever"
                 context["stageTimeoutMs"] = stageTimeoutMs
-                startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli() //started 5.1 minutes ago
+                startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli() // started 5.1 minutes ago
                 task {
                   id = "1"
                   implementingClass = DummyTimeoutOverrideTask::class.jvmName
                   status = RUNNING
-                  startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli() //started 5.1 minutes ago
+                  startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli() // started 5.1 minutes ago
                 }
               }
             }
@@ -1168,7 +1166,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
               refId = "1"
               type = "whatever"
               context["expr"] = expression
-              trigger = DefaultTrigger ("manual")
+              trigger = DefaultTrigger("manual")
               task {
                 id = "1"
                 startTime = clock.instant().toEpochMilli()

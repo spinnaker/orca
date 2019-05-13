@@ -203,7 +203,7 @@ class RunTaskHandler(
         Math.min(getDynamicBackoffPeriod(stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime
           ?: 0))), maxBackoff())
       )
-      else             -> Duration.ofSeconds(1)
+      else -> Duration.ofSeconds(1)
     }
 
   private fun formatTimeout(timeout: Long): String {
@@ -272,10 +272,12 @@ class RunTaskHandler(
       Duration.between(startTime.toInstant(), endTime.toInstant())
     }
 
-  private fun Registry.timeoutCounter(executionType: ExecutionType,
-                                      application: String,
-                                      stageType: String,
-                                      taskType: String) =
+  private fun Registry.timeoutCounter(
+    executionType: ExecutionType,
+    application: String,
+    stageType: String,
+    taskType: String
+  ) =
     counter(
       createId("queue.task.timeouts")
         .withTags(mapOf(

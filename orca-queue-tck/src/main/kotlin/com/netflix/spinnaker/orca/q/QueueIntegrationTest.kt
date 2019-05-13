@@ -941,4 +941,3 @@ class TestConfig {
     return DelegatingApplicationEventMulticaster(sync, async)
   }
 }
-

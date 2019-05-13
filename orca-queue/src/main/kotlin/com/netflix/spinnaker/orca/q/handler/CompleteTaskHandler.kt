@@ -85,7 +85,7 @@ class CompleteTaskHandler(
     }
   }
 
-  fun shouldCompleteStage(task: Task, status: ExecutionStatus, originalStatus: ExecutionStatus?) : Boolean {
+  fun shouldCompleteStage(task: Task, status: ExecutionStatus, originalStatus: ExecutionStatus?): Boolean {
     if (task.isStageEnd) {
       // last task in the stage
       return true

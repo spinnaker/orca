@@ -100,7 +100,7 @@ class StartStageHandler(
 
             publisher.publishEvent(StageStarted(this, stage))
             trackResult(stage)
-          } catch(e: Exception) {
+          } catch (e: Exception) {
             val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.name)
             if (exceptionDetails?.shouldRetry == true) {
               val attempts = message.getAttribute<AttemptsAttribute>()?.attempts ?: 0
@@ -148,7 +148,7 @@ class StartStageHandler(
 
   private fun Stage.plan() {
     builder().let { builder ->
-      //if we have a top level stage, ensure that context expressions are processed
+      // if we have a top level stage, ensure that context expressions are processed
       val mergedStage = if (this.parentStageId == null) this.withMergedContext() else this
       builder.addContextFlags(mergedStage)
       builder.buildTasks(mergedStage)

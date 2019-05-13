@@ -300,7 +300,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
   }
 
   describe("when a task should complete parent stage") {
-    val task = fun(isStageEnd: Boolean) : Task {
+    val task = fun(isStageEnd: Boolean): Task {
       val task = Task()
       task.isStageEnd = isStageEnd
       return task
