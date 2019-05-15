@@ -1,4 +1,4 @@
-package com.netflix.spinnaker.orca.kato.tasks
+package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.tencent
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
@@ -10,21 +10,21 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class DeleteAsgScheduledActionTask implements Task {
+class DeleteTencentScheduledActionTask implements Task {
 
   @Autowired
   KatoService kato
 
   @Override
   TaskResult execute(Stage stage) {
-    def taskId = kato.requestOperations([[deleteAsgScheduledActionDescription: stage.context]])
+    def taskId = kato.requestOperations([[deleteTencentScheduledActionDescription: stage.context]])
         .toBlocking()
         .first()
 
     def deployServerGroups = AsgDescriptionSupport.convertAsgsToDeploymentTargets(stage.context.asgs)
 
     new TaskResult(ExecutionStatus.SUCCEEDED, [
-        "notification.type"     : "deleteasgscheduledaction",
+        "notification.type"     : "deletetencentscheduledaction",
         "deploy.server.groups"  : deployServerGroups,
         "kato.last.task.id"     : taskId,
     ])
