@@ -33,7 +33,7 @@ import javax.annotation.Nonnull
 import javax.annotation.PostConstruct
 
 @Component("pipelineTemplatePreprocessor")
-@Order(1)
+@Order(2)
 class PipelineTemplatePreprocessor
 @Autowired constructor(
   private val pipelineTemplateObjectMapper: ObjectMapper,
