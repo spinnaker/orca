@@ -20,7 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 
 import java.text.SimpleDateFormat
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.PropertyNamingStrategy.LowerCaseWithUnderscoresStrategy
+import com.fasterxml.jackson.databind.PropertyNamingStrategy.SnakeCaseStrategy
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
@@ -61,19 +61,23 @@ class BakeryConfiguration {
 
   @Bean
   BakeryService bakery(Endpoint bakeryEndpoint) {
-    def objectMapper = new ObjectMapper()
-      .setPropertyNamingStrategy(new LowerCaseWithUnderscoresStrategy())
-      .setDateFormat(new SimpleDateFormat("YYYYMMDDHHmm"))
-      .setSerializationInclusion(NON_NULL)
-      .disable(FAIL_ON_UNKNOWN_PROPERTIES)
 
     new RestAdapter.Builder()
       .setEndpoint(bakeryEndpoint)
-      .setConverter(new JacksonConverter(objectMapper))
+      .setConverter(new JacksonConverter(bakeryConfiguredObjectMapper()))
       .setClient(retrofitClient)
       .setLogLevel(retrofitLogLevel)
       .setLog(new RetrofitSlf4jLog(BakeryService))
       .build()
       .create(BakeryService)
+  }
+
+  static ObjectMapper bakeryConfiguredObjectMapper() {
+    def objectMapper = new ObjectMapper()
+      .setPropertyNamingStrategy(new SnakeCaseStrategy())
+      .setDateFormat(new SimpleDateFormat("YYYYMMDDHHmm"))
+      .setSerializationInclusion(NON_NULL)
+      .disable(FAIL_ON_UNKNOWN_PROPERTIES)
+
   }
 }
