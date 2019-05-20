@@ -83,9 +83,9 @@ class TencentServerGroupCreator implements ServerGroupCreator, DeploymentDetails
       throw new IllegalStateException("No accountName could be found in ${context}.")
     }
 
-    if (!operation.containsKey("credentials")) {
-      throw new IllegalStateException("No credentials could be found in ${context}.")
-    }
+//    if (!operation.containsKey("credentials")) {
+//      throw new IllegalStateException("No credentials could be found in ${context}.")
+//    }
 
     if (!operation.containsKey("region")) {
       throw new IllegalStateException("No region could be found in ${context}.")
