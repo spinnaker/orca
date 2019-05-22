@@ -26,16 +26,18 @@ import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.Canonical
 import groovy.transform.ToString
-import groovy.util.logging.Slf4j
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 
-@Slf4j
 abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudProviderAwareTask implements OverridableTimeoutRetryableTask {
+  private Logger log = LoggerFactory.getLogger(getClass())
+
   @Override
   public long getBackoffPeriod() { 10000 }
 
-  @Value('${tasks.waitForClusterTimeoutMillis:1800000}')
+  @Value('${tasks.wait-for-cluster-timeout-millis:1800000}')
   public long defaultTimeout
 
   @Override
@@ -68,7 +70,8 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
       def isMatch = it.region == deployServerGroup.region && it.name == deployServerGroup.name
       isMatch
     })
-    log.info "Server groups matching $deployServerGroup : $matchingServerGroups"
+
+    log.info("Server groups matching $deployServerGroup : $matchingServerGroups")
     isServerGroupOperationInProgress(stage, interestingHealthProviderNames, matchingServerGroups)
   }
 
@@ -81,6 +84,11 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
   static class DeployServerGroup {
     String region
     String name
+
+    @Override
+    String toString() {
+      return "${region}->${name}"
+    }
   }
 
   static class RemainingDeployServerGroups {
@@ -110,8 +118,7 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
     }
 
     def serverGroups = cluster.get().serverGroups.collect { new TargetServerGroup(it) }
-    log.info "Pipeline ${stage.execution?.id} found server groups ${serverGroups.collect { it.region + "->" + it.name }}"
-    log.info "Pipeline ${stage.execution?.id} is looking for ${remainingDeployServerGroups.collect { it.region + "->" + it.name }}"
+    log.info "Pipeline ${stage.execution?.id} looking for server groups: $remainingDeployServerGroups found: $serverGroups"
 
     if (!serverGroups) {
       return emptyClusterResult(stage, clusterSelection, cluster.get())
@@ -121,7 +128,7 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
     List<DeployServerGroup> stillRemaining = remainingDeployServerGroups.findAll(this.&isServerGroupOperationInProgress.curry(stage, serverGroups, healthProviderTypesToCheck))
 
     if (stillRemaining) {
-      log.info "Pipeline ${stage.execution?.id} still has ${stillRemaining.collect { it.region + "->" + it.name }}"
+      log.info "Pipeline ${stage.execution?.id} still has $stillRemaining"
       return TaskResult.builder(ExecutionStatus.RUNNING).context([remainingDeployServerGroups: stillRemaining]).build()
     }
 

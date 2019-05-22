@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
-import java.util.function.Function
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
@@ -32,7 +31,7 @@ import org.springframework.beans.factory.annotation.Value
 @Component
 class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTask implements CloudProviderAware {
 
-  @Value('${tasks.disableClusterMinTimeMillis:90000}')
+  @Value('${tasks.disable-cluster-min-time-millis:90000}')
   private int MINIMUM_WAIT_TIME_MS
 
   private final Map<String, String> healthProviderNamesByPlatform

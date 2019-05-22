@@ -16,14 +16,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver;
 
-import com.netflix.spinnaker.orca.clouddriver.config.SelectableService;
-
+import com.netflix.spinnaker.kork.web.selector.SelectableService;
 import java.util.Collection;
 import java.util.Map;
 
 public class DelegatingCloudDriverCacheStatusService
-  extends DelegatingClouddriverService<CloudDriverCacheStatusService>
-  implements CloudDriverCacheStatusService {
+    extends DelegatingClouddriverService<CloudDriverCacheStatusService>
+    implements CloudDriverCacheStatusService {
 
   public DelegatingCloudDriverCacheStatusService(SelectableService selectableService) {
     super(selectableService);

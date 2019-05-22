@@ -45,7 +45,7 @@ import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
 import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.builder.SpringApplicationBuilder
-import org.springframework.boot.web.support.SpringBootServletInitializer
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -89,13 +89,13 @@ import org.springframework.scheduling.annotation.EnableAsync
 ])
 class Main extends SpringBootServletInitializer {
   static final Map<String, String> DEFAULT_PROPS = [
-    'netflix.environment'    : 'test',
-    'netflix.account'        : '${netflix.environment}',
-    'netflix.stack'          : 'test',
-    'spring.config.location' : '${user.home}/.spinnaker/',
-    'spring.application.name': 'orca',
-    'spring.config.name'     : 'spinnaker,${spring.application.name}',
-    'spring.profiles.active' : '${netflix.environment},local'
+    'netflix.environment'              : 'test',
+    'netflix.account'                  : '${netflix.environment}',
+    'netflix.stack'                    : 'test',
+    'spring.config.additional-location': '${user.home}/.spinnaker/',
+    'spring.application.name'          : 'orca',
+    'spring.config.name'               : 'spinnaker,${spring.application.name}',
+    'spring.profiles.active'           : '${netflix.environment},local'
   ]
 
   static void main(String... args) {

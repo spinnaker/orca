@@ -18,9 +18,10 @@ package com.netflix.spinnaker.orca.bakery.api
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonAnySetter
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.PropertyNamingStrategy
+import static com.fasterxml.jackson.databind.PropertyNamingStrategy.*
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
@@ -30,11 +31,13 @@ import groovy.transform.Immutable
  *
  * @see BakeryService#createBake
  */
-@Immutable(copyWith = true)
+@Immutable(
+  copyWith = true,
+  knownImmutables = ["other"] // fletch: this is a hack since an upgrade of Groovy started replacing "other" with an unmodifiable map breaking @JsonAnySetter
+)
 @CompileStatic
 class BakeRequest {
-  private static final PropertyNamingStrategy.LowerCaseWithUnderscoresStrategy lowerCaseWithUnderscoresStrategy =
-    new PropertyNamingStrategy.LowerCaseWithUnderscoresStrategy()
+  private static final PropertyNamingStrategyBase namingStrategy = new SnakeCaseStrategy()
 
   static final Default = new BakeRequest(user: System.getProperty("user.name"),
                                          cloudProviderType: CloudProviderType.aws,
@@ -63,7 +66,8 @@ class BakeRequest {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   Integer rootVolumeSize
 
-  private Map<String, Object> other = new HashMap<String, Object>()
+  @JsonIgnore
+  Map<String, Object> other = new HashMap<>()
 
   @JsonAnyGetter
   public Map<String, Object> other() {
@@ -72,7 +76,7 @@ class BakeRequest {
 
   @JsonAnySetter
   public void set(String name, Object value) {
-    other.put(lowerCaseWithUnderscoresStrategy.translate(name), value)
+    other.put(namingStrategy.translate(name), value)
   }
 
   static enum CloudProviderType {

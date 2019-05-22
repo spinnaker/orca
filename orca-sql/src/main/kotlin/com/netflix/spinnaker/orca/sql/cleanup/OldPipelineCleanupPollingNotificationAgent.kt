@@ -39,16 +39,16 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 @Component
-@ConditionalOnExpression("\${pollers.oldPipelineCleanup.enabled:false} && !\${executionRepository.redis.enabled:false}")
+@ConditionalOnExpression("\${pollers.old-pipeline-cleanup.enabled:false} && !\${execution-repository.redis.enabled:false}")
 class OldPipelineCleanupPollingNotificationAgent(
   clusterLock: NotificationClusterLock,
   private val jooq: DSLContext,
   private val clock: Clock,
   private val registry: Registry,
-  @Value("\${pollers.oldPipelineCleanup.intervalMs:3600000}") private val pollingIntervalMs: Long,
-  @Value("\${pollers.oldPipelineCleanup.thresholdDays:30}") private val thresholdDays: Long,
-  @Value("\${pollers.oldPipelineCleanup.minimumPipelineExecutions:5}") private val minimumPipelineExecutions: Int,
-  @Value("\${pollers.oldPipelineCleanup.chunkSize:1}") private val chunkSize: Int
+  @Value("\${pollers.old-pipeline-cleanup.interval-ms:3600000}") private val pollingIntervalMs: Long,
+  @Value("\${pollers.old-pipeline-cleanup.threshold-days:30}") private val thresholdDays: Long,
+  @Value("\${pollers.old-pipeline-cleanup.minimum-pipeline-executions:5}") private val minimumPipelineExecutions: Int,
+  @Value("\${pollers.old-pipeline-cleanup.chunk-size:1}") private val chunkSize: Int
 ) : AbstractPollingNotificationAgent(clusterLock) {
 
   companion object {
@@ -128,7 +128,7 @@ class OldPipelineCleanupPollingNotificationAgent(
         )
       } catch (e: Exception) {
         log.error("Failed to cleanup old pipelines for $application (pipelineConfigId: $pipelineConfigId)", e)
-        errorsCounter.increment();
+        errorsCounter.increment()
       }
     }
   }
@@ -142,9 +142,11 @@ class OldPipelineCleanupPollingNotificationAgent(
    * be used to indicate that a specific number of the most recent executions should be preserved even though they are
    * older than [thresholdMillis].
    */
-  private fun performCleanup(application: String,
-                             pipelineConfigId: String,
-                             thresholdMillis: Long) : Int {
+  private fun performCleanup(
+    application: String,
+    pipelineConfigId: String,
+    thresholdMillis: Long
+  ): Int {
     val deletedExecutionCount = AtomicInteger()
 
     val executionsToRemove = jooq

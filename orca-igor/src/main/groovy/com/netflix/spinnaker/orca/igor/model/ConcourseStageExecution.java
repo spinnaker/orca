@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2019 Pivotal, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.config;
+package com.netflix.spinnaker.orca.igor.model;
 
-interface ServiceSelector {
-  Object getService();
-  int getPriority();
-  boolean supports(SelectableService.Criteria criteria);
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * The Concourse job name and build number that is executing for a particular Concourse stage
+ * execution.
+ */
+@RequiredArgsConstructor
+@Getter
+public class ConcourseStageExecution {
+  private final String stageId;
+  private final String jobName;
+  private final Integer buildNumber;
 }

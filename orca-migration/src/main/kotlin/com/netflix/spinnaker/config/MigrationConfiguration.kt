@@ -31,11 +31,12 @@ import java.util.Optional
 class MigrationConfiguration {
 
   @Bean
-  @ConditionalOnExpression("\${pollers.orchestrationMigrator.enabled:false}")
-  fun orchestrationMigrationAgent(clusterLock: NotificationClusterLock,
-                                  front50Service: Front50Service,
-                                  dualExecutionRepository: Optional<DualExecutionRepository>,
-                                  @Value("\${pollers.orchestrationMigrator.intervalMs:3600000}") pollIntervalMs: Long
+  @ConditionalOnExpression("\${pollers.orchestration-migrator.enabled:false}")
+  fun orchestrationMigrationAgent(
+    clusterLock: NotificationClusterLock,
+    front50Service: Front50Service,
+    dualExecutionRepository: Optional<DualExecutionRepository>,
+    @Value("\${pollers.orchestration-migrator.interval-ms:3600000}") pollIntervalMs: Long
   ): OrchestrationMigrationAgent {
     if (!dualExecutionRepository.isPresent) {
       throw BeanInitializationException("Orchestration migration enabled, but dualExecutionRepository has not been configured")
@@ -44,11 +45,12 @@ class MigrationConfiguration {
   }
 
   @Bean
-  @ConditionalOnExpression("\${pollers.pipelineMigrator.enabled:false}")
-  fun pipelineMigrationAgent(clusterLock: NotificationClusterLock,
-                             front50Service: Front50Service,
-                             dualExecutionRepository: Optional<DualExecutionRepository>,
-                             @Value("\${pollers.pipelineMigrator.intervalMs:3600000}") pollIntervalMs: Long
+  @ConditionalOnExpression("\${pollers.pipeline-migrator.enabled:false}")
+  fun pipelineMigrationAgent(
+    clusterLock: NotificationClusterLock,
+    front50Service: Front50Service,
+    dualExecutionRepository: Optional<DualExecutionRepository>,
+    @Value("\${pollers.pipeline-migrator.interval-ms:3600000}") pollIntervalMs: Long
   ): PipelineMigrationAgent {
     if (!dualExecutionRepository.isPresent) {
       throw BeanInitializationException("Pipeline migration enabled, but dualExecutionRepository has not been configured")

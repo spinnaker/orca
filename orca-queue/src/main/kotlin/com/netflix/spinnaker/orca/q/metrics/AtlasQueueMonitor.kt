@@ -30,9 +30,21 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.ApplicationAware
 import com.netflix.spinnaker.orca.q.ExecutionLevel
 import com.netflix.spinnaker.q.Activator
-import com.netflix.spinnaker.q.metrics.*
+import com.netflix.spinnaker.q.metrics.LockFailed
+import com.netflix.spinnaker.q.metrics.MessageAcknowledged
+import com.netflix.spinnaker.q.metrics.MessageDead
+import com.netflix.spinnaker.q.metrics.MessageDuplicate
+import com.netflix.spinnaker.q.metrics.MessageNotFound
+import com.netflix.spinnaker.q.metrics.MessageProcessing
+import com.netflix.spinnaker.q.metrics.MessagePushed
+import com.netflix.spinnaker.q.metrics.MessageRescheduled
+import com.netflix.spinnaker.q.metrics.MessageRetried
+import com.netflix.spinnaker.q.metrics.MonitorableQueue
+import com.netflix.spinnaker.q.metrics.QueueEvent
+import com.netflix.spinnaker.q.metrics.QueuePolled
+import com.netflix.spinnaker.q.metrics.QueueState
+import com.netflix.spinnaker.q.metrics.RetryPolled
 import net.logstash.logback.argument.StructuredArguments.kv
-import net.logstash.logback.argument.StructuredArguments.value
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
@@ -48,7 +60,8 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit.MINUTES
-import java.util.*
+import java.util.Optional
+import java.util.Queue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicReference
@@ -67,9 +80,9 @@ class AtlasQueueMonitor
   private val clock: Clock,
   private val activators: List<Activator>,
   private val conch: NotificationClusterLock,
-  @Value("\${queue.zombieCheck.enabled:false}")private val zombieCheckEnabled: Boolean,
+  @Value("\${queue.zombie-check.enabled:false}")private val zombieCheckEnabled: Boolean,
   @Qualifier("scheduler") private val zombieCheckScheduler: Optional<Scheduler>,
-  @Value("\${queue.zombieCheck.cutoffMinutes:10}") private val zombieCheckCutoffMinutes: Long
+  @Value("\${queue.zombie-check.cutoff-minutes:10}") private val zombieCheckCutoffMinutes: Long
 ) {
 
   private val log = LoggerFactory.getLogger(javaClass)
@@ -98,7 +111,7 @@ class AtlasQueueMonitor
     _lastState.set(queue.readState())
   }
 
-  @Scheduled(fixedDelayString = "\${queue.zombieCheck.intervalMs:3600000}")
+  @Scheduled(fixedDelayString = "\${queue.zombie-check.interval-ms:3600000}")
   fun checkForZombies() {
     if (!zombieCheckEnabled || activators.none { it.enabled } || !conch.tryAcquireLock("zombie", TimeUnit.MINUTES.toSeconds(5))) return
 

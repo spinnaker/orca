@@ -78,10 +78,10 @@ class OperationsController {
   ContextParameterProcessor contextParameterProcessor
 
   @Autowired(required = false)
-  List<ExecutionPreprocessor> executionPreprocessors = new ArrayList<>();
+  List<ExecutionPreprocessor> executionPreprocessors = new ArrayList<>()
 
   @Autowired(required = false)
-  private List<PipelineModelMutator> pipelineModelMutators = new ArrayList<>();
+  private List<PipelineModelMutator> pipelineModelMutators = new ArrayList<>()
 
   @Autowired(required = false)
   WebhookService webhookService
@@ -103,24 +103,24 @@ class OperationsController {
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
-    planOrOrchestratePipeline(pipeline)
+    return planOrOrchestratePipeline(pipeline)
   }
 
   @RequestMapping(value = "/orchestrate/{pipelineConfigId}", method = RequestMethod.POST)
   Map<String, Object> orchestratePipelineConfig(@PathVariable String pipelineConfigId, @RequestBody Map trigger) {
     Map pipelineConfig = buildPipelineConfig(pipelineConfigId, trigger)
-    planOrOrchestratePipeline(pipelineConfig)
+    return planOrOrchestratePipeline(pipelineConfig)
   }
 
   @RequestMapping(value = "/plan", method = RequestMethod.POST)
   Map<String, Object> plan(@RequestBody Map pipeline, @Query("resolveArtifacts") boolean resolveArtifacts, HttpServletResponse response) {
-    planPipeline(pipeline, resolveArtifacts)
+    return planPipeline(pipeline, resolveArtifacts)
   }
 
   @RequestMapping(value = "/plan/{pipelineConfigId}", method = RequestMethod.POST)
   Map<String, Object> planPipelineConfig(@PathVariable String pipelineConfigId, @Query("resolveArtifacts") boolean resolveArtifacts, @RequestBody Map trigger) {
     Map pipelineConfig = buildPipelineConfig(pipelineConfigId, trigger)
-    planPipeline(pipelineConfig, resolveArtifacts)
+    return planPipeline(pipelineConfig, resolveArtifacts)
   }
 
   private Map buildPipelineConfig(String pipelineConfigId, Map trigger) {
@@ -128,7 +128,7 @@ class OperationsController {
       throw new UnsupportedOperationException("Front50 is not enabled, no way to retrieve pipeline configs. Fix this by setting front50.enabled: true")
     }
 
-    List<Map> history = front50Service.getPipelineHistory(pipelineConfigId, 1)
+    List<Map> history = AuthenticatedRequest.allowAnonymous({front50Service.getPipelineHistory(pipelineConfigId, 1)})
     if (history.isEmpty()) {
       throw new NotFoundException("Pipeline config $pipelineConfigId not found")
     }
@@ -139,9 +139,9 @@ class OperationsController {
 
   private Map planOrOrchestratePipeline(Map pipeline) {
     if (pipeline.plan) {
-      planPipeline(pipeline, false)
+      return planPipeline(pipeline, false)
     } else {
-      orchestratePipeline(pipeline)
+      return orchestratePipeline(pipeline)
     }
   }
 

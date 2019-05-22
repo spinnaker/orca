@@ -18,9 +18,11 @@ package com.netflix.spinnaker.orca.q.redis
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.config.RedisOrcaQueueConfiguration
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.config.JedisConfiguration
+import com.netflix.spinnaker.orca.config.RedisConfiguration
 import com.netflix.spinnaker.orca.q.QueueIntegrationTest
 import com.netflix.spinnaker.orca.q.TestConfig
 import com.netflix.spinnaker.orca.q.redis.pending.RedisPendingExecutionService
@@ -56,13 +58,16 @@ class RedisTestConfig {
     EmbeddedRedisConfiguration::class,
     JedisConfiguration::class,
     TestConfig::class,
+    RedisConfiguration::class,
     RedisTestConfig::class,
-    RedisOrcaQueueConfiguration::class
+    RedisOrcaQueueConfiguration::class,
+    DynamicConfigService.NoopDynamicConfig::class
   ],
   properties = [
     "queue.retry.delay.ms=10",
     "logging.level.root=ERROR",
     "logging.level.org.springframework.test=ERROR",
-    "logging.level.com.netflix.spinnaker=FATAL"
+    "logging.level.com.netflix.spinnaker=FATAL",
+    "execution-repository.redis.enabled=true"
   ])
 class RedisQueueIntegrationTest : QueueIntegrationTest()

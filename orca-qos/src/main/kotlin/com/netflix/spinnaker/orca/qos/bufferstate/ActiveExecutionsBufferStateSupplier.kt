@@ -42,7 +42,7 @@ class ActiveExecutionsBufferStateSupplier(
 
   private var state: BufferState = INACTIVE
 
-  @Scheduled(fixedDelayString = "\${pollers.qos.updateStateIntervalMs:5000}")
+  @Scheduled(fixedDelayString = "\${pollers.qos.update-state-interval-ms:5000}")
   private fun updateCurrentState() {
     if (!enabled()) {
       state = INACTIVE
@@ -72,8 +72,8 @@ class ActiveExecutionsBufferStateSupplier(
   override fun get() = state
 
   override fun enabled() =
-    configService.getConfig(String::class.java, "qos.bufferingState.supplier", "") == "activeExecutions"
+    configService.getConfig(String::class.java, "qos.buffering-state.supplier", "") == "activeExecutions"
 
   private fun getThreshold() =
-    configService.getConfig(Int::class.java, "qos.bufferingState.activeExecutions.threshold", 100)
+    configService.getConfig(Int::class.java, "qos.buffering-state.active-executions.threshold", 100)
 }
