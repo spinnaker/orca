@@ -8,19 +8,17 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class updateLambdaTask extends AbstractCloudProviderAwareTask implements Task {
 
-  @Autowired
-  KatoService katoService;
+  @Autowired KatoService katoService;
 
   public static final String TASK_NAME = "updateLambdaFunctionConfiguration";
 
@@ -32,21 +30,20 @@ public class updateLambdaTask extends AbstractCloudProviderAwareTask implements 
     Map<String, Object> task = new HashMap<>(stage.getContext());
 
     Map<String, Map> operation =
-      new ImmutableMap.Builder<String, Map>().put(TASK_NAME, task).build();
+        new ImmutableMap.Builder<String, Map>().put(TASK_NAME, task).build();
 
     TaskId taskId =
-      katoService
-        .requestOperations(cloudProvider, Collections.singletonList(operation))
-        .toBlocking()
-        .first();
+        katoService
+            .requestOperations(cloudProvider, Collections.singletonList(operation))
+            .toBlocking()
+            .first();
 
     Map<String, Object> context =
-      new ImmutableMap.Builder<String, Object>()
-        .put("kato.result.expected", true)
-        .put("kato.last.task.id", taskId)
-        .build();
+        new ImmutableMap.Builder<String, Object>()
+            .put("kato.result.expected", true)
+            .put("kato.last.task.id", taskId)
+            .build();
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
   }
-
 }
