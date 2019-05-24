@@ -35,7 +35,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.Execu
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -393,12 +391,6 @@ public class ArtifactResolver {
     ArtifactResolutionException(String message, Throwable cause) {
       super(message, cause);
     }
-  }
-
-  @Data
-  public static class ResolveResult {
-    Set<Artifact> resolvedArtifacts = new HashSet<>();
-    Set<ExpectedArtifact> unresolvedExpectedArtifacts = new HashSet<>();
   }
 
   private static Func2<Execution, Execution, Integer> startTimeOrId =
