@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Suppliers;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
@@ -32,7 +33,16 @@ import com.netflix.spinnaker.orca.pipeline.model.StageContext;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -244,8 +254,12 @@ public class ArtifactResolver {
       return;
     }
 
-    List<Artifact> priorArtifacts =
-        getArtifactsForPipelineId((String) pipeline.get("id"), new ExecutionCriteria());
+    // the call to getArtifactsForPipelineId is wrapped in a Supplier so that the cost of loading
+    // old executions is not paid if the downstream methods like resolveSingleArtifact() never need
+    // to look at prior artifacts
+    Supplier<List<Artifact>> priorArtifacts =
+        () -> getArtifactsForPipelineId((String) pipeline.get("id"), new ExecutionCriteria());
+
     LinkedHashSet<Artifact> resolvedArtifacts =
         resolveExpectedArtifacts(expectedArtifacts, receivedArtifacts, priorArtifacts, true);
     LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(receivedArtifacts);
@@ -272,10 +286,20 @@ public class ArtifactResolver {
   public Artifact resolveSingleArtifact(
       ExpectedArtifact expectedArtifact,
       List<Artifact> possibleMatches,
-      List<Artifact> priorArtifacts,
+      boolean requireUniqueMatches) {
+    return resolveSingleArtifact(
+        expectedArtifact, possibleMatches, () -> null, requireUniqueMatches);
+  }
+
+  private Artifact resolveSingleArtifact(
+      ExpectedArtifact expectedArtifact,
+      List<Artifact> possibleMatches,
+      @Nonnull Supplier<List<Artifact>> priorArtifactSupplier,
       boolean requireUniqueMatches) {
     Artifact resolved =
         matchSingleArtifact(expectedArtifact, possibleMatches, requireUniqueMatches);
+
+    List<Artifact> priorArtifacts = priorArtifactSupplier.get();
 
     if (resolved == null && expectedArtifact.isUsePriorArtifact() && priorArtifacts != null) {
       resolved = matchSingleArtifact(expectedArtifact, priorArtifacts, requireUniqueMatches);
@@ -325,7 +349,7 @@ public class ArtifactResolver {
       List<Artifact> receivedArtifacts,
       boolean requireUniqueMatches) {
     return resolveExpectedArtifacts(
-        expectedArtifacts, receivedArtifacts, null, requireUniqueMatches);
+        expectedArtifacts, receivedArtifacts, (List<Artifact>) null, requireUniqueMatches);
   }
 
   public LinkedHashSet<Artifact> resolveExpectedArtifacts(
@@ -333,7 +357,22 @@ public class ArtifactResolver {
       List<Artifact> receivedArtifacts,
       List<Artifact> priorArtifacts,
       boolean requireUniqueMatches) {
+
+    return resolveExpectedArtifacts(
+        expectedArtifacts, receivedArtifacts, () -> priorArtifacts, requireUniqueMatches);
+  }
+
+  private LinkedHashSet<Artifact> resolveExpectedArtifacts(
+      List<ExpectedArtifact> expectedArtifacts,
+      List<Artifact> receivedArtifacts,
+      @Nonnull Supplier<List<Artifact>> priorArtifacts,
+      boolean requireUniqueMatches) {
     LinkedHashSet<Artifact> resolvedArtifacts = new LinkedHashSet<>();
+
+    // wrap the Supplier of past artifacts in a memoizing Supplier so that resolveSingleArtifact
+    // () is free to call Supplier.get() as many times as it wants without re-fetching the prior
+    // artifact list
+    priorArtifacts = new MemoizingSupplierAdapter<>(priorArtifacts);
 
     for (ExpectedArtifact expectedArtifact : expectedArtifacts) {
       Artifact resolved =
@@ -370,4 +409,25 @@ public class ArtifactResolver {
         int startTimeCmp = bStartTime.compareTo(aStartTime);
         return startTimeCmp != 0L ? startTimeCmp : b.getId().compareTo(a.getId());
       };
+
+  /**
+   * A bridge between {@link java.util.function.Supplier} and { @link
+   * com.google.common.base.Supplier} so that we can use {@link
+   * Suppliers#memoize(com.google.common.base.Supplier)} without ClassCastException.
+   *
+   * @param <T> type
+   */
+  private static class MemoizingSupplierAdapter<T> implements Supplier<T> {
+
+    private final com.google.common.base.Supplier<T> supplier;
+
+    MemoizingSupplierAdapter(Supplier<T> delegate) {
+      this.supplier = Suppliers.memoize(delegate::get);
+    }
+
+    @Override
+    public T get() {
+      return supplier.get();
+    }
+  }
 }

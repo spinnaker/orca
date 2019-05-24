@@ -59,7 +59,7 @@ public class FindArtifactFromExecutionTask implements Task {
         artifactResolver.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
 
     Artifact match =
-        artifactResolver.resolveSingleArtifact(expectedArtifact, priorArtifacts, null, false);
+        artifactResolver.resolveSingleArtifact(expectedArtifact, priorArtifacts, false);
 
     if (match == null) {
       outputs.put(
