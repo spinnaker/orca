@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.UpdateJobProcessesStage
+import com.netflix.spinnaker.orca.clouddriver.tasks.job.UpdateJobProcessesTask
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
