@@ -30,7 +30,7 @@ public class UpdateLambdaFunctionStage implements StageDefinitionBuilder {
   @Override
   public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
     builder
-      .withTask(updateLambdaFunctionTask.TASK_NAME, updateLambdaFunctionTask.class)
-      .withTask("monitorLambdaFunction", MonitorKatoTask.class);
+        .withTask(updateLambdaFunctionTask.TASK_NAME, updateLambdaFunctionTask.class)
+        .withTask("monitorLambdaFunction", MonitorKatoTask.class);
   }
 }
