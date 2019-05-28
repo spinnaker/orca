@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class updateLambdaTask extends AbstractCloudProviderAwareTask implements Task {
+public class updateLambdaFunctionTask extends AbstractCloudProviderAwareTask implements Task {
 
   @Autowired KatoService katoService;
 
