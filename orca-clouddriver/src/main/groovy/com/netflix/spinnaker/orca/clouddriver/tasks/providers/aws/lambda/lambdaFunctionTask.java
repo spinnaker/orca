@@ -54,7 +54,7 @@ public class lambdaFunctionTask extends AbstractCloudProviderAwareTask implement
     String operationName = (String) task.get("operation");
     if (!StringUtils.isNotBlank(operationName)) {
       throw new IllegalArgumentException(
-        "Field 'operation' is missing and must be present in stage context");
+          "Field 'operation' is missing and must be present in stage context");
     }
 
     Map<String, Map> operation =
