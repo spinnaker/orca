@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpStatusCodeException
+import org.yaml.snakeyaml.Yaml
 
 @Slf4j
 @Component
@@ -76,20 +77,7 @@ class CreateWebhookTask implements RetryableTask {
 
       outputs.webhook << [statusCode: statusCode, statusCodeValue: statusCode.value()]
       if (e.responseBodyAsString) {
-        // Best effort parse of body in case it's JSON
-        def body = e.responseBodyAsString
-        try {
-          ObjectMapper objectMapper = new ObjectMapper()
-
-          if (body.startsWith("{")) {
-            body = objectMapper.readValue(body, Map.class)
-          } else if (body.startsWith("[")) {
-            body = objectMapper.readValue(body, List.class)
-          }
-        } catch (JsonParseException | JsonMappingException ex) {
-          // Just leave body as string, probs not JSON
-        }
-
+        def body = tryParse(e.responseBodyAsString)
         outputs.webhook << [body: body]
       }
 
@@ -121,8 +109,9 @@ class CreateWebhookTask implements RetryableTask {
     outputs.webhook << [statusCode: statusCode, statusCodeValue: statusCode.value()]
     outputsDeprecated << [statusCode: statusCode]
     if (response.body) {
-      outputs.webhook << [body: response.body]
-      outputsDeprecated << [buildInfo: response.body]
+      def parsedBody = tryParse(response.body as String)
+      outputs.webhook << [body: parsedBody]
+      outputsDeprecated << [buildInfo: parsedBody]
     }
 
     if (statusCode.is2xxSuccessful() || statusCode.is3xxRedirection()) {
@@ -169,6 +158,23 @@ class CreateWebhookTask implements RetryableTask {
       outputs.webhook << [error: "The webhook request failed"]
       return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputsDeprecated + outputs).build()
     }
+  }
+
+  private static Object tryParse(String response) {
+    def body = response
+    try {
+      ObjectMapper objectMapper = new ObjectMapper()
+      if (body.startsWith("{")) {
+        body = objectMapper.readValue(body, Map.class)
+      } else if (body.startsWith("[")) {
+        body = objectMapper.readValue(body, List.class)
+      } else if (body.contains(":")) {
+        body = new Yaml().load(response)
+      }
+    } catch (JsonParseException | JsonMappingException ex) {
+      // Just leave body as string, probs not JSON
+    }
+    return body
   }
 
   private static class StageData {

@@ -29,6 +29,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.client.HttpServerErrorException
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Unroll
+
 import java.nio.charset.Charset
 
 class CreateWebhookTaskSpec extends Specification {
@@ -117,6 +119,39 @@ class CreateWebhookTaskSpec extends Specification {
     result.status == ExecutionStatus.SUCCEEDED
   }
 
+  @Unroll
+  def "should parse return body if possible"() {
+    setup:
+    def stage = new Stage(pipeline, "webhook", "My webhook", [
+      url: "https://my-service.io/api/",
+      waitForCompletion: "false",
+      method: "get"
+    ])
+
+    createWebhookTask.webhookService = Stub(WebhookService) {
+      exchange(
+        HttpMethod.GET,
+        "https://my-service.io/api/",
+        null,
+        null
+      ) >> new ResponseEntity<String>(response, HttpStatus.OK)
+    }
+
+    when:
+    def result = createWebhookTask.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.SUCCEEDED
+    result.context.webhook.body == expected
+
+    where:
+    response            || expected
+    '{}'                || [:]
+    '[]'                || []
+    '{"json": "field"}' || [json: "field"]
+    'yaml: "field"'     || [yaml: "field"]
+  }
+
   def "should return TERMINAL status if webhook is not returning 200 OK"() {
     setup:
     def stage = new Stage(pipeline, "webhook", "My webhook", [
@@ -133,7 +168,7 @@ class CreateWebhookTaskSpec extends Specification {
         "https://my-service.io/api/",
         [:],
         [:]
-      ) >> new ResponseEntity<Map>([error: bodyString], HttpStatus.BAD_REQUEST)
+      ) >> new ResponseEntity<String>("error: $bodyString", HttpStatus.BAD_REQUEST)
     }
 
     when:
@@ -349,7 +384,7 @@ class CreateWebhookTaskSpec extends Specification {
     ])
 
     createWebhookTask.webhookService = Stub(WebhookService) {
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<Map>([success: true], HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<String>("success: true", HttpStatus.CREATED)
     }
 
     when:
@@ -382,7 +417,7 @@ class CreateWebhookTaskSpec extends Specification {
     createWebhookTask.webhookService = Stub(WebhookService) {
       def headers = new HttpHeaders()
       headers.add(HttpHeaders.LOCATION, "https://my-service.io/api/status/123")
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<Map>([success: true], headers, HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<String>("success: true", headers, HttpStatus.CREATED)
     }
 
     when:
@@ -413,10 +448,11 @@ class CreateWebhookTaskSpec extends Specification {
       statusUrlJsonPath: '$.location'
     ])
 
-    def body = [success: true, location: "https://my-service.io/api/status/123"]
+    def body = '{"success": true, "location": "https://my-service.io/api/status/123"}'
+    def parsedBody = [success: true, location: "https://my-service.io/api/status/123"]
 
     createWebhookTask.webhookService = Stub(WebhookService) {
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<Map>(body, HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<String>(body, HttpStatus.CREATED)
     }
 
     when:
@@ -427,11 +463,11 @@ class CreateWebhookTaskSpec extends Specification {
     result.context as Map == [
       deprecationWarning: "All webhook information will be moved beneath the key 'webhook', and the keys 'statusCode', 'buildInfo', 'statusEndpoint' and 'error' will be removed. Please migrate today.",
       statusCode: HttpStatus.CREATED,
-      buildInfo: body,
+      buildInfo: parsedBody,
       webhook: [
         statusCode: HttpStatus.CREATED,
         statusCodeValue: HttpStatus.CREATED.value(),
-        body: body,
+        body: parsedBody,
         statusEndpoint: "https://my-service.io/api/status/123"
       ]
     ]
@@ -447,7 +483,8 @@ class CreateWebhookTaskSpec extends Specification {
       statusUrlJsonPath: '$.location.something'
     ])
 
-    def body = [
+    def body = '{"success": true, "location": {"url": "https://my-service.io/api/status/123", "something": ["this", "is", "a", "list"]}}'
+    def parsedBody = [
       success: true,
       location: [
         url: "https://my-service.io/api/status/123",
@@ -456,7 +493,7 @@ class CreateWebhookTaskSpec extends Specification {
     ]
 
     createWebhookTask.webhookService = Stub(WebhookService) {
-      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<Map>(body, HttpStatus.CREATED)
+      exchange(HttpMethod.POST, "https://my-service.io/api/", null, null) >> new ResponseEntity<String>(body, HttpStatus.CREATED)
     }
 
     when:
@@ -468,7 +505,7 @@ class CreateWebhookTaskSpec extends Specification {
       webhook: [
         statusCode: HttpStatus.CREATED,
         statusCodeValue: HttpStatus.CREATED.value(),
-        body: body,
+        body: parsedBody,
         error: "The status URL couldn't be resolved, but 'Wait for completion' was checked",
         statusEndpoint: ["this", "is", "a", "list"]
       ]
