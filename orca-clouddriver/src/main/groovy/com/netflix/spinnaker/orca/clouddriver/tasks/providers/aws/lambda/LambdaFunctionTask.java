@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
   essentially just passes an arbitrary operation over to Clouddriver.
 */
 @Component
-public class lambdaFunctionTask extends AbstractCloudProviderAwareTask implements Task {
+public class LambdaFunctionTask extends AbstractCloudProviderAwareTask implements Task {
 
   @Autowired KatoService katoService;
 
@@ -52,7 +52,7 @@ public class lambdaFunctionTask extends AbstractCloudProviderAwareTask implement
     Map<String, Object> task = new HashMap<>(stage.getContext());
 
     String operationName = (String) task.get("operation");
-    if (!StringUtils.isNotBlank(operationName)) {
+    if (StringUtils.isBlank(operationName)) {
       throw new IllegalArgumentException(
           "Field 'operation' is missing and must be present in stage context");
     }

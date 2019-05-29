@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws;
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.lambdaFunctionTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.LambdaFunctionTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
@@ -30,7 +30,7 @@ public class LambdaFunctionStage implements StageDefinitionBuilder {
   @Override
   public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
     builder
-        .withTask(lambdaFunctionTask.TASK_NAME, lambdaFunctionTask.class)
+        .withTask(LambdaFunctionTask.TASK_NAME, LambdaFunctionTask.class)
         .withTask("monitorLambdaFunction", MonitorKatoTask.class);
   }
 }
