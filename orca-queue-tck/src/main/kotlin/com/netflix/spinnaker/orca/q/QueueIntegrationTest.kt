@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus.*
+import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
+import com.netflix.appinfo.InstanceInfo.InstanceStatus.STARTING
+import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.discovery.StatusChangeEvent
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
@@ -25,7 +27,14 @@ import com.netflix.spinnaker.config.OrcaQueueConfiguration
 import com.netflix.spinnaker.config.QueueConfiguration
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.orca.CancellableStage
-import com.netflix.spinnaker.orca.ExecutionStatus.*
+import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
+import com.netflix.spinnaker.orca.ExecutionStatus.FAILED_CONTINUE
+import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.ExecutionStatus.SKIPPED
+import com.netflix.spinnaker.orca.ExecutionStatus.STOPPED
+import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler
@@ -49,7 +58,16 @@ import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.memory.InMemoryQueue
 import com.netflix.spinnaker.q.metrics.EventPublisher
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.argThat
+import com.nhaarman.mockito_kotlin.check
+import com.nhaarman.mockito_kotlin.doAnswer
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.never
+import com.nhaarman.mockito_kotlin.reset
+import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -80,7 +98,7 @@ import java.time.temporal.ChronoUnit.HOURS
   properties = ["queue.retry.delay.ms=10"]
 )
 @RunWith(SpringRunner::class)
-class QueueIntegrationTest {
+abstract class QueueIntegrationTest {
 
   @Autowired
   lateinit var queue: Queue
@@ -93,7 +111,7 @@ class QueueIntegrationTest {
   @Autowired
   lateinit var context: ConfigurableApplicationContext
 
-  @Value("\${tasks.executionWindow.timezone:America/Los_Angeles}")
+  @Value("\${tasks.execution-window.timezone:America/Los_Angeles}")
   lateinit var timeZoneId: String
   private val timeZone by lazy { ZoneId.of(timeZoneId) }
 
@@ -142,7 +160,7 @@ class QueueIntegrationTest {
     repository.store(pipeline)
 
     whenever(dummyTask.timeout) doReturn 2000L
-    whenever(dummyTask.execute(any())) doReturn TaskResult(RUNNING) doReturn TaskResult.SUCCEEDED
+    whenever(dummyTask.execute(any())) doReturn TaskResult.RUNNING doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
 
@@ -264,7 +282,7 @@ class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.execute(any())) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(any())) doReturn TaskResult.ofStatus(TERMINAL)
 
     context.runToCompletion(pipeline, runner::start, repository)
 
@@ -304,7 +322,7 @@ class QueueIntegrationTest {
     repository.store(pipeline)
 
     whenever(dummyTask.timeout) doReturn 2000L
-    whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult.ofStatus(TERMINAL)
     whenever(dummyTask.execute(argThat { refId != "2a1" })) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -352,7 +370,7 @@ class QueueIntegrationTest {
     repository.store(pipeline)
 
     whenever(dummyTask.timeout) doReturn 2000L
-    whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult.ofStatus(TERMINAL)
     whenever(dummyTask.execute(argThat { refId != "2a1" })) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -407,7 +425,7 @@ class QueueIntegrationTest {
     repository.store(pipeline)
 
     whenever(dummyTask.timeout) doReturn 2000L
-    whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult.ofStatus(TERMINAL)
     whenever(dummyTask.execute(argThat { refId != "2a1" })) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -445,7 +463,7 @@ class QueueIntegrationTest {
     repository.store(childPipeline)
     repository.store(parentPipeline)
 
-    whenever(dummyTask.execute(argThat { refId == "1" })) doReturn TaskResult(CANCELED)
+    whenever(dummyTask.execute(argThat { refId == "1" })) doReturn TaskResult.ofStatus(CANCELED)
     context.runParentToCompletion(parentPipeline, childPipeline, runner::start, repository)
 
     repository.retrieve(PIPELINE, parentPipeline.id).apply {
@@ -481,7 +499,7 @@ class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.execute(argThat { refId == "2" })) doReturn TaskResult(TERMINAL)
+    whenever(dummyTask.execute(argThat { refId == "2" })) doReturn TaskResult.ofStatus(TERMINAL)
 
     context.runToCompletion(pipeline, runner::start, repository)
 
@@ -602,7 +620,7 @@ class QueueIntegrationTest {
     repository.store(pipeline)
 
     whenever(dummyTask.timeout) doReturn 2000L
-    whenever(dummyTask.execute(any())) doReturn TaskResult(SUCCEEDED, mapOf("output" to "foo"))
+    whenever(dummyTask.execute(any())) doReturn TaskResult.builder(SUCCEEDED).context(mapOf("output" to "foo")).build()
 
     context.runToCompletion(pipeline, runner::start, repository)
 
@@ -695,7 +713,7 @@ class QueueIntegrationTest {
     whenever(dummyTask.execute(any())) doAnswer {
       val stage = it.arguments.first() as Stage
       if (stage.refId == "1") {
-        TaskResult(SUCCEEDED, emptyMap<String, Any?>(), mapOf("foo" to false))
+        TaskResult.builder(SUCCEEDED).outputs(mapOf("foo" to false)).build()
       } else {
         TaskResult.SUCCEEDED
       }
@@ -752,7 +770,7 @@ class QueueIntegrationTest {
     whenever(dummyTask.execute(any())) doAnswer {
       val stage = it.arguments.first() as Stage
       if (stage.refId == "1") {
-        TaskResult(SUCCEEDED, emptyMap<String, Any?>(), mapOf("foo" to false))
+        TaskResult.builder(SUCCEEDED).outputs(mapOf("foo" to false)).build()
       } else {
         TaskResult.SUCCEEDED
       }
@@ -789,7 +807,7 @@ class QueueIntegrationTest {
     whenever(dummyTask.execute(any())) doAnswer {
       val stage = it.arguments.first() as Stage
       if (stage.refId == "1") {
-        TaskResult(TERMINAL)
+        TaskResult.ofStatus(TERMINAL)
       } else {
         TaskResult.SUCCEEDED
       }
@@ -923,4 +941,3 @@ class TestConfig {
     return DelegatingApplicationEventMulticaster(sync, async)
   }
 }
-

@@ -44,7 +44,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
 
   final long backoffPeriod = 10000
 
-  @Value('${tasks.findImageFromClusterTimeoutMillis:600000}')
+  @Value('${tasks.find-image-from-cluster-timeout-millis:600000}')
   long timeout
 
   static enum SelectionStrategy {
@@ -69,7 +69,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
     FAIL
   }
 
-  @Value('${findImage.defaultResolveMissingLocations:false}')
+  @Value('${find-image.default-resolve-missing-locations:false}')
   boolean defaultResolveMissingLocations = false
 
   @Value('${default.bake.account:default}')
@@ -160,7 +160,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
         return [(location): summaries]
       } catch (RetrofitError e) {
         if (e.response?.status == 404) {
-          final Map reason
+          Map reason
           try {
             reason = objectMapper.readValue(e.response.body.in(), new TypeReference<Map<String, Object>>() {})
           } catch (Exception ignored) {
@@ -183,7 +183,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
     if (!locationsWithMissingImageIds.isEmpty()) {
       // signifies that at least one summary was missing image details, let's retry until we see image details
       log.warn("One or more locations are missing image details (locations: ${locationsWithMissingImageIds*.value}, cluster: ${config.cluster}, account: ${account}, executionId: ${stage.execution.id})")
-      return new TaskResult(ExecutionStatus.RUNNING)
+      return TaskResult.ofStatus(ExecutionStatus.RUNNING)
     }
 
     if (missingLocations) {
@@ -292,12 +292,12 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
       return artifact
     }.flatten()
 
-    return new TaskResult(ExecutionStatus.SUCCEEDED, [
+    return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
       amiDetails: deploymentDetails,
       artifacts: artifacts
-    ], [
+    ]).outputs([
       deploymentDetails: deploymentDetails
-    ])
+    ]).build()
   }
 
   private void resolveFromBaseImageName(

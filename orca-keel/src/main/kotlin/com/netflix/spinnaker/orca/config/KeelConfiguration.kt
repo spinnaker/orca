@@ -41,15 +41,17 @@ import retrofit.converter.JacksonConverter
   ]
 )
 class KeelConfiguration {
-  @Bean fun keelEndpoint(@Value("\${keel.baseUrl}") keelBaseUrl: String): Endpoint {
+  @Bean fun keelEndpoint(@Value("\${keel.base-url}") keelBaseUrl: String): Endpoint {
     return Endpoints.newFixedEndpoint(keelBaseUrl)
   }
 
-  @Bean fun keelService(keelEndpoint: Endpoint,
-                  keelObjectMapper: ObjectMapper,
-                  retrofitClient: Client,
-                  retrofitLogLevel: RestAdapter.LogLevel)
-    = RestAdapter.Builder()
+  @Bean fun keelService(
+    keelEndpoint: Endpoint,
+    keelObjectMapper: ObjectMapper,
+    retrofitClient: Client,
+    retrofitLogLevel: RestAdapter.LogLevel
+  ) =
+    RestAdapter.Builder()
       .setEndpoint(keelEndpoint)
       .setClient(retrofitClient)
       .setLogLevel(retrofitLogLevel)
@@ -57,10 +59,8 @@ class KeelConfiguration {
       .build()
       .create(KeelService::class.java)
 
-
-  @Bean fun keelObjectMapper()
-    = OrcaObjectMapper.newInstance()
+  @Bean fun keelObjectMapper() =
+    OrcaObjectMapper.newInstance()
     .registerModule(KotlinModule())
     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 }
-

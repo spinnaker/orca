@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import javax.annotation.PostConstruct
 
-
 /**
  * The QueueShovel can be used to migrate from one queue implementation to another without an
  * operator needing to perform any substantial external work.
@@ -43,7 +42,7 @@ class QueueShovel(
   private val shoveledMessageId = registry.createId("orca.nu.shovel.pushedMessageRate")
   private val shovelErrorId = registry.createId("orca.nu.shovel.pushedMessageErrorRate")
 
-  @Scheduled(fixedDelayString = "\${queue.shovel.pollFrequency.ms:500}")
+  @Scheduled(fixedDelayString = "\${queue.shovel.poll-frequency.ms:500}")
   fun migrateOne() {
     activator.ifEnabled {
       registry.counter(pollOpsRateId).increment()

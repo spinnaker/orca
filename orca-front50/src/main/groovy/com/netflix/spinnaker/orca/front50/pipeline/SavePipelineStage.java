@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SavePipelineStage implements StageDefinitionBuilder {
-  @Value("${tasks.useManagedServiceAccounts:false}")
+  @Value("${tasks.use-managed-service-accounts:false}")
   boolean useManagedServiceAccounts;
 
   @Override
@@ -36,7 +36,7 @@ public class SavePipelineStage implements StageDefinitionBuilder {
     }
 
     builder
-      .withTask("savePipeline", SavePipelineTask.class)
-      .withTask("waitForPipelineSave", MonitorFront50Task.class);
+        .withTask("savePipeline", SavePipelineTask.class)
+        .withTask("waitForPipelineSave", MonitorFront50Task.class);
   }
 }

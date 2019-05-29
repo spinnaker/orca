@@ -59,13 +59,13 @@ class CreateBakeTask implements RetryableTask {
   @Autowired(required = false)
   Front50Service front50Service
 
-  @Value('${bakery.extractBuildDetails:false}')
+  @Value('${bakery.extract-build-details:false}')
   boolean extractBuildDetails
 
-  @Value('${bakery.roscoApisEnabled:false}')
+  @Value('${bakery.rosco-apis-enabled:false}')
   boolean roscoApisEnabled
 
-  @Value('${bakery.allowMissingPackageInstallation:false}')
+  @Value('${bakery.allow-missing-package-installation:false}')
   boolean allowMissingPackageInstallation
 
   RetrySupport retrySupport = new RetrySupport()
@@ -125,7 +125,7 @@ class CreateBakeTask implements RetryableTask {
         }
       }
 
-      new TaskResult(ExecutionStatus.SUCCEEDED, stageOutputs)
+      TaskResult.builder(ExecutionStatus.SUCCEEDED).context(stageOutputs).build()
     } catch (RetrofitError e) {
       if (e.response?.status && e.response.status == 404) {
         try {
@@ -138,7 +138,7 @@ class CreateBakeTask implements RetryableTask {
           // do nothing
         }
 
-        return new TaskResult(ExecutionStatus.RUNNING)
+        return TaskResult.ofStatus(ExecutionStatus.RUNNING)
       }
       throw e
     }
@@ -192,7 +192,7 @@ class CreateBakeTask implements RetryableTask {
 
     def request = mapper.convertValue(requestMap, BakeRequest)
     if (!roscoApisEnabled) {
-      request.other.clear()
+      request.other().clear()
     }
     return request
   }

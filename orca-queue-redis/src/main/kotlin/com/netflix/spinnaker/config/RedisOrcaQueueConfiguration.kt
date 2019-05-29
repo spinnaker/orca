@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PRO
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.q.redis.migration.ExecutionTypeDeserializer
@@ -38,16 +37,18 @@ import org.springframework.context.annotation.Configuration
 import redis.clients.jedis.Jedis
 import redis.clients.util.Pool
 import java.time.Clock
-import java.util.*
+import java.util.Optional
 
 @Configuration
 @EnableConfigurationProperties(ObjectMapperSubtypeProperties::class)
 class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
 
   @Autowired
-  fun redisQueueObjectMapper(mapper: ObjectMapper,
-                             objectMapperSubtypeProperties: ObjectMapperSubtypeProperties,
-                             taskResolver: TaskResolver) {
+  fun redisQueueObjectMapper(
+    mapper: ObjectMapper,
+    objectMapperSubtypeProperties: ObjectMapperSubtypeProperties,
+    taskResolver: TaskResolver
+  ) {
     mapper.apply {
       registerModule(KotlinModule())
       registerModule(
@@ -84,5 +85,4 @@ class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
     mapper: ObjectMapper
   ) =
     RedisPendingExecutionService(jedisPool, mapper)
-
 }

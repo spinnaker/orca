@@ -17,8 +17,10 @@ package com.netflix.spinnaker.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.sql.JooqSqlCommentAppender
 import com.netflix.spinnaker.orca.sql.JooqToSpringExceptionTransformer
+import com.netflix.spinnaker.orca.sql.QueryLogger
 import com.netflix.spinnaker.orca.sql.SpringLiquibaseProxy
 import com.netflix.spinnaker.orca.sql.SqlHealthIndicator
 import com.netflix.spinnaker.orca.sql.SqlHealthcheckActivator
@@ -59,7 +61,7 @@ class SqlConfiguration {
     System.setProperty("org.jooq.no-logo", "true")
 
     forceInetAddressCachePolicy()
-    Security.setProperty("networkaddress.cache.ttl", "0");
+    Security.setProperty("networkaddress.cache.ttl", "0")
   }
 
   @Bean fun liquibase(properties: SqlProperties): SpringLiquibase =
@@ -69,7 +71,7 @@ class SqlConfiguration {
     DataSourceTransactionManager(dataSource)
 
   @Bean fun dataSourceConnectionProvider(dataSource: DataSource): DataSourceConnectionProvider =
-    object: DataSourceConnectionProvider(TransactionAwareDataSourceProxy(dataSource)) {
+    object : DataSourceConnectionProvider(TransactionAwareDataSourceProxy(dataSource)) {
       // Use READ COMMITTED if possible
       override fun acquire(): Connection = super.acquire().apply {
           if (metaData.supportsTransactionIsolationLevel(Connection.TRANSACTION_READ_COMMITTED)) {
@@ -78,13 +80,17 @@ class SqlConfiguration {
         }
     }
 
-  @Bean fun jooqConfiguration(connectionProvider: DataSourceConnectionProvider,
-                              properties: SqlProperties): DefaultConfiguration =
+  @Bean fun jooqConfiguration(
+    connectionProvider: DataSourceConnectionProvider,
+    properties: SqlProperties,
+    dynamicConfigService: DynamicConfigService
+  ): DefaultConfiguration =
     DefaultConfiguration().apply {
       set(*DefaultExecuteListenerProvider.providers(
         JooqToSpringExceptionTransformer(),
         JooqSqlCommentAppender(),
-        SlowQueryLogger()
+        SlowQueryLogger(),
+        QueryLogger(dynamicConfigService)
       ))
       set(connectionProvider)
       setSQLDialect(properties.connectionPool.dialect)
@@ -93,11 +99,13 @@ class SqlConfiguration {
   @Bean(destroyMethod = "close") fun dsl(jooqConfiguration: DefaultConfiguration): DSLContext =
     DefaultDSLContext(jooqConfiguration)
 
-  @ConditionalOnProperty("executionRepository.sql.enabled")
-  @Bean fun sqlExecutionRepository(dsl: DSLContext,
-                                   mapper: ObjectMapper,
-                                   registry: Registry,
-                                   properties: SqlProperties) =
+  @ConditionalOnProperty("execution-repository.sql.enabled")
+  @Bean fun sqlExecutionRepository(
+    dsl: DSLContext,
+    mapper: ObjectMapper,
+    registry: Registry,
+    properties: SqlProperties
+  ) =
     SqlInstrumentedExecutionRepository(
       SqlExecutionRepository(
         properties.partitionName,
@@ -112,8 +120,10 @@ class SqlConfiguration {
   @Bean fun sqlHealthcheckActivator(dsl: DSLContext, registry: Registry) =
     SqlHealthcheckActivator(dsl, registry)
 
-  @Bean("dbHealthIndicator") fun dbHealthIndicator(sqlHealthcheckActivator: SqlHealthcheckActivator,
-                                                   sqlProperties: SqlProperties) =
+  @Bean("dbHealthIndicator") fun dbHealthIndicator(
+    sqlHealthcheckActivator: SqlHealthcheckActivator,
+    sqlProperties: SqlProperties
+  ) =
     SqlHealthIndicator(sqlHealthcheckActivator, sqlProperties.connectionPool.dialect)
 }
 

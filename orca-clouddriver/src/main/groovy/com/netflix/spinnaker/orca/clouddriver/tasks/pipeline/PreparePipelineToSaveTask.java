@@ -22,13 +22,12 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 @Component
 public class PreparePipelineToSaveTask implements Task {
@@ -46,7 +45,7 @@ public class PreparePipelineToSaveTask implements Task {
     final SavePipelinesData input = stage.mapTo(SavePipelinesData.class);
     if (input.getPipelinesToSave() == null || input.getPipelinesToSave().isEmpty()) {
       log.info("There are no pipelines to save.");
-      return new TaskResult(ExecutionStatus.TERMINAL);
+      return TaskResult.ofStatus(ExecutionStatus.TERMINAL);
     }
     final Map pipelineData = input.getPipelinesToSave().get(0);
     final String pipelineString;
@@ -56,11 +55,14 @@ public class PreparePipelineToSaveTask implements Task {
       throw new IllegalStateException(e);
     }
     final String encodedPipeline = Base64.getEncoder().encodeToString(pipelineString.getBytes());
-    final List<Map> remainingPipelinesToSave = input.getPipelinesToSave().subList(1, input.getPipelinesToSave().size());
-    final SavePipelinesData outputSavePipelinesData = new SavePipelinesData(encodedPipeline, remainingPipelinesToSave);
-    final Map output = objectMapper.convertValue(outputSavePipelinesData, new TypeReference<Map<String, Object>>() {});
+    final List<Map> remainingPipelinesToSave =
+        input.getPipelinesToSave().subList(1, input.getPipelinesToSave().size());
+    final SavePipelinesData outputSavePipelinesData =
+        new SavePipelinesData(encodedPipeline, remainingPipelinesToSave);
+    final Map output =
+        objectMapper.convertValue(
+            outputSavePipelinesData, new TypeReference<Map<String, Object>>() {});
     output.put("isExistingPipeline", pipelineData.get("id") != null);
-    return new TaskResult(ExecutionStatus.SUCCEEDED, output);
+    return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(output).build();
   }
-
 }

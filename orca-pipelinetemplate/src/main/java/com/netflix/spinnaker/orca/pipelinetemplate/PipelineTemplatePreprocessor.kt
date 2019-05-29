@@ -27,11 +27,13 @@ import com.netflix.spinnaker.orca.pipelinetemplate.handler.SchemaVersionHandler
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import javax.annotation.Nonnull
 import javax.annotation.PostConstruct
 
 @Component("pipelineTemplatePreprocessor")
+@Order(2)
 class PipelineTemplatePreprocessor
 @Autowired constructor(
   private val pipelineTemplateObjectMapper: ObjectMapper,
@@ -45,8 +47,10 @@ class PipelineTemplatePreprocessor
 
   @PostConstruct fun confirmUsage() = log.info("Using ${javaClass.simpleName}")
 
-  override fun supports(@Nonnull execution: MutableMap<String, Any>,
-                        @Nonnull type: ExecutionPreprocessor.Type): Boolean = true
+  override fun supports(
+    @Nonnull execution: MutableMap<String, Any>,
+    @Nonnull type: ExecutionPreprocessor.Type
+  ): Boolean = true
 
   override fun process(pipeline: MutableMap<String, Any>): MutableMap<String, Any> {
     // TODO(jacobkiefer): We push the 'toplevel' v2 config into a 'config' field to play nice
@@ -61,7 +65,6 @@ class PipelineTemplatePreprocessor
       pipeline.put("config", templateConfig)
       pipeline.put("type", "templatedPipeline")
     }
-
 
     val request = pipelineTemplateObjectMapper.convertValue(pipeline, TemplatedPipelineRequest::class.java)
     if (!request.isTemplatedPipelineRequest) {
@@ -96,7 +99,7 @@ class PipelineTemplatePreprocessor
       }
     }
 
-    recordRequest(context, context.getErrors().hasErrors(false))
+    recordRequest(context, !context.getErrors().hasErrors(false))
 
     log.debug("Handler chain complete")
     return context.getProcessedOutput()

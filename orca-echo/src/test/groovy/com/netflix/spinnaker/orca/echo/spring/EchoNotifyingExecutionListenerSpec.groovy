@@ -136,8 +136,8 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
     then:
     pipeline.notifications.size() == 2
-    pipeline.notifications.when == [["pipeline.started", "pipeline.completed"], ["pipeline.failed"]]
-    pipeline.notifications.extraField == ["extra", null]
+    pipeline.notifications.when.containsAll(["pipeline.started", "pipeline.completed"], ["pipeline.failed"])
+    pipeline.notifications.extraField.containsAll("extra", null)
     1 * front50Service.getApplicationNotifications("myapp") >> notifications
     1 * echoService.recordEvent(_)
     0 * _
@@ -190,8 +190,8 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
     pipeline.notifications == [slackPipes]
 
     1 * front50Service.getApplicationNotifications("myapp") >> {
-      assert MDC.get(AuthenticatedRequest.SPINNAKER_USER) == "user@schibsted.com"
-      assert MDC.get(AuthenticatedRequest.SPINNAKER_ACCOUNTS) == "someAccount,anotherAccount"
+      assert MDC.get(AuthenticatedRequest.Header.USER.header) == "user@schibsted.com"
+      assert MDC.get(AuthenticatedRequest.Header.ACCOUNTS.header) == "someAccount,anotherAccount"
       return notifications
     }
     1 * echoService.recordEvent(_)
@@ -218,7 +218,8 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
     echoListener.beforeExecution(null, pipeline)
 
     then:
-    pipeline.notifications == [notification1, notification2]
+    pipeline.notifications.size() == 2
+    pipeline.notifications.containsAll(notification1, notification2)
 
     1 * front50Service.getApplicationNotifications("myapp") >> notifications
     1 * echoService.recordEvent(_)

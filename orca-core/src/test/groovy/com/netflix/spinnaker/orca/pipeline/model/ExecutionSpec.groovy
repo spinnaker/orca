@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.model
 
 import com.netflix.spinnaker.security.AuthenticatedRequest
-import org.apache.log4j.MDC
+import org.slf4j.MDC
 import spock.lang.Specification
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
@@ -34,8 +34,8 @@ class ExecutionSpec extends Specification {
   def "should build AuthenticationDetails containing authenticated details"() {
     given:
     MDC.clear()
-    MDC.put(AuthenticatedRequest.SPINNAKER_USER, "SpinnakerUser")
-    MDC.put(AuthenticatedRequest.SPINNAKER_ACCOUNTS, "Account1,Account2")
+    MDC.put(AuthenticatedRequest.Header.USER.header, "SpinnakerUser")
+    MDC.put(AuthenticatedRequest.Header.ACCOUNTS.header, "Account1,Account2")
 
     when:
     def authenticationDetails = Execution.AuthenticationDetails.build().get()

@@ -41,7 +41,7 @@ import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.json.JsonSlurper
-import org.apache.log4j.MDC
+import org.slf4j.MDC
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
@@ -264,7 +264,7 @@ class OperationsControllerSpec extends Specification {
     buildService.getBuild(buildNumber, master, job) >> buildInfo
 
     if (queryUser) {
-      MDC.put(AuthenticatedRequest.SPINNAKER_USER, queryUser)
+      MDC.put(AuthenticatedRequest.Header.USER.header, queryUser)
     }
     when:
     controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))

@@ -22,13 +22,11 @@ import com.netflix.spinnaker.orca.listeners.ExecutionListener;
 import com.netflix.spinnaker.orca.listeners.Persister;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
+import com.netflix.spinnaker.security.AuthenticatedRequest;
 import org.slf4j.MDC;
 import org.springframework.context.ApplicationListener;
-import static com.netflix.spinnaker.security.AuthenticatedRequest.SPINNAKER_EXECUTION_ID;
 
-/**
- * Adapts events emitted by the nu-orca queue to an old-style listener.
- */
+/** Adapts events emitted by the nu-orca queue to an old-style listener. */
 public final class ExecutionListenerAdapter implements ApplicationListener<ExecutionEvent> {
 
   private final ExecutionListener delegate;
@@ -41,18 +39,18 @@ public final class ExecutionListenerAdapter implements ApplicationListener<Execu
     persister = new DefaultPersister(repository);
   }
 
-  @Override public void onApplicationEvent(ExecutionEvent event) {
+  @Override
+  public void onApplicationEvent(ExecutionEvent event) {
     try {
-      MDC.put(SPINNAKER_EXECUTION_ID, event.getExecutionId());
+      MDC.put(AuthenticatedRequest.Header.EXECUTION_ID.getHeader(), event.getExecutionId());
       if (event instanceof ExecutionStarted) {
         onExecutionStarted((ExecutionStarted) event);
       } else if (event instanceof ExecutionComplete) {
         onExecutionComplete((ExecutionComplete) event);
       }
     } finally {
-      MDC.remove(SPINNAKER_EXECUTION_ID);
+      MDC.remove(AuthenticatedRequest.Header.EXECUTION_ID.getHeader());
     }
-
   }
 
   private void onExecutionStarted(ExecutionStarted event) {
