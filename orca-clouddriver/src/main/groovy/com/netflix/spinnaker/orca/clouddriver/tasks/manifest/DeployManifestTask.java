@@ -138,6 +138,7 @@ public class DeployManifestTask extends AbstractCloudProviderAwareTask implement
     for (String id : Optional.ofNullable(context.getRequiredArtifactIds()).orElse(emptyList())) {
       Artifact requiredArtifact = artifactResolver.getBoundArtifactForId(stage, id);
       if (requiredArtifact == null) {
+    	  log.info(" required artfact within null...")
         throw new IllegalStateException("No artifact with id '" + id + "' could be found in the pipeline context.");
       }
 
