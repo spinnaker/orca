@@ -51,7 +51,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   @Override
   List<StepDefinition> additionalSteps(Stage stage) {
     def stageData = stage.mapTo(StageData)
-    if (Strategy.fromStrategy(stageData.strategy) == Strategy.ROLLING_RED_BLACK) {
+    if (Strategy.fromStrategyKey(stageData.strategy) == Strategy.ROLLING_RED_BLACK) {
       // rolling red/black has no need to snapshot capacities
       return []
     }
@@ -114,7 +114,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   List<StageDefinition> afterStageDefinitions(Stage stage) {
     def stageData = stage.mapTo(StageData)
     def stageDefinitions = []
-    if (Strategy.fromStrategy(stageData.strategy) != Strategy.ROLLING_RED_BLACK) {
+    if (Strategy.fromStrategyKey(stageData.strategy) != Strategy.ROLLING_RED_BLACK) {
       // rolling red/black has no need to apply a snapshotted capacity (on the newly created server group)
       stageDefinitions << new StageDefinition(
         name: "restoreMinCapacityFromSnapshot",
@@ -152,12 +152,12 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
 
   private static boolean shouldPinSourceServerGroup(String strategy) {
     // TODO-AJ consciously only enabling for rolling red/black -- will add support for other strategies after it's working
-    return (Strategy.fromStrategy(strategy) == Strategy.ROLLING_RED_BLACK)
+    return (Strategy.fromStrategyKey(strategy) == Strategy.ROLLING_RED_BLACK)
   }
 
   private static boolean shouldCheckServerGroupsPreconditions(StageData stageData) {
     // TODO(dreynaud): enabling cautiously for RRB only for testing, but we would ideally roll this out to other strategies
-    return (Strategy.fromStrategy(stageData.strategy) == Strategy.ROLLING_RED_BLACK) && (stageData.maxInitialAsgs != -1)
+    return (Strategy.fromStrategyKey(stageData.strategy) == Strategy.ROLLING_RED_BLACK) && (stageData.maxInitialAsgs != -1)
   }
 
   private Optional<Map<String, Object>> getResizeContext(StageData stageData) {

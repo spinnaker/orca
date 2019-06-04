@@ -34,7 +34,7 @@ class TitusDeployStagePreProcessor implements DeployStagePreProcessor {
   @Override
   List<StepDefinition> additionalSteps(Stage stage) {
     def stageData = stage.mapTo(StageData)
-    if (Strategy.fromStrategy(stageData.strategy) == Strategy.ROLLING_RED_BLACK) {
+    if (Strategy.fromStrategyKey(stageData.strategy) == Strategy.ROLLING_RED_BLACK) {
       // rolling red/black has no need to snapshot capacities
       return []
     }
@@ -57,7 +57,7 @@ class TitusDeployStagePreProcessor implements DeployStagePreProcessor {
   List<StageDefinition> afterStageDefinitions(Stage stage) {
     def stageData = stage.mapTo(StageData)
     def stageDefinitions = []
-    if (Strategy.fromStrategy(stageData.strategy) != Strategy.ROLLING_RED_BLACK) {
+    if (Strategy.fromStrategyKey(stageData.strategy) != Strategy.ROLLING_RED_BLACK) {
       // rolling red/black has no need to apply a snapshotted capacity (on the newly created server group)
       stageDefinitions << new StageDefinition(
         name: "restoreMinCapacityFromSnapshot",
