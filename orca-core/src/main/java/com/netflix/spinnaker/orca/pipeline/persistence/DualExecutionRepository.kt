@@ -233,6 +233,31 @@ class DualExecutionRepository(
     )
   }
 
+  override fun retrieveExecutionsWithStatusInTimeWindow(
+    executionType: Execution.ExecutionType,
+    status: String,
+    updatedAtStart: Long,
+    updatedAtEnd: Long
+  ): List<Execution> {
+
+    return primary.retrieveExecutionsWithStatusInTimeWindow(executionType, status, updatedAtStart, updatedAtStart)
+      .plus(previous.retrieveExecutionsWithStatusInTimeWindow(executionType, status, updatedAtStart, updatedAtStart)
+    )
+  }
+
+  override fun retrieveExecutionsWithSpecificStageTypesInTimeWindow(
+    executionType: Execution.ExecutionType,
+    status: String,
+    stageType: String,
+    updatedAtStart: Long,
+    updatedAtEnd: Long
+  ): List<Execution> {
+
+    return primary.retrieveExecutionsWithSpecificStageTypesInTimeWindow(executionType, status, stageType, updatedAtStart, updatedAtStart)
+      .plus(previous.retrieveExecutionsWithSpecificStageTypesInTimeWindow(executionType, status, stageType, updatedAtStart, updatedAtStart)
+      )
+  }
+
   override fun retrieveOrchestrationsForApplication(
     application: String,
     criteria: ExecutionCriteria,

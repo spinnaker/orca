@@ -114,6 +114,18 @@ public interface ExecutionRepository {
       @Nonnull String application, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
+  List<Execution> retrieveExecutionsWithStatusInTimeWindow(
+      ExecutionType executionType, String status, long updatedAtStart, long updatedAtEnd);
+
+  @Nonnull
+  List<Execution> retrieveExecutionsWithSpecificStageTypesInTimeWindow(
+      ExecutionType executionType,
+      String status,
+      String stageType,
+      long updatedAtStart,
+      long updatedAtEnd);
+
+  @Nonnull
   List<Execution> retrieveOrchestrationsForApplication(
       @Nonnull String application,
       @Nonnull ExecutionCriteria criteria,

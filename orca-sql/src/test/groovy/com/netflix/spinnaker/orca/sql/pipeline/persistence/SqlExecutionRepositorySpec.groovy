@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.config.TransactionRetryProperties
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -29,6 +30,7 @@ import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Unroll
 
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_ASC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_DESC
@@ -500,5 +502,43 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
       5L,
       new ExecutionCriteria().setPageSize(1).setSortType(BUILD_TIME_ASC)
     ).size() == 0
+  }
+
+  @Unroll
+  def "can retrieve #type by status and time window"() {
+    given:
+    def id = ulid.nextULID()
+    def since = System.currentTimeMillis()
+    ExecutionRepository repo = createExecutionRepository()
+    Execution execution = new Execution(type, id, "myapp")
+    execution.stages.add(new Stage(execution, "wait", "wait", Collections.emptyMap()))
+    execution.status = ExecutionStatus.TERMINAL
+    repo.store(execution)
+    def until = System.currentTimeMillis()
+
+    def otherId = ulid.nextULID()
+    execution = new Execution(type, otherId, "myapp")
+    execution.stages.add(new Stage(execution, "wait", "wait", Collections.emptyMap()))
+    execution.status = ExecutionStatus.SUCCEEDED
+    repo.store(execution)
+
+    when:
+    List<Execution> e1 = repo.retrieveExecutionsWithStatusInTimeWindow(type, "TERMINAL", since, until)
+
+    then:
+    e1.size() == 1
+    e1[0].id == id
+
+    when:
+    List<Execution> e2 = repo.retrieveExecutionsWithStatusInTimeWindow(type, "SUCCEEDED", since, System.currentTimeMillis())
+
+    then:
+    e2.size() == 1
+    e2[0].id == otherId
+
+    where:
+    _ | type
+    _ | PIPELINE
+    _ | ORCHESTRATION
   }
 }

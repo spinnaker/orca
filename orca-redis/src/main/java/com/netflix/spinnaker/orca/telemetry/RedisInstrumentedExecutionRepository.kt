@@ -170,6 +170,29 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
+  override fun retrieveExecutionsWithStatusInTimeWindow(
+    executionType: Execution.ExecutionType,
+    status: String,
+    updatedAtStart: Long,
+    updatedAtEnd: Long
+  ): List<Execution> {
+    return withMetrics("retrieveExecutionsWithStatusInTimeWindow") {
+      executionRepository.retrieveExecutionsWithStatusInTimeWindow(executionType, status, updatedAtStart, updatedAtEnd)
+    }
+  }
+
+  override fun retrieveExecutionsWithSpecificStageTypesInTimeWindow(
+    executionType: Execution.ExecutionType,
+    status: String,
+    stageType: String,
+    updatedAtStart: Long,
+    updatedAtEnd: Long
+  ): List<Execution> {
+    return withMetrics("retrieveExecutionsWithSpecificStageTypesInTimeWindow") {
+      executionRepository.retrieveExecutionsWithSpecificStageTypesInTimeWindow(executionType, status, stageType, updatedAtStart, updatedAtEnd)
+    }
+  }
+
   override fun retrieveOrchestrationsForApplication(
     application: String,
     criteria: ExecutionRepository.ExecutionCriteria,

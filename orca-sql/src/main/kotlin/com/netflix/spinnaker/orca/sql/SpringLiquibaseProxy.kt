@@ -67,8 +67,8 @@ class SpringLiquibaseProxy(
   private fun createDataSource(): DataSource =
     sqlProperties.migration.run {
       val ds = SingleConnectionDataSource(jdbcUrl, user, password, true)
-      if (driver != null) {
-        ds.setDriverClassName(driver)
+      driver?.let {
+        ds.setDriverClassName(it)
       }
       ds
     }

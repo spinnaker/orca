@@ -21,7 +21,9 @@ import com.netflix.config.validation.ValidationException
 import com.netflix.spinnaker.kork.exceptions.HasAdditionalAttributes
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand
 import com.netflix.spinnaker.orca.eureka.NoDiscoveryApplicationStatusPublisher
+import com.netflix.spinnaker.orca.model.AdminExecutionSearchResult
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -45,6 +47,10 @@ class AdminController {
 
   @Autowired
   ForceExecutionCancellationCommand forceExecutionCancellationCommand
+
+  @Autowired
+  ExecutionRepository repository
+
 
   @RequestMapping(value = "/instance/enabled", method = RequestMethod.POST)
   void setInstanceStatus(@RequestBody Map<String, Boolean> enabledWrapper) {
@@ -72,6 +78,29 @@ class AdminController {
                             @RequestParam(value = "executionType", required = false, defaultValue = "PIPELINE") Execution.ExecutionType executionType,
                             @RequestParam(value = "canceledBy", required = false, defaultValue = "admin") String canceledBy)  {
     forceExecutionCancellationCommand.forceCancel(executionType, executionId, canceledBy)
+  }
+
+  @RequestMapping(value = "/executions", method = RequestMethod.GET)
+  AdminExecutionSearchResult getExecutions(@RequestParam(value = "status", required = true) String status,
+  @RequestParam(value = "startTime", required = true) long startTime,
+  @RequestParam(value = "endTime", required = true) long endTime) {
+    AdminExecutionSearchResult searchResult = new AdminExecutionSearchResult()
+    searchResult.pipelines = repository.retrieveExecutionsWithStatusInTimeWindow(Execution.ExecutionType.PIPELINE, status, startTime, endTime)
+    searchResult.orchestrations = repository.retrieveExecutionsWithStatusInTimeWindow(Execution.ExecutionType.ORCHESTRATION, status, startTime, endTime)
+
+    return searchResult
+  }
+
+  @RequestMapping(value = "/executionsWithStage", method = RequestMethod.GET)
+  AdminExecutionSearchResult getExecutions(@RequestParam(value = "status", required = true) String status,
+                             @RequestParam(value = "stageType", required = true) String stageType,
+                             @RequestParam(value = "startTime", required = true) long startTime,
+                             @RequestParam(value = "endTime", required = true) long endTime) {
+    AdminExecutionSearchResult searchResult = new AdminExecutionSearchResult()
+    searchResult.pipelines = repository.retrieveExecutionsWithSpecificStageTypesInTimeWindow(Execution.ExecutionType.PIPELINE, status, stageType, startTime, endTime)
+    searchResult.orchestrations = repository.retrieveExecutionsWithSpecificStageTypesInTimeWindow(Execution.ExecutionType.ORCHESTRATION, status, stageType, startTime, endTime)
+
+    return searchResult
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)

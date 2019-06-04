@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20190604-update-stages-indices
+      author: mvulfson
+      changes:
+      - createIndex:
+          indexName: pipeline_stages_updated_at_idx
+          tableName: pipeline_stages
+          columns:
+          - column:
+              name: updated_at
+      - createIndex:
+          indexName: orchestration_stages_updated_at_idx
+          tableName: orchestration_stages
+          columns:
+            - column:
+                name: updated_at
+      rollback:
+      - dropIndex:
+          indexName: pipeline_stages_updated_at_idx
+          tableName: pipeline_stages
+      - dropIndex:
+          indexName: orchestration_stages_updated_at_idx
+          tableName: orchestration_stages

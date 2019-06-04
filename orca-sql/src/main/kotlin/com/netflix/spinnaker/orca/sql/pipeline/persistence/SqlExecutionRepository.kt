@@ -308,6 +308,53 @@ class SqlExecutionRepository(
     return Observable.from(retrieveOrchestrationsForApplication(application, criteria, NATURAL_ASC))
   }
 
+  override fun retrieveExecutionsWithStatusInTimeWindow(
+    executionType: ExecutionType,
+    status: String,
+    updatedAtStart: Long,
+    updatedAtEnd: Long
+  ): List<Execution> {
+    return jooq.selectExecutions(
+      executionType,
+      conditions = {
+        it
+          .where(field("updated_at").greaterOrEqual(updatedAtStart))
+          .and(field("updated_at").lessOrEqual(updatedAtEnd))
+          .statusIn(listOf(ExecutionStatus.valueOf(status)))
+      },
+      seek = {
+        it
+          .orderBy(field("id").asc())
+      }
+    ).fetchExecutions().toMutableList()
+  }
+
+  override fun retrieveExecutionsWithSpecificStageTypesInTimeWindow(
+    executionType: ExecutionType,
+    status: String,
+    stageType: String,
+    updatedAtStart: Long,
+    updatedAtEnd: Long
+  ): List<Execution> {
+    // SELECT tP.*
+    //   FROM pipeline_stages AS tS
+    //   INNER JOIN pipelines AS tP
+    //     ON tS.execution_id = tP.id
+    //   WHERE JSON_EXTRACT(tS.body, "$.type") = "deploy" AND tS.updated_at > 0 AND tS.updated_at < 10000000000000 AND tS.status = "SUCCEEDED";
+
+    return jooq.select(
+      field("tP.id").`as`("id"), field("tP.body").`as`("body"))
+      .from(executionType.stagesTableName.`as`("tS")
+        .join(executionType.tableName.`as`("tP"))
+        .on("tS.execution_id = tP.id"))
+      .where(field("tS.status").eq(status)
+        .and(field("tS.updated_at").greaterOrEqual(updatedAtStart))
+        .and(field("tS.updated_at").lessOrEqual(updatedAtEnd))
+        .and(field("JSON_EXTRACT(tS.body, '$.type')").eq(stageType)))
+      .fetchExecutions()
+      .toMutableList()
+  }
+
   override fun retrieveOrchestrationsForApplication(
     application: String,
     criteria: ExecutionCriteria,
@@ -728,9 +775,6 @@ class SqlExecutionRepository(
   private fun SelectConnectByStep<out Record>.statusIn(
     statuses: Collection<ExecutionStatus>
   ): SelectConnectByStep<out Record> {
-    // jOOQ doesn't seem to play well with Kotlin here. Using the vararg interface for `in` doesn't construct the
-    // SQL clause correctly, and I can't seem to get Kotlin to use the Collection<T> interface. We can manually
-    // build this clause and it remain reasonably safe.
     if (statuses.isEmpty() || statuses.size == ExecutionStatus.values().size) {
       return this
     }
