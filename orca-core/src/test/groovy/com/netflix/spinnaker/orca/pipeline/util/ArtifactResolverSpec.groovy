@@ -22,14 +22,31 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import rx.Observable
 import spock.lang.Specification
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class ArtifactResolverSpec extends Specification {
+
+  def pipelineId = "abc"
+
+  def expectedExecutionCriteria = {
+    def criteria = new ExecutionRepository.ExecutionCriteria()
+    criteria.setPageSize(1)
+    return criteria
+  }()
+
+  def executionRepository = Stub(ExecutionRepository) {
+    // only a call to retrievePipelinesForPipelineConfigId() with these argument values is expected
+    retrievePipelinesForPipelineConfigId(pipelineId, expectedExecutionCriteria) >> Observable.empty();
+    // any other interaction is unexpected
+    0 * _
+  }
+
   def makeArtifactResolver() {
-    return new ArtifactResolver(new ObjectMapper(), Mock(ExecutionRepository))
+    return new ArtifactResolver(new ObjectMapper(), executionRepository)
   }
 
   def "should find upstream artifacts in small pipeline"() {
