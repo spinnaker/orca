@@ -32,7 +32,15 @@ import com.netflix.spinnaker.orca.pipeline.model.StageContext;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -244,8 +252,7 @@ public class ArtifactResolver {
       return;
     }
 
-    List<Artifact> priorArtifacts =
-        getArtifactsForPipelineId((String) pipeline.get("id"), new ExecutionCriteria());
+    List<Artifact> priorArtifacts = getPriorArtifacts(pipeline);
     LinkedHashSet<Artifact> resolvedArtifacts =
         resolveExpectedArtifacts(expectedArtifacts, receivedArtifacts, priorArtifacts, true);
     LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(receivedArtifacts);
@@ -267,6 +274,16 @@ public class ArtifactResolver {
       throw new ArtifactResolutionException(
           "Failed to store artifacts in trigger: " + e.getMessage(), e);
     }
+  }
+
+  private List<Artifact> getPriorArtifacts(final Map<String, Object> pipeline) {
+    // set pageSize to a single record to avoid hydrating all of the stored Executions for
+    // the pipeline, since getArtifactsForPipelineId only uses the most recent Execution from the
+    // returned Observable<Execution>
+    ExecutionCriteria criteria = new ExecutionCriteria();
+    criteria.setPageSize(1);
+    criteria.setSortType(ExecutionRepository.ExecutionComparator.START_TIME_OR_ID);
+    return getArtifactsForPipelineId((String) pipeline.get("id"), criteria);
   }
 
   public Artifact resolveSingleArtifact(
@@ -310,7 +327,7 @@ public class ArtifactResolver {
         break;
       default:
         if (requireUniqueMatches) {
-          throw new IllegalArgumentException(
+          throw new InvalidRequestException(
               "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
         }
         result = matches.get(0);
