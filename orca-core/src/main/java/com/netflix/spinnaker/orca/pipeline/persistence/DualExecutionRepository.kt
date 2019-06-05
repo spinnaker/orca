@@ -240,9 +240,10 @@ class DualExecutionRepository(
     updatedAtEnd: Long
   ): List<Execution> {
 
-    return primary.retrieveExecutionsWithStatusInTimeWindow(executionType, status, updatedAtStart, updatedAtStart)
-      .plus(previous.retrieveExecutionsWithStatusInTimeWindow(executionType, status, updatedAtStart, updatedAtStart)
-    )
+    return Observable.merge(
+      Observable.from(primary.retrieveExecutionsWithStatusInTimeWindow(executionType, status, updatedAtStart, updatedAtStart)),
+      Observable.from(previous.retrieveExecutionsWithStatusInTimeWindow(executionType, status, updatedAtStart, updatedAtStart))
+    ).toList().toBlocking().single()
   }
 
   override fun retrieveExecutionsWithSpecificStageTypesInTimeWindow(
@@ -253,9 +254,10 @@ class DualExecutionRepository(
     updatedAtEnd: Long
   ): List<Execution> {
 
-    return primary.retrieveExecutionsWithSpecificStageTypesInTimeWindow(executionType, status, stageType, updatedAtStart, updatedAtStart)
-      .plus(previous.retrieveExecutionsWithSpecificStageTypesInTimeWindow(executionType, status, stageType, updatedAtStart, updatedAtStart)
-      )
+    return Observable.merge(
+      Observable.from(primary.retrieveExecutionsWithSpecificStageTypesInTimeWindow(executionType, status, stageType, updatedAtStart, updatedAtStart)),
+      Observable.from(previous.retrieveExecutionsWithSpecificStageTypesInTimeWindow(executionType, status, stageType, updatedAtStart, updatedAtStart))
+    ).toList().toBlocking().single()
   }
 
   override fun retrieveOrchestrationsForApplication(

@@ -53,7 +53,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.Nullable;
@@ -623,8 +622,10 @@ public class RedisExecutionRepository implements ExecutionRepository {
       String status,
       long updatedAtStart,
       long updatedAtEnd) {
-    throw new NotImplementedException(
-        "retrieveExecutionsWithStatusInTimeWindow Not supported in RedisExecutionRepository");
+    log.error(
+        "retrieveExecutionsWithStatusInTimeWindow is not supported in RedisExecutionRepository");
+
+    return emptyList();
   }
 
   @Override
@@ -634,8 +635,10 @@ public class RedisExecutionRepository implements ExecutionRepository {
       String stageType,
       long updatedAtStart,
       long updatedAtEnd) {
-    throw new NotImplementedException(
-        "retrieveExecutionsWithStatusInTimeWindow Not supported in RedisExecutionRepository");
+    log.error(
+        "retrieveExecutionsWithSpecificStageTypesInTimeWindow is not supported in RedisExecutionRepository");
+
+    return emptyList();
   }
 
   @Nonnull

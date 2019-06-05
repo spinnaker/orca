@@ -82,8 +82,9 @@ class AdminController {
 
   @RequestMapping(value = "/executions", method = RequestMethod.GET)
   AdminExecutionSearchResult getExecutions(@RequestParam(value = "status", required = true) String status,
-  @RequestParam(value = "startTime", required = true) long startTime,
-  @RequestParam(value = "endTime", required = true) long endTime) {
+                                           @RequestParam(value = "startTime", required = true) long startTime,
+                                           @RequestParam(value = "endTime", required = true) long endTime) {
+
     AdminExecutionSearchResult searchResult = new AdminExecutionSearchResult()
     searchResult.pipelines = repository.retrieveExecutionsWithStatusInTimeWindow(Execution.ExecutionType.PIPELINE, status, startTime, endTime)
     searchResult.orchestrations = repository.retrieveExecutionsWithStatusInTimeWindow(Execution.ExecutionType.ORCHESTRATION, status, startTime, endTime)
@@ -93,9 +94,10 @@ class AdminController {
 
   @RequestMapping(value = "/executionsWithStage", method = RequestMethod.GET)
   AdminExecutionSearchResult getExecutions(@RequestParam(value = "status", required = true) String status,
-                             @RequestParam(value = "stageType", required = true) String stageType,
-                             @RequestParam(value = "startTime", required = true) long startTime,
-                             @RequestParam(value = "endTime", required = true) long endTime) {
+                                           @RequestParam(value = "stageType", required = true) String stageType,
+                                           @RequestParam(value = "startTime", required = true) long startTime,
+                                           @RequestParam(value = "endTime", required = true) long endTime) {
+
     AdminExecutionSearchResult searchResult = new AdminExecutionSearchResult()
     searchResult.pipelines = repository.retrieveExecutionsWithSpecificStageTypesInTimeWindow(Execution.ExecutionType.PIPELINE, status, stageType, startTime, endTime)
     searchResult.orchestrations = repository.retrieveExecutionsWithSpecificStageTypesInTimeWindow(Execution.ExecutionType.ORCHESTRATION, status, stageType, startTime, endTime)
