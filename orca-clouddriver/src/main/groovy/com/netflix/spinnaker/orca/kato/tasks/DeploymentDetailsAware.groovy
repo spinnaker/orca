@@ -81,13 +81,21 @@ trait DeploymentDetailsAware {
     }
   }
 
+  boolean checkCloudprovider(Stage stage, Stage execution){
+    if(execution.context.cloudProvider!=null) {
+      return execution.context.cloudProvider == stage.context.cloudProvider
+    }
+    return true
+  }
+
   List<Stage> getAncestors(Stage stage, Execution execution) {
     if (stage?.requisiteStageRefIds) {
       def previousStages = execution.stages.findAll {
         // Include cloudProvider check to avoid confusion with multi-provider,
         // in some cases ancestors can be one of any multi-provider
         // Eg parent->aws and child->titus
-        it.refId in stage.requisiteStageRefIds && it.context.cloudProvider == stage.context.cloudProvider
+        it.refId in stage.requisiteStageRefIds && checkCloudprovider(stage,it)
+
       }
       def syntheticStages = execution.stages.findAll {
         it.parentStageId in previousStages*.id
