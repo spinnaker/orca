@@ -81,7 +81,7 @@ trait DeploymentDetailsAware {
     }
   }
 
-  boolean checkCloudprovider(Stage stage, Stage execution){
+  boolean isCloudProviderEqual(Stage stage, Stage execution){
     if(execution.context.cloudProvider!=null) {
       return execution.context.cloudProvider == stage.context.cloudProvider
     }
@@ -94,7 +94,7 @@ trait DeploymentDetailsAware {
         // Include cloudProvider check to avoid confusion with multi-provider,
         // in some cases ancestors can be one of any multi-provider
         // Eg parent->aws and child->titus
-        it.refId in stage.requisiteStageRefIds && checkCloudprovider(stage,it)
+        it.refId in stage.requisiteStageRefIds && isCloudProviderEqual(stage,it)
 
       }
       def syntheticStages = execution.stages.findAll {
