@@ -22,6 +22,7 @@ repositories {
 }
 
 dependencies {
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-kotlin"))
 

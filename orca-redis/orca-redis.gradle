@@ -5,6 +5,7 @@ dependencies {
   api("redis.clients:jedis")
   api("com.netflix.spinnaker.kork:kork-jedis")
 
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-front50"))
   implementation("io.reactivex:rxjava")

@@ -20,6 +20,7 @@ dependencies {
   api("com.squareup.retrofit:retrofit")
   api("com.squareup.retrofit:converter-jackson")
 
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation("com.squareup.okhttp:okhttp")
   implementation("com.squareup.okhttp:okhttp-urlconnection")

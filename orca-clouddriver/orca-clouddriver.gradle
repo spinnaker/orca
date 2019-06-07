@@ -24,6 +24,7 @@ test {
 
 dependencies {
   implementation("com.netflix.frigga:frigga")
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-retrofit"))
   implementation(project(":orca-front50"))

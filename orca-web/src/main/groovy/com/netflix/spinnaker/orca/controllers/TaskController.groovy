@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.controllers
 import java.nio.charset.Charset
 import java.time.Clock
 import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import com.fasterxml.jackson.databind.ObjectMapper

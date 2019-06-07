@@ -20,6 +20,7 @@ dependencies {
   api(project(":orca-queue"))
   api(project(":orca-test-kotlin"))
 
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-kotlin"))
   implementation(project(":orca-test"))

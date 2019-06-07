@@ -18,6 +18,7 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
 
   // TODO rz - Prefer definitely not having this

@@ -115,7 +115,8 @@ public class ExpressionsSupport {
           for (ExpressionFunctionProvider.FunctionDefinition function : p.getFunctions()) {
             String namespacedFunctionName = function.getName();
             if (p.getNamespace() != null) {
-              namespacedFunctionName = format("%s_%s", p.getNamespace(), namespacedFunctionName);
+              namespacedFunctionName =
+                  String.format("%s_%s", p.getNamespace(), namespacedFunctionName);
             }
             Class[] functionTypes =
                 function.getParameters().stream()

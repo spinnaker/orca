@@ -3,6 +3,7 @@ test {
 }
 
 dependencies {
+  implementation(project(":orca-api"))
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
   testCompileOnly("org.projectlombok:lombok")

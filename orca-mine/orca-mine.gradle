@@ -17,6 +17,7 @@
 apply from: "$rootDir/gradle/groovy.gradle"
 
 dependencies {
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-retrofit"))
   implementation(project(":orca-clouddriver"))

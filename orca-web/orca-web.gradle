@@ -32,6 +32,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("net.logstash.logback:logstash-logback-encoder")
 
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-redis"))
   implementation(project(":orca-bakery"))
@@ -56,6 +57,7 @@ dependencies {
   implementation(project(":orca-sql-mysql"))
   implementation(project(":orca-integrations-cloudfoundry"))
   implementation(project(":orca-integrations-gremlin"))
+  implementation(project(":orca-api"))
   implementation("com.netflix.spinnaker.kork:kork-exceptions")
   implementation("com.netflix.spinnaker.kork:kork-stackdriver")
   implementation("com.netflix.spinnaker.kork:kork-web")
@@ -82,6 +84,8 @@ dependencies {
   testImplementation("org.junit.jupiter:junit-jupiter-api")
   testImplementation("org.hamcrest:hamcrest-core:1.3")
   testImplementation("com.netflix.spinnaker.keiko:keiko-mem:$keikoVersion")
+
+  runtimeOnly fileTree(dir: '/opt/spinnaker/plugins/')
 }
 
 test {

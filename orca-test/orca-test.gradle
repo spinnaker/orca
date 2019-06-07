@@ -15,6 +15,7 @@
  */
 
 dependencies {
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation("com.netflix.spectator:spectator-api")
   implementation("org.springframework:spring-context")

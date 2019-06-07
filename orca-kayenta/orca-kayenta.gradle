@@ -18,6 +18,7 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-kotlin"))
   implementation(project(":orca-retrofit"))

@@ -18,6 +18,7 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 
 dependencies {
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+  implementation(project(":orca-api"))
   implementation(project(":orca-core"))
   implementation(project(":orca-retrofit"))
 }

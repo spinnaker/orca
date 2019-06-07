@@ -75,7 +75,8 @@ import rx.schedulers.Schedulers;
   "com.netflix.spinnaker.orca.pipeline.util",
   "com.netflix.spinnaker.orca.preprocessors",
   "com.netflix.spinnaker.orca.telemetry",
-  "com.netflix.spinnaker.orca.notifications.scheduling"
+  "com.netflix.spinnaker.orca.notifications.scheduling",
+  "com.netflix.spinnaker.plugin"
 })
 @Import(PreprocessorConfiguration.class)
 @EnableConfigurationProperties
