@@ -47,6 +47,10 @@ public enum Strategy implements StrategyFlowComposer {
     return NONE;
   }
 
+  public String getKey() {
+    return key;
+  }
+
   @Override
   public boolean replacesBasicSteps() {
     return this == ROLLING_PUSH || this == CUSTOM;
