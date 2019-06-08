@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import rx.Observable
@@ -43,13 +44,17 @@ class ArtifactResolverSpec extends Specification {
 
   def executionRepository = Stub(ExecutionRepository) {
     // only a call to retrievePipelinesForPipelineConfigId() with these argument values is expected
-    retrievePipelinesForPipelineConfigId(pipelineId, expectedExecutionCriteria) >> Observable.empty();
+    retrievePipelinesForPipelineConfigId(pipelineId, expectedExecutionCriteria) >> Observable.empty()
     // any other interaction is unexpected
     0 * _
   }
 
   def makeArtifactResolver() {
-    return new ArtifactResolver(new ObjectMapper(), executionRepository,
+    return makeArtifactResolverWithStub(executionRepository)
+  }
+
+  def makeArtifactResolverWithStub(ExecutionRepository executionRepositoryStub) {
+    return new ArtifactResolver(new ObjectMapper(), executionRepositoryStub,
       new ContextParameterProcessor())
   }
 
@@ -295,7 +300,7 @@ class ArtifactResolverSpec extends Specification {
         outputs.artifacts = [new Artifact(type: "2")]
       }
       stage {
-        // This stage does not emit an artifact
+        // This stage does not emit an artifacts
         requisiteStageRefIds = ["2"]
       }
     }
@@ -309,6 +314,121 @@ class ArtifactResolverSpec extends Specification {
     artifacts*.type == ["2", "1", "trigger"]
   }
 
+  def "should find artifacts from a specific pipeline"() {
+    when:
+    def execution = pipeline {
+      id: pipelineId
+      status: ExecutionStatus.SUCCEEDED
+      stage {
+        refId = "1"
+        outputs.artifacts = [new Artifact(type: "1")]
+      }
+      stage {
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+        outputs.artifacts = [new Artifact(type: "2")]
+      }
+      stage {
+        // This stage does not emit an artifacts
+        requisiteStageRefIds = ["2"]
+      }
+    }
+    execution.trigger = new DefaultTrigger("webhook", null, "user", [:], [new Artifact(type: "trigger")])
+
+    def executionCriteria = new ExecutionRepository.ExecutionCriteria()
+    executionCriteria.setStatuses(ExecutionStatus.SUCCEEDED)
+
+    def executionTerminalCriteria = new ExecutionRepository.ExecutionCriteria()
+    executionTerminalCriteria.setStatuses(ExecutionStatus.TERMINAL)
+
+    def executionRepositoryStub = Stub(ExecutionRepository) {
+      // only a call to retrievePipelinesForPipelineConfigId() with these argument values is expected
+      retrievePipelinesForPipelineConfigId(pipelineId, executionCriteria) >> Observable.just(execution)
+      retrievePipelinesForPipelineConfigId(pipelineId, executionTerminalCriteria) >> Observable.empty()
+      // any other interaction is unexpected
+      0 * _
+    }
+
+    def artifactResolver = makeArtifactResolverWithStub(executionRepositoryStub)
+
+    then:
+    def artifacts = artifactResolver.getArtifactsForPipelineId(pipelineId, executionCriteria)
+    artifacts.size == 3
+    artifacts*.type == ["2", "1", "trigger"]
+
+    def emptyArtifacts = artifactResolver.getArtifactsForPipelineId(pipelineId, executionTerminalCriteria)
+    emptyArtifacts == []
+  }
+
+  def "should find artifacts from a specific stage ref"() {
+    when:
+    def execution = pipeline {
+      id: pipelineId
+      stage {
+        refId = "1"
+        outputs.artifacts = [new Artifact(type: "1")]
+      }
+      stage {
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+        outputs.artifacts = [new Artifact(type: "2")]
+      }
+      stage {
+        // This stage does not emit an artifacts
+        requisiteStageRefIds = ["2"]
+      }
+    }
+    execution.trigger = new DefaultTrigger("webhook", null, "user", [:], [new Artifact(type: "trigger")])
+
+    def executionRepositoryStub = Stub(ExecutionRepository) {
+      // only a call to retrievePipelinesForPipelineConfigId() with these argument values is expected
+      retrievePipelinesForPipelineConfigId(pipelineId, expectedExecutionCriteria) >> Observable.just(execution)
+      // any other interaction is unexpected
+      0 * _
+    }
+
+    def artifactResolver = makeArtifactResolverWithStub(executionRepositoryStub)
+
+    then:
+    def artifacts = artifactResolver.getArtifactsForPipelineIdStageRef(pipelineId, "2", expectedExecutionCriteria)
+    artifacts.size == 1
+    artifacts*.type == ["2"]
+  }
+
+  def "should find artifacts without a specific stage ref"() {
+    when:
+    def execution = pipeline {
+      id: pipelineId
+      stage {
+        refId = "1"
+        outputs.artifacts = [new Artifact(type: "1")]
+      }
+      stage {
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+        outputs.artifacts = [new Artifact(type: "2")]
+      }
+      stage {
+        // This stage does not emit an artifacts
+        requisiteStageRefIds = ["2"]
+      }
+    }
+    execution.trigger = new DefaultTrigger("webhook", null, "user", [:], [new Artifact(type: "trigger")])
+
+    def executionRepositoryStub = Stub(ExecutionRepository) {
+      // only a call to retrievePipelinesForPipelineConfigId() with these argument values is expected
+      retrievePipelinesForPipelineConfigId(pipelineId, expectedExecutionCriteria) >> Observable.just(execution)
+      // any other interaction is unexpected
+      0 * _
+    }
+
+    def artifactResolver = makeArtifactResolverWithStub(executionRepositoryStub)
+
+    then:
+    def artifacts = artifactResolver.getArtifactsForPipelineIdWithoutStageRef(pipelineId, "2", expectedExecutionCriteria)
+    artifacts.size == 2
+    artifacts*.type == ["1", "trigger"]
+  }
   @Unroll
   def "should resolve expected artifacts from pipeline for #expectedArtifacts using #available and prior #prior"() {
     when:
@@ -331,7 +451,7 @@ class ArtifactResolverSpec extends Specification {
     given:
     def matchArtifact = Artifact.builder().type("docker/.*").build()
     def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def receivedArtifact = Artifact.builder().name("my-artifact").type("docker/image").build()
+    def receivedArtifact = Artifact.builder().name("my-artifacts").type("docker/image").build()
     def pipeline = [
       id: "abc",
       trigger: [:],
@@ -350,11 +470,11 @@ class ArtifactResolverSpec extends Specification {
 
   def "resolveArtifacts adds received artifacts to the trigger, skipping duplicates"() {
     given:
-    def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
+    def matchArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/.*").build()
     def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
-    def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
-    def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
+    def receivedArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/image").build()
+    def triggerArtifact = Artifact.builder().name("my-trigger-artifacts").type("docker/image").build()
+    def bothArtifact = Artifact.builder().name("my-both-artifacts").type("docker/image").build()
     def pipeline = [
       id: "abc",
       trigger: [
@@ -376,11 +496,11 @@ class ArtifactResolverSpec extends Specification {
 
   def "resolveArtifacts is idempotent"() {
     given:
-    def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
+    def matchArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/.*").build()
     def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
-    def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
-    def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
+    def receivedArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/image").build()
+    def triggerArtifact = Artifact.builder().name("my-trigger-artifacts").type("docker/image").build()
+    def bothArtifact = Artifact.builder().name("my-both-artifacts").type("docker/image").build()
     def pipeline = [
       id: "abc",
       trigger: [

@@ -128,14 +128,14 @@ public class ArtifactResolver {
   }
 
   /**
-   * Used to fully resolve a bound artifact on a stage that can either select an expected artifact
-   * ID for an expected artifact defined in a prior stage or as a trigger constraint OR define an
-   * inline expression-evaluable default artifact.
+   * Used to fully resolve a bound artifacts on a stage that can either select an expected artifacts
+   * ID for an expected artifacts defined in a prior stage or as a trigger constraint OR define an
+   * inline expression-evaluable default artifacts.
    *
-   * @param stage The stage containing context to evaluate expressions on the bound artifact.
-   * @param id An expected artifact id. Either id or artifact must be specified.
-   * @param artifact An inline default artifact. Either id or artifact must be specified.
-   * @return A bound artifact with expressions evaluated.
+   * @param stage The stage containing context to evaluate expressions on the bound artifacts.
+   * @param id An expected artifacts id. Either id or artifacts must be specified.
+   * @param artifact An inline default artifacts. Either id or artifacts must be specified.
+   * @return A bound artifacts with expressions evaluated.
    */
   public @Nullable Artifact getBoundArtifactForStage(
       Stage stage, @Nullable String id, @Nullable Artifact artifact) {
@@ -199,16 +199,49 @@ public class ArtifactResolver {
 
   public @Nonnull List<Artifact> getArtifactsForPipelineId(
       @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
-    Execution execution =
-        executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
-            .subscribeOn(Schedulers.io()).toSortedList(startTimeOrId).toBlocking().single().stream()
-            .findFirst()
-            .orElse(null);
+    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
 
     return execution == null ? Collections.emptyList() : getAllArtifacts(execution);
   }
 
-  public void resolveArtifacts(@Nonnull Map<String, Object> pipeline) {
+  public @Nonnull List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
+      @Nonnull String pipelineId, @Nonnull String stageRef, @Nonnull ExecutionCriteria criteria) {
+    List<Artifact> artifacts = getArtifactsForPipelineId(pipelineId, criteria);
+    List<Artifact> stageArtifacts =
+        getArtifactsForPipelineIdStageRef(pipelineId, stageRef, criteria);
+
+    stageArtifacts.forEach(artifact -> artifacts.remove(artifact));
+    if (stageArtifacts.size() > 0) {
+      log.debug("Removed artifacts from " + pipelineId + ": " + stageArtifacts.toString());
+    }
+    return artifacts;
+  }
+
+  public @Nonnull List<Artifact> getArtifactsForPipelineIdStageRef(
+      @Nonnull String pipelineId, @Nonnull String stageRef, @Nonnull ExecutionCriteria criteria) {
+    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
+
+    if (execution == null) {
+      return Collections.emptyList();
+    }
+
+    return execution.getStages().stream()
+        .filter(it -> stageRef.equals(it.getRefId()))
+        .filter(s -> s.getOutputs().containsKey("artifacts"))
+        .flatMap(
+            s ->
+                (Stream<Artifact>)
+                    ((List) s.getOutputs().get("artifacts"))
+                        .stream()
+                            .map(
+                                a ->
+                                    a instanceof Map
+                                        ? objectMapper.convertValue(a, Artifact.class)
+                                        : a))
+        .collect(Collectors.toList());
+  }
+
+  public void resolveArtifacts(@Nonnull Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
     List<ExpectedArtifact> expectedArtifacts =
         Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
@@ -328,7 +361,7 @@ public class ArtifactResolver {
       default:
         if (requireUniqueMatches) {
           throw new InvalidRequestException(
-              "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
+              "Expected artifacts " + expectedArtifact + " matches multiple artifacts " + matches);
         }
         result = matches.get(0);
     }
@@ -358,13 +391,21 @@ public class ArtifactResolver {
               expectedArtifact, receivedArtifacts, priorArtifacts, requireUniqueMatches);
       if (resolved == null) {
         throw new InvalidRequestException(
-            format("Unmatched expected artifact %s could not be resolved.", expectedArtifact));
+            format("Unmatched expected artifacts %s could not be resolved.", expectedArtifact));
       } else {
         resolvedArtifacts.add(resolved);
       }
     }
 
     return resolvedArtifacts;
+  }
+
+  private Execution getExecutionForPipelineId(
+      @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
+    return executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
+        .subscribeOn(Schedulers.io()).toSortedList(startTimeOrId).toBlocking().single().stream()
+        .findFirst()
+        .orElse(null);
   }
 
   private static class ArtifactResolutionException extends RuntimeException {

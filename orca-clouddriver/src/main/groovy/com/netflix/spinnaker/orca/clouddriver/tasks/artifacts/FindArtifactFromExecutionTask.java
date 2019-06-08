@@ -58,13 +58,21 @@ public class FindArtifactFromExecutionTask implements Task {
     List<Artifact> priorArtifacts =
         artifactResolver.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
 
+    // never resolve artifacts from the same stage in a prior execution
+    // we will get the set of the artifacts and remove them from the collection
+    if (stage.getExecution().getPipelineConfigId().equals(pipeline)) {
+      priorArtifacts =
+          artifactResolver.getArtifactsForPipelineIdWithoutStageRef(
+              pipeline, stage.getRefId(), executionOptions.toCriteria());
+    }
+
     Artifact match =
         artifactResolver.resolveSingleArtifact(expectedArtifact, priorArtifacts, null, false);
 
     if (match == null) {
       outputs.put(
           "exception",
-          "No artifact matching " + expectedArtifact + " found among " + priorArtifacts);
+          "No artifacts matching " + expectedArtifact + " found among " + priorArtifacts);
       return TaskResult.builder(ExecutionStatus.TERMINAL)
           .context(new HashMap<>())
           .outputs(outputs)
