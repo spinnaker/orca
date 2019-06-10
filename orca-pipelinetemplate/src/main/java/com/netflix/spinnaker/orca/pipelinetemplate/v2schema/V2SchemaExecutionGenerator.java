@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.transform.V
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2TemplateConfiguration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
 
@@ -76,7 +77,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "notifications",
           TemplateMerge.mergeDistinct(
-              (List<HashMap<String, Object>>) template.getPipeline().get("notifications"),
+              markInherited(getTemplateCollection(template, "notifications")),
               configuration.getNotifications()));
     }
   }
@@ -93,7 +94,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "parameterConfig",
           TemplateMerge.mergeDistinct(
-              (List<HashMap<String, Object>>) template.getPipeline().get("parameterConfig"),
+              markInherited(getTemplateCollection(template, "parameterConfig")),
               configuration.getParameters()));
     }
   }
@@ -110,8 +111,25 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "triggers",
           TemplateMerge.mergeDistinct(
-              (List<HashMap<String, Object>>) template.getPipeline().get("triggers"),
+              markInherited(getTemplateCollection(template, "triggers")),
               configuration.getTriggers()));
     }
+  }
+
+  private static List<HashMap<String, Object>> markInherited(
+      List<HashMap<String, Object>> templateCollection) {
+    return templateCollection.stream()
+        .map(
+            templateItem -> {
+              templateItem.put("inherited", true);
+              return templateItem;
+            })
+        .collect(Collectors.toList());
+  }
+
+  private static List<HashMap<String, Object>> getTemplateCollection(
+      V2PipelineTemplate template, String key) {
+    return Optional.ofNullable((List<HashMap<String, Object>>) template.getPipeline().get(key))
+        .orElse(Collections.emptyList());
   }
 }
