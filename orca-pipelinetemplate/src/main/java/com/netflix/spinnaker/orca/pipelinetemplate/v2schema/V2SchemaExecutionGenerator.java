@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.transform.V
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2TemplateConfiguration;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
 
@@ -77,7 +76,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "notifications",
           TemplateMerge.mergeDistinct(
-              markInherited(getTemplateCollection(template, "notifications")),
+              markTemplateCollectionAsInherited(getTemplateCollection(template, "notifications")),
               configuration.getNotifications()));
     }
   }
@@ -94,7 +93,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "parameterConfig",
           TemplateMerge.mergeDistinct(
-              markInherited(getTemplateCollection(template, "parameterConfig")),
+              markTemplateCollectionAsInherited(getTemplateCollection(template, "parameterConfig")),
               configuration.getParameters()));
     }
   }
@@ -111,20 +110,17 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "triggers",
           TemplateMerge.mergeDistinct(
-              markInherited(getTemplateCollection(template, "triggers")),
+              markTemplateCollectionAsInherited(getTemplateCollection(template, "triggers")),
               configuration.getTriggers()));
     }
   }
 
-  private static List<HashMap<String, Object>> markInherited(
+  private static List<HashMap<String, Object>> markTemplateCollectionAsInherited(
       List<HashMap<String, Object>> templateCollection) {
-    return templateCollection.stream()
-        .map(
-            templateItem -> {
-              templateItem.put("inherited", true);
-              return templateItem;
-            })
-        .collect(Collectors.toList());
+    for (HashMap<String, Object> templateItem : templateCollection) {
+      templateItem.put("inherited", true);
+    }
+    return templateCollection;
   }
 
   private static List<HashMap<String, Object>> getTemplateCollection(
