@@ -33,7 +33,7 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.
  */
 trait DeploymentDetailsAware {
 
-  private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.newInstance()
+  private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.getInstance()
 
   void withImageFromPrecedingStage(
     Stage stage,
@@ -81,10 +81,21 @@ trait DeploymentDetailsAware {
     }
   }
 
+  boolean isCloudProviderEqual(Stage stage, Stage execution){
+    if(execution.context.cloudProvider!=null) {
+      return execution.context.cloudProvider == stage.context.cloudProvider
+    }
+    return true
+  }
+
   List<Stage> getAncestors(Stage stage, Execution execution) {
     if (stage?.requisiteStageRefIds) {
       def previousStages = execution.stages.findAll {
-        it.refId in stage.requisiteStageRefIds
+        // Include cloudProvider check to avoid confusion with multi-provider,
+        // in some cases ancestors can be one of any multi-provider
+        // Eg parent->aws and child->titus
+        it.refId in stage.requisiteStageRefIds && isCloudProviderEqual(stage,it)
+
       }
       def syntheticStages = execution.stages.findAll {
         it.parentStageId in previousStages*.id
