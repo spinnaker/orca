@@ -76,7 +76,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "notifications",
           TemplateMerge.mergeDistinct(
-              markTemplateCollectionAsInherited(getTemplateCollection(template, "notifications")),
+              (List<HashMap<String, Object>>) template.getPipeline().get("notifications"),
               configuration.getNotifications()));
     }
   }
@@ -93,7 +93,7 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "parameterConfig",
           TemplateMerge.mergeDistinct(
-              markTemplateCollectionAsInherited(getTemplateCollection(template, "parameterConfig")),
+              (List<HashMap<String, Object>>) template.getPipeline().get("parameterConfig"),
               configuration.getParameters()));
     }
   }
@@ -110,22 +110,8 @@ public class V2SchemaExecutionGenerator implements V2ExecutionGenerator {
       pipeline.put(
           "triggers",
           TemplateMerge.mergeDistinct(
-              markTemplateCollectionAsInherited(getTemplateCollection(template, "triggers")),
+              (List<HashMap<String, Object>>) template.getPipeline().get("triggers"),
               configuration.getTriggers()));
     }
-  }
-
-  private static List<HashMap<String, Object>> markTemplateCollectionAsInherited(
-      List<HashMap<String, Object>> templateCollection) {
-    for (HashMap<String, Object> templateItem : templateCollection) {
-      templateItem.put("inherited", true);
-    }
-    return templateCollection;
-  }
-
-  private static List<HashMap<String, Object>> getTemplateCollection(
-      V2PipelineTemplate template, String key) {
-    return Optional.ofNullable((List<HashMap<String, Object>>) template.getPipeline().get(key))
-        .orElse(Collections.emptyList());
   }
 }
