@@ -71,7 +71,7 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
           isChangeSet
               ? getChangeSetInfo(stack, stage.getContext(), "status")
               : getStackInfo(stack, "stackStatus");
-      if (isComplete(status)) {
+      if (isComplete(status) || isEmptyChangeSet(stage, stack)) {
         return TaskResult.SUCCEEDED;
       } else if (isInProgress(status)) {
         return TaskResult.RUNNING;
@@ -118,6 +118,17 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
         .findFirst()
         .map(changeSet -> (String) changeSet.get(field))
         .orElse(CloudFormationStates.NOT_YET_READY.toString());
+  }
+
+  private boolean isEmptyChangeSet(Stage stage, Map<String, ?> stack) {
+    if ((boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false)) {
+      String status = getChangeSetInfo(stack, stage.getContext(), "status");
+      String statusReason = getChangeSetInfo(stack, stage.getContext(), "statusReason");
+      return status.equals(CloudFormationStates.FAILED.toString())
+          && statusReason.startsWith("The submitted information didn't contain changes");
+    } else {
+      return false;
+    }
   }
 
   private boolean isComplete(Object status) {
