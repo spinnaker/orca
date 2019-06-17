@@ -84,8 +84,6 @@ dependencies {
   testImplementation("org.junit.jupiter:junit-jupiter-api")
   testImplementation("org.hamcrest:hamcrest-core:1.3")
   testImplementation("com.netflix.spinnaker.keiko:keiko-mem:$keikoVersion")
-
-  runtimeOnly fileTree(dir: '/opt/spinnaker/plugins/')
 }
 
 test {
