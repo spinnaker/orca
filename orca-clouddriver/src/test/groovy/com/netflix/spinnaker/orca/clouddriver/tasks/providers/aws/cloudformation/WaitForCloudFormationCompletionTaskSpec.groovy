@@ -45,6 +45,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
     ]
     def stage = new Stage(pipeline, 'test', 'test', context)
     def stack = [
+      stackId: 'stackId',
       stackStatus: status,
       stackStatusReason: statusReason,
       changeSets: [
@@ -62,6 +63,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
     then:
     1 * oortService.getCloudFormationStack('stackId') >> stack
     result.status == expectedResult
+    result.outputs == stack
 
     where:
     isChangeSet | status            | statusReason                                        || expectedResult
@@ -88,6 +90,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
     then:
     1 * oortService.getCloudFormationStack('stackId') >> stack
     result.status == expectedResult
+    result.outputs.isEmpty()
 
     where:
     status                        | expectedResult
@@ -113,6 +116,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
     then:
     1 * oortService.getCloudFormationStack('stackId') >> { throw error404 }
     result.status == ExecutionStatus.RUNNING
+    result.outputs.isEmpty()
   }
 
   @Unroll
@@ -140,7 +144,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
     ]
 
     when:
-    waitForCloudFormationCompletionTask.execute(stage)
+    def result = waitForCloudFormationCompletionTask.execute(stage)
 
     then:
     1 * oortService.getCloudFormationStack('stackId') >> stack
@@ -155,7 +159,6 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
     true        | 'UNKNOWN'           || 'Unexpected stack status'
     true        | 'ROLLBACK_COMPLETE' || 'Change set failed'
     true        | 'FAILED'            || 'Change set failed'
-
   }
 
   def "should error when clouddriver responds with an error other than 404"() {
@@ -169,12 +172,13 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
     def error500 = RetrofitError.httpError("url", new Response("url", 500, "reason", [], null), null, null)
 
     when:
-    waitForCloudFormationCompletionTask.execute(stage)
+    def result = waitForCloudFormationCompletionTask.execute(stage)
 
     then:
     1 * oortService.getCloudFormationStack('stackId') >> { throw error500 }
     RuntimeException ex = thrown()
     ex.message == "500 reason"
+    result == null
   }
 
   @Unroll
