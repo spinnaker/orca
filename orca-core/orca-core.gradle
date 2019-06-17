@@ -49,6 +49,7 @@ dependencies {
   implementation("org.apache.commons:commons-lang3")
   implementation("javax.servlet:javax.servlet-api:4.0.1")
   implementation("com.jayway.jsonpath:json-path:2.2.0")
+  implementation("org.yaml:snakeyaml")
 
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
@@ -58,7 +59,6 @@ dependencies {
   testImplementation("org.junit.jupiter:junit-jupiter-api")
   testImplementation("org.assertj:assertj-core")
 
-  testRuntimeOnly("org.slf4j:slf4j-simple")
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-api")
   testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
 }
