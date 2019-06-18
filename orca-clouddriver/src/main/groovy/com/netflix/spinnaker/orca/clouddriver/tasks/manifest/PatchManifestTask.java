@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -41,11 +42,11 @@ public class PatchManifestTask extends AbstractCloudProviderAwareTask implements
   @Data
   @EqualsAndHashCode(callSuper = true)
   private static class PatchManifestContext extends ManifestContext {
-    private String patchBody;
+    private List<Map<Object, Object>> patchBody;
 
     @Nullable
     @Override
-    public String getRawManifest() {
+    public List<Map<Object, Object>> getManifest() {
       return patchBody;
     }
   }

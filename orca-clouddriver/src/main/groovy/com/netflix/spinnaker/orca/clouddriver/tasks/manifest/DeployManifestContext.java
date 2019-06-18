@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,7 +27,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DeployManifestContext extends ManifestContext {
-  @Nullable private List<String> manifests;
+  @Nullable private List<Map<Object, Object>> manifests;
 
   private TrafficManagement trafficManagement = new TrafficManagement();
 
@@ -55,7 +56,7 @@ public class DeployManifestContext extends ManifestContext {
   }
 
   @Override
-  public String getRawManifest() {
-    return manifests == null ? null : manifests.stream().findFirst().orElse(null);
+  public List<Map<Object, Object>> getManifest() {
+    return manifests;
   }
 }

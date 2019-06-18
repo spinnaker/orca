@@ -65,6 +65,8 @@ public class DeployManifestStage implements StageDefinitionBuilder {
       switch (trafficManagement.getOptions().getStrategy()) {
         case RedBlack:
           disableOldManifests(stage.getContext(), graph);
+          deleteOldManifests(stage.getContext(), graph);
+          break;
         case Highlander:
           deleteOldManifests(stage.getContext(), graph);
           break;

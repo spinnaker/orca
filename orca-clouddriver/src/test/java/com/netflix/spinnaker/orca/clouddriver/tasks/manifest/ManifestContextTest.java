@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +59,7 @@ class ManifestContextTest {
   private static class TestManifestContext extends ManifestContext {
     @Nullable
     @Override
-    public String getRawManifest() {
+    public List<Map<Object, Object>> getManifest() {
       return null;
     }
   }

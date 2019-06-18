@@ -69,6 +69,7 @@ public class ManifestEvaluator implements CloudProviderAware {
 
   public Result evaluate(Stage stage, ManifestContext context) {
     Iterable<Object> rawManifests = Collections.emptyList();
+    List<Map<Object, Object>> manifests = Collections.emptyList();
     if (ManifestContext.Source.Artifact.equals(context.getSource())) {
       Artifact manifestArtifact =
           artifactResolver.getBoundArtifactForStage(
@@ -105,43 +106,42 @@ public class ManifestEvaluator implements CloudProviderAware {
               10,
               200,
               true); // retry 10x, starting at .2s intervals);
-    } else if (context.getRawManifest() != null) {
-      rawManifests = Collections.singletonList(yamlParser.get().loadAll(context.getRawManifest()));
-    }
 
-    List<Object> unevaluatedManifests =
-        StreamSupport.stream(rawManifests.spliterator(), false)
-            .map(
-                m -> {
-                  try {
-                    return Collections.singletonList(objectMapper.convertValue(m, Map.class));
-                  } catch (Exception e) {
-                    return objectMapper.convertValue(
-                        m, new TypeReference<List<Map<Object, Object>>>() {});
-                  }
-                })
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
+      List<Object> unevaluatedManifests =
+          StreamSupport.stream(rawManifests.spliterator(), false)
+              .map(
+                  m -> {
+                    try {
+                      return Collections.singletonList(objectMapper.convertValue(m, Map.class));
+                    } catch (Exception e) {
+                      return objectMapper.convertValue(
+                          m, new TypeReference<List<Map<Object, Object>>>() {});
+                    }
+                  })
+              .flatMap(Collection::stream)
+              .collect(Collectors.toList());
 
-    List<Map<Object, Object>> manifests = Collections.emptyList();
-    if (!unevaluatedManifests.isEmpty()) {
-      Map<String, Object> manifestWrapper = new HashMap<>();
-      manifestWrapper.put("manifests", unevaluatedManifests);
+      if (!unevaluatedManifests.isEmpty()) {
+        Map<String, Object> manifestWrapper = new HashMap<>();
+        manifestWrapper.put("manifests", unevaluatedManifests);
 
-      if (!context.isSkipExpressionEvaluation()) {
-        manifestWrapper =
-            contextParameterProcessor.process(
-                manifestWrapper,
-                contextParameterProcessor.buildExecutionContext(stage, true),
-                true);
+        if (!context.isSkipExpressionEvaluation()) {
+          manifestWrapper =
+              contextParameterProcessor.process(
+                  manifestWrapper,
+                  contextParameterProcessor.buildExecutionContext(stage, true),
+                  true);
 
-        if (manifestWrapper.containsKey("expressionEvaluationSummary")) {
-          throw new IllegalStateException(
-              "Failure evaluating manifest expressions: "
-                  + manifestWrapper.get("expressionEvaluationSummary"));
+          if (manifestWrapper.containsKey("expressionEvaluationSummary")) {
+            throw new IllegalStateException(
+                "Failure evaluating manifest expressions: "
+                    + manifestWrapper.get("expressionEvaluationSummary"));
+          }
         }
+        manifests = (List<Map<Object, Object>>) manifestWrapper.get("manifests");
       }
-      manifests = (List<Map<Object, Object>>) manifestWrapper.get("manifests");
+    } else {
+      manifests = context.getManifest();
     }
 
     List<Artifact> requiredArtifacts = new ArrayList<>();
