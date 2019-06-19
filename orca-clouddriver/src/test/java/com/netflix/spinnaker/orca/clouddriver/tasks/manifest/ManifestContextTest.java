@@ -20,9 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
 
 class ManifestContextTest {
@@ -52,15 +49,7 @@ class ManifestContextTest {
             + "  ]\n"
             + "}";
 
-    TestManifestContext context = new ObjectMapper().readValue(json, TestManifestContext.class);
+    DeployManifestContext context = new ObjectMapper().readValue(json, DeployManifestContext.class);
     assertThat(context.getSource()).isEqualTo(ManifestContext.Source.Text);
-  }
-
-  private static class TestManifestContext extends ManifestContext {
-    @Nullable
-    @Override
-    public List<Map<Object, Object>> getManifest() {
-      return null;
-    }
   }
 }

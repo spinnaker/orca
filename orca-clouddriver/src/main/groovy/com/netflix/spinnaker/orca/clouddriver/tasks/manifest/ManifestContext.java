@@ -23,21 +23,30 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Data;
 
-/** Common model for Deploy and Patch Manifest stage contexts. */
-@Data
-public abstract class ManifestContext {
-  private Source source;
+public interface ManifestContext {
+  Source getSource();
 
-  private String manifestArtifactId;
-  private Artifact manifestArtifact;
-  private String manifestArtifactAccount;
+  String getManifestArtifactId();
 
-  private List<String> requiredArtifactIds;
-  private List<BindArtifact> requiredArtifacts;
+  Artifact getManifestArtifact();
 
-  private boolean skipExpressionEvaluation = false;
+  String getManifestArtifactAccount();
 
-  public enum Source {
+  List<String> getRequiredArtifactIds();
+
+  List<BindArtifact> getRequiredArtifacts();
+
+  boolean isSkipExpressionEvaluation();
+
+  /**
+   * @return A manifest provided as direct text input in the stage definition. Deploy and Patch
+   *     Manifest stages have differently named model elements describing this one concept, so for
+   *     backwards compatibility we must map their individual model elements to use them generally.
+   */
+  @Nullable
+  List<Map<Object, Object>> getManifests();
+
+  enum Source {
     @JsonProperty("text")
     Text,
 
@@ -46,17 +55,9 @@ public abstract class ManifestContext {
   }
 
   @Data
-  public static class BindArtifact {
+  class BindArtifact {
     @Nullable private String expectedArtifactId;
 
     @Nullable private Artifact artifact;
   }
-
-  /**
-   * @return A manifest provided as direct text input in the stage definition. Deploy and Patch
-   *     Manifest stages have differently named model elements describing this one concept, so for
-   *     backwards compatibility we must map their individual model elements to use them generally.
-   */
-  @Nullable
-  public abstract List<Map<Object, Object>> getManifest();
 }

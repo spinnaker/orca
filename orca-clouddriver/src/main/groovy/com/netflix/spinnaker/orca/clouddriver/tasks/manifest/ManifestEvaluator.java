@@ -68,7 +68,7 @@ public class ManifestEvaluator implements CloudProviderAware {
   }
 
   public Result evaluate(Stage stage, ManifestContext context) {
-    Iterable<Object> rawManifests = Collections.emptyList();
+    Iterable<Object> rawManifests;
     List<Map<Object, Object>> manifests = Collections.emptyList();
     if (ManifestContext.Source.Artifact.equals(context.getSource())) {
       Artifact manifestArtifact =
@@ -141,7 +141,7 @@ public class ManifestEvaluator implements CloudProviderAware {
         manifests = (List<Map<Object, Object>>) manifestWrapper.get("manifests");
       }
     } else {
-      manifests = context.getManifest();
+      manifests = context.getManifests();
     }
 
     List<Artifact> requiredArtifacts = new ArrayList<>();

@@ -17,19 +17,35 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Value;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class DeployManifestContext extends ManifestContext {
+@Value
+@JsonDeserialize(builder = DeployManifestContext.DeployManifestContextBuilder.class)
+@Builder(builderClassName = "DeployManifestContextBuilder", toBuilder = true)
+public class DeployManifestContext implements ManifestContext {
   @Nullable private List<Map<Object, Object>> manifests;
 
-  private TrafficManagement trafficManagement = new TrafficManagement();
+  private TrafficManagement trafficManagement;
+
+  private Source source;
+
+  private String manifestArtifactId;
+  private Artifact manifestArtifact;
+  private String manifestArtifactAccount;
+
+  private List<String> requiredArtifactIds;
+  private List<BindArtifact> requiredArtifacts;
+
+  @Builder.Default private boolean skipExpressionEvaluation = false;
 
   @Data
   public static class TrafficManagement {
@@ -40,23 +56,26 @@ public class DeployManifestContext extends ManifestContext {
     public static class Options {
       private boolean enableTraffic = false;
       private List<String> services = Collections.emptyList();
-      private ManifestStrategyType strategy = ManifestStrategyType.None;
+      private ManifestStrategyType strategy = ManifestStrategyType.NONE;
     }
 
     public enum ManifestStrategyType {
       @JsonProperty("redblack")
-      RedBlack,
+      RED_BLACK,
 
       @JsonProperty("highlander")
-      Highlander,
+      HIGHLANDER,
 
       @JsonProperty("none")
-      None
+      NONE
     }
   }
 
   @Override
-  public List<Map<Object, Object>> getManifest() {
+  public List<Map<Object, Object>> getManifests() {
     return manifests;
   }
+
+  @JsonPOJOBuilder(withPrefix = "")
+  public static class DeployManifestContextBuilder {}
 }
