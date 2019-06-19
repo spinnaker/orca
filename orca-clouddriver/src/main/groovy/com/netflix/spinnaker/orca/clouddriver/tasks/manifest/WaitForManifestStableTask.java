@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -27,7 +28,7 @@ import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest.Status;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,19 +64,61 @@ public class WaitForManifestStableTask
   public TaskResult execute(@Nonnull Stage stage) {
     String account = getCredentials(stage);
     Map<String, List<String>> deployedManifests = manifestNamesByNamespace(stage);
-    List<String> messages = new ArrayList<>();
-    List<String> failureMessages = new ArrayList<>();
-    List<Map<String, String>> stableManifests = new ArrayList<>();
-    List<Map<String, String>> failedManifests = new ArrayList<>();
-    List warnings = new ArrayList<>();
+
+    List<String> messages =
+        Lists.newArrayList(
+            (List<String>)
+                (stage.getContext().get("messages") != null
+                    ? stage.getContext().get("messages")
+                    : Collections.emptyList()));
+
+    Map<String, Map<String, List<String>>> exception =
+        (Map<String, Map<String, List<String>>>) stage.getContext().get("exception");
+    List<String> failureMessages =
+        Lists.newArrayList(
+            exception != null ? exception.get("details").get("errors") : Collections.emptyList());
+
+    List<Map<String, String>> stableManifests =
+        Lists.newArrayList(
+            (List<Map<String, String>>)
+                (stage.getContext().get("stableManifests") != null
+                    ? stage.getContext().get("stableManifests")
+                    : Collections.emptyList()));
+
+    List<Map<String, String>> failedManifests =
+        Lists.newArrayList(
+            (List<Map<String, String>>)
+                (stage.getContext().get("failedManifests") != null
+                    ? stage.getContext().get("failedManifests")
+                    : Collections.emptyList()));
+
+    List warnings =
+        Lists.newArrayList(
+            (stage.getContext().get("warnings") != null
+                ? stage.getContext().get("warnings")
+                : Collections.emptyList()));
+
     boolean allStable = true;
     boolean anyFailed = false;
     boolean anyUnknown = false;
 
+    List<Map<String, String>> completedManifests = Lists.newArrayList(stableManifests);
+    completedManifests.addAll(failedManifests);
+
     for (Map.Entry<String, List<String>> entry : deployedManifests.entrySet()) {
       String location = entry.getKey();
       for (String name : entry.getValue()) {
+
         String identifier = readableIdentifier(account, location, name);
+
+        if (completedManifests.stream()
+            .anyMatch(
+                completedManifest ->
+                    location.equals(completedManifest.get("location"))
+                        && name.equals(completedManifest.get("manifestName")))) {
+          continue;
+        }
+
         Manifest manifest;
         try {
           manifest = oortService.getManifest(account, location, name, false);
