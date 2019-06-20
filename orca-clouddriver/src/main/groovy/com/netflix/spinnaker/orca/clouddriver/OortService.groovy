@@ -47,17 +47,8 @@ interface OortService {
 
   @GET("/manifests/{account}/_/{manifest}")
   Manifest getManifest(@Path("account") String account,
-                       @Path("manifest") String manifest)
-
-  @GET("/manifests/{account}/_/{manifest}")
-  Manifest getManifest(@Path("account") String account,
                        @Path("manifest") String manifest,
                        @Query("includeEvents") boolean includeEvents)
-
-  @GET("/manifests/{account}/{location}/{manifest}")
-  Manifest getManifest(@Path("account") String account,
-                       @Path("location") String location,
-                       @Path("manifest") String manifest)
 
   @GET("/manifests/{account}/{location}/{manifest}")
   Manifest getManifest(@Path("account") String account,
@@ -72,15 +63,6 @@ interface OortService {
                               @Path("app") String app,
                               @Path("clusterName") String clusterName,
                               @Path("criteria") String criteria)
-
-  @GET("/manifests/{account}/{location}/{kind}/cluster/{app}/{clusterName}/dynamic/{criteria}")
-  Manifest getDynamicManifest(@Path("account") String account,
-                              @Path("location") String location,
-                              @Path("kind") String kind,
-                              @Path("app") String app,
-                              @Path("clusterName") String clusterName,
-                              @Path("criteria") String criteria,
-                              @Query("includeEvents") boolean includeEvents)
 
   @Deprecated
   @GET("/applications/{app}/serverGroups/{account}/{region}/{serverGroup}")
