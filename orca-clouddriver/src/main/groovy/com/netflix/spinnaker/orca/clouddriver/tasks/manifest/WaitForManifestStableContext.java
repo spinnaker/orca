@@ -18,7 +18,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +30,11 @@ import lombok.Getter;
 @Getter
 public class WaitForManifestStableContext extends HashMap<String, Object> {
 
-  private final Optional<List<String>> messages;
-  private final Optional<Exception> exception;
-  private final Optional<List<Map<String, String>>> stableManifests;
-  private final Optional<List<Map<String, String>>> failedManifests;
-  private final Optional<List> warnings;
+  private final List<String> messages;
+  private final List<String> failureMessages;
+  private final List<Map<String, String>> stableManifests;
+  private final List<Map<String, String>> failedManifests;
+  private final List warnings;
 
   // There does not seem to be a way to auto-generate a constructor using our current version of
   // Lombok (1.16.20) that
@@ -45,23 +45,19 @@ public class WaitForManifestStableContext extends HashMap<String, Object> {
       @JsonProperty("stableManifests") Optional<List<Map<String, String>>> stableManifests,
       @JsonProperty("failedManifests") Optional<List<Map<String, String>>> failedManifests,
       @JsonProperty("warnings") Optional<List> warnings) {
-    this.messages = messages;
-    this.exception = exception;
-    this.stableManifests = stableManifests;
-    this.failedManifests = failedManifests;
-    this.warnings = warnings;
+    this.messages = messages.orElseGet(ArrayList::new);
+    this.failureMessages =
+        exception
+            .flatMap((e) -> e.getDetails().map(details -> details.get("errors")))
+            .orElseGet(ArrayList::new);
+    this.stableManifests = stableManifests.orElseGet(ArrayList::new);
+    this.failedManifests = failedManifests.orElseGet(ArrayList::new);
+    this.warnings = warnings.orElseGet(ArrayList::new);
   }
 
   public List<Map<String, String>> getCompletedManifests() {
-    return Stream.concat(
-            stableManifests.orElse(Collections.emptyList()).stream(),
-            failedManifests.orElse(Collections.emptyList()).stream())
+    return Stream.concat(stableManifests.stream(), failedManifests.stream())
         .collect(Collectors.toList());
-  }
-
-  public Optional<List<String>> getFailureMessages() {
-    return getException()
-        .flatMap((exception) -> exception.getDetails().map(details -> details.get("errors")));
   }
 
   @Getter

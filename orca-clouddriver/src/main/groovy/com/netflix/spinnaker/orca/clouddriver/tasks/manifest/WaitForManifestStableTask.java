@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest.Status;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,13 +65,11 @@ public class WaitForManifestStableTask
 
     WaitForManifestStableContext context = stage.mapTo(WaitForManifestStableContext.class);
 
-    List<String> messages = context.getMessages().orElseGet(ArrayList::new);
-    List<String> failureMessages = context.getFailureMessages().orElseGet(ArrayList::new);
-    List<Map<String, String>> stableManifests =
-        context.getStableManifests().orElseGet(ArrayList::new);
-    List<Map<String, String>> failedManifests =
-        context.getFailedManifests().orElseGet(ArrayList::new);
-    List warnings = context.getWarnings().orElseGet(ArrayList::new);
+    List<String> messages = context.getMessages();
+    List<String> failureMessages = context.getFailureMessages();
+    List<Map<String, String>> stableManifests = context.getStableManifests();
+    List<Map<String, String>> failedManifests = context.getFailedManifests();
+    List warnings = context.getWarnings();
 
     boolean allStable = true;
     boolean anyFailed = false;
