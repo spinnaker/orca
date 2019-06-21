@@ -63,7 +63,8 @@ public class FindArtifactFromExecutionTask implements Task {
           artifactResolver.getArtifactsForPipelineIdWithoutStageRef(
               pipeline, stage.getRefId(), executionOptions.toCriteria());
     } else {
-      priorArtifacts = artifactResolver.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
+      priorArtifacts =
+          artifactResolver.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
     }
 
     Artifact match =

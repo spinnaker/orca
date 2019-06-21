@@ -101,7 +101,8 @@ public class ArtifactResolver {
     return getAllArtifacts(execution, Optional.empty());
   }
 
-  public @Nonnull List<Artifact> getAllArtifacts(@Nonnull Execution execution, Optional<Predicate<Stage>> stageFilter) {
+  public @Nonnull List<Artifact> getAllArtifacts(
+      @Nonnull Execution execution, Optional<Predicate<Stage>> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
