@@ -135,14 +135,14 @@ public class ArtifactResolver {
   }
 
   /**
-   * Used to fully resolve a bound artifacts on a stage that can either select an expected artifacts
-   * ID for an expected artifacts defined in a prior stage or as a trigger constraint OR define an
-   * inline expression-evaluable default artifacts.
+   * Used to fully resolve a bound artifact on a stage that can either select an expected artifact
+   * ID for an expected artifact defined in a prior stage or as a trigger constraint OR define an
+   * inline expression-evaluable default artifact.
    *
-   * @param stage The stage containing context to evaluate expressions on the bound artifacts.
-   * @param id An expected artifacts id. Either id or artifacts must be specified.
-   * @param artifact An inline default artifacts. Either id or artifacts must be specified.
-   * @return A bound artifacts with expressions evaluated.
+   * @param stage The stage containing context to evaluate expressions on the bound artifact.
+   * @param id An expected artifact id. Either id or artifact must be specified.
+   * @param artifact An inline default artifact. Either id or artifact must be specified.
+   * @return A bound artifact with expressions evaluated.
    */
   public @Nullable Artifact getBoundArtifactForStage(
       Stage stage, @Nullable String id, @Nullable Artifact artifact) {
@@ -355,7 +355,7 @@ public class ArtifactResolver {
       default:
         if (requireUniqueMatches) {
           throw new InvalidRequestException(
-              "Expected artifacts " + expectedArtifact + " matches multiple artifacts " + matches);
+              "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
         }
         result = matches.get(0);
     }
@@ -385,7 +385,7 @@ public class ArtifactResolver {
               expectedArtifact, receivedArtifacts, priorArtifacts, requireUniqueMatches);
       if (resolved == null) {
         throw new InvalidRequestException(
-            format("Unmatched expected artifacts %s could not be resolved.", expectedArtifact));
+            format("Unmatched expected artifact %s could not be resolved.", expectedArtifact));
       } else {
         resolvedArtifacts.add(resolved);
       }

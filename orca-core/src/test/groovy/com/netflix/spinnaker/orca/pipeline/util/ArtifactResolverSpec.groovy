@@ -300,7 +300,7 @@ class ArtifactResolverSpec extends Specification {
         outputs.artifacts = [new Artifact(type: "2")]
       }
       stage {
-        // This stage does not emit an artifacts
+        // This stage does not emit an artifact
         requisiteStageRefIds = ["2"]
       }
     }
@@ -451,7 +451,7 @@ class ArtifactResolverSpec extends Specification {
     given:
     def matchArtifact = Artifact.builder().type("docker/.*").build()
     def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def receivedArtifact = Artifact.builder().name("my-artifacts").type("docker/image").build()
+    def receivedArtifact = Artifact.builder().name("my-artifact").type("docker/image").build()
     def pipeline = [
       id: "abc",
       trigger: [:],
@@ -470,11 +470,11 @@ class ArtifactResolverSpec extends Specification {
 
   def "resolveArtifacts adds received artifacts to the trigger, skipping duplicates"() {
     given:
-    def matchArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/.*").build()
+    def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
     def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def receivedArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/image").build()
-    def triggerArtifact = Artifact.builder().name("my-trigger-artifacts").type("docker/image").build()
-    def bothArtifact = Artifact.builder().name("my-both-artifacts").type("docker/image").build()
+    def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
+    def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
+    def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
     def pipeline = [
       id: "abc",
       trigger: [
@@ -496,11 +496,11 @@ class ArtifactResolverSpec extends Specification {
 
   def "resolveArtifacts is idempotent"() {
     given:
-    def matchArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/.*").build()
+    def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
     def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def receivedArtifact = Artifact.builder().name("my-pipeline-artifacts").type("docker/image").build()
-    def triggerArtifact = Artifact.builder().name("my-trigger-artifacts").type("docker/image").build()
-    def bothArtifact = Artifact.builder().name("my-both-artifacts").type("docker/image").build()
+    def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
+    def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
+    def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
     def pipeline = [
       id: "abc",
       trigger: [
