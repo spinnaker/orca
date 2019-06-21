@@ -55,15 +55,15 @@ public class FindArtifactFromExecutionTask implements Task {
     ExecutionOptions executionOptions =
         objectMapper.convertValue(context.get("executionOptions"), ExecutionOptions.class);
 
-    List<Artifact> priorArtifacts =
-        artifactResolver.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
-
+    List<Artifact> priorArtifacts;
     // never resolve artifacts from the same stage in a prior execution
     // we will get the set of the artifacts and remove them from the collection
     if (stage.getExecution().getPipelineConfigId().equals(pipeline)) {
       priorArtifacts =
           artifactResolver.getArtifactsForPipelineIdWithoutStageRef(
               pipeline, stage.getRefId(), executionOptions.toCriteria());
+    } else {
+      priorArtifacts = artifactResolver.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
     }
 
     Artifact match =

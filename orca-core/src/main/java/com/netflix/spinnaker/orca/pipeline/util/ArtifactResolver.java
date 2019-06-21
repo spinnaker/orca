@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -97,11 +98,16 @@ public class ArtifactResolver {
   }
 
   public @Nonnull List<Artifact> getAllArtifacts(@Nonnull Execution execution) {
+    return getAllArtifacts(execution, Optional.empty());
+  }
+
+  public @Nonnull List<Artifact> getAllArtifacts(@Nonnull Execution execution, Optional<Predicate<Stage>> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
     List<Artifact> emittedArtifacts =
         Stage.topologicalSort(execution.getStages())
+            .filter(stageFilter.orElse(s -> true))
             .filter(s -> s.getOutputs().containsKey("artifacts"))
             .flatMap(
                 s ->
@@ -225,20 +231,7 @@ public class ArtifactResolver {
       return Collections.emptyList();
     }
 
-    return execution.getStages().stream()
-        .filter(it -> stageRef.equals(it.getRefId()))
-        .filter(s -> s.getOutputs().containsKey("artifacts"))
-        .flatMap(
-            s ->
-                (Stream<Artifact>)
-                    ((List) s.getOutputs().get("artifacts"))
-                        .stream()
-                            .map(
-                                a ->
-                                    a instanceof Map
-                                        ? objectMapper.convertValue(a, Artifact.class)
-                                        : a))
-        .collect(Collectors.toList());
+    return getAllArtifacts(execution, Optional.of(it -> stageRef.equals(it.getRefId())));
   }
 
   public void resolveArtifacts(@Nonnull Map pipeline) {
