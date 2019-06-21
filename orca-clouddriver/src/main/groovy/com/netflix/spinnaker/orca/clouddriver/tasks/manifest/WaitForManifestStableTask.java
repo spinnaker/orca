@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -28,26 +27,26 @@ import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest.Status;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class WaitForManifestStableTask
     implements OverridableTimeoutRetryableTask, CloudProviderAware, ManifestAware {
   public static final String TASK_NAME = "waitForManifestToStabilize";
 
-  @Autowired OortService oortService;
-
-  @Autowired ObjectMapper objectMapper;
+  private final OortService oortService;
+  private final ObjectMapper objectMapper;
 
   @Override
   public long getBackoffPeriod() {
@@ -65,45 +64,19 @@ public class WaitForManifestStableTask
     String account = getCredentials(stage);
     Map<String, List<String>> deployedManifests = manifestNamesByNamespace(stage);
 
-    List<String> messages =
-        Lists.newArrayList(
-            (List<String>)
-                (stage.getContext().get("messages") != null
-                    ? stage.getContext().get("messages")
-                    : Collections.emptyList()));
+    WaitForManifestStableContext context = stage.mapTo(WaitForManifestStableContext.class);
 
-    Map<String, Map<String, List<String>>> exception =
-        (Map<String, Map<String, List<String>>>) stage.getContext().get("exception");
-    List<String> failureMessages =
-        Lists.newArrayList(
-            exception != null ? exception.get("details").get("errors") : Collections.emptyList());
-
+    List<String> messages = context.getMessages().orElseGet(ArrayList::new);
+    List<String> failureMessages = context.getFailureMessages().orElseGet(ArrayList::new);
     List<Map<String, String>> stableManifests =
-        Lists.newArrayList(
-            (List<Map<String, String>>)
-                (stage.getContext().get("stableManifests") != null
-                    ? stage.getContext().get("stableManifests")
-                    : Collections.emptyList()));
-
+        context.getStableManifests().orElseGet(ArrayList::new);
     List<Map<String, String>> failedManifests =
-        Lists.newArrayList(
-            (List<Map<String, String>>)
-                (stage.getContext().get("failedManifests") != null
-                    ? stage.getContext().get("failedManifests")
-                    : Collections.emptyList()));
-
-    List warnings =
-        Lists.newArrayList(
-            (stage.getContext().get("warnings") != null
-                ? stage.getContext().get("warnings")
-                : Collections.emptyList()));
+        context.getFailedManifests().orElseGet(ArrayList::new);
+    List warnings = context.getWarnings().orElseGet(ArrayList::new);
 
     boolean allStable = true;
     boolean anyFailed = false;
     boolean anyUnknown = false;
-
-    List<Map<String, String>> completedManifests = Lists.newArrayList(stableManifests);
-    completedManifests.addAll(failedManifests);
 
     for (Map.Entry<String, List<String>> entry : deployedManifests.entrySet()) {
       String location = entry.getKey();
@@ -111,7 +84,7 @@ public class WaitForManifestStableTask
 
         String identifier = readableIdentifier(account, location, name);
 
-        if (completedManifests.stream()
+        if (context.getCompletedManifests().stream()
             .anyMatch(
                 completedManifest ->
                     location.equals(completedManifest.get("location"))
@@ -186,18 +159,18 @@ public class WaitForManifestStableTask
       builder.put("warnings", warnings);
     }
 
-    Map<String, Object> context = builder.build();
+    Map<String, Object> newContext = builder.build();
 
     if (!anyUnknown && anyFailed) {
-      return TaskResult.builder(ExecutionStatus.TERMINAL).context(context).build();
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(newContext).build();
     } else if (allStable) {
       return TaskResult.builder(ExecutionStatus.SUCCEEDED)
-          .context(context)
+          .context(newContext)
           .outputs(new HashMap<>())
           .build();
     } else {
       return TaskResult.builder(ExecutionStatus.RUNNING)
-          .context(context)
+          .context(newContext)
           .outputs(new HashMap<>())
           .build();
     }
