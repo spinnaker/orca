@@ -102,7 +102,9 @@ public class ArtifactResolver {
   }
 
   public @Nonnull List<Artifact> getAllArtifacts(
-      @Nonnull Execution execution, Boolean includeTrigger, Optional<Predicate<Stage>> stageFilter) {
+      @Nonnull Execution execution,
+      Boolean includeTrigger,
+      Optional<Predicate<Stage>> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
@@ -125,10 +127,10 @@ public class ArtifactResolver {
     // Get all artifacts in the parent pipeline's trigger; these artifacts go at the end of the
     // list,
     // after any that were emitted by the pipeline
-    if(includeTrigger) {
+    if (includeTrigger) {
       List<Artifact> triggerArtifacts =
-        objectMapper.convertValue(
-          execution.getTrigger().getArtifacts(), new TypeReference<List<Artifact>>() {});
+          objectMapper.convertValue(
+              execution.getTrigger().getArtifacts(), new TypeReference<List<Artifact>>() {});
 
       emittedArtifacts.addAll(triggerArtifacts);
     }
