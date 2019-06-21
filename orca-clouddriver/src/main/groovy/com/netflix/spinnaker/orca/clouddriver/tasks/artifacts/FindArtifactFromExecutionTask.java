@@ -73,7 +73,7 @@ public class FindArtifactFromExecutionTask implements Task {
     if (match == null) {
       outputs.put(
           "exception",
-          "No artifacts matching " + expectedArtifact + " found among " + priorArtifacts);
+          "No artifact matching " + expectedArtifact + " found among " + priorArtifacts);
       return TaskResult.builder(ExecutionStatus.TERMINAL)
           .context(new HashMap<>())
           .outputs(outputs)
