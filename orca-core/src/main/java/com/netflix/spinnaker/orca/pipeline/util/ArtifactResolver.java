@@ -226,17 +226,6 @@ public class ArtifactResolver {
     return getAllArtifacts(execution, true, Optional.of(it -> !stageRef.equals(it.getRefId())));
   }
 
-  public @Nonnull List<Artifact> getArtifactsForPipelineIdStageRef(
-      @Nonnull String pipelineId, @Nonnull String stageRef, @Nonnull ExecutionCriteria criteria) {
-    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
-
-    if (execution == null) {
-      return Collections.emptyList();
-    }
-
-    return getAllArtifacts(execution, false, Optional.of(it -> stageRef.equals(it.getRefId())));
-  }
-
   public void resolveArtifacts(@Nonnull Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
     List<ExpectedArtifact> expectedArtifacts =
