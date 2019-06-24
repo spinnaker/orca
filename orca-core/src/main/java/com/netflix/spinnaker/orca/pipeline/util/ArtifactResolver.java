@@ -217,15 +217,13 @@ public class ArtifactResolver {
 
   public @Nonnull List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
       @Nonnull String pipelineId, @Nonnull String stageRef, @Nonnull ExecutionCriteria criteria) {
-    List<Artifact> artifacts = getArtifactsForPipelineId(pipelineId, criteria);
-    List<Artifact> stageArtifacts =
-        getArtifactsForPipelineIdStageRef(pipelineId, stageRef, criteria);
+    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
 
-    stageArtifacts.forEach(artifact -> artifacts.remove(artifact));
-    if (stageArtifacts.size() > 0) {
-      log.debug("Removed artifacts from " + pipelineId + ": " + stageArtifacts.toString());
+    if (execution == null) {
+      return Collections.emptyList();
     }
-    return artifacts;
+
+    return getAllArtifacts(execution, true, Optional.of(it -> !stageRef.equals(it.getRefId())));
   }
 
   public @Nonnull List<Artifact> getArtifactsForPipelineIdStageRef(
