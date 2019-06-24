@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,8 @@ public class FindArtifactFromExecutionTask implements Task {
     List<Artifact> priorArtifacts;
     // never resolve artifacts from the same stage in a prior execution
     // we will get the set of the artifacts and remove them from the collection
-    if (stage.getExecution().getPipelineConfigId().equals(pipeline)) {
+    String pipelineConfigId = Optional.ofNullable(stage.getExecution().getPipelineConfigId()).orElse("");
+    if (pipelineConfigId.equals(pipeline)) {
       priorArtifacts =
           artifactResolver.getArtifactsForPipelineIdWithoutStageRef(
               pipeline, stage.getRefId(), executionOptions.toCriteria());
