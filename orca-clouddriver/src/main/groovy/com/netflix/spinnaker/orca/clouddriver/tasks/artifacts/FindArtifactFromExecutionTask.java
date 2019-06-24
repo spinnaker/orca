@@ -53,7 +53,8 @@ public class FindArtifactFromExecutionTask implements Task {
     List<Artifact> priorArtifacts;
     // never resolve artifacts from the same stage in a prior execution
     // we will get the set of the artifacts and remove them from the collection
-    String pipelineConfigId = Optional.ofNullable(stage.getExecution().getPipelineConfigId()).orElse("");
+    String pipelineConfigId =
+        Optional.ofNullable(stage.getExecution().getPipelineConfigId()).orElse("");
     if (pipelineConfigId.equals(pipeline)) {
       priorArtifacts =
           artifactResolver.getArtifactsForPipelineIdWithoutStageRef(
