@@ -42,7 +42,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public interface StageDefinitionBuilder {
+public interface StageDefinitionBuilder extends SimpleStageDefinitionBuilder {
 
   default @Nonnull TaskGraph buildTaskGraph(@Nonnull Stage stage) {
     Builder graphBuilder = Builder(FULL);

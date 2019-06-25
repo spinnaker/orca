@@ -20,6 +20,7 @@ import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStag
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import java.util.Collections;
@@ -38,7 +39,7 @@ public class TestRollback implements Rollback {
 
     return Collections.singletonList(
         newStage(
-            parentStage.getExecution(),
+            (Execution) parentStage.getExecution(),
             waitStage.getType(),
             "wait",
             waitContext,

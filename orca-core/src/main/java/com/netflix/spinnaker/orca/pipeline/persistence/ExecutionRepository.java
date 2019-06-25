@@ -19,8 +19,8 @@ import static java.util.stream.Collectors.toList;
 
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
 import java.time.Instant;
 import java.util.*;
 import javax.annotation.Nonnull;

@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.isInitial
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -236,17 +237,17 @@ class HydrateQueueCommand(
 
   private fun ExecutionRepository.retrieveRunning(): Observable<Execution> =
     rx.Observable.merge(
-      retrieve(Execution.ExecutionType.ORCHESTRATION, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING)),
-      retrieve(Execution.ExecutionType.PIPELINE, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING))
+      retrieve(ExecutionType.ORCHESTRATION, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING)),
+      retrieve(ExecutionType.PIPELINE, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING))
     )
 
   private fun ExecutionRepository.retrieveSingleRunning(executionId: String): Observable<Execution> {
     // TODO rz - Ugh. So dumb.
     val execution = try {
-      retrieve(Execution.ExecutionType.ORCHESTRATION, executionId)
+      retrieve(ExecutionType.ORCHESTRATION, executionId)
     } catch (e: ExecutionNotFoundException) {
       try {
-        retrieve(Execution.ExecutionType.PIPELINE, executionId)
+        retrieve(ExecutionType.PIPELINE, executionId)
       } catch (e: ExecutionNotFoundException) {
         null
       }

@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.kato.tasks.quip.ResolveQuipVersionTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -78,7 +79,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
         nextStageContext.put("instanceIds", [key]) // for WaitForDown/UpInstancesTask
 
         stages << newStage(
-          stage.execution,
+          (Execution) stage.execution,
           bulkQuickPatchStage.type,
           "bulkQuickPatchStage",
           nextStageContext,
@@ -94,7 +95,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
       // for WaitForDown/UpInstancesTask
 
       stages << newStage(
-        stage.execution,
+        (Execution) stage.execution,
         bulkQuickPatchStage.type,
         "bulkQuickPatchStage",
         nextStageContext,

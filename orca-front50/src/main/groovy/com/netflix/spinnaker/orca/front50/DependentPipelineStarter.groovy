@@ -17,11 +17,13 @@
 package com.netflix.spinnaker.orca.front50
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.jsontype.NamedType
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
@@ -37,7 +39,7 @@ import org.springframework.stereotype.Component
 
 import java.util.concurrent.Callable
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
 
 @Component
 @Slf4j
@@ -70,6 +72,8 @@ class DependentPipelineStarter implements ApplicationContextAware {
                     Map suppliedParameters,
                     String parentPipelineStageId,
                     User principal) {
+
+    objectMapper.registerSubtypes(new NamedType(Execution.class, "Execution"))
     def json = objectMapper.writeValueAsString(pipelineConfig)
 
     if (pipelineConfig.disabled) {

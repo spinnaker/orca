@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.webhook.tasks
 
-import com.fasterxml.jackson.databind.ObjectMapper
+
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage

@@ -18,11 +18,11 @@ package com.netflix.spinnaker.orca.front50.pipeline
 
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 class PipelineStageSpec extends Specification {
   def executionRepository = Mock(ExecutionRepository)
@@ -39,13 +39,13 @@ class PipelineStageSpec extends Specification {
     def stage = new Stage(Execution.newPipeline("orca"), "pipeline", stageContext)
 
     and:
-    executionRepository.retrieve(PIPELINE, stageContext.executionId) >> childPipeline
+    executionRepository.retrieve(ExecutionType.PIPELINE, stageContext.executionId) >> childPipeline
 
     when:
     pipelineStage.cancel(stage)
 
     then:
-    (shouldCancel ? 1 : 0) * executionRepository.cancel(PIPELINE, stageContext.executionId, "parent pipeline", null)
+    (shouldCancel ? 1 : 0) * executionRepository.cancel(ExecutionType.PIPELINE, stageContext.executionId, "parent pipeline", null)
 
     where:
     stageContext                     || childPipelineIsCanceled || shouldCancel

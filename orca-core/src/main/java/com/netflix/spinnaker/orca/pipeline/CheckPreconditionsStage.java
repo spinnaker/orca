@@ -23,6 +23,7 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 import com.netflix.spinnaker.orca.Task;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.tasks.PreconditionTask;
 import java.util.Collection;
@@ -73,7 +74,7 @@ public class CheckPreconditionsStage implements StageDefinitionBuilder {
           .map(
               context ->
                   newStage(
-                      stage.getExecution(),
+                      (Execution) stage.getExecution(),
                       getType(),
                       format("Check precondition (%s)", context.get("preconditionType")),
                       context,

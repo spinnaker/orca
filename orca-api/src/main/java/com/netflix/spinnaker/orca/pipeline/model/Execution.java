@@ -17,20 +17,19 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
 import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.security.AuthenticatedRequest;
-import com.netflix.spinnaker.security.User;
+import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails;
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.execution.PausedDetails;
+import com.netflix.spinnaker.orca.pipeline.model.execution.PipelineSource;
 import de.huxhorn.sulky.ulid.ULID;
 import java.io.Serializable;
 import java.util.*;
@@ -351,143 +350,5 @@ public class Execution implements Serializable {
   @Deprecated
   public static Execution newPipeline(String application) {
     return new Execution(PIPELINE, application);
-  }
-
-  public static class AuthenticationDetails implements Serializable {
-
-    private String user;
-
-    public @Nullable String getUser() {
-      return user;
-    }
-
-    public void setUser(@Nullable String user) {
-      this.user = user;
-    }
-
-    private Collection<String> allowedAccounts = emptySet();
-
-    public Collection<String> getAllowedAccounts() {
-      return ImmutableSet.copyOf(allowedAccounts);
-    }
-
-    public void setAllowedAccounts(Collection<String> allowedAccounts) {
-      this.allowedAccounts = ImmutableSet.copyOf(allowedAccounts);
-    }
-
-    public AuthenticationDetails() {}
-
-    public AuthenticationDetails(String user, String... allowedAccounts) {
-      this.user = user;
-      this.allowedAccounts = asList(allowedAccounts);
-    }
-
-    public static Optional<AuthenticationDetails> build() {
-      Optional<String> spinnakerUserOptional = AuthenticatedRequest.getSpinnakerUser();
-      Optional<String> spinnakerAccountsOptional = AuthenticatedRequest.getSpinnakerAccounts();
-      if (spinnakerUserOptional.isPresent() || spinnakerAccountsOptional.isPresent()) {
-        return Optional.of(
-            new AuthenticationDetails(
-                spinnakerUserOptional.orElse(null),
-                spinnakerAccountsOptional.map(s -> s.split(",")).orElse(new String[0])));
-      }
-
-      return Optional.empty();
-    }
-
-    public Optional<User> toKorkUser() {
-      return Optional.ofNullable(user)
-          .map(
-              it -> {
-                User user = new User();
-                user.setEmail(it);
-                user.setAllowedAccounts(allowedAccounts);
-                return user;
-              });
-    }
-  }
-
-  public static class PausedDetails implements Serializable {
-    String pausedBy;
-
-    public @Nullable String getPausedBy() {
-      return pausedBy;
-    }
-
-    public void setPausedBy(@Nullable String pausedBy) {
-      this.pausedBy = pausedBy;
-    }
-
-    String resumedBy;
-
-    public @Nullable String getResumedBy() {
-      return resumedBy;
-    }
-
-    public void setResumedBy(@Nullable String resumedBy) {
-      this.resumedBy = resumedBy;
-    }
-
-    Long pauseTime;
-
-    public @Nullable Long getPauseTime() {
-      return pauseTime;
-    }
-
-    public void setPauseTime(@Nullable Long pauseTime) {
-      this.pauseTime = pauseTime;
-    }
-
-    Long resumeTime;
-
-    public @Nullable Long getResumeTime() {
-      return resumeTime;
-    }
-
-    public void setResumeTime(@Nullable Long resumeTime) {
-      this.resumeTime = resumeTime;
-    }
-
-    @JsonIgnore
-    public boolean isPaused() {
-      return pauseTime != null && resumeTime == null;
-    }
-
-    @JsonIgnore
-    public long getPausedMs() {
-      return (pauseTime != null && resumeTime != null) ? resumeTime - pauseTime : 0;
-    }
-  }
-
-  public enum ExecutionType {
-    PIPELINE,
-    ORCHESTRATION;
-
-    @Override
-    public String toString() {
-      return name().toLowerCase();
-    }
-  }
-
-  public static class PipelineSource implements Serializable {
-    private String id;
-
-    public @Nonnull String getId() {
-      return id;
-    }
-
-    public void setId(@Nonnull String id) {
-      this.id = id;
-    }
-
-    private String type;
-
-    public @Nonnull String getType() {
-      return type;
-    }
-
-    public void setType(@Nonnull String type) {
-      this.type = type;
-    }
   }
 }

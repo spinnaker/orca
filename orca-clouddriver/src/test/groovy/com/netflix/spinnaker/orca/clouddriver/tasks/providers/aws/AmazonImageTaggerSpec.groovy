@@ -22,6 +22,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTagger
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTaggerSpec
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import spock.lang.Unroll
 

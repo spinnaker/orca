@@ -36,7 +36,8 @@ import spock.lang.Specification
 import java.time.Clock
 import java.time.Instant
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
@@ -219,7 +220,7 @@ class TaskControllerSpec extends Specification {
 
   void '/applications/{application}/evaluateExpressions precomputes values'() {
     given:
-    executionRepository.retrieve(Execution.ExecutionType.PIPELINE, "1") >> {
+    executionRepository.retrieve(PIPELINE, "1") >> {
       pipeline {
         id = "1"
         application = "doesn't matter"

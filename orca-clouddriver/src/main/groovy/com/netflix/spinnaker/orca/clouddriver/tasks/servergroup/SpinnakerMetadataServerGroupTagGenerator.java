@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
 
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.core.RetrySupport;
@@ -48,7 +48,7 @@ public class SpinnakerMetadataServerGroupTagGenerator implements ServerGroupEnti
   @Override
   public Collection<Map<String, Object>> generateTags(
       Stage stage, String serverGroup, String account, String location, String cloudProvider) {
-    Execution execution = stage.getExecution();
+    Execution execution = (Execution) stage.getExecution();
     Map context = stage.getContext();
 
     Map<String, Object> value = new HashMap<>();

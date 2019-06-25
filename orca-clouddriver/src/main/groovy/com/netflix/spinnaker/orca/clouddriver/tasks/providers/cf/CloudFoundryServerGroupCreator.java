@@ -43,7 +43,7 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
   @Override
   public List<Map> getOperations(Stage stage) {
     Map<String, Object> context = stage.getContext();
-    final Execution execution = stage.getExecution();
+    final Execution execution = (Execution) stage.getExecution();
     ImmutableMap.Builder<String, Object> operation =
         ImmutableMap.<String, Object>builder()
             .put("application", context.get("application"))

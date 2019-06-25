@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.pipeline.expressions.whitelisting;
 
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.*;
+import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails;
+import com.netflix.spinnaker.orca.pipeline.model.execution.PausedDetails;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,8 +65,8 @@ public interface ReturnTypeRestrictor extends InstantiationTypeRestrictor {
                   ConcourseBuildInfo.class,
                   SourceControl.class,
                   ExecutionStatus.class,
-                  Execution.AuthenticationDetails.class,
-                  Execution.PausedDetails.class)));
+                  AuthenticationDetails.class,
+                  PausedDetails.class)));
 
   static boolean supports(Class<?> type) {
     final Class<?> returnType = type.isArray() ? type.getComponentType() : type;

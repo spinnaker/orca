@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.front50.tasks
 
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails
 import com.netflix.spinnaker.security.User
 import spock.lang.Specification
 import spock.lang.Subject
@@ -101,7 +101,7 @@ class StartPipelineTaskSpec extends Specification {
     where:
     authentication || expectedAuthenticatedEmail || expectedAuthenticatedAllowedAccounts
     null           || null                       || null
-    new Execution.AuthenticationDetails(
+    new AuthenticationDetails(
       "authenticated_user",
       "account1"
     )              || "authenticated_user"       || ["account1"]

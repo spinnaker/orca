@@ -18,13 +18,9 @@ package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.WaitStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-
-import javax.annotation.Nonnull;
 
 class StageResolverSpec extends Specification {
   @Subject

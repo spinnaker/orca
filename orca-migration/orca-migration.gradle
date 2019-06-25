@@ -19,5 +19,6 @@ apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
   implementation(project(":orca-core"))
+  implementation(project(":orca-api"))
   implementation(project(":orca-front50"))
 }

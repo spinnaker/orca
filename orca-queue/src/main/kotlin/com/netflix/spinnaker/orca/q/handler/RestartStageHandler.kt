@@ -45,10 +45,11 @@ class RestartStageHandler(
 
   override fun handle(message: RestartStage) {
     message.withStage { stage ->
-      if (stage.execution.shouldQueue()) {
+      val execution = stage.execution
+      if (execution.shouldQueue()) {
         // this pipeline is already running and has limitConcurrent = true
-        stage.execution.pipelineConfigId?.let {
-          log.info("Queueing restart of {} {} {}", stage.execution.application, stage.execution.name, stage.execution.id)
+        execution.pipelineConfigId?.let {
+          log.info("Queueing restart of {} {} {}", execution.application, execution.name, execution.id)
           pendingExecutionService.enqueue(it, message)
         }
       } else {

@@ -23,6 +23,7 @@ repositories {
 
 dependencies {
   implementation(project(":orca-core"))
+  implementation(project(":orca-api"))
   implementation(project(":orca-kotlin"))
 
   testImplementation(project(":orca-queue-tck"))

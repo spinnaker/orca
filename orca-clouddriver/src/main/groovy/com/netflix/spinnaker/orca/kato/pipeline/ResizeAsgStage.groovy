@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.kato.tasks.ResizeAsgTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
@@ -79,7 +80,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
       def stages = configureTargets(parentStage)
       if (targetReferenceSupport.isDynamicallyBound(parentStage)) {
         stages << newStage(
-          parentStage.execution,
+          (Execution) parentStage.execution,
           determineTargetReferenceStage.type,
           "determineTargetReferences",
           parentStage.context,

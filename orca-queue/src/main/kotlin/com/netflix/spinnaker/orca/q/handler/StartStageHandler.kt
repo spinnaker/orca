@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.ext.firstBeforeStages
 import com.netflix.spinnaker.orca.ext.firstTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository

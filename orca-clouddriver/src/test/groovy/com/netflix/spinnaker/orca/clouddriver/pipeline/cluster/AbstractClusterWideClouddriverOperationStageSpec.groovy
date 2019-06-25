@@ -14,6 +14,7 @@ import com.netflix.spinnaker.orca.pipeline.AcquireLockStage
 import com.netflix.spinnaker.orca.pipeline.ReleaseLockStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import org.springframework.mock.env.MockEnvironment
 import spock.lang.Specification

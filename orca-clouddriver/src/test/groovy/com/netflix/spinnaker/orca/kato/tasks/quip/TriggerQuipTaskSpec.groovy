@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
+import com.netflix.spinnaker.orca.pipeline.model.Stage
+
 import java.nio.charset.Charset
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus

@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
 
 class KubernetesContainerFinder {
   static Map parseContainerPartsFrom(String containerName) {

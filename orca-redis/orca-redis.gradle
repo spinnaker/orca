@@ -6,6 +6,8 @@ dependencies {
   api("com.netflix.spinnaker.kork:kork-jedis")
 
   implementation(project(":orca-core"))
+  implementation(project(":orca-api"))
+  implementation(project(":orca-jackson"))
   implementation(project(":orca-front50"))
   implementation("io.reactivex:rxjava")
   implementation("net.logstash.logback:logstash-logback-encoder")

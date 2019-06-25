@@ -22,6 +22,8 @@ dependencies {
 
   // TODO rz - Prefer definitely not having this
   implementation(project(":orca-queue-redis"))
+  implementation(project(":orca-api"))
+  implementation(project(":orca-jackson"))
   implementation("com.netflix.spinnaker.keiko:keiko-core:$keikoVersion")
   implementation("org.springframework:spring-jdbc")
   implementation("org.springframework:spring-tx")

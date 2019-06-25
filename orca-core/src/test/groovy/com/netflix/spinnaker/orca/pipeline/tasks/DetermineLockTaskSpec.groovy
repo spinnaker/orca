@@ -7,6 +7,7 @@ import com.netflix.spinnaker.orca.pipeline.AcquireLockStage
 import com.netflix.spinnaker.orca.pipeline.ReleaseLockStage
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import org.springframework.core.env.StandardEnvironment
@@ -32,7 +33,7 @@ class DetermineLockTaskSpec extends Specification {
 
   def "should determine the lock when lock values explicitly provided"() {
     given:
-    def exec = new Execution(Execution.ExecutionType.PIPELINE, app)
+    def exec = new Execution(ExecutionType.PIPELINE, app)
     def stage = new Stage(exec, ReleaseLockStage.PIPELINE_TYPE, [
       lock: [
         lockName: lockName,
@@ -58,7 +59,7 @@ class DetermineLockTaskSpec extends Specification {
 
   def "should determine the lock from a previous stage"() {
     given:
-    def exec = new Execution(Execution.ExecutionType.PIPELINE, app)
+    def exec = new Execution(ExecutionType.PIPELINE, app)
     def acquire = new Stage(exec, AcquireLockStage.PIPELINE_TYPE, [
       refId: 'acquireLock',
       lock: [
@@ -96,7 +97,7 @@ class DetermineLockTaskSpec extends Specification {
 
   def "should fail if unable to determine lock from a previous stage"() {
     given:
-    def exec = new Execution(Execution.ExecutionType.PIPELINE, app)
+    def exec = new Execution(ExecutionType.PIPELINE, app)
 
     def release = new Stage(exec, ReleaseLockStage.PIPELINE_TYPE, [
       refId: 'releaseLock',
@@ -117,7 +118,7 @@ class DetermineLockTaskSpec extends Specification {
     given:
     config.learningMode = learningMode
     config.enabled = lockingEnabled
-    def exec = new Execution(Execution.ExecutionType.PIPELINE, app)
+    def exec = new Execution(ExecutionType.PIPELINE, app)
 
     def release = new Stage(exec, ReleaseLockStage.PIPELINE_TYPE, [
       refId: 'releaseLock'

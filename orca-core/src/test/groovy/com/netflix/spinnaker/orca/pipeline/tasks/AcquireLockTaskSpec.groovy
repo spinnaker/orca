@@ -9,6 +9,8 @@ import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.AcquireLockStage
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -29,7 +31,7 @@ class AcquireLockTaskSpec extends Specification {
 
   def "should build default lock from stage"() {
     given:
-    def ex = new Execution(Execution.ExecutionType.PIPELINE, application)
+    def ex = new Execution(ExecutionType.PIPELINE, application)
     def stage = new Stage(ex, AcquireLockStage.PIPELINE_TYPE, [lock: [lockName: lockName]])
     def lc = new LockContext(lockName, lv(ex), stage.id)
 
@@ -48,7 +50,7 @@ class AcquireLockTaskSpec extends Specification {
 
   def "a lock failure should STOP the stage and allow other branches to complete"() {
     given:
-    def ex = new Execution(Execution.ExecutionType.PIPELINE, application)
+    def ex = new Execution(ExecutionType.PIPELINE, application)
     def stage = new Stage(ex, AcquireLockStage.PIPELINE_TYPE, [lock: [lockName: lockName]])
     def lc = new LockContext(lockName, lv(ex), stage.id)
 
@@ -67,7 +69,7 @@ class AcquireLockTaskSpec extends Specification {
 
     where:
     currentApplication = 'barapp'
-    currentLockValue = lv(new Execution(Execution.ExecutionType.PIPELINE, currentApplication))
+    currentLockValue = lv(new Execution(ExecutionType.PIPELINE, currentApplication))
     application = 'fooapp'
     lockName = 'testlock'
 
@@ -97,7 +99,7 @@ class AcquireLockTaskSpec extends Specification {
     'bazapp' | 'bazid' | 'someholder' || 'both lockValue and lockHolder provided'
 
     contextLockValue = ctxLv(lvApp, lvId)
-    execution = new Execution(Execution.ExecutionType.PIPELINE, application)
+    execution = new Execution(ExecutionType.PIPELINE, application)
     defaultLockValue = lv(execution)
 
     expectedLockValue = contextLockValue == null ? defaultLockValue :

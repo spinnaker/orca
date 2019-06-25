@@ -16,6 +16,7 @@
 
 include "orca-extensionpoint",
   "orca-core",
+  "orca-api",
   "orca-core-tck",
   "orca-redis",
   "orca-test-redis",
@@ -48,7 +49,8 @@ include "orca-extensionpoint",
   "orca-sql",
   "orca-sql-mysql",
   "orca-integrations-gremlin",
-  "orca-integrations-cloudfoundry"
+  "orca-integrations-cloudfoundry",
+  "orca-jackson"
 
 rootProject.name = "orca"
 

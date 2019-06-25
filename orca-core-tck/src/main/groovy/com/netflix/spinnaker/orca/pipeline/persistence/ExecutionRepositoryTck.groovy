@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import rx.schedulers.Schedulers
 import spock.lang.Specification
@@ -32,9 +33,6 @@ import java.time.Instant
 import java.time.ZoneOffset
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL_ASC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
@@ -258,7 +256,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(pipeline)
 
     expect:
-    repository.retrieve(PIPELINE).toBlocking().first().id == pipeline.id
+    repository.retrieve(ExecutionType.PIPELINE).toBlocking().first().id == pipeline.id
 
     with(repository.retrieve(pipeline.type, pipeline.id)) {
       id == pipeline.id
@@ -318,16 +316,16 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     and:
     repository.store(pipeline)
-    repository.delete(PIPELINE, pipeline.id)
+    repository.delete(ExecutionType.PIPELINE, pipeline.id)
 
     when:
-    repository.retrieve(PIPELINE, pipeline.id)
+    repository.retrieve(ExecutionType.PIPELINE, pipeline.id)
 
     then:
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(PIPELINE).toList().toBlocking().first() == []
+    repository.retrieve(ExecutionType.PIPELINE).toList().toBlocking().first() == []
   }
 
   def "updateStatus sets startTime to current time if new status is RUNNING"() {
@@ -595,7 +593,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
     repository.store(execution)
 
     expect:
-    with(repository.retrieve(PIPELINE, execution.id)) {
+    with(repository.retrieve(ExecutionType.PIPELINE, execution.id)) {
       trigger.parentExecution instanceof Execution
     }
   }
@@ -628,14 +626,14 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     where:
     statuses             | limit | type          | expectedResults
-    []                   | 0     | PIPELINE      | ExecutionStatus.values().size()
-    []                   | 0     | ORCHESTRATION | ExecutionStatus.values().size()
-    [RUNNING, SUCCEEDED] | 0     | PIPELINE      | 2
-    [RUNNING, SUCCEEDED] | 0     | ORCHESTRATION | 2
-    []                   | 1     | PIPELINE      | 1
-    []                   | 1     | ORCHESTRATION | 1
-    [RUNNING, SUCCEEDED] | 1     | PIPELINE      | 1
-    [RUNNING, SUCCEEDED] | 1     | ORCHESTRATION | 1
+    []                   | 0     | ExecutionType.PIPELINE      | ExecutionStatus.values().size()
+    []                   | 0     | ExecutionType.ORCHESTRATION | ExecutionStatus.values().size()
+    [RUNNING, SUCCEEDED] | 0     | ExecutionType.PIPELINE      | 2
+    [RUNNING, SUCCEEDED] | 0     | ExecutionType.ORCHESTRATION | 2
+    []                   | 1     | ExecutionType.PIPELINE      | 1
+    []                   | 1     | ExecutionType.ORCHESTRATION | 1
+    [RUNNING, SUCCEEDED] | 1     | ExecutionType.PIPELINE      | 1
+    [RUNNING, SUCCEEDED] | 1     | ExecutionType.ORCHESTRATION | 1
   }
 
   def "can retrieve all application names in database, type: #executionType, min: #minExecutions"() {
@@ -665,11 +663,11 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     where:
     executionType | minExecutions || expectedApps
-    ORCHESTRATION | 0             || ["spindemo"]
-    PIPELINE      | 0             || ["spindemo", "orca"]
+    ExecutionType.ORCHESTRATION | 0             || ["spindemo"]
+    ExecutionType.PIPELINE      | 0             || ["spindemo", "orca"]
     null          | 0             || ["spindemo", "orca"]
     null          | 2             || ["spindemo"]
-    PIPELINE      | 2             || []
+    ExecutionType.PIPELINE      | 2             || []
   }
 }
 

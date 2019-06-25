@@ -1,7 +1,7 @@
 package com.netflix.spinnaker.orca.controllers;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 import static org.mockito.ArgumentMatchers.any;

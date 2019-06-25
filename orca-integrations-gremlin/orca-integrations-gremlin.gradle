@@ -2,6 +2,8 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 
 dependencies {
   implementation(project(":orca-core"))
+  implementation(project(":orca-api"))
+  implementation(project(":orca-jackson"))
   implementation(project(":orca-kotlin"))
   implementation(project(":orca-retrofit"))
 

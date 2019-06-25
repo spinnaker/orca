@@ -16,9 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.AuthenticationDetails;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -29,10 +26,11 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineBuilder;
+import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.Trigger;
+import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails;
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.execution.PipelineSource;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.io.IOException;
@@ -118,7 +116,7 @@ public class ExecutionLauncher {
   }
 
   private void checkRunnable(Execution execution) {
-    if (execution.getType() == PIPELINE) {
+    if (execution.getType() == ExecutionType.PIPELINE) {
       pipelineValidator.ifPresent(it -> it.checkRunnable(execution));
     }
   }
@@ -187,7 +185,7 @@ public class ExecutionLauncher {
   }
 
   private Execution parse(ExecutionType type, String configJson) throws IOException {
-    if (type == PIPELINE) {
+    if (type == ExecutionType.PIPELINE) {
       return parsePipeline(configJson);
     } else {
       return parseOrchestration(configJson);
@@ -211,7 +209,7 @@ public class ExecutionLauncher {
         .withSource(
             (config.get("source") == null)
                 ? null
-                : objectMapper.convertValue(config.get("source"), Execution.PipelineSource.class))
+                : objectMapper.convertValue(config.get("source"), PipelineSource.class))
         .build();
   }
 

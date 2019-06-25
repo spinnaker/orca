@@ -10,6 +10,8 @@ dependencies {
 
   implementation(project(":orca-clouddriver"))
   implementation(project(":orca-core"))
+  implementation(project(":orca-api"))
+  implementation(project(":orca-jackson"))
 
   testImplementation("org.junit.jupiter:junit-jupiter-api")
   testImplementation("org.assertj:assertj-core")

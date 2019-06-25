@@ -19,10 +19,10 @@ package com.netflix.spinnaker.orca.pipeline.persistence.jedis;
 import static com.google.common.collect.Maps.filterValues;
 import static com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED;
 import static com.netflix.spinnaker.orca.config.RedisConfiguration.Clients.EXECUTION_REPOSITORY;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.NO_TRIGGER;
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.*;
@@ -41,8 +41,10 @@ import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.*;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails;
+import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails;
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.execution.PausedDetails;
+import com.netflix.spinnaker.orca.pipeline.model.execution.PipelineSource;
 import com.netflix.spinnaker.orca.pipeline.persistence.*;
 import java.io.IOException;
 import java.util.*;
@@ -856,14 +858,14 @@ public class RedisExecutionRepository implements ExecutionRepository {
         execution.setStatus(ExecutionStatus.valueOf(map.get("status")));
       }
       execution.setAuthentication(
-          mapper.readValue(map.get("authentication"), Execution.AuthenticationDetails.class));
+          mapper.readValue(map.get("authentication"), AuthenticationDetails.class));
       if (map.get("paused") != null) {
         execution.setPaused(mapper.readValue(map.get("paused"), PausedDetails.class));
       }
       execution.setKeepWaitingPipelines(Boolean.parseBoolean(map.get("keepWaitingPipelines")));
       execution.setOrigin(map.get("origin"));
       if (map.get("source") != null) {
-        execution.setSource(mapper.readValue(map.get("source"), Execution.PipelineSource.class));
+        execution.setSource(mapper.readValue(map.get("source"), PipelineSource.class));
       }
       execution.setTrigger(
           map.get("trigger") != null

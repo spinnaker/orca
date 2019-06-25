@@ -40,7 +40,7 @@ import com.netflix.spinnaker.orca.ext.failureStatus
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -223,7 +223,8 @@ class RunTaskHandler(
     if (this is RetryableTask) {
       val startTime = taskModel.startTime.toInstant()
       if (startTime != null) {
-        val pausedDuration = stage.execution.pausedDurationRelativeTo(startTime)
+        val execution = stage.execution
+        val pausedDuration = execution.pausedDurationRelativeTo(startTime)
         val elapsedTime = Duration.between(startTime, clock.instant())
         val actualTimeout = (
           if (this is OverridableTimeoutRetryableTask && stage.parentWithTimeout.isPresent)
@@ -250,7 +251,8 @@ class RunTaskHandler(
       val startTime = it.startTime.toInstant()
       if (startTime != null) {
         val elapsedTime = Duration.between(startTime, clock.instant())
-        val pausedDuration = stage.execution.pausedDurationRelativeTo(startTime)
+        val execution = stage.execution
+        val pausedDuration = execution.pausedDurationRelativeTo(startTime)
         val executionWindowDuration = stage.executionWindow?.duration ?: ZERO
         val timeout = Duration.ofMillis(it.timeout.get())
         if (elapsedTime.minus(pausedDuration).minus(executionWindowDuration) > timeout) {

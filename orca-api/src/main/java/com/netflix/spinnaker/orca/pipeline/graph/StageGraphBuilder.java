@@ -22,7 +22,7 @@ import static java.lang.String.format;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.pipeline.SimpleStageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import java.util.HashSet;
@@ -145,7 +145,7 @@ public class StageGraphBuilder {
 
   /**
    * Builds and returns the stages represented in the graph. This method is not typically useful to
-   * implementors of {@link StageDefinitionBuilder}, it's used internally and by tests.
+   * implementors of {@link SimpleStageDefinitionBuilder}, it's used internally and by tests.
    */
   public @Nonnull Iterable<Stage> build() {
     requiredPrefix.ifPresent(

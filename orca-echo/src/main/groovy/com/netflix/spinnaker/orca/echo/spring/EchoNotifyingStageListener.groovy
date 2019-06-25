@@ -31,7 +31,7 @@ import groovy.util.logging.Slf4j
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION
 
 /**
  * Converts execution events to Echo events.
@@ -112,7 +112,7 @@ class EchoNotifyingStageListener implements StageListener {
         content: [
           standalone : stage.execution.type == ORCHESTRATION,
           canceled   : stage.execution.canceled,
-          context    : buildContext(stage.execution, stage.context),
+          context    : buildContext((Execution) stage.execution, stage.context),
           startTime  : stage.startTime,
           endTime    : stage.endTime,
           execution  : stage.execution,

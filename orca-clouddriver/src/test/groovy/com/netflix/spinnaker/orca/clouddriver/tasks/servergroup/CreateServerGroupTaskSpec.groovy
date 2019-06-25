@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.GoogleServerGr
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import rx.Observable
