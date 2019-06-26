@@ -23,6 +23,23 @@ import spock.lang.Specification
 class DeployManifestContextSpec extends Specification {
   ObjectMapper mapper = OrcaObjectMapper.getInstance();
 
+  def "correctly defaults traffic management when it is absent"() {
+    given:
+    String json = """
+{
+  "type": "deployManifest"
+}
+"""
+
+    when:
+    DeployManifestContext context = mapper.readValue(json, DeployManifestContext.class)
+
+    then:
+    context.getTrafficManagement() != null
+    context.getTrafficManagement().isEnabled() == false
+    context.getTrafficManagement().getOptions() != null
+  }
+
   def "correctly deserializes a highlander strategy"() {
     given:
     String json = """
