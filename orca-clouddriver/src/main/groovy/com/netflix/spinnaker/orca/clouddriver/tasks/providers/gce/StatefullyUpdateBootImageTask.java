@@ -54,6 +54,7 @@ public final class StatefullyUpdateBootImageTask extends AbstractCloudProviderAw
     this.resolver = resolver;
   }
 
+  @Nonnull
   @Override
   public TaskResult execute(@Nonnull Stage stage) {
     StageData data = stage.mapTo(StageData.class);

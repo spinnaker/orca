@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import javax.annotation.Nonnull;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,7 +41,7 @@ public final class StatefullyUpdateBootImageStage implements StageDefinitionBuil
   }
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull Stage stage, TaskNode.Builder builder) {
     builder.withTask("statefullyUpdateBootDisk", StatefullyUpdateBootImageTask.class);
 
     if (isForceCacheRefreshEnabled(dynamicConfigService)) {
