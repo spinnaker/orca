@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TreeTraversingParser;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -400,6 +401,106 @@ public class Stage implements Serializable {
     } else {
       return emptyList();
     }
+  }
+
+  /**
+   * Computes all ancestor stages, including those of parent pipelines
+   *
+   * @return list of ancestor stages
+   */
+  public List<Stage> ancestorsWithParentPipelines() {
+    return Stage.getAncestors(this, this.execution);
+  }
+
+  private static List<Stage> getAncestors(Stage stage, Execution execution) {
+    List<Stage> allPriorStages = new ArrayList<>();
+
+    if (stage != null && !stage.getRequisiteStageRefIds().isEmpty()) {
+      List<Stage> previousStages =
+          execution.getStages().stream()
+              .filter(s -> stage.getRequisiteStageRefIds().contains(s.getRefId()))
+              .collect(toList());
+
+      Set<String> previousStageIds =
+          new HashSet<>(previousStages.stream().map(Stage::getId).collect(toList()));
+      List<Stage> syntheticStages =
+          execution.getStages().stream()
+              .filter(s -> previousStageIds.contains(s.getParentStageId()))
+              .collect(toList());
+
+      allPriorStages.addAll(previousStages);
+      allPriorStages.addAll(syntheticStages);
+
+      for (Stage s : previousStages) {
+        allPriorStages.addAll(getAncestors(s, execution));
+      }
+    } else if ((stage != null) && !Strings.isNullOrEmpty(stage.getParentStageId())) {
+      Optional<Stage> parent =
+          execution.getStages().stream()
+              .filter(s -> s.getId().equals(stage.getParentStageId()))
+              .findFirst();
+
+      if (!parent.isPresent()) {
+        throw new IllegalStateException(
+            "Couldn't find parent of stage "
+                + stage.getId()
+                + " with parent "
+                + stage.getParentStageId());
+      }
+
+      allPriorStages.add(parent.get());
+      allPriorStages.addAll(getAncestors(parent.get(), execution));
+    } else if ((execution.getType() == PIPELINE)
+        && (execution.getTrigger() instanceof PipelineTrigger)) {
+      PipelineTrigger parentTrigger = (PipelineTrigger) execution.getTrigger();
+
+      Execution parentPipelineExecution = parentTrigger.getParentExecution();
+      String parentPipelineStageId = parentTrigger.getParentPipelineStageId();
+
+      Optional<Stage> parentPipelineStage =
+          parentPipelineExecution.getStages().stream()
+              .filter(
+                  s -> s.getType().equals("pipeline") && s.getId().equals(parentPipelineStageId))
+              .findFirst();
+
+      if (parentPipelineStage.isPresent()) {
+        allPriorStages.addAll(getAncestors(parentPipelineStage.get(), parentPipelineExecution));
+      } else {
+        List<Stage> parentPipelineStages = new ArrayList<>(parentPipelineExecution.getStages());
+        parentPipelineStages.sort(
+            new Comparator<Stage>() {
+              @Override
+              public int compare(Stage s1, Stage s2) {
+                if ((s1.endTime == null) && (s2.endTime == null)) {
+                  return 0;
+                }
+
+                if (s1.endTime == null) {
+                  return 1;
+                }
+
+                if (s2.endTime == null) {
+                  return -1;
+                }
+
+                return s1.endTime.compareTo(s2.endTime);
+              }
+            });
+
+        if (parentPipelineStages.size() > 0) {
+          // The list is sorted in reverse order by endTime.
+          Stage firstStage = parentPipelineStages.get(0);
+
+          allPriorStages.addAll(parentPipelineStages);
+          allPriorStages.addAll(getAncestors(firstStage, parentPipelineExecution));
+        } else {
+          // Parent pipeline has no stages.
+          allPriorStages.addAll(getAncestors(null, parentPipelineExecution));
+        }
+      }
+    }
+
+    return allPriorStages;
   }
 
   /** Recursively get all stages that are children of the current one */
