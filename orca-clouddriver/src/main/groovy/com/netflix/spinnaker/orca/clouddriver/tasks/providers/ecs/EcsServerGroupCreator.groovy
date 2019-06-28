@@ -100,8 +100,10 @@ class EcsServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAwar
     Artifact taskDef = artifactResolver.getBoundArtifactForStage(
       stage,
       taskDefArtifactInput.artifactId,
-      taskDefArtifactInput.artifact
-    )
+      taskDefArtifactInput.artifact)
+    if (taskDef == null) {
+      throw new IllegalArgumentException("Unable to bind the task definition artifact");
+    }
     return taskDef
   }
 
@@ -141,7 +143,6 @@ class EcsServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAwar
         if (trigger instanceof DockerTrigger && trigger.account == description.account && trigger.repository == description.repository) {
           description.tag = trigger.tag
         }
-
         description.imageId = buildImageId(description.registry, description.repository, description.tag)
       }
 
