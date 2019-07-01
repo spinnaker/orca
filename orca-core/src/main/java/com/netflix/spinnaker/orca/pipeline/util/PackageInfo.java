@@ -385,19 +385,17 @@ public class PackageInfo {
 
   private static Map<String, Object> findBuildInfoInUpstreamStage(
       Stage currentStage, List<Pattern> packageFilePatterns) {
+
     Stage upstreamStage =
-        currentStage.ancestorsWithParentPipelines().stream()
-            .filter(
-                it -> {
-                  Map<String, Object> buildInfo =
-                      (Map<String, Object>) it.getOutputs().get("buildInfo");
-                  return buildInfo != null
-                      && artifactMatch(
-                          (List<Map<String, String>>) buildInfo.get("artifacts"),
-                          packageFilePatterns);
-                })
-            .findFirst()
-            .orElse(null);
+        currentStage.findAncestor(
+            it -> {
+              Map<String, Object> buildInfo =
+                  (Map<String, Object>) it.getOutputs().get("buildInfo");
+              return buildInfo != null
+                  && artifactMatch(
+                      (List<Map<String, String>>) buildInfo.get("artifacts"), packageFilePatterns);
+            });
+
     return upstreamStage != null
         ? (Map<String, Object>) upstreamStage.getOutputs().get("buildInfo")
         : emptyMap();
@@ -405,6 +403,7 @@ public class PackageInfo {
 
   private static boolean artifactMatch(
       List<Map<String, String>> artifacts, List<Pattern> patterns) {
+
     return artifacts != null
         && artifacts.stream()
             .anyMatch(

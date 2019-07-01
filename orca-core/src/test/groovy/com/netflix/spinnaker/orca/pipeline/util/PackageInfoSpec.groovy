@@ -779,25 +779,59 @@ class PackageInfoSpec extends Specification {
     [["fileName": "test-package-1539516142-1.x86_64.rpm"]]   | [["fileName": "test-package-1539516142-1.x86_64.rpm"]]     | "test-package"     | "test-package-1539516142-1.x86_64"
   }
 
-  def "parent pipeline jenkins job has artifact, but there are other jenkins stages"() {
+  def "locates correct artifact from prior Jenkins stages (including parent executions)"() {
     given:
-    def parentPipeline = pipeline {
+    def grandParentPipeline = pipeline {
       stage {
-        refId = "1"
+        refId = "1-gp"
+        type = "jenkins"
+        outputs["buildInfo"] = [
+          url      : "http://jenkins",
+          master   : "master",
+          name     : "grandParentStage",
+          number   : 1,
+          artifacts: [[fileName: "artifact1_1.1.1-h01.grandParent.deb", relativePath: "."],
+                      [fileName: "artifact2_1.1.1-h01.grandParent.deb", relativePath: "."]],
+          scm      : []
+        ]
+      }
+      stage {
+        refId = "2-gp"
+        type = "pipeline"
+        requisiteStageRefIds = ["1-gp"]
+      }
+    }
+
+    def parentPipeline = pipeline {
+      trigger = new PipelineTrigger(
+        "pipeline",
+        null,
+        "example@example.com",
+        [:],
+        [],
+        [],
+        false,
+        false,
+        false,
+        grandParentPipeline,
+        grandParentPipeline.stageByRef("2-gp").id
+      )
+      stage {
+        refId = "1-p"
         type = "jenkins"
         outputs["buildInfo"] = [
           url      : "http://jenkins",
           master   : "master",
           name     : "parentStage",
           number   : 1,
-          artifacts: [[fileName: "api_1.1.1-h01.sha123_all.deb", relativePath: "."]],
+          artifacts: [[fileName: "artifact1_1.1.2-h02-parent.deb", relativePath: "."]],
           scm      : []
         ]
       }
       stage {
-        refId = "2"
+        refId = "2-p"
         type = "pipeline"
-        requisiteStageRefIds = ["1"]
+        requisiteStageRefIds = ["1-p"]
       }
     }
     def pipeline = pipeline {
@@ -812,7 +846,7 @@ class PackageInfoSpec extends Specification {
         false,
         false,
         parentPipeline,
-        parentPipeline.stageByRef("2").id
+        parentPipeline.stageByRef("2-p").id
       )
       stage {
         refId = "1-child"
@@ -820,31 +854,63 @@ class PackageInfoSpec extends Specification {
         outputs["buildInfo"] = [
           url      : "http://jenkins",
           master   : "master",
-          name     : "job",
+          name     : "childStage",
           number   : 1,
-          artifacts: [[fileName: "blah_1.1.1-h01.sha123_all.deb", relativePath: "."]],
+          artifacts: [[fileName: "blah_1.1.1-h01.child.deb", relativePath: "."]],
           scm      : []
         ]
       }
       stage {
-        type = "bake"
-        refId = "2-child"
+        type = "bake-child"
+        refId = "child-bake-bakes-blah"
         requisiteStageRefIds = ["1-child"]
-        context["package"] = "api"
+        context["package"] = "blah"
+      }
+      stage {
+        type = "bake-parent"
+        refId = "child-bake-bakes-artifact1"
+        requisiteStageRefIds = ["1-child"]
+        context["package"] = "artifact1"
+      }
+      stage {
+        type = "bake-grandparent"
+        refId = "child-bake-bakes-artifact2"
+        requisiteStageRefIds = ["1-child"]
+        context["package"] = "artifact2"
       }
     }
 
-    def bakeStage = pipeline.stageByRef("2-child")
     PackageType packageType = DEB
     ObjectMapper objectMapper = new ObjectMapper()
-    PackageInfo packageInfo = new PackageInfo(bakeStage, [], packageType.packageType, packageType.versionDelimiter, true, true, objectMapper)
 
     when:
-    def buildInfo = packageInfo.findTargetPackage(false)
+    PackageInfo packageInfo1 = new PackageInfo(
+      pipeline.stageByRef("child-bake-bakes-blah"), [], packageType.packageType, packageType.versionDelimiter, true, true, objectMapper)
+    def buildInfo1 = packageInfo1.findTargetPackage(false)
 
     then:
     noExceptionThrown()
-    buildInfo == [packageVersion:"1.1.1-h01.sha123", package:"api_1.1.1-h01.sha123_all",
+    buildInfo1 == [packageVersion:"1.1.1-h01.child", package:"blah_1.1.1-h01.child",
+                  buildInfoUrl:"http://jenkins", job:"childStage", buildNumber:1]
+
+    when:
+    PackageInfo packageInfo2 = new PackageInfo(
+      pipeline.stageByRef("child-bake-bakes-artifact1"), [], packageType.packageType, packageType.versionDelimiter, true, true, objectMapper)
+    def buildInfo2 = packageInfo2.findTargetPackage(false)
+
+    then:
+    noExceptionThrown()
+    buildInfo2 == [packageVersion:"1.1.2-h02-parent", package:"artifact1_1.1.2-h02-parent",
                   buildInfoUrl:"http://jenkins", job:"parentStage", buildNumber:1]
+
+    when:
+    PackageInfo packageInfo3 = new PackageInfo(
+      pipeline.stageByRef("child-bake-bakes-artifact2"), [], packageType.packageType, packageType.versionDelimiter, true, true, objectMapper)
+    def buildInfo3 = packageInfo3.findTargetPackage(false)
+
+    then:
+    noExceptionThrown()
+    buildInfo3 == [packageVersion:"1.1.1-h01.grandParent", package:"artifact2_1.1.1-h01.grandParent",
+                   buildInfoUrl:"http://jenkins", job:"grandParentStage", buildNumber:1]
   }
 }

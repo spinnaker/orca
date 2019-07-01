@@ -41,6 +41,7 @@ import de.huxhorn.sulky.ulid.ULID;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -408,12 +409,12 @@ public class Stage implements Serializable {
    *
    * @return list of ancestor stages
    */
-  public List<Stage> ancestorsWithParentPipelines() {
-    return Stage.getAncestors(this, this.execution);
+  public Stage findAncestor(Predicate<Stage> predicate) {
+    return Stage.findAncestor(this, this.execution, predicate);
   }
 
-  private static List<Stage> getAncestors(Stage stage, Execution execution) {
-    List<Stage> allPriorStages = new ArrayList<>();
+  private static Stage findAncestor(Stage stage, Execution execution, Predicate<Stage> predicate) {
+    Stage matchingStage = null;
 
     if (stage != null && !stage.getRequisiteStageRefIds().isEmpty()) {
       List<Stage> previousStages =
@@ -428,11 +429,20 @@ public class Stage implements Serializable {
               .filter(s -> previousStageIds.contains(s.getParentStageId()))
               .collect(toList());
 
-      allPriorStages.addAll(previousStages);
-      allPriorStages.addAll(syntheticStages);
+      List<Stage> priorStages = new ArrayList<>();
+      priorStages.addAll(previousStages);
+      priorStages.addAll(syntheticStages);
 
-      for (Stage s : previousStages) {
-        allPriorStages.addAll(getAncestors(s, execution));
+      matchingStage = priorStages.stream().filter(predicate).findFirst().orElse(null);
+
+      if (matchingStage == null) {
+        for (Stage s : previousStages) {
+          matchingStage = findAncestor(s, execution, predicate);
+
+          if (matchingStage != null) {
+            break;
+          }
+        }
       }
     } else if ((stage != null) && !Strings.isNullOrEmpty(stage.getParentStageId())) {
       Optional<Stage> parent =
@@ -448,8 +458,11 @@ public class Stage implements Serializable {
                 + stage.getParentStageId());
       }
 
-      allPriorStages.add(parent.get());
-      allPriorStages.addAll(getAncestors(parent.get(), execution));
+      if (predicate.test(parent.get())) {
+        matchingStage = parent.get();
+      } else {
+        matchingStage = findAncestor(parent.get(), execution, predicate);
+      }
     } else if ((execution.getType() == PIPELINE)
         && (execution.getTrigger() instanceof PipelineTrigger)) {
       PipelineTrigger parentTrigger = (PipelineTrigger) execution.getTrigger();
@@ -464,43 +477,47 @@ public class Stage implements Serializable {
               .findFirst();
 
       if (parentPipelineStage.isPresent()) {
-        allPriorStages.addAll(getAncestors(parentPipelineStage.get(), parentPipelineExecution));
+        matchingStage = findAncestor(parentPipelineStage.get(), parentPipelineExecution, predicate);
       } else {
         List<Stage> parentPipelineStages = new ArrayList<>(parentPipelineExecution.getStages());
         parentPipelineStages.sort(
-            new Comparator<Stage>() {
-              @Override
-              public int compare(Stage s1, Stage s2) {
-                if ((s1.endTime == null) && (s2.endTime == null)) {
-                  return 0;
-                }
-
-                if (s1.endTime == null) {
-                  return 1;
-                }
-
-                if (s2.endTime == null) {
-                  return -1;
-                }
-
-                return s1.endTime.compareTo(s2.endTime);
+            (s1, s2) -> {
+              if ((s1.endTime == null) && (s2.endTime == null)) {
+                return 0;
               }
+
+              if (s1.endTime == null) {
+                return 1;
+              }
+
+              if (s2.endTime == null) {
+                return -1;
+              }
+
+              return s1.endTime.compareTo(s2.endTime);
             });
 
         if (parentPipelineStages.size() > 0) {
           // The list is sorted in reverse order by endTime.
-          Stage firstStage = parentPipelineStages.get(0);
+          matchingStage = parentPipelineStages.stream().filter(predicate).findFirst().orElse(null);
 
-          allPriorStages.addAll(parentPipelineStages);
-          allPriorStages.addAll(getAncestors(firstStage, parentPipelineExecution));
+          if (matchingStage == null) {
+            Stage firstStage = parentPipelineStages.get(0);
+
+            if (predicate.test(firstStage)) {
+              matchingStage = firstStage;
+            } else {
+              matchingStage = findAncestor(firstStage, parentPipelineExecution, predicate);
+            }
+          }
         } else {
           // Parent pipeline has no stages.
-          allPriorStages.addAll(getAncestors(null, parentPipelineExecution));
+          matchingStage = findAncestor(null, parentPipelineExecution, predicate);
         }
       }
     }
 
-    return allPriorStages;
+    return matchingStage;
   }
 
   /** Recursively get all stages that are children of the current one */

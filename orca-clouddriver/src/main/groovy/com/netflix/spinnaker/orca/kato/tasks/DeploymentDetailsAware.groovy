@@ -62,7 +62,7 @@ trait DeploymentDetailsAware {
       return null
     }
 
-    return stage.ancestorsWithParentPipelines().find {
+    Stage ancestorWithImage = stage.findAncestor({
       def regions = (it.context.region ? [it.context.region] : it.context.regions) as Set<String>
       def cloudProviderFromContext = it.context.cloudProvider ?: it.context.cloudProviderType
       boolean hasTargetCloudProvider = !cloudProviderFromContext || targetCloudProvider == cloudProviderFromContext
@@ -70,7 +70,9 @@ trait DeploymentDetailsAware {
       boolean hasImage = it.context.containsKey("ami") || it.context.containsKey("amiDetails")
 
       return hasImage && hasTargetRegion && hasTargetCloudProvider
-    }
+    })
+
+    return ancestorWithImage
   }
 
   List<Execution> getPipelineExecutions(Execution execution) {
