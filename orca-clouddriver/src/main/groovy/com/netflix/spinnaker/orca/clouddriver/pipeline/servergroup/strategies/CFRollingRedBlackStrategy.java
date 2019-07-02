@@ -162,7 +162,7 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
     // Start off with deploying one instance of the new version
     ((Map<String, Object>) manifest.get("direct")).put("instances", 1);
 
-    Execution execution = (Execution) stage.getExecution();
+    Execution execution = stage.getExecution();
     String executionId = execution.getId();
     List<Integer> targetPercentages = stageData.getTargetPercentages();
     if (targetPercentages.isEmpty() || targetPercentages.get(targetPercentages.size() - 1) != 100) {
@@ -317,8 +317,7 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
       Map<String, Object> waitContext =
           Collections.singletonMap("waitTime", stageData.getDelayBeforeCleanup());
       Stage stage =
-          new Stage(
-              (Execution) parentStage.getExecution(), WaitStage.STAGE_TYPE, "wait", waitContext);
+          new Stage(parentStage.getExecution(), WaitStage.STAGE_TYPE, "wait", waitContext);
       stage.setParentStageId(parentStage.getId());
       stage.setSyntheticStageOwner(SyntheticStageOwner.STAGE_AFTER);
       stages.add(stage);

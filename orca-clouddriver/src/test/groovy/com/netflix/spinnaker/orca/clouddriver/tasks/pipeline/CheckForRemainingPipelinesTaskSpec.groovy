@@ -15,7 +15,6 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline
 
-
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage

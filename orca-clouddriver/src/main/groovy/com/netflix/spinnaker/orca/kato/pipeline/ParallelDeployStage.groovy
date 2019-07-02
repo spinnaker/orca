@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
@@ -56,7 +55,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
   @Nonnull List<Stage> parallelStages(@Nonnull Stage stage) {
     parallelContexts(stage).collect { context ->
       def type = isClone(stage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
-      newStage((Execution) stage.execution, type, context.name as String, context, stage, STAGE_BEFORE)
+      newStage(stage.execution, type, context.name as String, context, stage, STAGE_BEFORE)
     }
   }
 

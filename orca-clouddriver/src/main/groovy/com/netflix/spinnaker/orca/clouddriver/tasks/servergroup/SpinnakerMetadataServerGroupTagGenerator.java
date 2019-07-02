@@ -48,7 +48,7 @@ public class SpinnakerMetadataServerGroupTagGenerator implements ServerGroupEnti
   @Override
   public Collection<Map<String, Object>> generateTags(
       Stage stage, String serverGroup, String account, String location, String cloudProvider) {
-    Execution execution = (Execution) stage.getExecution();
+    Execution execution = stage.getExecution();
     Map context = stage.getContext();
 
     Map<String, Object> value = new HashMap<>();

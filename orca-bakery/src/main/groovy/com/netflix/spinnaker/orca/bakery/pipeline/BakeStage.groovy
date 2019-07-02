@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import groovy.transform.CompileDynamic
@@ -73,7 +72,7 @@ class BakeStage implements StageDefinitionBuilder {
   ) {
     if (isTopLevelStage(stage)) {
       return parallelContexts(stage).collect { context ->
-        newStage((Execution) stage.execution, type, "Bake in ${context.region}", context, stage, STAGE_BEFORE)
+        newStage(stage.execution, type, "Bake in ${context.region}", context, stage, STAGE_BEFORE)
       }
     } else {
       return Collections.emptyList()
