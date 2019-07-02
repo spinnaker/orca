@@ -21,7 +21,6 @@ import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.pipeline.UpdatePipelineStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipelinetemplate.tasks.PlanTemplateDependentsTask;
@@ -96,7 +95,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
     }
 
     return StageDefinitionBuilder.newStage(
-        (Execution) stage.getExecution(),
+        stage.getExecution(),
         updatePipelineStage.getType(),
         "updateDependentPipeline",
         context,

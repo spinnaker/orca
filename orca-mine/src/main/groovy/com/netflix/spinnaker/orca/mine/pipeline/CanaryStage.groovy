@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-
 import java.util.concurrent.TimeUnit
 import javax.annotation.Nonnull
 import com.netflix.frigga.autoscaling.AutoScalingGroupNameBuilder
@@ -28,7 +26,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGro
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired

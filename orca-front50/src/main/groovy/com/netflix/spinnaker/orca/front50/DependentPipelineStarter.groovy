@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.front50
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.jsontype.NamedType
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
@@ -71,8 +70,6 @@ class DependentPipelineStarter implements ApplicationContextAware {
                     Map suppliedParameters,
                     String parentPipelineStageId,
                     User principal) {
-
-    objectMapper.registerSubtypes(new NamedType(Execution.class, "Execution"))
     def json = objectMapper.writeValueAsString(pipelineConfig)
 
     if (pipelineConfig.disabled) {

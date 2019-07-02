@@ -16,9 +16,6 @@
 
 package com.netflix.spinnaker.orca.sql.cleanup
 
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
