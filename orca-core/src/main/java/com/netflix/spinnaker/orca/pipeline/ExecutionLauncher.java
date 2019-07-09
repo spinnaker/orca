@@ -204,6 +204,7 @@ public class ExecutionLauncher {
         .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
         .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
         .withNotifications((List<Map<String, Object>>) config.get("notifications"))
+        .withInitialConfig((Map<String, Object>) config.get("initialConfig"))
         .withOrigin(getString(config, "origin"))
         .withStartTimeExpiry(getString(config, "startTimeExpiry"))
         .withSource(
