@@ -19,10 +19,13 @@ package com.netflix.spinnaker.orca.front50.tasks
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
@@ -38,6 +41,12 @@ class StartPipelineTask implements Task {
 
   @Autowired
   DependentPipelineStarter dependentPipelineStarter
+
+  @Autowired
+  ContextParameterProcessor contextParameterProcessor
+
+  @Autowired(required = false)
+  List<ExecutionPreprocessor> executionPreprocessors = new ArrayList<>()
 
   @Override
   TaskResult execute(Stage stage) {
@@ -58,6 +67,10 @@ class StartPipelineTask implements Task {
 
     if (pipelineConfig.getOrDefault("disabled", false)) {
       throw new IllegalArgumentException("The referenced ${isStrategy ? 'custom strategy' : 'pipeline'} is disabled")
+    }
+
+    if (V2Util.isV2Pipeline(pipelineConfig)) {
+      pipelineConfig = V2Util.planPipeline(contextParameterProcessor, executionPreprocessors, pipelineConfig)
     }
 
     def parameters = stage.context.pipelineParameters ?: [:]
