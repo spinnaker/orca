@@ -31,6 +31,7 @@ import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -80,6 +81,7 @@ class RedisOrcaQueueConfiguration : RedisQueueConfiguration() {
   }
 
   @Bean
+  @ConditionalOnProperty(value = ["queue.pending-execution-service.redis.enabled"], matchIfMissing = true)
   fun pendingExecutionService(
     @Qualifier("queueRedisPool") jedisPool: Pool<Jedis>,
     mapper: ObjectMapper
