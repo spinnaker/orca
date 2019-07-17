@@ -377,6 +377,15 @@ public class Stage implements Serializable {
     }
   }
 
+  /**
+   * Worker method to get the list of all ancestors (parents and, optionally, prerequisite stages)
+   * of the current stage.
+   *
+   * @param visited list of visited nodes
+   * @param directParentOnly true to only include direct parents of the stage, false to also include
+   *     stages this stage depends on (via requisiteRefIds)
+   * @return list of ancestor stages
+   */
   private List<Stage> getAncestorsImpl(Set<String> visited, boolean directParentOnly) {
     visited.add(this.refId);
 
