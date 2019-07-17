@@ -36,17 +36,21 @@ import org.springframework.stereotype.Component
 @Slf4j
 class StartPipelineTask implements Task {
 
-  @Autowired(required = false)
-  Front50Service front50Service
+  private final Front50Service front50Service
+
+  private final DependentPipelineStarter dependentPipelineStarter
+
+  private final ContextParameterProcessor contextParameterProcessor
+
+  private final List<ExecutionPreprocessor> executionPreprocessors
 
   @Autowired
-  DependentPipelineStarter dependentPipelineStarter
-
-  @Autowired
-  ContextParameterProcessor contextParameterProcessor
-
-  @Autowired(required = false)
-  List<ExecutionPreprocessor> executionPreprocessors = new ArrayList<>()
+  StartPipelineTask(Optional<Front50Service> front50Service, DependentPipelineStarter dependentPipelineStarter, ContextParameterProcessor contextParameterProcessor, Optional<List<ExecutionPreprocessor>> executionPreprocessors) {
+    this.front50Service = front50Service.orElse(null)
+    this.dependentPipelineStarter = dependentPipelineStarter
+    this.contextParameterProcessor = contextParameterProcessor
+    this.executionPreprocessors = executionPreprocessors.orElse(Collections.emptyList())
+  }
 
   @Override
   TaskResult execute(Stage stage) {
