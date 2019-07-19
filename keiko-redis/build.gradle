@@ -2,7 +2,9 @@ apply from: "$rootDir/gradle/spek.gradle"
 
 dependencies {
   api project(":keiko-core")
-  api "redis.clients:jedis"
+  api("redis.clients:jedis:2.10.2") {
+    force = true
+  }
   api "com.fasterxml.jackson.core:jackson-databind"
   api "com.fasterxml.jackson.module:jackson-module-kotlin"
   api "org.funktionale:funktionale-partials"

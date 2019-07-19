@@ -23,4 +23,5 @@ class RedisQueueProperties {
   var queueName: String = "keiko.queue"
   var deadLetterQueueName: String = "keiko.queue.deadLetters"
   var ackTimeoutSeconds: Int = 60
+  var shards: Int = 1
 }

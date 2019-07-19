@@ -21,16 +21,21 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.migration.SerializationMigrator
+import com.netflix.spinnaker.q.redis.RedisClusterDeadMessageHandler
+import com.netflix.spinnaker.q.redis.RedisClusterQueue
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import redis.clients.jedis.HostAndPort
 import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisCluster
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Protocol
 import redis.clients.util.Pool
@@ -43,11 +48,19 @@ import java.util.Optional
 @EnableConfigurationProperties(RedisQueueProperties::class)
 class RedisQueueConfiguration {
 
-  @Bean @ConditionalOnMissingBean(GenericObjectPoolConfig::class)
-  fun redisPoolConfig() = GenericObjectPoolConfig<Any>()
+  @Bean
+  @ConditionalOnMissingBean(GenericObjectPoolConfig::class)
+  fun redisPoolConfig() = GenericObjectPoolConfig<Any>().apply {
+    blockWhenExhausted = false
+    maxWaitMillis = 2000
+  }
 
   @Bean
   @ConditionalOnMissingBean(name = ["queueRedisPool"])
+  @ConditionalOnProperty(
+    value = ["redis.cluster-enabled"],
+    havingValue = "false",
+    matchIfMissing = true)
   fun queueRedisPool(
     @Value("\${redis.connection:redis://localhost:6379}") connection: String,
     @Value("\${redis.timeout:2000}") timeout: Int,
@@ -66,6 +79,10 @@ class RedisQueueConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(name = ["queue"])
+  @ConditionalOnProperty(
+    value = ["redis.cluster-enabled"],
+    havingValue = "false",
+    matchIfMissing = true)
   fun queue(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
@@ -88,6 +105,10 @@ class RedisQueueConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(name = ["redisDeadMessageHandler"])
+  @ConditionalOnProperty(
+    value = ["redis.cluster-enabled"],
+    havingValue = "false",
+    matchIfMissing = true)
   fun redisDeadMessageHandler(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
@@ -98,6 +119,65 @@ class RedisQueueConfiguration {
       pool = redisPool,
       clock = clock
     )
+
+  @Bean
+  @ConditionalOnMissingBean(name = ["queueRedisCluster"])
+  @ConditionalOnProperty(value = ["redis.cluster-enabled"])
+  fun queueRedisCluster(
+    @Value("\${redis.connection:redis://localhost:6379}") connection: String,
+    @Value("\${redis.timeout:2000}") timeout: Int,
+    @Value("\${redis.maxattempts:4}") maxAttempts: Int,
+    redisPoolConfig: GenericObjectPoolConfig<Any>
+  ): JedisCluster {
+    URI.create(connection).let { cx ->
+      val port = if (cx.port == -1) Protocol.DEFAULT_PORT else cx.port
+      val password = cx.userInfo?.substringAfter(":")
+      return JedisCluster(
+        HostAndPort(cx.host, port),
+        timeout,
+        timeout,
+        maxAttempts,
+        password,
+        redisPoolConfig
+      )
+    }
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(name = ["queue", "clusterQueue"])
+  @ConditionalOnProperty(value = ["redis.cluster-enabled"])
+  fun clusterQueue(
+    @Qualifier("queueRedisCluster") cluster: JedisCluster,
+    redisQueueProperties: RedisQueueProperties,
+    clock: Clock,
+    deadMessageHandler: RedisClusterDeadMessageHandler,
+    publisher: EventPublisher,
+    redisQueueObjectMapper: ObjectMapper,
+    serializationMigrator: Optional<SerializationMigrator>
+  ) =
+    RedisClusterQueue(
+      queueName = redisQueueProperties.queueName,
+      jedisCluster = cluster,
+      clock = clock,
+      mapper = redisQueueObjectMapper,
+      deadMessageHandlers = listOf(deadMessageHandler),
+      publisher = publisher,
+      ackTimeout = Duration.ofSeconds(redisQueueProperties.ackTimeoutSeconds.toLong()),
+      serializationMigrator = serializationMigrator
+    )
+
+  @Bean
+  @ConditionalOnMissingBean(name = ["redisClusterDeadMessageHandler"])
+  @ConditionalOnProperty(value = ["redis.cluster-enabled"])
+  fun redisClusterDeadMessageHandler(
+    @Qualifier("queueRedisCluster") cluster: JedisCluster,
+    redisQueueProperties: RedisQueueProperties,
+    clock: Clock
+  ) = RedisClusterDeadMessageHandler(
+    deadLetterQueueName = redisQueueProperties.deadLetterQueueName,
+    jedisCluster = cluster,
+    clock = clock
+  )
 
   @Bean
   @ConditionalOnMissingBean

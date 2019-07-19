@@ -18,8 +18,6 @@ package com.netflix.spinnaker.q.redis
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.google.common.hash.Hashing
 import com.netflix.spinnaker.KotlinOpen
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.DeadMessageCallback
@@ -36,7 +34,6 @@ import com.netflix.spinnaker.q.metrics.MessageProcessing
 import com.netflix.spinnaker.q.metrics.MessagePushed
 import com.netflix.spinnaker.q.metrics.MessageRescheduled
 import com.netflix.spinnaker.q.metrics.MessageRetried
-import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.QueueState
 import com.netflix.spinnaker.q.metrics.RetryPolled
@@ -47,19 +44,13 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisCommands
 import redis.clients.jedis.ScriptingCommands
-import redis.clients.jedis.Transaction
 import redis.clients.jedis.exceptions.JedisDataException
 import redis.clients.jedis.params.sortedset.ZAddParams.zAddParams
 import redis.clients.util.Pool
 import java.io.IOException
-import java.lang.String.format
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
-import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.Locale
@@ -76,29 +67,32 @@ class RedisQueue(
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandlers: List<DeadMessageCallback>,
   override val publisher: EventPublisher
-) : MonitorableQueue {
+) : AbstractRedisQueue(
+  clock,
+  lockTtlSeconds,
+  mapper,
+  serializationMigrator,
+  ackTimeout,
+  deadMessageHandlers,
+  publisher
+) {
 
-  private val log: Logger = LoggerFactory.getLogger(javaClass)
+  final override val log: Logger = LoggerFactory.getLogger(javaClass)
 
-  private val queueKey = "$queueName.queue"
-  private val unackedKey = "$queueName.unacked"
-  private val messagesKey = "$queueName.messages"
-  private val locksKey = "$queueName.locks"
-  private val attemptsKey = "$queueName.attempts"
+  override val queueKey = "$queueName.queue"
+  override val unackedKey = "$queueName.unacked"
+  override val messagesKey = "$queueName.messages"
+  override val locksKey = "$queueName.locks"
+  override val attemptsKey = "$queueName.attempts"
 
-  // Internal ObjectMapper that enforces deterministic property ordering for use only in hashing.
-  private val hashObjectMapper = ObjectMapper().copy().apply {
-    enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-  }
-
-  private lateinit var readMessageWithLockScriptSha: String
+  override lateinit var readMessageWithLockScriptSha: String
 
   init {
     cacheScript()
     log.info("Configured queue: $queueName")
   }
 
-  fun cacheScript() {
+  final override fun cacheScript() {
     pool.resource.use { redis ->
       readMessageWithLockScriptSha = redis.scriptLoad(READ_MESSAGE_WITH_LOCK_SRC)
     }
@@ -277,7 +271,7 @@ class RedisQueue(
     }
   }
 
-  private fun Jedis.queueMessage(message: Message, delay: TemporalAmount = ZERO) {
+  internal fun Jedis.queueMessage(message: Message, delay: TemporalAmount = Duration.ZERO) {
     val fingerprint = message.fingerprint().latest
 
     // ensure the message has the attempts tracking attribute
@@ -291,14 +285,14 @@ class RedisQueue(
     }
   }
 
-  private fun Jedis.requeueMessage(fingerprint: String) {
+  internal fun Jedis.requeueMessage(fingerprint: String) {
     multi {
       zrem(unackedKey, fingerprint)
       zadd(queueKey, score(), fingerprint)
     }
   }
 
-  private fun Jedis.removeMessage(fingerprint: String) {
+  internal fun Jedis.removeMessage(fingerprint: String) {
     multi {
       zrem(queueKey, fingerprint)
       zrem(unackedKey, fingerprint)
@@ -308,7 +302,7 @@ class RedisQueue(
     }
   }
 
-  private fun Jedis.readMessageWithoutLock(fingerprint: String, block: (Message) -> Unit) {
+  internal fun Jedis.readMessageWithoutLock(fingerprint: String, block: (Message) -> Unit) {
     try {
       hget(messagesKey, fingerprint)
         .let {
@@ -325,7 +319,7 @@ class RedisQueue(
     }
   }
 
-  private fun ScriptingCommands.readMessageWithLock(): Triple<String, Instant, String?>? {
+  internal fun ScriptingCommands.readMessageWithLock(): Triple<String, Instant, String?>? {
     try {
       val response = evalsha(readMessageWithLockScriptSha, listOf(
         queueKey,
@@ -336,8 +330,8 @@ class RedisQueue(
         score().toString(),
         10.toString(), // TODO rz - make this configurable.
         lockTtlSeconds.toString(),
-        format(Locale.US, "%f", score(ackTimeout)),
-        format(Locale.US, "%f", score())
+        java.lang.String.format(Locale.US, "%f", score(ackTimeout)),
+        java.lang.String.format(Locale.US, "%f", score())
       ))
       if (response is List<*>) {
         return Triple(
@@ -367,7 +361,7 @@ class RedisQueue(
    * [block]. If it's not accessible for whatever reason any references are
    * cleaned up.
    */
-  private fun Jedis.readMessage(fingerprint: String, json: String?, block: (Message) -> Unit) {
+  internal fun Jedis.readMessage(fingerprint: String, json: String?, block: (Message) -> Unit) {
     if (json == null) {
       log.error("Payload for message $fingerprint is missing")
       // clean up what is essentially an unrecoverable message
@@ -391,141 +385,4 @@ class RedisQueue(
       }
     }
   }
-
-  private fun runSerializationMigration(json: String): String {
-    if (serializationMigrator.isPresent) {
-      return serializationMigrator.get().migrate(json)
-    }
-    return json
-  }
-
-  private fun handleDeadMessage(message: Message) {
-    deadMessageHandlers.forEach {
-      it.invoke(this, message)
-    }
-  }
-
-  /**
-   * @return current time (plus optional [delay]) converted to a score for a
-   * Redis sorted set.
-   */
-  private fun score(delay: TemporalAmount = ZERO) =
-    clock.instant().plus(delay).toEpochMilli().toDouble()
-
-  private inline fun <reified R> ObjectMapper.readValue(content: String): R =
-    readValue(content, R::class.java)
-
-  private fun Jedis.multi(block: Transaction.() -> Unit) =
-    multi().use { tx ->
-      tx.block()
-      tx.exec()
-    }
-
-  private fun JedisCommands.hgetInt(key: String, field: String, default: Int = 0) =
-    hget(key, field)?.toInt() ?: default
-
-  private fun JedisCommands.zismember(key: String, member: String) =
-    zrank(key, member) != null
-
-  private fun JedisCommands.anyZismember(key: String, members: Set<String>) =
-    members.any { zismember(key, it) }
-
-  private fun JedisCommands.firstFingerprint(key: String, fingerprint: Fingerprint) =
-    fingerprint.all.firstOrNull { zismember(key, it) }
-
-  @Deprecated("Hashes the attributes property, which is mutable")
-  private fun Message.hashV1() =
-    Hashing
-      .murmur3_128()
-      .hashString(toString(), Charset.defaultCharset())
-      .toString()
-
-  private fun Message.hashV2() =
-    hashObjectMapper.convertValue(this, MutableMap::class.java)
-      .apply { remove("attributes") }
-      .let {
-        Hashing
-          .murmur3_128()
-          .hashString("v2:${hashObjectMapper.writeValueAsString(it)}", StandardCharsets.UTF_8)
-          .toString()
-      }
-
-  private fun Message.fingerprint() =
-    hashV2().let { Fingerprint(latest = it, all = setOf(it, hashV1())) }
-
-  internal data class Fingerprint(
-    val latest: String,
-    val all: Set<String> = setOf()
-  )
 }
-
-private const val READ_MESSAGE_SRC = """
-  local java_scientific = function(x)
-    return string.format("%.12E", x):gsub("\+", "")
-  end
-
-  -- get the message, move the fingerprint to the unacked queue and return
-  local message = redis.call("HGET", messagesKey, fingerprint)
-
-  -- check for an ack timeout override on the message
-  local unackScore = unackDefaultScore
-  if type(message) == "string" and message ~= nil then
-    local ackTimeoutOverride = tonumber(cjson.decode(message)["ackTimeoutMs"])
-    if ackTimeoutOverride ~= nil and unackBaseScore ~= nil then
-      unackScore = unackBaseScore + ackTimeoutOverride
-    end
-  end
-
-  unackScore = java_scientific(unackScore)
-
-  redis.call("ZREM", queueKey, fingerprint)
-  redis.call("ZADD", unackKey, unackScore, fingerprint)
-"""
-
-/* ktlint-disable max-line-length */
-private const val READ_MESSAGE_WITH_LOCK_SRC = """
-  local queueKey = KEYS[1]
-  local unackKey = KEYS[2]
-  local lockKey = KEYS[3]
-  local messagesKey = KEYS[4]
-  local maxScore = ARGV[1]
-  local peekFingerprintCount = ARGV[2]
-  local lockTtlSeconds = ARGV[3]
-  local unackDefaultScore = ARGV[4]
-  local unackBaseScore = ARGV[5]
-
-  local not_empty = function(x)
-    return (type(x) == "table") and (not x.err) and (#x ~= 0)
-  end
-
-  local acquire_lock = function(fingerprints, locksKey, lockTtlSeconds)
-    if not_empty(fingerprints) then
-      local i=1
-      while (i <= #fingerprints) do
-        redis.call("ECHO", "attempting lock on " .. fingerprints[i])
-        if redis.call("SET", locksKey .. ":" .. fingerprints[i], "\uD83D\uDD12", "EX", lockTtlSeconds, "NX") then
-          redis.call("ECHO", "acquired lock on " .. fingerprints[i])
-          return fingerprints[i], fingerprints[i+1]
-        end
-        i=i+2
-      end
-    end
-    return nil, nil
-  end
-
-  -- acquire a lock on a fingerprint
-  local fingerprints = redis.call("ZRANGEBYSCORE", queueKey, 0.0, maxScore, "WITHSCORES", "LIMIT", 0, peekFingerprintCount)
-  local fingerprint, fingerprintScore = acquire_lock(fingerprints, lockKey, lockTtlSeconds)
-
-  -- no lock could be acquired
-  if fingerprint == nil then
-    if #fingerprints == 0 then
-      return "NoReadyMessages"
-    end
-    return "AcquireLockFailed"
-  end
-
-  $READ_MESSAGE_SRC
-
-  return {fingerprint, fingerprintScore, message}
-"""
