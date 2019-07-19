@@ -93,7 +93,8 @@ public class PipelineBuilder {
 
   public Execution build() {
     pipeline.setBuildTime(System.currentTimeMillis());
-    pipeline.setAuthentication(Execution.AuthenticationDetails.build().orElse(new Execution.AuthenticationDetails()));
+    pipeline.setAuthentication(
+        Execution.AuthenticationDetails.build().orElse(new Execution.AuthenticationDetails()));
 
     return pipeline;
   }

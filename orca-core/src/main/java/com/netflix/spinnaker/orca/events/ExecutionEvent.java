@@ -28,7 +28,9 @@ public abstract class ExecutionEvent extends ApplicationEvent {
   private final String executionId;
 
   protected ExecutionEvent(
-      @Nonnull Object source, @Nonnull Execution.ExecutionType executionType, @Nonnull String executionId) {
+      @Nonnull Object source,
+      @Nonnull Execution.ExecutionType executionType,
+      @Nonnull String executionId) {
     super(source);
     this.executionType = executionType;
     this.executionId = executionId;

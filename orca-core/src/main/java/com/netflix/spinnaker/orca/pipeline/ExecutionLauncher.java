@@ -27,8 +27,8 @@ import com.netflix.spinnaker.kork.web.exceptions.ValidationException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
 import com.netflix.spinnaker.orca.pipeline.model.*;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.io.IOException;
@@ -103,7 +103,8 @@ public class ExecutionLauncher {
    *
    * @param e the exception that was thrown during pipeline validation
    */
-  public Execution fail(Execution.ExecutionType type, String configJson, Exception e) throws Exception {
+  public Execution fail(Execution.ExecutionType type, String configJson, Exception e)
+      throws Exception {
     final Execution execution = parse(type, configJson);
 
     persistExecution(execution);

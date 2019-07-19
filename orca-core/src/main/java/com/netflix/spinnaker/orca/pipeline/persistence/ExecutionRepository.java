@@ -20,7 +20,6 @@ import static java.util.stream.Collectors.toList;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import java.time.Instant;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -58,7 +57,8 @@ public interface ExecutionRepository {
 
   boolean isCanceled(Execution.ExecutionType type, @Nonnull String id);
 
-  void updateStatus(Execution.ExecutionType type, @Nonnull String id, @Nonnull ExecutionStatus status);
+  void updateStatus(
+      Execution.ExecutionType type, @Nonnull String id, @Nonnull ExecutionStatus status);
 
   @Nonnull
   Execution retrieve(@Nonnull Execution.ExecutionType type, @Nonnull String id)
@@ -70,7 +70,8 @@ public interface ExecutionRepository {
   Observable<Execution> retrieve(@Nonnull Execution.ExecutionType type);
 
   @Nonnull
-  Observable<Execution> retrieve(@Nonnull Execution.ExecutionType type, @Nonnull ExecutionCriteria criteria);
+  Observable<Execution> retrieve(
+      @Nonnull Execution.ExecutionType type, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
   Observable<Execution> retrievePipelinesForApplication(@Nonnull String application);

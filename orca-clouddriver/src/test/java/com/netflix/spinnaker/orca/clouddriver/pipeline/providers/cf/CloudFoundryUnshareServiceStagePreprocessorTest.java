@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryUns
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +42,8 @@ class CloudFoundryUnshareServiceStagePreprocessorTest {
     context.put("cloudProvider", "my-cloud");
     context.put("manifest", Collections.singletonMap("type", "direct"));
     Stage stage =
-        new Stage(new Execution(Execution.ExecutionType.PIPELINE, "orca"), "unshareService", context);
+        new Stage(
+            new Execution(Execution.ExecutionType.PIPELINE, "orca"), "unshareService", context);
 
     TaskNode.Builder builder = new TaskNode.Builder(TaskNode.GraphType.FULL);
     preprocessor.addSteps(builder, stage);
