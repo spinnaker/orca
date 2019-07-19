@@ -100,10 +100,10 @@ class StartPipelineTask implements Task {
 
   // There are currently two sources-of-truth for the user:
   // 1. The MDC context, which are the values that get propagated to downstream services like Front50.
-  // 2. The AuthenticationDetails object.
+  // 2. The Execution.AuthenticationDetails object.
   //
   // In the case of the implicit pipeline invocation, the MDC is empty, which is why we fall back
-  // to AuthenticationDetails of the parent pipeline.
+  // to Execution.AuthenticationDetails of the parent pipeline.
   User getUser(Execution parentPipeline) {
     def korkUsername = AuthenticatedRequest.getSpinnakerUser()
     if (korkUsername.isPresent()) {

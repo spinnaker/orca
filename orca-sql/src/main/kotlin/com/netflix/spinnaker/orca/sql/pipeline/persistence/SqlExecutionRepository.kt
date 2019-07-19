@@ -25,10 +25,10 @@ import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.ExecutionStatus.PAUSED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.execution.PausedDetails
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -107,11 +107,11 @@ class SqlExecutionRepository(
     storeStage(stage)
   }
 
-  override fun cancel(type: ExecutionType, id: String) {
+  override fun cancel(type: Execution.ExecutionType, id: String) {
     cancel(type, id, null, null)
   }
 
-  override fun cancel(type: ExecutionType, id: String, user: String?, reason: String?) {
+  override fun cancel(type: Execution.ExecutionType, id: String, user: String?, reason: String?) {
     jooq.transactional {
       selectExecution(it, type, id)
         ?.let { execution ->
@@ -130,7 +130,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun pause(type: ExecutionType, id: String, user: String?) {
+  override fun pause(type: Execution.ExecutionType, id: String, user: String?) {
     jooq.transactional {
       selectExecution(it, type, id)
         ?.let { execution ->
@@ -148,11 +148,11 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun resume(type: ExecutionType, id: String, user: String?) {
+  override fun resume(type: Execution.ExecutionType, id: String, user: String?) {
     resume(type, id, user, false)
   }
 
-  override fun resume(type: ExecutionType, id: String, user: String?, ignoreCurrentStatus: Boolean) {
+  override fun resume(type: Execution.ExecutionType, id: String, user: String?, ignoreCurrentStatus: Boolean) {
     jooq.transactional {
       selectExecution(it, type, id)
         ?.let { execution ->
@@ -168,7 +168,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun isCanceled(type: ExecutionType, id: String): Boolean {
+  override fun isCanceled(type: Execution.ExecutionType, id: String): Boolean {
     return jooq.fetchExists(
       jooq.selectFrom(type.tableName)
         .where(id.toWhereCondition())
@@ -176,7 +176,7 @@ class SqlExecutionRepository(
     )
   }
 
-  override fun updateStatus(type: ExecutionType, id: String, status: ExecutionStatus) {
+  override fun updateStatus(type: Execution.ExecutionType, id: String, status: ExecutionStatus) {
     jooq.transactional {
       selectExecution(it, type, id)
         ?.let { execution ->
@@ -192,7 +192,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun delete(type: ExecutionType, id: String) {
+  override fun delete(type: Execution.ExecutionType, id: String) {
     val correlationField = if (type == PIPELINE) "pipeline_id" else "orchestration_id"
     val (ulid, _) = mapLegacyId(jooq, type.tableName, id)
 
@@ -218,20 +218,20 @@ class SqlExecutionRepository(
   }
 
   // TODO rz - Refactor to not use exceptions. So weird.
-  override fun retrieve(type: ExecutionType, id: String) =
+  override fun retrieve(type: Execution.ExecutionType, id: String) =
     selectExecution(jooq, type, id)
       ?: throw ExecutionNotFoundException("No $type found for $id")
 
-  override fun retrieve(type: ExecutionType): Observable<Execution> =
+  override fun retrieve(type: Execution.ExecutionType): Observable<Execution> =
     Observable.from(fetchExecutions { pageSize, cursor ->
       selectExecutions(type, pageSize, cursor)
     })
 
-  override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<Execution> {
+  override fun retrieve(type: Execution.ExecutionType, criteria: ExecutionCriteria): Observable<Execution> {
     return retrieve(type, criteria, null)
   }
 
-  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<Execution> {
+  private fun retrieve(type: Execution.ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<Execution> {
     val select = jooq.selectExecutions(
       type,
       fields = selectFields() + field("status"),
@@ -342,7 +342,7 @@ class SqlExecutionRepository(
     ).fetchExecutions().toMutableList()
   }
 
-  override fun retrieveByCorrelationId(executionType: ExecutionType, correlationId: String) =
+  override fun retrieveByCorrelationId(executionType: Execution.ExecutionType, correlationId: String) =
     when (executionType) {
       PIPELINE -> retrievePipelineForCorrelationId(correlationId)
       ORCHESTRATION -> retrieveOrchestrationForCorrelationId(correlationId)
@@ -405,7 +405,7 @@ class SqlExecutionRepository(
         ).toList().toBlocking().single()
       }
 
-  override fun retrieveAllApplicationNames(type: ExecutionType?): List<String> {
+  override fun retrieveAllApplicationNames(type: Execution.ExecutionType?): List<String> {
     return if (type == null) {
       jooq.select(field("application"))
         .from(PIPELINE.tableName)
@@ -426,7 +426,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun retrieveAllApplicationNames(type: ExecutionType?, minExecutions: Int): List<String> {
+  override fun retrieveAllApplicationNames(type: Execution.ExecutionType?, minExecutions: Int): List<String> {
     return if (type == null) {
       jooq.select(field("application"))
         .from(PIPELINE.tableName)
@@ -534,14 +534,14 @@ class SqlExecutionRepository(
     return allExecutions
   }
 
-  override fun hasExecution(type: ExecutionType, id: String): Boolean {
+  override fun hasExecution(type: Execution.ExecutionType, id: String): Boolean {
     return jooq.selectCount()
       .from(type.tableName)
       .where(id.toWhereCondition())
       .fetchOne(count()) > 0
   }
 
-  override fun retrieveAllExecutionIds(type: ExecutionType): MutableList<String> {
+  override fun retrieveAllExecutionIds(type: Execution.ExecutionType): MutableList<String> {
     return jooq.select(field("id")).from(type.tableName).fetch("id", String::class.java)
   }
 
@@ -749,7 +749,7 @@ class SqlExecutionRepository(
 
   private fun selectExecution(
     ctx: DSLContext,
-    type: ExecutionType,
+    type: Execution.ExecutionType,
     id: String,
     forUpdate: Boolean = false
   ): Execution? {
@@ -761,7 +761,7 @@ class SqlExecutionRepository(
   }
 
   private fun selectExecutions(
-    type: ExecutionType,
+    type: Execution.ExecutionType,
     limit: Int,
     cursor: String?,
     where: ((SelectJoinStep<Record>) -> SelectConditionStep<Record>)? = null
@@ -800,7 +800,7 @@ class SqlExecutionRepository(
   }
 
   private fun DSLContext.selectExecutions(
-    type: ExecutionType,
+    type: Execution.ExecutionType,
     fields: List<Field<Any>> = selectFields(),
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
@@ -811,7 +811,7 @@ class SqlExecutionRepository(
       .let { seek(it) }
 
   private fun DSLContext.selectExecutions(
-    type: ExecutionType,
+    type: Execution.ExecutionType,
     fields: List<Field<Any>> = selectFields(),
     usingIndex: String,
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
@@ -822,7 +822,7 @@ class SqlExecutionRepository(
       .let { conditions(it) }
       .let { seek(it) }
 
-  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectFields()) =
+  private fun DSLContext.selectExecution(type: Execution.ExecutionType, fields: List<Field<Any>> = selectFields()) =
     select(fields)
       .from(type.tableName)
 

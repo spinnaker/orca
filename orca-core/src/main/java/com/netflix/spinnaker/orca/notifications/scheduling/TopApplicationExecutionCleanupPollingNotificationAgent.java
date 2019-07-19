@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.notifications.scheduling;
 
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
 import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Comparator.comparing;

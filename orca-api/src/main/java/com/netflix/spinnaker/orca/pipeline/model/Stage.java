@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;

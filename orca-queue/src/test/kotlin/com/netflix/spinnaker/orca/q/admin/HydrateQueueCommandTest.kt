@@ -24,8 +24,8 @@ import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.fixture.task
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import com.netflix.spinnaker.orca.q.CompleteExecution

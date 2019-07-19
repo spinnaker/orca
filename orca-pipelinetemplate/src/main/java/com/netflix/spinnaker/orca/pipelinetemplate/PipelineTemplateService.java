@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.pipelinetemplate;
 
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;

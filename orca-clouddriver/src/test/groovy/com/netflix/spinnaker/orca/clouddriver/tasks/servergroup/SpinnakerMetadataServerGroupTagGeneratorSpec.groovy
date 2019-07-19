@@ -24,7 +24,7 @@ import retrofit.client.Response
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND
 
@@ -57,7 +57,7 @@ class SpinnakerMetadataServerGroupTagGeneratorSpec extends Specification {
       name = "my pipeline"
       application = "application"
       pipelineConfigId = "configId"
-      authentication = authenticatedUser ? new AuthenticationDetails(authenticatedUser) : null
+      authentication = authenticatedUser ? new Execution.AuthenticationDetails(authenticatedUser) : null
 
       stage {
         type = "wait"
@@ -105,7 +105,7 @@ class SpinnakerMetadataServerGroupTagGeneratorSpec extends Specification {
     def orchestration = orchestration {
       name = "my orchestration"
       application = "application"
-      authentication = authenticatedUser ? new AuthenticationDetails(authenticatedUser) : null
+      authentication = authenticatedUser ? new Execution.AuthenticationDetails(authenticatedUser) : null
       description = "this is my orchestration"
 
       stages << new Stage(delegate, "wait")

@@ -20,14 +20,14 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import org.slf4j.MDC
 import org.slf4j.helpers.NOPMDCAdapter
 import spock.lang.Specification
-import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class ExecutionSpec extends Specification {
   void setupSpec() {
     if (MDC.getMDCAdapter() instanceof NOPMDCAdapter) {
-      throw new IllegalStateException("AuthenticationDetails tests cannot function " +
+      throw new IllegalStateException("Execution.AuthenticationDetails tests cannot function " +
               "without a real MDC implementation loaded by slf4j")
     }
   }
@@ -37,17 +37,17 @@ class ExecutionSpec extends Specification {
     MDC.clear()
 
     expect:
-    !AuthenticationDetails.build().present
+    !Execution.AuthenticationDetails.build().present
   }
 
-  def "should build AuthenticationDetails containing authenticated details"() {
+  def "should build Execution.AuthenticationDetails containing authenticated details"() {
     given:
     MDC.clear()
     MDC.put(AuthenticatedRequest.Header.USER.header, "SpinnakerUser")
     MDC.put(AuthenticatedRequest.Header.ACCOUNTS.header, "Account1,Account2")
 
     when:
-    def authenticationDetails = AuthenticationDetails.build().get()
+    def authenticationDetails = Execution.AuthenticationDetails.build().get()
 
     then:
     authenticationDetails.user == "SpinnakerUser"

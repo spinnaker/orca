@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.util;
 
 import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ExpressionEvaluationVersion.V2;
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;

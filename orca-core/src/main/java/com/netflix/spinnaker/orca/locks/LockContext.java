@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -70,7 +70,7 @@ public class LockContext {
                     () ->
                         execution
                             .map(Execution::getType)
-                            .map(ExecutionType::toString)
+                            .map(Execution.ExecutionType::toString)
                             .orElse(null));
 
         final String id =

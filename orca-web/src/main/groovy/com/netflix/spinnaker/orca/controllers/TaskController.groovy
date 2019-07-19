@@ -32,7 +32,7 @@ import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -50,8 +50,8 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.access.prepost.PreFilter
 import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
@@ -564,11 +564,11 @@ class TaskController {
     return filterPipelinesByHistoryCutoff(allPipelines, limit)
   }
 
-  private void cancelExecution(ExecutionType executionType, String id) {
+  private void cancelExecution(Execution.ExecutionType executionType, String id) {
     cancelExecution(executionType, id, null)
   }
 
-  private void cancelExecution(ExecutionType executionType, String id, String reason) {
+  private void cancelExecution(Execution.ExecutionType executionType, String id, String reason) {
     executionRepository.retrieve(executionType, id).with { execution ->
       executionRunner.cancel(
               execution,
@@ -804,7 +804,7 @@ class TaskController {
 
   @ResponseStatus(HttpStatus.CONFLICT)
   private static class CannotDeleteRunningExecution extends RuntimeException {
-    CannotDeleteRunningExecution(ExecutionType type, String id) {
+    CannotDeleteRunningExecution(Execution.ExecutionType type, String id) {
       super("Cannot delete a running $type, please cancel it first.")
     }
   }

@@ -23,7 +23,7 @@ import com.netflix.spinnaker.kork.web.selector.v2.SelectableService.Parameter;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfigurationProperties;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import java.util.*;
 import java.util.function.Function;
 
@@ -61,7 +61,7 @@ public class BakerySelector {
     final String application = stage.getExecution().getApplication();
     final String user =
         Optional.ofNullable(stage.getExecution().getAuthentication())
-            .map(AuthenticationDetails::getUser)
+            .map(Execution.AuthenticationDetails::getUser)
             .orElse("unknown");
     final List<Parameter> parameters = new ArrayList<>();
 

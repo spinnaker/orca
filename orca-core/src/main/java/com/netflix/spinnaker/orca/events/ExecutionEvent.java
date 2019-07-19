@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.events;
 
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import java.time.Instant;
 import javax.annotation.Nonnull;
 import org.springframework.context.ApplicationEvent;
@@ -24,11 +24,11 @@ import org.springframework.context.ApplicationEvent;
 /** Events emitted at various stages in the lifecycle of an execution. */
 public abstract class ExecutionEvent extends ApplicationEvent {
 
-  private final ExecutionType executionType;
+  private final Execution.ExecutionType executionType;
   private final String executionId;
 
   protected ExecutionEvent(
-      @Nonnull Object source, @Nonnull ExecutionType executionType, @Nonnull String executionId) {
+      @Nonnull Object source, @Nonnull Execution.ExecutionType executionType, @Nonnull String executionId) {
     super(source);
     this.executionType = executionType;
     this.executionId = executionId;
@@ -38,7 +38,7 @@ public abstract class ExecutionEvent extends ApplicationEvent {
     return Instant.ofEpochMilli(super.getTimestamp());
   }
 
-  public final @Nonnull ExecutionType getExecutionType() {
+  public final @Nonnull Execution.ExecutionType getExecutionType() {
     return executionType;
   }
 

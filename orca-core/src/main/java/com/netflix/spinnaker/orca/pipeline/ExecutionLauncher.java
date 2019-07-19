@@ -28,9 +28,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
 import com.netflix.spinnaker.orca.pipeline.model.*;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails;
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
-import com.netflix.spinnaker.orca.pipeline.model.execution.PipelineSource;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.io.IOException;
@@ -78,7 +76,7 @@ public class ExecutionLauncher {
     this.registry = registry;
   }
 
-  public Execution start(ExecutionType type, String configJson) throws Exception {
+  public Execution start(Execution.ExecutionType type, String configJson) throws Exception {
     final Execution execution = parse(type, configJson);
 
     final Execution existingExecution = checkForCorrelatedExecution(execution);
@@ -105,7 +103,7 @@ public class ExecutionLauncher {
    *
    * @param e the exception that was thrown during pipeline validation
    */
-  public Execution fail(ExecutionType type, String configJson, Exception e) throws Exception {
+  public Execution fail(Execution.ExecutionType type, String configJson, Exception e) throws Exception {
     final Execution execution = parse(type, configJson);
 
     persistExecution(execution);
@@ -116,7 +114,7 @@ public class ExecutionLauncher {
   }
 
   private void checkRunnable(Execution execution) {
-    if (execution.getType() == ExecutionType.PIPELINE) {
+    if (execution.getType() == Execution.ExecutionType.PIPELINE) {
       pipelineValidator.ifPresent(it -> it.checkRunnable(execution));
     }
   }
@@ -184,8 +182,8 @@ public class ExecutionLauncher {
     return executionRepository.retrieve(execution.getType(), execution.getId());
   }
 
-  private Execution parse(ExecutionType type, String configJson) throws IOException {
-    if (type == ExecutionType.PIPELINE) {
+  private Execution parse(Execution.ExecutionType type, String configJson) throws IOException {
+    if (type == Execution.ExecutionType.PIPELINE) {
       return parsePipeline(configJson);
     } else {
       return parseOrchestration(configJson);
@@ -210,7 +208,7 @@ public class ExecutionLauncher {
         .withSource(
             (config.get("source") == null)
                 ? null
-                : objectMapper.convertValue(config.get("source"), PipelineSource.class))
+                : objectMapper.convertValue(config.get("source"), Execution.PipelineSource.class))
         .build();
   }
 
@@ -244,7 +242,7 @@ public class ExecutionLauncher {
 
     orchestration.setBuildTime(clock.millis());
     orchestration.setAuthentication(
-        AuthenticationDetails.build().orElse(new AuthenticationDetails()));
+        Execution.AuthenticationDetails.build().orElse(new Execution.AuthenticationDetails()));
     orchestration.setOrigin((String) config.getOrDefault("origin", "unknown"));
     orchestration.setStartTimeExpiry((Long) config.get("startTimeExpiry"));
 

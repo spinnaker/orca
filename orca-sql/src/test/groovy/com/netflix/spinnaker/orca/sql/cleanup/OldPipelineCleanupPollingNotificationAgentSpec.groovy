@@ -36,7 +36,7 @@ import spock.lang.AutoCleanup
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.sql.SqlTestUtil.initDatabase
 import static java.time.temporal.ChronoUnit.DAYS
 

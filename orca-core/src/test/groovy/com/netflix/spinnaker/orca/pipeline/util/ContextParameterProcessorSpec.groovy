@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionTransform
 import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionsSupport
 import com.netflix.spinnaker.orca.pipeline.expressions.SpelHelperFunctionException
 import com.netflix.spinnaker.orca.pipeline.model.*
-import com.netflix.spinnaker.orca.pipeline.model.execution.AuthenticationDetails
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.springframework.expression.spel.SpelEvaluationException
 import spock.lang.Specification
 import spock.lang.Subject
@@ -852,7 +852,7 @@ class ContextParameterProcessorSpec extends Specification {
       }
     }
 
-    pipe.setAuthentication(new AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
+    pipe.setAuthentication(new Execution.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
 
     def stage = pipe.stages.find { it.name == "Wait1" }
     def ctx = contextParameterProcessor.buildExecutionContext(stage, true)

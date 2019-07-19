@@ -31,7 +31,6 @@ import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -54,7 +53,7 @@ import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static java.lang.String.format
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -123,7 +122,7 @@ class OperationsControllerSpec extends Specification {
   def "uses trigger details from pipeline if present"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -162,7 +161,7 @@ class OperationsControllerSpec extends Specification {
   def "should not get pipeline execution details from trigger if provided"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -188,7 +187,7 @@ class OperationsControllerSpec extends Specification {
   def "should get pipeline execution details from trigger if not provided"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -257,7 +256,7 @@ class OperationsControllerSpec extends Specification {
   def "trigger user takes precedence over query parameter"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -306,7 +305,7 @@ class OperationsControllerSpec extends Specification {
   def "gets properties file from igor if specified in pipeline"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -343,7 +342,7 @@ class OperationsControllerSpec extends Specification {
   def "context parameters are processed before pipeline is started"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
     }
 
@@ -374,7 +373,7 @@ class OperationsControllerSpec extends Specification {
   def "processes pipeline parameters"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
     }
 
@@ -401,7 +400,7 @@ class OperationsControllerSpec extends Specification {
   def "fills out pipeline parameters with defaults"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
     }
 
@@ -445,7 +444,7 @@ class OperationsControllerSpec extends Specification {
   def "an empty string does not get overridden with default values"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -477,7 +476,7 @@ class OperationsControllerSpec extends Specification {
   def "provided trigger can evaluate spel"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -582,7 +581,7 @@ class OperationsControllerSpec extends Specification {
     ]
     def response = Mock(HttpServletResponse)
     Execution failedPipeline = null
-    1 * executionLauncher.fail(*_) >> { ExecutionType type, String json, Throwable t ->
+    1 * executionLauncher.fail(*_) >> { Execution.ExecutionType type, String json, Throwable t ->
       failedPipeline = mapper.readValue(json, Execution)
       failedPipeline.id = UUID.randomUUID().toString()
       failedPipeline
@@ -606,7 +605,7 @@ class OperationsControllerSpec extends Specification {
       throw new IllegalStateException(format("Unmatched expected artifact could not be resolved."))
     }
     Execution failedPipeline = null
-    1 * executionLauncher.fail(*_) >> { ExecutionType type, String json, Throwable t ->
+    1 * executionLauncher.fail(*_) >> { Execution.ExecutionType type, String json, Throwable t ->
       failedPipeline = mapper.readValue(json, Execution)
       failedPipeline.id = UUID.randomUUID().toString()
       failedPipeline
@@ -655,7 +654,7 @@ class OperationsControllerSpec extends Specification {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "waitForCompletion", "statusUrlResolution",
                                    "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -688,7 +687,7 @@ class OperationsControllerSpec extends Specification {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "waitForCompletion", "statusUrlResolution",
                                    "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
@@ -742,7 +741,7 @@ class OperationsControllerSpec extends Specification {
   def "should start pipeline by config id with provided trigger"() {
     given:
     Execution startedPipeline = null
-    executionLauncher.start(*_) >> { ExecutionType type, String json ->
+    executionLauncher.start(*_) >> { Execution.ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
     }
     front50Service.getPipelineHistory("1234", 1) >> {

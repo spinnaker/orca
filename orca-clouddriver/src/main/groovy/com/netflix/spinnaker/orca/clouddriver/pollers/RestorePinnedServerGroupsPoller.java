@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
@@ -186,7 +186,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
         AuthenticatedRequest.propagate(
                 () ->
                     executionLauncher.start(
-                        ExecutionType.ORCHESTRATION,
+                        Execution.ExecutionType.ORCHESTRATION,
                         objectMapper.writeValueAsString(cleanupOperation)),
                 systemUser)
             .call();
@@ -329,7 +329,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
     public String location;
     public String serverGroup;
 
-    public ExecutionType executionType;
+    public Execution.ExecutionType executionType;
     public String executionId;
     public String stageId;
 

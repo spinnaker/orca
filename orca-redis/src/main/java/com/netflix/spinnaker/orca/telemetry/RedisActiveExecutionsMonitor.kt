@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException
@@ -69,12 +68,12 @@ class RedisActiveExecutionsMonitor(
   private val executor = Executors.newScheduledThreadPool(2)
 
   private val activePipelineCounter = registry.gauge(
-    registry.createId("executions.active").withTag("executionType", ExecutionType.PIPELINE.toString()),
+    registry.createId("executions.active").withTag("executionType", Execution.ExecutionType.PIPELINE.toString()),
     AtomicInteger(0)
   )
 
   private val activeOrchestrationCounter = registry.gauge(
-    registry.createId("executions.active").withTag("executionType", ExecutionType.ORCHESTRATION.toString()),
+    registry.createId("executions.active").withTag("executionType", Execution.ExecutionType.ORCHESTRATION.toString()),
     AtomicInteger(0)
   )
 
@@ -111,8 +110,8 @@ class RedisActiveExecutionsMonitor(
       log.info("Refreshing active execution gauges (active: ${executions.size})")
 
       val executionByType = executions.groupBy { it.type }
-      activePipelineCounter.set(executionByType.get(ExecutionType.PIPELINE)?.size ?: 0)
-      activeOrchestrationCounter.set(executionByType.get(ExecutionType.ORCHESTRATION)?.size ?: 0)
+      activePipelineCounter.set(executionByType.get(Execution.ExecutionType.PIPELINE)?.size ?: 0)
+      activeOrchestrationCounter.set(executionByType.get(Execution.ExecutionType.ORCHESTRATION)?.size ?: 0)
     }
   }
 
@@ -168,7 +167,7 @@ class RedisActiveExecutionsMonitor(
     }
   }
 
-  private fun startExecution(executionType: ExecutionType, executionId: String) {
+  private fun startExecution(executionType: Execution.ExecutionType, executionId: String) {
     val execution: Execution
     try {
       execution = executionRepository.retrieve(executionType, executionId)
@@ -203,7 +202,7 @@ class RedisActiveExecutionsMonitor(
 
   data class ActiveExecution(
     val id: String,
-    val type: ExecutionType,
+    val type: Execution.ExecutionType,
     val application: String
   )
 }

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.cf.pipeline.expressions.functions;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING;
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static java.util.Collections.*;
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.commands
 import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.LoggerFactory
 import java.time.Clock
@@ -36,7 +35,7 @@ class ForceExecutionCancellationCommand(
 
   private val log = LoggerFactory.getLogger(javaClass)
 
-  fun forceCancel(executionType: ExecutionType, executionId: String, canceledBy: String) {
+  fun forceCancel(executionType: Execution.ExecutionType, executionId: String, canceledBy: String) {
     log.info("Forcing cancel of $executionType:$executionId by: $canceledBy")
     val execution = executionRepository.retrieve(executionType, executionId)
 

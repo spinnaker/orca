@@ -20,7 +20,7 @@ import static java.util.stream.Collectors.toList;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
 import java.time.Instant;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -38,39 +38,39 @@ public interface ExecutionRepository {
 
   void addStage(@Nonnull Stage stage);
 
-  void cancel(@Nonnull ExecutionType type, @Nonnull String id);
+  void cancel(@Nonnull Execution.ExecutionType type, @Nonnull String id);
 
   void cancel(
-      @Nonnull ExecutionType type,
+      @Nonnull Execution.ExecutionType type,
       @Nonnull String id,
       @Nullable String user,
       @Nullable String reason);
 
-  void pause(@Nonnull ExecutionType type, @Nonnull String id, @Nullable String user);
+  void pause(@Nonnull Execution.ExecutionType type, @Nonnull String id, @Nullable String user);
 
-  void resume(@Nonnull ExecutionType type, @Nonnull String id, @Nullable String user);
+  void resume(@Nonnull Execution.ExecutionType type, @Nonnull String id, @Nullable String user);
 
   void resume(
-      @Nonnull ExecutionType type,
+      @Nonnull Execution.ExecutionType type,
       @Nonnull String id,
       @Nullable String user,
       boolean ignoreCurrentStatus);
 
-  boolean isCanceled(ExecutionType type, @Nonnull String id);
+  boolean isCanceled(Execution.ExecutionType type, @Nonnull String id);
 
-  void updateStatus(ExecutionType type, @Nonnull String id, @Nonnull ExecutionStatus status);
+  void updateStatus(Execution.ExecutionType type, @Nonnull String id, @Nonnull ExecutionStatus status);
 
   @Nonnull
-  Execution retrieve(@Nonnull ExecutionType type, @Nonnull String id)
+  Execution retrieve(@Nonnull Execution.ExecutionType type, @Nonnull String id)
       throws ExecutionNotFoundException;
 
-  void delete(@Nonnull ExecutionType type, @Nonnull String id);
+  void delete(@Nonnull Execution.ExecutionType type, @Nonnull String id);
 
   @Nonnull
-  Observable<Execution> retrieve(@Nonnull ExecutionType type);
+  Observable<Execution> retrieve(@Nonnull Execution.ExecutionType type);
 
   @Nonnull
-  Observable<Execution> retrieve(@Nonnull ExecutionType type, @Nonnull ExecutionCriteria criteria);
+  Observable<Execution> retrieve(@Nonnull Execution.ExecutionType type, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
   Observable<Execution> retrievePipelinesForApplication(@Nonnull String application);
@@ -121,7 +121,7 @@ public interface ExecutionRepository {
 
   @Nonnull
   Execution retrieveByCorrelationId(
-      @Nonnull ExecutionType executionType, @Nonnull String correlationId)
+      @Nonnull Execution.ExecutionType executionType, @Nonnull String correlationId)
       throws ExecutionNotFoundException;
 
   @Deprecated
@@ -138,15 +138,15 @@ public interface ExecutionRepository {
   List<Execution> retrieveBufferedExecutions();
 
   @Nonnull
-  List<String> retrieveAllApplicationNames(@Nullable ExecutionType executionType);
+  List<String> retrieveAllApplicationNames(@Nullable Execution.ExecutionType executionType);
 
   @Nonnull
   List<String> retrieveAllApplicationNames(
-      @Nullable ExecutionType executionType, int minExecutions);
+      @Nullable Execution.ExecutionType executionType, int minExecutions);
 
-  boolean hasExecution(@Nonnull ExecutionType type, @Nonnull String id);
+  boolean hasExecution(@Nonnull Execution.ExecutionType type, @Nonnull String id);
 
-  List<String> retrieveAllExecutionIds(@Nonnull ExecutionType type);
+  List<String> retrieveAllExecutionIds(@Nonnull Execution.ExecutionType type);
 
   final class ExecutionCriteria {
     private int pageSize = 3500;

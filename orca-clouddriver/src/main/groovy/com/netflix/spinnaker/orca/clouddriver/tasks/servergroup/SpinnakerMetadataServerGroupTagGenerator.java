@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.core.RetrySupport;

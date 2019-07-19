@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher;
-import com.netflix.spinnaker.orca.pipeline.model.execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import groovy.util.logging.Slf4j;
@@ -135,7 +135,7 @@ public class EphemeralServerGroupsPoller extends AbstractPollingNotificationAgen
         AuthenticatedRequest.propagate(
                 () ->
                     executionLauncher.start(
-                        ExecutionType.ORCHESTRATION,
+                        Execution.ExecutionType.ORCHESTRATION,
                         objectMapper.writeValueAsString(cleanupOperation)),
                 systemUser)
             .call();
