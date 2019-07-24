@@ -114,7 +114,7 @@ public class CreateBakeManifestTask implements RetryableTask {
 
     HelmBakeManifestRequest request = new HelmBakeManifestRequest();
     request.setInputArtifacts(inputArtifacts);
-    request.setTemplateRenderer(context.getTemplateRenderer());
+    request.setTemplateRenderer("HELM2");
     request.setOutputName(context.getOutputName());
     request.setOverrides(overrides);
     request.setNamespace(context.getNamespace());
