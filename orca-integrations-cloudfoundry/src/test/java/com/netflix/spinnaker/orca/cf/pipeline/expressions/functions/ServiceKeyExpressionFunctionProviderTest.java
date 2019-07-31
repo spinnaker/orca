@@ -35,7 +35,8 @@ class ServiceKeyExpressionFunctionProviderTest {
   void getFunctionsShouldReturnOneFunctionWithTheCorrectNameWhichHasTwoParameters() {
     ServiceKeyExpressionFunctionProvider functionProvider =
         new ServiceKeyExpressionFunctionProvider();
-    Collection<FunctionDefinition> functionDefinitions = functionProvider.getFunctions();
+    Collection<FunctionDefinition> functionDefinitions =
+        functionProvider.getFunctions().getFunctionsDefinitions();
 
     assertThat(functionDefinitions.size()).isEqualTo(1);
     functionDefinitions.stream()

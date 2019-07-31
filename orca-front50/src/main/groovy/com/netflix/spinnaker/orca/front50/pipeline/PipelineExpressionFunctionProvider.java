@@ -24,9 +24,6 @@ import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
@@ -51,17 +48,16 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
 
   @NotNull
   @Override
-  public Collection<FunctionDefinition> getFunctions() {
-    return Collections.singletonList(
+  public Functions getFunctions() {
+    return new Functions(
         new FunctionDefinition(
             "pipelineId",
-            Arrays.asList(
-                new FunctionParameter(
-                    Execution.class,
-                    "execution",
-                    "The execution containing the currently executing stage"),
-                new FunctionParameter(
-                    String.class, "pipelineName", "A valid stage reference identifier"))));
+            new FunctionParameter(
+                Execution.class,
+                "execution",
+                "The execution containing the currently executing stage"),
+            new FunctionParameter(
+                String.class, "pipelineName", "A valid stage reference identifier")));
   }
 
   /**

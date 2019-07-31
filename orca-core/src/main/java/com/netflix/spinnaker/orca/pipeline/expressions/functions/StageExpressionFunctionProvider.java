@@ -23,10 +23,6 @@ import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.ExecutionContext;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,29 +38,26 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
 
   @NotNull
   @Override
-  public Collection<FunctionDefinition> getFunctions() {
-    List<FunctionParameter> stageParameters =
-        Arrays.asList(
-            new FunctionParameter(Execution.class, "execution", "The execution for the stage"),
-            new FunctionParameter(String.class, "idOrName", "The name or id of the stage to find"));
+  public Functions getFunctions() {
+    FunctionParameter[] stageParameters = {
+      new FunctionParameter(Execution.class, "execution", "The execution for the stage"),
+      new FunctionParameter(String.class, "idOrName", "The name or id of the stage to find")
+    };
 
-    return Arrays.asList(
+    return new Functions(
         new FunctionDefinition(
             "currentStage",
-            Collections.singletonList(
-                new FunctionParameter(
-                    Execution.class,
-                    "execution",
-                    "The execution containing the currently executing stage"))),
+            new FunctionParameter(
+                Execution.class,
+                "execution",
+                "The execution containing the currently executing stage")),
         new FunctionDefinition(
             "stageByRefId",
-            Arrays.asList(
-                new FunctionParameter(
-                    Execution.class,
-                    "execution",
-                    "The execution containing the currently executing stage"),
-                new FunctionParameter(
-                    String.class, "refId", "A valid stage reference identifier"))),
+            new FunctionParameter(
+                Execution.class,
+                "execution",
+                "The execution containing the currently executing stage"),
+            new FunctionParameter(String.class, "refId", "A valid stage reference identifier")),
         new FunctionDefinition("stage", stageParameters),
         new FunctionDefinition("stageExists", stageParameters),
         new FunctionDefinition("judgment", stageParameters),

@@ -27,9 +27,6 @@ import com.netflix.spinnaker.orca.pipeline.util.HttpClientUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,25 +55,18 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
 
   @NotNull
   @Override
-  public Collection<FunctionDefinition> getFunctions() {
-    return Arrays.asList(
+  public Functions getFunctions() {
+    return new Functions(
         new FunctionDefinition(
-            "fromUrl",
-            Collections.singletonList(
-                new FunctionParameter(String.class, "url", "A URL to retrieve text from"))),
+            "fromUrl", new FunctionParameter(String.class, "url", "A URL to retrieve text from")),
         new FunctionDefinition(
             "jsonFromUrl",
-            Collections.singletonList(
-                new FunctionParameter(String.class, "url", "A URL to retrieve a JSON file from"))),
+            new FunctionParameter(String.class, "url", "A URL to retrieve a JSON file from")),
         new FunctionDefinition(
             "propertiesFromUrl",
-            Collections.singletonList(
-                new FunctionParameter(
-                    String.class, "url", "A URL to retrieve a Properties file from"))),
+            new FunctionParameter(String.class, "url", "A URL to retrieve a Properties file from")),
         new FunctionDefinition(
-            "readJson",
-            Collections.singletonList(
-                new FunctionParameter(String.class, "url", "A String containing JSON"))));
+            "readJson", new FunctionParameter(String.class, "url", "A String containing JSON")));
   }
 
   /**

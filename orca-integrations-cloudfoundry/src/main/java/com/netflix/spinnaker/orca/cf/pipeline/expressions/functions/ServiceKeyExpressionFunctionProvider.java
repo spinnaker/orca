@@ -44,17 +44,13 @@ public class ServiceKeyExpressionFunctionProvider implements ExpressionFunctionP
 
   @NotNull
   @Override
-  public Collection<FunctionDefinition> getFunctions() {
-    return Collections.singletonList(
+  public Functions getFunctions() {
+    return new Functions(
         new FunctionDefinition(
             "cfServiceKey",
-            Arrays.asList(
-                new FunctionParameter(
-                    Execution.class,
-                    "execution",
-                    "The execution within which to search for stages"),
-                new FunctionParameter(
-                    String.class, "idOrName", "A stage name or stage ID to match"))));
+            new FunctionParameter(
+                Execution.class, "execution", "The execution within which to search for stages"),
+            new FunctionParameter(String.class, "idOrName", "A stage name or stage ID to match")));
   }
 
   public static Map<String, Object> cfServiceKey(Execution execution, String idOrName) {
