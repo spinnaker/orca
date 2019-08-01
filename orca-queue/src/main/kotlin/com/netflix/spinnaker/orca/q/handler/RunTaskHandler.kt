@@ -311,7 +311,9 @@ class RunTaskHandler(
     try {
       MDC.put("stageType", type)
       MDC.put("taskType", taskModel.implementingClass)
-      MDC.put(AuthenticatedRequest.Header.makeCustomHeader("pipeline-description"), execution.description)
+      if (execution.name != null) {
+        MDC.put(AuthenticatedRequest.Header.makeCustomHeader("pipeline-name"), execution.name)
+      }
       if (taskModel.startTime != null) {
         MDC.put("taskStartTime", taskModel.startTime.toString())
       }
