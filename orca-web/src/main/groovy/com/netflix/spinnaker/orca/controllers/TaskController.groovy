@@ -542,7 +542,7 @@ class TaskController {
    * Adds trigger and execution to stage context so that expression evaluation can be tested.
    * This is not great, because it's brittle, but it's very useful to be able to test expressions.
    */
-  Map<String, Object> augmentContext(Stage stage) {
+  private Map<String, Object> augmentContext(Stage stage) {
     Map <String, Object> augmentedContext = stage.context
     augmentedContext.put("trigger", stage.execution.trigger)
     augmentedContext.put("execution", stage.execution)
