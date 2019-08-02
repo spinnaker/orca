@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
+import org.yaml.snakeyaml.Yaml;
 
 @SuppressWarnings("unused")
 @Component
@@ -63,10 +64,17 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
             "jsonFromUrl",
             new FunctionParameter(String.class, "url", "A URL to retrieve a JSON file from")),
         new FunctionDefinition(
+            "yamlFromUrl",
+            new FunctionParameter(String.class, "url", "A URL to retrieve a YAML file from")),
+        new FunctionDefinition(
             "propertiesFromUrl",
             new FunctionParameter(String.class, "url", "A URL to retrieve a Properties file from")),
         new FunctionDefinition(
-            "readJson", new FunctionParameter(String.class, "url", "A String containing JSON")));
+            "readJson",
+            new FunctionParameter(String.class, "value", "A String containing JSON text")),
+        new FunctionDefinition(
+            "readYaml",
+            new FunctionParameter(String.class, "value", "A String containing YAML text")));
   }
 
   /**
@@ -94,6 +102,30 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
       return mapper.readValue(text, Map.class);
     } catch (Exception e) {
       throw new SpelHelperFunctionException(format("#readJson(%s) failed", text), e);
+    }
+  }
+
+  /**
+   * Reads a yaml text
+   *
+   * @param url url to get the json text
+   * @return an object representing the yaml object
+   */
+  public static Object yamlFromUrl(String url) {
+    return readYaml(fromUrl(url));
+  }
+
+  /**
+   * Attempts to read yaml from a text String. Will throw a parsing exception on bad yaml
+   *
+   * @param text text to read as yaml
+   * @return the object representation of the yaml text
+   */
+  public static Object readYaml(String text) {
+    try {
+      return new Yaml().load(text);
+    } catch (Exception e) {
+      throw new SpelHelperFunctionException(format("#readYaml(%s) failed", text), e);
     }
   }
 
