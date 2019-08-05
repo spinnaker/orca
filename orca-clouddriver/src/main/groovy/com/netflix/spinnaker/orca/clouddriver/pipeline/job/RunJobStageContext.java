@@ -30,6 +30,7 @@ public class RunJobStageContext {
   private String cloudProviderType;
   private String application;
   private String credentials;
+  private String account;
 
   @JsonIgnore private Map<String, Object> other = new HashMap<>();
 
@@ -81,5 +82,13 @@ public class RunJobStageContext {
 
   public void setCredentials(String credentials) {
     this.credentials = credentials;
+  }
+
+  public String getAccount() {
+    return account;
+  }
+
+  public void setAccount(String account) {
+    this.account = account;
   }
 }

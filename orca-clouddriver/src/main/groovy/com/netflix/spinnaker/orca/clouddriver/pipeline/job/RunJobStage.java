@@ -94,6 +94,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
       destroyContext.put("cloudProvider", context.getCloudProvider());
       destroyContext.put("region", context.getJobStatus().getRegion());
       destroyContext.put("credentials", context.getCredentials());
+      destroyContext.put("account", context.getAccount());
 
       stage.setContext(destroyContext);
 
