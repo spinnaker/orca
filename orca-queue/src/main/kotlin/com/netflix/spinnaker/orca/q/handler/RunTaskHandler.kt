@@ -310,7 +310,6 @@ class RunTaskHandler(
     try {
       MDC.put("stageType", type)
       MDC.put("taskType", taskModel.implementingClass)
-
       if (taskModel.startTime != null) {
         MDC.put("taskStartTime", taskModel.startTime.toString())
       }
