@@ -17,18 +17,21 @@
 
 package com.netflix.spinnaker.orca.webhook.tasks
 
+import com.google.common.base.Strings
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.PathNotFoundException
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpStatusCodeException
 
+import javax.annotation.Nonnull
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -39,6 +42,7 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
   long backoffPeriod = TimeUnit.SECONDS.toMillis(1)
   long timeout = TimeUnit.HOURS.toMillis(1)
   private static final String JSON_PATH_NOT_FOUND_ERR_FMT = "Unable to parse %s: JSON property '%s' not found in response body"
+  WebhookService webhookService
 
   @Override
   long getDynamicBackoffPeriod(Stage stage, Duration taskDuration) {
@@ -51,106 +55,138 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
   }
 
   @Autowired
-  WebhookService webhookService
-
-  static requiredParameters = ["statusEndpoint", "statusJsonPath"]
+  MonitorWebhookTask(WebhookService webhookService) {
+    this.webhookService = webhookService
+  }
 
   @Override
   TaskResult execute(Stage stage) {
-    def missing = requiredParameters.findAll { !stage.context.get(it) }
-    if (!missing.empty) {
-      throw new IllegalStateException("Missing required parameter${missing.size() > 1 ? 's' : ''} '${missing.join('\', \'')}'")
+    WebhookStage.StageData stageData = stage.mapTo(WebhookStage.StageData)
+
+    if (Strings.isNullOrEmpty(stageData.statusEndpoint) || Strings.isNullOrEmpty(stageData.statusJsonPath)) {
+      throw new IllegalStateException(
+        "Missing required parameter(s): statusEndpoint = ${stageData.statusEndpoint}, statusJsonPath = ${stageData.statusJsonPath}")
     }
 
-    String statusEndpoint = stage.context.statusEndpoint
-    String statusJsonPath = stage.context.statusJsonPath
-    String progressJsonPath = stage.context.progressJsonPath
-    String successStatuses = stage.context.successStatuses
-    String canceledStatuses = stage.context.canceledStatuses
-    String terminalStatuses = stage.context.terminalStatuses
-    def customHeaders = stage.context.customHeaders
+    // Preserve the responses we got from createWebhookTask, but reset the monitor subkey as we will overwrite it new data
+    def originalResponse = stage.context.getOrDefault("webhook", [:])
+    originalResponse["monitor"] = [:]
+    originalResponse = [webhook: originalResponse]
 
     def response
     try {
-      response = webhookService.getStatus(statusEndpoint, customHeaders)
+      response = webhookService.getStatus(stageData.statusEndpoint, stageData.customHeaders)
       log.debug(
         "Received status code {} from status endpoint {} in execution {} in stage {}",
         response.statusCode,
-        statusEndpoint,
+        stageData.statusEndpoint,
         stage.execution.id,
         stage.id
       )
-    } catch (IllegalArgumentException e) {
-      if (e.cause instanceof UnknownHostException) {
-        log.warn("name resolution failure in webhook for pipeline ${stage.execution.id} to ${statusEndpoint}, will retry.", e)
-        return TaskResult.ofStatus(ExecutionStatus.RUNNING)
-      }
-
-      throw e
     } catch (HttpStatusCodeException  e) {
       def statusCode = e.getStatusCode()
-      if (statusCode.is5xxServerError() || statusCode.value() == 429) {
-        log.warn("error getting webhook status from ${statusEndpoint}, will retry", e)
+      def statusValue = statusCode.value()
+
+      boolean shouldRetry = statusCode.is5xxServerError() ||
+                            (statusValue == 429) ||
+                            ((stageData.retryStatusCodes != null) && (stageData.retryStatusCodes.contains(statusValue)))
+
+      if (shouldRetry) {
+        log.warn("Failed to get webhook status from ${stageData.statusEndpoint} with statusCode=${statusValue}, will retry", e)
         return TaskResult.ofStatus(ExecutionStatus.RUNNING)
       }
 
-      throw e
+      String errorMessage = "an exception occurred in webhook monitor to ${stageData.statusEndpoint}: ${e}"
+      log.error(errorMessage, e)
+      Map<String, ?> outputs = originalResponse
+      outputs.webhook.monitor << [error: errorMessage]
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
+    } catch (Exception e) {
+      if (e instanceof UnknownHostException || e.cause instanceof UnknownHostException) {
+        log.warn("name resolution failure in webhook for pipeline ${stage.execution.id} to ${stageData.statusEndpoint}, will retry.", e)
+        return TaskResult.ofStatus(ExecutionStatus.RUNNING)
+      }
+
+      String errorMessage = "an exception occurred in webhook monitor to ${stageData.statusEndpoint}: ${e}"
+      log.error(errorMessage, e)
+      Map<String, ?> outputs = originalResponse
+      outputs.webhook.monitor << [error: errorMessage]
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
     }
 
     def result
-    def responsePayload = [
-      webhook: [
-        monitor: [
+    def responsePayload = originalResponse
+    responsePayload.webhook.monitor =  [
           body: response.body,
           statusCode: response.statusCode,
           statusCodeValue: response.statusCode.value()
         ]
-      ],
-      buildInfo: response.body, // TODO: deprecated
-      deprecationWarning: "All webhook information will be moved beneath the key 'webhook', " +
-        "and the keys 'statusCode', 'buildInfo', 'statusEndpoint' and 'error' will be removed. Please migrate today."
-    ]
+
     try {
-      result = JsonPath.read(response.body, statusJsonPath)
+      result = JsonPath.read(response.body, stageData.statusJsonPath)
     } catch (PathNotFoundException e) {
-      responsePayload.webhook.monitor << [error: String.format(JSON_PATH_NOT_FOUND_ERR_FMT, "status", statusJsonPath)]
+      responsePayload.webhook.monitor << [error: String.format(JSON_PATH_NOT_FOUND_ERR_FMT, "status", stageData.statusJsonPath)]
       return TaskResult.builder(ExecutionStatus.TERMINAL).context(responsePayload).build()
     }
     if (!(result instanceof String || result instanceof Number || result instanceof Boolean)) {
-      responsePayload.webhook.monitor << [error: "The json path '${statusJsonPath}' did not resolve to a single value", resolvedValue: result]
+      responsePayload.webhook.monitor << [error: "The json path '${stageData.statusJsonPath}' did not resolve to a single value", resolvedValue: result]
       return TaskResult.builder(ExecutionStatus.TERMINAL).context(responsePayload).build()
     }
 
-    if (progressJsonPath) {
+    if (stageData.progressJsonPath) {
       def progress
       try {
-        progress = JsonPath.read(response.body, progressJsonPath)
+        progress = JsonPath.read(response.body, stageData.progressJsonPath)
       } catch (PathNotFoundException e) {
-        responsePayload.webhook.monitor << [error: String.format(JSON_PATH_NOT_FOUND_ERR_FMT, "progress", statusJsonPath)]
+        responsePayload.webhook.monitor << [error: String.format(JSON_PATH_NOT_FOUND_ERR_FMT, "progress", stageData.statusJsonPath)]
         return TaskResult.builder(ExecutionStatus.TERMINAL).context(responsePayload).build()
       }
       if (!(progress instanceof String)) {
-        responsePayload.webhook.monitor << [error: "The json path '${progressJsonPath}' did not resolve to a String value", resolvedValue: progress]
+        responsePayload.webhook.monitor << [error: "The json path '${stageData.progressJsonPath}' did not resolve to a String value", resolvedValue: progress]
         return TaskResult.builder(ExecutionStatus.TERMINAL).context(responsePayload).build()
       }
       if (progress) {
-        responsePayload << [progressMessage: progress] // TODO: deprecated
         responsePayload.webhook.monitor << [progressMessage: progress]
       }
     }
 
-    def statusMap = createStatusMap(successStatuses, canceledStatuses, terminalStatuses)
+    def statusMap = createStatusMap(stageData.successStatuses, stageData.canceledStatuses, stageData.terminalStatuses)
 
     if (result instanceof Number) {
       def status = result == 100 ? ExecutionStatus.SUCCEEDED : ExecutionStatus.RUNNING
-      responsePayload << [percentComplete: result] // TODO: deprecated
       responsePayload.webhook.monitor << [percentComplete: result]
       return TaskResult.builder(status).context(responsePayload).build()
     } else if (statusMap.containsKey(result.toString().toUpperCase())) {
       return TaskResult.builder(statusMap[result.toString().toUpperCase()]).context(responsePayload).build()
     }
 
-    return TaskResult.builder(ExecutionStatus.RUNNING).context(response ? responsePayload : [:]).build()
+    stage.context
+    return TaskResult.builder(ExecutionStatus.RUNNING).context(response ? responsePayload : originalResponse).build()
+  }
+
+  @Override void onCancel(@Nonnull Stage stage) {
+    WebhookStage.StageData stageData = stage.mapTo(WebhookStage.StageData)
+
+    // Only do cancellation if we made the initial webhook request and the user specified a cancellation endpoint
+    if (Strings.isNullOrEmpty(stageData.webhook.statusCode) || Strings.isNullOrEmpty(stageData.cancelEndpoint)) {
+      return
+    }
+
+    try {
+      log.info("Sending best effort webhook cancellation to ${stageData.cancelEndpoint}")
+      def response = webhookService.exchange(stageData.cancelMethod, stageData.cancelEndpoint, stageData.cancelPayload, stageData.customHeaders)
+      log.debug(
+        "Received status code {} from cancel endpoint {} in execution {} in stage {}",
+        response.statusCode,
+        stageData.cancelEndpoint,
+        stage.execution.id,
+        stage.id
+      )
+    } catch (HttpStatusCodeException e) {
+      log.warn("Failed to cancel webhook ${stageData.cancelEndpoint} with statusCode=${e.getStatusCode().value()}", e)
+    } catch (Exception e) {
+      log.warn("Failed to cancel webhook ${stageData.cancelEndpoint}", e)
+    }
   }
 
   private static Map<String, ExecutionStatus> createStatusMap(String successStatuses, String canceledStatuses, String terminalStatuses) {

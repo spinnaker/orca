@@ -33,7 +33,7 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.
  */
 trait DeploymentDetailsAware {
 
-  private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.newInstance()
+  private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.getInstance()
 
   void withImageFromPrecedingStage(
     Stage stage,
@@ -42,7 +42,7 @@ trait DeploymentDetailsAware {
     Closure callback) {
     Stage previousStage = getPreviousStageWithImage(stage, targetRegion, targetCloudProvider)
     def result = [:]
-    if (previousStage) {
+    if (previousStage && isCloudProviderEqual(stage, previousStage)) {
       if (previousStage.context.containsKey("amiDetails")) {
         def amiDetail = previousStage.context.amiDetails.find {
           !targetRegion || it.region == targetRegion
@@ -62,7 +62,7 @@ trait DeploymentDetailsAware {
       return null
     }
 
-    return getAncestors(stage, stage.execution).find {
+    Stage ancestorWithImage = stage.findAncestor({
       def regions = (it.context.region ? [it.context.region] : it.context.regions) as Set<String>
       def cloudProviderFromContext = it.context.cloudProvider ?: it.context.cloudProviderType
       boolean hasTargetCloudProvider = !cloudProviderFromContext || targetCloudProvider == cloudProviderFromContext
@@ -70,7 +70,9 @@ trait DeploymentDetailsAware {
       boolean hasImage = it.context.containsKey("ami") || it.context.containsKey("amiDetails")
 
       return hasImage && hasTargetRegion && hasTargetCloudProvider
-    }
+    })
+
+    return ancestorWithImage
   }
 
   List<Execution> getPipelineExecutions(Execution execution) {
@@ -81,50 +83,11 @@ trait DeploymentDetailsAware {
     }
   }
 
-  List<Stage> getAncestors(Stage stage, Execution execution) {
-    if (stage?.requisiteStageRefIds) {
-      def previousStages = execution.stages.findAll {
-        it.refId in stage.requisiteStageRefIds
-      }
-      def syntheticStages = execution.stages.findAll {
-        it.parentStageId in previousStages*.id
-      }
-      return (previousStages + syntheticStages) + previousStages.collect { getAncestors(it, execution ) }.flatten()
-    } else if (stage?.parentStageId) {
-      def parent = execution.stages.find { it.id == stage.parentStageId }
-      return ([parent] + getAncestors(parent, execution)).flatten()
-    } else if (execution.type == PIPELINE) {
-      def parentPipelineExecution = getParentPipelineExecution(execution)
-
-      if (parentPipelineExecution) {
-        String parentPipelineStageId = (execution.trigger as PipelineTrigger).parentPipelineStageId
-        Stage parentPipelineStage = parentPipelineExecution.stages?.find {
-          it.type == "pipeline" && it.id == parentPipelineStageId
-        }
-
-        if (parentPipelineStage) {
-          return getAncestors(parentPipelineStage, parentPipelineExecution)
-        } else {
-          List<Stage> parentPipelineStages = parentPipelineExecution.stages?.collect()?.sort {
-            a, b -> b.endTime <=> a.endTime
-          }
-
-          if (parentPipelineStages) {
-            // The list is sorted in reverse order by endTime.
-            Stage firstStage = parentPipelineStages.last()
-
-            return parentPipelineStages + getAncestors(firstStage, parentPipelineExecution)
-          } else {
-            // Parent pipeline has no stages.
-            return getAncestors(null, parentPipelineExecution)
-          }
-        }
-      }
-
-      return []
-    } else {
-      return []
+  boolean isCloudProviderEqual(Stage stage, Stage previousStage){
+    if(previousStage.context.cloudProvider!=null && stage.context.cloudProvider!=null) {
+      return previousStage.context.cloudProvider == stage.context.cloudProvider
     }
+    return true
   }
 
   private Execution getParentPipelineExecution(Execution execution) {

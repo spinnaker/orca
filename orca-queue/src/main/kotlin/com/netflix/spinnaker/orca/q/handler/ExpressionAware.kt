@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
+import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
@@ -38,7 +38,7 @@ interface ExpressionAware {
   val contextParameterProcessor: ContextParameterProcessor
 
   companion object {
-    val mapper: ObjectMapper = OrcaObjectMapper.newInstance()
+    val mapper: ObjectMapper = OrcaObjectMapper.getInstance()
   }
 
   val log: Logger

@@ -17,88 +17,76 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
-import lombok.Getter;
-import org.jetbrains.annotations.Nullable;
+import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import lombok.Builder;
+import lombok.Value;
 
-@Getter
-public class DeployManifestContext extends HashMap<String, Object> {
-  private final String source;
-  private final String manifestArtifactId;
-  private final Artifact manifestArtifact;
-  private final String manifestArtifactAccount;
-  private final Boolean skipExpressionEvaluation;
-  private final TrafficManagement trafficManagement;
-  private final List<String> requiredArtifactIds;
-  private final List<BindArtifact> requiredArtifacts;
+@Builder(builderClassName = "DeployManifestContextBuilder", toBuilder = true)
+@JsonDeserialize(builder = DeployManifestContext.DeployManifestContextBuilder.class)
+@Value
+public class DeployManifestContext implements ManifestContext {
+  @Nullable private List<Map<Object, Object>> manifests;
 
-  // There does not seem to be a way to auto-generate a constructor using our current version of
-  // Lombok (1.16.20) that
-  // Jackson can use to deserialize.
-  public DeployManifestContext(
-      @JsonProperty("source") String source,
-      @JsonProperty("manifestArtifactId") String manifestArtifactId,
-      @JsonProperty("manifestArtifact") Artifact manifestArtifact,
-      @JsonProperty("manifestArtifactAccount") String manifestArtifactAccount,
-      @JsonProperty("skipExpressionEvaluation") Boolean skipExpressionEvaluation,
-      @JsonProperty("trafficManagement") TrafficManagement trafficManagement,
-      @JsonProperty("requiredArtifactIds") List<String> requiredArtifactIds,
-      @JsonProperty("requiredArtifacts") List<BindArtifact> requiredArtifacts) {
-    this.source = source;
-    this.manifestArtifactId = manifestArtifactId;
-    this.manifestArtifact = manifestArtifact;
-    this.manifestArtifactAccount = manifestArtifactAccount;
-    this.skipExpressionEvaluation = skipExpressionEvaluation;
-    this.trafficManagement =
-        Optional.ofNullable(trafficManagement).orElse(new TrafficManagement(false, null));
-    this.requiredArtifactIds = requiredArtifactIds;
-    this.requiredArtifacts = requiredArtifacts;
-  }
+  @Builder.Default @Nonnull
+  private TrafficManagement trafficManagement = TrafficManagement.builder().build();
 
-  @Getter
-  public static class BindArtifact {
-    @Nullable private final String expectedArtifactId;
+  private Source source;
 
-    @Nullable private final Artifact artifact;
+  private String manifestArtifactId;
+  private Artifact manifestArtifact;
+  private String manifestArtifactAccount;
 
-    public BindArtifact(
-        @JsonProperty("expectedArtifactId") @Nullable String expectedArtifactId,
-        @JsonProperty("artifact") @Nullable Artifact artifact) {
-      this.expectedArtifactId = expectedArtifactId;
-      this.artifact = artifact;
-    }
-  }
+  private List<String> requiredArtifactIds;
+  private List<BindArtifact> requiredArtifacts;
 
-  @Getter
+  @Builder.Default private boolean skipExpressionEvaluation = false;
+
+  @Builder(builderClassName = "TrafficManagementBuilder", toBuilder = true)
+  @JsonDeserialize(builder = DeployManifestContext.TrafficManagement.TrafficManagementBuilder.class)
+  @Value
   public static class TrafficManagement {
-    private final boolean enabled;
-    private final Options options;
+    @Builder.Default private boolean enabled = false;
+    @Nonnull @Builder.Default private Options options = Options.builder().build();
 
-    public TrafficManagement(
-        @JsonProperty("enabled") Boolean enabled, @JsonProperty("options") Options options) {
-      this.enabled = Optional.ofNullable(enabled).orElse(false);
-      this.options =
-          Optional.ofNullable(options).orElse(new Options(false, Collections.emptyList(), null));
-    }
-
-    @Getter
+    @Builder(builderClassName = "OptionsBuilder", toBuilder = true)
+    @JsonDeserialize(builder = DeployManifestContext.TrafficManagement.Options.OptionsBuilder.class)
+    @Value
     public static class Options {
-      private final boolean enableTraffic;
-      private final List<String> services;
-      private final ManifestStrategyType strategy;
+      @Builder.Default private boolean enableTraffic = false;
+      @Builder.Default private List<String> services = Collections.emptyList();
+      @Builder.Default private ManifestStrategyType strategy = ManifestStrategyType.NONE;
 
-      public Options(
-          @JsonProperty("enableTraffic") Boolean enableTraffic,
-          @JsonProperty("services") List<String> services,
-          @JsonProperty("strategy") String strategy) {
-        this.enableTraffic = Optional.ofNullable(enableTraffic).orElse(false);
-        this.services = Optional.ofNullable(services).orElse(Collections.emptyList());
-        this.strategy = ManifestStrategyType.fromKey(strategy);
-      }
+      @JsonPOJOBuilder(withPrefix = "")
+      public static class OptionsBuilder {}
     }
+
+    public enum ManifestStrategyType {
+      @JsonProperty("redblack")
+      RED_BLACK,
+
+      @JsonProperty("highlander")
+      HIGHLANDER,
+
+      @JsonProperty("none")
+      NONE
+    }
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class TrafficManagementBuilder {}
   }
+
+  @Override
+  public List<Map<Object, Object>> getManifests() {
+    return manifests;
+  }
+
+  @JsonPOJOBuilder(withPrefix = "")
+  public static class DeployManifestContextBuilder {}
 }

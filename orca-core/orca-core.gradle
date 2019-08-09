@@ -28,6 +28,7 @@ dependencies {
   api("com.netflix.spinnaker.kork:kork-artifacts")
   api("com.netflix.spinnaker.kork:kork-security")
   api("com.netflix.spinnaker.kork:kork-exceptions")
+  api("com.netflix.spinnaker.kork:kork-expressions")
   api("io.reactivex:rxjava")
 
   implementation(project(":orca-extensionpoint"))
@@ -47,8 +48,10 @@ dependencies {
   implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
   implementation("org.apache.commons:commons-lang3")
+  implementation("org.apache.httpcomponents:httpclient")
   implementation("javax.servlet:javax.servlet-api:4.0.1")
   implementation("com.jayway.jsonpath:json-path:2.2.0")
+  implementation("org.yaml:snakeyaml")
 
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
@@ -58,7 +61,6 @@ dependencies {
   testImplementation("org.junit.jupiter:junit-jupiter-api")
   testImplementation("org.assertj:assertj-core")
 
-  testRuntimeOnly("org.slf4j:slf4j-simple")
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-api")
   testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
 }

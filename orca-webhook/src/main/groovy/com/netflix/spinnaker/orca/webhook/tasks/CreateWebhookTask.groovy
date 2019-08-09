@@ -17,23 +17,21 @@
 
 package com.netflix.spinnaker.orca.webhook.tasks
 
-import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.PathNotFoundException
-import com.jayway.jsonpath.internal.JsonContext
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
+import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import groovy.util.logging.Slf4j
 import org.apache.http.HttpHeaders
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpStatusCodeException
 
@@ -50,27 +48,11 @@ class CreateWebhookTask implements RetryableTask {
   @Override
   TaskResult execute(Stage stage) {
     Map<String, ?> outputs = [webhook: [:]]
-    // TODO: The below parameter is deprecated and should be removed after some time
-    Map<String, ?> outputsDeprecated = [deprecationWarning: "All webhook information will be moved beneath the key 'webhook', " +
-      "and the keys 'statusCode', 'buildInfo', 'statusEndpoint' and 'error' will be removed. Please migrate today."]
-
-    StageData stageData = stage.mapTo(StageData)
+    WebhookStage.StageData stageData = stage.mapTo(WebhookStage.StageData)
 
     def response
     try {
       response = webhookService.exchange(stageData.method, stageData.url, stageData.payload, stageData.customHeaders)
-    } catch (IllegalArgumentException e) {
-      if (e.cause instanceof UnknownHostException) {
-        String errorMessage = "name resolution failure in webhook for pipeline ${stage.execution.id} to ${stageData.url}, will retry."
-        log.warn(errorMessage, e)
-        outputs.webhook << [error: errorMessage]
-        return TaskResult.builder(ExecutionStatus.RUNNING).context(outputs).build()
-      } else {
-        String errorMessage = "an exception occurred in webhook to ${stageData.url}: ${e}"
-        log.error(errorMessage, e)
-        outputs.webhook << [error: errorMessage]
-        return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
-      }
     } catch (HttpStatusCodeException e) {
       def statusCode = e.getStatusCode()
 
@@ -114,15 +96,25 @@ class CreateWebhookTask implements RetryableTask {
       outputs.webhook << [error: errorMessage]
 
       return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
+    } catch (Exception e) {
+      if (e instanceof UnknownHostException || e.cause instanceof UnknownHostException) {
+        String errorMessage = "name resolution failure in webhook for pipeline ${stage.execution.id} to ${stageData.url}, will retry."
+        log.warn(errorMessage, e)
+        outputs.webhook << [error: errorMessage]
+        return TaskResult.builder(ExecutionStatus.RUNNING).context(outputs).build()
+      } else {
+        String errorMessage = "an exception occurred in webhook to ${stageData.url}: ${e}"
+        log.error(errorMessage, e)
+        outputs.webhook << [error: errorMessage]
+        return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
+      }
     }
 
     def statusCode = response.statusCode
 
     outputs.webhook << [statusCode: statusCode, statusCodeValue: statusCode.value()]
-    outputsDeprecated << [statusCode: statusCode]
     if (response.body) {
       outputs.webhook << [body: response.body]
-      outputsDeprecated << [buildInfo: response.body]
     }
 
     if (statusCode.is2xxSuccessful() || statusCode.is3xxRedirection()) {
@@ -153,34 +145,21 @@ class CreateWebhookTask implements RetryableTask {
         }
         stage.context.statusEndpoint = statusUrl
         outputs.webhook << [statusEndpoint: statusUrl]
-        return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputsDeprecated + outputs).build()
+        return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build()
       }
       if (stage.context.containsKey("expectedArtifacts") && !((List) stage.context.get("expectedArtifacts")).isEmpty()) {
         try {
-          def artifacts = new JsonContext().parse(response.body).read("artifacts")
+          def artifacts = JsonPath.parse(response.body).read("artifacts")
           outputs << [artifacts: artifacts]
         } catch (Exception e) {
-          outputs.webhook << [error: "Expected artifacts in webhook response none were found"]
+          outputs.webhook << [error: "Expected artifacts in webhook response couldn't be parsed " + e.toString()]
           return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
         }
       }
-      return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputsDeprecated + outputs).build()
+      return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build()
     } else {
       outputs.webhook << [error: "The webhook request failed"]
-      return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputsDeprecated + outputs).build()
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
     }
-  }
-
-  private static class StageData {
-    public String url
-    public Object payload
-    public Object customHeaders
-    public List<Integer> failFastStatusCodes
-    public Boolean waitForCompletion
-    public WebhookProperties.StatusUrlResolution statusUrlResolution
-    public String statusUrlJsonPath
-
-    @JsonFormat(with = [JsonFormat.Feature.ACCEPT_CASE_INSENSITIVE_PROPERTIES])
-    public HttpMethod method = HttpMethod.POST
   }
 }

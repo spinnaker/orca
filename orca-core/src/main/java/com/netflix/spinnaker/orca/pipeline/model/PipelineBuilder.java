@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
+import com.google.common.base.Strings;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,13 @@ import java.util.Map;
 public class PipelineBuilder {
   public PipelineBuilder(String application) {
     pipeline = Execution.newPipeline(application);
+  }
+
+  public PipelineBuilder withId(String id) {
+    if (!Strings.isNullOrEmpty(id)) {
+      pipeline.setId(id);
+    }
+    return this;
   }
 
   public PipelineBuilder withTrigger(Trigger trigger) {
@@ -39,6 +47,15 @@ public class PipelineBuilder {
     if (notifications != null) {
       pipeline.getNotifications().addAll(notifications);
     }
+    return this;
+  }
+
+  public PipelineBuilder withInitialConfig(Map<String, Object> initialConfig) {
+    pipeline.getInitialConfig().clear();
+    if (initialConfig != null) {
+      pipeline.getInitialConfig().putAll(initialConfig);
+    }
+
     return this;
   }
 

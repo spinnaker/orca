@@ -32,7 +32,16 @@ import com.netflix.spinnaker.orca.pipeline.model.StageContext;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -89,11 +98,19 @@ public class ArtifactResolver {
   }
 
   public @Nonnull List<Artifact> getAllArtifacts(@Nonnull Execution execution) {
+    return getAllArtifacts(execution, true, Optional.empty());
+  }
+
+  public @Nonnull List<Artifact> getAllArtifacts(
+      @Nonnull Execution execution,
+      Boolean includeTrigger,
+      Optional<Predicate<Stage>> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
     List<Artifact> emittedArtifacts =
         Stage.topologicalSort(execution.getStages())
+            .filter(stageFilter.orElse(s -> true))
             .filter(s -> s.getOutputs().containsKey("artifacts"))
             .flatMap(
                 s ->
@@ -110,11 +127,13 @@ public class ArtifactResolver {
     // Get all artifacts in the parent pipeline's trigger; these artifacts go at the end of the
     // list,
     // after any that were emitted by the pipeline
-    List<Artifact> triggerArtifacts =
-        objectMapper.convertValue(
-            execution.getTrigger().getArtifacts(), new TypeReference<List<Artifact>>() {});
+    if (includeTrigger) {
+      List<Artifact> triggerArtifacts =
+          objectMapper.convertValue(
+              execution.getTrigger().getArtifacts(), new TypeReference<List<Artifact>>() {});
 
-    emittedArtifacts.addAll(triggerArtifacts);
+      emittedArtifacts.addAll(triggerArtifacts);
+    }
 
     return emittedArtifacts;
   }
@@ -191,16 +210,23 @@ public class ArtifactResolver {
 
   public @Nonnull List<Artifact> getArtifactsForPipelineId(
       @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
-    Execution execution =
-        executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
-            .subscribeOn(Schedulers.io()).toSortedList(startTimeOrId).toBlocking().single().stream()
-            .findFirst()
-            .orElse(null);
+    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
 
     return execution == null ? Collections.emptyList() : getAllArtifacts(execution);
   }
 
-  public void resolveArtifacts(@Nonnull Map<String, Object> pipeline) {
+  public @Nonnull List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
+      @Nonnull String pipelineId, @Nonnull String stageRef, @Nonnull ExecutionCriteria criteria) {
+    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
+
+    if (execution == null) {
+      return Collections.emptyList();
+    }
+
+    return getAllArtifacts(execution, true, Optional.of(it -> !stageRef.equals(it.getRefId())));
+  }
+
+  public void resolveArtifacts(@Nonnull Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
     List<ExpectedArtifact> expectedArtifacts =
         Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
@@ -244,8 +270,7 @@ public class ArtifactResolver {
       return;
     }
 
-    List<Artifact> priorArtifacts =
-        getArtifactsForPipelineId((String) pipeline.get("id"), new ExecutionCriteria());
+    List<Artifact> priorArtifacts = getPriorArtifacts(pipeline);
     LinkedHashSet<Artifact> resolvedArtifacts =
         resolveExpectedArtifacts(expectedArtifacts, receivedArtifacts, priorArtifacts, true);
     LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(receivedArtifacts);
@@ -267,6 +292,16 @@ public class ArtifactResolver {
       throw new ArtifactResolutionException(
           "Failed to store artifacts in trigger: " + e.getMessage(), e);
     }
+  }
+
+  private List<Artifact> getPriorArtifacts(final Map<String, Object> pipeline) {
+    // set pageSize to a single record to avoid hydrating all of the stored Executions for
+    // the pipeline, since getArtifactsForPipelineId only uses the most recent Execution from the
+    // returned Observable<Execution>
+    ExecutionCriteria criteria = new ExecutionCriteria();
+    criteria.setPageSize(1);
+    criteria.setSortType(ExecutionRepository.ExecutionComparator.START_TIME_OR_ID);
+    return getArtifactsForPipelineId((String) pipeline.get("id"), criteria);
   }
 
   public Artifact resolveSingleArtifact(
@@ -310,7 +345,7 @@ public class ArtifactResolver {
         break;
       default:
         if (requireUniqueMatches) {
-          throw new IllegalArgumentException(
+          throw new InvalidRequestException(
               "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
         }
         result = matches.get(0);
@@ -348,6 +383,14 @@ public class ArtifactResolver {
     }
 
     return resolvedArtifacts;
+  }
+
+  private Execution getExecutionForPipelineId(
+      @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
+    return executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
+        .subscribeOn(Schedulers.io()).toSortedList(startTimeOrId).toBlocking().single().stream()
+        .findFirst()
+        .orElse(null);
   }
 
   private static class ArtifactResolutionException extends RuntimeException {

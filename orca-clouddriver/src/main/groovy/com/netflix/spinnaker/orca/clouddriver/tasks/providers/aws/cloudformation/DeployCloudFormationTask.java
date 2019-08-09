@@ -15,6 +15,8 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
@@ -29,7 +31,11 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -47,6 +53,8 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
 
   @Autowired OortService oortService;
 
+  @Autowired ObjectMapper objectMapper;
+
   @Autowired ArtifactResolver artifactResolver;
 
   public static final String TASK_NAME = "deployCloudFormation";
@@ -63,24 +71,31 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
     }
 
     if (task.get("source").equals("artifact")) {
-      if (!StringUtils.isNotBlank((String) task.get("stackArtifactId"))) {
+      if (!StringUtils.isNotBlank((String) task.get("stackArtifactId"))
+          && task.get("stackArtifact") == null) {
         throw new IllegalArgumentException(
             "Invalid stage format, no stack template artifact was specified.");
       }
-      if (!StringUtils.isNotBlank((String) task.get("stackArtifactAccount"))) {
+      if (!StringUtils.isNotBlank((String) task.get("stackArtifactAccount"))
+          && task.get("stackArtifact") == null) {
         throw new IllegalArgumentException(
             "Invalid stage format, no artifact account was specified.");
       }
+      String stackArtifactId =
+          Optional.ofNullable(task.get("stackArtifactId")).map(Object::toString).orElse(null);
+      Artifact stackArtifact =
+          Optional.ofNullable(task.get("stackArtifact"))
+              .map(m -> objectMapper.convertValue(m, Artifact.class))
+              .orElse(null);
       Artifact artifact =
-          artifactResolver.getBoundArtifactForId(stage, task.get("stackArtifactId").toString());
-      artifact.setArtifactAccount(task.get("stackArtifactAccount").toString());
+          artifactResolver.getBoundArtifactForStage(stage, stackArtifactId, stackArtifact);
+      Optional.ofNullable(task.get("stackArtifactAccount"))
+          .ifPresent(account -> artifact.setArtifactAccount(account.toString()));
       Response response = oortService.fetchArtifact(artifact);
       try {
         String template = CharStreams.toString(new InputStreamReader(response.getBody().in()));
         log.debug("Fetched template from artifact {}: {}", artifact.getReference(), template);
-        // attempt to deserialize template body to a map. supports YAML or JSON formatted templates.
-        Map<String, Object> templateBody = (Map<String, Object>) new Yaml().load(template);
-        task.put("templateBody", templateBody);
+        task.put("templateBody", template);
       } catch (IOException e) {
         throw new IllegalArgumentException(
             "Failed to read template from artifact definition " + artifact, e);
@@ -89,8 +104,12 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
       }
     }
 
-    Map templateBody = (Map) task.get("templateBody");
-    if (templateBody == null || templateBody.isEmpty()) {
+    Object templateBody = task.get("templateBody");
+    if (templateBody instanceof Map && !((Map) templateBody).isEmpty()) {
+      templateBody = new Yaml().dump(templateBody);
+      task.put("templateBody", templateBody);
+    }
+    if (!(templateBody instanceof String) || Strings.isNullOrEmpty((String) templateBody)) {
       throw new IllegalArgumentException(
           "Invalid stage format, missing artifact or templateBody field: "
               + templateBody

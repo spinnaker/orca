@@ -24,13 +24,16 @@ dependencies {
   implementation("com.netflix.spinnaker.keiko:keiko-spring:$keikoVersion")
   implementation("org.threeten:threeten-extra")
   implementation("org.funktionale:funktionale-partials")
+  implementation("org.springframework:spring-web")
   implementation("net.logstash.logback:logstash-logback-encoder")
   implementation("com.netflix.spinnaker.keiko:keiko-spring:$keikoVersion")
   implementation("javax.ws.rs:jsr311-api:1.1.1")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
   implementation("com.github.ben-manes.caffeine:guava")
 
+  testImplementation("com.netflix.spinnaker.kork:kork-jedis-test")
   testImplementation(project(":orca-test-kotlin"))
   testImplementation(project(":orca-queue-tck"))
+  testImplementation(project(":orca-queue-redis"))
   testImplementation("org.assertj:assertj-core")
 }

@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.WordUtils;
+import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -198,6 +198,7 @@ public class ExecutionLauncher {
     // TODO: can we not just annotate the class properly to avoid all this?
     Map<String, Serializable> config = objectMapper.readValue(configJson, Map.class);
     return new PipelineBuilder(getString(config, "application"))
+        .withId(getString(config, "executionId"))
         .withName(getString(config, "name"))
         .withPipelineConfigId(getString(config, "id"))
         .withTrigger(objectMapper.convertValue(config.get("trigger"), Trigger.class))
@@ -205,6 +206,7 @@ public class ExecutionLauncher {
         .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
         .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
         .withNotifications((List<Map<String, Object>>) config.get("notifications"))
+        .withInitialConfig((Map<String, Object>) config.get("initialConfig"))
         .withOrigin(getString(config, "origin"))
         .withStartTimeExpiry(getString(config, "startTimeExpiry"))
         .withSource(
