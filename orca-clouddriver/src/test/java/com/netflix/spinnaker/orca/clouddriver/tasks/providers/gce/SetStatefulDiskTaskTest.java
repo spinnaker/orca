@@ -1,27 +1,23 @@
 /*
+ * Copyright 2019 Google, Inc.
  *
- *  * Copyright 2019 Google, Inc.
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License")
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *   http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,29 +29,28 @@ import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import rx.Observable;
 
-@RunWith(JUnit4.class)
-public class SetStatefulDiskTaskTest {
+@ExtendWith(MockitoExtension.class)
+class SetStatefulDiskTaskTest {
 
   private SetStatefulDiskTask task;
 
-  private KatoService katoService;
-  private TargetServerGroupResolver resolver;
+  @Mock private KatoService katoService;
+  @Mock private TargetServerGroupResolver resolver;
 
-  @Before
-  public void setUp() {
-    katoService = mock(KatoService.class);
-    resolver = mock(TargetServerGroupResolver.class);
+  @BeforeEach
+  void setUp() {
     task = new SetStatefulDiskTask(katoService, resolver);
   }
 
   @Test
-  public void success() {
+  void success() {
     when(resolver.resolve(any()))
         .thenReturn(
             ImmutableList.of(new TargetServerGroup(ImmutableMap.of("name", "testapp-v000"))));

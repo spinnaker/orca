@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TreeTraversingParser;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -40,6 +41,7 @@ import de.huxhorn.sulky.ulid.ULID;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -336,21 +338,59 @@ public class Stage implements Serializable {
     return tasks.stream().filter(it -> it.getId().equals(taskId)).findFirst().orElse(null);
   }
 
-  /** Gets all ancestor stages, including the current stage. */
+  /**
+   * Gets all ancestor stages, including the current stage.
+   *
+   * <p>Ancestors include: <br>
+   * - stages this stage depends on (via requisiteStageRefIds) <br>
+   * - parent stages of this stage <br>
+   * - synthetic stages that share a parent with this stage & occur prior to current stage <br>
+   */
   public List<Stage> ancestors() {
     if (execution != null) {
       Set<String> visited = Sets.newHashSetWithExpectedSize(execution.getStages().size());
-      return ImmutableList.<Stage>builder().add(this).addAll(ancestorsOnly(visited)).build();
+      return ImmutableList.<Stage>builder()
+          .add(this)
+          .addAll(getAncestorsImpl(visited, false))
+          .build();
     } else {
       return emptyList();
     }
   }
 
-  private List<Stage> ancestorsOnly(Set<String> visited) {
+  /**
+   * Gets all ancestor stages that are direct parents, including the current stage.
+   *
+   * <p>Ancestors include: <br>
+   * - parent stages of this stage <br>
+   * - synthetic stages that share a parent with this stage & occur prior to current stage
+   */
+  public List<Stage> directAncestors() {
+    if (execution != null) {
+      Set<String> visited = Sets.newHashSetWithExpectedSize(execution.getStages().size());
+      return ImmutableList.<Stage>builder()
+          .add(this)
+          .addAll(getAncestorsImpl(visited, true))
+          .build();
+    } else {
+      return emptyList();
+    }
+  }
+
+  /**
+   * Worker method to get the list of all ancestors (parents and, optionally, prerequisite stages)
+   * of the current stage.
+   *
+   * @param visited list of visited nodes
+   * @param directParentOnly true to only include direct parents of the stage, false to also include
+   *     stages this stage depends on (via requisiteRefIds)
+   * @return list of ancestor stages
+   */
+  private List<Stage> getAncestorsImpl(Set<String> visited, boolean directParentOnly) {
     visited.add(this.refId);
 
-    if (!requisiteStageRefIds.isEmpty()) {
-      // Get parent stages, but exclude already visited ones.
+    if (!requisiteStageRefIds.isEmpty() && !directParentOnly) {
+      // Get stages this stage depends on via requisiteStageRefIds:
       List<Stage> previousStages =
           execution.getStages().stream()
               .filter(it -> requisiteStageRefIds.contains(it.refId))
@@ -369,10 +409,12 @@ public class Stage implements Serializable {
           .addAll(syntheticStages)
           .addAll(
               previousStages.stream()
-                  .flatMap(it -> it.ancestorsOnly(visited).stream())
+                  .flatMap(it -> it.getAncestorsImpl(visited, directParentOnly).stream())
                   .collect(toList()))
           .build();
     } else if (parentStageId != null && !visited.contains(parentStageId)) {
+      // Get parent stages, but exclude already visited ones:
+
       List<Stage> ancestors = new ArrayList<>();
       if (getSyntheticStageOwner() == SyntheticStageOwner.STAGE_AFTER) {
         ancestors.addAll(
@@ -392,7 +434,7 @@ public class Stage implements Serializable {
                   parent ->
                       ImmutableList.<Stage>builder()
                           .add(parent)
-                          .addAll(parent.ancestorsOnly(visited))
+                          .addAll(parent.getAncestorsImpl(visited, directParentOnly))
                           .build())
               .orElse(emptyList()));
 
@@ -400,6 +442,129 @@ public class Stage implements Serializable {
     } else {
       return emptyList();
     }
+  }
+
+  /**
+   * Find the ancestor stage that satisfies the given predicate (including traversing the parent
+   * execution graphs)
+   *
+   * <p>Ancestor stages include: <br>
+   * - stages this stage depends on (via requisiteStageRefIds) <br>
+   * - parent stages of this stage <br>
+   * - synthetic stages that share a parent with this stage & occur prior to current stage <br>
+   * - stages in parent execution that satisfy above criteria <br>
+   *
+   * @return the first stage that matches the predicate, or null
+   */
+  public Stage findAncestor(Predicate<Stage> predicate) {
+    return Stage.findAncestor(this, this.execution, predicate);
+  }
+
+  private static Stage findAncestor(Stage stage, Execution execution, Predicate<Stage> predicate) {
+    Stage matchingStage = null;
+
+    if (stage != null && !stage.getRequisiteStageRefIds().isEmpty()) {
+      List<Stage> previousStages =
+          execution.getStages().stream()
+              .filter(s -> stage.getRequisiteStageRefIds().contains(s.getRefId()))
+              .collect(toList());
+
+      Set<String> previousStageIds =
+          new HashSet<>(previousStages.stream().map(Stage::getId).collect(toList()));
+      List<Stage> syntheticStages =
+          execution.getStages().stream()
+              .filter(s -> previousStageIds.contains(s.getParentStageId()))
+              .collect(toList());
+
+      List<Stage> priorStages = new ArrayList<>();
+      priorStages.addAll(previousStages);
+      priorStages.addAll(syntheticStages);
+
+      matchingStage = priorStages.stream().filter(predicate).findFirst().orElse(null);
+
+      if (matchingStage == null) {
+        for (Stage s : previousStages) {
+          matchingStage = findAncestor(s, execution, predicate);
+
+          if (matchingStage != null) {
+            break;
+          }
+        }
+      }
+    } else if ((stage != null) && !Strings.isNullOrEmpty(stage.getParentStageId())) {
+      Optional<Stage> parent =
+          execution.getStages().stream()
+              .filter(s -> s.getId().equals(stage.getParentStageId()))
+              .findFirst();
+
+      if (!parent.isPresent()) {
+        throw new IllegalStateException(
+            "Couldn't find parent of stage "
+                + stage.getId()
+                + " with parent "
+                + stage.getParentStageId());
+      }
+
+      if (predicate.test(parent.get())) {
+        matchingStage = parent.get();
+      } else {
+        matchingStage = findAncestor(parent.get(), execution, predicate);
+      }
+    } else if ((execution.getType() == PIPELINE)
+        && (execution.getTrigger() instanceof PipelineTrigger)) {
+      PipelineTrigger parentTrigger = (PipelineTrigger) execution.getTrigger();
+
+      Execution parentPipelineExecution = parentTrigger.getParentExecution();
+      String parentPipelineStageId = parentTrigger.getParentPipelineStageId();
+
+      Optional<Stage> parentPipelineStage =
+          parentPipelineExecution.getStages().stream()
+              .filter(
+                  s -> s.getType().equals("pipeline") && s.getId().equals(parentPipelineStageId))
+              .findFirst();
+
+      if (parentPipelineStage.isPresent()) {
+        matchingStage = findAncestor(parentPipelineStage.get(), parentPipelineExecution, predicate);
+      } else {
+        List<Stage> parentPipelineStages = new ArrayList<>(parentPipelineExecution.getStages());
+        parentPipelineStages.sort(
+            (s1, s2) -> {
+              if ((s1.endTime == null) && (s2.endTime == null)) {
+                return 0;
+              }
+
+              if (s1.endTime == null) {
+                return 1;
+              }
+
+              if (s2.endTime == null) {
+                return -1;
+              }
+
+              return s1.endTime.compareTo(s2.endTime);
+            });
+
+        if (parentPipelineStages.size() > 0) {
+          // The list is sorted in reverse order by endTime.
+          matchingStage = parentPipelineStages.stream().filter(predicate).findFirst().orElse(null);
+
+          if (matchingStage == null) {
+            Stage firstStage = parentPipelineStages.get(0);
+
+            if (predicate.test(firstStage)) {
+              matchingStage = firstStage;
+            } else {
+              matchingStage = findAncestor(firstStage, parentPipelineExecution, predicate);
+            }
+          }
+        } else {
+          // Parent pipeline has no stages.
+          matchingStage = findAncestor(null, parentPipelineExecution, predicate);
+        }
+      }
+    }
+
+    return matchingStage;
   }
 
   /** Recursively get all stages that are children of the current one */
@@ -436,7 +601,7 @@ public class Stage implements Serializable {
     return mapTo(null, type);
   }
 
-  @JsonIgnore private final transient ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
+  @JsonIgnore private final transient ObjectMapper objectMapper = OrcaObjectMapper.getInstance();
 
   /**
    * Maps the stage's context to a typed object at a provided pointer. Uses <a

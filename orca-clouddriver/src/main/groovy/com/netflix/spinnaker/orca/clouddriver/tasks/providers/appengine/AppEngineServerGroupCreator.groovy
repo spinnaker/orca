@@ -63,8 +63,9 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
     Execution execution = stage.getExecution()
     if (execution.type == PIPELINE) {
       String expectedId = operation.expectedArtifactId?.trim()
-      if (expectedId) {
-        Artifact boundArtifact = artifactResolver.getBoundArtifactForId(stage, expectedId)
+      Artifact expectedArtifact = operation.expectedArtifact
+      if (expectedId || expectedArtifact) {
+        Artifact boundArtifact = artifactResolver.getBoundArtifactForStage(stage, expectedId, expectedArtifact)
         if (boundArtifact) {
           operation.artifact = boundArtifact
         } else {
@@ -74,7 +75,7 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
       List<ArtifactAccountPair> configArtifacts = operation.configArtifacts
       if (configArtifacts != null && configArtifacts.size() > 0) {
         operation.configArtifacts = configArtifacts.collect { artifactAccountPair ->
-          def artifact = artifactResolver.getBoundArtifactForId(stage, artifactAccountPair.id)
+          def artifact = artifactResolver.getBoundArtifactForStage(stage, artifactAccountPair.id, artifactAccountPair.artifact)
           artifact.artifactAccount = artifactAccountPair.account
           return artifact
         }
@@ -84,6 +85,7 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
 }
 
 class ArtifactAccountPair {
-  String id;
-  String account;
+  String id
+  String account
+  Artifact artifact
 }

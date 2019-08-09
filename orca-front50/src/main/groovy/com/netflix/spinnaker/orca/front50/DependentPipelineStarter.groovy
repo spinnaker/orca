@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
+import com.netflix.spinnaker.kork.web.exceptions.ValidationException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -84,10 +85,17 @@ class DependentPipelineStarter implements ApplicationContextAware {
       parentExecution      : parentPipeline,
       parentPipelineStageId: parentPipelineStageId,
       parameters           : [:],
-      strategy             : suppliedParameters.strategy == true
+      strategy             : suppliedParameters.strategy == true,
+      correlationId        : "${parentPipeline.id}_${parentPipelineStageId}_${pipelineConfig.id}_${parentPipeline.startTime}"
     ]
+    /* correlationId is added so that two pipelines aren't triggered when a pipeline is canceled.
+     * parentPipelineStageId is added so that a child pipeline (via pipeline stage)
+     *  is differentiated from a downstream pipeline (via pipeline trigger).
+     * pipelineConfig.id is added so that we allow two different pipelines to be triggered off the same parent.
+     * parentPipeline.startTime is added so that a restarted pipeline will trigger a new round of dependent pipelines.
+     */
 
-    if (pipelineConfig.parameterConfig || !suppliedParameters.empty) {
+    if (pipelineConfig.parameterConfig || !suppliedParameters.isEmpty()) {
       def pipelineParameters = suppliedParameters ?: [:]
       pipelineConfig.parameterConfig.each {
         pipelineConfig.trigger.parameters[it.name] = pipelineParameters.containsKey(it.name) ? pipelineParameters[it.name] : it.default
@@ -99,13 +107,6 @@ class DependentPipelineStarter implements ApplicationContextAware {
 
     def trigger = pipelineConfig.trigger
     //keep the trigger as the preprocessor removes it.
-    def expectedArtifacts = pipelineConfig.expectedArtifacts
-
-    for (ExecutionPreprocessor preprocessor : executionPreprocessors.findAll {
-      it.supports(pipelineConfig, ExecutionPreprocessor.Type.PIPELINE)
-    }) {
-      pipelineConfig = preprocessor.process(pipelineConfig)
-    }
 
     if (parentPipelineStageId != null) {
       pipelineConfig.receivedArtifacts = artifactResolver?.getArtifacts(parentPipeline.stageById(parentPipelineStageId))
@@ -113,14 +114,27 @@ class DependentPipelineStarter implements ApplicationContextAware {
       pipelineConfig.receivedArtifacts = artifactResolver?.getAllArtifacts(parentPipeline)
     }
 
+    // This is required for template source with jinja expressions
+    trigger.artifacts = pipelineConfig.receivedArtifacts
+
+    for (ExecutionPreprocessor preprocessor : executionPreprocessors.findAll {
+      it.supports(pipelineConfig, ExecutionPreprocessor.Type.PIPELINE)
+    }) {
+      pipelineConfig = preprocessor.process(pipelineConfig)
+    }
+
     pipelineConfig.trigger = trigger
-    pipelineConfig.expectedArtifacts = expectedArtifacts
 
     def artifactError = null
+
     try {
       artifactResolver?.resolveArtifacts(pipelineConfig)
     } catch (Exception e) {
       artifactError = e
+    }
+
+    if (pipelineConfig.errors != null) {
+      throw new ValidationException("Pipeline template is invalid", pipelineConfig.errors as List<Map<String, Object>>)
     }
 
     // Process the raw trigger to resolve any expressions before converting it to a Trigger object, which will not be

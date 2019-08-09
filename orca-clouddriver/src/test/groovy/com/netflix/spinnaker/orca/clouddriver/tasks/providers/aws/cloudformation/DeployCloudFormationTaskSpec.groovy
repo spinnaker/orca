@@ -38,7 +38,7 @@ class DeployCloudFormationTaskSpec extends Specification {
   def artifactResolver = Mock(ArtifactResolver)
 
   @Subject
-  def deployCloudFormationTask = new DeployCloudFormationTask(katoService: katoService, oortService: oortService,  artifactResolver: artifactResolver)
+  def deployCloudFormationTask = new DeployCloudFormationTask(katoService: katoService, oortService: oortService,  artifactResolver: artifactResolver, objectMapper: objectMapper)
 
   def "should put kato task information as output"() {
     given:
@@ -56,7 +56,32 @@ class DeployCloudFormationTaskSpec extends Specification {
     def result = deployCloudFormationTask.execute(stage)
 
     then:
-    1 * katoService.requestOperations(_, _) >> Observable.just(taskId)
+    1 * katoService.requestOperations("aws", {
+      it.get(0).get("deployCloudFormation").get("templateBody").trim() == '{key: value}'
+    }) >> Observable.just(taskId)
+    result.context.'kato.result.expected' == true
+    result.context.'kato.last.task.id' == taskId
+  }
+
+  def "should put kato task information as output when templateBody is a string"() {
+    given:
+    def taskId = new TaskId(id: 'id')
+    def pipeline = Execution.newPipeline('orca')
+    def context = [
+      credentials: 'creds',
+      cloudProvider: 'aws',
+      source: 'text',
+      regions: ['eu-west-1'],
+      templateBody: 'key: "value"']
+    def stage = new Stage(pipeline, 'test', 'test', context)
+
+    when:
+    def result = deployCloudFormationTask.execute(stage)
+
+    then:
+    1 * katoService.requestOperations("aws", {
+      it.get(0).get("deployCloudFormation").get("templateBody").trim() == 'key: "value"'
+    }) >> Observable.just(taskId)
     result.context.'kato.result.expected' == true
     result.context.'kato.last.task.id' == taskId
   }
@@ -81,7 +106,7 @@ class DeployCloudFormationTaskSpec extends Specification {
     def result = deployCloudFormationTask.execute(stage)
 
     then:
-    (_..1) * artifactResolver.getBoundArtifactForId(stage, 'id') >> new Artifact()
+    (_..1) * artifactResolver.getBoundArtifactForStage(stage, 'id', null) >> new Artifact()
     (_..1) * oortService.fetchArtifact(_) >> new Response("url", 200, "reason", Collections.emptyList(), template)
     thrown(expectedException)
 
@@ -94,6 +119,7 @@ class DeployCloudFormationTaskSpec extends Specification {
     'text'     | null            | null                 | null           | null    || IllegalArgumentException
     'text'     | null            | null                 | [] as Map      | null    || IllegalArgumentException
     'text'     | null            | null                 | [key: 'value'] | []      || IllegalArgumentException
+    'text'     | null            | null                 | ""             | null    || IllegalArgumentException
   }
 
   def "should fetch artifact if specified, and add it as a templateBody"() {
@@ -105,6 +131,7 @@ class DeployCloudFormationTaskSpec extends Specification {
       cloudProvider: 'aws',
       source: source,
       stackArtifactId: stackArtifactId,
+      stackArtifact: stackArtifact,
       stackArtifactAccount: stackArtifactAccount,
       regions: ['eu-west-1'],
       templateBody: [key: 'value']]
@@ -114,7 +141,7 @@ class DeployCloudFormationTaskSpec extends Specification {
     def result = deployCloudFormationTask.execute(stage)
 
     then:
-    1 * artifactResolver.getBoundArtifactForId(stage, 'id') >> new Artifact()
+    1 * artifactResolver.getBoundArtifactForStage(stage, stackArtifactId, _) >> new Artifact()
     1 * oortService.fetchArtifact(_) >> new Response("url", 200, "reason", Collections.emptyList(), new TypedString(template))
     1 * katoService.requestOperations("aws", {
       it.get(0).get("deployCloudFormation").containsKey("templateBody")
@@ -123,9 +150,11 @@ class DeployCloudFormationTaskSpec extends Specification {
     result.context.'kato.last.task.id' == taskId
 
     where:
-    source     | stackArtifactId  | stackArtifactAccount | template
-    'artifact' | 'id'             | 'account'            | '{"key": "value"}'
-    'artifact' | 'id'             | 'account'            | 'key: value'
+    source     | stackArtifactId  | stackArtifactAccount | stackArtifact                        | template
+    'artifact' | 'id'             | 'account'            | null                                 | '{"key": "value"}'
+    'artifact' | 'id'             | 'account'            | null                                 | 'key: value'
+    'artifact' | null             | null                 | Collections.singletonMap("id", "id") | 'key: value'
+
   }
 
 }

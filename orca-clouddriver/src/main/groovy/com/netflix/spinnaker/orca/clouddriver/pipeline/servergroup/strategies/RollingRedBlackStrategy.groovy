@@ -15,14 +15,16 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.DetermineTargetServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
+import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
@@ -33,15 +35,13 @@ import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
-import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.*
-
 @Slf4j
 @Component
 class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
   final String name = "rollingredblack"
 
   @Autowired
-  DisableClusterStage disableClusterStage
+  DisableServerGroupStage disableServerGroupStage
 
   @Autowired
   ResizeServerGroupStage resizeServerGroupStage
@@ -54,9 +54,6 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
 
   @Autowired
   DetermineTargetServerGroupStage determineTargetServerGroupStage
-
-  @Autowired
-  TargetServerGroupResolver targetServerGroupResolver
 
   @Autowired
   ScaleDownClusterStage scaleDownClusterStage
@@ -99,8 +96,6 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
       desired: 0
     ]
 
-
-
     def targetPercentages = stageData.getTargetPercentages()
     if (targetPercentages.isEmpty() || targetPercentages[-1] != 100) {
       targetPercentages.add(100)
@@ -111,6 +106,38 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
       targetLocation: cleanupConfig.location,
     ]
 
+    // Get source ASG from prior determineSourceServerGroupTask
+    def source = null
+
+    try {
+      StageData.Source sourceServerGroup
+
+      Stage parentCreateServerGroupStage = stage.directAncestors().find() { it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE }
+
+      if (parentCreateServerGroupStage.status == ExecutionStatus.NOT_STARTED) {
+        // No point in composing the flow if we are called to plan "beforeStages" since we don't have any STAGE_BEFOREs.
+        // Also, we rely on the the source server group task to have run already.
+        // In the near future we will move composeFlow into beforeStages and afterStages instead of the
+        // deprecated aroundStages
+        return []
+      }
+
+      StageData parentStageData = parentCreateServerGroupStage.mapTo(StageData)
+      sourceServerGroup = parentStageData.source
+
+      if (sourceServerGroup != null && sourceServerGroup.serverGroupName != null) {
+        source = new ResizeStrategy.Source(
+          region: sourceServerGroup.region,
+          serverGroupName: sourceServerGroup.serverGroupName,
+          credentials: stageData.credentials ?: stageData.account,
+          cloudProvider: stageData.cloudProvider
+        )
+      }
+    } catch (Exception e) {
+      // This probably means there was no parent CreateServerGroup stage - which should never happen
+      throw new IllegalStateException("Failed to determine source server group from parent stage while planning RRB flow", e)
+    }
+
     stages << newStage(
       stage.execution,
       determineTargetServerGroupStage.type,
@@ -119,11 +146,6 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
       stage,
       SyntheticStageOwner.STAGE_AFTER
     )
-
-    def source = null
-    try {
-      source = getSource(targetServerGroupResolver, stageData, baseContext)
-    } catch (TargetServerGroup.NotFoundException e) {}
 
     if (source == null) {
       log.warn("no source server group -- will perform RRB to exact fallback capacity $savedCapacity with no disableCluster or scaleDownCluster stages")
@@ -167,22 +189,21 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
 
       // an expression to grab newly deployed server group at runtime (ie. the server group being resized up)
       def deployedServerGroupName = '${' + "#stage('${resizeStage.id}')['context']['asgName']" + '}'.toString()
-      stages.addAll(getBeforeCleanupStages(stage, stageData, source, deployedServerGroupName, p))
+      stages.addAll(getBeforeCleanupStages(stage, stageData, cleanupConfig, source?.serverGroupName, deployedServerGroupName, p))
 
       // only generate the "disable p% of traffic" stages if we have something to disable
       if (source) {
         def disableContext = baseContext + [
-          desiredPercentage           : p,
-          remainingEnabledServerGroups: 1,
-          preferLargerOverNewer       : false
+          desiredPercentage : p,
+          serverGroupName   : source.serverGroupName
         ]
 
         log.info("Adding `Disable $p% of Desired Size` stage with context $disableContext [executionId=${stage.execution.id}]")
 
         stages << newStage(
           stage.execution,
-          disableClusterStage.type,
-          "Disable $p% of Traffic",
+          disableServerGroupStage.type,
+          "Disable $p% of Traffic on ${source.serverGroupName}",
           disableContext,
           stage,
           SyntheticStageOwner.STAGE_AFTER
@@ -224,7 +245,8 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
 
   List<Stage> getBeforeCleanupStages(Stage parentStage,
                                      RollingRedBlackStageData stageData,
-                                     ResizeStrategy.Source source,
+                                     AbstractDeployStrategyStage.CleanupConfig cleanupConfig,
+                                     String sourceServerGroupName,
                                      String deployedServerGroupName,
                                      int percentageComplete) {
     def stages = []
@@ -243,10 +265,9 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
 
     if (stageData.pipelineBeforeCleanup?.application && stageData.pipelineBeforeCleanup?.pipelineId) {
       def serverGroupCoordinates = [
-        region         : source.region,
-        serverGroupName: source.serverGroupName,
-        account        : source.credentials,
-        cloudProvider  : source.cloudProvider
+        region         : cleanupConfig.location.value,
+        account        : cleanupConfig.account,
+        cloudProvider  : cleanupConfig.cloudProvider
       ]
 
       def pipelineContext = [
@@ -258,7 +279,7 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
             serverGroupName: deployedServerGroupName
           ],
           "sourceServerGroup"  : serverGroupCoordinates + [
-            serverGroupName: source.serverGroupName
+            serverGroupName: sourceServerGroupName
           ],
           "percentageComplete" : percentageComplete
         ]
