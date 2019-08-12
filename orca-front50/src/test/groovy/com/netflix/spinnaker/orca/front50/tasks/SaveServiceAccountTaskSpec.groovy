@@ -24,8 +24,11 @@ import com.netflix.spinnaker.fiat.model.resources.ServiceAccount
 import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
+import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
@@ -120,6 +123,10 @@ class SaveServiceAccountTaskSpec extends Specification {
       new UserPermission().addResources([new Role('foo')]).view
     }
 
+    1 * front50Service.savePipeline(_) >> { Map<String, Object> newPipeline ->
+      new Response('http://front50', 200, 'OK', [], null)
+    }
+
     1 * front50Service.saveServiceAccount(expectedServiceAccount) >> {
       new Response('http://front50', 200, 'OK', [], null)
     }
@@ -184,6 +191,10 @@ class SaveServiceAccountTaskSpec extends Specification {
       new UserPermission().setAdmin(true).view
     }
 
+    1 * front50Service.savePipeline(_) >> { Map<String, Object> newPipeline ->
+      new Response('http://front50', 200, 'OK', [], null)
+    }
+
     1 * front50Service.saveServiceAccount(expectedServiceAccount) >> {
       new Response('http://front50', 200, 'OK', [], null)
     }
@@ -192,40 +203,113 @@ class SaveServiceAccountTaskSpec extends Specification {
     result.context == ImmutableMap.of('pipeline.serviceAccount', expectedServiceAccount.name)
   }
 
-  def "should generate a pipeline id if not already present"() {
+  def "should update runAsUser with service account in each trigger where it is not set "() {
     given:
+    String runAsUser
+    def expectedServiceAccount = new ServiceAccount(name: 'my-pipeline-id@managed-service-account', memberOf: ['foo'])
     def pipeline = [
-      application: 'orca',
-      name: 'My pipeline',
-      stages: [],
-      roles: ['foo']
+        application: 'orca',
+        id: 'my-pipeline-id',
+        name: 'my pipeline',
+        roles: ['foo'],
+        stages: [],
+        triggers: [
+            [
+                type: 'cron',
+                enabled: true
+            ]
+        ]
     ]
-    def stage = stage {
-      context = [
+    def stage = new Stage(new Execution(Execution.ExecutionType.PIPELINE, "orca"), "whatever", [
         pipeline: Base64.encoder.encodeToString(objectMapper.writeValueAsString(pipeline).bytes)
-      ]
-    }
-    def uuid = null
-    def expectedServiceAccountName = null
+    ])
+    stage.execution.trigger = new DefaultTrigger('manual', null, 'abc@somedomain.io')
 
     when:
-    stage.getExecution().setTrigger(new DefaultTrigger('manual', null, 'abc@somedomain.io'))
-    def result = task.execute(stage)
-
-    then:
     1 * fiatPermissionEvaluator.getPermission('abc@somedomain.io') >> {
       new UserPermission().addResources([new Role('foo')]).view
     }
 
-    1 * front50Service.saveServiceAccount({ it.name != null }) >> { ServiceAccount serviceAccount ->
-      uuid = serviceAccount.name - "@managed-service-account"
-      expectedServiceAccountName = serviceAccount.name
+    1 * front50Service.saveServiceAccount(expectedServiceAccount) >> {
       new Response('http://front50', 200, 'OK', [], null)
     }
 
-    result.status == ExecutionStatus.SUCCEEDED
-    result.context == ImmutableMap.of(
-      'pipeline.id', uuid,
-      'pipeline.serviceAccount', expectedServiceAccountName)
+    1 * front50Service.savePipeline(_) >> { Map<String, Object> newPipeline ->
+      runAsUser = newPipeline.triggers[0].runAsUser
+      new Response('http://front50', 200, 'OK', [], null)
+    }
+
+    task.execute(stage)
+
+    then:
+    runAsUser == expectedServiceAccount.name
+  }
+
+  def "should not update runAsUser in a trigger if it is already set"() {
+    given:
+    def pipeline = [
+        application: 'orca',
+        id: 'my-pipeline-id',
+        name: 'my pipeline',
+        stages: [],
+        triggers: [
+            [
+                type: 'cron',
+                enabled: true,
+                runAsUser: 'someServiceAccount'
+            ]
+        ]
+    ]
+    def stage = new Stage(new Execution(Execution.ExecutionType.PIPELINE, "orca"), "whatever", [
+        pipeline: Base64.encoder.encodeToString(objectMapper.writeValueAsString(pipeline).bytes)
+    ])
+
+    when:
+    0 * front50Service.savePipeline(_)
+    0 * fiatPermissionEvaluator.getPermission(_)
+    0 * front50Service.saveServiceAccount(_)
+
+    def result = task.execute(stage)
+
+    then:
+    result == TaskResult.SUCCEEDED
+  }
+
+  def "should remove runAsUser in triggers if roles are empty"(){
+    given:
+    String runAsUser
+    def expectedServiceAccount = new ServiceAccount(name: 'my-pipeline-id@managed-service-account', memberOf: [])
+    def pipeline = [
+        application: 'orca',
+        id: 'my-pipeline-id',
+        name: 'my pipeline',
+        roles: [],
+        stages: [],
+        triggers: [
+            [
+                type: 'cron',
+                enabled: true,
+                runAsUser: 'id@managed-service-account'
+            ]
+        ]
+    ]
+    def stage = new Stage(new Execution(Execution.ExecutionType.PIPELINE, "orca"), "whatever", [
+        pipeline: Base64.encoder.encodeToString(objectMapper.writeValueAsString(pipeline).bytes)
+    ])
+    stage.execution.trigger = new DefaultTrigger('manual', null, 'abc@somedomain.io')
+
+    when:
+    1 * front50Service.saveServiceAccount(expectedServiceAccount) >> {
+      new Response('http://front50', 200, 'OK', [], null)
+    }
+
+    1 * front50Service.savePipeline(_) >> { Map<String, Object> newPipeline ->
+      runAsUser = newPipeline.get("triggers")[0]?.runAsUser
+      new Response('http://front50', 200, 'OK', [], null)
+    }
+    task.execute(stage)
+
+    then:
+    runAsUser == null
   }
 }

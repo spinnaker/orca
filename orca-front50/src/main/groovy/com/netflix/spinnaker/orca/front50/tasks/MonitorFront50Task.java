@@ -114,6 +114,18 @@ public class MonitorFront50Task implements RetryableTask {
           "No id found, unable to verify that the object has been updated (executionId: {})",
           stage.getExecution().getId());
     }
+    if (stageData.serviceAccount != null) {
+      try {
+        return monitor(this::getServiceAccount, stageData.serviceAccount, stage.getStartTime());
+      } catch (Exception e) {
+        log.error(
+            "Unable to verify that automatic service account has been updated (executionId: {}, serviceAccount: {})",
+            stage.getExecution().getId(),
+            stageData.serviceAccount,
+            e);
+        return TaskResult.RUNNING;
+      }
+    }
 
     return TaskResult.SUCCEEDED;
   }
@@ -179,6 +191,20 @@ public class MonitorFront50Task implements RetryableTask {
     }
   }
 
+  private Optional<Map<String, Object>> getServiceAccount(String serviceAccountId) {
+    try {
+      front50Service.invalidateServiceAccountCache(serviceAccountId);
+      return Optional.ofNullable(front50Service.getServiceAccount(serviceAccountId));
+    } catch (RetrofitError e) {
+      if (e.getResponse() != null
+          && Arrays.asList(404, 403, 401).contains(e.getResponse().getStatus())) {
+        return Optional.empty();
+      } else {
+        throw e;
+      }
+    }
+  }
+
   private static class StageData {
     public String application;
 
@@ -187,6 +213,9 @@ public class MonitorFront50Task implements RetryableTask {
 
     @JsonProperty("pipeline.name")
     public String pipelineName;
+
+    @JsonProperty("pipeline.serviceAccount")
+    public String serviceAccount;
 
     public DeliveryConfig deliveryConfig;
   }

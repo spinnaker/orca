@@ -31,12 +31,10 @@ public class SavePipelineStage implements StageDefinitionBuilder {
 
   @Override
   public void taskGraph(Stage stage, Builder builder) {
+    builder.withTask("savePipeline", SavePipelineTask.class);
     if (useManagedServiceAccounts) {
       builder.withTask("updatePipelinePermissions", SaveServiceAccountTask.class);
     }
-
-    builder
-        .withTask("savePipeline", SavePipelineTask.class)
-        .withTask("waitForPipelineSave", MonitorFront50Task.class);
+    builder.withTask("waitForPipelineSave", MonitorFront50Task.class);
   }
 }

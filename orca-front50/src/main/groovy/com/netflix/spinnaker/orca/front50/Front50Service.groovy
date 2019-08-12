@@ -130,6 +130,12 @@ interface Front50Service {
   @POST("/serviceAccounts")
   Response saveServiceAccount(@Body ServiceAccount serviceAccount)
 
+  @GET("/serviceAccounts/{serviceAccountId}")
+  Map<String, Object> getServiceAccount(@Path("serviceAccountId") String serviceAccountId)
+
+  @POST("/serviceAccounts/{serviceAccountId}/invalidateCache")
+  Response invalidateServiceAccountCache(@Path("serviceAccountId") String serviceAccountId)
+
   @GET("/deliveries/{id}")
   DeliveryConfig getDeliveryConfig(@Path("id") String id)
 

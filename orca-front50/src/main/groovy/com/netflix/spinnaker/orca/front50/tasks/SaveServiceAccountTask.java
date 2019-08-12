@@ -27,16 +27,15 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -100,6 +99,8 @@ public class SaveServiceAccountTask implements RetryableTask {
       throw new IllegalArgumentException("pipeline must be encoded as base64", e);
     }
 
+    pipeline.putIfAbsent("id", stage.getContext().get("pipeline.id"));
+
     if (!pipeline.containsKey("roles")) {
       log.debug("Skipping managed service accounts since roles field is not present.");
       return TaskResult.SUCCEEDED;
@@ -108,20 +109,10 @@ public class SaveServiceAccountTask implements RetryableTask {
     List<String> roles = (List<String>) pipeline.get("roles");
     String user = stage.getExecution().getTrigger().getUser();
 
-    Map<String, Object> outputs = new HashMap<>();
-
-    pipeline.computeIfAbsent(
-        "id",
-        k -> {
-          String uuid = UUID.randomUUID().toString();
-          outputs.put("pipeline.id", uuid);
-          return uuid;
-        });
-
     // Check if pipeline roles did not change, and skip updating a service account if so.
     String serviceAccountName = generateSvcAcctName(pipeline);
     if (!pipelineRolesChanged(serviceAccountName, roles)) {
-      log.debug("Skipping managed service account creation/updatimg since roles have not changed.");
+      log.debug("Skipping managed service account creation/updating since roles have not changed.");
       return TaskResult.builder(ExecutionStatus.SUCCEEDED)
           .context(ImmutableMap.of("pipeline.serviceAccount", serviceAccountName))
           .build();
@@ -145,9 +136,15 @@ public class SaveServiceAccountTask implements RetryableTask {
       return TaskResult.ofStatus(ExecutionStatus.TERMINAL);
     }
 
-    outputs.put("pipeline.serviceAccount", svcAcct.getName());
+    updateServiceAccount(pipeline, svcAcct.getName());
+    response = front50Service.savePipeline(pipeline);
+    if (response.getStatus() != HttpStatus.OK.value()) {
+      return TaskResult.ofStatus(ExecutionStatus.TERMINAL);
+    }
 
-    return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build();
+    return TaskResult.builder(ExecutionStatus.SUCCEEDED)
+        .context(ImmutableMap.of("pipeline.serviceAccount", svcAcct.getName()))
+        .build();
   }
 
   private String generateSvcAcctName(Map<String, Object> pipeline) {
@@ -193,5 +190,33 @@ public class SaveServiceAccountTask implements RetryableTask {
         permission.getRoles().stream().map(Role.View::getName).collect(Collectors.toSet());
 
     return !currentRoles.equals(new HashSet<>(pipelineRoles));
+  }
+
+  @SuppressWarnings("unchecked")
+  private void updateServiceAccount(Map<String, Object> pipeline, String serviceAccountName) {
+    if (StringUtils.isEmpty(serviceAccountName) || !pipeline.containsKey("triggers")) {
+      return;
+    }
+    List<Map<String, Object>> triggers = (List<Map<String, Object>>) pipeline.get("triggers");
+    List<String> roles = (List<String>) pipeline.get("roles");
+    // Managed service acct but no roles; Remove runAsUserFrom triggers
+    if (roles == null || roles.isEmpty()) {
+      triggers.stream()
+          .filter(
+              t -> {
+                String runAsUser = (String) t.get("runAsUser");
+                return runAsUser != null && runAsUser.endsWith("@managed-service-account");
+              })
+          .forEach(t -> t.remove("runAsUser"));
+      return;
+    }
+    // Managed Service account exists and roles are set; Update triggers
+    triggers.stream()
+        .filter(
+            t -> {
+              String runAsUser = (String) t.get("runAsUser");
+              return runAsUser == null || runAsUser.endsWith("@managed-service-account");
+            })
+        .forEach(t -> t.put("runAsUser", serviceAccountName));
   }
 }

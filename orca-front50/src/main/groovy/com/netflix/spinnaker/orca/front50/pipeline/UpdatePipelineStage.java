@@ -30,10 +30,9 @@ public class UpdatePipelineStage implements StageDefinitionBuilder {
 
   @Override
   public void taskGraph(Stage stage, Builder builder) {
+    builder.withTask("updatePipeline", SavePipelineTask.class);
     if (useManagedServiceAccounts) {
       builder.withTask("updatePipelinePermissions", SaveServiceAccountTask.class);
     }
-
-    builder.withTask("updatePipeline", SavePipelineTask.class);
   }
 }

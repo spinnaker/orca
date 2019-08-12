@@ -22,7 +22,12 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -78,20 +83,12 @@ public class SavePipelineTask implements RetryableTask {
         pipeline.put("index", existingPipeline.get("index"));
       }
     }
-    String serviceAccount = (String) stage.getContext().get("pipeline.serviceAccount");
-    if (serviceAccount != null) {
-      updateServiceAccount(pipeline, serviceAccount);
-    }
     final Boolean isSavingMultiplePipelines =
         (Boolean)
             Optional.ofNullable(stage.getContext().get("isSavingMultiplePipelines")).orElse(false);
-    if (stage.getContext().get("pipeline.id") != null
-        && pipeline.get("id") == null
-        && !isSavingMultiplePipelines) {
-      pipeline.put("id", stage.getContext().get("pipeline.id"));
-
-      // We need to tell front50 to regenerate cron trigger id's
-      pipeline.put("regenerateCronTriggerIds", true);
+    if (pipeline.get("id") == null) {
+      // This is a new pipeline, we need to remove all existing automatic service accounts
+      removeAutomaticServiceAccounts(pipeline);
     }
 
     pipelineModelMutators.stream()
@@ -140,27 +137,19 @@ public class SavePipelineTask implements RetryableTask {
     return TimeUnit.SECONDS.toMillis(30);
   }
 
-  private void updateServiceAccount(Map<String, Object> pipeline, String serviceAccount) {
-    if (StringUtils.isEmpty(serviceAccount) || !pipeline.containsKey("triggers")) {
+  @SuppressWarnings("unchecked")
+  private void removeAutomaticServiceAccounts(Map<String, Object> pipeline) {
+    if (!pipeline.containsKey("triggers")) {
       return;
     }
-
     List<Map<String, Object>> triggers = (List<Map<String, Object>>) pipeline.get("triggers");
-    List<String> roles = (List<String>) pipeline.get("roles");
-    // Managed service acct but no roles; Remove runAsUserFrom triggers
-    if (roles == null || roles.isEmpty()) {
-      triggers.forEach(t -> t.remove("runAsUser", serviceAccount));
-      return;
-    }
-
-    // Managed Service account exists and roles are set; Update triggers
     triggers.stream()
         .filter(
             t -> {
               String runAsUser = (String) t.get("runAsUser");
-              return runAsUser == null || runAsUser.endsWith("@managed-service-account");
+              return runAsUser != null && runAsUser.endsWith("@managed-service-account");
             })
-        .forEach(t -> t.put("runAsUser", serviceAccount));
+        .forEach(t -> t.remove("runAsUser"));
   }
 
   private Map<String, Object> fetchExistingPipeline(Map<String, Object> newPipeline) {
