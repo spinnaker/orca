@@ -24,6 +24,12 @@ allprojects {
     apply(plugin: "spinnaker.project")
   }
 
+  if (korkVersion.endsWith('-SNAPSHOT')) {
+    repositories {
+      mavenLocal()
+    }
+  }
+
   group = "com.netflix.spinnaker.keiko"
 }
 
