@@ -146,7 +146,7 @@ class TaskController {
     executionRepository.retrieve(ORCHESTRATION, id)
   }
 
-  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.DELETE)
   void deleteTask(@PathVariable String id) {
     executionRepository.retrieve(ORCHESTRATION, id).with {
@@ -159,14 +159,14 @@ class TaskController {
     }
   }
 
-  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/tasks/{id}/cancel", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancelTask(@PathVariable String id) {
     cancelExecution(ORCHESTRATION, id)
   }
 
-  @PreFilter("hasPermission(this.getOrchestration(filterObject)?.application, 'APPLICATION', 'WRITE')")
+  @PreFilter("hasPermission(this.getOrchestration(filterObject)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/tasks/cancel", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancelTasks(@RequestBody List<String> taskIds) {
@@ -399,7 +399,7 @@ class TaskController {
     executionRepository.retrieve(PIPELINE, id)
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}", method = RequestMethod.DELETE)
   void deletePipeline(@PathVariable String id) {
     executionRepository.retrieve(PIPELINE, id).with {
@@ -412,7 +412,7 @@ class TaskController {
     }
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/cancel", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancel(
@@ -421,7 +421,7 @@ class TaskController {
     cancelExecution(PIPELINE, id, reason)
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/pause", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void pause(@PathVariable String id) {
@@ -430,7 +430,7 @@ class TaskController {
     executionRunner.reschedule(pipeline)
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/resume", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void resume(@PathVariable String id) {
@@ -455,7 +455,7 @@ class TaskController {
     []
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}", method = RequestMethod.PATCH)
   Execution updatePipelineStage(
     @PathVariable String id,
