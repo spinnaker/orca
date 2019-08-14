@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.bakery.api
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.bakery.api.manifests.helm.HelmBakeManifestRequest
+import com.netflix.spinnaker.orca.bakery.api.manifests.kustomize.KustomizeBakeManifestRequest
 import retrofit.http.*
 import rx.Observable
 
@@ -26,7 +27,10 @@ import rx.Observable
  */
 interface BakeryService {
   @POST("/api/v2/manifest/bake/helm")
-  Artifact bakeManifest(@Body HelmBakeManifestRequest bakeRequest)
+  Artifact bakeManifestHelm(@Body HelmBakeManifestRequest bakeRequest)
+
+  @POST("/api/v2/manifest/bake/kustomize")
+  Artifact bakeManifestKustomize(@Body KustomizeBakeManifestRequest bakeRequest)
 
   @POST("/api/v1/{region}/bake")
   Observable<BakeStatus> createBake(@Path("region") String region, @Body BakeRequest bake, @Query("rebake") String rebake)

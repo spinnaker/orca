@@ -31,6 +31,7 @@ public class BakeManifestContext {
   private final String templateRenderer;
   private final String outputName;
   private final String namespace;
+  private final String kustomization;
 
   // There does not seem to be a way to auto-generate a constructor using our current version of
   // Lombok (1.16.20) that
@@ -42,7 +43,8 @@ public class BakeManifestContext {
       @JsonProperty("evaluateOverrideExpressions") Boolean evaluateOverrideExpressions,
       @JsonProperty("templateRenderer") String templateRenderer,
       @JsonProperty("outputName") String outputName,
-      @JsonProperty("namespace") String namespace) {
+      @JsonProperty("namespace") String namespace,
+      @JsonProperty("kustomization") String kustomization) {
     this.inputArtifacts = inputArtifacts;
     this.expectedArtifacts = expectedArtifacts;
     this.overrides = overrides;
@@ -50,5 +52,6 @@ public class BakeManifestContext {
     this.templateRenderer = templateRenderer;
     this.outputName = outputName;
     this.namespace = namespace;
+    this.kustomization = kustomization;
   }
 }
