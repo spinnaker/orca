@@ -146,7 +146,7 @@ class TaskController {
     executionRepository.retrieve(ORCHESTRATION, id)
   }
 
-  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'EXECUTE')")
+  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.DELETE)
   void deleteTask(@PathVariable String id) {
     executionRepository.retrieve(ORCHESTRATION, id).with {
@@ -399,7 +399,7 @@ class TaskController {
     executionRepository.retrieve(PIPELINE, id)
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/pipelines/{id}", method = RequestMethod.DELETE)
   void deletePipeline(@PathVariable String id) {
     executionRepository.retrieve(PIPELINE, id).with {
@@ -455,7 +455,7 @@ class TaskController {
     []
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}", method = RequestMethod.PATCH)
   Execution updatePipelineStage(
     @PathVariable String id,
