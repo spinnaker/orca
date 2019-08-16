@@ -20,7 +20,7 @@ import com.google.common.annotations.Beta;
 
 @Beta
 public interface SimpleStage<T> {
-  <T> SimpleStageOutput execute(SimpleStageInput<T> simpleStageInput);
+  SimpleStageOutput execute(SimpleStageInput<T> simpleStageInput);
 
   String getName();
 }

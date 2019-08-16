@@ -190,8 +190,7 @@ public class OrcaConfiguration {
   public StageResolver stageResolver(
       Collection<StageDefinitionBuilder> stageDefinitionBuilders,
       Optional<Collection<SimpleStage>> simpleStages) {
-    Collection<SimpleStage> stages =
-        simpleStages.isPresent() ? simpleStages.get() : new ArrayList<SimpleStage>();
+    Collection<SimpleStage> stages = simpleStages.orElseGet(ArrayList::new);
     return new StageResolver(stageDefinitionBuilders, stages);
   }
 

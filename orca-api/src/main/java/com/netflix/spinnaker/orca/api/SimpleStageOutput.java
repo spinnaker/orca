@@ -31,13 +31,13 @@ public class SimpleStageOutput {
     return this.status;
   }
 
-  private Map outputs;
+  private Map<String, Object> outputs;
 
   public void setOutputs(Map outputs) {
     this.outputs = outputs;
   }
 
-  public Map getOutputs() {
+  public Map<String, Object> getOutputs() {
     return this.outputs;
   }
 }

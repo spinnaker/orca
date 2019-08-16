@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
@@ -37,7 +36,7 @@ public class StageResolver {
 
   public StageResolver(
       Collection<StageDefinitionBuilder> stageDefinitionBuilders,
-      Collection<SimpleStage> apiStages) {
+      Collection<SimpleStage> simpleStages) {
     for (StageDefinitionBuilder stageDefinitionBuilder : stageDefinitionBuilders) {
       stageDefinitionBuilderByAlias.put(stageDefinitionBuilder.getType(), stageDefinitionBuilder);
       for (String alias : stageDefinitionBuilder.aliases()) {
@@ -54,12 +53,11 @@ public class StageResolver {
       }
     }
 
-    if (!Objects.equals(apiStages, null)) {
-      for (SimpleStage stage : apiStages) {
-        SimpleStageDefinitionBuilder builder = new SimpleStageDefinitionBuilder(stage);
-        stageDefinitionBuilderByAlias.put(stage.getName(), builder);
-      }
-    }
+    simpleStages.stream()
+        .forEach(
+            s ->
+                stageDefinitionBuilderByAlias.put(
+                    s.getName(), new SimpleStageDefinitionBuilder(s)));
   }
 
   /**

@@ -52,7 +52,7 @@ public class SimpleTask implements Task {
     ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
 
     ExecutionStatus status;
-    SimpleStageOutput outputs = new SimpleStageOutput();
+    SimpleStageOutput output = new SimpleStageOutput();
 
     try {
       List<Class<?>> cArg = Arrays.asList(SimpleStageInput.class);
@@ -65,8 +65,8 @@ public class SimpleTask implements Task {
           new SimpleStageInput(
               objectMapper.convertValue(
                   stage.getContext(), GenericTypeResolver.resolveType(inputType, typeVariableMap)));
-      outputs = simpleStage.execute(simpleStageInput);
-      switch (outputs.getStatus()) {
+      output = simpleStage.execute(simpleStageInput);
+      switch (output.getStatus()) {
         case TERMINAL:
           status = ExecutionStatus.TERMINAL;
           break;
@@ -84,14 +84,13 @@ public class SimpleTask implements Task {
           break;
       }
     } catch (Exception e) {
-      log.error("Cannot execute stage " + simpleStage.getName());
-      log.error(e.getMessage());
+      log.error("Cannot execute stage " + simpleStage.getName() + " " + e.getMessage());
       status = ExecutionStatus.TERMINAL;
     }
 
     return TaskResult.builder(status)
-        .context(outputs.getOutputs())
-        .outputs(outputs.getOutputs())
+        .context(output.getOutputs())
+        .outputs(output.getOutputs())
         .build();
   }
 }
