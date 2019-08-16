@@ -47,12 +47,8 @@ public class SimpleTask implements Task {
     this.simpleStage = simpleStage;
   }
 
-  @Nonnull
-  public TaskResult execute(@Nonnull Stage stage) {
+  private SimpleStageInput getStageInput(Stage stage) {
     ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
-
-    ExecutionStatus status;
-    SimpleStageOutput output = new SimpleStageOutput();
 
     try {
       List<Class<?>> cArg = Arrays.asList(SimpleStageInput.class);
@@ -61,31 +57,38 @@ public class SimpleTask implements Task {
       Map<TypeVariable, Type> typeVariableMap =
           GenericTypeResolver.getTypeVariableMap(simpleStage.getClass());
 
-      SimpleStageInput simpleStageInput =
-          new SimpleStageInput(
-              objectMapper.convertValue(
-                  stage.getContext(), GenericTypeResolver.resolveType(inputType, typeVariableMap)));
-      output = simpleStage.execute(simpleStageInput);
-      switch (output.getStatus()) {
-        case TERMINAL:
-          status = ExecutionStatus.TERMINAL;
-          break;
-        case RUNNING:
-          status = ExecutionStatus.RUNNING;
-          break;
-        case COMPLETED:
-          status = ExecutionStatus.SUCCEEDED;
-          break;
-        case NOT_STARTED:
-          status = ExecutionStatus.NOT_STARTED;
-          break;
-        default:
-          status = ExecutionStatus.FAILED_CONTINUE;
-          break;
-      }
-    } catch (Exception e) {
-      log.error("Cannot execute stage " + simpleStage.getName() + " " + e.getMessage());
-      status = ExecutionStatus.TERMINAL;
+      return new SimpleStageInput(
+          objectMapper.convertValue(
+              stage.getContext(), GenericTypeResolver.resolveType(inputType, typeVariableMap)));
+    } catch (NoSuchMethodException exeception) {
+      log.error("Cannot get method for " + simpleStage.getName() + ": " + exeception.getMessage());
+    }
+
+    return new SimpleStageInput(new Object());
+  }
+
+  @Nonnull
+  public TaskResult execute(@Nonnull Stage stage) {
+    ExecutionStatus status;
+    SimpleStageInput simpleStageInput = getStageInput(stage);
+    SimpleStageOutput output = simpleStage.execute(simpleStageInput);
+
+    switch (output.getStatus()) {
+      case TERMINAL:
+        status = ExecutionStatus.TERMINAL;
+        break;
+      case RUNNING:
+        status = ExecutionStatus.RUNNING;
+        break;
+      case COMPLETED:
+        status = ExecutionStatus.SUCCEEDED;
+        break;
+      case NOT_STARTED:
+        status = ExecutionStatus.NOT_STARTED;
+        break;
+      default:
+        status = ExecutionStatus.FAILED_CONTINUE;
+        break;
     }
 
     return TaskResult.builder(status)
