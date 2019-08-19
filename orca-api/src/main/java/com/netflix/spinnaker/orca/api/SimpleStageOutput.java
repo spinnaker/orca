@@ -18,26 +18,11 @@ package com.netflix.spinnaker.orca.api;
 
 import com.google.common.annotations.Beta;
 import java.util.Map;
+import lombok.Data;
 
 @Beta
+@Data
 public class SimpleStageOutput {
   private SimpleStageStatus status;
-
-  public void setStatus(SimpleStageStatus status) {
-    this.status = status;
-  }
-
-  public SimpleStageStatus getStatus() {
-    return this.status;
-  }
-
   private Map<String, Object> outputs;
-
-  public void setOutputs(Map outputs) {
-    this.outputs = outputs;
-  }
-
-  public Map<String, Object> getOutputs() {
-    return this.outputs;
-  }
 }

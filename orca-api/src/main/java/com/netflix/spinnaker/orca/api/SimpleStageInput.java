@@ -17,20 +17,14 @@
 package com.netflix.spinnaker.orca.api;
 
 import com.google.common.annotations.Beta;
+import lombok.Data;
 
 @Beta
+@Data
 public class SimpleStageInput<T> {
   private T value;
 
   public SimpleStageInput(T value) {
     this.value = value;
-  }
-
-  public void setValue(T value) {
-    this.value = value;
-  }
-
-  public T getValue() {
-    return this.value;
   }
 }
