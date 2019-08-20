@@ -39,7 +39,7 @@ class SimpleTaskSpec extends Specification {
       Map<String, String> stageOutput = new HashMap<>()
       stageOutput.put("hello", "world")
 
-      output.setStatus(SimpleStageStatus.COMPLETED)
+      output.setStatus(SimpleStageStatus.SUCCEEDED)
       output.setOutputs(stageOutput)
       return output
     }

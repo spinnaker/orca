@@ -160,7 +160,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
     override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput<Any, Any> {
       val output = SimpleStageOutput<Any, Any>()
-      output.status = SimpleStageStatus.COMPLETED
+      output.status = SimpleStageStatus.SUCCEEDED
       return output
     }
   }

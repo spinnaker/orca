@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -70,27 +69,9 @@ public class SimpleTask implements Task {
   @Nonnull
   public TaskResult execute(@Nonnull Stage stage) {
     ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
-    ExecutionStatus status;
     SimpleStageInput simpleStageInput = getStageInput(stage);
     SimpleStageOutput output = simpleStage.execute(simpleStageInput);
-
-    switch (output.getStatus()) {
-      case TERMINAL:
-        status = ExecutionStatus.TERMINAL;
-        break;
-      case RUNNING:
-        status = ExecutionStatus.RUNNING;
-        break;
-      case COMPLETED:
-        status = ExecutionStatus.SUCCEEDED;
-        break;
-      case NOT_STARTED:
-        status = ExecutionStatus.NOT_STARTED;
-        break;
-      default:
-        throw new NotFoundException(
-            "Stage " + stage.getName() + " didn't return proper SimpleStatus");
-    }
+    ExecutionStatus status = ExecutionStatus.valueOf(output.getStatus().toString());
 
     return TaskResult.builder(status)
         .context(

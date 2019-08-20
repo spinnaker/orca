@@ -22,6 +22,6 @@ import com.google.common.annotations.Beta;
 public enum SimpleStageStatus {
   TERMINAL,
   RUNNING,
-  COMPLETED,
+  SUCCEEDED,
   NOT_STARTED
 }
