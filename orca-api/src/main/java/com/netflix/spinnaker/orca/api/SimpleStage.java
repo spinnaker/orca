@@ -18,9 +18,28 @@ package com.netflix.spinnaker.orca.api;
 
 import com.google.common.annotations.Beta;
 
+/**
+ * Used to create a more simplistic stage. This should be used by plugin developers to create plugin
+ * stages
+ *
+ * @param <T>
+ */
 @Beta
 public interface SimpleStage<T> {
+  /**
+   * When this stage runs, the execute method gets called. It takes in a class that is created that
+   * has the data needed by the stage. It returns a class that contains the status of the stage,
+   * outputs and context
+   *
+   * @param simpleStageInput
+   * @return status, outputs, and context of the executed stage
+   */
   SimpleStageOutput execute(SimpleStageInput<T> simpleStageInput);
 
+  /**
+   * Sets the name of the stage
+   *
+   * @return name of the stage
+   */
   String getName();
 }
