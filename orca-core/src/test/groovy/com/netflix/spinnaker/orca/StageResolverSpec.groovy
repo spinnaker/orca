@@ -32,7 +32,7 @@ class StageResolverSpec extends Specification {
     new AliasedStageDefinitionBuilder()
   ],
     [
-      new SimpleStage()
+      new TestSimpleStage()
     ])
 
   @Unroll
@@ -54,7 +54,7 @@ class StageResolverSpec extends Specification {
       new AliasedStageDefinitionBuilder()
     ],
       [
-        new SimpleStage()
+        new TestSimpleStage()
       ])
 
     then:
@@ -73,7 +73,7 @@ class StageResolverSpec extends Specification {
   class AliasedStageDefinitionBuilder implements StageDefinitionBuilder {
   }
 
-  class SimpleStage implements SimpleStage {
+  class TestSimpleStage implements SimpleStage {
     @Override
     public SimpleStageOutput execute(SimpleStageInput input) {
       return new SimpleStageOutput();
