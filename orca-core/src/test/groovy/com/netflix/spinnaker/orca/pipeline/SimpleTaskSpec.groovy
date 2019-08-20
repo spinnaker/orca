@@ -33,7 +33,7 @@ class SimpleTaskSpec extends Specification {
     }
 
     @Override
-    <Object> SimpleStageOutput execute(SimpleStageInput<Object> input) {
+    SimpleStageOutput execute(SimpleStageInput<Object> input) {
       SimpleStageOutput output = new SimpleStageOutput()
 
       Map<String, String> stageOutput = new HashMap<>()
@@ -56,6 +56,6 @@ class SimpleTaskSpec extends Specification {
 
     then:
     results.getStatus() == ExecutionStatus.SUCCEEDED
-    results.context.hello == "world"
+    results.outputs.hello == "world"
   }
 }

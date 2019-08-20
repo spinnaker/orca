@@ -17,12 +17,12 @@
 package com.netflix.spinnaker.orca.api;
 
 import com.google.common.annotations.Beta;
-import java.util.Map;
 import lombok.Data;
 
 @Beta
 @Data
-public class SimpleStageOutput {
+public class SimpleStageOutput<T, U> {
   private SimpleStageStatus status;
-  private Map<String, Object> outputs;
+  private T outputs;
+  private U context;
 }

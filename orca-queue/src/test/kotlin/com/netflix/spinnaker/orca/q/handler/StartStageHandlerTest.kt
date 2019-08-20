@@ -107,8 +107,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
   val runningApiStage = object : SimpleStage<Any> {
     override fun getName() = "runningApiStage"
 
-    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput {
-      val output = SimpleStageOutput()
+    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput<Any, Any> {
+      val output = SimpleStageOutput<Any, Any>()
       output.status = SimpleStageStatus.RUNNING
       return output
     }

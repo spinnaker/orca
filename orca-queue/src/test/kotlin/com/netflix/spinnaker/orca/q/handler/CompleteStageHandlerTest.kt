@@ -150,7 +150,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   val emptyApiStage = object : SimpleStage<Any> {
     override fun getName() = "emptyApiStage"
 
-    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput {
+    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput<Any, Any> {
       return SimpleStageOutput()
     }
   }
@@ -158,8 +158,8 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   val successfulApiStage = object : SimpleStage<Any> {
     override fun getName() = "successfulApiStage"
 
-    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput {
-      val output = SimpleStageOutput()
+    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput<Any, Any> {
+      val output = SimpleStageOutput<Any, Any>()
       output.status = SimpleStageStatus.COMPLETED
       return output
     }

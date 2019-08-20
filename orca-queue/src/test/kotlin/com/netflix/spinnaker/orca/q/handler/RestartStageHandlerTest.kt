@@ -83,7 +83,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
   val emptyApiStage = object : SimpleStage<Object> {
     override fun getName() = "emptyApiStage"
 
-    override fun execute(simpleStageInput: SimpleStageInput<Object>): SimpleStageOutput {
+    override fun execute(simpleStageInput: SimpleStageInput<Object>): SimpleStageOutput<Any, Any> {
       return SimpleStageOutput()
     }
   }

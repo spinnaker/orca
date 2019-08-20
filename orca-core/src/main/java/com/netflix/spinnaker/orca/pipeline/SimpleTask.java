@@ -30,6 +30,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -68,6 +69,7 @@ public class SimpleTask implements Task {
 
   @Nonnull
   public TaskResult execute(@Nonnull Stage stage) {
+    ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
     ExecutionStatus status;
     SimpleStageInput simpleStageInput = getStageInput(stage);
     SimpleStageOutput output = simpleStage.execute(simpleStageInput);
@@ -91,8 +93,14 @@ public class SimpleTask implements Task {
     }
 
     return TaskResult.builder(status)
-        .context(output.getOutputs())
-        .outputs(output.getOutputs())
+        .context(
+            output.getContext() == null
+                ? new HashMap<>()
+                : objectMapper.convertValue(output.getContext(), Map.class))
+        .outputs(
+            output.getOutputs() == null
+                ? new HashMap<>()
+                : objectMapper.convertValue(output.getOutputs(), Map.class))
         .build();
   }
 }
