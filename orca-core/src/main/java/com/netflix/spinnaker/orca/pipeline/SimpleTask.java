@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -61,10 +62,8 @@ public class SimpleTask implements Task {
           objectMapper.convertValue(
               stage.getContext(), GenericTypeResolver.resolveType(inputType, typeVariableMap)));
     } catch (NoSuchMethodException exeception) {
-      log.error("Cannot get method for " + simpleStage.getName() + ": " + exeception.getMessage());
+      throw new NoSuchStageException(exeception.getMessage());
     }
-
-    return new SimpleStageInput(new Object());
   }
 
   @Nonnull
@@ -87,8 +86,8 @@ public class SimpleTask implements Task {
         status = ExecutionStatus.NOT_STARTED;
         break;
       default:
-        status = ExecutionStatus.FAILED_CONTINUE;
-        break;
+        throw new NotFoundException(
+            "Stage " + stage.getName() + " didn't return proper SimpleStatus");
     }
 
     return TaskResult.builder(status)
