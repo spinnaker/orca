@@ -16,11 +16,9 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks;
 
-import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.Map;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
@@ -61,17 +59,10 @@ public class StageStatusPreconditionTask implements PreconditionTask {
                             stageName)));
     String actualStatus = foundStage.getStatus().toString();
     if (!actualStatus.equals(assertedStatus)) {
-      Map<String, Object> outputs =
-          ImmutableMap.of(
-              "exception",
-              ImmutableMap.of(
-                  "details",
-                  ImmutableMap.of(
-                      "error",
-                      String.format(
-                          "The status of stage %s was asserted to be %s, but was actually %s",
-                          stageName, assertedStatus, actualStatus))));
-      return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build();
+      throw new RuntimeException(
+          String.format(
+              "The status of stage %s was asserted to be %s, but was actually %s",
+              stageName, assertedStatus, actualStatus));
     }
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).build();
   }

@@ -55,8 +55,6 @@ class StageStatusPreconditionTaskSpec extends Specification {
     where:
     stageName | stageStatus || taskResultStatus
     "Stage A" | "SUCCEEDED" || SUCCEEDED
-    "Stage A" | "TERMINAL"  || TERMINAL
-    "Stage B" | "SUCCEEDED" || TERMINAL
     "Stage B" | "TERMINAL"  || SUCCEEDED
   }
 
@@ -88,5 +86,38 @@ class StageStatusPreconditionTaskSpec extends Specification {
     "Invalid" | "SUCCEEDED"
     null      | "SUCCEEDED"
     "Stage A" |  null
+  }
+
+  def "should throw error when status assertion is false"() {
+    given:
+    def task = new StageStatusPreconditionTask()
+    def stage = stage {
+      name = "Check Stage Status"
+      context.context = [
+        stageName: stageName,
+        stageStatus: stageStatus
+      ]
+      execution = pipeline {
+        stage {
+          name = "Stage A"
+          status = SUCCEEDED
+        }
+        stage {
+          name = "Stage B"
+          status = TERMINAL
+        }
+      }
+    }
+
+    when:
+    task.execute(stage)
+
+    then:
+    thrown(RuntimeException)
+
+    where:
+    stageName | stageStatus
+    "Stage A" | "TERMINAL"
+    "Stage B" | "SUCCEEDED"
   }
 }
