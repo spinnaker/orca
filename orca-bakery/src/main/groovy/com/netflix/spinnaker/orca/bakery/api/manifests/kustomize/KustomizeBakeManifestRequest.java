@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Netflix, Inc.
+ * Copyright 2019 Armory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,24 @@
 package com.netflix.spinnaker.orca.bakery.api.manifests.kustomize;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
+import com.netflix.spinnaker.orca.bakery.tasks.manifests.BakeManifestContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class KustomizeBakeManifestRequest extends BakeManifestRequest {
-  @JsonProperty("namespace")
-  String namespace;
+  @JsonProperty("inputArtifact")
+  private Artifact inputArtifact;
 
-  @JsonProperty("kustomisation")
-  String kustomisation;
-
-  @JsonProperty("outputArtifactName")
-  String outputArtifactName;
+  public KustomizeBakeManifestRequest(
+      BakeManifestContext bakeManifestContext, Artifact inputArtifact, String outputArtifactName) {
+    super(
+        bakeManifestContext.getTemplateRenderer(),
+        outputArtifactName,
+        bakeManifestContext.getOutputName());
+    this.inputArtifact = inputArtifact;
+  }
 }

@@ -71,8 +71,14 @@ public class CreateBakeManifestTask implements RetryableTask {
     List<InputArtifactPair> inputArtifactsObj = context.getInputArtifacts();
     List<Artifact> inputArtifacts;
 
+    // kustomize depends on a single input artifact so we may not have a list here
+    // but we still want the resolution provided by the stream below
     if (inputArtifactsObj == null || inputArtifactsObj.isEmpty()) {
-      throw new IllegalArgumentException("At least one input artifact to bake must be supplied");
+      if (context.getInputArtifact() != null) {
+        inputArtifactsObj.add(context.getInputArtifact());
+      } else {
+        throw new IllegalArgumentException("At least one input artifact to bake must be supplied");
+      }
     }
 
     inputArtifacts =
@@ -106,6 +112,7 @@ public class CreateBakeManifestTask implements RetryableTask {
 
     String outputArtifactName = expectedArtifacts.get(0).getMatchArtifact().getName();
 
+    // TODO(ethanfrogers): encapsulate this into the HelmBakeManifestRequest
     Map<String, Object> overrides = context.getOverrides();
     Boolean evaluateOverrideExpressions = context.getEvaluateOverrideExpressions();
     if (evaluateOverrideExpressions != null && evaluateOverrideExpressions) {
@@ -115,31 +122,22 @@ public class CreateBakeManifestTask implements RetryableTask {
               overrides, contextParameterProcessor.buildExecutionContext(stage, true), true);
     }
 
-    Artifact result = null;
-    BakeManifestRequest request = new BakeManifestRequest();
-    request.setInputArtifacts(inputArtifacts);
-    request.setTemplateRenderer(context.getTemplateRenderer());
-    request.setOutputName(context.getOutputName());
-    request.setOverrides(overrides);
+    BakeManifestRequest request;
     switch (context.getTemplateRenderer().toUpperCase()) {
       case "HELM2":
-        HelmBakeManifestRequest requestHelm = ((HelmBakeManifestRequest) request);
-        requestHelm.setNamespace(context.getNamespace());
-        requestHelm.setOutputArtifactName(outputArtifactName);
-        log.info("Requesting {}", requestHelm);
-        result = bakery.bakeManifestHelm(requestHelm);
+        request =
+            new HelmBakeManifestRequest(context, inputArtifacts, outputArtifactName, overrides);
         break;
       case "KUSTOMIZE":
-        KustomizeBakeManifestRequest requestKustomize = ((KustomizeBakeManifestRequest) request);
-        requestKustomize.setKustomisation(context.getKustomization());
-        requestKustomize.setOutputArtifactName(outputArtifactName);
-        log.info("Requesting {}", requestKustomize);
-        result = bakery.bakeManifestKustomize(requestKustomize);
+        Artifact inputArtifact = inputArtifacts.get(0);
+        request = new KustomizeBakeManifestRequest(context, inputArtifact, outputArtifactName);
         break;
       default:
         throw new IllegalArgumentException(
             "Invalid template renderer " + context.getTemplateRenderer());
     }
+
+    Artifact result = bakery.bakeManifest(request.getTemplateRenderer(), request);
 
     Map<String, Object> outputs = new HashMap<>();
     outputs.put("artifacts", Collections.singleton(result));

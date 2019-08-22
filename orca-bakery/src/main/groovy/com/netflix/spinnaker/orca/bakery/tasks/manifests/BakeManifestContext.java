@@ -20,31 +20,34 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.Getter;
 
 @Getter
 public class BakeManifestContext {
-  private final List<CreateBakeManifestTask.InputArtifactPair> inputArtifacts;
+  @Nullable private final List<CreateBakeManifestTask.InputArtifactPair> inputArtifacts;
+  @Nullable private final CreateBakeManifestTask.InputArtifactPair inputArtifact;
   private final List<ExpectedArtifact> expectedArtifacts;
   private final Map<String, Object> overrides;
   private final Boolean evaluateOverrideExpressions;
   private final String templateRenderer;
   private final String outputName;
   private final String namespace;
-  private final String kustomization;
 
   // There does not seem to be a way to auto-generate a constructor using our current version of
   // Lombok (1.16.20) that
   // Jackson can use to deserialize.
   public BakeManifestContext(
-      @JsonProperty("inputArtifacts") List<CreateBakeManifestTask.InputArtifactPair> inputArtifacts,
+      @Nullable @JsonProperty("inputArtifacts")
+          List<CreateBakeManifestTask.InputArtifactPair> inputArtifacts,
       @JsonProperty("expectedArtifacts") List<ExpectedArtifact> expectedArtifacts,
       @JsonProperty("overrides") Map<String, Object> overrides,
       @JsonProperty("evaluateOverrideExpressions") Boolean evaluateOverrideExpressions,
       @JsonProperty("templateRenderer") String templateRenderer,
       @JsonProperty("outputName") String outputName,
       @JsonProperty("namespace") String namespace,
-      @JsonProperty("kustomization") String kustomization) {
+      @Nullable @JsonProperty("inputArtifact")
+          CreateBakeManifestTask.InputArtifactPair inputArtifact) {
     this.inputArtifacts = inputArtifacts;
     this.expectedArtifacts = expectedArtifacts;
     this.overrides = overrides;
@@ -52,6 +55,6 @@ public class BakeManifestContext {
     this.templateRenderer = templateRenderer;
     this.outputName = outputName;
     this.namespace = namespace;
-    this.kustomization = kustomization;
+    this.inputArtifact = inputArtifact;
   }
 }
