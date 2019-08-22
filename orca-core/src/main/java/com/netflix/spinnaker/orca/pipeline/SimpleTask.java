@@ -79,9 +79,9 @@ public class SimpleTask implements Task {
                 ? new HashMap<>()
                 : objectMapper.convertValue(output.getContext(), Map.class))
         .outputs(
-            output.getOutputs() == null
+            output.getOutput() == null
                 ? new HashMap<>()
-                : objectMapper.convertValue(output.getOutputs(), Map.class))
+                : objectMapper.convertValue(output.getOutput(), Map.class))
         .build();
   }
 }

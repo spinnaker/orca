@@ -40,7 +40,7 @@ class SimpleTaskSpec extends Specification {
       stageOutput.put("hello", "world")
 
       output.setStatus(SimpleStageStatus.SUCCEEDED)
-      output.setOutputs(stageOutput)
+      output.setOutput(stageOutput)
       return output
     }
   }

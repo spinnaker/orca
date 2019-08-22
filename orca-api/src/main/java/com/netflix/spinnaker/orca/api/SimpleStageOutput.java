@@ -23,6 +23,6 @@ import lombok.Data;
 @Data
 public class SimpleStageOutput<T, U> {
   private SimpleStageStatus status;
-  private T outputs;
+  private T output;
   private U context;
 }
