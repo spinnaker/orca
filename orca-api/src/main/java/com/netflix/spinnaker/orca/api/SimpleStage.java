@@ -19,10 +19,10 @@ package com.netflix.spinnaker.orca.api;
 import com.google.common.annotations.Beta;
 
 /**
- * Used to create a more simplistic stage. This should be used by plugin developers to create plugin
- * stages
+ * This should be used by plugin developers to create plugin stages.
  *
- * @param <T>
+ * @param <T> is a class plugin developers will create to have a concrete class that has all of the
+ *     fields that are required for the stage to run.
  */
 @Beta
 public interface SimpleStage<T> {
