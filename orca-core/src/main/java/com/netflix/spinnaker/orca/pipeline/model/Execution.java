@@ -169,6 +169,11 @@ public class Execution implements Serializable {
    */
   @JsonIgnoreProperties(value = "execution")
   public @Nonnull List<Stage> getStages() {
+    if (stages.size() == 0) {
+      setStartTime(new Date().getTime());
+      setEndTime(new Date().getTime());
+    }
+
     return stages;
   }
 
