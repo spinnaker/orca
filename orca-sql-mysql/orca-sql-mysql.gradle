@@ -1,4 +1,4 @@
 dependencies {
   implementation(project(":orca-sql"))
-  implementation("mysql:mysql-connector-java")
+  implementation("org.mariadb.jdbc:mariadb-java-client:2.4.3")
 }
