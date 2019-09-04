@@ -194,6 +194,11 @@ class OperationsController {
   }
 
   private void recordPipelineFailure(Map pipeline, String errorMessage) {
+    // While we are recording the failure for this execution, we still want to
+    // parse/validate/realize the pipeline as best as we can. This way the UI
+    // can visualize the pipeline as best as possible.
+    // Additionally, if there are any failures we will record all errors for the
+    // user to be aware of and address
     Exception pipelineError = null
     try {
       pipeline = parseAndValidatePipeline(pipeline)
