@@ -21,6 +21,7 @@ import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.TestMessage
 import com.netflix.spinnaker.time.MutableClock
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.argumentCaptor
 import com.nhaarman.mockito_kotlin.atLeastOnce
 import com.nhaarman.mockito_kotlin.isA
@@ -135,7 +136,11 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
     }
 
     it("fires an event to report the push") {
-      verify(publisher).publishEvent(isA<MessageDuplicate>())
+
+      /* This test previously verified publication of a MessageDuplicate event
+       * but it is now optional for MonitorableQueue implementations.
+       */
+      verify(publisher, times(2)).publishEvent(any())
     }
 
     it("reports an unchanged queue depth") {
@@ -285,6 +290,7 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
       on("checking for unacknowledged messages") {
         clock.incrementBy(queue!!.ackTimeout)
         triggerRedeliveryCheck.invoke(queue!!)
+        clock.incrementBy(queue!!.ackTimeout)
       }
 
       it("fires an event indicating the message is being retried") {
@@ -318,12 +324,17 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
       }
 
       on("checking for unacknowledged messages") {
+        resetMocks()
         clock.incrementBy(queue!!.ackTimeout)
         triggerRedeliveryCheck.invoke(queue!!)
+        clock.incrementBy(queue!!.ackTimeout)
       }
 
       it("fires an event indicating the message is a duplicate") {
-        verify(publisher).publishEvent(isA<MessageDuplicate>())
+        /* This should see one of either (MessageDuplicate, MessagePushed) and
+         * a RetryPolled event.
+         */
+        verify(publisher, times(2)).publishEvent(any())
       }
 
       it("reports the depth without the message re-queued") {
@@ -351,6 +362,7 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
           queue!!.poll { _, _ -> }
           clock.incrementBy(queue!!.ackTimeout)
           triggerRedeliveryCheck.invoke(queue!!)
+          clock.incrementBy(queue!!.ackTimeout)
         }
       }
 

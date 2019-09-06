@@ -47,6 +47,11 @@ interface Queue {
   fun poll(callback: QueueCallback): Unit
 
   /**
+   * Polls the queue for ready messages, processing up-to [maxMessages].
+   */
+  fun poll(maxMessages: Int, callback: QueueCallback): Unit
+
+  /**
    * Push [message] for immediate delivery.
    */
   fun push(message: Message): Unit = push(message, ZERO)
@@ -92,6 +97,11 @@ interface Queue {
    * [Queue.ackTimeout] times.
    */
   val deadMessageHandlers: List<DeadMessageCallback>
+
+  /**
+   * Denotes a queue implementation capable of processing multiple messages per poll.
+   */
+  val canPollMany: Boolean
 
   companion object {
     /**

@@ -6,7 +6,8 @@ include(
   "keiko-redis-spring",
   "keiko-spring",
   "keiko-tck",
-  "keiko-test-common"
+  "keiko-test-common",
+  "keiko-sql"
 )
 
 rootProject.name = "keiko"

@@ -26,6 +26,7 @@ abstract class AbstractRedisQueue(
   private val serializationMigrator: Optional<SerializationMigrator>,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandlers: List<DeadMessageCallback>,
+  override val canPollMany: Boolean = false,
   override val publisher: EventPublisher
 
 ) : MonitorableQueue {

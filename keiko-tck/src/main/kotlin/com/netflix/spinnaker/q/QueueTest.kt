@@ -217,6 +217,7 @@ abstract class QueueTest<out Q : Queue>(
         with(queue!!) {
           clock.incrementBy(ackTimeout)
           retry()
+          clock.incrementBy(ackTimeout)
           poll(callback)
         }
       }
@@ -257,6 +258,7 @@ abstract class QueueTest<out Q : Queue>(
         with(queue!!) {
           clock.incrementBy(ackTimeoutOverride)
           retry()
+          clock.incrementBy(ackTimeout)
           poll(callback)
         }
       }
@@ -306,6 +308,7 @@ abstract class QueueTest<out Q : Queue>(
             poll { _, _ -> }
             clock.incrementBy(ackTimeout)
             retry()
+            clock.incrementBy(ackTimeout)
           }
         }
       }
@@ -315,6 +318,7 @@ abstract class QueueTest<out Q : Queue>(
 
       on("polling the queue again") {
         with(queue!!) {
+          clock.incrementBy(ackTimeout)
           poll(callback)
         }
       }
@@ -514,6 +518,7 @@ abstract class QueueTest<out Q : Queue>(
           with(queue!!) {
             clock.incrementBy(ackTimeout)
             retry()
+            clock.incrementBy(ackTimeout)
             poll(callback)
           }
         }
@@ -569,6 +574,7 @@ abstract class QueueTest<out Q : Queue>(
           with(queue!!) {
             clock.incrementBy(ackTimeout)
             retry()
+            clock.incrementBy(ackTimeout)
             poll(callback)
             poll(callback)
           }

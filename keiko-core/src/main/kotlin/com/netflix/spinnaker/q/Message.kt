@@ -60,8 +60,15 @@ const val JSON_NAME_PROPERTY = "kind"
 @JsonTypeInfo(use = NAME, property = JSON_NAME_PROPERTY)
 interface Attribute
 
+@Deprecated("Message attributes are intended for internal keiko use only, handlers should " +
+  "limit attempts or run-time through other means.")
 /**
  * An attribute representing the maximum number of retries for a message.
+ *
+ * @deprecated This attribute originally combined the number of times a message
+ * could be retried due to not being acked within [AckTimeoutSeconds] as well as
+ * the number of times a properly acked retryable message could be requeued which
+ * is normal behavior for many Orca message types.
  */
 @JsonTypeName("maxAttempts")
 data class MaxAttemptsAttribute(val maxAttempts: Int = -1) : Attribute
@@ -71,3 +78,10 @@ data class MaxAttemptsAttribute(val maxAttempts: Int = -1) : Attribute
  */
 @JsonTypeName("attempts")
 data class AttemptsAttribute(var attempts: Int = 0) : Attribute
+
+/**
+ * An attribute representing the number of times a message has been retried
+ * due to ack timeouts.
+ */
+@JsonTypeName("ackAttempts")
+data class AckAttemptsAttribute(var ackAttempts: Int = 0) : Attribute

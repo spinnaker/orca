@@ -52,13 +52,17 @@ class QueueProcessor(
    * Polls the [Queue] once (or more if [fillExecutorEachCycle] is true) so
    * long as [executor] has capacity.
    */
-  @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:10}")
+  @Scheduled(fixedDelayString = "\${queue.poll.frequency.ms:50}")
   fun poll() =
     ifEnabled {
       if (executor.hasCapacity()) {
         if (fillExecutorEachCycle) {
-          executor.availableCapacity().downTo(1).forEach {
-            pollOnce()
+          if (queue.canPollMany) {
+            queue.poll(executor.availableCapacity(), callback)
+          } else {
+            executor.availableCapacity().downTo(1).forEach {
+              pollOnce()
+            }
           }
         } else {
           pollOnce()
@@ -72,44 +76,46 @@ class QueueProcessor(
    * Polls the [Queue] once to attempt to read a single message.
    */
   private fun pollOnce() {
-    queue.poll { message, ack ->
-      log.info("Received message $message")
-      val handler = handlerFor(message)
-      if (handler != null) {
-        try {
-          executor.execute {
-            try {
-              handler.invoke(message)
-              ack.invoke()
-            } catch (e: Throwable) {
-              // Something very bad is happening
-              log.error("Unhandled throwable from $message", e)
-              publisher.publishEvent(HandlerThrewError(message))
-            }
-          }
-        } catch (e: RejectedExecutionException) {
-          var requeueDelaySeconds = requeueDelay.seconds
-          if (requeueMaxJitter.seconds > 0) {
-            requeueDelaySeconds += random.nextInt(requeueMaxJitter.seconds.toInt())
-          }
+    queue.poll(callback)
+  }
 
-          val requeueDelay = Duration.ofSeconds(requeueDelaySeconds)
-          val numberOfAttempts = message.getAttribute<AttemptsAttribute>()
-
-          log.warn(
-            "Executor at capacity, re-queuing message {} (delay: {}, attempts: {})",
-            message,
-            requeueDelay,
-            numberOfAttempts,
-            e
-          )
-          queue.push(message, requeueDelay)
+  val callback: QueueCallback = { message, ack ->
+    log.info("Received message $message")
+    val handler = handlerFor(message)
+    if (handler != null) {
+      try {
+        executor.execute {
+          try {
+            handler.invoke(message)
+            ack.invoke()
+          } catch (e: Throwable) {
+            // Something very bad is happening
+            log.error("Unhandled throwable from $message", e)
+            publisher.publishEvent(HandlerThrewError(message))
+          }
         }
-      } else {
-        log.error("Unsupported message type ${message.javaClass.simpleName}: $message")
-        deadMessageHandler.invoke(queue, message)
-        publisher.publishEvent(MessageDead)
+      } catch (e: RejectedExecutionException) {
+        var requeueDelaySeconds = requeueDelay.seconds
+        if (requeueMaxJitter.seconds > 0) {
+          requeueDelaySeconds += random.nextInt(requeueMaxJitter.seconds.toInt())
+        }
+
+        val requeueDelay = Duration.ofSeconds(requeueDelaySeconds)
+        val numberOfAttempts = message.getAttribute<AttemptsAttribute>()
+
+        log.warn(
+          "Executor at capacity, re-queuing message {} (delay: {}, attempts: {})",
+          message,
+          requeueDelay,
+          numberOfAttempts,
+          e
+        )
+        queue.push(message, requeueDelay)
       }
+    } else {
+      log.error("Unsupported message type ${message.javaClass.simpleName}: $message")
+      deadMessageHandler.invoke(queue, message)
+      publisher.publishEvent(MessageDead)
     }
   }
 

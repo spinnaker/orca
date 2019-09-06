@@ -46,6 +46,10 @@ import java.util.Optional
 
 @Configuration
 @EnableConfigurationProperties(RedisQueueProperties::class)
+@ConditionalOnProperty(
+  value = ["keiko.queue.redis.enabled"],
+  havingValue = "true",
+  matchIfMissing = true)
 class RedisQueueConfiguration {
 
   @Bean

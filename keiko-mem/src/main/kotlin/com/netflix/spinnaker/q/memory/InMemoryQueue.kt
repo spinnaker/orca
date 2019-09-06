@@ -19,6 +19,7 @@ package com.netflix.spinnaker.q.memory
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.QueueCallback
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MessageAcknowledged
 import com.netflix.spinnaker.q.metrics.MessageDead
@@ -51,6 +52,7 @@ class InMemoryQueue(
   private val clock: Clock,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandlers: List<DeadMessageCallback>,
+  override val canPollMany: Boolean = false,
   override val publisher: EventPublisher
 ) : MonitorableQueue {
 
@@ -76,6 +78,10 @@ class InMemoryQueue(
         fire(MessageAcknowledged)
       }
     }
+  }
+
+  override fun poll(maxMessages: Int, callback: QueueCallback) {
+    poll(callback)
   }
 
   override fun push(message: Message, delay: TemporalAmount) {

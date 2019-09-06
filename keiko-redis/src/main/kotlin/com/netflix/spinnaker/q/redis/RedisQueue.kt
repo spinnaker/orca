@@ -24,6 +24,7 @@ import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.MaxAttemptsAttribute
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.QueueCallback
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.LockFailed
 import com.netflix.spinnaker.q.metrics.MessageAcknowledged
@@ -66,6 +67,7 @@ class RedisQueue(
   private val serializationMigrator: Optional<SerializationMigrator>,
   override val ackTimeout: TemporalAmount = Duration.ofMinutes(1),
   override val deadMessageHandlers: List<DeadMessageCallback>,
+  override val canPollMany: Boolean = false,
   override val publisher: EventPublisher
 ) : AbstractRedisQueue(
   clock,
@@ -74,6 +76,7 @@ class RedisQueue(
   serializationMigrator,
   ackTimeout,
   deadMessageHandlers,
+  canPollMany,
   publisher
 ) {
 
@@ -89,7 +92,7 @@ class RedisQueue(
 
   init {
     cacheScript()
-    log.info("Configured queue: $queueName")
+    log.info("Configured $javaClass queue: $queueName")
   }
 
   final override fun cacheScript() {
@@ -122,6 +125,10 @@ class RedisQueue(
         }
       fire(QueuePolled)
     }
+  }
+
+  override fun poll(maxMessages: Int, callback: QueueCallback) {
+    poll(callback)
   }
 
   override fun push(message: Message, delay: TemporalAmount) {
