@@ -1,5 +1,9 @@
 SET tx_isolation = 'READ-COMMITTED';
 
+DROP DATABASE IF EXISTS orca;
+DROP USER IF EXISTS orca_migrate;
+DROP USER IF EXISTS orca_service;
+
 CREATE DATABASE orca;
 CREATE USER orca_migrate;
 CREATE USER orca_service;
