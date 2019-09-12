@@ -33,7 +33,6 @@ class PipelineExpressionEvaluatorSpec extends Specification {
 
     then:
     noExceptionThrown()
-    evaluator
     evaluator.getExecutionAwareFunctions().size() == 2 // only 1 function is execution aware.
     evaluator.getExecutionAwareFunctions().findAll { it.contains('functionWithExecutionContext') }.size() == 2
   }

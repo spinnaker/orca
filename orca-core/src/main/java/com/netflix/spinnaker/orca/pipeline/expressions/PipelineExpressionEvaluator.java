@@ -94,7 +94,7 @@ public class PipelineExpressionEvaluator {
         }
 
         // 'deployServerGroups' is a variable instead of a function and this block handles that.
-        // Migrate it to a function before removing this block of code.
+        // Migrate the pipelines to use function instead, before removing this block of code.
         for (String a : EXECUTION_AWARE_ALIASES) {
           if (expression.contains(a) && !expression.contains("#" + a + "( #root.execution, ")) {
             expression = expression.replaceAll(a, "#" + a + "( #root.execution)");
