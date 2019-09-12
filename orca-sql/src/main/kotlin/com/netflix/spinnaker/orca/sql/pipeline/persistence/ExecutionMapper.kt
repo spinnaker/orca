@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFOR
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.sql.ResultSet
+import kotlin.math.max
 
 /**
  * Converts a SQL [ResultSet] into an Execution.
@@ -88,8 +89,8 @@ class ExecutionMapper(
             .sortedBy { it.refId }
             .forEach {
               when (it.syntheticStageOwner) {
-                STAGE_BEFORE -> stages.add(stages.indexOf(it.parent), it)
-                STAGE_AFTER -> stages.add(stages.indexOf(it.parent) + 1, it)
+                STAGE_BEFORE -> stages.add(max(0, stages.indexOf(it.parent)), it)
+                STAGE_AFTER -> stages.add(max(0, stages.indexOf(it.parent)) + 1, it)
               }
             }
 
