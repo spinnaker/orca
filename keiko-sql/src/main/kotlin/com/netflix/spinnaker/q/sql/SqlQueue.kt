@@ -55,6 +55,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.Exception
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.random.Random.Default.nextLong
 
 @KotlinOpen
 class SqlQueue(
@@ -115,6 +116,9 @@ class SqlQueue(
   private val lockedField = field("locked")
 
   private val lockTtlDuration = Duration.ofSeconds(lockTtlSeconds.toLong())
+
+  private val writeRetryBackoffMin = max(sqlRetryProperties.transactions.backoffMs - 25, 25)
+  private val writeRetryBackoffMax = max(sqlRetryProperties.transactions.backoffMs + 50, 100)
 
   init {
     log.info("Configured $javaClass queue: $queueName")
@@ -716,7 +720,9 @@ class SqlQueue(
         "sqlWrite",
         RetryConfig.custom<T>()
           .maxAttempts(sqlRetryProperties.transactions.maxRetries)
-          .waitDuration(Duration.ofMillis(sqlRetryProperties.transactions.backoffMs))
+          .waitDuration(
+            Duration.ofMillis(
+              nextLong(writeRetryBackoffMin, writeRetryBackoffMax)))
           .ignoreExceptions(SQLDialectNotSupportedException::class.java)
           .build()
       )

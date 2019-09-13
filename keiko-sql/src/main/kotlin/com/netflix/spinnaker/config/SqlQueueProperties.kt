@@ -52,7 +52,7 @@ class SqlQueueProperties {
    * See: https://github.com/spinnaker/kork/blob/master/kork-sql/src/main/kotlin/com/netflix/spinnaker/kork/sql/config/SqlRetryProperties.kt
    */
   var retries: SqlRetryProperties = SqlRetryProperties(
-    transactions = RetryProperties(maxRetries = 10, backoffMs = 100),
+    transactions = RetryProperties(maxRetries = 20, backoffMs = 100),
     reads = RetryProperties()
   )
 }
