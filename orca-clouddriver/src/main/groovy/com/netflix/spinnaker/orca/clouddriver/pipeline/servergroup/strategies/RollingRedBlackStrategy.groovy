@@ -34,11 +34,12 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
+import static com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy.ROLLING_RED_BLACK
 
 @Slf4j
 @Component
 class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
-  final String name = "rollingredblack"
+  final String name = ROLLING_RED_BLACK.key
 
   @Autowired
   DisableServerGroupStage disableServerGroupStage

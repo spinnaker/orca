@@ -18,6 +18,8 @@ package com.netflix.spinnaker.config
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
+import com.netflix.spinnaker.orca.notifications.SqlNotificationClusterLock
 import com.netflix.spinnaker.orca.sql.JooqSqlCommentAppender
 import com.netflix.spinnaker.orca.sql.JooqToSpringExceptionTransformer
 import com.netflix.spinnaker.orca.sql.QueryLogger
@@ -34,6 +36,7 @@ import org.jooq.impl.DataSourceConnectionProvider
 import org.jooq.impl.DefaultConfiguration
 import org.jooq.impl.DefaultDSLContext
 import org.jooq.impl.DefaultExecuteListenerProvider
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -41,12 +44,14 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Primary
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy
 import sun.net.InetAddressCachePolicy
 import java.lang.reflect.Field
 import java.security.Security
 import java.sql.Connection
+import java.time.Clock
 import javax.sql.DataSource
 
 @Configuration
@@ -123,9 +128,24 @@ class SqlConfiguration {
 
   @Bean("dbHealthIndicator") fun dbHealthIndicator(
     sqlHealthcheckActivator: SqlHealthcheckActivator,
-    sqlProperties: SqlProperties
+    sqlProperties: SqlProperties,
+    dynamicConfigService: DynamicConfigService
   ) =
-    SqlHealthIndicator(sqlHealthcheckActivator, sqlProperties.connectionPool.dialect)
+    SqlHealthIndicator(sqlHealthcheckActivator, sqlProperties.connectionPool.dialect, dynamicConfigService)
+
+  @ConditionalOnProperty("execution-repository.sql.enabled")
+  @ConditionalOnMissingBean(NotificationClusterLock::class)
+  @Primary
+  @Bean
+  fun sqlNotificationClusterLock(
+    jooq: DSLContext,
+    clock: Clock,
+    properties: SqlProperties
+  ) = SqlNotificationClusterLock(
+    jooq = jooq,
+    clock = clock,
+    retryProperties = properties.transactionRetry
+  )
 }
 
 /**
