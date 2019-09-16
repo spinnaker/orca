@@ -49,7 +49,7 @@ public class ConditionAwareDeployStagePreprocessor implements DeployStagePreProc
 
   @Override
   public boolean supports(Stage stage) {
-    // Restricting pausing deployments to Pipeline executions only
+    // Restrict pausing deployments to Pipeline executions only
     // Orchestrations do not currently allow a user to skip the wait in the UI
     return stage.getExecution().getType().equals(Execution.ExecutionType.PIPELINE);
   }
