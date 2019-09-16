@@ -33,15 +33,19 @@ import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySup
 
 @Component
 class GceDeployStagePreProcessor implements DeployStagePreProcessor  {
+  private final ApplySourceServerGroupCapacityStage applySourceServerGroupSnapshotStage
+  private final ResizeServerGroupStage resizeServerGroupStage
+  private final TargetServerGroupResolver targetServerGroupResolver
 
   @Autowired
-  ApplySourceServerGroupCapacityStage applySourceServerGroupSnapshotStage
-
-  @Autowired
-  ResizeServerGroupStage resizeServerGroupStage
-
-  @Autowired
-  TargetServerGroupResolver targetServerGroupResolver
+  GceDeployStagePreProcessor(
+    ApplySourceServerGroupCapacityStage applySourceServerGroupCapacityStage,
+    ResizeServerGroupStage resizeServerGroupStage,
+    TargetServerGroupResolver targetServerGroupResolver) {
+    this.applySourceServerGroupSnapshotStage = applySourceServerGroupCapacityStage
+    this.resizeServerGroupStage = resizeServerGroupStage
+    this.targetServerGroupResolver = targetServerGroupResolver
+  }
 
   @Override
   List<StepDefinition> additionalSteps(Stage stage) {

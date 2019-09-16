@@ -50,6 +50,10 @@ public interface DeployStagePreProcessor {
   class StepDefinition {
     String name;
     Class taskClass;
+
+    public Class getTaskClass() {
+      return taskClass;
+    }
   }
 
   class StageDefinition {
