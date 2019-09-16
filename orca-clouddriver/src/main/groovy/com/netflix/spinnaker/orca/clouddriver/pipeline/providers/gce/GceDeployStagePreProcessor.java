@@ -62,18 +62,18 @@ public class GceDeployStagePreProcessor implements DeployStagePreProcessor {
   @Override
   public ImmutableList<StageDefinition> beforeStageDefinitions(Stage stage) {
     StageData stageData = stage.mapTo(StageData.class);
-    if (shouldPinSourceServerGroup(stageData.getStrategy())) {
-      Map<String, Object> resizeContext = getResizeContext(stageData);
-      resizeContext.put("pinMinimumCapacity", true);
-
-      return ImmutableList.of(
-          new StageDefinition(
-              String.format("Pin %s", resizeContext.get("serverGroupName")),
-              resizeServerGroupStage,
-              resizeContext));
+    if (!shouldPinSourceServerGroup(stageData.getStrategy())) {
+      return ImmutableList.of();
     }
 
-    return ImmutableList.of();
+    Map<String, Object> resizeContext = getResizeContext(stageData);
+    resizeContext.put("pinMinimumCapacity", true);
+
+    return ImmutableList.of(
+        new StageDefinition(
+            String.format("Pin %s", resizeContext.get("serverGroupName")),
+            resizeServerGroupStage,
+            resizeContext));
   }
 
   @Override

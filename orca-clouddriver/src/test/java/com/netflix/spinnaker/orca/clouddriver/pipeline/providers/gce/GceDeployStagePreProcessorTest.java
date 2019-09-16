@@ -66,49 +66,40 @@ class GceDeployStagePreProcessorTest {
                 new TargetServerGroup(
                     ImmutableMap.of("name", "testapp-v000", "zone", "us-central1-f"))));
     Stage stage = new Stage();
-    Map<String, Object> context = new HashMap<>();
+    Map<String, Object> context = createDefaultContext();
     context.put("strategy", "redblack");
-    context.put("cloudProvider", "gce");
-    context.put("zone", "us-central1-f");
-    context.put(
-        "availabilityZones",
-        Collections.singletonMap("us-central1-f", Collections.singletonList("us-central1-f")));
-    context.put("application", "testapp");
     stage.setContext(context);
 
     // Before Stages
     List<StageDefinition> beforeStages = preProcessor.beforeStageDefinitions(stage);
-    assertThat(beforeStages.stream().map(stageDefinition -> stageDefinition.stageDefinitionBuilder))
+    assertThat(beforeStages)
+        .extracting(stageDefinition -> stageDefinition.stageDefinitionBuilder)
         .containsExactly(resizeServerGroupStage);
 
     // Additional Steps
     List<StepDefinition> additionalSteps = preProcessor.additionalSteps(stage);
-    assertThat(additionalSteps.stream().map(StepDefinition::getTaskClass))
+    assertThat(additionalSteps)
+        .extracting(StepDefinition::getTaskClass)
         .containsExactly(CaptureSourceServerGroupCapacityTask.class);
 
     // After Stages
     List<StageDefinition> afterStages = preProcessor.afterStageDefinitions(stage);
-    assertThat(afterStages.stream().map(stageDefinition -> stageDefinition.stageDefinitionBuilder))
+    assertThat(afterStages)
+        .extracting(stageDefinition -> stageDefinition.stageDefinitionBuilder)
         .containsExactly(applySourceServerGroupCapacityStage);
 
     // On Failure Stages
     List<StageDefinition> failureStages = preProcessor.onFailureStageDefinitions(stage);
-    assertThat(
-            failureStages.stream().map(stageDefinition -> stageDefinition.stageDefinitionBuilder))
+    assertThat(failureStages)
+        .extracting(stageDefinition -> stageDefinition.stageDefinitionBuilder)
         .containsExactly(resizeServerGroupStage);
   }
 
   @Test
   void noneStrategyTest() {
     Stage stage = new Stage();
-    Map<String, Object> context = new HashMap<>();
+    Map<String, Object> context = createDefaultContext();
     context.put("strategy", "none");
-    context.put("cloudProvider", "gce");
-    context.put("zone", "us-central1-f");
-    context.put(
-        "availabilityZones",
-        Collections.singletonMap("us-central1-f", Collections.singletonList("us-central1-f")));
-    context.put("application", "my-gce-application");
     stage.setContext(context);
 
     // Before Stages
@@ -117,16 +108,29 @@ class GceDeployStagePreProcessorTest {
 
     // Additional Steps
     List<StepDefinition> additionalSteps = preProcessor.additionalSteps(stage);
-    assertThat(additionalSteps.stream().map(StepDefinition::getTaskClass))
+    assertThat(additionalSteps)
+        .extracting(StepDefinition::getTaskClass)
         .containsExactly(CaptureSourceServerGroupCapacityTask.class);
 
     // After Stages
     List<StageDefinition> afterStages = preProcessor.afterStageDefinitions(stage);
-    assertThat(afterStages.stream().map(stageDefinition -> stageDefinition.stageDefinitionBuilder))
+    assertThat(afterStages)
+        .extracting(stageDefinition -> stageDefinition.stageDefinitionBuilder)
         .containsExactly(applySourceServerGroupCapacityStage);
 
     // On Failure Stages
     List<StageDefinition> failureStages = preProcessor.onFailureStageDefinitions(stage);
     assertThat(failureStages).isEmpty();
+  }
+
+  private Map<String, Object> createDefaultContext() {
+    Map<String, Object> context = new HashMap<>();
+    context.put("cloudProvider", "gce");
+    context.put("zone", "us-central1-f");
+    context.put(
+        "availabilityZones",
+        Collections.singletonMap("us-central1-f", Collections.singletonList("us-central1-f")));
+    context.put("application", "my-gce-application");
+    return context;
   }
 }
