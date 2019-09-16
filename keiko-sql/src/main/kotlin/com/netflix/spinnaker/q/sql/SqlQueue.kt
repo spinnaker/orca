@@ -363,10 +363,12 @@ class SqlQueue(
        * If an instance crashes after committing the above txn but before the following delete,
        * [retry] will release the locks after [lockTtlSeconds] and another instance will grab them.
        */
-      withRetry(RetryCategory.WRITE) {
-        jooq.deleteFrom(queueTable)
-          .where(idField.`in`(*ids.toTypedArray()))
-          .execute()
+      ids.sorted().chunked(4).forEach { chunk ->
+        withRetry(RetryCategory.WRITE) {
+          jooq.deleteFrom(queueTable)
+            .where(idField.`in`(*chunk.toTypedArray()))
+            .execute()
+        }
       }
 
       lockedMessages.forEach {
@@ -639,11 +641,25 @@ class SqlQueue(
         .execute()
     }
 
-    val changed = withRetry(RetryCategory.WRITE) {
-      jooq.update(queueTable)
-        .set(lockedField, "0")
-        .where(fingerprintField.eq(fingerprint))
-        .execute()
+    var changed = 0
+
+    withRetry(RetryCategory.WRITE) {
+      jooq.transaction { config ->
+        val txn = DSL.using(config)
+
+        val id = txn.select(idField)
+          .from(queueTable)
+          .where(fingerprintField.eq(fingerprint))
+          .limit(1)
+          .fetchInto(String::class.java)
+
+        if (id.isNotEmpty()) {
+          changed = txn.update(queueTable)
+            .set(lockedField, "0")
+            .where(idField.eq(id.first()))
+            .execute()
+        }
+      }
     }
 
     if (changed == 0) {
