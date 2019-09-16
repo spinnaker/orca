@@ -51,6 +51,13 @@ public interface DeployStagePreProcessor {
     String name;
     Class taskClass;
 
+    public StepDefinition() {}
+
+    public StepDefinition(String name, Class taskClass) {
+      this.name = name;
+      this.taskClass = taskClass;
+    }
+
     public Class getTaskClass() {
       return taskClass;
     }
@@ -60,5 +67,14 @@ public interface DeployStagePreProcessor {
     public String name;
     public StageDefinitionBuilder stageDefinitionBuilder;
     public Map context;
+
+    public StageDefinition() {}
+
+    public StageDefinition(
+        String name, StageDefinitionBuilder stageDefinitionBuilder, Map context) {
+      this.name = name;
+      this.stageDefinitionBuilder = stageDefinitionBuilder;
+      this.context = context;
+    }
   }
 }
