@@ -31,7 +31,6 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,14 +53,14 @@ public class GceDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  public List<StepDefinition> additionalSteps(Stage stage) {
+  public ImmutableList<StepDefinition> additionalSteps(Stage stage) {
     return ImmutableList.of(
         new StepDefinition(
             "snapshotSourceServerGroup", CaptureSourceServerGroupCapacityTask.class));
   }
 
   @Override
-  public List<StageDefinition> beforeStageDefinitions(Stage stage) {
+  public ImmutableList<StageDefinition> beforeStageDefinitions(Stage stage) {
     StageData stageData = stage.mapTo(StageData.class);
     if (shouldPinSourceServerGroup(stageData.getStrategy())) {
       Map<String, Object> resizeContext = getResizeContext(stageData);
@@ -78,7 +77,7 @@ public class GceDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  public List<StageDefinition> afterStageDefinitions(Stage stage) {
+  public ImmutableList<StageDefinition> afterStageDefinitions(Stage stage) {
     return ImmutableList.of(
         new StageDefinition(
             "restoreMinCapacityFromSnapshot",
@@ -87,7 +86,7 @@ public class GceDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  public List<StageDefinition> onFailureStageDefinitions(Stage stage) {
+  public ImmutableList<StageDefinition> onFailureStageDefinitions(Stage stage) {
     StageData stageData = stage.mapTo(StageData.class);
 
     StageDefinition unpinServerGroupStage = buildUnpinServerGroupStage(stageData);
