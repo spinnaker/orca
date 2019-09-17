@@ -632,41 +632,28 @@ class SqlQueue(
   }
 
   private fun ackMessage(fingerprint: String) {
-    /* TODO: since this isn't transactional, we should periodically check for and cleanup
-     *  any old messages with fingerprints not represented on the queue or in unacked.
-     */
     withRetry(RetryCategory.WRITE) {
       jooq.deleteFrom(unackedTable)
         .where(fingerprintField.eq(fingerprint))
         .execute()
     }
 
-    var changed = 0
-
     withRetry(RetryCategory.WRITE) {
       jooq.transaction { config ->
         val txn = DSL.using(config)
 
-        val id = txn.select(idField)
-          .from(queueTable)
-          .where(fingerprintField.eq(fingerprint))
-          .limit(1)
-          .fetchInto(String::class.java)
-
-        if (id.isNotEmpty()) {
-          changed = txn.update(queueTable)
-            .set(lockedField, "0")
-            .where(idField.eq(id.first()))
-            .execute()
-        }
-      }
-    }
-
-    if (changed == 0) {
-      withRetry(RetryCategory.WRITE) {
-        jooq.deleteFrom(messagesTable)
+        val changed = txn.update(queueTable)
+          .set(lockedField, "0")
           .where(fingerprintField.eq(fingerprint))
           .execute()
+
+        // TODO: consider async scheduled cleanup of messagesTable if having this in the
+        //  ack txn results in frequent deadlocks.
+        if (changed == 0) {
+          txn.deleteFrom(messagesTable)
+            .where(fingerprintField.eq(fingerprint))
+            .execute()
+        }
       }
     }
 
