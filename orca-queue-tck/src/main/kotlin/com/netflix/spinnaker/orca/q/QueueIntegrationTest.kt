@@ -139,7 +139,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -159,7 +159,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.RUNNING doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -194,7 +194,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -234,7 +234,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -309,9 +309,15 @@ abstract class QueueIntegrationTest {
         requisiteStageRefIds = listOf("2a1")
       }
       stage {
-        refId = "2b"
-        type = "dummy"
+        refId = "2b1"
+        type = "wait"
+        context = mapOf("waitTime" to 2)
         requisiteStageRefIds = listOf("1")
+      }
+      stage {
+        refId = "2b2"
+        type = "dummy"
+        requisiteStageRefIds = listOf("2b1")
       }
       stage {
         refId = "3"
@@ -321,7 +327,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult.ofStatus(TERMINAL)
     whenever(dummyTask.execute(argThat { refId != "2a1" })) doReturn TaskResult.SUCCEEDED
 
@@ -332,7 +338,7 @@ abstract class QueueIntegrationTest {
       assertThat(stageByRef("1").status).isEqualTo(SUCCEEDED)
       assertThat(stageByRef("2a1").status).isEqualTo(TERMINAL)
       assertThat(stageByRef("2a2").status).isEqualTo(NOT_STARTED)
-      assertThat(stageByRef("2b").status).isEqualTo(SUCCEEDED)
+      assertThat(stageByRef("2b2").status).isEqualTo(NOT_STARTED)
       assertThat(stageByRef("3").status).isEqualTo(NOT_STARTED)
     }
   }
@@ -369,7 +375,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult.ofStatus(TERMINAL)
     whenever(dummyTask.execute(argThat { refId != "2a1" })) doReturn TaskResult.SUCCEEDED
 
@@ -424,7 +430,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(argThat { refId == "2a1" })) doReturn TaskResult.ofStatus(TERMINAL)
     whenever(dummyTask.execute(argThat { refId != "2a1" })) doReturn TaskResult.SUCCEEDED
 
@@ -454,16 +460,22 @@ abstract class QueueIntegrationTest {
     val parentPipeline = pipeline {
       application = "spinnaker"
       stage {
-        refId = "1"
+        refId = "1a"
+        type = "wait"
+        context = mapOf("waitTime" to 2)
+      }
+      stage {
+        refId = "1b"
         type = "pipeline"
         context = mapOf("executionId" to childPipeline.id)
+        requisiteStageRefIds = linkedSetOf("1a")
       }
     }
 
     repository.store(childPipeline)
     repository.store(parentPipeline)
 
-    whenever(dummyTask.execute(argThat { refId == "1" })) doReturn TaskResult.ofStatus(CANCELED)
+    whenever(dummyTask.execute(argThat { refId == "1b" })) doReturn TaskResult.ofStatus(CANCELED)
     context.runParentToCompletion(parentPipeline, childPipeline, runner::start, repository)
 
     repository.retrieve(PIPELINE, parentPipeline.id).apply {
@@ -492,20 +504,27 @@ abstract class QueueIntegrationTest {
         context = mapOf("waitTime" to 60)
       }
       stage {
-        refId = "2"
-        type = "dummy"
+        refId = "2a"
+        type = "wait"
+        context = mapOf("waitTime" to 2)
         requisiteStageRefIds = emptyList()
+      }
+      stage {
+        refId = "2b"
+        type = "dummy"
+        requisiteStageRefIds = listOf("2a")
       }
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.execute(argThat { refId == "2" })) doReturn TaskResult.ofStatus(TERMINAL)
+    whenever(dummyTask.execute(argThat { refId == "2b" })) doReturn TaskResult.ofStatus(TERMINAL)
 
     context.runToCompletion(pipeline, runner::start, repository)
 
     repository.retrieve(PIPELINE, pipeline.id).apply {
       assertThat(status).isEqualTo(TERMINAL)
-      assertThat(stageByRef("2").status).isEqualTo(TERMINAL)
+      assertThat(stageByRef("2b").status).isEqualTo(TERMINAL)
+      assertThat(stageByRef("2a").status).isEqualTo(SUCCEEDED)
       assertThat(stageByRef("1").status).isEqualTo(CANCELED)
       assertThat(stageByRef("1").startTime).isGreaterThan(1L)
       assertThat(stageByRef("1").endTime).isGreaterThan(1L)
@@ -547,7 +566,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -555,7 +574,7 @@ abstract class QueueIntegrationTest {
     repository.retrieve(PIPELINE, pipeline.id).apply {
       assertThat(status).isEqualTo(SUCCEEDED)
       assertThat(stages.size).isEqualTo(2)
-      assertThat(stages.first().type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
+      assertThat(stages.map { it.type }).contains(RestrictExecutionDuringTimeWindow.TYPE)
       assertThat(stages.map { it.status }).allMatch { it == SUCCEEDED }
     }
   }
@@ -584,7 +603,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -593,9 +612,12 @@ abstract class QueueIntegrationTest {
       assertSoftly {
         assertThat(status).isEqualTo(SUCCEEDED)
         assertThat(stages.size).isEqualTo(5)
-        assertThat(stages.first().type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
-        assertThat(stages[1..3].map { it.type }).allMatch { it == "dummy" }
-        assertThat(stages.last().type).isEqualTo("parallel")
+        assertThat(stages.map { it.type }).containsExactlyInAnyOrder(
+          RestrictExecutionDuringTimeWindow.TYPE,
+          "dummy",
+          "dummy",
+          "dummy",
+          "parallel")
         assertThat(stages.map { it.status }).allMatch { it == SUCCEEDED }
       }
     }
@@ -619,7 +641,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.builder(SUCCEEDED).context(mapOf("output" to "foo")).build()
 
     context.runToCompletion(pipeline, runner::start, repository)
@@ -668,7 +690,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doReturn TaskResult.SUCCEEDED // second run succeeds
 
     context.restartAndRunToCompletion(pipeline.stageByRef("1"), runner::restart, repository)
@@ -709,7 +731,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doAnswer {
       val stage = it.arguments.first() as Stage
       if (stage.refId == "1") {
@@ -766,7 +788,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doAnswer {
       val stage = it.arguments.first() as Stage
       if (stage.refId == "1") {
@@ -803,7 +825,7 @@ abstract class QueueIntegrationTest {
     }
     repository.store(pipeline)
 
-    whenever(dummyTask.timeout) doReturn 2000L
+    whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doAnswer {
       val stage = it.arguments.first() as Stage
       if (stage.refId == "1") {
@@ -846,7 +868,7 @@ class TestConfig {
 
   @Bean
   fun dummyTask(): DummyTask = mock {
-    on { timeout } doReturn Duration.ofMinutes(2).toMillis()
+    on { getDynamicTimeout(any()) } doReturn Duration.ofMinutes(2).toMillis()
   }
 
   @Bean
