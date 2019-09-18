@@ -679,7 +679,7 @@ class SqlQueue(
     }
 
     if (deleted > 0) {
-      log.debug("Cleaned up $deleted completed messages ($toDelete candidates / " +
+      log.debug("Cleaned up $deleted completed messages (${toDelete.size} candidates / " +
         "$candidates messages older than $minTime)")
     }
   }
