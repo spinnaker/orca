@@ -248,7 +248,6 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
           assertThat(depth).isEqualTo(0)
           assertThat(unacked).isEqualTo(0)
           assertThat(ready).isEqualTo(0)
-          assertThat(orphaned).isEqualTo(0)
         }
       }
     }
@@ -303,7 +302,6 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
             assertThat(depth).isEqualTo(1)
             assertThat(unacked).isEqualTo(0)
             assertThat(ready).isEqualTo(1)
-            assertThat(orphaned).isEqualTo(0)
           }
         }
       }

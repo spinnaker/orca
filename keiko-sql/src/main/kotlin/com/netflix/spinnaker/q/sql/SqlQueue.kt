@@ -71,7 +71,8 @@ class SqlQueue(
   override val canPollMany: Boolean = true,
   override val publisher: EventPublisher,
   private val sqlRetryProperties: SqlRetryProperties,
-  private val ULID: ULID = ULID()
+  private val ULID: ULID = ULID(),
+  private val cleanupAfter: TemporalAmount = Duration.ofMinutes(5)
 ) : MonitorableQueue {
 
   companion object {
@@ -631,30 +632,63 @@ class SqlQueue(
     fire(RetryPolled)
   }
 
+  // TODO: ideally, this would only run on one instance at a time with a distributed lock
+  @Scheduled(fixedDelayString = "\${queue.cleanup.frequency.ms:300000}")
+  fun cleanupMessages() {
+    val minTime = clock.instant().minus(cleanupAfter)
+    val minUlid = ULID.nextValue(minTime.toEpochMilli()).toString()
+
+    val rs = withRetry(RetryCategory.READ) {
+      jooq.select(
+        field("m.id").`as`("mid"),
+        field("q.id").`as`("qid"),
+        field("u.id").`as`("uid")
+      )
+        .from(messagesTable.`as`("m"))
+        .leftOuterJoin(queueTable.`as`("q"))
+        .on(sql("m.fingerprint = q.fingerprint"))
+        .leftOuterJoin(unackedTable.`as`("u"))
+        .on(sql("m.fingerprint = u.fingerprint"))
+        .where(field("m.id").lt(minUlid))
+        .fetch()
+        .intoResultSet()
+    }
+
+    val toDelete = mutableListOf<String>()
+    var candidates = 0
+
+    while (rs.next()) {
+      val queueId: String? = rs.getString("qid")
+      val unackedId: String? = rs.getString("uid")
+
+      if (queueId == null && unackedId == null) {
+        toDelete.add(rs.getString("mid"))
+      }
+
+      candidates++
+    }
+
+    var deleted = 0
+
+    toDelete.sorted().chunked(10).forEach { chunk ->
+      withRetry(RetryCategory.WRITE) {
+        deleted += jooq.deleteFrom(messagesTable)
+          .where(idField.`in`(*chunk.toTypedArray()))
+          .execute()
+      }
+    }
+
+    if (deleted > 0) {
+      log.debug("Cleaned up $deleted completed messages ($toDelete candidates / " +
+        "$candidates messages older than $minTime)")
+    }
+  }
+
   private fun ackMessage(fingerprint: String) {
     withRetry(RetryCategory.WRITE) {
       jooq.deleteFrom(unackedTable)
         .where(fingerprintField.eq(fingerprint))
         .execute()
-    }
-
-    withRetry(RetryCategory.WRITE) {
-      jooq.transaction { config ->
-        val txn = DSL.using(config)
-
-        val changed = txn.update(queueTable)
-          .set(lockedField, "0")
-          .where(fingerprintField.eq(fingerprint))
-          .execute()
-
-        // TODO: consider async scheduled cleanup of messagesTable if having this in the
-        //  ack txn results in frequent deadlocks.
-        if (changed == 0) {
-          txn.deleteFrom(messagesTable)
-            .where(fingerprintField.eq(fingerprint))
-            .execute()
-        }
-      }
     }
 
     fire(MessageAcknowledged)
