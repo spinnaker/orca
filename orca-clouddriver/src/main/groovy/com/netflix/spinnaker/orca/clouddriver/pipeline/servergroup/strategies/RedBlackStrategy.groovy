@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.WaitStage
@@ -56,27 +57,24 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
     StageData stageData = stage.mapTo(StageData)
     Map<String, Object> baseContext = AbstractDeployStrategyStage.CleanupConfig.toContext(stageData)
 
-    try {
-      Stage parentCreateServerGroupStage = stage.directAncestors().find() { it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE }
+    Stage parentCreateServerGroupStage = stage.directAncestors().find() { it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE || it.type == CloneServerGroupStage.PIPELINE_CONFIG_TYPE }
+    if (parentCreateServerGroupStage == null) {
+      throw new IllegalStateException("Failed to determine source server group from parent stage while planning red/black flow")
+    }
+    if (parentCreateServerGroupStage.status == ExecutionStatus.NOT_STARTED) {
+      // No point in composing the flow if we are called to plan "beforeStages" since we don't have any STAGE_BEFOREs.
+      // Also, we rely on the the source server group task to have run already.
+      // In the near future we will move composeFlow into beforeStages and afterStages instead of the
+      // deprecated aroundStages
+      return []
+    }
 
-      if (parentCreateServerGroupStage.status == ExecutionStatus.NOT_STARTED) {
-        // No point in composing the flow if we are called to plan "beforeStages" since we don't have any STAGE_BEFOREs.
-        // Also, we rely on the the source server group task to have run already.
-        // In the near future we will move composeFlow into beforeStages and afterStages instead of the
-        // deprecated aroundStages
-        return []
-      }
+    StageData parentStageData = parentCreateServerGroupStage.mapTo(StageData)
+    StageData.Source sourceServerGroup = parentStageData.source
 
-      StageData parentStageData = parentCreateServerGroupStage.mapTo(StageData)
-      StageData.Source sourceServerGroup = parentStageData.source
-
-      // Short-circuit if there is no source server group
-      if (sourceServerGroup == null || sourceServerGroup.serverGroupName == null) {
-        return []
-      }
-    } catch (Exception e) {
-      // This probably means there was no parent CreateServerGroup stage - which should never happen
-      throw new IllegalStateException("Failed to determine source server group from parent stage while planning red/black flow", e)
+    // Short-circuit if there is no source server group
+    if (sourceServerGroup == null || sourceServerGroup.serverGroupName == null) {
+      return []
     }
 
     // We don't want the key propagated if interestingHealthProviderNames isn't defined, since this prevents
