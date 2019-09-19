@@ -16,21 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce;
 
-import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport.getSource;
-
 import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ApplySourceServerGroupCapacityStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.CaptureSourceServerGroupCapacityTask;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.AbstractDeployStrategyStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
-import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -67,26 +60,5 @@ public class GceDeployStagePreProcessor implements DeployStagePreProcessor {
   public boolean supports(Stage stage) {
     StageData stageData = stage.mapTo(StageData.class);
     return stageData.getCloudProvider().equals("gce");
-  }
-
-  private Optional<Map<String, Object>> getResizeContext(StageData stageData) {
-    Map<String, Object> resizeContext =
-        AbstractDeployStrategyStage.CleanupConfig.toContext(stageData);
-
-    try {
-      ResizeStrategy.Source source = getSource(targetServerGroupResolver, stageData, resizeContext);
-      if (source == null) {
-        return Optional.empty();
-      }
-
-      resizeContext.put("serverGroupName", source.getServerGroupName());
-      resizeContext.put("action", ResizeStrategy.ResizeAction.scale_to_server_group);
-      resizeContext.put("source", source);
-      resizeContext.put(
-          "useNameAsLabel", true); // hint to deck that it should _not_ override the name
-      return Optional.of(resizeContext);
-    } catch (TargetServerGroup.NotFoundException e) {
-      return Optional.empty();
-    }
   }
 }
