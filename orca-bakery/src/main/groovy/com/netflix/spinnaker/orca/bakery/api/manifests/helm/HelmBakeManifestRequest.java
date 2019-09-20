@@ -18,7 +18,11 @@
 package com.netflix.spinnaker.orca.bakery.api.manifests.helm;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
+import com.netflix.spinnaker.orca.bakery.tasks.manifests.BakeManifestContext;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -26,8 +30,27 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class HelmBakeManifestRequest extends BakeManifestRequest {
   @JsonProperty("namespace")
-  String namespace;
+  private String namespace;
 
-  @JsonProperty("outputArtifactName")
-  String outputArtifactName;
+  @JsonProperty("overrides")
+  private Map<String, Object> overrides;
+
+  @JsonProperty("inputArtifacts")
+  private List<Artifact> inputArtifacts;
+
+  private List<Artifact> values;
+
+  public HelmBakeManifestRequest(
+      BakeManifestContext bakeManifestContext,
+      List<Artifact> inputArtifacts,
+      String outputArtifactName,
+      Map<String, Object> overrides) {
+    super(
+        bakeManifestContext.getTemplateRenderer(),
+        outputArtifactName,
+        bakeManifestContext.getOutputName());
+    this.setOverrides(overrides);
+    this.setNamespace(bakeManifestContext.getNamespace());
+    this.setInputArtifacts(inputArtifacts);
+  }
 }

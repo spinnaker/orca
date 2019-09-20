@@ -16,8 +16,9 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+
 import javax.annotation.Nonnull
-import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
@@ -52,11 +53,14 @@ class ParallelDeployStage implements StageDefinitionBuilder {
     builder.withTask("completeParallelDeploy", CompleteParallelDeployTask)
   }
 
-  @Nonnull List<Stage> parallelStages(@Nonnull Stage stage) {
-    parallelContexts(stage).collect { context ->
-      def type = isClone(stage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
-      newStage(stage.execution, type, context.name as String, context, stage, STAGE_BEFORE)
-    }
+  @Override
+  void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+    parallelContexts(parent)
+      .collect({ context ->
+        def type = isClone(parent) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
+        newStage(parent.execution, type, context.name as String, context, parent, STAGE_BEFORE)
+      })
+      .forEach({ Stage s -> graph.add(s) })
   }
 
   @CompileDynamic
