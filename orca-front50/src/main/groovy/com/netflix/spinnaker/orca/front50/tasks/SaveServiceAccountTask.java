@@ -67,7 +67,7 @@ public class SaveServiceAccountTask implements RetryableTask {
 
   @Override
   public long getTimeout() {
-    return TimeUnit.SECONDS.toMillis(30);
+    return TimeUnit.SECONDS.toMillis(60);
   }
 
   @Nonnull

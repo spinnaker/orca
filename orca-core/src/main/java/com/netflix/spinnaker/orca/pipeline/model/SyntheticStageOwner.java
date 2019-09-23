@@ -18,5 +18,5 @@ package com.netflix.spinnaker.orca.pipeline.model;
 
 public enum SyntheticStageOwner {
   STAGE_BEFORE,
-  STAGE_AFTER;
+  STAGE_AFTER
 }

@@ -159,14 +159,14 @@ class TaskController {
     }
   }
 
-  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getOrchestration(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/tasks/{id}/cancel", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancelTask(@PathVariable String id) {
     cancelExecution(ORCHESTRATION, id)
   }
 
-  @PreFilter("hasPermission(this.getOrchestration(filterObject)?.application, 'APPLICATION', 'WRITE')")
+  @PreFilter("hasPermission(this.getOrchestration(filterObject)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/tasks/cancel", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancelTasks(@RequestBody List<String> taskIds) {
@@ -412,7 +412,7 @@ class TaskController {
     }
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/cancel", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void cancel(
@@ -421,7 +421,7 @@ class TaskController {
     cancelExecution(PIPELINE, id, reason)
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/pause", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void pause(@PathVariable String id) {
@@ -430,7 +430,7 @@ class TaskController {
     executionRunner.reschedule(pipeline)
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/resume", method = RequestMethod.PUT)
   @ResponseStatus(HttpStatus.ACCEPTED)
   void resume(@PathVariable String id) {
@@ -455,7 +455,7 @@ class TaskController {
     []
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}", method = RequestMethod.PATCH)
   Execution updatePipelineStage(
     @PathVariable String id,
@@ -490,7 +490,7 @@ class TaskController {
     }
   }
 
-  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'WRITE')")
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}/restart", method = RequestMethod.PUT)
   Execution retryPipelineStage(
     @PathVariable String id, @PathVariable String stageId) {
@@ -712,11 +712,19 @@ class TaskController {
     return aStartTime <=> bStartTime ?: b.id <=> a.id
   }
 
+  static boolean shouldReplace(Map.Entry<String, Object> entry, Map variables) {
+    // a duplicate key with an empty value should
+    // not overwrite a previous key with a non empty value
+    return isNullOrEmpty(variables[entry.key]) || !isNullOrEmpty(entry.value)
+  }
+
   private OrchestrationViewModel convert(Execution orchestration) {
     def variables = [:]
     for (stage in orchestration.stages) {
       for (entry in stage.context.entrySet()) {
-        variables[entry.key] = entry.value
+        if (shouldReplace(entry, variables)) {
+          variables[entry.key] = entry.value
+        }
       }
     }
     new OrchestrationViewModel(
@@ -747,6 +755,19 @@ class TaskController {
       .collect(Collectors.toList())
 
     return pipelineConfigIds
+  }
+
+  private static boolean isNullOrEmpty(Object value) {
+    if (value == null) {
+      return true
+    } else if (value instanceof Collection) {
+      return value.isEmpty()
+    } else if (value instanceof String) {
+      return value.length() == 0
+    } else if (value == [:]) {
+      return true
+    }
+    return false
   }
 
   @VisibleForTesting
