@@ -115,6 +115,7 @@ class SqlQueue(
   private val fingerprintField = field("fingerprint")
   private val idField = field("id")
   private val lockedField = field("locked")
+  private val updatedAtField = field("updated_at")
   private val orders = listOf(SortOrder.ASC, SortOrder.DESC)
 
   private val lockTtlDuration = Duration.ofSeconds(lockTtlSeconds.toLong())
@@ -338,6 +339,7 @@ class SqlQueue(
         .map {
           update(messagesTable)
             .set(bodyField, mapper.writeValueAsString(it.message))
+            .set(updatedAtField, now)
             .where(fingerprintField.eq(it.fingerprint))
         }
         .toList()
@@ -406,6 +408,7 @@ class SqlQueue(
           .set(idField, ulid.toString())
           .set(fingerprintField, fingerprint)
           .set(bodyField, mapper.writeValueAsString(message))
+          .set(updatedAtField, clock.millis())
           .onDuplicateKeyUpdate()
           .set(idField, MySQLDSL.values(idField) as Any)
           .set(bodyField, MySQLDSL.values(bodyField) as Any)
@@ -632,6 +635,7 @@ class SqlQueue(
       if (rows == 1) {
         jooq.update(messagesTable)
           .set(bodyField, mapper.writeValueAsString(message))
+          .set(updatedAtField, unackBaseTime)
           .where(fingerprintField.eq(fingerprint))
           .execute()
 
