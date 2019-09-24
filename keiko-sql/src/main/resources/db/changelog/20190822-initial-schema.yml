@@ -229,3 +229,36 @@ databaseChangeLog:
         - dropIndex:
             indexName: keiko_messages_fingerprint_idx
             tableName: keiko_v1_dlq_template
+
+  - changeSet:
+      id: add-keiko-queue-messages-updated-col
+      author: afeldman
+      changes:
+      - addColumn:
+          tableName: keiko_v1_messages_template
+          columns:
+            - column:
+                name: updated_at
+                type: bigint(13)
+                defaultValue: 0
+                constraints:
+                  nullable: false
+    rollback:
+      - dropColumn:
+          tableName: keiko_v1_messages_template
+          columnName: updated_at
+
+  - changeSet:
+      id: add-keiko-queue-messages-updated-idx
+      author: afeldman
+      changes:
+        - createIndex:
+            indexName: keiko_messages_updated_idx
+            tableName: keiko_v1_messages_template
+            columns:
+              - column:
+                  name: updated_at
+      rollback:
+        - dropIndex:
+            indexName: keiko_messages_updated_idx
+            tableName: keiko_v1_messages_template

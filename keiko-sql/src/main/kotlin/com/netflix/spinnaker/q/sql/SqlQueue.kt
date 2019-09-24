@@ -288,8 +288,16 @@ class SqlQueue(
 
       while (rs.next()) {
         val fingerprint = rs.getString("fingerprint")
+        val json: String? = rs.getString("body")
+
+        if (json == null) {
+          log.error("Payload for message $fingerprint is missing")
+          deleteAll(fingerprint)
+          continue
+        }
+
         try {
-          val message = mapper.readValue<Message>(runSerializationMigration(rs.getString("body")))
+          val message = mapper.readValue<Message>(runSerializationMigration(json))
             .apply {
               val currentAttempts = (getAttribute() ?: AttemptsAttribute())
                 .run { copy(attempts = attempts + 1) }
@@ -316,7 +324,7 @@ class SqlQueue(
           )
         } catch (e: Exception) {
           log.error("Failed reading message for fingerprint: $fingerprint, " +
-            "json: ${rs.getString("body")}, removing", e)
+            "json: $json, removing", e)
           deleteAll(fingerprint)
         }
       }
@@ -399,6 +407,7 @@ class SqlQueue(
           .set(fingerprintField, fingerprint)
           .set(bodyField, mapper.writeValueAsString(message))
           .onDuplicateKeyUpdate()
+          .set(idField, MySQLDSL.values(idField) as Any)
           .set(bodyField, MySQLDSL.values(bodyField) as Any)
           .execute()
 
