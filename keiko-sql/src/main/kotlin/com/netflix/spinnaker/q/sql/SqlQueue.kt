@@ -649,7 +649,6 @@ class SqlQueue(
   fun cleanupMessages() {
     val start = clock.millis()
     val cleanBefore = start - ackTimeout.multipliedBy(2).toMillis()
-    val minUlid = ULID.nextValue(cleanBefore).toString()
 
     /**
      * Coin toss whether to read from the heads or tails of older messages
@@ -668,7 +667,7 @@ class SqlQueue(
         .on(sql("m.fingerprint = q.fingerprint"))
         .leftOuterJoin(unackedTable.`as`("u"))
         .on(sql("m.fingerprint = u.fingerprint"))
-        .where(field("m.id").lt(minUlid))
+        .where(field("m.updated_at").lt(cleanBefore))
         .orderBy(field("m.id").sort(order))
         .limit(2000)
         .fetch()
@@ -694,7 +693,10 @@ class SqlQueue(
     candidates.chunked(100).forEach { chunk ->
       withRetry(RetryCategory.WRITE) {
         deleted += jooq.deleteFrom(messagesTable)
-          .where(idField.`in`(*chunk.toTypedArray()))
+          .where(
+            idField.`in`(*chunk.toTypedArray()),
+            updatedAtField.lt(cleanBefore)
+          )
           .execute()
       }
     }
@@ -708,6 +710,13 @@ class SqlQueue(
   private fun ackMessage(fingerprint: String) {
     withRetry(RetryCategory.WRITE) {
       jooq.deleteFrom(unackedTable)
+        .where(fingerprintField.eq(fingerprint))
+        .execute()
+    }
+
+    withRetry(RetryCategory.WRITE) {
+      jooq.update(messagesTable)
+        .set(updatedAtField, clock.millis())
         .where(fingerprintField.eq(fingerprint))
         .execute()
     }
