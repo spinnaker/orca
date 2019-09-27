@@ -27,14 +27,11 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.Mo
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentStep;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.StatusExplanation;
-import com.netflix.spinnaker.orca.deploymentmonitor.models.StatusReason;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -50,11 +47,28 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected Registry registry;
   private DeploymentMonitorServiceProvider deploymentMonitorServiceProvider;
+  private final Map<EvaluateHealthResponse.NextStepDirective, String> summaryMapping =
+      new HashMap<>();
 
   MonitoredDeployBaseTask(
       DeploymentMonitorServiceProvider deploymentMonitorServiceProvider, Registry registry) {
     this.deploymentMonitorServiceProvider = deploymentMonitorServiceProvider;
     this.registry = registry;
+
+    // This could be in deck, but for now, I think it's valuable to have this show up in the JSON
+    // for easier debugging
+    summaryMapping.put(
+        EvaluateHealthResponse.NextStepDirective.WAIT,
+        "Waiting for deployment monitor to evaluate health of deployed instances");
+    summaryMapping.put(
+        EvaluateHealthResponse.NextStepDirective.ABORT,
+        "Deployment monitor deemed the deployed instances unhealthy, aborting deployment");
+    summaryMapping.put(
+        EvaluateHealthResponse.NextStepDirective.CONTINUE,
+        "Deployment monitor deemed the instances healthy, proceeding with deploy");
+    summaryMapping.put(
+        EvaluateHealthResponse.NextStepDirective.COMPLETE,
+        "Deployment monitor deemed the instances healthy and requested to complete the deployment early");
   }
 
   @Override
@@ -203,16 +217,17 @@ public class MonitoredDeployBaseTask implements RetryableTask {
 
   TaskResult buildTaskResult(
       TaskResult.TaskResultBuilder taskResultBuilder, EvaluateHealthResponse response) {
-    List<StatusReason> statusReasons =
-        Optional.ofNullable(response.getStatusReasons()).orElse(Collections.emptyList());
 
-    String summary = "Deployment monitor requested to: " + response.getNextStep().getDirective();
-    StatusExplanation explanation = new StatusExplanation(summary, statusReasons);
+    String summary =
+        summaryMapping.getOrDefault(
+            response.getNextStep().getDirective(), "Health evaluation results are unknown");
+    StatusExplanation explanation = new StatusExplanation(summary, response.getStatusReason());
 
     return taskResultBuilder.context("deploymentMonitorReasons", explanation).build();
   }
 
-  TaskResult buildTaskResult(TaskResult.TaskResultBuilder taskResultBuilder, String summary) {
+  private TaskResult buildTaskResult(
+      TaskResult.TaskResultBuilder taskResultBuilder, String summary) {
     StatusExplanation explanation = new StatusExplanation(summary);
 
     return taskResultBuilder.context("deploymentMonitorReasons", explanation).build();
