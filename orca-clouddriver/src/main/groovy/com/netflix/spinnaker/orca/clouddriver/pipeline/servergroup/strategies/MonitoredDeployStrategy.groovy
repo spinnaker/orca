@@ -17,7 +17,6 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.config.DeploymentMonitorServiceProvider
-import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.NotifyDeployCompletedStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.NotifyDeployStartingStage
@@ -384,6 +383,28 @@ class MonitoredDeployStrategy implements Strategy {
       parent,
       SyntheticStageOwner.STAGE_AFTER
     )
+
+    MonitoredDeployStageData mdsd = parent.mapTo(MonitoredDeployStageData.class)
+    if (mdsd.deploymentMonitor.id) {
+      def evalContext = mdsd.getChildStageContext()
+      MonitoredDeployInternalStageData internalStageData = new MonitoredDeployInternalStageData()
+      internalStageData.account = baseContext.credentials
+      internalStageData.cloudProvider = baseContext.cloudProvider
+      internalStageData.region = baseContext.region
+      internalStageData.oldServerGroup = source?.serverGroupName
+      internalStageData.newServerGroup = mdsd.deployServerGroups[baseContext.region].first()
+      internalStageData.parameters = mdsd.deploymentMonitor.parameters
+
+      evalContext += internalStageData.toContextMap()
+      stages << newStage(
+        parent.execution,
+        notifyDeployCompletedStage.type,
+        "Notify monitored deploy complete",
+        evalContext,
+        parent,
+        SyntheticStageOwner.STAGE_AFTER
+      )
+    }
 
     return stages
   }
