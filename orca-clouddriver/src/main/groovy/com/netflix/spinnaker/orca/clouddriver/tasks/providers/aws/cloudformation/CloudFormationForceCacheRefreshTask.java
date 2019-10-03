@@ -60,8 +60,11 @@ public class CloudFormationForceCacheRefreshTask extends AbstractCloudProviderAw
       data.put("stackName", stackName);
     }
 
-    cacheService.forceCacheUpdate(cloudProvider, REFRESH_TYPE, data);
-
+    try {
+      cacheService.forceCacheUpdate(cloudProvider, REFRESH_TYPE, data);
+    } catch (RetrofitError e) {
+      return TaskResult.RUNNING;
+    }
     return TaskResult.SUCCEEDED;
   }
 
