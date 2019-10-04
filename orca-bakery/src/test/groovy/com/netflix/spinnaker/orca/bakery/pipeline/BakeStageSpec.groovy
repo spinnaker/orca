@@ -116,6 +116,38 @@ class BakeStageSpec extends Specification {
     }
   }
 
+  def "should fail if image names don't match across regions"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        id = "1"
+        type = "bake"
+        context = [
+          "region": "us-east-1",
+          "regions": ["us-east-1", "us-west-2", "eu-east-1"]
+        ]
+        status = ExecutionStatus.RUNNING
+      }
+    }
+
+    def bakeStage = pipeline.stageById("1")
+    def graph = StageGraphBuilder.beforeStages(bakeStage)
+    new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+    def parallelStages = graph.build()
+
+    parallelStages.eachWithIndex { it, idx ->
+      it.context.ami = "${idx}"
+      it.context.imageName = "image#${idx}"
+    }
+    pipeline.stages.addAll(parallelStages)
+
+    when:
+    def taskResult = new BakeStage.CompleteParallelBakeTask().execute(pipeline.stageById("1"))
+
+    then:
+    thrown IllegalStateException
+  }
+
   private
   static List<Map> deployAz(String cloudProvider, String prefix, String... regions) {
     if (prefix == "clusters") {

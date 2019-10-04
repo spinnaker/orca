@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.bakery.pipeline
 
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import java.time.Clock
@@ -36,6 +37,9 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import java.util.stream.Collectors
+
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static java.time.Clock.systemUTC
 import static java.time.ZoneOffset.UTC
@@ -108,6 +112,9 @@ class BakeStage implements StageDefinitionBuilder {
   @Component
   @CompileStatic
   static class CompleteParallelBakeTask implements Task {
+    @Autowired
+    DynamicConfigService dynamicConfigService
+
     TaskResult execute(Stage stage) {
       def bakeInitializationStages = stage.execution.stages.findAll {
         it.parentStageId == stage.parentStageId && it.status == ExecutionStatus.RUNNING
@@ -120,7 +127,7 @@ class BakeStage implements StageDefinitionBuilder {
       def globalContext = [
         deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { Stage bakeStage ->
           def deploymentDetails = [:]
-          ["ami", "imageId", "amiSuffix", "baseLabel", "baseOs", "refId", "storeType", "vmType", "region", "package", "cloudProviderType", "cloudProvider"].each {
+          ["ami", "imageId", "imageName", "amiSuffix", "baseLabel", "baseOs", "refId", "storeType", "vmType", "region", "package", "cloudProviderType", "cloudProvider"].each {
             if (bakeStage.context.containsKey(it)) {
               deploymentDetails.put(it, bakeStage.context.get(it))
             }
@@ -129,7 +136,28 @@ class BakeStage implements StageDefinitionBuilder {
           return deploymentDetails
         }
       ]
+
+      // TODO: add condition for user-specified opt-out setting in addition to feature toggle
+      if (failOnImageNameMismatch()) {
+        def imageNames = globalContext.deploymentDetails.stream().map({details -> details['imageName']})
+          .distinct()
+          .collect(Collectors.toList())
+
+        if (imageNames.size() > 1) {
+          throw new IllegalStateException("Non-matching image names found in different regions: ${imageNames}. " +
+          "Failing bake stage as this would cause deployment failures. Please re-run the bake.")
+        }
+      }
+
       TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(globalContext).build()
+    }
+
+    def failOnImageNameMismatch() {
+      try {
+        return dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch",false);
+      } catch (Exception e) {
+        return true;
+      }
     }
   }
 }
