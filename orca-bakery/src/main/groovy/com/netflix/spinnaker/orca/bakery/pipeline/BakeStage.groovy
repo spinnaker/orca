@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.bakery.pipeline
 
+import com.google.common.base.Joiner
+import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
@@ -112,8 +114,27 @@ class BakeStage implements StageDefinitionBuilder {
   @Component
   @CompileStatic
   static class CompleteParallelBakeTask implements Task {
-    @Autowired
+    public static final List<String> DEPLOYMENT_DETAILS_CONTEXT_FIELDS = [
+      "ami",
+      "imageId",
+      "imageName",
+      "amiSuffix",
+      "baseLabel",
+      "baseOs",
+      "refId",
+      "storeType",
+      "vmType",
+      "region",
+      "package",
+      "cloudProviderType",
+      "cloudProvider"
+    ]
     DynamicConfigService dynamicConfigService
+
+    @Autowired
+    CompleteParallelBakeTask(DynamicConfigService dynamicConfigService) {
+      this.dynamicConfigService = dynamicConfigService
+    }
 
     TaskResult execute(Stage stage) {
       def bakeInitializationStages = stage.execution.stages.findAll {
@@ -127,7 +148,7 @@ class BakeStage implements StageDefinitionBuilder {
       def globalContext = [
         deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { Stage bakeStage ->
           def deploymentDetails = [:]
-          ["ami", "imageId", "imageName", "amiSuffix", "baseLabel", "baseOs", "refId", "storeType", "vmType", "region", "package", "cloudProviderType", "cloudProvider"].each {
+          DEPLOYMENT_DETAILS_CONTEXT_FIELDS.each {
             if (bakeStage.context.containsKey(it)) {
               deploymentDetails.put(it, bakeStage.context.get(it))
             }
@@ -139,24 +160,28 @@ class BakeStage implements StageDefinitionBuilder {
 
       // TODO: add condition for user-specified opt-out setting in addition to feature toggle
       if (failOnImageNameMismatch()) {
-        def imageNames = globalContext.deploymentDetails.stream().map({details -> details['imageName']})
+         List<String> distinctImageNames = globalContext.deploymentDetails.stream()
+          .map({details -> details['imageName']})
           .distinct()
           .collect(Collectors.toList())
 
-        if (imageNames.size() > 1) {
-          throw new IllegalStateException("Non-matching image names found in different regions: ${imageNames}. " +
-          "Failing bake stage as this would cause deployment failures. Please re-run the bake.")
+        Joiner joiner = Joiner.on(", ")
+
+        if (distinctImageNames.size() > 1) {
+          throw new ConstraintViolationException(
+            "Image names found in different regions do not match: ${joiner.join(distinctImageNames)}. "
+            + "Re-run the bake to protect against deployment failures.")
         }
       }
 
       TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(globalContext).build()
     }
 
-    def failOnImageNameMismatch() {
+    private boolean failOnImageNameMismatch() {
       try {
         return dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch",false);
       } catch (Exception e) {
-        return true;
+        return false;
       }
     }
   }

@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.bakery.pipeline
 
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 
 import java.time.Clock
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -31,6 +33,8 @@ import static java.time.ZoneOffset.UTC
 import static java.time.temporal.ChronoUnit.*
 
 class BakeStageSpec extends Specification {
+  def dynamicConfigService = Mock(DynamicConfigService)
+
   @Unroll
   def "should build contexts corresponding to locally specified bake region and all target deploy regions"() {
     given:
@@ -141,11 +145,13 @@ class BakeStageSpec extends Specification {
     }
     pipeline.stages.addAll(parallelStages)
 
+    dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch", false) >> { true }
+
     when:
-    def taskResult = new BakeStage.CompleteParallelBakeTask().execute(pipeline.stageById("1"))
+    def taskResult = new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(pipeline.stageById("1"))
 
     then:
-    thrown IllegalStateException
+    thrown ConstraintViolationException
   }
 
   private
