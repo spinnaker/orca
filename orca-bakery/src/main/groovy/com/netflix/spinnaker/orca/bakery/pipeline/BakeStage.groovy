@@ -158,8 +158,7 @@ class BakeStage implements StageDefinitionBuilder {
         }
       ]
 
-      // TODO: add condition for user-specified opt-out setting in addition to feature toggle
-      if (failOnImageNameMismatch()) {
+      if (failOnImageNameMismatchEnabled() && !stage.context.dontFailOnImageNameMismatch) {
          List<String> distinctImageNames = globalContext.deploymentDetails.stream()
           .map({details -> details['imageName']})
           .distinct()
@@ -177,11 +176,11 @@ class BakeStage implements StageDefinitionBuilder {
       TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(globalContext).build()
     }
 
-    private boolean failOnImageNameMismatch() {
+    private boolean failOnImageNameMismatchEnabled() {
       try {
-        return dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch",false);
+        return dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch", false)
       } catch (Exception e) {
-        return false;
+        return false
       }
     }
   }

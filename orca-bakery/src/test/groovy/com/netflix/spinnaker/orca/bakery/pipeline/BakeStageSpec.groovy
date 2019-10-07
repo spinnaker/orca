@@ -120,7 +120,7 @@ class BakeStageSpec extends Specification {
     }
   }
 
-  def "should fail if image names don't match across regions"() {
+  def "should fail if image names don't match across regions (unless user opts out)"() {
     given:
     def pipeline = pipeline {
       stage {
@@ -128,7 +128,7 @@ class BakeStageSpec extends Specification {
         type = "bake"
         context = [
           "region": "us-east-1",
-          "regions": ["us-east-1", "us-west-2", "eu-east-1"]
+          "regions": ["us-east-1", "us-west-2", "eu-east-1"],
         ]
         status = ExecutionStatus.RUNNING
       }
@@ -148,10 +148,24 @@ class BakeStageSpec extends Specification {
     dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch", false) >> { true }
 
     when:
-    def taskResult = new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(pipeline.stageById("1"))
+    new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(bakeStage)
 
     then:
-    thrown ConstraintViolationException
+    thrown(ConstraintViolationException)
+
+    when:
+    bakeStage.context["dontFailOnImageNameMismatch"] = false
+    new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(bakeStage)
+
+    then:
+    thrown(ConstraintViolationException)
+
+    when:
+    bakeStage.context["dontFailOnImageNameMismatch"] = true
+    new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(bakeStage)
+
+    then:
+    notThrown(ConstraintViolationException)
   }
 
   private
