@@ -803,7 +803,7 @@ class ContextParameterProcessorSpec extends Specification {
     }
 
     def stage = pipe.stageByRef("2")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -825,7 +825,7 @@ class ContextParameterProcessorSpec extends Specification {
     }
 
     def stage = pipe.stageByRef("1")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -854,7 +854,7 @@ class ContextParameterProcessorSpec extends Specification {
     pipe.setAuthentication(new Execution.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
 
     def stage = pipe.stages.find { it.name == "Wait1" }
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -881,7 +881,7 @@ class ContextParameterProcessorSpec extends Specification {
 
     and:
     def stage = pipe.stages.find { it.type == "bake" }
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -911,7 +911,7 @@ class ContextParameterProcessorSpec extends Specification {
 
     and:
     def stage = pipe.stageByRef("1")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -942,7 +942,7 @@ class ContextParameterProcessorSpec extends Specification {
   }
 
   @Unroll
-  def "Does not evaluate expressions that refer to outputs of prior stages"() {
+  def "Correctly evaluates expressions that refer to outputs of prior stages"() {
     given:
     def execution = pipeline {
       stage {
@@ -974,7 +974,7 @@ class ContextParameterProcessorSpec extends Specification {
     }
 
     def stage = execution.stageByRef("2")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -983,8 +983,8 @@ class ContextParameterProcessorSpec extends Specification {
     result.manifests == [
       [
         kind: 'ReplicaSet',
-        name: '${keyA}',
-        namespace: '${keyB}'
+        name: 'valueA',
+        namespace: 'valueB'
       ]
     ]
   }
