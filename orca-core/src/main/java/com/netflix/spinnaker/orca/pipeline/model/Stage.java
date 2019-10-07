@@ -801,7 +801,7 @@ public class Stage implements Serializable {
 
   @Override
   public String toString() {
-    return "Stage {" + "id='" + id + '\'' + ", executionId=" + execution.getId() + '}';
+    return "Stage {id='" + id + "', executionId='" + execution.getId() + "'}";
   }
 
   public static final String STAGE_TIMEOUT_OVERRIDE_KEY = "stageTimeoutMs";
