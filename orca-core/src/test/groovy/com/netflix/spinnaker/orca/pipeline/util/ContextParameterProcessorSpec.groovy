@@ -941,6 +941,54 @@ class ContextParameterProcessorSpec extends Specification {
     [branch:"hello"] || "hello"
   }
 
+  @Unroll
+  def "Does not evaluate expressions that refer to outputs of prior stages"() {
+    given:
+    def execution = pipeline {
+      stage {
+        type = "evaluateVariables"
+        name = "Evaluate namespace"
+        refId = "1"
+        status = SUCCEEDED
+        outputs.putAll(
+          keyA: "valueA",
+          keyB: "valueB"
+        )
+      }
+      stage {
+        type = "deployManifest"
+        name = "Deploy manifest"
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+        context.putAll(
+          manifests: [
+            [
+              kind: 'ReplicaSet',
+              name: '${keyA}',
+              namespace: '${keyB}'
+            ]
+
+          ]
+        )
+      }
+    }
+
+    def stage = execution.stageByRef("2")
+    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+
+    when:
+    def result = contextParameterProcessor.process(stage.context, ctx, true)
+
+    then:
+    result.manifests == [
+      [
+        kind: 'ReplicaSet',
+        name: '${keyA}',
+        namespace: '${keyB}'
+      ]
+    ]
+  }
+
   static escapeExpression(String expression) {
     return ExpressionTransform.escapeSimpleExpression(expression)
   }
