@@ -178,7 +178,7 @@ class BakeStage implements StageDefinitionBuilder {
       try {
         return dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch", false)
       } catch (Exception e) {
-        log.error("Error retrieving config value for stages.bake.failOnImageNameMismatch. Assuming false.", e)
+        log.error("Unable to retrieve config value for stages.bake.failOnImageNameMismatch. Assuming false.", e)
         return false
       }
     }
