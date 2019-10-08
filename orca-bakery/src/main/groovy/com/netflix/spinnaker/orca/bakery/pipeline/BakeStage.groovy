@@ -164,11 +164,9 @@ class BakeStage implements StageDefinitionBuilder {
           .distinct()
           .collect(Collectors.toList())
 
-        Joiner joiner = Joiner.on(", ")
-
         if (distinctImageNames.size() > 1) {
           throw new ConstraintViolationException(
-            "Image names found in different regions do not match: ${joiner.join(distinctImageNames)}. "
+            "Image names found in different regions do not match: ${Joiner.on(", ").join(distinctImageNames)}. "
             + "Re-run the bake to protect against deployment failures.")
         }
       }
