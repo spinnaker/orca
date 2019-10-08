@@ -26,7 +26,7 @@ class ResolveKayentaConfigIdTask(
       .toList()
 
     if (candidates.size == 0) {
-      throw UserException("Couldn't find a configId for configName $configName and application $currentApplication")
+      throw UserException("Couldn't find a canary configId for configName $configName and application $currentApplication")
     } else if (candidates.size > 1) {
       throw UserException("Found more than one configId for configName $configName and application $currentApplication")
     }
