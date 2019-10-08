@@ -28,7 +28,7 @@ class ResolveKayentaConfigIdTask(
     if (candidates.size == 0) {
       throw UserException("Couldn't find a canary configId for configName $configName and application $currentApplication")
     } else if (candidates.size > 1) {
-      throw UserException("Found more than one configId for configName $configName and application $currentApplication")
+      throw UserException("Found more than one canary configId for configName $configName and application $currentApplication")
     }
     return TaskResult.builder(SUCCEEDED).context("canaryConfigId", candidates[0].id).build()
   }
