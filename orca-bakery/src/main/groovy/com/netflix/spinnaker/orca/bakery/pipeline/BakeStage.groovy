@@ -158,7 +158,7 @@ class BakeStage implements StageDefinitionBuilder {
         }
       ]
 
-      if (failOnImageNameMismatchEnabled() && !stage.context.ignoreImageNameMismatch) {
+      if (failOnImageNameMismatchEnabled()) {
          List<String> distinctImageNames = globalContext.deploymentDetails.stream()
           .map({details -> details['imageName']})
           .distinct()

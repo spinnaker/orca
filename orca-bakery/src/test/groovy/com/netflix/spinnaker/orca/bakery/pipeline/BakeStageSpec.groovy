@@ -152,20 +152,6 @@ class BakeStageSpec extends Specification {
 
     then:
     thrown(ConstraintViolationException)
-
-    when:
-    bakeStage.context["ignoreImageNameMismatch"] = false
-    new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(bakeStage)
-
-    then:
-    thrown(ConstraintViolationException)
-
-    when:
-    bakeStage.context["ignoreImageNameMismatch"] = true
-    new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(bakeStage)
-
-    then:
-    notThrown(ConstraintViolationException)
   }
 
   private
