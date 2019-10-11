@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.EvaluateD
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DestroyServerGroupStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.PinServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.DetermineTargetServerGroupStage
@@ -58,6 +59,14 @@ class MonitoredDeployStrategy implements Strategy {
 
   @Override
   List<Stage> composeBeforeStages(Stage stage) {
+    def stageData = stage.mapTo(MonitoredDeployStageData)
+
+    if (stageData.deploymentMonitor?.id) {
+      // Before we begin deploy, just validate that the given deploy monitor is registered
+      // Note: getDefinitionById will throw if no monitor is registered with the given ID
+      deploymentMonitorServiceProvider.getDefinitionById(stageData.deploymentMonitor.id)
+    }
+
     if (stage.context.useSourceCapacity) {
       stage.context.useSourceCapacity = false
     }
@@ -67,7 +76,6 @@ class MonitoredDeployStrategy implements Strategy {
     def savedCapacity = stage.context.savedCapacity ?: stage.context.capacity?.clone()
     stage.context.savedCapacity = savedCapacity
 
-    // FIXME: this clobbers the input capacity value (if any). Should find a better way to request a new asg of size 0
     stage.context.capacity = [
       min    : 0,
       max    : 0,
@@ -103,11 +111,6 @@ class MonitoredDeployStrategy implements Strategy {
       deploySteps.add(100)
     }
 
-    if (stageData.deploymentMonitor?.id) {
-      // Before we begin deploy, just validate that the given deploy monitor is registered
-      deploymentMonitorServiceProvider.getDefinitionById(stageData.deploymentMonitor.id)
-    }
-
     // Get source ASG from prior determineSourceServerGroupTask
     def source = null
 
@@ -125,9 +128,9 @@ class MonitoredDeployStrategy implements Strategy {
     internalStageData.cloudProvider = baseContext.cloudProvider
     internalStageData.region = baseContext.region
     internalStageData.oldServerGroup = source?.serverGroupName
-    internalStageData.parameters = stageData.deploymentMonitor.parameters
+    internalStageData.parameters = stageData.deploymentMonitor?.parameters
 
-    CreateServerGroupStage.StageData createServerStageData = parent.mapTo(CreateServerGroupStage.StageData)
+    CreateServerGroupStage.StageData createServerStageData = stage.mapTo(CreateServerGroupStage.StageData)
     internalStageData.newServerGroup = createServerStageData.getServerGroup()
 
     evalContext += internalStageData.toContextMap()
@@ -223,14 +226,15 @@ class MonitoredDeployStrategy implements Strategy {
       if (source) {
         def disableContext = baseContext + [
           desiredPercentage: p,
-          serverGroupName  : source.serverGroupName
+          serverGroupName  : source.serverGroupName,
+          useNameAsLabel   : true,     // hint to deck that it should _not_ override the name
         ]
 
         log.info("Adding `Disable $p% of Desired Size` stage with context $disableContext [executionId=${stage.execution.id}]")
 
         def disablePortionStage = newStage(
           stage.execution,
-          DestroyServerGroupStage.PIPELINE_CONFIG_TYPE,
+          DisableServerGroupStage.PIPELINE_CONFIG_TYPE,
           "Disable $p% of Traffic on ${source.serverGroupName}",
           disableContext,
           stage,

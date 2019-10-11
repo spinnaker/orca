@@ -18,17 +18,105 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition
 import com.netflix.spinnaker.config.DeploymentMonitorServiceProvider
+import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.EvaluateDeploymentHealthStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.NotifyDeployCompletedStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.NotifyDeployStartingStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DestroyServerGroupStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.PinServerGroupStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.DetermineTargetServerGroupStage
 import spock.lang.Specification
 
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class MonitoredDeployStrategySpec extends Specification {
+  def "should fixup context while planning beforeStages"() {
+    given:
+    def pipeline = configureBasicPipeline()
+    def strategy = createStrategy()
+    def stage = pipeline.stageByRef("2-deploy1")
+
+    when:
+    stage.context.rollback = [
+      onFailure: true
+    ]
+    def beforeStages = strategy.composeBeforeStages(stage)
+
+    then:
+    noExceptionThrown()
+    beforeStages.size() == 0
+    stage.context.capacity == [
+      min    : 0,
+      desired: 0,
+      max    : 0,
+    ]
+    stage.context.savedCapacity == [
+      min    : 1,
+      desired: 2,
+      max    : 3,
+    ]
+    stage.context.rollback == null
+
+    when: 'the invalid deployment monitor specified'
+    stage.context.deploymentMonitor.id = "invalid"
+    strategy.composeBeforeStages(stage)
+
+    then: 'we throw'
+    thrown(NotFoundException)
+  }
+
+  def "composes happy path flow"() {
+    given:
+    def pipeline = configureBasicPipeline()
+    def strategy = createStrategy()
+    def stage = pipeline.stageByRef("2-deploy1")
+    def sourceServerGroupName = pipeline.stageByRef("1-create").context.source.serverGroupName
+
+    when: 'no steps are provided'
+    def afterStages = strategy.composeAfterStages(stage)
+
+    then: 'goes straight to 100%'
+    afterStages.size() == 8
+    afterStages[0].type == DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE
+    afterStages[1].type == PinServerGroupStage.TYPE
+    afterStages[2].type == NotifyDeployStartingStage.PIPELINE_CONFIG_TYPE
+    afterStages[3].type == ResizeServerGroupStage.TYPE
+    afterStages[3].context.scalePct == 100
+    afterStages[4].type == DisableServerGroupStage.PIPELINE_CONFIG_TYPE
+    afterStages[4].context.desiredPercentage == 100
+    afterStages[5].type == EvaluateDeploymentHealthStage.PIPELINE_CONFIG_TYPE
+    afterStages[6].type == PinServerGroupStage.TYPE
+    afterStages[7].type == NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE
+
+    when: 'only 50% step is provided'
+    stage.context.deploySteps = [50]
+    afterStages = strategy.composeAfterStages(stage)
+
+    then: 'adds 100% step'
+    afterStages.size() == 11
+    afterStages[3].type == ResizeServerGroupStage.TYPE
+    afterStages[3].context.scalePct == 50
+    afterStages[4].type == DisableServerGroupStage.PIPELINE_CONFIG_TYPE
+    afterStages[4].context.desiredPercentage == 50
+    afterStages[6].type == ResizeServerGroupStage.TYPE
+    afterStages[6].context.scalePct == 100
+    afterStages[7].type == DisableServerGroupStage.PIPELINE_CONFIG_TYPE
+    afterStages[7].context.desiredPercentage == 100
+
+    when: 'no deployment monitor specified'
+    stage.context.remove("deploymentMonitor")
+    afterStages = strategy.composeAfterStages(stage)
+
+    then:
+    noExceptionThrown()
+    afterStages.size() == 7
+  }
+
   def "composes correct failure flow when no deployment monitor specified"() {
     given:
     def pipeline = configureBasicPipeline()
@@ -168,10 +256,13 @@ class MonitoredDeployStrategySpec extends Specification {
 
   private def createStrategy() {
     def serviceProviderStub = Stub(DeploymentMonitorServiceProvider) {
-      getDefinitionById(_) >> {
-        def deploymentMonitor = new DeploymentMonitorDefinition()
+      getDefinitionById(_ as String) >> { id ->
+        if (id[0] == "simpletestmonitor") {
+          def deploymentMonitor = new DeploymentMonitorDefinition()
+          return deploymentMonitor
+        }
 
-        return deploymentMonitor
+        throw new NotFoundException()
       }
     }
 
