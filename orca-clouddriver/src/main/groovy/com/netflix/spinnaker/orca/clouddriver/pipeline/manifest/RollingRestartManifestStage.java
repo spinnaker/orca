@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.RollingRestartManif
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,7 +30,7 @@ public class RollingRestartManifestStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "rollingRestartManifest";
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull Stage stage, TaskNode.Builder builder) {
     builder
         .withTask(RollingRestartManifestTask.TASK_NAME, RollingRestartManifestTask.class)
         .withTask("monitorRollingRestart", MonitorKatoTask.class)
