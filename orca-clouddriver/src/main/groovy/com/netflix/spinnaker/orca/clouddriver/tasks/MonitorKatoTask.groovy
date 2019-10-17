@@ -17,12 +17,14 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks
 
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SystemNotification
 import groovy.transform.CompileStatic
@@ -38,7 +40,7 @@ import java.time.Clock
 @Slf4j
 @Component
 @CompileStatic
-class MonitorKatoTask implements RetryableTask {
+class MonitorKatoTask implements RetryableTask, CloudProviderAware {
 
   /**
    * How long to continue trying to look up a task that reports a 404 Not Found.
@@ -51,16 +53,18 @@ class MonitorKatoTask implements RetryableTask {
   private final Clock clock
   private final Registry registry
   private final KatoService kato
+  private final DynamicConfigService dynamicConfigService
 
   @Autowired
-  MonitorKatoTask(KatoService katoService, Registry registry) {
-    this(katoService, registry, Clock.systemUTC())
+  MonitorKatoTask(KatoService katoService, Registry registry, DynamicConfigService dynamicConfigService) {
+    this(katoService, registry, Clock.systemUTC(), dynamicConfigService)
   }
 
-  MonitorKatoTask(KatoService katoService, Registry registry, Clock clock) {
+  MonitorKatoTask(KatoService katoService, Registry registry, Clock clock, DynamicConfigService dynamicConfigService) {
     this.registry = registry
     this.clock = clock
     this.kato = katoService
+    this.dynamicConfigService = dynamicConfigService
   }
 
   long getBackoffPeriod() { 5000L }
@@ -160,7 +164,7 @@ class MonitorKatoTask implements RetryableTask {
       outputs["kato.tasks"] = katoTasks
     }
 
-    if (status == ExecutionStatus.TERMINAL && katoTask.status.retryable) {
+    if (status == ExecutionStatus.TERMINAL && katoTask.status.retryable && dynamicConfigService.isEnabled("tasks.monitor-kato-task.saga-retries", true)) {
       stage.execution.systemNotifications.add(new SystemNotification(
         clock.millis(),
         "katoRetryTask",
