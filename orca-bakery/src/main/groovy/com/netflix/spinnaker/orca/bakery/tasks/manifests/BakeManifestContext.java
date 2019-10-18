@@ -27,6 +27,7 @@ import lombok.Getter;
 public class BakeManifestContext {
   @Nullable private final List<CreateBakeManifestTask.InputArtifactPair> inputArtifacts;
   @Nullable private final CreateBakeManifestTask.InputArtifactPair inputArtifact;
+  @Nullable private final String kustomizeFilePath;
   private final List<ExpectedArtifact> expectedArtifacts;
   private final Map<String, Object> overrides;
   private final Boolean evaluateOverrideExpressions;
@@ -48,6 +49,7 @@ public class BakeManifestContext {
       @JsonProperty("namespace") String namespace,
       @Nullable @JsonProperty("inputArtifact")
           CreateBakeManifestTask.InputArtifactPair inputArtifact,
+      @Nullable @JsonProperty("kustomizeFilePath") String kustomizeFilePath,
       @JsonProperty("rawOverrides") Boolean rawOverrides) {
     this.inputArtifacts = inputArtifacts;
     this.expectedArtifacts = expectedArtifacts;
@@ -57,6 +59,7 @@ public class BakeManifestContext {
     this.outputName = outputName;
     this.namespace = namespace;
     this.inputArtifact = inputArtifact;
+    this.kustomizeFilePath = kustomizeFilePath;
     this.rawOverrides = rawOverrides;
   }
 }
