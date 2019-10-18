@@ -172,7 +172,7 @@ class BakeStageSpec extends Specification {
         type = "bake"
         context = [
           "region": "us-east-1",
-          "regions": ["eu-east-1"]
+          "regions": ["us-east-1"]
         ]
         status = ExecutionStatus.RUNNING
       }
