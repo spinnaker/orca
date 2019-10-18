@@ -164,9 +164,9 @@ class BakeStage implements StageDefinitionBuilder {
       if (failOnImageNameMismatchEnabled()) {
         // find distinct image names in bake stages that are actually related to the stage passed into the task
         def distinctImageNames = relatedBakeStages
-          .findAll { it.parentStageId == stage.id && (it.context.ami || it.context.imageId) }
+          .findAll { childStage -> childStage.parentStageId == stage.id && childStage.context.imageName }
           .stream()
-          .map { childStage -> childStage.context['imageName'] }
+          .map { childStage -> childStage.context.imageName }
           .distinct()
           .collect(Collectors.toList())
 
