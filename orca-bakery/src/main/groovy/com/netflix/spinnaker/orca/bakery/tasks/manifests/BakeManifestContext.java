@@ -21,6 +21,7 @@ import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.Getter;
 
@@ -48,12 +49,12 @@ public class BakeManifestContext {
       @JsonProperty("namespace") String namespace,
       @Nullable @JsonProperty("inputArtifact") CreateBakeManifestTask.InputArtifact inputArtifact,
       @JsonProperty("rawOverrides") Boolean rawOverrides) {
-    this.inputArtifacts = inputArtifacts == null ? new ArrayList<>() : inputArtifacts;
+    this.inputArtifacts = Optional.of(inputArtifacts).orElse(new ArrayList<>());
     // Kustomize stage configs provide a single input artifact
     if (this.inputArtifacts.isEmpty() && inputArtifact != null) {
       this.inputArtifacts.add(inputArtifact);
     }
-    this.expectedArtifacts = expectedArtifacts;
+    this.expectedArtifacts = Optional.of(expectedArtifacts).orElse(new ArrayList<>());
     this.overrides = overrides;
     this.evaluateOverrideExpressions = evaluateOverrideExpressions;
     this.templateRenderer = templateRenderer;
