@@ -324,12 +324,11 @@ class MonitoredDeployStrategy implements Strategy {
     }
 
     if (stageData.deploymentMonitor?.id) {
-      internalStageData.failure = false;
       stages << newStage(
         stage.execution,
         NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy complete",
-        evalContext,
+        evalContext + [hasDeploymentFailed: false],
         stage,
         SyntheticStageOwner.STAGE_AFTER
       )
@@ -397,7 +396,7 @@ class MonitoredDeployStrategy implements Strategy {
       internalStageData.oldServerGroup = source?.serverGroupName
       internalStageData.newServerGroup = createServerStageData.getServerGroup()
       internalStageData.parameters = stageData.deploymentMonitor.parameters
-      internalStageData.failure = true;
+      internalStageData.hasDeploymentFailed = true;
       evalContext += internalStageData.toContextMap()
       stages << newStage(
         parent.execution,

@@ -30,7 +30,7 @@ public class MonitoredDeployInternalStageData {
   private String cloudProvider;
   private int currentProgress;
   private Map<String, Object> parameters;
-  private boolean isFailure;
+  private boolean hasDeploymentFailed;
 
   public Map toContextMap() {
     return new ObjectMapper().convertValue(this, Map.class);
