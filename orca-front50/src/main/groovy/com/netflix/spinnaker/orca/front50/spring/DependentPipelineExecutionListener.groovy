@@ -83,9 +83,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
        } else {
          return pipeline
        }
-      }.findAll({ pipeline ->
-        pipeline != null
-      })
+      }
     }
 
     allPipelines.findAll { (it != null) && (!it.disabled) }
