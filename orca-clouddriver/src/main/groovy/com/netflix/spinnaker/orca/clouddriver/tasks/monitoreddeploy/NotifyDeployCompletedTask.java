@@ -63,7 +63,7 @@ public class NotifyDeployCompletedTask extends MonitoredDeployBaseTask {
   }
 
   private DeploymentCompletedRequest.DeploymentStatus convertStageStatus(Boolean failedStatus) {
-    return failedStatus
+    return (failedStatus == null || failedStatus)
         ? DeploymentCompletedRequest.DeploymentStatus.FAILURE
         : DeploymentCompletedRequest.DeploymentStatus.SUCCESS;
   }
