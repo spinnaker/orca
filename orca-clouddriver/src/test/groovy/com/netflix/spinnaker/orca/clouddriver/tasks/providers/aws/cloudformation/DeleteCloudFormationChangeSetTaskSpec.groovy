@@ -64,7 +64,7 @@ class DeleteCloudFormationChangeSetTaskSpec extends Specification {
 
   }
 
-  def "should skip deleting change set if not requested by the context"() {
+  def "should succeed deleting change set if not requested by the context"() {
     given:
     def pipeline = Execution.newPipeline('orca')
     def context = [
@@ -81,7 +81,7 @@ class DeleteCloudFormationChangeSetTaskSpec extends Specification {
     def result = deleteCloudFormationChangeSetTask.execute(stage)
 
     then:
-    result.getStatus() == ExecutionStatus.SKIPPED
+    result.getStatus() == ExecutionStatus.SUCCEEDED
 
   }
 

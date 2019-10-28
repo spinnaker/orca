@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;
@@ -42,17 +43,17 @@ public class DeleteCloudFormationChangeSetTask extends AbstractCloudProviderAwar
   public TaskResult execute(@Nonnull Stage stage) {
     String cloudProvider = getCloudProvider(stage);
 
-    Map<String, Object> task = new HashMap<>(stage.getContext());
+    Map<String, Object> stageContext = stage.getContext();
 
-    String stackName = (String) task.get("stackName");
-    String changeSetName = (String) task.get("changeSetName");
+    String stackName = (String) stageContext.get("stackName");
+    String changeSetName = (String) stageContext.get("changeSetName");
 
-    if ((boolean) Optional.ofNullable(stage.getContext().get("deleteChangeSet")).orElse(false)) {
+    if ((boolean) Optional.ofNullable(stageContext.get("deleteChangeSet")).orElse(false)) {
       log.debug(
           "Deleting CloudFormation changeset {} from stack {} as requested.",
           changeSetName,
           stackName);
-      List<String> regions = (List<String>) task.get("regions");
+      List<String> regions = (List<String>) stageContext.get("regions");
       String region =
           regions.stream()
               .findFirst()
@@ -60,20 +61,32 @@ public class DeleteCloudFormationChangeSetTask extends AbstractCloudProviderAwar
                   () ->
                       new IllegalArgumentException(
                           "No regions selected. At least one region must be chosen."));
+
+      Map<String, Object> task = new HashMap<>();
+      task.put("stackName", stackName);
+      task.put("changeSetName", changeSetName);
       task.put("region", region);
 
       Map<String, Map> operation =
           new ImmutableMap.Builder<String, Map>().put(TASK_NAME, task).build();
 
-      katoService
-          .requestOperations(cloudProvider, Collections.singletonList(operation))
-          .toBlocking()
-          .first();
-      return TaskResult.builder(ExecutionStatus.SUCCEEDED).build();
+      TaskId taskId =
+          katoService
+              .requestOperations(cloudProvider, Collections.singletonList(operation))
+              .toBlocking()
+              .first();
+
+      Map<String, Object> context =
+          new ImmutableMap.Builder<String, Object>()
+              .put("kato.result.expected", false)
+              .put("kato.last.task.id", taskId)
+              .build();
+
+      return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
     } else {
       log.debug(
           "Not deleting CloudFormation ChangeSet {} from stack {}.", changeSetName, stackName);
-      return TaskResult.builder(ExecutionStatus.SKIPPED).build();
+      return TaskResult.builder(ExecutionStatus.SUCCEEDED).build();
     }
   }
 }

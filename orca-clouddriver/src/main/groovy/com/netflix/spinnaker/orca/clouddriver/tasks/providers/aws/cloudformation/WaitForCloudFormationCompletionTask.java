@@ -76,7 +76,7 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
         return TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(stack).build();
       } else if (isEmptyChangeSet(stage, stack)) {
         String changeSetName = (String) result.get("changeSetName");
-        log.debug("CloudFormation ChangeSet {} empty. Requesting to be deleted.", changeSetName);
+        log.info("CloudFormation ChangeSet {} empty. Requesting to be deleted.", changeSetName);
         return TaskResult.builder(ExecutionStatus.SUCCEEDED)
             .context("deleteChangeSet", true)
             .outputs(stack)

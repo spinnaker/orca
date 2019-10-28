@@ -40,6 +40,7 @@ public class DeployCloudFormationStage implements StageDefinitionBuilder {
         .withTask("waitForCloudFormationCompletion", WaitForCloudFormationCompletionTask.class);
     if ((boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false)) {
       builder.withTask("deleteCloudFormationChangeSet", DeleteCloudFormationChangeSetTask.class);
+      builder.withTask("monitorDeleteCloudFormationChangeSet", MonitorKatoTask.class);
     }
   }
 }
