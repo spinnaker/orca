@@ -1,11 +1,11 @@
 /*
- * Copyright 2019 Armory, Inc.
+ * Copyright 2019 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-apply from: "$rootDir/gradle/kotlin.gradle"
-apply from: "$rootDir/gradle/spock.gradle"
+package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
-test {
-  useJUnitPlatform {
-    includeEngines "junit-vintage", "junit-jupiter"
+import org.springframework.stereotype.Component;
+
+@Component
+public class RollingRestartManifestTask extends GenericUpdateManifestTask {
+  public static final String TASK_NAME = "rollingRestartManifest";
+
+  @Override
+  protected String taskName() {
+    return TASK_NAME;
   }
-}
-
-dependencies {
-  api "com.netflix.spinnaker.kork:kork-plugins-api"
-
-  implementation("com.google.guava:guava")
-
-  compileOnly("org.projectlombok:lombok")
-  annotationProcessor("org.projectlombok:lombok")
 }
