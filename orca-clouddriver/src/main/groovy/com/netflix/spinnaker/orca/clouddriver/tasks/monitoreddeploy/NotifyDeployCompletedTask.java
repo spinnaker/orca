@@ -43,7 +43,7 @@ public class NotifyDeployCompletedTask extends MonitoredDeployBaseTask {
       Stage stage, DeploymentMonitorDefinition monitorDefinition) {
     DeploymentCompletedRequest request = new DeploymentCompletedRequest(stage);
 
-    request.setStatus(convertStageStatus((Boolean) stage.getContext().get("hasDeploymentFailed")));
+    request.setStatus(convertStageStatus((boolean) stage.getContext().getOrDefault("hasDeploymentFailed", false)));
     request.setRollback(DeploymentCompletedRequest.DeploymentStatus.ROLLBACK_NOT_PERFORMED);
 
     // check whether rollback was initiated and successful
