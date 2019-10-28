@@ -41,7 +41,7 @@ class NotifyDeployCompletedTaskSpec extends Specification {
   Execution pipe = pipeline {
   }
 
-  def "happy flow - rollback stage was not initiated and notify complete stage was successful "() {
+  def "should indicate deployment success or failure when no rollback is performed"() {
     given:
     def monitorServiceStub = Stub(DeploymentMonitorService) {
       notifyCompleted(_) >> {
