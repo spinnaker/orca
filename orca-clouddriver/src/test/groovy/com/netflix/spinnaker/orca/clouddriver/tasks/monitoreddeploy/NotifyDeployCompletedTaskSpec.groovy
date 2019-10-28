@@ -47,57 +47,59 @@ class NotifyDeployCompletedTaskSpec extends Specification {
       notifyCompleted(_) >> {
         return new Response("", 200, "OK", [], null)
       }
+    }
+
+    def serviceProviderStub = Stub(DeploymentMonitorServiceProvider) {
+      getDefinitionById(_) >> {
+        def deploymentMonitor = new DeploymentMonitorDefinition()
+        deploymentMonitor.id = "LogMonitorId"
+        deploymentMonitor.name = "LogMonitor"
+        deploymentMonitor.failOnError = true
+        deploymentMonitor.service = monitorServiceStub
+
+        return deploymentMonitor
       }
+    }
 
-      def serviceProviderStub = Stub(DeploymentMonitorServiceProvider) {
-        getDefinitionById(_) >> {
-          def deploymentMonitor = new DeploymentMonitorDefinition()
-          deploymentMonitor.id = "LogMonitorId"
-          deploymentMonitor.name = "LogMonitor"
-          deploymentMonitor.failOnError = true
-          deploymentMonitor.service = monitorServiceStub
+    def task = new NotifyDeployCompletedTask(serviceProviderStub, new NoopRegistry())
 
-          return deploymentMonitor
-        }
-      }
+    MonitoredDeployStageData stageData = new MonitoredDeployStageData()
+    stageData.deploymentMonitor = new DeploymentMonitor()
+    stageData.deploymentMonitor.id = "LogMonitorId"
+    stageData.application = pipe.application
 
-      def task = new NotifyDeployCompletedTask(serviceProviderStub, new NoopRegistry())
+    def stage = new Stage(pipe, NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
+    stage.context.put("hasDeploymentFailed", false)
 
-      MonitoredDeployStageData stageData = new MonitoredDeployStageData()
-      stageData.deploymentMonitor = new DeploymentMonitor()
-      stageData.deploymentMonitor.id = "LogMonitorId"
-      stageData.application = pipe.application
+    when:
+    TaskResult result = task.execute(stage)
 
-      def stage = new Stage(pipe, NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
-      stage.context.put("hasDeploymentFailed", false)
-
-      when:
-      TaskResult result = task.execute(stage)
-
-      then:
-      monitorServiceStub.notifyCompleted({it != null } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
-        assert request.status == DeploymentCompletedRequest.DeploymentStatus.SUCCESS &&
+    then:
+    monitorServiceStub.notifyCompleted({
+      it != null
+    } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
+      assert request.status == DeploymentCompletedRequest.DeploymentStatus.SUCCESS &&
         request.rollback == DeploymentCompletedRequest.DeploymentStatus.ROLLBACK_NOT_PERFORMED
-        new Response('', 200, 'OK', [], null)
-      }
-
-
-      when: 'deployment has failed'
-
-      stage.context.put("hasDeploymentFailed", true)
-      result = task.execute(stage)
-
-      then:
-      monitorServiceStub.notifyCompleted({it != null } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
-        assert request.status == DeploymentCompletedRequest.DeploymentStatus.FAILURE &&
-          request.rollback == DeploymentCompletedRequest.DeploymentStatus.ROLLBACK_NOT_PERFORMED
-        new Response('', 200, 'OK', [], null)
+      new Response('', 200, 'OK', [], null)
     }
 
 
+    when: 'deployment has failed'
 
-      result.status == ExecutionStatus.SUCCEEDED
+    stage.context.put("hasDeploymentFailed", true)
+    result = task.execute(stage)
+
+    then:
+    monitorServiceStub.notifyCompleted({
+      it != null
+    } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
+      assert request.status == DeploymentCompletedRequest.DeploymentStatus.FAILURE &&
+        request.rollback == DeploymentCompletedRequest.DeploymentStatus.ROLLBACK_NOT_PERFORMED
+      new Response('', 200, 'OK', [], null)
     }
+
+    result.status == ExecutionStatus.SUCCEEDED
+  }
 
   def "rollback stage was initiated"() {
     given:
@@ -143,7 +145,9 @@ class NotifyDeployCompletedTaskSpec extends Specification {
 
     then:
 
-    monitorServiceStub.notifyCompleted({it != null } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
+    monitorServiceStub.notifyCompleted({
+      it != null
+    } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
       assert request.rollback == DeploymentCompletedRequest.DeploymentStatus.SUCCESS
       new Response('', 200, 'OK', [], null)
     }
@@ -155,13 +159,15 @@ class NotifyDeployCompletedTaskSpec extends Specification {
 
     then:
 
-    monitorServiceStub.notifyCompleted({it != null } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
+    monitorServiceStub.notifyCompleted({
+      it != null
+    } as DeploymentCompletedRequest) >> { DeploymentCompletedRequest request ->
       assert request.rollback == DeploymentCompletedRequest.DeploymentStatus.FAILURE
       new Response('', 200, 'OK', [], null)
     }
 
     result.status == ExecutionStatus.SUCCEEDED
-    }
   }
+}
 
 
