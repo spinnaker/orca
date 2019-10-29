@@ -49,12 +49,12 @@ public class BakeManifestContext {
       @JsonProperty("namespace") String namespace,
       @Nullable @JsonProperty("inputArtifact") CreateBakeManifestTask.InputArtifact inputArtifact,
       @JsonProperty("rawOverrides") Boolean rawOverrides) {
-    this.inputArtifacts = Optional.of(inputArtifacts).orElse(new ArrayList<>());
+    this.inputArtifacts = Optional.ofNullable(inputArtifacts).orElse(new ArrayList<>());
     // Kustomize stage configs provide a single input artifact
     if (this.inputArtifacts.isEmpty() && inputArtifact != null) {
       this.inputArtifacts.add(inputArtifact);
     }
-    this.expectedArtifacts = Optional.of(expectedArtifacts).orElse(new ArrayList<>());
+    this.expectedArtifacts = Optional.ofNullable(expectedArtifacts).orElse(new ArrayList<>());
     this.overrides = overrides;
     this.evaluateOverrideExpressions = evaluateOverrideExpressions;
     this.templateRenderer = templateRenderer;
