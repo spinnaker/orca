@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation.CloudFormationForceCacheRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation.DeployCloudFormationTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation.EvaluateCloudFormationChangeSetExecutionTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation.ExecuteCloudFormationChangeSetTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation.WaitForCloudFormationCompletionTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
@@ -36,5 +38,23 @@ public class DeployCloudFormationStage implements StageDefinitionBuilder {
         .withTask("monitorCloudFormation", MonitorKatoTask.class)
         .withTask("forceRefreshCache", CloudFormationForceCacheRefreshTask.class)
         .withTask("waitForCloudFormationCompletion", WaitForCloudFormationCompletionTask.class);
+
+    if ((boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false)) {
+      builder.withTask("deleteCloudFormationChangeSet", DeleteCloudFormationChangeSetTask.class);
+      builder.withTask("monitorDeleteCloudFormationChangeSet", MonitorKatoTask.class);
+    }
+
+    if ((boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false)
+        && (boolean)
+            Optional.ofNullable(stage.getContext().get("executeChangeSet")).orElse(false)) {
+      builder
+          .withTask(
+              "evaluateCloudFormationChangeSetExecution",
+              EvaluateCloudFormationChangeSetExecutionTask.class)
+          .withTask("executeCloudFormationChangeSet", ExecuteCloudFormationChangeSetTask.class)
+          .withTask("monitorCloudFormation", MonitorKatoTask.class)
+          .withTask("forceRefreshCache", CloudFormationForceCacheRefreshTask.class)
+          .withTask("waitForCloudFormationCompletion", WaitForCloudFormationCompletionTask.class);
+    }
   }
 }
