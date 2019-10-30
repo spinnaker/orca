@@ -39,6 +39,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.support.RequisiteStageRefIdDeserializer;
@@ -614,6 +615,21 @@ public class Stage implements Serializable {
     return children;
   }
 
+  /**
+   * Gets all direct children of the current stage. This is not a recursive method and will return
+   * only the children in the first level of the stage.
+   */
+  public List<Stage> directChildren() {
+
+    if (execution != null) {
+      return getExecution().getStages().stream()
+          .filter(
+              stage -> stage.getParentStageId() != null && stage.getParentStageId().equals(getId()))
+          .collect(toList());
+    }
+    return emptyList();
+  }
+
   /** Maps the stage's context to a typed object */
   public <O> O mapTo(Class<O> type) {
     return mapTo(null, type);
@@ -753,6 +769,38 @@ public class Stage implements Serializable {
       return Optional.of((Double) timeout).map(Double::longValue);
     }
     return Optional.empty();
+  }
+
+  /**
+   * Check if this stage should propagate FAILED_CONTINUE to parent stage. Normally, if a synthetic
+   * child fails with FAILED_CONTINUE {@link
+   * com.netflix.spinnaker.orca.q.handler.CompleteStageHandler} will propagate the FAILED_CONTINUE
+   * status to the parent, preventing all subsequent sibling stages from executing. This allows for
+   * an option (similar to Tasks) to continue execution if a child stage returns FAILED_CONTINUE
+   *
+   * @return true if we want to allow subsequent siblings to continue even if this stage returns
+   *     FAILED_CONTINUE
+   */
+  @JsonIgnore
+  public boolean getAllowSiblingStagesToContinueOnFailure() {
+    if (parentStageId == null) {
+      return false;
+    }
+
+    StageContext context = (StageContext) getContext();
+    return (boolean) context.getCurrentOnly("allowSiblingStagesToContinueOnFailure", false);
+  }
+
+  @JsonIgnore
+  public void setAllowSiblingStagesToContinueOnFailure(boolean propagateFailuresToParent) {
+    if (parentStageId == null) {
+      throw new SpinnakerException(
+          String.format(
+              "Not allowed to set propagateFailuresToParent on a non-child stage: %s with id %s",
+              getType(), getId()));
+    }
+
+    context.put("allowSiblingStagesToContinueOnFailure", propagateFailuresToParent);
   }
 
   public static class LastModifiedDetails implements Serializable {
