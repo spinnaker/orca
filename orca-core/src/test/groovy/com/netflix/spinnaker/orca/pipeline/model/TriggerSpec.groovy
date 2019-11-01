@@ -277,6 +277,36 @@ class TriggerSpec extends Specification {
 '''
   }
 
+  def "can parse a Git trigger without optional fields"() {
+    given:
+    def trigger = mapper.readValue(triggerJson, Trigger)
+
+    expect:
+    trigger instanceof GitTrigger
+    with(trigger) {
+      hash == "f5d3cd95665a1aa45842230472c2abf3721bea02"
+      source == "github"
+      project == "spinnaker"
+      branch == "release-0.2.x"
+      slug == "orca"
+      action == "undefined"
+    }
+
+    where:
+    triggerJson = '''
+{
+  "project": "spinnaker",
+  "source": "github",
+  "type": "git",
+  "branch": "release-0.2.x",
+  "user": "[anonymous]",
+  "enabled": true,
+  "slug": "orca",
+  "hash": "f5d3cd95665a1aa45842230472c2abf3721bea02"
+}
+'''
+  }
+
   def "can parse a jenkins trigger"() {
     given:
     def trigger = mapper.readValue(triggerJson, Trigger)
