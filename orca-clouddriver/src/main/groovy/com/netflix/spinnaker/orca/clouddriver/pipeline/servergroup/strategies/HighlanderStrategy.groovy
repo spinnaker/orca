@@ -38,7 +38,12 @@ class HighlanderStrategy implements Strategy, ApplicationContextAware {
   ApplicationContext applicationContext
 
   @Override
-  List<Stage> composeFlow(Stage stage) {
+  List<Stage> composeBeforeStages(Stage parent) {
+    return Collections.emptyList()
+  }
+
+  @Override
+  List<Stage> composeAfterStages(Stage stage) {
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stage)
     Map shrinkContext = [
         (cleanupConfig.location.singularType()): cleanupConfig.location.value,

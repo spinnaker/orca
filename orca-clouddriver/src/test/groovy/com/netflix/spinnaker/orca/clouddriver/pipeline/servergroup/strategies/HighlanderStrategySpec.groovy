@@ -21,7 +21,6 @@ import com.netflix.spinnaker.kork.dynamicconfig.SpringDynamicConfigService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
@@ -33,12 +32,11 @@ class HighlanderStrategySpec extends Specification {
 
   def trafficGuard = Stub(TrafficGuard)
   def env = new MockEnvironment()
-  def lockingConfig = new LockingConfigurationProperties(new SpringDynamicConfigService(environment: env))
 
   def dynamicConfigService = Mock(DynamicConfigService)
 
-  def disableClusterStage = new DisableClusterStage(trafficGuard, lockingConfig, dynamicConfigService)
-  def shrinkClusterStage = new ShrinkClusterStage(trafficGuard, lockingConfig, dynamicConfigService, disableClusterStage)
+  def disableClusterStage = new DisableClusterStage(dynamicConfigService)
+  def shrinkClusterStage = new ShrinkClusterStage(dynamicConfigService, disableClusterStage)
 
   @Unroll
   def "should compose flow"() {
@@ -62,9 +60,8 @@ class HighlanderStrategySpec extends Specification {
       def strat = new HighlanderStrategy(shrinkClusterStage: shrinkClusterStage)
 
     when:
-      def syntheticStages = strat.composeFlow(stage)
-      def beforeStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_BEFORE }
-      def afterStages = syntheticStages.findAll { it.syntheticStageOwner == SyntheticStageOwner.STAGE_AFTER }
+      def beforeStages = strat.composeBeforeStages(stage)
+      def afterStages = strat.composeAfterStages(stage)
 
     then:
       beforeStages.isEmpty()

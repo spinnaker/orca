@@ -29,6 +29,7 @@ import spock.lang.Subject
 import spock.lang.Unroll
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -783,7 +784,7 @@ class ContextParameterProcessorSpec extends Specification {
 
   }
 
-  def "can find a stage in an execution"() {
+  def "can find a stage in an execution and get its status"() {
     given:
     def pipe = pipeline {
       stage {
@@ -798,18 +799,34 @@ class ContextParameterProcessorSpec extends Specification {
         refId = "2"
         requisiteStageRefIds = ["1"]
         context.waitTime = 1
-        context.comments = '${#stage("Wait1")["status"].toString()}'
+        context.comments = 'succeeded: ${#stage("Wait1")["status"] == "SUCCEEDED"}'
+        context.succeeded = '${#stage("Wait1").hasSucceeded}'
+        context.failed = '${#stage("Wait1").hasFailed}'
       }
     }
 
-    def stage = pipe.stageByRef("2")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def stage1 = pipe.stageByRef("1")
+    stage1.setStatus(SUCCEEDED)
+
+    def stage2 = pipe.stageByRef("2")
+    def ctx = contextParameterProcessor.buildExecutionContext(stage2)
 
     when:
-    def result = contextParameterProcessor.process(stage.context, ctx, true)
+    def result = contextParameterProcessor.process(stage2.context, ctx, true)
 
     then:
-    result.comments == "NOT_STARTED"
+    result.comments == "succeeded: true"
+    result.succeeded == true
+    result.failed == false
+
+    when:
+    stage1.setStatus(TERMINAL)
+    result = contextParameterProcessor.process(stage2.context, ctx, true)
+
+    then:
+    result.comments == "succeeded: false"
+    result.succeeded == false
+    result.failed == true
   }
 
   def "can not toJson an execution with expressions in the context"() {
@@ -825,7 +842,7 @@ class ContextParameterProcessorSpec extends Specification {
     }
 
     def stage = pipe.stageByRef("1")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -854,7 +871,7 @@ class ContextParameterProcessorSpec extends Specification {
     pipe.setAuthentication(new Execution.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
 
     def stage = pipe.stages.find { it.name == "Wait1" }
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -881,7 +898,7 @@ class ContextParameterProcessorSpec extends Specification {
 
     and:
     def stage = pipe.stages.find { it.type == "bake" }
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -911,7 +928,7 @@ class ContextParameterProcessorSpec extends Specification {
 
     and:
     def stage = pipe.stageByRef("1")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage, true)
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
 
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
@@ -939,6 +956,54 @@ class ContextParameterProcessorSpec extends Specification {
     [:]              || "noValue"
     [notFound:"xyz"] || "noValue"
     [branch:"hello"] || "hello"
+  }
+
+  @Unroll
+  def "Correctly evaluates expressions that refer to outputs of prior stages"() {
+    given:
+    def execution = pipeline {
+      stage {
+        type = "evaluateVariables"
+        name = "Evaluate namespace"
+        refId = "1"
+        status = SUCCEEDED
+        outputs.putAll(
+          keyA: "valueA",
+          keyB: "valueB"
+        )
+      }
+      stage {
+        type = "deployManifest"
+        name = "Deploy manifest"
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+        context.putAll(
+          manifests: [
+            [
+              kind: 'ReplicaSet',
+              name: '${keyA}',
+              namespace: '${keyB}'
+            ]
+
+          ]
+        )
+      }
+    }
+
+    def stage = execution.stageByRef("2")
+    def ctx = contextParameterProcessor.buildExecutionContext(stage)
+
+    when:
+    def result = contextParameterProcessor.process(stage.context, ctx, true)
+
+    then:
+    result.manifests == [
+      [
+        kind: 'ReplicaSet',
+        name: 'valueA',
+        namespace: 'valueB'
+      ]
+    ]
   }
 
   static escapeExpression(String expression) {

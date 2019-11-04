@@ -20,11 +20,13 @@ import static org.springframework.context.annotation.AnnotationConfigUtils.EVENT
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.config.PluginsAutoConfiguration;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.StageResolver;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResolver;
+import com.netflix.spinnaker.orca.api.SimpleStage;
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand;
 import com.netflix.spinnaker.orca.events.ExecutionEvent;
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter;
@@ -40,8 +42,11 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -72,7 +77,7 @@ import rx.schedulers.Schedulers;
   "com.netflix.spinnaker.orca.telemetry",
   "com.netflix.spinnaker.orca.notifications.scheduling"
 })
-@Import(PreprocessorConfiguration.class)
+@Import({PreprocessorConfiguration.class, PluginsAutoConfiguration.class})
 @EnableConfigurationProperties
 public class OrcaConfiguration {
   @Bean
@@ -132,8 +137,8 @@ public class OrcaConfiguration {
 
   @Bean
   public ContextParameterProcessor contextParameterProcessor(
-      List<ExpressionFunctionProvider> expressionFunctionProviders) {
-    return new ContextParameterProcessor(expressionFunctionProviders);
+      List<ExpressionFunctionProvider> expressionFunctionProviders, PluginManager pluginManager) {
+    return new ContextParameterProcessor(expressionFunctionProviders, pluginManager);
   }
 
   @Bean
@@ -174,6 +179,16 @@ public class OrcaConfiguration {
   }
 
   @Bean
+  public ThreadPoolTaskExecutor cancellableStageExecutor() {
+    ThreadPoolTaskExecutor threadPool = new ThreadPoolTaskExecutor();
+    threadPool.setThreadNamePrefix("cancel-");
+    threadPool.setCorePoolSize(5);
+    threadPool.setMaxPoolSize(10);
+    threadPool.setQueueCapacity(20);
+    return threadPool;
+  }
+
+  @Bean
   public TaskScheduler taskScheduler() {
     ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
     scheduler.setThreadNamePrefix("scheduler-");
@@ -187,8 +202,11 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  public StageResolver stageResolver(Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
-    return new StageResolver(stageDefinitionBuilders);
+  public StageResolver stageResolver(
+      Collection<StageDefinitionBuilder> stageDefinitionBuilders,
+      Optional<List<SimpleStage>> simpleStages) {
+    List<SimpleStage> stages = simpleStages.orElseGet(ArrayList::new);
+    return new StageResolver(stageDefinitionBuilders, stages);
   }
 
   @Bean(name = EVENT_LISTENER_FACTORY_BEAN_NAME)

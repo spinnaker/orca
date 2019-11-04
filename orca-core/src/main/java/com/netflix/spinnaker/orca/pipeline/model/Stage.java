@@ -20,7 +20,10 @@ import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.*;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -36,13 +39,24 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.support.RequisiteStageRefIdDeserializer;
 import de.huxhorn.sulky.ulid.ULID;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -529,23 +543,25 @@ public class Stage implements Serializable {
       if (parentPipelineStage.isPresent()) {
         matchingStage = findAncestor(parentPipelineStage.get(), parentPipelineExecution, predicate);
       } else {
-        List<Stage> parentPipelineStages = new ArrayList<>(parentPipelineExecution.getStages());
-        parentPipelineStages.sort(
-            (s1, s2) -> {
-              if ((s1.endTime == null) && (s2.endTime == null)) {
-                return 0;
-              }
+        List<Stage> parentPipelineStages =
+            parentPipelineExecution.getStages().stream()
+                .sorted(
+                    (s1, s2) -> {
+                      if ((s1.endTime == null) && (s2.endTime == null)) {
+                        return 0;
+                      }
 
-              if (s1.endTime == null) {
-                return 1;
-              }
+                      if (s1.endTime == null) {
+                        return -1;
+                      }
 
-              if (s2.endTime == null) {
-                return -1;
-              }
+                      if (s2.endTime == null) {
+                        return 1;
+                      }
 
-              return s1.endTime.compareTo(s2.endTime);
-            });
+                      return s2.endTime.compareTo(s1.endTime);
+                    })
+                .collect(toList());
 
         if (parentPipelineStages.size() > 0) {
           // The list is sorted in reverse order by endTime.
@@ -597,6 +613,21 @@ public class Stage implements Serializable {
     }
 
     return children;
+  }
+
+  /**
+   * Gets all direct children of the current stage. This is not a recursive method and will return
+   * only the children in the first level of the stage.
+   */
+  public List<Stage> directChildren() {
+
+    if (execution != null) {
+      return getExecution().getStages().stream()
+          .filter(
+              stage -> stage.getParentStageId() != null && stage.getParentStageId().equals(getId()))
+          .collect(toList());
+    }
+    return emptyList();
   }
 
   /** Maps the stage's context to a typed object */
@@ -740,6 +771,38 @@ public class Stage implements Serializable {
     return Optional.empty();
   }
 
+  /**
+   * Check if this stage should propagate FAILED_CONTINUE to parent stage. Normally, if a synthetic
+   * child fails with FAILED_CONTINUE {@link
+   * com.netflix.spinnaker.orca.q.handler.CompleteStageHandler} will propagate the FAILED_CONTINUE
+   * status to the parent, preventing all subsequent sibling stages from executing. This allows for
+   * an option (similar to Tasks) to continue execution if a child stage returns FAILED_CONTINUE
+   *
+   * @return true if we want to allow subsequent siblings to continue even if this stage returns
+   *     FAILED_CONTINUE
+   */
+  @JsonIgnore
+  public boolean getAllowSiblingStagesToContinueOnFailure() {
+    if (parentStageId == null) {
+      return false;
+    }
+
+    StageContext context = (StageContext) getContext();
+    return (boolean) context.getCurrentOnly("allowSiblingStagesToContinueOnFailure", false);
+  }
+
+  @JsonIgnore
+  public void setAllowSiblingStagesToContinueOnFailure(boolean propagateFailuresToParent) {
+    if (parentStageId == null) {
+      throw new SpinnakerException(
+          String.format(
+              "Not allowed to set propagateFailuresToParent on a non-child stage: %s with id %s",
+              getType(), getId()));
+    }
+
+    context.put("allowSiblingStagesToContinueOnFailure", propagateFailuresToParent);
+  }
+
   public static class LastModifiedDetails implements Serializable {
     private String user;
 
@@ -782,6 +845,31 @@ public class Stage implements Serializable {
     return getExecution().getStages().stream()
         .filter(it -> it.getRequisiteStageRefIds().contains(getRefId()))
         .collect(toList());
+  }
+
+  @Override
+  public String toString() {
+    return "Stage {id='" + id + "', executionId='" + execution.getId() + "'}";
+  }
+
+  /**
+   * NOTE: this function is mostly for convenience to endusers using SpEL
+   *
+   * @return true if stage has succeeded
+   */
+  @JsonIgnore
+  public boolean getHasSucceeded() {
+    return (status == ExecutionStatus.SUCCEEDED);
+  }
+
+  /**
+   * NOTE: this function is mostly for convenience to endusers using SpEL
+   *
+   * @return true if stage has failed
+   */
+  @JsonIgnore
+  public boolean getHasFailed() {
+    return (status == ExecutionStatus.TERMINAL);
   }
 
   public static final String STAGE_TIMEOUT_OVERRIDE_KEY = "stageTimeoutMs";

@@ -16,22 +16,25 @@
 
 package com.netflix.spinnaker.orca.bakery.pipeline
 
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
+
 import java.time.Clock
-import java.time.Instant
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import spock.lang.Specification
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
-import static java.time.Clock.systemUTC
 import static java.time.Instant.EPOCH
-import static java.time.Instant.now
 import static java.time.ZoneOffset.UTC
 import static java.time.temporal.ChronoUnit.*
 
 class BakeStageSpec extends Specification {
+  def dynamicConfigService = Mock(DynamicConfigService)
+
   @Unroll
   def "should build contexts corresponding to locally specified bake region and all target deploy regions"() {
     given:
@@ -99,7 +102,9 @@ class BakeStageSpec extends Specification {
     }
 
     def bakeStage = pipeline.stageById("1")
-    def parallelStages = new BakeStage(regionCollector: new RegionCollector()).parallelStages(bakeStage)
+    def graph = StageGraphBuilder.beforeStages(bakeStage)
+    new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+    def parallelStages = graph.build()
 
     parallelStages.eachWithIndex { it, idx -> it.context.ami = idx + 1 }
     pipeline.stages.addAll(parallelStages)
@@ -113,6 +118,85 @@ class BakeStageSpec extends Specification {
       deploymentDetails[1].ami == 2
       deploymentDetails[2].ami == 3
     }
+  }
+
+  def "should fail if image names don't match across regions"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        id = "1"
+        type = "bake"
+        context = [
+          "region": "us-east-1",
+          "regions": ["us-east-1", "us-west-2", "eu-east-1"],
+        ]
+        status = ExecutionStatus.RUNNING
+      }
+    }
+
+    def bakeStage = pipeline.stageById("1")
+    def graph = StageGraphBuilder.beforeStages(bakeStage)
+    new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+    def parallelStages = graph.build()
+
+    parallelStages.eachWithIndex { it, idx ->
+      it.context.ami = "${idx}"
+      it.context.imageName = "image#${idx}"
+    }
+    pipeline.stages.addAll(parallelStages)
+
+    dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch", false) >> { true }
+
+    when:
+    new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(bakeStage)
+
+    then:
+    thrown(ConstraintViolationException)
+  }
+
+  def "should NOT fail if image names from unrelated bake stages don't match"() {
+    given:
+    def pipeline = pipeline {
+      stage {
+        id = "1"
+        type = "bake"
+        context = [
+          "region": "us-east-1",
+          "regions": ["us-east-1", "us-west-2"]
+        ]
+        status = ExecutionStatus.RUNNING
+      }
+      // this is a sibling bake stage whose child bake contexts should not be included in stage 1's outputs, but are
+      stage {
+        id = "2"
+        type = "bake"
+        context = [
+          "region": "us-east-1",
+          "regions": ["us-east-1"]
+        ]
+        status = ExecutionStatus.RUNNING
+      }
+    }
+
+    for (stageId in ["1", "2"]) {
+      def bakeStage = pipeline.stageById(stageId)
+      def graph = StageGraphBuilder.beforeStages(bakeStage)
+      new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+      def childBakeStages = graph.build()
+      childBakeStages.eachWithIndex { it, idx ->
+        it.context.ami = "${idx}"
+        it.context.imageName = "image-from-bake-stage-${stageId}"
+      }
+      pipeline.stages.addAll(childBakeStages)
+    }
+
+    dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch", false) >> { true }
+
+    when:
+    new BakeStage.CompleteParallelBakeTask(dynamicConfigService).execute(pipeline.stageById("1"))
+
+    then:
+    notThrown(ConstraintViolationException)
   }
 
   private

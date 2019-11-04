@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver
 
-
 import com.google.common.hash.Hashing
 import com.netflix.spinnaker.orca.ExecutionContext
 import com.netflix.spinnaker.orca.clouddriver.model.Task
@@ -25,6 +24,8 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import rx.Observable
+
+import javax.annotation.Nonnull
 
 @Component
 class KatoService {
@@ -54,12 +55,15 @@ class KatoService {
     return Observable.from(cloudDriverTaskStatusService.lookupTask(id))
   }
 
-  private static String requestId(Object payload) {
-    final ExecutionContext context = ExecutionContext.get()
-    return "${context.getStageId()}-${context.getStageStartTime()}-${requestHash(payload)}".toString()
+  @Nonnull
+  TaskId resumeTask(@Nonnull String id) {
+    katoRestService.resumeTask(id)
   }
 
-  private static String requestHash(Object payload) {
-    return Hashing.sha256().hashBytes(OrcaObjectMapper.getInstance().writeValueAsBytes(payload))
+  private static String requestId(Object payload) {
+    final ExecutionContext context = ExecutionContext.get()
+    final byte[] payloadBytes = OrcaObjectMapper.getInstance().writeValueAsBytes(payload)
+    return Hashing.sha256().hashBytes(
+      "${context.getStageId()}-${context.getStageStartTime()}-${payloadBytes}".toString().bytes)
   }
 }

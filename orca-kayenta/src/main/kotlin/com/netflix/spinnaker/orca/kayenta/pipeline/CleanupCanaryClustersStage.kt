@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kayenta.pipeline
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
+import com.netflix.spinnaker.orca.ext.setContinueOnFailure
 import com.netflix.spinnaker.orca.kayenta.model.ServerGroupSpec
 import com.netflix.spinnaker.orca.kayenta.model.cluster
 import com.netflix.spinnaker.orca.kayenta.model.deployments
@@ -45,12 +46,16 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
           it.name = "Disable control cluster ${pair.control.cluster}"
           it.context.putAll(pair.control.toContext)
           it.context["remainingEnabledServerGroups"] = 0
+          // Even if disabling fails, move on to shrink below which will have another go at destroying the server group
+          it.setContinueOnFailure(true)
         },
         graph.add {
           it.type = DisableClusterStage.STAGE_TYPE
           it.name = "Disable experiment cluster ${pair.experiment.cluster}"
           it.context.putAll(pair.experiment.toContext)
           it.context["remainingEnabledServerGroups"] = 0
+          // Even if disabling fails, move on to shrink below which will have another go at destroying the server group
+          it.setContinueOnFailure(true)
         }
       )
     }
@@ -63,6 +68,9 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
     }
 
     disableStages.forEach {
+      // Continue the stages even if disabling one of the clusters fails - subsequent stages will delete them
+      // but we need to make sure they run
+      it.allowSiblingStagesToContinueOnFailure = true
       graph.connect(it, waitStage)
     }
 
@@ -74,6 +82,7 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
         it.context.putAll(pair.control.toContext)
         it.context["allowDeleteActive"] = true
         it.context["shrinkToSize"] = 0
+        it.setContinueOnFailure(true)
       }
 
       // destroy experiment cluster
@@ -83,6 +92,7 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
         it.context.putAll(pair.experiment.toContext)
         it.context["allowDeleteActive"] = true
         it.context["shrinkToSize"] = 0
+        it.setContinueOnFailure(true)
       }
     }
   }

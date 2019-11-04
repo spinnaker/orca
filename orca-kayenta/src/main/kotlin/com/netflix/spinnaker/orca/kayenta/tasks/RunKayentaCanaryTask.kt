@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.kayenta.tasks
 
+import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
@@ -37,6 +38,10 @@ class RunKayentaCanaryTask(
   override fun execute(stage: Stage): TaskResult {
     val context = stage.mapTo<RunCanaryContext>()
 
+    if (context.canaryConfigId.isNullOrEmpty()) {
+      throw UserException("Invalid canaryConfigId. Was the correct configName or configId used?")
+    }
+
     val canaryPipelineExecutionId = kayentaService.create(
       context.canaryConfigId,
       stage.execution.application,
@@ -47,6 +52,11 @@ class RunKayentaCanaryTask(
       CanaryExecutionRequest(context.scopes, context.scoreThresholds, context.siteLocal)
     )["canaryExecutionId"] as String
 
-    return TaskResult.builder(SUCCEEDED).context("canaryPipelineExecutionId", canaryPipelineExecutionId).build()
+    val outputs = mapOf(
+      "canaryPipelineExecutionId" to canaryPipelineExecutionId,
+      "canaryConfigId" to context.canaryConfigId
+    )
+
+    return TaskResult.builder(SUCCEEDED).context("canaryPipelineExecutionId", canaryPipelineExecutionId).outputs(outputs).build()
   }
 }

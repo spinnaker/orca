@@ -16,17 +16,17 @@
 
 package com.netflix.spinnaker.orca.pipeline.expressions;
 
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.ExpressionTransform;
 import com.netflix.spinnaker.kork.expressions.ExpressionsSupport;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+import lombok.Getter;
+import org.pf4j.PluginManager;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.TemplateParserContext;
@@ -37,13 +37,13 @@ public class PipelineExpressionEvaluator {
   public static final String SUMMARY = "expressionEvaluationSummary";
   public static final String ERROR = "Failed Expression Evaluation";
 
-  private static final List<String> EXECUTION_AWARE_FUNCTIONS =
-      Arrays.asList("judgment", "judgement", "stage", "stageExists", "deployedServerGroups");
+  // No new items should go in to this list. We should use functions instead of vars going forward.
   private static final List<String> EXECUTION_AWARE_ALIASES =
       Collections.singletonList("deployedServerGroups");
 
   private static Class[] extraAllowedReturnTypes =
       new Class[] {
+        Artifact.class,
         Execution.class,
         Stage.class,
         Trigger.class,
@@ -61,8 +61,13 @@ public class PipelineExpressionEvaluator {
   private final ParserContext parserContext = new TemplateParserContext("${", "}");
   private final ExpressionsSupport support;
 
-  public PipelineExpressionEvaluator(List<ExpressionFunctionProvider> expressionFunctionProviders) {
-    this.support = new ExpressionsSupport(extraAllowedReturnTypes, expressionFunctionProviders);
+  @Getter private final Set<String> executionAwareFunctions = new HashSet<String>();
+
+  public PipelineExpressionEvaluator(
+      List<ExpressionFunctionProvider> expressionFunctionProviders, PluginManager pluginManager) {
+    this.support =
+        new ExpressionsSupport(extraAllowedReturnTypes, expressionFunctionProviders, pluginManager);
+    initExecutionAwareFunctions(expressionFunctionProviders);
   }
 
   public Map<String, Object> evaluate(
@@ -80,13 +85,15 @@ public class PipelineExpressionEvaluator {
   private final Function<String, String> includeExecutionParameter =
       e -> {
         String expression = e;
-        for (String fn : EXECUTION_AWARE_FUNCTIONS) {
+        for (String fn : this.executionAwareFunctions) {
           if (expression.contains("#" + fn)
               && !expression.contains("#" + fn + "( #root.execution, ")) {
             expression = expression.replaceAll("#" + fn + "\\(", "#" + fn + "( #root.execution, ");
           }
         }
 
+        // 'deployServerGroups' is a variable instead of a function and this block handles that.
+        // Migrate the pipelines to use function instead, before removing this block of code.
         for (String a : EXECUTION_AWARE_ALIASES) {
           if (expression.contains(a) && !expression.contains("#" + a + "( #root.execution, ")) {
             expression = expression.replaceAll(a, "#" + a + "( #root.execution)");
@@ -95,4 +102,21 @@ public class PipelineExpressionEvaluator {
 
         return expression;
       };
+
+  private void initExecutionAwareFunctions(
+      List<ExpressionFunctionProvider> expressionFunctionProviders) {
+
+    expressionFunctionProviders.forEach(
+        p -> {
+          p.getFunctions()
+              .getFunctionsDefinitions()
+              .forEach(
+                  f -> {
+                    if (!f.getParameters().isEmpty()
+                        && f.getParameters().get(0).getType() == Execution.class) {
+                      this.executionAwareFunctions.add(f.getName());
+                    }
+                  });
+        });
+  }
 }

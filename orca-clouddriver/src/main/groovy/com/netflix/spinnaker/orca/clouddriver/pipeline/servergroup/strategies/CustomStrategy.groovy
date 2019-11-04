@@ -32,8 +32,12 @@ class CustomStrategy implements Strategy {
   final String name = "custom"
 
   @Override
-  List<Stage> composeFlow(Stage stage) {
+  List<Stage> composeBeforeStages(Stage parent) {
+    return Collections.emptyList()
+  }
 
+  @Override
+  List<Stage> composeAfterStages(Stage stage) {
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stage)
 
     Map parameters = [

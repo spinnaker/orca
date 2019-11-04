@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.bakery.api.BakeRequest
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.bakery.api.BaseImage
-import com.netflix.spinnaker.orca.bakery.api.manifests.helm.HelmBakeManifestRequest
+import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import retrofit.http.Body
@@ -39,7 +39,7 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class BakerySelectorSpec extends Specification {
   def bakeryConfigProperties = new BakeryConfigurationProperties(
-    baseUrl: "http://bakery.com", 
+    baseUrl: "http://bakery.com",
     baseUrls: [
       new BaseUrl(
         baseUrl: "http://rosco.us-east-1.com",
@@ -47,6 +47,7 @@ class BakerySelectorSpec extends Specification {
         config: [:],
         parameters: [
           new Parameter(name: "region", values: ["us-east-1"]),
+          new Parameter(name: "baseOs", values: ["centos"]),
           new Parameter(name: "cloudProviderType", values: ["aws"])
         ]
       ),
@@ -97,7 +98,7 @@ class BakerySelectorSpec extends Specification {
     where:
     ctx                                       | user               || service
     [region: "us-east-1"]                     | "user@netflix.com" || new TestBakeryService(url: "http://bakery.com")
-    [region: "us-east-1", cloudProviderType: "aws", selectBakery: true] | "user@netflix.com" || new TestBakeryService(url: "http://rosco.us-east-1.com")
+    [region: "us-east-1", cloudProviderType: "aws", selectBakery: true, baseOs: "centos"] | "user@netflix.com" || new TestBakeryService(url: "http://rosco.us-east-1.com")
     [region: "eu-west-1", selectBakery: true] | "test@netflix.com" || new TestBakeryService(url: "http://bakery.com")
     [selectBakery: true]                      | "bob@netflix.com"  || new TestBakeryService(url: "http://rosco.eu-west-1.com")
     [selectBakery: false]                     | "bob@netflix.com"  || new TestBakeryService(url: "http://bakery.com")
@@ -126,7 +127,7 @@ class BakerySelectorSpec extends Specification {
     }
 
     @Override
-    Artifact bakeManifest(@Body HelmBakeManifestRequest bakeRequest) {
+    Artifact bakeManifest(@Path("type") String type, @Body BakeManifestRequest bakeRequest) {
       return null
     }
 

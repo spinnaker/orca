@@ -16,6 +16,11 @@
 
 package com.netflix.spinnaker.orca.bakery.pipeline
 
+import com.google.common.base.Joiner
+import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+
 import java.time.Clock
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -34,6 +39,9 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import java.util.stream.Collectors
+
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static java.time.Clock.systemUTC
 import static java.time.ZoneOffset.UTC
@@ -66,16 +74,13 @@ class BakeStage implements StageDefinitionBuilder {
   }
 
   @Override
-  @Nonnull
-  List<Stage> parallelStages(
-    @Nonnull Stage stage
-  ) {
-    if (isTopLevelStage(stage)) {
-      return parallelContexts(stage).collect { context ->
-        newStage(stage.execution, type, "Bake in ${context.region}", context, stage, STAGE_BEFORE)
-      }
-    } else {
-      return Collections.emptyList()
+  void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+    if (isTopLevelStage(parent)) {
+      parallelContexts(parent)
+        .collect({ context ->
+          newStage(parent.execution, type, "Bake in ${context.region}", context, parent, STAGE_BEFORE)
+        })
+        .forEach({Stage s -> graph.add(s) })
     }
   }
 
@@ -109,11 +114,36 @@ class BakeStage implements StageDefinitionBuilder {
   @Component
   @CompileStatic
   static class CompleteParallelBakeTask implements Task {
+    public static final List<String> DEPLOYMENT_DETAILS_CONTEXT_FIELDS = [
+      "ami",
+      "imageId",
+      "imageName",
+      "amiSuffix",
+      "baseLabel",
+      "baseOs",
+      "refId",
+      "storeType",
+      "vmType",
+      "region",
+      "package",
+      "cloudProviderType",
+      "cloudProvider"
+    ]
+    DynamicConfigService dynamicConfigService
+
+    @Autowired
+    CompleteParallelBakeTask(DynamicConfigService dynamicConfigService) {
+      this.dynamicConfigService = dynamicConfigService
+    }
+
     TaskResult execute(Stage stage) {
       def bakeInitializationStages = stage.execution.stages.findAll {
         it.parentStageId == stage.parentStageId && it.status == ExecutionStatus.RUNNING
       }
 
+      // FIXME? (lpollo): I don't know why we do this, but we include in relatedStages all parallel bake stages in the
+      //  same pipeline, not just the ones related to the stage passed to this task, which means this list actually
+      //  contains *unrelated* bake stages...
       def relatedBakeStages = stage.execution.stages.findAll {
         it.type == PIPELINE_CONFIG_TYPE && bakeInitializationStages*.id.contains(it.parentStageId)
       }
@@ -121,7 +151,7 @@ class BakeStage implements StageDefinitionBuilder {
       def globalContext = [
         deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { Stage bakeStage ->
           def deploymentDetails = [:]
-          ["ami", "imageId", "amiSuffix", "baseLabel", "baseOs", "refId", "storeType", "vmType", "region", "package", "cloudProviderType", "cloudProvider"].each {
+          DEPLOYMENT_DETAILS_CONTEXT_FIELDS.each {
             if (bakeStage.context.containsKey(it)) {
               deploymentDetails.put(it, bakeStage.context.get(it))
             }
@@ -130,7 +160,33 @@ class BakeStage implements StageDefinitionBuilder {
           return deploymentDetails
         }
       ]
+
+      if (failOnImageNameMismatchEnabled()) {
+        // find distinct image names in bake stages that are actually related to the stage passed into the task
+        List<String> distinctImageNames = relatedBakeStages
+          .findAll { childStage -> childStage.parentStageId == stage.id && childStage.context.imageName }
+          .stream()
+          .map { childStage -> childStage.context.imageName }
+          .distinct()
+          .collect(Collectors.toList())
+
+        if (distinctImageNames.size() > 1) {
+          throw new ConstraintViolationException(
+            "Image names found in different regions do not match: ${Joiner.on(", ").join(distinctImageNames)}. "
+            + "Re-run the bake to protect against deployment failures.")
+        }
+      }
+
       TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(globalContext).build()
+    }
+
+    private boolean failOnImageNameMismatchEnabled() {
+      try {
+        return dynamicConfigService.isEnabled("stages.bake.failOnImageNameMismatch", false)
+      } catch (Exception e) {
+        log.error("Unable to retrieve config value for stages.bake.failOnImageNameMismatch. Assuming false.", e)
+        return false
+      }
     }
   }
 }

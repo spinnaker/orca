@@ -26,6 +26,10 @@ import com.netflix.spinnaker.orca.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.StageResolver
+import com.netflix.spinnaker.orca.api.SimpleStage
+import com.netflix.spinnaker.orca.api.SimpleStageInput
+import com.netflix.spinnaker.orca.api.SimpleStageOutput
+import com.netflix.spinnaker.orca.api.SimpleStageStatus
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
@@ -143,6 +147,24 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
     }
   }
 
+  val emptyApiStage = object : SimpleStage<Any> {
+    override fun getName() = "emptyApiStage"
+
+    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput<Any, Any> {
+      return SimpleStageOutput()
+    }
+  }
+
+  val successfulApiStage = object : SimpleStage<Any> {
+    override fun getName() = "successfulApiStage"
+
+    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput<Any, Any> {
+      val output = SimpleStageOutput<Any, Any>()
+      output.status = SimpleStageStatus.SUCCEEDED
+      return output
+    }
+  }
+
   subject(GROUP) {
     CompleteStageHandler(
       queue,
@@ -167,6 +189,10 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
             stageWithNothingButAfterStages,
             stageWithSyntheticOnFailure,
             emptyStage
+          ),
+          listOf(
+            emptyApiStage,
+            successfulApiStage
           )
         )
       )
@@ -1052,6 +1078,41 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
           verify(queue).push(message.copy(stageId = pipeline.stageByRef("1").id))
         }
       }
+
+      given("a synthetic stage's task ends with $FAILED_CONTINUE status and the synthetic allows siblings to continue") {
+        val pipeline = pipeline {
+          stage {
+            refId = "1"
+            type = stageWithSyntheticBefore.type
+            stageWithSyntheticBefore.buildBeforeStages(this)
+            stageWithSyntheticBefore.plan(this)
+          }
+        }
+
+        val syntheticStage = pipeline.stageByRef("1<1")
+        syntheticStage.allowSiblingStagesToContinueOnFailure = true
+        val message = CompleteStage(syntheticStage)
+
+        beforeGroup {
+          pipeline.stageById(message.stageId).apply {
+            status = RUNNING
+            singleTaskStage.plan(this)
+            tasks.first().status = FAILED_CONTINUE
+          }
+
+          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        }
+
+        on("receiving the message") {
+          subject.handle(message)
+        }
+
+        afterGroup(::resetMocks)
+
+        it("starts executing the next sibling") {
+          verify(queue).push(StartStage(pipeline.stageByRef("1<2")))
+        }
+      }
     }
 
     setOf(TERMINAL, CANCELED).forEach { taskStatus ->
@@ -1465,6 +1526,24 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
           assertThat(pipeline.stageById(message.stageId).status).isEqualTo(TERMINAL)
         }
       }
+    }
+  }
+
+  given("api stage completed successfully") {
+    val pipeline = pipeline {
+      stage {
+        refId = "1"
+        type = successfulApiStage.name
+      }
+    }
+
+    val message = CompleteStage(pipeline.stageByRef("1"))
+    pipeline.stageById(message.stageId).apply {
+      status = SUCCEEDED
+    }
+
+    it("stage was successfully ran") {
+      assertThat(pipeline.stageById(message.stageId).status).isEqualTo(SUCCEEDED)
     }
   }
 })

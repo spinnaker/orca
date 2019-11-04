@@ -19,23 +19,20 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwareStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
-import com.netflix.spinnaker.orca.clouddriver.utils.ClusterLockHelper
-import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
-import com.netflix.spinnaker.orca.locks.LockingConfigurationProperties
-import com.netflix.spinnaker.orca.pipeline.AcquireLockStage
-import com.netflix.spinnaker.orca.pipeline.ReleaseLockStage
+
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+
+import javax.annotation.Nonnull
 
 import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor.StageDefinition
 import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup.Support.locationFromStageData
@@ -59,9 +56,6 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   @Autowired
   TrafficGuard trafficGuard
 
-  @Autowired
-  LockingConfigurationProperties lockingConfigurationProperties
-
   AbstractDeployStrategyStage(String name) {
     super(name)
   }
@@ -76,7 +70,6 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   @Override
   void taskGraph(Stage stage, TaskNode.Builder builder) {
     builder
-    // TODO(ttomsu): This is currently an AWS-only stage. I need to add and support the "useSourceCapacity" option.
       .withTask("determineSourceServerGroup", DetermineSourceServerGroupTask)
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
 
@@ -87,9 +80,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
       }
     }
 
-    Strategy strategy = (Strategy) strategies.findResult(noStrategy, {
-      it.name.equalsIgnoreCase(stage.context.strategy) ? it : null
-    })
+    Strategy strategy = getStrategy(stage)
     if (!strategy.replacesBasicSteps()) {
       (basicTasks(stage) ?: []).each {
         builder.withTask(it.name, it.implementingClass)
@@ -115,80 +106,83 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  List<Stage> aroundStages(Stage stage) {
-    correctContext(stage)
-    Strategy strategy = getStrategy(stage)
-    def preProcessors = deployStagePreProcessors.findAll { it.supports(stage) }
-    def stageData = stage.mapTo(StageData)
-    def stages = []
-    boolean addLocking = false
-    String lockName = null
-    if (lockingConfigurationProperties.isEnabled()) {
-      def moniker = stageData.moniker?.cluster ? stageData.moniker : MonikerHelper.friggaToMoniker(stageData.cluster)
-      def location = TargetServerGroup.Support.locationFromStageData(stageData)
-      lockName = ClusterLockHelper.clusterLockName(moniker, stageData.account, location)
-      addLocking = trafficGuard.hasDisableLock(moniker, stageData.account, location)
-      if (addLocking) {
-        def lockCtx = [lock: [lockName: lockName]]
-        def lockStage = newStage(stage.execution, AcquireLockStage.PIPELINE_TYPE, "acquireLock", lockCtx, stage, SyntheticStageOwner.STAGE_BEFORE)
-        stages << lockStage
-      }
-    }
-    stages.addAll(strategy.composeFlow(stage))
+  void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+    correctContext(parent)
+    Strategy strategy = getStrategy(parent)
+    def preProcessors = deployStagePreProcessors.findAll { it.supports(parent) }
+    def stageData = parent.mapTo(StageData)
+    List<Stage> stages = new ArrayList<>()
+    stages.addAll(strategy.composeBeforeStages(parent))
 
     preProcessors.each {
       def defaultContext = [
         credentials  : stageData.account,
         cloudProvider: stageData.cloudProvider
       ]
-      it.beforeStageDefinitions(stage).each {
+      it.beforeStageDefinitions(parent).each {
         stages << newStage(
-          stage.execution,
+          parent.execution,
           it.stageDefinitionBuilder.type,
           it.name,
           defaultContext + it.context,
-          stage,
+          parent,
           SyntheticStageOwner.STAGE_BEFORE
         )
       }
-      it.afterStageDefinitions(stage).each {
+    }
+
+    stages.forEach({ graph.append(it) })
+  }
+
+  @Override
+  void afterStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+    Strategy strategy = getStrategy(parent)
+    def preProcessors = deployStagePreProcessors.findAll { it.supports(parent) }
+    def stageData = parent.mapTo(StageData)
+    List<Stage> stages = new ArrayList<>()
+
+    stages.addAll(strategy.composeAfterStages(parent))
+
+    preProcessors.each {
+      def defaultContext = [
+        credentials  : stageData.account,
+        cloudProvider: stageData.cloudProvider
+      ]
+      it.afterStageDefinitions(parent).each {
         stages << newStage(
-          stage.execution,
+          parent.execution,
           it.stageDefinitionBuilder.type,
           it.name,
           defaultContext + it.context,
-          stage,
+          parent,
           SyntheticStageOwner.STAGE_AFTER
         )
       }
     }
-    if (addLocking) {
-      stages << newStage(
-        stage.execution,
-        ReleaseLockStage.PIPELINE_TYPE,
-        'releaseLock',
-        [lock: [lockName: lockName]],
-        stage,
-        SyntheticStageOwner.STAGE_AFTER
-      )
-    }
 
-    return stages
+    stages.forEach({ graph.append(it) })
   }
 
   @Override
   void onFailureStages(Stage stage, StageGraphBuilder graph) {
+    Strategy strategy = getStrategy(stage)
+    // Strategy shouldn't ever be null during regular execution, but that's not the case for unit tests
+    // Either way, defensive programming
+    if (strategy != null) {
+      strategy.composeOnFailureStages(stage).forEach({ graph.append(it) })
+    }
+
     deployStagePreProcessors
       .findAll { it.supports(stage) }
       .collect { it.onFailureStageDefinitions(stage) }
       .flatten()
       .forEach { StageDefinition stageDefinition ->
-      graph.add {
-        it.type = stageDefinition.stageDefinitionBuilder.type
-        it.name = stageDefinition.name
-        it.context = stageDefinition.context
+        graph.add {
+          it.type = stageDefinition.stageDefinitionBuilder.type
+          it.name = stageDefinition.name
+          it.context = stageDefinition.context
+        }
       }
-    }
   }
 
   /**
@@ -233,6 +227,17 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
         cloudProvider: stageData.cloudProvider,
         location: loc
       )
+    }
+
+    static Map<String, Object> toContext(StageData stageData) {
+      CleanupConfig cleanupConfig = fromStage(stageData)
+      Map<String, Object> context = new HashMap<>()
+      context.put(cleanupConfig.getLocation().singularType(), cleanupConfig.getLocation().getValue())
+      context.put("cloudProvider", cleanupConfig.getCloudProvider())
+      context.put("cluster", cleanupConfig.getCluster())
+      context.put("credentials", cleanupConfig.getAccount())
+      context.put("moniker", cleanupConfig.getMoniker())
+      return context
     }
   }
 }

@@ -51,6 +51,18 @@ tasks:
 logging:
   config: classpath:logback-defaults.xml
 
+resilience4j.retry:
+  instances:
+    # TODO(rz): These defaults were just copied from the resilience4j website. They still need to be tuned.
+    default:
+      maxRetryAttempts: 2
+      waitDuration: 10s
+      enableExponentialBackoff: false
+    # katoRetrofitServiceWriter is any write operation to Clouddriver using Retrofit.
+    katoRetrofitServiceWriter:
+      retryExceptions:
+        - retrofit.RetrofitError
+
 integrations:
   gremlin:
     enabled: false
@@ -77,6 +89,9 @@ integrations:
 #        {
 #          "text": "Version ${trigger.buildInfo.artifacts[0].version} deployed"
 #        }
+#      failFastStatusCodes:
+#        - 404
+#        - 501
 #      waitForCompletion: true
 #      # The rest of the properties are only used if waitForCompletion == true
 #      statusUrlResolution: webhookResponse # getMethod, locationHeader, webhookResponse

@@ -16,13 +16,10 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline.strategy;
 
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.Collections;
-import java.util.List;
-
-public enum Strategy implements StrategyFlowComposer {
+public enum Strategy {
   RED_BLACK("redblack"),
   ROLLING_RED_BLACK("rollingredblack"),
+  MONITORED("monitored"),
   CF_ROLLING_RED_BLACK("cfrollingredblack"),
   HIGHLANDER("highlander"),
   ROLLING_PUSH("rollingpush"),
@@ -35,7 +32,7 @@ public enum Strategy implements StrategyFlowComposer {
     this.key = key;
   }
 
-  public static Strategy fromStrategy(String key) {
+  public static Strategy fromStrategyKey(String key) {
     if (key == null) {
       return NONE;
     }
@@ -47,24 +44,7 @@ public enum Strategy implements StrategyFlowComposer {
     return NONE;
   }
 
-  @Override
-  public boolean replacesBasicSteps() {
-    return this == ROLLING_PUSH || this == CUSTOM;
-  }
-
-  @Override
-  public List<Stage> composeFlow(DeployStrategyStage builder, Stage stage) {
-    switch (this) {
-      case RED_BLACK:
-        return builder.composeRedBlackFlow(stage);
-      case HIGHLANDER:
-        return builder.composeHighlanderFlow(stage);
-      case ROLLING_PUSH:
-        return builder.composeRollingPushFlow(stage);
-      case CUSTOM:
-        return builder.composeCustomFlow(stage);
-    }
-
-    return Collections.emptyList();
+  public String getKey() {
+    return key;
   }
 }
