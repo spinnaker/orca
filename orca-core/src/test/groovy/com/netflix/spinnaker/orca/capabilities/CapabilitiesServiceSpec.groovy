@@ -30,7 +30,9 @@ class CapabilitiesServiceSpec extends Specification {
   def 'should return valid data'() {
     given:
     def functionProvider = PipelineExpressionEvaluatorSpec.buildExpressionFunctionProvider("TEST_EXPRESSION_FUNCTION")
-    def supportedSpelEvaluators = PipelineExpressionEvaluator.SpelEvaluatorVersion.values().findAll({it.isSupported}).collect({it.key})
+    def supportedSpelEvaluators = PipelineExpressionEvaluator.SpelEvaluatorVersion.values().findAll({
+      it.isSupported
+    }).collect({ it.key })
 
     CapabilitiesService capabilitiesService = new CapabilitiesService(Collections.singletonList(functionProvider), pluginManager)
 
@@ -38,7 +40,7 @@ class CapabilitiesServiceSpec extends Specification {
     ExpressionCapabilityResult capabilities = capabilitiesService.getExpressionCapabilities()
 
     then:
-    def funcCaps = capabilities.functions.findAll({it.name.contains("TEST_EXPRESSION_FUNCTION")})
+    def funcCaps = capabilities.functions.findAll({ it.name.contains("TEST_EXPRESSION_FUNCTION") })
     funcCaps.size() == 2
     funcCaps[0].name == 'functionWithExecutionContext-TEST_EXPRESSION_FUNCTION'
     funcCaps[0].description == 'description for: functionWithExecutionContext-TEST_EXPRESSION_FUNCTION'
@@ -51,8 +53,9 @@ class CapabilitiesServiceSpec extends Specification {
     funcCaps[1].description == 'description for: functionWithNoExecutionContext-TEST_EXPRESSION_FUNCTION'
     funcCaps[1].parameters.size() == 1
 
-    capabilities.spelEvaluators == supportedSpelEvaluators
-    capabilities.spelEvaluators.contains(PipelineExpressionEvaluator.SpelEvaluatorVersion.V3.key)
-    !capabilities.spelEvaluators.contains(PipelineExpressionEvaluator.SpelEvaluatorVersion.V4.key)
+    def spelVersions = capabilities.spelEvaluators.collect({ it.versionKey })
+    spelVersions == supportedSpelEvaluators
+    spelVersions.contains(PipelineExpressionEvaluator.SpelEvaluatorVersion.V3.key)
+    !spelVersions.contains(PipelineExpressionEvaluator.SpelEvaluatorVersion.V4.key)
   }
 }
