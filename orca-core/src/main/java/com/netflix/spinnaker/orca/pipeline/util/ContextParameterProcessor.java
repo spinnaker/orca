@@ -29,6 +29,7 @@ import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
+import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SpelEvaluatorVersion;
 import com.netflix.spinnaker.orca.pipeline.expressions.functions.*;
 import com.netflix.spinnaker.orca.pipeline.model.*;
 import java.util.*;
@@ -73,6 +74,32 @@ public class ContextParameterProcessor {
     return process(source, context, allowUnknownKeys, summary);
   }
 
+  /**
+   * Process pipeline to evaluate spel expressions. Note that 'stages' key is not processed if we
+   * are using spel v4
+   */
+  public Map<String, Object> processPipeline(
+      Map<String, Object> pipeline, Map<String, Object> context, boolean allowUnknownKeys) {
+
+    final String spelEvaluatorKey = "spelEvaluator";
+    ExpressionEvaluationSummary summary = new ExpressionEvaluationSummary();
+    SpelEvaluatorVersion spelEvaluatorVersion =
+        SpelEvaluatorVersion.fromStringKey((String) pipeline.get(spelEvaluatorKey));
+
+    Object stages = null;
+    if (SpelEvaluatorVersion.V4.equals(spelEvaluatorVersion)) {
+      stages = pipeline.remove("stages");
+    }
+
+    Map<String, Object> processedPipeline = process(pipeline, context, allowUnknownKeys, summary);
+
+    if (SpelEvaluatorVersion.V4.equals(spelEvaluatorVersion)) {
+      processedPipeline.put("stages", stages);
+    }
+
+    return processedPipeline;
+  }
+
   public Map<String, Object> process(
       Map<String, Object> source,
       Map<String, Object> context,
@@ -95,7 +122,7 @@ public class ContextParameterProcessor {
     }
 
     if (summary.getFailureCount() > 0) {
-      result.put("expressionEvaluationSummary", summary.getExpressionResult());
+      result.put(PipelineExpressionEvaluator.SUMMARY, summary.getExpressionResult());
     }
 
     return result;
