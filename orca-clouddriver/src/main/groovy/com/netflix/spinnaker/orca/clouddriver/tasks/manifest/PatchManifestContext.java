@@ -19,11 +19,11 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import lombok.Builder;
 import lombok.Value;
 
@@ -69,7 +69,7 @@ public class PatchManifestContext implements ManifestContext {
     MERGE
   }
 
-  @Nullable
+  @Nonnull
   @Override
   public List<Map<Object, Object>> getManifests() {
     /*
@@ -81,14 +81,12 @@ public class PatchManifestContext implements ManifestContext {
      * in 1.15 and 1.16.
      */
     if (patchBody == null) {
-      return null;
+      return ImmutableList.of();
     }
     if (patchBody instanceof List) {
-      return (List) patchBody;
+      return ImmutableList.copyOf((List) patchBody);
     }
-    List<Map<Object, Object>> manifests = new ArrayList<>();
-    manifests.add((Map<Object, Object>) patchBody);
-    return manifests;
+    return ImmutableList.of((Map<Object, Object>) patchBody);
   }
 
   @JsonPOJOBuilder(withPrefix = "")
