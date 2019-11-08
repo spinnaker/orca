@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -55,15 +56,28 @@ public class StartGoogleCloudBuildTask implements Task {
     GoogleCloudBuildStageDefinition stageDefinition =
         stage.mapTo(GoogleCloudBuildStageDefinition.class);
 
-    Map<String, Object> buildDefinition;
-    if (stageDefinition.getBuildDefinitionSource() != null
-        && stageDefinition.getBuildDefinitionSource().equals("artifact")) {
-      buildDefinition = getBuildDefinitionFromArtifact(stage, stageDefinition);
-    } else {
-      buildDefinition = stageDefinition.getBuildDefinition();
+    GoogleCloudBuild result;
+    String source = Optional.ofNullable(stageDefinition.getBuildDefinitionSource()).orElse("");
+    switch (source) {
+      case "artifact":
+        result =
+            igorService.createGoogleCloudBuild(
+                stageDefinition.getAccount(),
+                getBuildDefinitionFromArtifact(stage, stageDefinition));
+        break;
+      case "trigger":
+        result =
+            igorService.runGoogleCloudBuildTrigger(
+                stageDefinition.getAccount(),
+                stageDefinition.getTriggerId(),
+                stageDefinition.getRepoSource());
+        break;
+      default:
+        result =
+            igorService.createGoogleCloudBuild(
+                stageDefinition.getAccount(), stageDefinition.getBuildDefinition());
     }
-    GoogleCloudBuild result =
-        igorService.createGoogleCloudBuild(stageDefinition.getAccount(), buildDefinition);
+
     Map<String, Object> context = stage.getContext();
     context.put("buildInfo", result);
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
