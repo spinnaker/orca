@@ -30,7 +30,6 @@ import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -57,15 +56,14 @@ public class StartGoogleCloudBuildTask implements Task {
         stage.mapTo(GoogleCloudBuildStageDefinition.class);
 
     GoogleCloudBuild result;
-    String source = Optional.ofNullable(stageDefinition.getBuildDefinitionSource()).orElse("");
-    switch (source) {
-      case "artifact":
+    switch (stageDefinition.getBuildDefinitionSource()) {
+      case ARTIFACT:
         result =
             igorService.createGoogleCloudBuild(
                 stageDefinition.getAccount(),
                 getBuildDefinitionFromArtifact(stage, stageDefinition));
         break;
-      case "trigger":
+      case TRIGGER:
         result =
             igorService.runGoogleCloudBuildTrigger(
                 stageDefinition.getAccount(),

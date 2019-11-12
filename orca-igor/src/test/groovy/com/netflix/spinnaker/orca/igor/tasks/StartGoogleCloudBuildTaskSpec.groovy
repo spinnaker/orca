@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild
-import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildRepoSource
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
