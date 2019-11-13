@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.controllers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.fiat.model.UserPermission
 import com.netflix.spinnaker.fiat.model.resources.Role
+import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
 import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException
@@ -29,6 +30,7 @@ import com.netflix.spinnaker.orca.exceptions.OperationFailedException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator
+import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -40,6 +42,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.PipelineTemplateService
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import com.netflix.spinnaker.security.AuthenticatedRequest
+import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import javassist.NotFoundException
 import org.springframework.beans.factory.annotation.Autowired
@@ -88,6 +91,9 @@ class OperationsController {
   WebhookService webhookService
 
   @Autowired(required = false)
+  private FiatPermissionEvaluator fiatPermissionEvaluator;
+
+  @Autowired(required = false)
   JobService jobService
 
   @Autowired(required = false)
@@ -101,6 +107,8 @@ class OperationsController {
 
   @Autowired(required = false)
   Front50Service front50Service
+
+  def jsonSlurper = new JsonSlurper()
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
@@ -167,7 +175,7 @@ class OperationsController {
 
   private Map<String, Object> orchestratePipeline(Map pipeline) {
     def request = objectMapper.writeValueAsString(pipeline)
-
+    addStageAuthorizedRoles(request,pipeline)
     Exception pipelineError = null
     try {
       pipeline = parseAndValidatePipeline(pipeline)
@@ -469,5 +477,59 @@ class OperationsController {
     if (!pipeline.origin) {
       pipeline.origin = AuthenticatedRequest.spinnakerUserOrigin.orElse('unknown')
     }
+  }
+
+  private void addStageAuthorizedRoles(def request, Map pipeline) {
+
+    def jsonObject = jsonSlurper.parseText(request)
+    if (jsonObject.application) {
+      Application application = front50Service.get(jsonObject.application)
+      if (application) {
+        def username = AuthenticatedRequest.getSpinnakerUser().orElse("")
+        def permissions = objectMapper.writeValueAsString(application.getPermission().permissions)
+        def permJsonObject = jsonSlurper.parseText(permissions)
+        def applicationRoles = []
+        permJsonObject.each { item ->
+          List<String> strList = item.getValue()
+          strList.each { item1 ->
+            String[] strArray = item1.split(',')
+            strArray.each { item2 ->
+              if (!applicationRoles.contains(item2.trim())) {
+                applicationRoles.add(item2.trim())
+              }
+            }
+          }
+        }
+        UserPermission.View permission = fiatPermissionEvaluator.getPermission(username);
+        if (permission == null) { // Should never happen?
+          return;
+        }
+        // User has to have all the pipeline roles.
+        Set<Role.View> roleView = permission.getRoles()
+        def userRoles = []
+        roleView.each { it -> userRoles.add(it.getName().trim()) }
+        def stageList = pipeline.stages
+        def stageRoles = []
+        stageList.each { item ->
+          stageRoles = item.selectedStageRoles
+          item.isAuthorized = checkAuthorizedGroups(userRoles, stageRoles, applicationRoles)
+        }
+      }
+    }
+  }
+
+  private boolean checkAuthorizedGroups(def userRoles,def stageRoles,def applicationRoles) {
+
+    def value = false
+    if((!applicationRoles) || (!stageRoles)) {
+      value = true
+      return value
+    }
+    userRoles.each { item ->
+      if(stageRoles.contains(item) && applicationRoles.contains(item)) {
+        value = true
+      }
+    }
+    return value
   }
 }
