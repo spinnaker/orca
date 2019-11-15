@@ -17,7 +17,8 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.netflix.spinnaker.config.TransactionRetryProperties
+import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.test.SqlTestUtil.TestDatabase
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.Execution
@@ -40,7 +41,7 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.cleanupDb
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initTcMysqlDatabase
 
-class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepository> {
+class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<ExecutionRepository> {
 
   @Shared
   ObjectMapper mapper = OrcaObjectMapper.newInstance().with {
@@ -69,13 +70,16 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<SqlExecutionRepo
   }
 
   @Override
-  SqlExecutionRepository createExecutionRepository() {
-    new SqlExecutionRepository("test", currentDatabase.context, mapper, new TransactionRetryProperties(), 10, 100)
+  ExecutionRepository createExecutionRepository() {
+    com.netflix.spinnaker.kork.telemetry.InstrumentedProxy.proxy(
+      new DefaultRegistry(),
+      new SqlExecutionRepository("test", currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName"),
+      "namespace")
   }
 
   @Override
-  SqlExecutionRepository createExecutionRepositoryPrevious() {
-    new SqlExecutionRepository("test", previousDatabase.context, mapper, new TransactionRetryProperties(), 10, 100)
+  ExecutionRepository createExecutionRepositoryPrevious() {
+    new SqlExecutionRepository("test", previousDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName")
   }
 
   def "can store a new pipeline"() {
