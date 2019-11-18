@@ -70,6 +70,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     @Override
     TaskResult execute(Stage stage) {
       StageData stageData = stage.mapTo(StageData)
+      def stageAuthorized = stage.context.get('isAuthorized')
       String notificationState
       ExecutionStatus executionStatus
 
@@ -86,6 +87,12 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
           notificationState = "manualJudgment"
           executionStatus = ExecutionStatus.RUNNING
           break
+      }
+      if (!stageAuthorized) {
+        notificationState = "manualJudgment"
+        executionStatus = ExecutionStatus.RUNNING
+        stage.context.put("judgmentStatus", "")
+        stage.context.put("instructions", "User does not have permissions to continue")
       }
 
       Map outputs = processNotifications(stage, stageData, notificationState)
