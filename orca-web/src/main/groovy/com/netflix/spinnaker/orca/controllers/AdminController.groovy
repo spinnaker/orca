@@ -19,13 +19,16 @@ package com.netflix.spinnaker.orca.controllers
 
 import com.netflix.spinnaker.kork.exceptions.HasAdditionalAttributes
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand
 import com.netflix.spinnaker.orca.eureka.NoDiscoveryApplicationStatusPublisher
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationListener
+import org.springframework.context.annotation.Profile
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.RequestBody
@@ -42,6 +45,9 @@ class AdminController {
   @Autowired(required = false)
   @Qualifier("discoveryStatusPoller")
   ApplicationListener<ContextRefreshedEvent> discoveryStatusPoller
+
+  @Autowired
+  ExecutionRepository executionRepository
 
   @Autowired
   ForceExecutionCancellationCommand forceExecutionCancellationCommand
@@ -72,6 +78,24 @@ class AdminController {
                             @RequestParam(value = "executionType", required = false, defaultValue = "PIPELINE") Execution.ExecutionType executionType,
                             @RequestParam(value = "canceledBy", required = false, defaultValue = "admin") String canceledBy)  {
     forceExecutionCancellationCommand.forceCancel(executionType, executionId, canceledBy)
+  }
+
+
+  @RequestMapping(value = "/executions/", method = RequestMethod.POST)
+  @ResponseStatus(HttpStatus.OK)
+  @Profile(['test', 'local', 'staging', 'prestaging'])
+  void createExecution(@RequestBody Execution execution) {
+
+    if (execution.status in [ExecutionStatus.CANCELED, ExecutionStatus.SUCCEEDED, ExecutionStatus.TERMINAL]) {
+      log.info('Importing execution with id: {}, status: {}', execution.id, execution.status)
+      execution.stages.each {
+        it.execution = execution
+      }
+      executionRepository.store(execution)
+      return
+    }
+
+    throw new IllegalArgumentException('Cannot import provided execution, Status: ' + execution.status)
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
