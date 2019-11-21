@@ -176,6 +176,56 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     taskResult.getStatus() == ExecutionStatus.SUCCEEDED
   }
 
+  def "waits for a pending refresh with optimized logic"() {
+    given:
+    def namespace = "my-namespace"
+    def manifest = "replicaSet my-replicaset-v014"
+    def context = [
+      account: ACCOUNT,
+      cloudProvider: PROVIDER,
+      "outputs.manifestNamesByNamespace": [
+        (namespace): [
+          manifest
+        ]
+      ],
+    ]
+    def refreshDetails = [
+      account: ACCOUNT,
+      location: namespace,
+      name: manifest
+    ]
+    def stage = mockStage(context)
+
+    when:
+    task.optimize = true
+    def taskResult = task.execute(stage)
+
+    then:
+    1 * cacheService.forceCacheUpdate(PROVIDER, REFRESH_TYPE, refreshDetails) >> mockResponse(HTTP_ACCEPTED)
+    0 * cacheService._
+    taskResult.getStatus() == ExecutionStatus.RUNNING
+
+    when:
+    context << taskResult.context
+    stage = mockStage(context)
+    taskResult = task.execute(stage)
+
+    then:
+    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE, refreshDetails) >> [pendingRefresh(refreshDetails)]
+    0 * cacheService._
+    taskResult.getStatus() == ExecutionStatus.RUNNING
+
+    when:
+    context << taskResult.context
+    stage = mockStage(context)
+    taskResult = task.execute(stage)
+
+    then:
+    1 * cacheStatusService.pendingForceCacheUpdates(PROVIDER, REFRESH_TYPE, refreshDetails) >> [processedRefresh(refreshDetails)]
+    0 * cacheService._
+    taskResult.getStatus() == ExecutionStatus.SUCCEEDED
+  }
+
   def "only returns succeeded if a processed refresh exactly matches"() {
     given:
     def namespace = "my-namespace"

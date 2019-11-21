@@ -67,6 +67,10 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   private final ObjectMapper objectMapper;
   private final Id durationTimerId;
 
+  @org.springframework.beans.factory.annotation.Value(
+      "${tasks.optimizeManifestForceCacheRefreshTask:false}")
+  boolean optimize;
+
   @Autowired
   public ManifestForceCacheRefreshTask(
       Registry registry,
@@ -156,11 +160,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
       return;
     }
 
-    Collection<PendingRefresh> pendingRefreshes =
-        objectMapper.convertValue(
-            cacheStatusService.pendingForceCacheUpdates(
-                provider, REFRESH_TYPE, Collections.emptyMap()),
-            new TypeReference<Collection<PendingRefresh>>() {});
+    Collection<PendingRefresh> pendingRefreshes = getPendingRefreshes(provider, manifestsToCheck);
 
     for (ScopedManifest manifest : manifestsToCheck) {
       RefreshStatus refreshStatus =
@@ -182,6 +182,28 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
         refreshedManifests.remove(manifest);
       }
     }
+  }
+
+  private Collection<PendingRefresh> getPendingRefreshes(
+      String provider, List<ScopedManifest> manifestsToCheck) {
+    if (!optimize) {
+      return objectMapper.convertValue(
+          cacheStatusService.pendingForceCacheUpdates(
+              provider, REFRESH_TYPE, Collections.emptyMap()),
+          new TypeReference<Collection<PendingRefresh>>() {});
+    }
+
+    List<PendingRefresh> allPendingRefreshes = new ArrayList<>();
+    for (ScopedManifest manifest : manifestsToCheck) {
+      Map<String, String> queryParams =
+          objectMapper.convertValue(manifest, new TypeReference<Map<String, String>>() {});
+      Collection<PendingRefresh> pendingRefreshes =
+          objectMapper.convertValue(
+              cacheStatusService.pendingForceCacheUpdates(provider, REFRESH_TYPE, queryParams),
+              new TypeReference<Collection<PendingRefresh>>() {});
+      allPendingRefreshes.addAll(pendingRefreshes);
+    }
+    return allPendingRefreshes;
   }
 
   private boolean refreshMatches(ScopedManifest refresh, ScopedManifest manifest) {
