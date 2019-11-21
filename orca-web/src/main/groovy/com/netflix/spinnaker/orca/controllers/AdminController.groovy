@@ -28,7 +28,6 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationListener
-import org.springframework.context.annotation.Profile
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.RequestBody
@@ -83,7 +82,6 @@ class AdminController {
 
   @RequestMapping(value = "/executions/", method = RequestMethod.POST)
   @ResponseStatus(HttpStatus.OK)
-  @Profile(['test', 'local', 'staging', 'prestaging'])
   void createExecution(@RequestBody Execution execution) {
 
     if (execution.status in [ExecutionStatus.CANCELED, ExecutionStatus.SUCCEEDED, ExecutionStatus.TERMINAL]) {
