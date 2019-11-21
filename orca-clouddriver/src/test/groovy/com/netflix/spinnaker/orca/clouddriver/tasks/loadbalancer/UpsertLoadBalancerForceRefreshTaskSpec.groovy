@@ -89,7 +89,7 @@ class UpsertLoadBalancerForceRefreshTaskSpec extends Specification {
 
     // checks for pending, receives empty list and retries
     when:
-    1 * cloudDriverCacheStatusService.pendingForceCacheUpdates('aws', 'LoadBalancer') >> { [] }
+    1 * cloudDriverCacheStatusService.pendingForceCacheUpdates('aws', 'LoadBalancer', [:]) >> { [] }
     stage.context = result.context
     result = task.execute(stage)
 
@@ -100,7 +100,7 @@ class UpsertLoadBalancerForceRefreshTaskSpec extends Specification {
 
     // sees a pending onDemand key for our load balancers
     when:
-    1 * cloudDriverCacheStatusService.pendingForceCacheUpdates('aws', 'LoadBalancer') >> {
+    1 * cloudDriverCacheStatusService.pendingForceCacheUpdates('aws', 'LoadBalancer', [:]) >> {
       [[id: "aws:loadBalancers:spinnaker:us-west-1:flapjack-frontend"]]
     }
 
@@ -114,7 +114,7 @@ class UpsertLoadBalancerForceRefreshTaskSpec extends Specification {
 
     // onDemand key has been processed, task completes
     when:
-    1 * cloudDriverCacheStatusService.pendingForceCacheUpdates('aws', 'LoadBalancer') >> { [] }
+    1 * cloudDriverCacheStatusService.pendingForceCacheUpdates('aws', 'LoadBalancer', [:]) >> { [] }
     stage.context = result.context
     result = task.execute(stage)
 

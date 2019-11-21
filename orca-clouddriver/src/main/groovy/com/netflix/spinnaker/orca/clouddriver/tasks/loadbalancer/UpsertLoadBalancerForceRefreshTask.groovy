@@ -150,7 +150,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
     String cloudProvider = getCloudProvider(stage)
 
     Collection<Map> pendingCacheUpdates = retrySupport.retry({
-      cacheStatusService.pendingForceCacheUpdates(cloudProvider, REFRESH_TYPE)
+      cacheStatusService.pendingForceCacheUpdates(cloudProvider, REFRESH_TYPE, [:])
     }, 3, 1000, false)
 
     if (!pendingCacheUpdates.isEmpty() && !context.refreshState.seenPendingCacheUpdates) {

@@ -18,9 +18,11 @@ package com.netflix.spinnaker.orca.clouddriver
 
 import retrofit.http.GET
 import retrofit.http.Path
+import retrofit.http.QueryMap
 
 interface CloudDriverCacheStatusService {
   @GET("/cache/{cloudProvider}/{type}")
   Collection<Map> pendingForceCacheUpdates(@Path("cloudProvider") String cloudProvider,
-                                           @Path("type") String type)
+                                           @Path("type") String type,
+                                           @QueryMap Map<String, String> queryParams)
 }
