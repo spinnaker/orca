@@ -125,7 +125,7 @@ public class ContextParameterProcessor {
    * PIPELINE)
    *
    * @param execution Execution to build context for
-   * @return Map for of the merged context
+   * @return Map of the merged context
    */
   public Map<String, Object> buildExecutionContext(Execution execution) {
     Map<String, Object> executionContext = new HashMap<>();
