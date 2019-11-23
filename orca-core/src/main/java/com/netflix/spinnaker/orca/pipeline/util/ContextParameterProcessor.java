@@ -24,6 +24,8 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
@@ -48,6 +50,7 @@ public class ContextParameterProcessor {
   private static final ObjectMapper mapper = OrcaObjectMapper.getInstance();
 
   private PipelineExpressionEvaluator expressionEvaluator;
+  private DynamicConfigService dynamicConfigService;
 
   @VisibleForTesting
   public ContextParameterProcessor() {
@@ -58,13 +61,17 @@ public class ContextParameterProcessor {
             new ManifestLabelValueExpressionFunctionProvider(),
             new StageExpressionFunctionProvider(),
             new UrlExpressionFunctionProvider(new UserConfiguredUrlRestrictions.Builder().build())),
-        new DefaultPluginManager());
+        new DefaultPluginManager(),
+        DynamicConfigService.NOOP);
   }
 
   public ContextParameterProcessor(
-      List<ExpressionFunctionProvider> expressionFunctionProviders, PluginManager pluginManager) {
+      List<ExpressionFunctionProvider> expressionFunctionProviders,
+      PluginManager pluginManager,
+      DynamicConfigService dynamicConfigService) {
     this.expressionEvaluator =
         new PipelineExpressionEvaluator(expressionFunctionProviders, pluginManager);
+    this.dynamicConfigService = dynamicConfigService;
   }
 
   public Map<String, Object> process(
@@ -82,9 +89,10 @@ public class ContextParameterProcessor {
       Map<String, Object> pipeline, Map<String, Object> context, boolean allowUnknownKeys) {
 
     final String spelEvaluatorKey = "spelEvaluator";
+
     ExpressionEvaluationSummary summary = new ExpressionEvaluationSummary();
     SpelEvaluatorVersion spelEvaluatorVersion =
-        SpelEvaluatorVersion.fromStringKey((String) pipeline.get(spelEvaluatorKey));
+        getEffectiveSpelVersionToUse((String) pipeline.get(spelEvaluatorKey));
 
     Object stages = null;
     if (SpelEvaluatorVersion.V4.equals(spelEvaluatorVersion)) {
@@ -167,6 +175,17 @@ public class ContextParameterProcessor {
 
   public static boolean containsExpression(String value) {
     return isNotEmpty(value) && value.contains("${");
+  }
+
+  public SpelEvaluatorVersion getEffectiveSpelVersionToUse(String executionSpelVersion) {
+    String override =
+        dynamicConfigService.getConfig(String.class, "expression.spel-version-override", "");
+
+    if (Strings.isNullOrEmpty(override)) {
+      return SpelEvaluatorVersion.fromStringKey(executionSpelVersion);
+    }
+
+    return SpelEvaluatorVersion.fromStringKey(override);
   }
 
   private Map<String, Object> precomputeValues(Map<String, Object> context) {

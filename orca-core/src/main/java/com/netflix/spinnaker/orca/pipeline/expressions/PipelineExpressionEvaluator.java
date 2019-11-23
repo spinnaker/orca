@@ -39,9 +39,12 @@ public class PipelineExpressionEvaluator {
   public static final String ERROR = "Failed Expression Evaluation";
 
   public enum SpelEvaluatorVersion {
-    V4("v4", "Supports sequential evaluation of variables in Evaluate Variables stage", true),
-    V3("v3", "", true, true),
-    V2("v2", "", true, true);
+    V4(
+        "v4",
+        "Evaluates expressions at stage start; supports sequential evaluation of variables in Evaluate Variables stage",
+        true),
+    V3("v3", "Evaluates expressions as soon as possible, not recommended", true, true),
+    V2("v2", "DO NOT USE", true, true);
 
     SpelEvaluatorVersion(String key, String description, boolean supported) {
       this(key, description, supported, false);

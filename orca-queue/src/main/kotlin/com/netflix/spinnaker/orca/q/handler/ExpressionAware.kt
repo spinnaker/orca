@@ -21,7 +21,9 @@ import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
+import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ERROR
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SpelEvaluatorVersion
+import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SUMMARY
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.StageContext
@@ -132,7 +134,7 @@ interface ExpressionAware {
   private fun processEntries(stage: Stage, summary: ExpressionEvaluationSummary): StageContext {
     var shouldContinueProcessing = true
 
-    val spelVersion = SpelEvaluatorVersion.fromStringKey(stage.execution.spelEvaluator)
+    val spelVersion = contextParameterProcessor.getEffectiveSpelVersionToUse(stage.execution.spelEvaluator)
     if (SpelEvaluatorVersion.V4 == spelVersion) {
       // Let the stage process its expressions first if it wants (e.g. see EvaluateVariables stage)
       val stageBuilder = stageDefinitionBuilderFactory.builderFor(stage)
