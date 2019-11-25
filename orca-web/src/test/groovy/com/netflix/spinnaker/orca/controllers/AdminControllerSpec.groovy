@@ -16,8 +16,10 @@
 
 package com.netflix.spinnaker.orca.controllers
 
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import de.huxhorn.sulky.ulid.ULID
 import spock.lang.Specification
@@ -37,14 +39,17 @@ class AdminControllerSpec extends Specification {
   @Unroll
   def 'should throw error while saving execution with status: #invalidStatus '() {
       given:
-      Execution execution = new Execution(Execution.ExecutionType.PIPELINE, new ULID().toString(), 'testapp')
+      String executionId =  new ULID().nextULID()
+      Execution execution = new Execution(Execution.ExecutionType.PIPELINE, executionId, 'testapp')
 
       when:
       execution.status = invalidStatus
       controller.createExecution(execution)
 
       then:
-      thrown(IllegalArgumentException)
+      thrown(InvalidRequestException)
+      1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
+      0 * _
 
       where:
       invalidStatus << [ExecutionStatus.RUNNING, ExecutionStatus.PAUSED, ExecutionStatus.NOT_STARTED]
@@ -53,14 +58,20 @@ class AdminControllerSpec extends Specification {
   @Unroll
   def 'should succeed while saving execution with status: #validStatus '() {
     given:
-    Execution execution = new Execution(Execution.ExecutionType.PIPELINE, new ULID().toString(), 'testapp')
+    String executionId = new ULID().nextULID()
+    Execution execution = new Execution(Execution.ExecutionType.PIPELINE, executionId, 'testapp')
 
     when:
     execution.status = validStatus
-    controller.createExecution(execution)
+    Map result = controller.createExecution(execution)
 
     then:
     noExceptionThrown()
+    1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
+    1 * executionRepository.store(execution)
+    0 * _
+    result.executionId == executionId
+    result.status == validStatus
 
     where:
     validStatus << [ExecutionStatus.SUCCEEDED, ExecutionStatus.CANCELED, ExecutionStatus.TERMINAL]
