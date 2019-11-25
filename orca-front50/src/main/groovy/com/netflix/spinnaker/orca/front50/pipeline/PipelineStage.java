@@ -46,7 +46,19 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
 
   @Override
   public void taskGraph(Stage stage, TaskNode.Builder builder) {
-    builder.withTask("startPipeline", StartPipelineTask.class);
+    // If set to true, this means that the child pipeline is already started, and we need to only
+    // monitor it
+    boolean isAlreadyRunning =
+        stage
+            .getContext()
+            .getOrDefault("isAlreadyRunning", "false")
+            .toString()
+            .toLowerCase()
+            .equals("true");
+
+    if (!isAlreadyRunning) {
+      builder.withTask("startPipeline", StartPipelineTask.class);
+    }
 
     if (!stage
         .getContext()
