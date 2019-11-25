@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import retrofit.RetrofitError
 
 @RestController
 @RequestMapping("/admin")
@@ -92,16 +93,18 @@ class AdminController {
   @ResponseStatus(HttpStatus.CREATED)
   Map<String, String> createExecution(@RequestBody Execution execution) {
 
-    if (front50Service && !front50Service.get(execution.application)) {
-      log.warn('No application exists with name: ' + execution.application)
+    // Check if app exists before importing execution.
+    try {
+      front50Service.get(execution.application)
+    } catch(RetrofitError e) {
+      throw new InvalidRequestException("Error received retrieving application: " + execution.application, e)
     }
 
     try {
       executionRepository.retrieve(execution.type, execution.id)
-      log.warn('Execution found with id: []', execution.id)
       throw new InvalidRequestException('Execution already exists with id: ' + execution.id)
     } catch(ExecutionNotFoundException e) {
-      log.info('Execution not found .. can import it..')
+      log.info('Execution not found: {}, Will continue with importing..', execution.id)
     }
 
     if (execution.status in [ExecutionStatus.CANCELED, ExecutionStatus.SUCCEEDED, ExecutionStatus.TERMINAL]) {

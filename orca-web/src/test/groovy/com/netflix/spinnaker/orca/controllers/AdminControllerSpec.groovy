@@ -18,10 +18,14 @@ package com.netflix.spinnaker.orca.controllers
 
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import de.huxhorn.sulky.ulid.ULID
+import retrofit.RetrofitError
+import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -29,11 +33,13 @@ class AdminControllerSpec extends Specification {
 
   ExecutionRepository executionRepository = Mock(ExecutionRepository)
 
+  Front50Service front50Service = Mock(Front50Service)
+
   AdminController controller = new AdminController(executionRepository: executionRepository)
 
   def setup() {
     executionRepository = Mock(ExecutionRepository)
-    controller = new AdminController(executionRepository: executionRepository)
+    controller = new AdminController(executionRepository: executionRepository, front50Service: front50Service)
   }
 
   @Unroll
@@ -48,6 +54,7 @@ class AdminControllerSpec extends Specification {
 
       then:
       thrown(InvalidRequestException)
+      1 * front50Service.get('testapp') >> { new Application(name: 'testapp') }
       1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
       0 * _
 
@@ -67,6 +74,7 @@ class AdminControllerSpec extends Specification {
 
     then:
     noExceptionThrown()
+    1 * front50Service.get('testapp') >> { new Application(name: 'testapp') }
     1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
     1 * executionRepository.store(execution)
     0 * _
@@ -75,6 +83,21 @@ class AdminControllerSpec extends Specification {
 
     where:
     validStatus << [ExecutionStatus.SUCCEEDED, ExecutionStatus.CANCELED, ExecutionStatus.TERMINAL]
+  }
+
+  def 'should fail to import if unable to retrieve app name from front50'() {
+    given:
+    String executionId = new ULID().nextULID()
+    Execution execution = new Execution(Execution.ExecutionType.PIPELINE, executionId, 'testapp')
+    execution.status = ExecutionStatus.SUCCEEDED
+
+    when:
+    controller.createExecution(execution)
+
+    then:
+    thrown(InvalidRequestException)
+    1 * front50Service.get('testapp') >> { throw RetrofitError.unexpectedError('http://test.front50.com', new RuntimeException())}
+    0 * _
   }
 
 }
