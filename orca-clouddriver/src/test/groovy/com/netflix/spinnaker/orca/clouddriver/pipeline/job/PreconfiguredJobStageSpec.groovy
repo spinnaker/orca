@@ -53,6 +53,37 @@ class PreconfiguredJobStageSpec extends Specification {
     expectedField   | expectedValue   | stageName | stageContext                                                              | preconfiguredJobProperties
     "cloudProvider" | "kubernetes"    | "testJob" | [account: "test-account"]                                                 | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [], cloudProvider: "kubernetes")
     "cloudProvider" | "titus"         | "testJob" | [account: "test-account"]                                                 | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [new PreconfiguredJobStageParameter(mapping: "cloudProvider", defaultValue: "titus")], cloudProvider: "kubernetes")
+    "cloudProvider" | "titus"         | "testJob" | [account: "test-account"]                                                 | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [new PreconfiguredJobStageParameter(mapping: "cloudProvider", defaultValue: "titus", "name": "cloudProvider")], cloudProvider: "kubernetes")
+    "cloudProvider" | "somethingElse" | "testJob" | [account: "test-account", parameters: ["cloudProvider": "somethingElse"]] | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [new PreconfiguredJobStageParameter(mapping: "cloudProvider", defaultValue: "titus", "name": "cloudProvider")], cloudProvider: "kubernetes")
+  }
+
+  def "should replace properties in context"() {
+    given:
+    def jobService = Mock(JobService) {
+      1 * getPreconfiguredStages() >> {
+        return [
+          preconfiguredJobProperties
+        ]
+      }
+    }
+
+    def stage = stage {
+      type = stageName
+      context = stageContext
+    }
+
+    when:
+    PreconfiguredJobStage preconfiguredJobStage = new PreconfiguredJobStage(Mock(DestroyJobTask), Optional.of(jobService))
+    preconfiguredJobStage.buildTaskGraph(stage)
+
+    then:
+    stage.getContext().get(expectedField) == expectedValue
+
+    where:
+    expectedField   | expectedValue   | stageName | stageContext                                                              | preconfiguredJobProperties
+    "cloudProvider" | "kubernetes"    | "testJob" | [account: "test-account"]                                                 | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [], cloudProvider: "kubernetes")
+    "cloudProvider" | "titus"         | "testJob" | [account: "test-account"]                                                 | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [new PreconfiguredJobStageParameter(mapping: "cloudProvider", defaultValue: "titus")], cloudProvider: "kubernetes")
+    "cloudProvider" | "titus"         | "testJob" | [account: "test-account"]                                                 | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [new PreconfiguredJobStageParameter(mapping: "cloudProvider", defaultValue: "titus", "name": "cloudProvider")], cloudProvider: "kubernetes")
     "cloudProvider" | "somethingElse" | "testJob" | [account: "test-account", parameters: ["cloudProvider": "somethingElse"]] | new KubernetesPreconfiguredJobProperties(enabled: true, label: "testJob", type: "testJob", parameters: [new PreconfiguredJobStageParameter(mapping: "cloudProvider", defaultValue: "titus", "name": "cloudProvider")], cloudProvider: "kubernetes")
   }
 

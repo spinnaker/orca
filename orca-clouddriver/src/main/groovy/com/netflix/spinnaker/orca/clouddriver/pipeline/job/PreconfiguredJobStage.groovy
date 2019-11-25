@@ -72,17 +72,20 @@ class PreconfiguredJobStage extends RunJobStage {
         context[it] = preconfiguredMap[it]
       }
     }
+    if (!context.parameters) {
+      context.parameters = [:]
+    }
     preconfiguredJob.parameters.each { defaults ->
-      if (defaults.defaultValue != null) {
-        Eval.xy(context, defaults.defaultValue, "x.${defaults.mapping} = y.toString()")
+      if (defaults.defaultValue != null && context.parameters[defaults.name] == null) {
+        context.parameters[defaults.name] = defaults.defaultValue
       }
     }
-    if (context.parameters) {
-      context.parameters.each { k, v ->
-        def parameterDefinition = preconfiguredJob.parameters.find { it.name == k }
-        if (parameterDefinition) {
-          Eval.xy(context, v, "x.${parameterDefinition.mapping} = y.toString()")
-        }
+
+    // to keep support for legacy `mapping` attribute.
+    context.parameters.each { k, v ->
+      def parameterDefinition = preconfiguredJob.parameters.find { it.name == k }
+      if (parameterDefinition && parameterDefinition.mapping) {
+        Eval.xy(context, v, "x.${parameterDefinition.mapping} = y.toString()")
       }
     }
     context.preconfiguredJobParameters = preconfiguredJob.parameters
