@@ -75,7 +75,7 @@ class RestartStageHandler(
     val trigger = topStage.execution.trigger as PipelineTrigger
 
     val parentStage = trigger.parentExecution.stageById(trigger.parentPipelineStageId)
-    parentStage.addAlreadyRunning(message)
+    parentStage.addSkipRestart()
 
     queue.push(RestartStage(trigger.parentExecution, parentStage.id, message.user))
   }
@@ -83,7 +83,7 @@ class RestartStageHandler(
   /**
    * Inform the parent stage when it restarts that the child is already running
    */
-  private fun Stage.addAlreadyRunning(message: RestartStage) {
+  private fun Stage.addSkipRestart() {
     context["_skipPipelineRestart"] = "true"
   }
 
