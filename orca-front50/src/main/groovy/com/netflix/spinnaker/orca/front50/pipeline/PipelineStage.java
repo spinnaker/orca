@@ -114,13 +114,4 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
 
     return new CancellableStage.Result(stage, emptyMap());
   }
-
-  private boolean shouldSkipRestart(Stage stage) {
-    return stage
-        .getContext()
-        .getOrDefault("_skipPipelineRestart", "false")
-        .toString()
-        .toLowerCase()
-        .equals("true");
-  }
 }
