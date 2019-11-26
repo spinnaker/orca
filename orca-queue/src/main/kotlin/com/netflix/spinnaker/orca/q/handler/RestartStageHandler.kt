@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.RestartStage
@@ -68,27 +68,23 @@ class RestartStageHandler(
   }
 
   private fun restartParentPipelineIfNeeded(message: RestartStage, topStage: Stage) {
-    val trigger = topStage.execution.trigger
-    if (!topStage.execution.trigger.type.equals("pipeline")) {
+    if (topStage.execution.trigger !is PipelineTrigger) {
       return
     }
 
-    val parentExecution = trigger.other["parentExecution"] as Execution
-    val parentStage = parentExecution.stageById(trigger.other["parentPipelineStageId"] as String)
+    val trigger = topStage.execution.trigger as PipelineTrigger
+
+    val parentStage = trigger.parentExecution.stageById(trigger.parentPipelineStageId)
     parentStage.addAlreadyRunning(message)
 
-    queue.push(RestartStage(parentExecution, parentStage.id, message.user))
+    queue.push(RestartStage(trigger.parentExecution, parentStage.id, message.user))
   }
 
   /**
    * Inform the parent stage when it restarts that the child is already running
    */
   private fun Stage.addAlreadyRunning(message: RestartStage) {
-    message.withExecution { execution ->
-      context["isAlreadyRunning"] = "true"
-      context["executionId"] = execution.id
-      context["executionName"] = execution.name
-    }
+    context["_skipPipelineRestart"] = "true"
   }
 
   private fun Stage.addRestartDetails(user: String?) {

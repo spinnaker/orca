@@ -46,17 +46,8 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
 
   @Override
   public void taskGraph(Stage stage, TaskNode.Builder builder) {
-    // If set to true, this means that the child pipeline is already started, and we need to only
-    // monitor it
-    boolean isAlreadyRunning =
-        stage
-            .getContext()
-            .getOrDefault("isAlreadyRunning", "false")
-            .toString()
-            .toLowerCase()
-            .equals("true");
-
-    if (!isAlreadyRunning) {
+    // only start the pipeline if no execution ID already exists
+    if (stage.getContext().get("executionId") == null) {
       builder.withTask("startPipeline", StartPipelineTask.class);
     }
 
@@ -77,8 +68,18 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   @Override
   public void prepareStageForRestart(Stage stage) {
     stage.getContext().remove("status");
-    stage.getContext().remove("executionName");
-    stage.getContext().remove("executionId");
+    if (!stage
+        .getContext()
+        .getOrDefault("_skipPipelineRestart", "false")
+        .toString()
+        .toLowerCase()
+        .equals("true")) {
+      stage.getContext().remove("executionName");
+      stage.getContext().remove("executionId");
+    } else {
+      // Clear the skip restart flag
+      stage.getContext().remove("_skipPipelineRestart");
+    }
   }
 
   @Override
@@ -112,5 +113,14 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
     }
 
     return new CancellableStage.Result(stage, emptyMap());
+  }
+
+  private boolean shouldSkipRestart(Stage stage) {
+    return stage
+        .getContext()
+        .getOrDefault("_skipPipelineRestart", "false")
+        .toString()
+        .toLowerCase()
+        .equals("true");
   }
 }
