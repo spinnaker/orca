@@ -25,41 +25,40 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundExceptio
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import de.huxhorn.sulky.ulid.ULID
 import retrofit.RetrofitError
-import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Unroll
 
-class AdminControllerSpec extends Specification {
+class ExecutionsImportControllerSpec extends Specification {
 
   ExecutionRepository executionRepository = Mock(ExecutionRepository)
 
   Front50Service front50Service = Mock(Front50Service)
 
-  AdminController controller = new AdminController(executionRepository: executionRepository)
+  ExecutionsImportController controller
 
   def setup() {
     executionRepository = Mock(ExecutionRepository)
-    controller = new AdminController(executionRepository: executionRepository, front50Service: front50Service)
+    controller = new ExecutionsImportController(executionRepository, front50Service)
   }
 
   @Unroll
   def 'should throw error while saving execution with status: #invalidStatus '() {
-      given:
-      String executionId =  new ULID().nextULID()
-      Execution execution = new Execution(Execution.ExecutionType.PIPELINE, executionId, 'testapp')
+    given:
+    String executionId =  new ULID().nextULID()
+    Execution execution = new Execution(Execution.ExecutionType.PIPELINE, executionId, 'testapp')
 
-      when:
-      execution.status = invalidStatus
-      controller.createExecution(execution)
+    when:
+    execution.status = invalidStatus
+    controller.createExecution(execution)
 
-      then:
-      thrown(InvalidRequestException)
-      1 * front50Service.get('testapp') >> { new Application(name: 'testapp') }
-      1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
-      0 * _
+    then:
+    thrown(InvalidRequestException)
+    1 * front50Service.get('testapp') >> { new Application(name: 'testapp') }
+    1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
+    0 * _
 
-      where:
-      invalidStatus << [ExecutionStatus.RUNNING, ExecutionStatus.PAUSED, ExecutionStatus.NOT_STARTED]
+    where:
+    invalidStatus << [ExecutionStatus.RUNNING, ExecutionStatus.PAUSED, ExecutionStatus.NOT_STARTED]
   }
 
   @Unroll
@@ -85,19 +84,23 @@ class AdminControllerSpec extends Specification {
     validStatus << [ExecutionStatus.SUCCEEDED, ExecutionStatus.CANCELED, ExecutionStatus.TERMINAL]
   }
 
-  def 'should fail to import if unable to retrieve app name from front50'() {
+  def 'should succeed to import if unable to retrieve app from front50'() {
     given:
     String executionId = new ULID().nextULID()
     Execution execution = new Execution(Execution.ExecutionType.PIPELINE, executionId, 'testapp')
     execution.status = ExecutionStatus.SUCCEEDED
 
     when:
-    controller.createExecution(execution)
+    Map result = controller.createExecution(execution)
 
     then:
-    thrown(InvalidRequestException)
+    noExceptionThrown()
     1 * front50Service.get('testapp') >> { throw RetrofitError.unexpectedError('http://test.front50.com', new RuntimeException())}
+    1 * executionRepository.retrieve(Execution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
+    1 * executionRepository.store(execution)
     0 * _
+    result.executionId == executionId
+    result.status == ExecutionStatus.SUCCEEDED
   }
 
 }
