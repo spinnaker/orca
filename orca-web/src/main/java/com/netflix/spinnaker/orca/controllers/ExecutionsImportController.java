@@ -69,7 +69,7 @@ public class ExecutionsImportController {
     try {
       front50Service.get(execution.getApplication());
     } catch (RetrofitError e) {
-      log.warn("Exception received while retrieving application from font50", e);
+      log.warn("Exception received while retrieving application from front50", e);
     }
 
     // Continue importing even if we can't retrieve the APP.
