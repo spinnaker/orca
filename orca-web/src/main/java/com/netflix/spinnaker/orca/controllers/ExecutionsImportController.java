@@ -19,12 +19,12 @@ package com.netflix.spinnaker.orca.controllers;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.front50.model.Application;
+import com.netflix.spinnaker.orca.model.ExecutionImportResponse;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,13 +63,23 @@ public class ExecutionsImportController {
 
   @PostMapping(value = "")
   @ResponseStatus(HttpStatus.CREATED)
-  Map<String, Object> createExecution(@RequestBody Execution execution) {
+  ExecutionImportResponse createExecution(@RequestBody Execution execution) {
 
     // Check if app exists before importing execution.
+    Application application = null;
     try {
-      front50Service.get(execution.getApplication());
+      application = front50Service.get(execution.getApplication());
+      log.info("Importing application with name: {}", application.name);
     } catch (RetrofitError e) {
-      log.warn("Exception received while retrieving application from front50", e);
+      if (e.getKind() == RetrofitError.Kind.HTTP && e.getResponse().getStatus() != 404) {
+        log.warn("Exception received while retrieving application from front50", e);
+      }
+    }
+
+    if (application == null) {
+      log.info(
+          "Application {} not found in front50, but still importing it",
+          execution.getApplication());
     }
 
     // Continue importing even if we can't retrieve the APP.
@@ -93,11 +103,8 @@ public class ExecutionsImportController {
                 stage.setExecution(execution);
               });
       executionRepository.store(execution);
-      Map<String, Object> executionDetails = new HashMap<>();
-      executionDetails.put("executionId", execution.getId());
-      executionDetails.put("status", execution.getStatus());
-      executionDetails.put("totalStages", execution.getStages().size());
-      return executionDetails;
+      return new ExecutionImportResponse(
+          execution.getId(), execution.getStatus(), execution.getStages().size());
     }
 
     throw new InvalidRequestException(

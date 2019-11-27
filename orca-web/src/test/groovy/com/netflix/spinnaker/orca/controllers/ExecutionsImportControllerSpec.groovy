@@ -20,6 +20,7 @@ import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
+import com.netflix.spinnaker.orca.model.ExecutionImportResponse
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -69,7 +70,7 @@ class ExecutionsImportControllerSpec extends Specification {
 
     when:
     execution.status = validStatus
-    Map result = controller.createExecution(execution)
+    ExecutionImportResponse result = controller.createExecution(execution)
 
     then:
     noExceptionThrown()
@@ -78,7 +79,7 @@ class ExecutionsImportControllerSpec extends Specification {
     1 * executionRepository.store(execution)
     0 * _
     result.executionId == executionId
-    result.status == validStatus
+    result.executionStatus == validStatus
 
     where:
     validStatus << [ExecutionStatus.SUCCEEDED, ExecutionStatus.CANCELED, ExecutionStatus.TERMINAL]
@@ -91,7 +92,7 @@ class ExecutionsImportControllerSpec extends Specification {
     execution.status = ExecutionStatus.SUCCEEDED
 
     when:
-    Map result = controller.createExecution(execution)
+    ExecutionImportResponse result = controller.createExecution(execution)
 
     then:
     noExceptionThrown()
@@ -100,7 +101,7 @@ class ExecutionsImportControllerSpec extends Specification {
     1 * executionRepository.store(execution)
     0 * _
     result.executionId == executionId
-    result.status == ExecutionStatus.SUCCEEDED
+    result.executionStatus == ExecutionStatus.SUCCEEDED
   }
 
 }
