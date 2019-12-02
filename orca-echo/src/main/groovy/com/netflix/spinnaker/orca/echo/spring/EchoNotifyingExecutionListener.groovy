@@ -105,9 +105,9 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
 
   private void processSpelInNotifications(Execution execution) {
     List<Map<String, Object>> spelProcessedNotifications = execution.notifications.collect({
-      Map executionMap = objectMapper.convertValue(execution, Map)
-      contextParameterProcessor.process(it, executionMap, true)
+      contextParameterProcessor.process(it, contextParameterProcessor.buildExecutionContext(execution), true)
     })
+
     execution.notifications = spelProcessedNotifications
   }
 
@@ -132,9 +132,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
 
     if (notifications) {
       notifications.getPipelineNotifications().each { appNotification ->
-        Map executionMap = objectMapper.convertValue(pipeline, Map)
-
-        appNotification = contextParameterProcessor.process(appNotification, executionMap, true)
+        appNotification = contextParameterProcessor.process(appNotification, contextParameterProcessor.buildExecutionContext(pipeline), true)
 
         Map<String, Object> targetMatch = pipeline.notifications.find { pipelineNotification ->
           def addressMatches = appNotification.address && pipelineNotification.address && pipelineNotification.address == appNotification.address

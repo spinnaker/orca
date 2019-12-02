@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.capabilities.models;
+package com.netflix.spinnaker.orca.model;
 
-import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
+import com.netflix.spinnaker.orca.ExecutionStatus;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-public class ExpressionSpelEvaluatorDefinition {
-  private String versionKey;
-  private String description;
-  private boolean isDeprecated;
+@AllArgsConstructor
+public class ExecutionImportResponse {
 
-  public ExpressionSpelEvaluatorDefinition() {}
+  private String executionId;
 
-  public ExpressionSpelEvaluatorDefinition(
-      PipelineExpressionEvaluator.SpelEvaluatorVersion version) {
-    this.versionKey = version.getKey();
-    this.description = version.getDescription();
-    this.isDeprecated = version.isDeprecated();
-  }
+  private ExecutionStatus executionStatus;
+
+  private Integer totalStages;
 }
