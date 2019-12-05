@@ -16,8 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.ExecutionStatus.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -74,8 +73,14 @@ class RestartStageHandler(
 
     val trigger = topStage.execution.trigger as PipelineTrigger
 
+    if (trigger.parentExecution.status != TERMINAL) {
+      // only attempt to restart the parent pipeline if it's in a terminal state
+      return
+    }
+
     val parentStage = trigger.parentExecution.stageById(trigger.parentPipelineStageId)
     parentStage.addSkipRestart()
+    repository.storeStage(parentStage)
 
     queue.push(RestartStage(trigger.parentExecution, parentStage.id, message.user))
   }
@@ -84,7 +89,7 @@ class RestartStageHandler(
    * Inform the parent stage when it restarts that the child is already running
    */
   private fun Stage.addSkipRestart() {
-    context["_skipPipelineRestart"] = "true"
+    context["_skipPipelineRestart"] = true
   }
 
   private fun Stage.addRestartDetails(user: String?) {
