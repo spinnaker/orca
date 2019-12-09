@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -75,8 +74,8 @@ class RestartStageHandler(
 
     val trigger = topStage.execution.trigger as PipelineTrigger
 
-    if (trigger.parentExecution.status != TERMINAL) {
-      // only attempt to restart the parent pipeline if it's in a terminal state
+    if (!trigger.parentExecution.status.isComplete()) {
+      // only attempt to restart the parent pipeline if it's not running
       return
     }
 
