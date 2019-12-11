@@ -73,13 +73,15 @@ class RestartStageHandler(
     }
 
     val trigger = topStage.execution.trigger as PipelineTrigger
+    // We have a copy of the parent execution, not the live one. So we retrieve the live one.
+    val parentExecution = repository.retrieve(trigger.parentExecution.type, trigger.parentExecution.id)
 
-    if (!trigger.parentExecution.status.isComplete()) {
+    if (!parentExecution.status.isComplete()) {
       // only attempt to restart the parent pipeline if it's not running
       return
     }
 
-    val parentStage = trigger.parentExecution.stageById(trigger.parentPipelineStageId)
+    val parentStage = parentExecution.stageById(trigger.parentPipelineStageId)
     parentStage.addSkipRestart()
     repository.storeStage(parentStage)
 

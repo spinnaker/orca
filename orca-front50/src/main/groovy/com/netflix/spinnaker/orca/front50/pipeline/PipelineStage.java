@@ -72,9 +72,8 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
 
     context.remove("status");
 
-    boolean restartPipeline = (boolean) context.getCurrentOnly("_skipPipelineRestart", false);
-
-    if (!restartPipeline) {
+    boolean skipPipelineRestart = (boolean) context.getCurrentOnly("_skipPipelineRestart", false);
+    if (!skipPipelineRestart) {
       stage.getContext().remove("executionName");
       stage.getContext().remove("executionId");
     } else {
