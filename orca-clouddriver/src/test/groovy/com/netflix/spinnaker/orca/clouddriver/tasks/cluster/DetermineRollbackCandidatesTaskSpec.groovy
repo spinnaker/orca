@@ -64,7 +64,7 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    (shouldFetchServerGroup ? 1 : 0) * oortService.getServerGroup("test", "us-west-2", "servergroup-v001") >> {
+    (shouldFetchServerGroup ? 1 : 0) * oortService.getServerGroup("test", "us-west-2", "servergroup-v002") >> {
       return buildResponse([
         moniker: [
           app    : "app",
@@ -75,8 +75,10 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
     1 * oortService.getCluster("app", "test", "app-stack-details", "aws") >> {
       return buildResponse([
         serverGroups: [
-          buildServerGroup("servergroup-v000", "us-west-2", 50, true, [name: "my_image-0"], [:], 5),
-          buildServerGroup("servergroup-v001", "us-west-2", 100, false, [name: "my_image-1"], [:], 5)
+          buildServerGroup("servergroup-v000", "us-west-2", 50, false, [name: "my_image-0"], [:], 5),
+          // disabled server groups should be skipped when evaluating rollback candidates
+          buildServerGroup("servergroup-v001", "us-west-2", 100, true, [name: "my_image-1"], [:], 5),
+          buildServerGroup("servergroup-v002", "us-west-2", 150, false, [name: "my_image-2"], [:], 5)
         ]
       ])
     }
@@ -94,7 +96,7 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
       ],
       rollbackContexts: [
         "us-west-2": [
-          rollbackServerGroupName        : "servergroup-v001",
+          rollbackServerGroupName        : "servergroup-v002",
           restoreServerGroupName         : "servergroup-v000",
           targetHealthyRollbackPercentage: 100
         ]
@@ -104,7 +106,7 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
     where:
     additionalStageContext                           | areEntityTagsEnabled || shouldFetchServerGroup || shouldFetchEntityTags
     [:]                                              | true                 || false                  || true       // stage context includes moniker, no need to fetch server group
-    [moniker: null, serverGroup: "servergroup-v001"] | false                || true                   || false
+    [moniker: null, serverGroup: "servergroup-v002"] | false                || true                   || false
   }
 
   def "should build PREVIOUS_IMAGE rollback context when there are _only_ entity tags"() {

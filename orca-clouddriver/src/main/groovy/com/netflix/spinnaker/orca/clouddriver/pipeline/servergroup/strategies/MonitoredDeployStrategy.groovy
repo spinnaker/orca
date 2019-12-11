@@ -211,12 +211,12 @@ class MonitoredDeployStrategy implements Strategy {
         resizeContext.capacity = savedCapacity // will scale to a percentage of that static capacity
       }
 
-      log.info("Adding `Grow to $p% of Desired Size` stage with context $resizeContext [executionId=${stage.execution.id}]")
+      log.info("Adding `Grow new server group to $p% of Desired Size` stage with context $resizeContext [executionId=${stage.execution.id}]")
 
       def resizeStage = newStage(
         stage.execution,
         ResizeServerGroupStage.TYPE,
-        "Grow to $p% of Desired Size",
+        "Grow new server group to $p% of Desired Size",
         resizeContext,
         stage,
         SyntheticStageOwner.STAGE_AFTER

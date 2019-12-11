@@ -163,28 +163,28 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
             cluster.get("serverGroups"), new TypeReference<List<ServerGroup>>() {});
     serverGroups.sort(Comparator.comparing((ServerGroup o) -> o.createdTime).reversed());
 
+    List<ServerGroup> enabledServerGroups =
+        serverGroups.stream()
+            .filter(s -> s.disabled == null || !s.disabled)
+            .collect(Collectors.toList());
+
     List<Map> imagesToRestore = new ArrayList<>();
     for (String region : stageData.regions) {
-      List<ServerGroup> serverGroupsInRegion =
-          serverGroups.stream()
+      List<ServerGroup> enabledServerGroupsInRegion =
+          enabledServerGroups.stream()
               .filter(s -> region.equalsIgnoreCase(s.region))
               .collect(Collectors.toList());
 
-      if (serverGroupsInRegion.isEmpty()) {
-        // no server groups in region, nothing to rollback!
+      if (enabledServerGroupsInRegion.isEmpty()) {
+        // no enabled server groups in region, nothing to rollback to!
+        logger.warn(
+            "No enabled server groups in cluster {} and region {} to rollback to. Skipping this region.",
+            moniker.get().getCluster(),
+            region);
         continue;
       }
 
-      ServerGroup newestEnabledServerGroupInRegion =
-          serverGroupsInRegion.stream()
-              .filter(s -> s.disabled == null || !s.disabled)
-              .findFirst()
-              .orElse(null);
-
-      if (newestEnabledServerGroupInRegion == null) {
-        // no enabled server groups in this region, nothing to rollback!
-        continue;
-      }
+      ServerGroup newestEnabledServerGroupInRegion = enabledServerGroupsInRegion.get(0);
 
       ImageDetails imageDetails =
           previousImageRollbackSupport.getImageDetailsFromEntityTags(
@@ -196,18 +196,34 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       RollbackDetails rollbackDetails = null;
       if (imageDetails != null) {
         // check for rollback candidates based on entity tags
+        logger.info(
+            "Looking for rollback candidates in cluster {}, region {} based on entity tags.",
+            moniker.get().getCluster(),
+            region);
+
         rollbackDetails =
             fetchRollbackDetails(
-                imageDetails, newestEnabledServerGroupInRegion, serverGroupsInRegion);
+                imageDetails, newestEnabledServerGroupInRegion, enabledServerGroupsInRegion);
       }
 
       if (rollbackDetails == null) {
         // check for rollback candidates based on previous server groups
+        logger.info(
+            "Looking for rollback candidates in cluster {}, region {} based on previous server groups.",
+            moniker.get().getCluster(),
+            region);
+
         rollbackDetails =
-            fetchRollbackDetails(newestEnabledServerGroupInRegion, serverGroupsInRegion);
+            fetchRollbackDetails(newestEnabledServerGroupInRegion, enabledServerGroupsInRegion);
       }
 
       if (rollbackDetails != null) {
+        logger.info(
+            "Found rollback candidate in cluster {}, region {}: {}",
+            moniker.get().getCluster(),
+            region,
+            rollbackDetails.rollbackContext.get("restoreServerGroupName"));
+
         Map<String, Object> rollbackContext = new HashMap<>(rollbackDetails.rollbackContext);
         rollbackContext.put(
             "targetHealthyRollbackPercentage",
