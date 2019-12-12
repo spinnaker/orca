@@ -463,7 +463,7 @@ class MonitoredDeployStrategy implements Strategy {
           // When initiating a rollback automatically as part of deployment failure handling, only rollback to a server
           // group that's enabled, as any disabled ones, even if newer, were likely manually marked so for being "bad"
           // (e.g. as part of a manual rollback).
-          disregardDisabledCandidates: true
+          onlyEnabledServerGroups: true
         ]
       ],
       parent,

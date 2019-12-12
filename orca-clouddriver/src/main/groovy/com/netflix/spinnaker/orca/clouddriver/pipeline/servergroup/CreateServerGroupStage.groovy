@@ -124,7 +124,7 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
     // When initiating a rollback automatically as part of deployment failure handling, only rollback to a server
     // group that's enabled, as any disabled ones, even if newer, were likely manually marked so for being "bad"
     // (e.g. as part of a manual rollback).
-    additionalRollbackContext.disregardDisabledCandidates = true
+    additionalRollbackContext.onlyEnabledServerGroups = true
 
     if (strategySupportsRollback) {
       graph.add {

@@ -194,10 +194,11 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       }
 
       ServerGroup newestEnabledServerGroupInRegion = enabledServerGroupsInRegion.get(0);
-      boolean disregardDisabledCandidates =
+      boolean onlyEnabled =
           stageData.additionalRollbackContext != null
-              && stageData.additionalRollbackContext.containsKey("disregardDisabledCandidates")
-              && ((Boolean) stageData.additionalRollbackContext.get("disregardDisabledCandidates"))
+              && ((Boolean)
+                      stageData.additionalRollbackContext.getOrDefault(
+                          "onlyEnabledServerGroups", Boolean.FALSE))
                   .booleanValue();
 
       ImageDetails imageDetails =
@@ -212,7 +213,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
         // check for rollback candidates based on entity tags
         logger.info(
             "Looking for rollback candidates in cluster {}, region {} based on entity tags, "
-                + (disregardDisabledCandidates ? "excluding" : "including")
+                + (onlyEnabled ? "excluding" : "including")
                 + " disabled server groups",
             moniker.get().getCluster(),
             region);
@@ -221,16 +222,14 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
             fetchRollbackDetails(
                 imageDetails,
                 newestEnabledServerGroupInRegion,
-                disregardDisabledCandidates
-                    ? enabledServerGroupsInRegion
-                    : allServerGroupsInRegion);
+                onlyEnabled ? enabledServerGroupsInRegion : allServerGroupsInRegion);
       }
 
       if (rollbackDetails == null) {
         // check for rollback candidates based on previous server groups
         logger.info(
             "Looking for rollback candidates in cluster {}, region {} based on previous server groups, "
-                + (disregardDisabledCandidates ? "excluding" : "including")
+                + (onlyEnabled ? "excluding" : "including")
                 + " disabled ones",
             moniker.get().getCluster(),
             region);
@@ -238,9 +237,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
         rollbackDetails =
             fetchRollbackDetails(
                 newestEnabledServerGroupInRegion,
-                disregardDisabledCandidates
-                    ? enabledServerGroupsInRegion
-                    : allServerGroupsInRegion);
+                onlyEnabled ? enabledServerGroupsInRegion : allServerGroupsInRegion);
       }
 
       if (rollbackDetails != null) {

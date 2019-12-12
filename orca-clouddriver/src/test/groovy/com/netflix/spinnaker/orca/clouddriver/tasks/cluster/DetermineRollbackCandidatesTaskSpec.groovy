@@ -111,8 +111,8 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
     buildAdditionalStageContext("servergroup-v002", true)   | false                || true                   || false                 || "servergroup-v000" || "my_image-0"
   }
 
-  def buildAdditionalStageContext(String serverGroup, boolean disregardDisabledCandidates) {
-    [moniker: null, serverGroup: serverGroup, additionalRollbackContext: [disregardDisabledCandidates: disregardDisabledCandidates]]
+  private static def buildAdditionalStageContext(String serverGroup, boolean onlyEnabledServerGroups) {
+    [moniker: null, serverGroup: serverGroup, additionalRollbackContext: [onlyEnabledServerGroups: onlyEnabledServerGroups]]
   }
 
   def "should build PREVIOUS_IMAGE rollback context when there are _only_ entity tags"() {
