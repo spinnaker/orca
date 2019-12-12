@@ -211,12 +211,12 @@ class MonitoredDeployStrategy implements Strategy {
         resizeContext.capacity = savedCapacity // will scale to a percentage of that static capacity
       }
 
-      log.info("Adding `Grow new server group to $p% of Desired Size` stage with context $resizeContext [executionId=${stage.execution.id}]")
+      log.info("Adding `Grow ${internalStageData.newServerGroup} to $p% of Desired Size` stage with context $resizeContext [executionId=${stage.execution.id}]")
 
       def resizeStage = newStage(
         stage.execution,
         ResizeServerGroupStage.TYPE,
-        "Grow new server group to $p% of Desired Size",
+        "Grow ${internalStageData.newServerGroup} to $p% of Desired Size",
         resizeContext,
         stage,
         SyntheticStageOwner.STAGE_AFTER
@@ -231,7 +231,7 @@ class MonitoredDeployStrategy implements Strategy {
           useNameAsLabel   : true,     // hint to deck that it should _not_ override the name
         ]
 
-        log.info("Adding `Disable $p% of Desired Size` stage with context $disableContext [executionId=${stage.execution.id}]")
+        log.info("Adding `Disable $p% of Traffic on ${source.serverGroupName}` stage with context $disableContext [executionId=${stage.execution.id}]")
 
         def disablePortionStage = newStage(
           stage.execution,
