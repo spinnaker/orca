@@ -459,7 +459,11 @@ class MonitoredDeployStrategy implements Strategy {
         serverGroup              : stageData.serverGroup,
         stageTimeoutMs           : MINUTES.toMillis(30), // timebox a rollback to 30 minutes
         additionalRollbackContext: [
-          enableAndDisableOnly: true
+          enableAndDisableOnly: true,
+          // When initiating a rollback automatically as part of deployment failure handling, only rollback to a server
+          // group that's enabled, as any disabled ones, even if newer, were likely manually marked so for being "bad"
+          // (e.g. as part of a manual rollback).
+          disregardDisabledCandidates: true
         ]
       ],
       parent,

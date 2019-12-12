@@ -163,28 +163,42 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
             cluster.get("serverGroups"), new TypeReference<List<ServerGroup>>() {});
     serverGroups.sort(Comparator.comparing((ServerGroup o) -> o.createdTime).reversed());
 
-    List<ServerGroup> enabledServerGroups =
-        serverGroups.stream()
-            .filter(s -> s.disabled == null || !s.disabled)
-            .collect(Collectors.toList());
-
     List<Map> imagesToRestore = new ArrayList<>();
     for (String region : stageData.regions) {
-      List<ServerGroup> enabledServerGroupsInRegion =
-          enabledServerGroups.stream()
+      List<ServerGroup> allServerGroupsInRegion =
+          serverGroups.stream()
               .filter(s -> region.equalsIgnoreCase(s.region))
               .collect(Collectors.toList());
 
-      if (enabledServerGroupsInRegion.isEmpty()) {
-        // no enabled server groups in region, nothing to rollback to!
+      if (allServerGroupsInRegion.size() < 2) {
+        // need at least one server group to rollback from, and one to rollback to!
         logger.warn(
-            "No enabled server groups in cluster {} and region {} to rollback to. Skipping this region.",
+            "Not enough server groups in cluster {} and region {} to perform a rollback. Skipping this region.",
+            moniker.get().getCluster(),
+            region);
+        continue;
+      }
+
+      List<ServerGroup> enabledServerGroupsInRegion =
+          allServerGroupsInRegion.stream()
+              .filter(s -> s.disabled == null || !s.disabled)
+              .collect(Collectors.toList());
+
+      if (enabledServerGroupsInRegion.isEmpty()) {
+        // no enabled server groups in this region, nothing to rollback from!
+        logger.warn(
+            "No enabled server groups in cluster {} and region {} to rollback from. Skipping this region.",
             moniker.get().getCluster(),
             region);
         continue;
       }
 
       ServerGroup newestEnabledServerGroupInRegion = enabledServerGroupsInRegion.get(0);
+      boolean disregardDisabledCandidates =
+          stageData.additionalRollbackContext != null
+              && stageData.additionalRollbackContext.containsKey("disregardDisabledCandidates")
+              && ((Boolean) stageData.additionalRollbackContext.get("disregardDisabledCandidates"))
+                  .booleanValue();
 
       ImageDetails imageDetails =
           previousImageRollbackSupport.getImageDetailsFromEntityTags(
@@ -197,24 +211,36 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       if (imageDetails != null) {
         // check for rollback candidates based on entity tags
         logger.info(
-            "Looking for rollback candidates in cluster {}, region {} based on entity tags.",
+            "Looking for rollback candidates in cluster {}, region {} based on entity tags, "
+                + (disregardDisabledCandidates ? "excluding" : "including")
+                + " disabled server groups",
             moniker.get().getCluster(),
             region);
 
         rollbackDetails =
             fetchRollbackDetails(
-                imageDetails, newestEnabledServerGroupInRegion, enabledServerGroupsInRegion);
+                imageDetails,
+                newestEnabledServerGroupInRegion,
+                disregardDisabledCandidates
+                    ? enabledServerGroupsInRegion
+                    : allServerGroupsInRegion);
       }
 
       if (rollbackDetails == null) {
         // check for rollback candidates based on previous server groups
         logger.info(
-            "Looking for rollback candidates in cluster {}, region {} based on previous server groups.",
+            "Looking for rollback candidates in cluster {}, region {} based on previous server groups, "
+                + (disregardDisabledCandidates ? "excluding" : "including")
+                + " disabled ones",
             moniker.get().getCluster(),
             region);
 
         rollbackDetails =
-            fetchRollbackDetails(newestEnabledServerGroupInRegion, enabledServerGroupsInRegion);
+            fetchRollbackDetails(
+                newestEnabledServerGroupInRegion,
+                disregardDisabledCandidates
+                    ? enabledServerGroupsInRegion
+                    : allServerGroupsInRegion);
       }
 
       if (rollbackDetails != null) {
@@ -315,10 +341,6 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   private static RollbackDetails fetchRollbackDetails(
       ServerGroup newestEnabledServerGroupInRegion, List<ServerGroup> serverGroupsInRegion) {
-    if (serverGroupsInRegion.size() < 2 || newestEnabledServerGroupInRegion == null) {
-      // less than 2 server groups or no enabled server group, nothing to rollback!
-      return null;
-    }
 
     ServerGroup previousServerGroupInRegion =
         serverGroupsInRegion.stream()
@@ -378,6 +400,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
     public Moniker moniker;
     public List<String> regions;
+    public Map<String, Object> additionalRollbackContext;
   }
 
   private static class ServerGroup {

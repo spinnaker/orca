@@ -76,7 +76,7 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
       return buildResponse([
         serverGroups: [
           buildServerGroup("servergroup-v000", "us-west-2", 50, false, [name: "my_image-0"], [:], 5),
-          // disabled server groups should be skipped when evaluating rollback candidates
+          // disabled server groups should be skipped when evaluating rollback candidates, but only on automatic rollbacks after a failed deployment
           buildServerGroup("servergroup-v001", "us-west-2", 100, true, [name: "my_image-1"], [:], 5),
           buildServerGroup("servergroup-v002", "us-west-2", 150, false, [name: "my_image-2"], [:], 5)
         ]
@@ -87,7 +87,7 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
 
     result.context == [
       imagesToRestore: [
-        [region: "us-west-2", image: "my_image-0", rollbackMethod: "EXPLICIT"]
+        [region: "us-west-2", image: expectedImage, rollbackMethod: "EXPLICIT"]
       ]
     ]
     result.outputs == [
@@ -97,16 +97,22 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
       rollbackContexts: [
         "us-west-2": [
           rollbackServerGroupName        : "servergroup-v002",
-          restoreServerGroupName         : "servergroup-v000",
+          restoreServerGroupName         : expectedCandidate,
           targetHealthyRollbackPercentage: 100
         ]
       ]
     ]
 
     where:
-    additionalStageContext                           | areEntityTagsEnabled || shouldFetchServerGroup || shouldFetchEntityTags
-    [:]                                              | true                 || false                  || true       // stage context includes moniker, no need to fetch server group
-    [moniker: null, serverGroup: "servergroup-v002"] | false                || true                   || false
+    additionalStageContext                                  | areEntityTagsEnabled || shouldFetchServerGroup || shouldFetchEntityTags || expectedCandidate  || expectedImage
+    [:]                                                     | true                 || false                  || true                  || "servergroup-v001" || "my_image-1"
+    [moniker: null, serverGroup: "servergroup-v002"]        | false                || true                   || false                 || "servergroup-v001" || "my_image-1"
+    buildAdditionalStageContext("servergroup-v002", false)  | false                || true                   || false                 || "servergroup-v001" || "my_image-1"
+    buildAdditionalStageContext("servergroup-v002", true)   | false                || true                   || false                 || "servergroup-v000" || "my_image-0"
+  }
+
+  def buildAdditionalStageContext(String serverGroup, boolean disregardDisabledCandidates) {
+    [moniker: null, serverGroup: serverGroup, additionalRollbackContext: [disregardDisabledCandidates: disregardDisabledCandidates]]
   }
 
   def "should build PREVIOUS_IMAGE rollback context when there are _only_ entity tags"() {
