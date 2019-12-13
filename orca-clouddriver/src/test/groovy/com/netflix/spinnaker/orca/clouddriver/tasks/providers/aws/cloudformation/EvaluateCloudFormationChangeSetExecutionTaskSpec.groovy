@@ -56,7 +56,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
       def result = evaluateCloudFormationChangeSetExecutionTask.execute(stage)
 
     then:
-      result.context.changeSetIsReplacement == resultContextChangeSetIsReplacement
+      result.context.changeSetContainsReplacement == resultContextChangeSetIsReplacement
       result.status == resultStatus
 
     where:
@@ -72,7 +72,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
     def context = [
       cloudProvider: 'aws',
       changeSetName: 'changeSetName',
-      changeSetIsReplacement: false
+      changeSetContainsReplacement: false
     ]
     def outputs = [
       changeSets: [
@@ -104,7 +104,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
     def context = [
       cloudProvider: 'aws',
       changeSetName: 'changeSetName',
-      changeSetIsReplacement: true,
+      changeSetContainsReplacement:  true,
       changeSetExecutionChoice: changeSetExecutionChoice
     ]
     def outputs = [
