@@ -98,7 +98,7 @@ public class ExecuteCloudFormationChangeSetTask extends AbstractCloudProviderAwa
         new ImmutableMap.Builder<String, Object>()
             .put("kato.result.expected", true)
             .put("kato.last.task.id", taskId)
-            .put("isChangeSetDeploy", true)
+            .put("isChangeSetExecution", true)
             .build();
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
