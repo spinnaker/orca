@@ -47,12 +47,7 @@ public class EvaluateCloudFormationChangeSetExecutionTask
         Optional.ofNullable(getChangeSetIsReplacement(stage));
 
     if (!changeSetIsReplacement.isPresent()) {
-      Boolean isReplacement;
-      if (isAnyChangeSetReplacement(currentChangeSet.get())) {
-        isReplacement = true;
-      } else {
-        isReplacement = false;
-      }
+      Boolean isReplacement = isAnyChangeSetReplacement(currentChangeSet.get());
       Map<String, Object> context = stage.getContext();
       context.put("changeSetIsReplacement", isReplacement);
       return TaskResult.builder(ExecutionStatus.RUNNING).context(context).build();
