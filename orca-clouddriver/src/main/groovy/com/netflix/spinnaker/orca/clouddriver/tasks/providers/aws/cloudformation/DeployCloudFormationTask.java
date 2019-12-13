@@ -111,11 +111,6 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
       task.put("templateBody", templateBody);
     }
 
-    if (templateBody instanceof List && !((List) templateBody).isEmpty()) {
-      templateBody = new Yaml().dump(((List) templateBody).get(0));
-      task.put("templateBody", templateBody);
-    }
-
     if (!(templateBody instanceof String) || Strings.isNullOrEmpty((String) templateBody)) {
       throw new IllegalArgumentException(
           "Invalid stage format, missing artifact or templateBody field: "
