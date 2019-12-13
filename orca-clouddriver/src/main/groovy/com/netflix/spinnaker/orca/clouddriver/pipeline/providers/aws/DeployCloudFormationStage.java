@@ -42,19 +42,17 @@ public class DeployCloudFormationStage implements StageDefinitionBuilder {
     if ((boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false)) {
       builder.withTask("deleteCloudFormationChangeSet", DeleteCloudFormationChangeSetTask.class);
       builder.withTask("monitorDeleteCloudFormationChangeSet", MonitorKatoTask.class);
-    }
 
-    if ((boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false)
-        && (boolean)
-            Optional.ofNullable(stage.getContext().get("executeChangeSet")).orElse(false)) {
-      builder
-          .withTask(
-              "evaluateCloudFormationChangeSetExecution",
-              EvaluateCloudFormationChangeSetExecutionTask.class)
-          .withTask("executeCloudFormationChangeSet", ExecuteCloudFormationChangeSetTask.class)
-          .withTask("monitorCloudFormation", MonitorKatoTask.class)
-          .withTask("forceRefreshCache", CloudFormationForceCacheRefreshTask.class)
-          .withTask("waitForCloudFormationCompletion", WaitForCloudFormationCompletionTask.class);
+      if ((boolean) Optional.ofNullable(stage.getContext().get("executeChangeSet")).orElse(false)) {
+        builder
+            .withTask(
+                "evaluateCloudFormationChangeSetExecution",
+                EvaluateCloudFormationChangeSetExecutionTask.class)
+            .withTask("executeCloudFormationChangeSet", ExecuteCloudFormationChangeSetTask.class)
+            .withTask("monitorCloudFormation", MonitorKatoTask.class)
+            .withTask("forceRefreshCache", CloudFormationForceCacheRefreshTask.class)
+            .withTask("waitForCloudFormationCompletion", WaitForCloudFormationCompletionTask.class);
+      }
     }
   }
 }
