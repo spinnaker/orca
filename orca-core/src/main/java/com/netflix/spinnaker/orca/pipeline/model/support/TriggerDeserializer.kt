@@ -138,7 +138,8 @@ internal class TriggerDeserializer :
           get("source").textValue(),
           get("project").textValue(),
           get("branch").textValue(),
-          get("slug").textValue()
+          get("slug").textValue(),
+          get("action")?.textValue() ?: "undefined"
         )
         looksLikeCustom() -> {
           // chooses the first custom deserializer to keep behavior consistent
@@ -157,7 +158,7 @@ internal class TriggerDeserializer :
           get("strategy")?.booleanValue() == true
         )
       }.apply {
-        other = mapValue(parser) ?: mutableMapOf()
+        other = mapValue(parser)
         resolvedExpectedArtifacts = get("resolvedExpectedArtifacts")?.listValue(parser) ?: mutableListOf()
       }
     }
@@ -185,11 +186,13 @@ internal class TriggerDeserializer :
   private fun JsonNode.looksLikeCustom() =
     customTriggerSuppliers.any { it.predicate.invoke(this) }
 
-  private fun <E> JsonNode.listValue(parser: JsonParser) =
-    parser.codec.treeToValue(this, List::class.java) as? List<E>
+  private inline fun <reified E> JsonNode.listValue(parser: JsonParser) =
+    this.map { parser.codec.treeToValue(it, E::class.java) }
 
-  private fun <K, V> JsonNode.mapValue(parser: JsonParser) =
-    parser.codec.treeToValue(this, Map::class.java) as? Map<K, V>
+  private inline fun <reified V> JsonNode.mapValue(parser: JsonParser): Map<String, V> =
+    this.fields().asSequence().fold(mapOf()) { acc, mutableEntry ->
+      acc + (mutableEntry.key to parser.codec.treeToValue(mutableEntry.value, V::class.java))
+    }
 
   private inline fun <reified T> JsonNode.parseValue(parser: JsonParser): T =
     parser.codec.treeToValue(this, T::class.java)

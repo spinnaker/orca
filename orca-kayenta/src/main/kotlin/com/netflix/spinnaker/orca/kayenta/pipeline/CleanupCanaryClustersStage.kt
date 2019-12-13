@@ -45,12 +45,16 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
           it.name = "Disable control cluster ${pair.control.cluster}"
           it.context.putAll(pair.control.toContext)
           it.context["remainingEnabledServerGroups"] = 0
+          // Even if disabling fails, move on to shrink below which will have another go at destroying the server group
+          it.continuePipelineOnFailure = true
         },
         graph.add {
           it.type = DisableClusterStage.STAGE_TYPE
           it.name = "Disable experiment cluster ${pair.experiment.cluster}"
           it.context.putAll(pair.experiment.toContext)
           it.context["remainingEnabledServerGroups"] = 0
+          // Even if disabling fails, move on to shrink below which will have another go at destroying the server group
+          it.continuePipelineOnFailure = true
         }
       )
     }
@@ -63,6 +67,9 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
     }
 
     disableStages.forEach {
+      // Continue the stages even if disabling one of the clusters fails - subsequent stages will delete them
+      // but we need to make sure they run
+      it.allowSiblingStagesToContinueOnFailure = true
       graph.connect(it, waitStage)
     }
 
@@ -74,6 +81,7 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
         it.context.putAll(pair.control.toContext)
         it.context["allowDeleteActive"] = true
         it.context["shrinkToSize"] = 0
+        it.continuePipelineOnFailure = true
       }
 
       // destroy experiment cluster
@@ -83,6 +91,7 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
         it.context.putAll(pair.experiment.toContext)
         it.context["allowDeleteActive"] = true
         it.context["shrinkToSize"] = 0
+        it.continuePipelineOnFailure = true
       }
     }
   }

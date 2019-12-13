@@ -110,7 +110,7 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
     def additionalRollbackContext = [:]
 
     def strategy = Strategy.fromStrategyKey(stageData.strategy)
-    if ((strategy == Strategy.ROLLING_RED_BLACK) || (strategy == Strategy.MONITORED)) {
+    if (strategy == Strategy.ROLLING_RED_BLACK) {
       // rollback is always supported regardless of where the failure occurred
       strategySupportsRollback = true
       additionalRollbackContext.enableAndDisableOnly = true
@@ -120,6 +120,11 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
       strategySupportsRollback = stage.tasks.any { it.status == ExecutionStatus.TERMINAL }
       additionalRollbackContext.disableOnly = true
     }
+
+    // When initiating a rollback automatically as part of deployment failure handling, only rollback to a server
+    // group that's enabled, as any disabled ones, even if newer, were likely manually marked so for being "bad"
+    // (e.g. as part of a manual rollback).
+    additionalRollbackContext.onlyEnabledServerGroups = true
 
     if (strategySupportsRollback) {
       graph.add {
@@ -156,7 +161,7 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
     super.onFailureStages(stage, graph)
   }
 
-  private static class StageData {
+  static class StageData {
     String application
     String account
     String credentials
@@ -186,7 +191,7 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
     }
   }
 
-  private static class Rollback {
+  static class Rollback {
     Boolean onFailure
     Boolean destroyLatest
   }

@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.ExecutionStatus.FAILED_CONTINUE
@@ -33,12 +34,14 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.exceptions.TimeoutException
 import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.failureStatus
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -70,12 +73,14 @@ class RunTaskHandler(
   override val queue: Queue,
   override val repository: ExecutionRepository,
   override val stageNavigator: StageNavigator,
+  override val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory,
   override val contextParameterProcessor: ContextParameterProcessor,
   private val tasks: Collection<Task>,
   private val clock: Clock,
   private val exceptionHandlers: List<ExceptionHandler>,
   private val taskExecutionInterceptors: List<TaskExecutionInterceptor>,
-  private val registry: Registry
+  private val registry: Registry,
+  private val dynamicConfigService: DynamicConfigService
 ) : OrcaMessageHandler<RunTask>, ExpressionAware, AuthenticationAware {
 
   override fun handle(message: RunTask) {
@@ -107,8 +112,13 @@ class RunTaskHandler(
               .increment()
             taskResult = task.onTimeout(stage)
 
-            if (!setOf(TERMINAL, FAILED_CONTINUE).contains(taskResult?.status)) {
-              log.error("Task ${task.javaClass.name} returned invalid status (${taskResult?.status} for onTimeout")
+            if (taskResult == null) {
+              // This means this task doesn't care to alter the timeout flow, just throw
+              throw e
+            }
+
+            if (!setOf(TERMINAL, FAILED_CONTINUE).contains(taskResult.status)) {
+              log.error("Task ${task.javaClass.name} returned invalid status (${taskResult.status}) for onTimeout")
               throw e
             }
           }
@@ -170,12 +180,6 @@ class RunTaskHandler(
     }
   }
 
-  private fun maxBackoff(): Long =
-    taskExecutionInterceptors.fold(Long.MAX_VALUE) {
-      backoff, interceptor ->
-      Math.min(backoff, interceptor.maxTaskBackoff())
-    }
-
   private fun trackResult(stage: Stage, thisInvocationStartTimeMs: Long, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
     val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
     val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
@@ -209,10 +213,58 @@ class RunTaskHandler(
   private fun Task.backoffPeriod(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: Stage): TemporalAmount =
     when (this) {
       is RetryableTask -> Duration.ofMillis(
-        Math.min(getDynamicBackoffPeriod(stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime
-          ?: 0))), maxBackoff())
+        retryableBackOffPeriod(taskModel, stage).coerceAtMost(taskExecutionInterceptors.maxBackoff())
       )
-      else -> Duration.ofSeconds(1)
+      else -> Duration.ofMillis(1000)
+    }
+
+  /**
+   * The max back off value always wins.  For example, given the following dynamic configs:
+   * `tasks.global.backOffPeriod = 5000`
+   * `tasks.aws.backOffPeriod = 80000`
+   * `tasks.aws.someAccount.backoffPeriod = 60000`
+   * `tasks.aws.backoffPeriod` will be used (given the criteria matches and unless the default dynamicBackOffPeriod is greater).
+   */
+  private fun RetryableTask.retryableBackOffPeriod(
+    taskModel: com.netflix.spinnaker.orca.pipeline.model.Task,
+    stage: Stage
+  ): Long {
+    val dynamicBackOffPeriod = getDynamicBackoffPeriod(
+      stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime ?: 0))
+    )
+    val backOffs: MutableList<Long> = mutableListOf(
+      dynamicBackOffPeriod,
+      dynamicConfigService.getConfig(
+        Long::class.java,
+        "tasks.global.backOffPeriod",
+        dynamicBackOffPeriod)
+    )
+
+    if (this is CloudProviderAware && hasCloudProvider(stage)) {
+      backOffs.add(
+        dynamicConfigService.getConfig(
+          Long::class.java,
+          "tasks.${getCloudProvider(stage)}.backOffPeriod",
+          dynamicBackOffPeriod
+        )
+      )
+      if (hasCredentials(stage)) {
+        backOffs.add(
+          dynamicConfigService.getConfig(
+            Long::class.java,
+            "tasks.${getCloudProvider(stage)}.${getCredentials(stage)}.backOffPeriod",
+            dynamicBackOffPeriod
+          )
+        )
+      }
+    }
+
+    return backOffs.max() ?: dynamicBackOffPeriod
+  }
+
+  private fun List<TaskExecutionInterceptor>.maxBackoff(): Long =
+    this.fold(Long.MAX_VALUE) { backoff, interceptor ->
+      backoff.coerceAtMost(interceptor.maxTaskBackoff())
     }
 
   private fun formatTimeout(timeout: Long): String {

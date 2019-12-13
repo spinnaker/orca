@@ -16,10 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks
 
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneId
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.Task
@@ -34,6 +32,10 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
+
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class MonitorKatoTaskSpec extends Specification {
@@ -42,8 +44,9 @@ class MonitorKatoTaskSpec extends Specification {
   def now = Instant.now()
 
   KatoService kato = Mock(KatoService)
+  DynamicConfigService dynamicConfigService = Mock()
 
-  @Subject task = new MonitorKatoTask(kato, new NoopRegistry(), Clock.fixed(now, ZoneId.of("UTC"))) {{
+  @Subject task = new MonitorKatoTask(kato, new NoopRegistry(), Clock.fixed(now, ZoneId.of("UTC")), dynamicConfigService) {{
     taskNotFoundTimeoutMs = TASK_NOT_FOUND_TIMEOUT
   }}
 
@@ -180,19 +183,26 @@ class MonitorKatoTaskSpec extends Specification {
     def stage = stage {
       type = "type"
       context = [
-        "kato.last.task.id": new TaskId(katoTask.id)
+        "kato.last.task.id": new TaskId(katoTask.id),
+        "kato.task.terminalRetryCount": 8
       ]
     }
 
     when:
-    task.execute(stage)
+    def result = task.execute(stage)
 
     then:
     notThrown(RetrofitError)
+    dynamicConfigService.isEnabled("tasks.monitor-kato-task.terminal-retries", _) >> true
     with(kato) {
       1 * lookupTask(katoTask.id, false) >> { Observable.just(katoTask) }
       1 * resumeTask(katoTask.id) >> { new TaskId(katoTask.id) }
     }
+
+    and:
+    result.status == ExecutionStatus.RUNNING
+    result.context["kato.task.lastStatus"] == ExecutionStatus.TERMINAL
+    result.context['kato.task.terminalRetryCount'] == 9
   }
 
   def "should get task from master when kato.task.skipReplica=true"() {

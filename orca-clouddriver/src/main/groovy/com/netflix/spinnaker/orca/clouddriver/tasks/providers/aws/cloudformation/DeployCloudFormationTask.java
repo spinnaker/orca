@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -108,6 +109,11 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
 
     if (templateBody instanceof Map && !((Map) templateBody).isEmpty()) {
       templateBody = new Yaml().dump(templateBody);
+      task.put("templateBody", templateBody);
+    } else if (templateBody instanceof List && !((List) templateBody).isEmpty()) {
+      templateBody =
+          ((List<?>) templateBody)
+              .stream().map(part -> new Yaml().dump(part)).collect(Collectors.joining("\n---\n"));
       task.put("templateBody", templateBody);
     }
 

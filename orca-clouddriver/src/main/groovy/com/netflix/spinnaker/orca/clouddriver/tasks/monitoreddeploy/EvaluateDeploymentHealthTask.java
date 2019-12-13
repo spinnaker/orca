@@ -19,10 +19,9 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition;
-import com.netflix.spinnaker.config.DeploymentMonitorServiceProvider;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.MonitoredDeployStageData;
+import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthRequest;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
@@ -44,9 +43,7 @@ public class EvaluateDeploymentHealthTask extends MonitoredDeployBaseTask {
 
   @Override
   public @Nonnull TaskResult executeInternal(
-      Stage stage,
-      MonitoredDeployStageData context,
-      DeploymentMonitorDefinition monitorDefinition) {
+      Stage stage, DeploymentMonitorDefinition monitorDefinition) {
     EvaluateHealthRequest request = new EvaluateHealthRequest(stage);
 
     log.info(

@@ -16,11 +16,18 @@
 
 package com.netflix.spinnaker.orca.pipeline.expressions
 
+import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import org.pf4j.PluginManager
 import spock.lang.Specification
 
 class PipelineExpressionEvaluatorSpec extends Specification {
+
+  PluginManager pluginManager = Mock() {
+    getExtensions(_) >> []
+  }
 
   def 'should set execution aware functions for the given function providers'() {
 
@@ -29,7 +36,10 @@ class PipelineExpressionEvaluatorSpec extends Specification {
     ExpressionFunctionProvider expressionFunctionProvider2 = buildExpressionFunctionProvider('jenkins')
 
     when: 'registered with pipeline evaluator'
-    PipelineExpressionEvaluator evaluator = new PipelineExpressionEvaluator([expressionFunctionProvider1, expressionFunctionProvider2])
+    PipelineExpressionEvaluator evaluator = new PipelineExpressionEvaluator(
+      [expressionFunctionProvider1, expressionFunctionProvider2],
+      pluginManager
+    )
 
     then:
     noExceptionThrown()
@@ -37,7 +47,27 @@ class PipelineExpressionEvaluatorSpec extends Specification {
     evaluator.getExecutionAwareFunctions().findAll { it.contains('functionWithExecutionContext') }.size() == 2
   }
 
-  private ExpressionFunctionProvider buildExpressionFunctionProvider(String providerName) {
+  def "should allow comparing ExecutionStatus to string"() {
+    given:
+    def source = [test: testCase]
+    PipelineExpressionEvaluator evaluator = new PipelineExpressionEvaluator([], pluginManager)
+
+    when:
+    ExpressionEvaluationSummary evaluationSummary = new ExpressionEvaluationSummary()
+    def result = evaluator.evaluate(source, [status: ExecutionStatus.TERMINAL], evaluationSummary, true)
+
+    then:
+    result.test == evalResult
+
+    where:
+    testCase                                    | evalResult
+    '${status.toString() == "TERMINAL"}'        | true
+    '${status == "TERMINAL"}'                   | true
+    '${status.toString() == "SUCCEEDED"}'       | false
+    '${status == "SUCCEEDED"}'                  | false
+  }
+
+  static ExpressionFunctionProvider buildExpressionFunctionProvider(String providerName) {
     new ExpressionFunctionProvider() {
       @Override
       String getNamespace() {
@@ -49,6 +79,7 @@ class PipelineExpressionEvaluatorSpec extends Specification {
         return new ExpressionFunctionProvider.Functions(
           new ExpressionFunctionProvider.FunctionDefinition(
             "functionWithExecutionContext-${providerName}",
+            "description for: functionWithExecutionContext-${providerName}",
             new ExpressionFunctionProvider.FunctionParameter(
               Execution.class,
               "execution",
@@ -57,6 +88,7 @@ class PipelineExpressionEvaluatorSpec extends Specification {
               String.class, "someArg", "A valid stage reference identifier")),
           new ExpressionFunctionProvider.FunctionDefinition(
             "functionWithNoExecutionContext-${providerName}",
+            "description for: functionWithNoExecutionContext-${providerName}",
             new ExpressionFunctionProvider.FunctionParameter(
               String.class, "someArg", "A valid stage reference identifier"))
         )

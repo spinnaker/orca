@@ -213,6 +213,8 @@ public class ExecutionLauncher {
             (config.get("source") == null)
                 ? null
                 : objectMapper.convertValue(config.get("source"), Execution.PipelineSource.class))
+        .withSpelEvaluator(getString(config, "spelEvaluator"))
+        .withTemplateVariables((Map<String, Object>) config.get("templateVariables"))
         .build();
   }
 
@@ -253,6 +255,7 @@ public class ExecutionLauncher {
         AuthenticationDetails.build().orElse(new AuthenticationDetails()));
     orchestration.setOrigin((String) config.getOrDefault("origin", "unknown"));
     orchestration.setStartTimeExpiry((Long) config.get("startTimeExpiry"));
+    orchestration.setSpelEvaluator(getString(config, "spelEvaluator"));
 
     return orchestration;
   }

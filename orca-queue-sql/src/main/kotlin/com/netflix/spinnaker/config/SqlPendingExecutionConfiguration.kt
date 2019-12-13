@@ -2,6 +2,7 @@ package com.netflix.spinnaker.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.sql.config.SqlProperties
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.sql.pending.SqlPendingExecutionService
 import com.netflix.spinnaker.q.Queue
@@ -26,17 +27,18 @@ class SqlPendingExecutionConfiguration {
     clock: Clock,
     registry: Registry,
     sqlProperties: SqlProperties,
+    orcaSqlProperties: OrcaSqlProperties,
     sqlPendingProperties: SqlPendingExecutionProperties
   ) =
     SqlPendingExecutionService(
-      sqlProperties.partitionName,
+      orcaSqlProperties.partitionName,
       jooq,
       queue,
       repository,
       mapper,
       clock,
       registry,
-      sqlProperties.transactionRetry,
+      sqlProperties.retries.transactions,
       sqlPendingProperties.maxDepth
     )
 }

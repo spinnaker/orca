@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.expressions;
 
+import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
@@ -23,13 +24,10 @@ import com.netflix.spinnaker.kork.expressions.ExpressionTransform;
 import com.netflix.spinnaker.kork.expressions.ExpressionsSupport;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.*;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import lombok.Getter;
+import org.pf4j.PluginManager;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.TemplateParserContext;
@@ -39,6 +37,75 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 public class PipelineExpressionEvaluator {
   public static final String SUMMARY = "expressionEvaluationSummary";
   public static final String ERROR = "Failed Expression Evaluation";
+
+  public enum SpelEvaluatorVersion {
+    V4(
+        "v4",
+        "Evaluates expressions at stage start; supports sequential evaluation of variables in Evaluate Variables stage",
+        true),
+    V3("v3", "Evaluates expressions as soon as possible, not recommended", true, false),
+    V2("v2", "DO NOT USE", true, true);
+
+    SpelEvaluatorVersion(String key, String description, boolean supported) {
+      this(key, description, supported, false);
+    }
+
+    SpelEvaluatorVersion(String key, String description, boolean supported, boolean deprecated) {
+      this.key = key;
+      this.description = description;
+      this.isSupported = supported;
+      this.isDeprecated = deprecated;
+    }
+
+    String key;
+    String description;
+    boolean isSupported;
+    boolean isDeprecated;
+
+    public boolean getIsSupported() {
+      return isSupported;
+    }
+
+    public boolean isDeprecated() {
+      return isDeprecated;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public static SpelEvaluatorVersion fromStringKey(String key) {
+      if (Strings.isNullOrEmpty(key)) {
+        return Default();
+      }
+
+      for (SpelEvaluatorVersion spelVersion : values()) {
+        if (key.equalsIgnoreCase(spelVersion.key)) {
+          return spelVersion;
+        }
+      }
+
+      return Default();
+    }
+
+    public static boolean isSupported(String version) {
+      for (SpelEvaluatorVersion spelEvaluatorVersion : values()) {
+        if (version.equals(spelEvaluatorVersion.key)) {
+          return spelEvaluatorVersion.isSupported;
+        }
+      }
+
+      return false;
+    }
+
+    public static SpelEvaluatorVersion Default() {
+      return V3;
+    }
+  }
 
   // No new items should go in to this list. We should use functions instead of vars going forward.
   private static final List<String> EXECUTION_AWARE_ALIASES =
@@ -66,8 +133,10 @@ public class PipelineExpressionEvaluator {
 
   @Getter private final Set<String> executionAwareFunctions = new HashSet<String>();
 
-  public PipelineExpressionEvaluator(List<ExpressionFunctionProvider> expressionFunctionProviders) {
-    this.support = new ExpressionsSupport(extraAllowedReturnTypes, expressionFunctionProviders);
+  public PipelineExpressionEvaluator(
+      List<ExpressionFunctionProvider> expressionFunctionProviders, PluginManager pluginManager) {
+    this.support =
+        new ExpressionsSupport(extraAllowedReturnTypes, expressionFunctionProviders, pluginManager);
     initExecutionAwareFunctions(expressionFunctionProviders);
   }
 

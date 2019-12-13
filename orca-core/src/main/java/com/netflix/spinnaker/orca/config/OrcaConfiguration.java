@@ -20,7 +20,9 @@ import static org.springframework.context.annotation.AnnotationConfigUtils.EVENT
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.config.PluginsAutoConfiguration;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.StageResolver;
 import com.netflix.spinnaker.orca.Task;
@@ -41,7 +43,11 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -64,7 +70,7 @@ import rx.schedulers.Schedulers;
 
 @Configuration
 @ComponentScan({
-  "com.netflix.spinnaker.orca.locks",
+  "com.netflix.spinnaker.orca.capabilities",
   "com.netflix.spinnaker.orca.pipeline",
   "com.netflix.spinnaker.orca.deprecation",
   "com.netflix.spinnaker.orca.pipeline.util",
@@ -72,7 +78,7 @@ import rx.schedulers.Schedulers;
   "com.netflix.spinnaker.orca.telemetry",
   "com.netflix.spinnaker.orca.notifications.scheduling"
 })
-@Import(PreprocessorConfiguration.class)
+@Import({PreprocessorConfiguration.class, PluginsAutoConfiguration.class})
 @EnableConfigurationProperties
 public class OrcaConfiguration {
   @Bean
@@ -132,8 +138,11 @@ public class OrcaConfiguration {
 
   @Bean
   public ContextParameterProcessor contextParameterProcessor(
-      List<ExpressionFunctionProvider> expressionFunctionProviders) {
-    return new ContextParameterProcessor(expressionFunctionProviders);
+      List<ExpressionFunctionProvider> expressionFunctionProviders,
+      PluginManager pluginManager,
+      DynamicConfigService dynamicConfigService) {
+    return new ContextParameterProcessor(
+        expressionFunctionProviders, pluginManager, dynamicConfigService);
   }
 
   @Bean
@@ -199,8 +208,8 @@ public class OrcaConfiguration {
   @Bean
   public StageResolver stageResolver(
       Collection<StageDefinitionBuilder> stageDefinitionBuilders,
-      Optional<Collection<SimpleStage>> simpleStages) {
-    Collection<SimpleStage> stages = simpleStages.orElseGet(ArrayList::new);
+      Optional<List<SimpleStage>> simpleStages) {
+    List<SimpleStage> stages = simpleStages.orElseGet(ArrayList::new);
     return new StageResolver(stageDefinitionBuilders, stages);
   }
 

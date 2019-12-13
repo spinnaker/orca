@@ -29,7 +29,9 @@ public class MonitoredDeployInternalStageData {
   private String region;
   private String cloudProvider;
   private int currentProgress;
-  private Map<String, Object> parameters;
+  private boolean hasDeploymentFailed;
+  private DeploymentMonitorStageConfig deploymentMonitor;
+  private int deployMonitorHttpRetryCount;
 
   public Map toContextMap() {
     return new ObjectMapper().convertValue(this, Map.class);

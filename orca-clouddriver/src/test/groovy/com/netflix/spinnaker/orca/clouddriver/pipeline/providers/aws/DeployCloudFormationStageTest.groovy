@@ -33,10 +33,13 @@ class DeployCloudFormationStageTest extends Specification {
     def stage = new Stage(new Execution(Execution.ExecutionType.PIPELINE, "testApp"), "cf", [:])
 
     when:
+    if (isChangeSet) {
+      stage.context.put("isChangeSet", true)
+    }
     cloudFormationStage.taskGraph(stage, builder)
 
     then:
-    builder.graph.size == 4
+    builder.graph.size == graphSize
     if (isChangeSet) {
       stage.context.put("isChangeSet", true)
     }
@@ -53,7 +56,6 @@ class DeployCloudFormationStageTest extends Specification {
     false       | false            || 4
     true        | false            || 6
     true        | true             || 11
-
   }
 
 }

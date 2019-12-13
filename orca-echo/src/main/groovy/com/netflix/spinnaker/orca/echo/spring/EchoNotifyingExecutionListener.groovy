@@ -54,6 +54,8 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
   void beforeExecution(Persister persister, Execution execution) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
+        processSpelInNotifications(execution)
+
         if (execution.type == PIPELINE) {
           addApplicationNotifications(execution)
         }
@@ -80,6 +82,8 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
                       boolean wasSuccessful) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
+        processSpelInNotifications(execution)
+
         if (execution.type == PIPELINE) {
           addApplicationNotifications(execution)
         }
@@ -97,6 +101,14 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
     } catch (Exception e) {
       log.error("Failed to send pipeline end event: ${execution?.id}", e)
     }
+  }
+
+  private void processSpelInNotifications(Execution execution) {
+    List<Map<String, Object>> spelProcessedNotifications = execution.notifications.collect({
+      contextParameterProcessor.process(it, contextParameterProcessor.buildExecutionContext(execution), true)
+    })
+
+    execution.notifications = spelProcessedNotifications
   }
 
   /**
@@ -120,9 +132,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
 
     if (notifications) {
       notifications.getPipelineNotifications().each { appNotification ->
-        Map executionMap = objectMapper.convertValue(pipeline, Map)
-
-        appNotification = contextParameterProcessor.process(appNotification, executionMap, true)
+        appNotification = contextParameterProcessor.process(appNotification, contextParameterProcessor.buildExecutionContext(pipeline), true)
 
         Map<String, Object> targetMatch = pipeline.notifications.find { pipelineNotification ->
           def addressMatches = appNotification.address && pipelineNotification.address && pipelineNotification.address == appNotification.address

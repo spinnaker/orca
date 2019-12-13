@@ -29,6 +29,7 @@ import spock.lang.Subject
 import spock.lang.Unroll
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -382,12 +383,72 @@ class ContextParameterProcessorSpec extends Specification {
 
   }
 
+  @Unroll
+  def "constructs execution context correctly"() {
+    when:
+    def result = contextParameterProcessor.buildExecutionContext(execution)
+
+    then:
+    result.size() == 2
+    result.execution == execution
+    result.trigger == OrcaObjectMapper.newInstance().convertValue(execution.trigger, Map)
+
+    where:
+    execution << [
+      pipeline {
+        stage {
+          type = "wait"
+          status = SUCCEEDED
+        }
+        trigger = new JenkinsTrigger("master", "job", 1, null)
+      },
+      pipeline {
+        stage {
+          type = "wait"
+          status = SUCCEEDED
+        }
+      }]
+  }
+
+  @Unroll
+  def "constructs stage context correctly"() {
+    when:
+    def testStage = execution.stageByRef("stage1")
+    def result = contextParameterProcessor.buildExecutionContext(testStage)
+
+    then:
+    result.size() == 3
+    result.execution == execution
+    result.trigger == OrcaObjectMapper.newInstance().convertValue(execution.trigger, Map)
+    result.waitTime == testStage.context.waitTime
+
+    where:
+    execution << [
+      pipeline {
+        stage {
+          refId = "stage1"
+          type = "wait"
+          status = SUCCEEDED
+          context = [waitTime: 10]
+        }
+        trigger = new JenkinsTrigger("master", "job", 1, null)
+      },
+      pipeline {
+        stage {
+          refId = "stage1"
+          type = "wait"
+          status = SUCCEEDED
+          context = [waitTime: 10]
+        }
+      }]
+  }
+
   def "is able to parse deployment details correctly from execution"() {
     given:
     def source = ['deployed': '${deployedServerGroups}']
 
     when:
-    def result = contextParameterProcessor.process(source, [execution: execution], true)
+    def result = contextParameterProcessor.process(source, contextParameterProcessor.buildExecutionContext(execution), true)
 
     then:
     result.deployed.size == 2
@@ -536,7 +597,7 @@ class ContextParameterProcessorSpec extends Specification {
     def source = ['deployed': '${#deployedServerGroups()}']
 
     when:
-    def result = contextParameterProcessor.process(source, [execution: execution], true)
+    def result = contextParameterProcessor.process(source, contextParameterProcessor.buildExecutionContext(execution), true)
 
     then:
     result.deployed.size == 2
@@ -547,7 +608,7 @@ class ContextParameterProcessorSpec extends Specification {
 
     when: 'specifying a stage name'
     source = ['deployed': '${#deployedServerGroups("Deploy in us-east-1")}']
-    result = contextParameterProcessor.process(source, [execution: execution], true)
+    result = contextParameterProcessor.process(source, contextParameterProcessor.buildExecutionContext(execution), true)
 
     then: 'should only consider the specified stage name/id'
     result.deployed.size == 1
@@ -783,7 +844,7 @@ class ContextParameterProcessorSpec extends Specification {
 
   }
 
-  def "can find a stage in an execution"() {
+  def "can find a stage in an execution and get its status"() {
     given:
     def pipe = pipeline {
       stage {
@@ -798,18 +859,34 @@ class ContextParameterProcessorSpec extends Specification {
         refId = "2"
         requisiteStageRefIds = ["1"]
         context.waitTime = 1
-        context.comments = '${#stage("Wait1")["status"].toString()}'
+        context.comments = 'succeeded: ${#stage("Wait1")["status"] == "SUCCEEDED"}'
+        context.succeeded = '${#stage("Wait1").hasSucceeded}'
+        context.failed = '${#stage("Wait1").hasFailed}'
       }
     }
 
-    def stage = pipe.stageByRef("2")
-    def ctx = contextParameterProcessor.buildExecutionContext(stage)
+    def stage1 = pipe.stageByRef("1")
+    stage1.setStatus(SUCCEEDED)
+
+    def stage2 = pipe.stageByRef("2")
+    def ctx = contextParameterProcessor.buildExecutionContext(stage2)
 
     when:
-    def result = contextParameterProcessor.process(stage.context, ctx, true)
+    def result = contextParameterProcessor.process(stage2.context, ctx, true)
 
     then:
-    result.comments == "NOT_STARTED"
+    result.comments == "succeeded: true"
+    result.succeeded == true
+    result.failed == false
+
+    when:
+    stage1.setStatus(TERMINAL)
+    result = contextParameterProcessor.process(stage2.context, ctx, true)
+
+    then:
+    result.comments == "succeeded: false"
+    result.succeeded == false
+    result.failed == true
   }
 
   def "can not toJson an execution with expressions in the context"() {
@@ -979,7 +1056,10 @@ class ContextParameterProcessorSpec extends Specification {
     when:
     def result = contextParameterProcessor.process(stage.context, ctx, true)
 
-    then:
+    then: "doesn't mutate the context"
+    ctx == contextParameterProcessor.buildExecutionContext(stage)
+
+    and: "looks up results from prior stages"
     result.manifests == [
       [
         kind: 'ReplicaSet',

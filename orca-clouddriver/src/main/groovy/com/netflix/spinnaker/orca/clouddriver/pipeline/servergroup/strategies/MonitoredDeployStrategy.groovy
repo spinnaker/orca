@@ -15,8 +15,8 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.netflix.spinnaker.config.DeploymentMonitorServiceProvider
+import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider
+import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.NotifyDeployCompletedStage
@@ -24,11 +24,13 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.NotifyDep
 import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.EvaluateDeploymentHealthStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DestroyServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.PinServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.DetermineTargetServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
+import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentMonitorStageConfig
 import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployInternalStageData
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
@@ -44,6 +46,7 @@ import java.util.concurrent.TimeUnit
 
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import static com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy.MONITORED
+import static java.util.concurrent.TimeUnit.MINUTES
 
 @Slf4j
 @Component
@@ -52,34 +55,18 @@ class MonitoredDeployStrategy implements Strategy {
   final String name = MONITORED.key
 
   @Autowired
-  DisableServerGroupStage disableServerGroupStage
-
-  @Autowired
-  ResizeServerGroupStage resizeServerGroupStage
-
-  @Autowired
-  WaitStage waitStage
-
-  @Autowired
-  NotifyDeployStartingStage notifyDeployStartingStage
-
-  @Autowired
-  NotifyDeployCompletedStage notifyDeployCompletedStage
-
-  @Autowired
-  EvaluateDeploymentHealthStage evaluateDeploymentHealthStage
-
-  @Autowired
-  DetermineTargetServerGroupStage determineTargetServerGroupStage
-
-  @Autowired
-  ScaleDownClusterStage scaleDownClusterStage
-
-  @Autowired
   DeploymentMonitorServiceProvider deploymentMonitorServiceProvider
 
   @Override
   List<Stage> composeBeforeStages(Stage stage) {
+    def stageData = stage.mapTo(MonitoredDeployStageData)
+
+    if (stageData.deploymentMonitor?.id) {
+      // Before we begin deploy, just validate that the given deploy monitor is registered
+      // Note: getDefinitionById will throw if no monitor is registered with the given ID
+      deploymentMonitorServiceProvider.getDefinitionById(stageData.deploymentMonitor.id)
+    }
+
     if (stage.context.useSourceCapacity) {
       stage.context.useSourceCapacity = false
     }
@@ -89,12 +76,14 @@ class MonitoredDeployStrategy implements Strategy {
     def savedCapacity = stage.context.savedCapacity ?: stage.context.capacity?.clone()
     stage.context.savedCapacity = savedCapacity
 
-    // FIXME: this clobbers the input capacity value (if any). Should find a better way to request a new asg of size 0
     stage.context.capacity = [
       min    : 0,
       max    : 0,
       desired: 0
     ]
+
+    // Don't allow old-school "rollback" key in the deploy stage, we handle our own rollback
+    stage.context.remove("rollback")
 
     return Collections.emptyList()
   }
@@ -122,11 +111,6 @@ class MonitoredDeployStrategy implements Strategy {
       deploySteps.add(100)
     }
 
-    if (stageData.deploymentMonitor.id) {
-      // Before we begin deploy, just validate that the given deploy monitor is registered
-      deploymentMonitorServiceProvider.getDefinitionById(stageData.deploymentMonitor.id)
-    }
-
     // Get source ASG from prior determineSourceServerGroupTask
     def source = null
 
@@ -138,16 +122,17 @@ class MonitoredDeployStrategy implements Strategy {
     }
 
     // TODO(mvulfson): I don't love this
-    def evalContext = stageData.getChildStageContext()
     MonitoredDeployInternalStageData internalStageData = new MonitoredDeployInternalStageData()
     internalStageData.account = baseContext.credentials
     internalStageData.cloudProvider = baseContext.cloudProvider
     internalStageData.region = baseContext.region
     internalStageData.oldServerGroup = source?.serverGroupName
-    internalStageData.newServerGroup = stageData.deployServerGroups[baseContext.region].first()
-    internalStageData.parameters = stageData.deploymentMonitor.parameters
+    internalStageData.deploymentMonitor = stageData.deploymentMonitor
 
-    evalContext += internalStageData.toContextMap()
+    CreateServerGroupStage.StageData createServerStageData = stage.mapTo(CreateServerGroupStage.StageData)
+    internalStageData.newServerGroup = createServerStageData.getServerGroup()
+
+    def evalContext = internalStageData.toContextMap()
 
     def findContext = baseContext + [
       //target        : TargetServerGroup.Params.Target.current_asg_dynamic,
@@ -157,7 +142,7 @@ class MonitoredDeployStrategy implements Strategy {
 
     stages << newStage(
       stage.execution,
-      determineTargetServerGroupStage.type,
+      DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE,
       "Determine Deployed Server Group",
       findContext,
       stage,
@@ -186,15 +171,16 @@ class MonitoredDeployStrategy implements Strategy {
       )
     }
 
-    if (stageData.deploymentMonitor.id) {
+    if (stageData.deploymentMonitor?.id) {
       def notifyDeployStartingStage = newStage(
         stage.execution,
-        this.notifyDeployStartingStage.type,
+        NotifyDeployStartingStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy starting",
         evalContext,
         stage,
         SyntheticStageOwner.STAGE_AFTER
       )
+      notifyDeployStartingStage.setAllowSiblingStagesToContinueOnFailure(true)
       stages << notifyDeployStartingStage
     } else {
       log.warn("No deployment monitor specified, all monitoring will be skipped")
@@ -208,6 +194,7 @@ class MonitoredDeployStrategy implements Strategy {
         scalePct                     : p,
         pinCapacity                  : p < 100,  // if p < 100, capacity should be pinned (min == max == desired)
         unpinMinimumCapacity         : p == 100, // if p == 100, min capacity should be restored to the original unpinned value from source
+        pinMinimumCapacity           : p < 100,  // pinMinimumCapacity should be false when unpinMinimumCapacity is true
         useNameAsLabel               : true,     // hint to deck that it should _not_ override the name
         targetHealthyDeployPercentage: stage.context.targetHealthyDeployPercentage
       ]
@@ -224,12 +211,12 @@ class MonitoredDeployStrategy implements Strategy {
         resizeContext.capacity = savedCapacity // will scale to a percentage of that static capacity
       }
 
-      log.info("Adding `Grow to $p% of Desired Size` stage with context $resizeContext [executionId=${stage.execution.id}]")
+      log.info("Adding `Grow ${internalStageData.newServerGroup} to $p% of Desired Size` stage with context $resizeContext [executionId=${stage.execution.id}]")
 
       def resizeStage = newStage(
         stage.execution,
-        resizeServerGroupStage.type,
-        "Grow to $p% of Desired Size",
+        ResizeServerGroupStage.TYPE,
+        "Grow ${internalStageData.newServerGroup} to $p% of Desired Size",
         resizeContext,
         stage,
         SyntheticStageOwner.STAGE_AFTER
@@ -240,14 +227,15 @@ class MonitoredDeployStrategy implements Strategy {
       if (source) {
         def disableContext = baseContext + [
           desiredPercentage: p,
-          serverGroupName  : source.serverGroupName
+          serverGroupName  : source.serverGroupName,
+          useNameAsLabel   : true,     // hint to deck that it should _not_ override the name
         ]
 
-        log.info("Adding `Disable $p% of Desired Size` stage with context $disableContext [executionId=${stage.execution.id}]")
+        log.info("Adding `Disable $p% of Traffic on ${source.serverGroupName}` stage with context $disableContext [executionId=${stage.execution.id}]")
 
         def disablePortionStage = newStage(
           stage.execution,
-          disableServerGroupStage.type,
+          DisableServerGroupStage.PIPELINE_CONFIG_TYPE,
           "Disable $p% of Traffic on ${source.serverGroupName}",
           disableContext,
           stage,
@@ -256,17 +244,20 @@ class MonitoredDeployStrategy implements Strategy {
         stages << disablePortionStage
       }
 
-      if (stageData.deploymentMonitor.id) {
+      if (stageData.deploymentMonitor?.id) {
         evalContext.currentProgress = p
 
-        stages << newStage(
+        Stage evaluateHealthStage = newStage(
           stage.execution,
-          evaluateDeploymentHealthStage.type,
+          EvaluateDeploymentHealthStage.PIPELINE_CONFIG_TYPE,
           "Evaluate health of deployed instances",
           evalContext,
           stage,
           SyntheticStageOwner.STAGE_AFTER
         )
+        evaluateHealthStage.setAllowSiblingStagesToContinueOnFailure(true)
+
+        stages << evaluateHealthStage
       }
     })
 
@@ -276,7 +267,7 @@ class MonitoredDeployStrategy implements Strategy {
         def waitContext = [waitTime: stageData?.getDelayBeforeScaleDown()]
         stages << newStage(
           stage.execution,
-          waitStage.type,
+          WaitStage.STAGE_TYPE,
           "Wait Before Scale Down",
           waitContext,
           stage,
@@ -287,16 +278,21 @@ class MonitoredDeployStrategy implements Strategy {
       def scaleDown = baseContext + [
         allowScaleDownActive         : false,
         remainingFullSizeServerGroups: 1,
-        preferLargerOverNewer        : false
+        preferLargerOverNewer        : false,
+
       ]
-      stages << newStage(
+      Stage scaleDownStage = newStage(
         stage.execution,
-        scaleDownClusterStage.type,
+        ScaleDownClusterStage.PIPELINE_CONFIG_TYPE,
         "scaleDown",
         scaleDown,
         stage,
         SyntheticStageOwner.STAGE_AFTER
       )
+
+      scaleDownStage.setAllowSiblingStagesToContinueOnFailure(true)
+      scaleDownStage.setContinuePipelineOnFailure(true)
+      stages << scaleDownStage
     }
 
     // Only unpin if we have a source ASG and we didn't scale it down
@@ -326,7 +322,7 @@ class MonitoredDeployStrategy implements Strategy {
         allowDeleteActive    : false,
         retainLargerOverNewer: false
       ]
-      stages << newStage(
+      Stage shrinkClusterStage = newStage(
         stage.execution,
         ShrinkClusterStage.STAGE_TYPE,
         "shrinkCluster",
@@ -334,17 +330,25 @@ class MonitoredDeployStrategy implements Strategy {
         stage,
         SyntheticStageOwner.STAGE_AFTER
       )
+
+      shrinkClusterStage.setAllowSiblingStagesToContinueOnFailure(true)
+      shrinkClusterStage.setContinuePipelineOnFailure(true)
+      stages << shrinkClusterStage
     }
 
-    if (stageData.deploymentMonitor.id) {
-      stages << newStage(
+    if (stageData.deploymentMonitor?.id) {
+      Stage notifyDeployCompletedStage = newStage(
         stage.execution,
-        notifyDeployCompletedStage.type,
+        NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy complete",
-        evalContext,
+        evalContext + [hasDeploymentFailed: false],
         stage,
         SyntheticStageOwner.STAGE_AFTER
       )
+
+      notifyDeployCompletedStage.setAllowSiblingStagesToContinueOnFailure(true)
+      notifyDeployCompletedStage.setContinuePipelineOnFailure(true)
+      stages << notifyDeployCompletedStage
     }
 
     return stages
@@ -365,6 +369,8 @@ class MonitoredDeployStrategy implements Strategy {
     if (source == null) {
       return stages
     }
+
+    stages.addAll(composeRollbackStages(parent))
 
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(parent)
 
@@ -396,23 +402,88 @@ class MonitoredDeployStrategy implements Strategy {
       SyntheticStageOwner.STAGE_AFTER
     )
 
-    MonitoredDeployStageData stageData = parent.mapTo(MonitoredDeployStageData.class)
-    if (stageData.deploymentMonitor.id) {
-      def evalContext = stageData.getChildStageContext()
+    MonitoredDeployStageData stageData = parent.mapTo(MonitoredDeployStageData)
+    if (stageData.deploymentMonitor?.id) {
+      CreateServerGroupStage.StageData createServerStageData = parent.mapTo(CreateServerGroupStage.StageData)
       MonitoredDeployInternalStageData internalStageData = new MonitoredDeployInternalStageData()
       internalStageData.account = baseContext.credentials
       internalStageData.cloudProvider = baseContext.cloudProvider
       internalStageData.region = baseContext.region
       internalStageData.oldServerGroup = source?.serverGroupName
-      internalStageData.newServerGroup = stageData.deployServerGroups[baseContext.region].first()
-      internalStageData.parameters = stageData.deploymentMonitor.parameters
+      internalStageData.newServerGroup = createServerStageData.getServerGroup()
+      internalStageData.deploymentMonitor = stageData.deploymentMonitor
+      internalStageData.hasDeploymentFailed = true;
 
-      evalContext += internalStageData.toContextMap()
+      Map evalContext = internalStageData.toContextMap()
       stages << newStage(
         parent.execution,
-        notifyDeployCompletedStage.type,
+        NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy complete",
         evalContext,
+        parent,
+        SyntheticStageOwner.STAGE_AFTER
+      )
+    }
+
+    return stages
+  }
+
+  List<Stage> composeRollbackStages(Stage parent) {
+    CreateServerGroupStage.StageData stageData = parent.mapTo(CreateServerGroupStage.StageData)
+    MonitoredDeployStageData monitoredDeployStageData = parent.mapTo(MonitoredDeployStageData)
+    String deployedServerGroupName = stageData.getServerGroup()
+
+    // Does the user want an automatic rollback?
+    if ((monitoredDeployStageData.failureActions.rollback != FailureActions.RollbackType.Automatic) &&
+      (monitoredDeployStageData.failureActions.rollback != FailureActions.RollbackType.Manual)) {
+      log.warn("Not performing automatic rollback on failed deploy of ${deployedServerGroupName ?: '<NO SERVER GROUP CREATED>'} because no rollback was requested by user in pipeline config")
+      return Collections.emptyList()
+    }
+
+    if (!deployedServerGroupName) {
+      // did not get far enough to create a new server group
+      log.warn("Not performing automatic rollback because the server group was not created")
+      return Collections.emptyList()
+    }
+
+    List<Stage> stages = new ArrayList<>()
+
+    stages << newStage(
+      parent.execution,
+      RollbackClusterStage.PIPELINE_CONFIG_TYPE,
+      "Rollback ${stageData.cluster}",
+      [
+        credentials              : stageData.credentials,
+        cloudProvider            : stageData.cloudProvider,
+        regions                  : [stageData.region],
+        serverGroup              : stageData.serverGroup,
+        stageTimeoutMs           : MINUTES.toMillis(30), // timebox a rollback to 30 minutes
+        additionalRollbackContext: [
+          enableAndDisableOnly: true,
+          // When initiating a rollback automatically as part of deployment failure handling, only rollback to a server
+          // group that's enabled, as any disabled ones, even if newer, were likely manually marked so for being "bad"
+          // (e.g. as part of a manual rollback).
+          onlyEnabledServerGroups: true
+        ]
+      ],
+      parent,
+      SyntheticStageOwner.STAGE_AFTER
+    )
+
+    if (monitoredDeployStageData.failureActions.destroyInstances) {
+      stages << newStage(
+        parent.execution,
+        DestroyServerGroupStage.PIPELINE_CONFIG_TYPE,
+        "Destroy ${stageData.serverGroup} due to rollback",
+        [
+          cloudProvider    : stageData.cloudProvider,
+          cloudProviderType: stageData.cloudProvider,
+          cluster          : stageData.cluster,
+          credentials      : stageData.credentials,
+          region           : stageData.region,
+          serverGroupName  : stageData.serverGroup,
+          stageTimeoutMs   : MINUTES.toMillis(5) // timebox a destroy to 5 minutes
+        ],
         parent,
         SyntheticStageOwner.STAGE_AFTER
       )
@@ -426,7 +497,9 @@ class MonitoredDeployStrategy implements Strategy {
     StageData.Source sourceServerGroup
 
     Stage parentCreateServerGroupStage = stage.directAncestors()
-      .find() { it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE || it.type == CloneServerGroupStage.PIPELINE_CONFIG_TYPE }
+      .find() {
+        it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE || it.type == CloneServerGroupStage.PIPELINE_CONFIG_TYPE
+      }
 
     StageData parentStageData = parentCreateServerGroupStage.mapTo(StageData)
     sourceServerGroup = parentStageData.source
@@ -461,11 +534,11 @@ class FailureActions {
 
   RollbackType rollback
   boolean destroyInstances
-}
 
-class DeploymentMonitor {
-  String id
-  Map<String, Object> parameters
+  FailureActions() {
+    rollback = RollbackType.None
+    destroyInstances = false
+  }
 }
 
 class MonitoredDeployStageData extends StageData {
@@ -473,20 +546,8 @@ class MonitoredDeployStageData extends StageData {
   Capacity targetCapacity
   int maxRemainingAsgs
   int scaleDownOldAsgs
-  FailureActions failureActions
-  DeploymentMonitor deploymentMonitor
-  int deployMonitorHttpRetryCount
-
-  Map getChildStageContext() {
-    def context = [
-            deploymentMonitor: deploymentMonitor,
-    ]
-
-    return context
-  }
-
-  @JsonProperty("deploy.server.groups")
-  Map<String, Set<String>> deployServerGroups = [:]
+  FailureActions failureActions = new FailureActions()
+  DeploymentMonitorStageConfig deploymentMonitor
 
   //Capacity originalCapacity
 }
