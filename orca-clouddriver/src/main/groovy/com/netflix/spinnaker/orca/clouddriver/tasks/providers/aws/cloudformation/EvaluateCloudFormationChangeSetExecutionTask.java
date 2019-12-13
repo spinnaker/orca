@@ -43,17 +43,17 @@ public class EvaluateCloudFormationChangeSetExecutionTask
     }
 
     Optional<Map> currentChangeSet = getCurrentChangeSet(stage);
-    Optional<Boolean> changeSetIsReplacement =
+    Optional<Boolean> changeSetContainsReplacement =
         Optional.ofNullable(getChangeSetIsReplacement(stage));
 
-    if (!changeSetIsReplacement.isPresent()) {
+    if (!changeSetContainsReplacement.isPresent()) {
       Boolean isReplacement = isAnyChangeSetReplacement(currentChangeSet.get());
       Map<String, Object> context = stage.getContext();
-      context.put("changeSetIsReplacement", isReplacement);
+      context.put("changeSetContainsReplacement", isReplacement);
       return TaskResult.builder(ExecutionStatus.RUNNING).context(context).build();
     }
 
-    if (!changeSetIsReplacement.orElse(false)) {
+    if (!changeSetContainsReplacement.orElse(false)) {
       return TaskResult.SUCCEEDED;
     }
 
@@ -83,7 +83,7 @@ public class EvaluateCloudFormationChangeSetExecutionTask
 
   private Boolean getChangeSetIsReplacement(Stage stage) {
     return (Boolean)
-        Optional.ofNullable(stage.getContext().get("changeSetIsReplacement")).orElse(null);
+        Optional.ofNullable(stage.getContext().get("changeSetContainsReplacement")).orElse(null);
   }
 
   private Optional<Map> getCurrentChangeSet(Stage stage) {
