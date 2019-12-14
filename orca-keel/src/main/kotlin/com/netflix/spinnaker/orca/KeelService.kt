@@ -16,22 +16,13 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.keel.model.UpsertIntentRequest
+import com.netflix.spinnaker.orca.keel.model.ResourceSpec
 import retrofit.client.Response
 import retrofit.http.Body
-import retrofit.http.DELETE
-import retrofit.http.GET
+import retrofit.http.Header
 import retrofit.http.POST
-import retrofit.http.Path
-import retrofit.http.Query
 
 interface KeelService {
-  @GET("/v1/intents/")
-  fun getIntents(): Response
-
-  @POST("/v1/intents/")
-  fun upsertIntents(@Body upsertIntentRequest: UpsertIntentRequest): Response
-
-  @DELETE("/v1/intents/{id}")
-  fun deleteIntents(@Path("id") id: String, @Query("status") status: String?): Response
+  @POST("/resources/")
+  fun publishSpec(@Body resourceSpec: ResourceSpec, @Header(value = "X-SPINNAKER-USER") user: String): Response
 }
