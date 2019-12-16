@@ -1,7 +1,7 @@
 # Keiko
 
-Keiko is a simple queueing library originally built for Spinnaker's Orca
-µservice.
+Keiko is a simple, at-least-once queueing library originally built for 
+Spinnaker's Orca µservice.
 
 ## Concepts
 
