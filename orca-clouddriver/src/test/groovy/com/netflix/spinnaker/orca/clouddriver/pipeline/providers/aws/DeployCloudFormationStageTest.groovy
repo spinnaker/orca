@@ -36,13 +36,6 @@ class DeployCloudFormationStageTest extends Specification {
     if (isChangeSet) {
       stage.context.put("isChangeSet", true)
     }
-    cloudFormationStage.taskGraph(stage, builder)
-
-    then:
-    builder.graph.size == graphSize
-    if (isChangeSet) {
-      stage.context.put("isChangeSet", true)
-    }
     if (executeChangeSet){
       stage.context.put("executeChangeSet", true)
     }
