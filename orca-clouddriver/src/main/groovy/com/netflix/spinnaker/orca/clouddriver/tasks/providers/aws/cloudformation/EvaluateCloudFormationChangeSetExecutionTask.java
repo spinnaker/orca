@@ -43,8 +43,7 @@ public class EvaluateCloudFormationChangeSetExecutionTask
     }
 
     Optional<Map> currentChangeSet = getCurrentChangeSet(stage);
-    Optional<Boolean> changeSetContainsReplacement =
-        Optional.ofNullable(getChangeSetIsReplacement(stage));
+    Optional<Boolean> changeSetContainsReplacement = getChangeSetIsReplacement(stage);
 
     if (!changeSetContainsReplacement.isPresent()) {
       Boolean isReplacement = isAnyChangeSetReplacement(currentChangeSet.get());
@@ -53,17 +52,17 @@ public class EvaluateCloudFormationChangeSetExecutionTask
       return TaskResult.builder(ExecutionStatus.RUNNING).context(context).build();
     }
 
-    if (!changeSetContainsReplacement.orElse(false)) {
+    if (changeSetContainsReplacement.orElse(false)) {
+      Optional<String> changeSetExecutionChoice = getChangeSetExecutionChoice(stage);
+      if (changeSetExecutionChoice.isPresent()) {
+        Map<String, Object> context = stage.getContext();
+        context.put("actionOnReplacement", changeSetExecutionChoice);
+        return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
+      }
+      return TaskResult.RUNNING;
+    } else {
       return TaskResult.SUCCEEDED;
     }
-
-    String changeSetExecutionChoice = getChangeSetExecutionChoice(stage);
-    if (changeSetExecutionChoice != "none") {
-      Map<String, Object> context = stage.getContext();
-      context.put("actionOnReplacement", changeSetExecutionChoice);
-      return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
-    }
-    return TaskResult.RUNNING;
   }
 
   @Override
@@ -76,14 +75,12 @@ public class EvaluateCloudFormationChangeSetExecutionTask
     return Integer.MAX_VALUE;
   }
 
-  private String getChangeSetExecutionChoice(Stage stage) {
-    return (String)
-        Optional.ofNullable(stage.getContext().get("changeSetExecutionChoice")).orElse("none");
+  private Optional getChangeSetExecutionChoice(Stage stage) {
+    return Optional.ofNullable(stage.getContext().get("changeSetExecutionChoice"));
   }
 
-  private Boolean getChangeSetIsReplacement(Stage stage) {
-    return (Boolean)
-        Optional.ofNullable(stage.getContext().get("changeSetContainsReplacement")).orElse(null);
+  private Optional getChangeSetIsReplacement(Stage stage) {
+    return Optional.ofNullable(stage.getContext().get("changeSetContainsReplacement"));
   }
 
   private Optional<Map> getCurrentChangeSet(Stage stage) {
