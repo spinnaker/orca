@@ -43,21 +43,25 @@ public class ExecuteCloudFormationChangeSetTask extends AbstractCloudProviderAwa
   @Autowired KatoService katoService;
 
   public static final String TASK_NAME = "executeCloudFormationChangeSet";
+  public static final String ACTION_ON_REPLACEMENT_SKIP = "skip";
+  public static final String ACTION_ON_REPLACEMENT_FAIL = "fail";
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull Stage stage) {
 
     String actionOnReplacement =
-        (String) Optional.ofNullable(stage.getContext().get("actionOnReplacement")).orElse("fail");
+        (String)
+            Optional.ofNullable(stage.getContext().get("actionOnReplacement"))
+                .orElse(ACTION_ON_REPLACEMENT_FAIL);
 
     Optional<Map> currentChangeSet = getCurrentChangeSet(stage);
     if (currentChangeSet.isPresent()) {
       if (isAnyChangeSetReplacement(currentChangeSet.get())) {
         switch (actionOnReplacement) {
-          case "skip":
+          case ACTION_ON_REPLACEMENT_SKIP:
             return TaskResult.SUCCEEDED;
-          case "fail":
+          case ACTION_ON_REPLACEMENT_FAIL:
             throw new RuntimeException("ChangeSet has a replacement, failing!");
         }
       }
