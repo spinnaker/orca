@@ -133,8 +133,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
     where:
       changeSetExecutionChoice || actionOnReplacement | TaskStatus
         null                   || null                | ExecutionStatus.RUNNING
-        "none"                 || null                | ExecutionStatus.RUNNING
-        "ask"                  || "ask"               | ExecutionStatus.SUCCEEDED
+        "ask"                  || Optional.of("ask")  | ExecutionStatus.SUCCEEDED
   }
 }
 
