@@ -24,8 +24,12 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
 
+/**
+ * Task that retrieves a Managed Delivery config manifest from source control via igor, then publishes it to keel.
+ * Generally this will be added to a single-stage pipeline with a git trigger to support GitOps flows.
+ */
 @Component
-class PublishDeliveryConfigStage() : StageDefinitionBuilder {
+class PublishDeliveryConfigStage : StageDefinitionBuilder {
   override fun taskGraph(stage: Stage, builder: TaskNode.Builder) {
     builder.withTask("publishDeliveryConfig", PublishDeliveryConfigTask::class)
   }
