@@ -5,5 +5,7 @@ dependencies {
   api "com.fasterxml.jackson.core:jackson-databind"
   api "org.springframework:spring-context"
 
+  implementation "com.netflix.spectator:spectator-api"
+
   testImplementation project(":keiko-test-common")
 }

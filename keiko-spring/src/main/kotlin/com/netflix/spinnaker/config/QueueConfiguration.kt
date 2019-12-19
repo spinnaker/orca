@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.config
 
+import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.q.Activator
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.EnabledActivator
@@ -24,10 +25,13 @@ import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.QueueExecutor
 import com.netflix.spinnaker.q.QueueProcessor
 import com.netflix.spinnaker.q.metrics.EventPublisher
-import com.netflix.spinnaker.q.metrics.QueueEvent
+import com.netflix.spinnaker.q.metrics.MonitorableQueue
+import com.netflix.spinnaker.q.metrics.NoopEventPublisher
+import com.netflix.spinnaker.q.metrics.QueueMetricsPublisher
+import com.netflix.spinnaker.q.metrics.QueueMonitor
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -95,11 +99,23 @@ class QueueConfiguration {
   fun enabledActivator(queueProperties: QueueProperties) = EnabledActivator(queueProperties.enabled)
 
   @Bean
-  fun queueEventPublisher(
-    applicationEventPublisher: ApplicationEventPublisher
-  ) = object : EventPublisher {
-    override fun publishEvent(event: QueueEvent) {
-      applicationEventPublisher.publishEvent(event)
-    }
-  }
+  @ConditionalOnProperty("queue.metrics.enabled", havingValue = "true", matchIfMissing = true)
+  fun queueMonitor(
+    registry: Registry,
+    clock: Clock,
+    queue: MonitorableQueue
+  ) = QueueMonitor(registry, clock, queue)
+
+  @Bean
+  @ConditionalOnProperty("queue.metrics.enabled", havingValue = "true", matchIfMissing = true)
+  fun queueMetricsPublisher(
+    registry: Registry,
+    clock: Clock
+  ): EventPublisher =
+    QueueMetricsPublisher(registry, clock)
+
+  @Bean
+  @ConditionalOnMissingBean(EventPublisher::class)
+  fun queueEventPublisher(): EventPublisher =
+    NoopEventPublisher()
 }

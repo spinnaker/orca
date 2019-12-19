@@ -24,7 +24,6 @@ import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.QueueState
 import com.netflix.spinnaker.q.metrics.RetryPolled
-import com.netflix.spinnaker.q.metrics.fire
 import com.netflix.spinnaker.q.migration.SerializationMigrator
 import de.huxhorn.sulky.ulid.ULID
 import io.github.resilience4j.retry.Retry
@@ -53,7 +52,6 @@ import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.Optional
 import java.util.concurrent.TimeUnit
-import kotlin.Exception
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random.Default.nextLong

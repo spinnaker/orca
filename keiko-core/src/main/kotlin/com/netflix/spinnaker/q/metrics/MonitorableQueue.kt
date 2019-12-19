@@ -21,7 +21,7 @@ import com.netflix.spinnaker.q.Queue
 
 /**
  * Optional interface [Queue] implementations may support in order to provide
- * hooks and publish events for analytics.
+ * hooks and publish metrics
  */
 interface MonitorableQueue : Queue {
 
@@ -37,13 +37,13 @@ interface MonitorableQueue : Queue {
    * [predicate].
    */
   fun containsMessage(predicate: (Message) -> Boolean): Boolean
-}
 
-/**
- * Convenience method to allow implementations to fire events.
- */
-fun MonitorableQueue.fire(event: QueueEvent) {
-  publisher.publishEvent(event)
+  /**
+   * Convenience method to allow implementations to fire events.
+   */
+  fun fire(event: QueueEvent) {
+    publisher.publishEvent(event)
+  }
 }
 
 data class QueueState(

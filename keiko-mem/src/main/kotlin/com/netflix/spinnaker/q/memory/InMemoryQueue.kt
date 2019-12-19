@@ -31,7 +31,6 @@ import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.QueueState
 import com.netflix.spinnaker.q.metrics.RetryPolled
-import com.netflix.spinnaker.q.metrics.fire
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import org.springframework.scheduling.annotation.Scheduled

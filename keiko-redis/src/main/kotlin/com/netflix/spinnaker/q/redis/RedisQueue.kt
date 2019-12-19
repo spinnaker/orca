@@ -38,7 +38,6 @@ import com.netflix.spinnaker.q.metrics.MessageRetried
 import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.QueueState
 import com.netflix.spinnaker.q.metrics.RetryPolled
-import com.netflix.spinnaker.q.metrics.fire
 import com.netflix.spinnaker.q.migration.SerializationMigrator
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
