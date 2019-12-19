@@ -23,12 +23,12 @@ import com.netflix.spinnaker.orca.KeelService
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.ScmService
+import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
-import retrofit.client.Response
 import java.util.concurrent.TimeUnit
 
 /**
@@ -39,13 +39,15 @@ import java.util.concurrent.TimeUnit
 class PublishDeliveryConfigTask
 constructor(
   private val keelService: KeelService,
-  private val objectMapper: ObjectMapper,
-  private val scmService: ScmService
+  private val scmService: ScmService,
+  private val objectMapper: ObjectMapper
 ) : RetryableTask {
   private val log = LoggerFactory.getLogger(javaClass)
 
   override fun execute(stage: Stage): TaskResult {
     val context = objectMapper.convertValue<PublishDeliveryConfigContext>(stage.context)
+    val trigger = stage.execution.trigger
+    val user = trigger.user ?: "anonymous"
 
     if (context.attempt > context.maxRetries!!) {
       val error = "Maximum number of retries exceeded (${context.maxRetries})"
@@ -53,17 +55,43 @@ constructor(
       return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to error)).build()
     }
 
+    // if the pipeline has a git trigger, infer what context we can from the trigger
+    if (trigger is GitTrigger) {
+      if (trigger.hash != null && context.ref == null) {
+        context.ref = trigger.hash
+        log.debug("Inferred context.ref from trigger: ${context.ref}")
+      } else if (trigger.branch != null && context.ref == null) {
+        context.ref = "refs/heads/${trigger.branch}"
+        log.debug("Inferred context.ref from trigger: ${context.ref}")
+      }
+      if (trigger.source != null && context.scmType == null) {
+        context.scmType = trigger.source
+        log.debug("Inferred context.scmType from trigger: ${context.scmType}")
+      }
+      if (trigger.project != null && context.project == null) {
+        context.project = trigger.project
+        log.debug("Inferred context.project from trigger: ${context.project}")
+      }
+      if (trigger.slug != null && context.repository == null) {
+        context.repository = trigger.slug
+        log.debug("Inferred context.repository from trigger: ${context.repository}")
+      }
+    } else {
+      if (context.ref == null) {
+        context.ref = "refs/heads/master"
+      }
+      if (context.scmType == null || context.project == null || context.repository == null) {
+        throw IllegalArgumentException("scmType, project and repository are required fields in the stage if there's no git trigger.")
+      }
+    }
+
     val manifestLocation = "${context.scmType}://${context.project}/${context.repository}/.netflix/${context.directory
-      ?: ""}/${context.manifest}"
+      ?: ""}/${context.manifest}@${context.ref}"
 
     return try {
       log.info("Retrieving keel manifest at $manifestLocation")
-      // FIXME: I *think* the ref parameter below should actually be based on info from the git trigger
       val deliveryConfig = scmService.getDeliveryConfigManifest(
         context.scmType, context.project, context.repository, context.directory, context.manifest, context.ref)
-
-      // TODO: confirm this is the right thing to do
-      val user = stage.execution.trigger.user ?: "anonymous"
 
       log.info("Publishing manifest ${context.manifest} to keel on behalf of $user")
       keelService.publishDeliveryConfig(deliveryConfig, user)
@@ -74,22 +102,23 @@ constructor(
         e.kind == RetrofitError.Kind.NETWORK -> {
           // retry if unable to connect
           log.error("network error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${e.friendlyMessage}")
-          TaskResult.builder(ExecutionStatus.RUNNING).context(context.incrementAttempt().toMap()).build()
+          buildRetry(context)
         }
         e.response?.status == HttpStatus.NOT_FOUND.value() -> {
           // just give up on 404
-          log.error("404 response from downstream service, giving up: ${e.friendlyMessage}")
-          TaskResult.builder(ExecutionStatus.TERMINAL).context(emptyMap<String, Any?>()).build()
+          val errorDetails = "404 response from downstream service, giving up: ${e.friendlyMessage}"
+          log.error(errorDetails)
+          buildError(errorDetails)
         }
         else -> {
           // retry on other status codes
           log.error("HTTP error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${e.friendlyMessage}")
-          TaskResult.builder(ExecutionStatus.RUNNING).context(context.incrementAttempt().toMap()).build()
+          buildRetry(context)
         }
       }
     } catch (e: Exception) {
       log.error("Unexpected exception while executing {}, aborting.", javaClass.simpleName, e)
-      TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to e.message)).build()
+      buildError(e.message)
     }
   }
 
@@ -97,25 +126,28 @@ constructor(
 
   override fun getTimeout() = TimeUnit.SECONDS.toMillis(180)
 
-  private fun Response.successful() =
-    this.status in 200..299
+  private fun buildRetry(context: PublishDeliveryConfigContext) =
+    TaskResult.builder(ExecutionStatus.RUNNING).context(context.incrementAttempt().toMap()).build()
+
+  private fun buildError(errorDetails: String?) =
+    TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to errorDetails)).build()
 
   val RetrofitError.friendlyMessage: String
     get() = "HTTP ${response.status} ${response.url}: ${cause?.message ?: message}"
 
   data class PublishDeliveryConfigContext(
-    val scmType: String,
-    val project: String,
-    val repository: String,
-    val directory: String?, // as in, the directory *under* whatever manifest base path is configured in igor (e.g. ".netflix")
-    val manifest: String? = "spinnaker.yml",
-    val ref: String? = "refs/heads/master",
-    val forceRepublish: Boolean? = false,
-    val maxRetries: Int? = MAX_RETRIES,
-    val attempt: Int = 1
+    var scmType: String? = null,
+    var project: String? = null,
+    var repository: String? = null,
+    var directory: String? = null, // as in, the directory *under* whatever manifest base path is configured in igor (e.g. ".netflix")
+    var manifest: String? = "spinnaker.yml",
+    var ref: String? = null,
+    var attempt: Int = 1,
+    val maxRetries: Int? = MAX_RETRIES
+//    val forceRepublish: Boolean? = false // TODO
   )
 
-  fun PublishDeliveryConfigContext.incrementAttempt() = this.copy(attempt = attempt + 1)
+  fun PublishDeliveryConfigContext.incrementAttempt() = this.also { attempt += 1 }
   fun PublishDeliveryConfigContext.toMap() = objectMapper.convertValue<Map<String, Any?>>(this)
 
   companion object {
