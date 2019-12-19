@@ -1,7 +1,7 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -16,9 +16,7 @@
 
 package com.netflix.spinnaker.orca.keel.model
 
-data class ResourceSpec(
-  val apiVersion: String,
-  val kind: String,
-  val metadata: Map<String, Any?>,
-  val spec: Map<String, Any?>
-)
+/**
+ * A Managed Delivery config file, modeled as a simple Map for now. Keel is expected to validate the format, not orca.
+ */
+typealias DeliveryConfig = Map<String, Any?>

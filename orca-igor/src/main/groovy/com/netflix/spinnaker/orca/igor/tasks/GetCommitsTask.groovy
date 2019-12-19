@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.igor.tasks
 
-import com.netflix.spinnaker.orca.igor.ScmService
-
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper

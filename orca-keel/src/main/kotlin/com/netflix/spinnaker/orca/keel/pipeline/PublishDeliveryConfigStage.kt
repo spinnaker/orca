@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.keel.pipeline
 
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.keel.task.PublishKeelSpecsTask
+import com.netflix.spinnaker.orca.keel.task.PublishDeliveryConfigTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.Stage
@@ -25,9 +25,9 @@ import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
 
 @Component
-class PublishKeelSpecsStage() : StageDefinitionBuilder {
+class PublishDeliveryConfigStage() : StageDefinitionBuilder {
   override fun taskGraph(stage: Stage, builder: TaskNode.Builder) {
-    builder.withTask("publishKeelSpecs", PublishKeelSpecsTask::class)
+    builder.withTask("publishDeliveryConfig", PublishDeliveryConfigTask::class)
   }
 
   private fun TaskNode.Builder.withTask(name: String, type: KClass<out Task>) =

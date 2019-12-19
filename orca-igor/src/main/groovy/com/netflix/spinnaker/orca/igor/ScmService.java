@@ -16,14 +16,9 @@ public class ScmService {
     return igorService.compareCommits(repoType, projectKey, repositorySlug, requestParams);
   }
 
-  public List<String> listKeelManifests(
-      String scmType, String projectKey, String repositorySlug, String at) {
-    return igorService.listKeelManifests(scmType, projectKey, repositorySlug, at);
-  }
-
-  public Map<String, Object> getKeelManifest(
-      String scmType, String projectKey, String repositorySlug, String manifest, String at) {
-    return igorService.getKeelManifest(scmType, projectKey, repositorySlug, manifest, at);
+  public Map<String, Object> getDeliveryConfigManifest(
+      String scmType, String project, String repository, String directory, String manifest, String ref) {
+    return igorService.getDeliveryConfigManifest(scmType, project, repository, directory, manifest, ref);
   }
 
   private final IgorService igorService;

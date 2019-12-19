@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.keel.model.ResourceSpec
+import com.netflix.spinnaker.orca.keel.model.DeliveryConfig
 import retrofit.client.Response
 import retrofit.http.Body
 import retrofit.http.Header
 import retrofit.http.POST
 
 interface KeelService {
-  @POST("/resources/")
-  fun publishSpec(@Body resourceSpec: ResourceSpec, @Header(value = "X-SPINNAKER-USER") user: String): Response
+  @POST("/delivery-configs/")
+  fun publishDeliveryConfig(@Body deliveryConfig: DeliveryConfig, @Header(value = "X-SPINNAKER-USER") user: String): Response
 }

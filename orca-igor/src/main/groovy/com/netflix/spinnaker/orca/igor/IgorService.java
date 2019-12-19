@@ -86,18 +86,12 @@ public interface IgorService {
       @Path("triggerId") String triggerId,
       @Body GoogleCloudBuildRepoSource repoSource);
 
-  @GET("/keel/{scmType}/{projectKey}/{repositorySlug}/manifests")
-  List<String> listKeelManifests(
-      @Path("scmType") String scmType,
-      @Path("projectKey") String projectKey,
-      @Path("repositorySlug") String repositorySlug,
-      @Query("at") String at);
-
-  @GET("/keel/{scmType}/{projectKey}/{repositorySlug}/manifests/{manifest}")
-  Map<String, Object> getKeelManifest(
-      @Path("scmType") String scmType,
-      @Path("projectKey") String projectKey,
-      @Path("repositorySlug") String repositorySlug,
-      @Path("manifest") String manifest,
-      @Query("at") String at);
+  @GET("/delivery-config/manifest")
+  Map<String, Object> getDeliveryConfigManifest(
+      @Query("scmType") String scmType,
+      @Query("project") String project,
+      @Query("repository") String repository,
+      @Query("directory") String directory,
+      @Query("manifest") String manifest,
+      @Query("ref") String ref);
 }
