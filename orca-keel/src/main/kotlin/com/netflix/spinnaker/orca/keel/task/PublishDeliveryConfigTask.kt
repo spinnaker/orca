@@ -145,7 +145,11 @@ constructor(
   override fun getTimeout() = TimeUnit.SECONDS.toMillis(180)
 
   val RetrofitError.friendlyMessage: String
-    get() = "HTTP ${response.status} ${response.url}: ${cause?.message ?: message}"
+    get() = if (kind == RetrofitError.Kind.HTTP) {
+      "HTTP ${response.status} ${response.url}: ${cause?.message ?: message}"
+    } else {
+      "$message: ${cause?.message ?: ""}"
+    }
 
   data class PublishDeliveryConfigContext(
     var scmType: String? = null,
