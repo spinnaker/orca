@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildRepoSource;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import retrofit.http.*;
 
 public interface IgorService {
@@ -91,7 +92,7 @@ public interface IgorService {
       @Query("scmType") String scmType,
       @Query("project") String project,
       @Query("repository") String repository,
-      @Query("directory") String directory,
-      @Query("manifest") String manifest,
-      @Query("ref") String ref);
+      @Query("directory") @Nullable String directory,
+      @Query("manifest") @Nullable String manifest,
+      @Query("ref") @Nullable String ref);
 }

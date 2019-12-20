@@ -57,6 +57,7 @@ constructor(
 
     // if the pipeline has a git trigger, infer what context we can from the trigger
     if (trigger is GitTrigger) {
+      // FIXME: GitTrigger props are non-null, but IIUC branch and hash would be mutually exclusive, so what to do here?
       if (trigger.hash != null && context.ref == null) {
         context.ref = trigger.hash
         log.debug("Inferred context.ref from trigger: ${context.ref}")
@@ -64,15 +65,15 @@ constructor(
         context.ref = "refs/heads/${trigger.branch}"
         log.debug("Inferred context.ref from trigger: ${context.ref}")
       }
-      if (trigger.source != null && context.scmType == null) {
+      if (context.scmType == null) {
         context.scmType = trigger.source
         log.debug("Inferred context.scmType from trigger: ${context.scmType}")
       }
-      if (trigger.project != null && context.project == null) {
+      if (context.project == null) {
         context.project = trigger.project
         log.debug("Inferred context.project from trigger: ${context.project}")
       }
-      if (trigger.slug != null && context.repository == null) {
+      if (context.repository == null) {
         context.repository = trigger.slug
         log.debug("Inferred context.repository from trigger: ${context.repository}")
       }

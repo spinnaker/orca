@@ -2,6 +2,7 @@ package com.netflix.spinnaker.orca.igor;
 
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,9 +21,9 @@ public class ScmService {
       String scmType,
       String project,
       String repository,
-      String directory,
-      String manifest,
-      String ref) {
+      @Nullable String directory,
+      @Nullable String manifest,
+      @Nullable String ref) {
     return igorService.getDeliveryConfigManifest(
         scmType, project, repository, directory, manifest, ref);
   }
