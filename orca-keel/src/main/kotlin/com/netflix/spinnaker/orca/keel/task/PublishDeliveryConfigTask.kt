@@ -86,15 +86,15 @@ constructor(
       }
     }
 
-    val manifestLocation = "${context.scmType}://${context.project}/${context.repository}/.netflix/${context.directory
+    val manifestLocation = "${context.scmType}://${context.project}/${context.repository}/<manifestBaseDir>/${context.directory
       ?: ""}/${context.manifest}@${context.ref}"
 
     return try {
-      log.info("Retrieving keel manifest at $manifestLocation")
+      log.debug("Retrieving keel manifest at $manifestLocation")
       val deliveryConfig = scmService.getDeliveryConfigManifest(
         context.scmType, context.project, context.repository, context.directory, context.manifest, context.ref)
 
-      log.info("Publishing manifest ${context.manifest} to keel on behalf of $user")
+      log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
       keelService.publishDeliveryConfig(deliveryConfig, user)
 
       TaskResult.builder(ExecutionStatus.SUCCEEDED).context(emptyMap<String, Any?>()).build()
@@ -145,7 +145,6 @@ constructor(
     var ref: String? = null,
     var attempt: Int = 1,
     val maxRetries: Int? = MAX_RETRIES
-//    val forceRepublish: Boolean? = false // TODO
   )
 
   fun PublishDeliveryConfigContext.incrementAttempt() = this.also { attempt += 1 }
