@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.task.PublishDeliveryConfigTask
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import dev.minutest.junit.JUnit5Minutests
@@ -35,7 +36,9 @@ import io.mockk.verify
 import retrofit.RetrofitError
 import retrofit.client.Response
 import strikt.api.expectThat
+import strikt.api.expectThrows
 import strikt.assertions.isEqualTo
+import java.lang.IllegalArgumentException
 
 internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
   data class ManifestLocation(
@@ -48,23 +51,20 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
   )
 
   data class Fixture(
-    val trigger: Trigger,
-    val context: Map<String, Any?>
+    val trigger: Trigger
   ) {
-
     companion object {
       val objectMapper = ObjectMapper()
-      val manifestLocation = ManifestLocation(
-        scmType = "stash",
-        project = "SPKR",
-        repository = "keeldemo",
-        directory = ".",
-        manifest = "spinnaker.yml",
-        ref = "refs/heads/master"
-      )
     }
 
-    val manifestLocation = Companion.manifestLocation
+    val manifestLocation = ManifestLocation(
+      scmType = "stash",
+      project = "SPKR",
+      repository = "keeldemo",
+      directory = ".",
+      manifest = "spinnaker.yml",
+      ref = "refs/heads/master"
+    )
 
     val manifest = mapOf(
       "name" to "keeldemo-manifest",
@@ -75,14 +75,7 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
 
     val scmService: ScmService = mockk(relaxUnitFun = true) {
       every {
-        getDeliveryConfigManifest(
-          manifestLocation.scmType,
-          manifestLocation.project,
-          manifestLocation.repository,
-          manifestLocation.directory,
-          manifestLocation.manifest,
-          manifestLocation.ref
-        )
+        getDeliveryConfigManifest(any(), any(), any(), any(), any(), any())
       } returns manifest
     }
 
@@ -94,32 +87,29 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
 
     val subject = PublishDeliveryConfigTask(keelService, scmService, objectMapper)
 
-    fun execute(additionalContext: Map<String, Any?> = emptyMap()) =
+    fun execute(context: Map<String, Any?>) =
       subject.execute(
         Stage(
           Execution(Execution.ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
           Execution.ExecutionType.PIPELINE.toString(),
-          context + additionalContext
+          context
         )
       )
   }
 
-  fun ManifestLocation.toMap() = Fixture.objectMapper.convertValue<Map<String, Any?>>(this)
+  private fun ManifestLocation.toMap() =
+    Fixture.objectMapper.convertValue<Map<String, Any?>>(this).toMutableMap()
 
   fun tests() = rootContext<Fixture> {
-    context("with manual trigger and proper stage context") {
+    context("basic behavior") {
       fixture {
         Fixture(
-          DefaultTrigger("manual"),
-          Fixture.manifestLocation.toMap()
+          DefaultTrigger("manual")
         )
       }
-
-      test("retrieves specified manifest from SCM and publishes it to keel") {
-        val result = execute()
-
+      test("successfully retrieves manifest from SCM and publishes to keel") {
+        val result = execute(manifestLocation.toMap())
         expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
-
         verify(exactly = 1) {
           scmService.getDeliveryConfigManifest(
             manifestLocation.scmType,
@@ -130,13 +120,127 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
             manifestLocation.ref
           )
         }
-
         verify(exactly = 1) {
           keelService.publishDeliveryConfig(manifest, trigger.user!!)
         }
       }
+    }
 
-      context("manifest not found") {
+    context("with manual trigger") {
+      fixture {
+        Fixture(
+          DefaultTrigger("manual")
+        )
+      }
+
+      context("with required stage context missing") {
+        test("throws an exception") {
+          expectThrows<IllegalArgumentException> {
+            execute(manifestLocation.toMap().also { it.remove("scmType") })
+          }
+        }
+      }
+
+      context("with optional stage context missing") {
+        test("uses defaults to fill in the blanks") {
+          val result = execute(manifestLocation.toMap().also {
+            it.remove("directory")
+            it.remove("manifest")
+            it.remove("ref")
+          })
+          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          verify(exactly = 1) {
+            scmService.getDeliveryConfigManifest(
+              manifestLocation.scmType,
+              manifestLocation.project,
+              manifestLocation.repository,
+              null,
+              "spinnaker.yml",
+              "refs/heads/master"
+            )
+          }
+        }
+      }
+    }
+
+    context("with git trigger") {
+      fixture {
+        Fixture(
+          GitTrigger(
+            source = "stash",
+            project = "other",
+            slug = "other",
+            branch = "master",
+            hash = "bea43e7033e19327183416f23fe2ee1b64c25f4a",
+            action = "n/a"
+          )
+        )
+      }
+
+      context("with fully-populated stage context") {
+        test("disregards trigger and uses context information to retrieve manifest from SCM") {
+          val result = execute(manifestLocation.toMap())
+          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          verify(exactly = 1) {
+            scmService.getDeliveryConfigManifest(
+              manifestLocation.scmType,
+              manifestLocation.project,
+              manifestLocation.repository,
+              manifestLocation.directory,
+              manifestLocation.manifest,
+              manifestLocation.ref
+            )
+          }
+        }
+      }
+
+      context("with some missing information in stage context") {
+        test("uses trigger information to fill in the blanks") {
+          val result = execute(manifestLocation.toMap().also {
+            it.remove("project")
+            it.remove("repository")
+            it.remove("ref")
+          })
+          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          verify(exactly = 1) {
+            scmService.getDeliveryConfigManifest(
+              manifestLocation.scmType,
+              (trigger as GitTrigger).project,
+              trigger.slug,
+              manifestLocation.directory,
+              manifestLocation.manifest,
+              trigger.hash
+            )
+          }
+        }
+      }
+
+      context("with no information in stage context") {
+        test("uses trigger information and defaults to fill in the blanks") {
+          val result = execute(mutableMapOf())
+          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          verify(exactly = 1) {
+            scmService.getDeliveryConfigManifest(
+              (trigger as GitTrigger).source,
+              trigger.project,
+              trigger.slug,
+              null,
+              "spinnaker.yml",
+              trigger.hash
+            )
+          }
+        }
+      }
+    }
+
+    context("additional error handling behavior") {
+      fixture {
+        Fixture(
+          DefaultTrigger("manual")
+        )
+      }
+
+      context("manifest is not found") {
         modifyFixture {
           with(scmService) {
             every {
@@ -155,7 +259,7 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
         }
 
         test("task fails if manifest not found") {
-          val result = execute()
+          val result = execute(manifestLocation.toMap())
           expectThat(result.status).isEqualTo(ExecutionStatus.TERMINAL)
         }
       }
@@ -181,14 +285,14 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
         test("task retries if max retries not reached") {
           var result: TaskResult
           for (attempt in 1..PublishDeliveryConfigTask.MAX_RETRIES) {
-            result = execute(mapOf("attempt" to attempt))
+            result = execute(manifestLocation.toMap().also { it["attempt"] = attempt })
             expectThat(result.status).isEqualTo(ExecutionStatus.RUNNING)
             expectThat(result.context["attempt"]).isEqualTo(attempt + 1)
           }
         }
 
         test("task fails if max retries reached") {
-          val result = execute(mapOf("attempt" to PublishDeliveryConfigTask.MAX_RETRIES + 1))
+          val result = execute(manifestLocation.toMap().also { it["attempt"] = PublishDeliveryConfigTask.MAX_RETRIES + 1 })
           expectThat(result.status).isEqualTo(ExecutionStatus.TERMINAL)
         }
       }
