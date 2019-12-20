@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -55,8 +56,28 @@ constructor(
       return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to error)).build()
     }
 
-    // if the pipeline has a git trigger, infer what context we can from the trigger
+    val manifestLocation = processDeliveryConfigLocation(trigger, context)
+
+    return try {
+      log.debug("Retrieving keel manifest at $manifestLocation")
+      val deliveryConfig = scmService.getDeliveryConfigManifest(
+        context.scmType, context.project, context.repository, context.directory, context.manifest, context.ref)
+
+      log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
+      keelService.publishDeliveryConfig(deliveryConfig, user)
+
+      TaskResult.builder(ExecutionStatus.SUCCEEDED).context(emptyMap<String, Any?>()).build()
+    } catch (e: RetrofitError) {
+      handleFailure(e, context)
+    } catch (e: Exception) {
+      log.error("Unexpected exception while executing {}, aborting.", javaClass.simpleName, e)
+      buildError(e.message)
+    }
+  }
+
+  private fun processDeliveryConfigLocation(trigger: Trigger, context: PublishDeliveryConfigContext): String {
     if (trigger is GitTrigger) {
+      // if the pipeline has a git trigger, infer what context we can from the trigger
       // FIXME: GitTrigger props are non-null, but IIUC branch and hash would be mutually exclusive, so what to do here?
       if (trigger.hash != null && context.ref == null) {
         context.ref = trigger.hash
@@ -78,6 +99,7 @@ constructor(
         log.debug("Inferred context.repository from trigger: ${context.repository}")
       }
     } else {
+      // otherwise, apply defaults where possible, or fail
       if (context.ref == null) {
         context.ref = "refs/heads/master"
       }
@@ -86,24 +108,9 @@ constructor(
       }
     }
 
-    val manifestLocation = "${context.scmType}://${context.project}/${context.repository}/<manifestBaseDir>/${context.directory
+    // this is just a friend URI-like string to refer to the delivery config location in logs
+    return "${context.scmType}://${context.project}/${context.repository}/<manifestBaseDir>/${context.directory
       ?: ""}/${context.manifest}@${context.ref}"
-
-    return try {
-      log.debug("Retrieving keel manifest at $manifestLocation")
-      val deliveryConfig = scmService.getDeliveryConfigManifest(
-        context.scmType, context.project, context.repository, context.directory, context.manifest, context.ref)
-
-      log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
-      keelService.publishDeliveryConfig(deliveryConfig, user)
-
-      TaskResult.builder(ExecutionStatus.SUCCEEDED).context(emptyMap<String, Any?>()).build()
-    } catch (e: RetrofitError) {
-      handleFailure(e, context)
-    } catch (e: Exception) {
-      log.error("Unexpected exception while executing {}, aborting.", javaClass.simpleName, e)
-      buildError(e.message)
-    }
   }
 
   private fun handleFailure(e: RetrofitError, context: PublishDeliveryConfigContext): TaskResult {
