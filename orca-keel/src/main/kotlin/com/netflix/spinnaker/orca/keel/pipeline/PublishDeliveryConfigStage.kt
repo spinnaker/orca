@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
 
 /**
- * Task that retrieves a Managed Delivery config manifest from source control via igor, then publishes it to keel.
+ * Pipeline stage that retrieves a Managed Delivery config manifest from source control via igor, then publishes it to keel.
  * Generally this will be added to a single-stage pipeline with a git trigger to support GitOps flows.
  */
 @Component

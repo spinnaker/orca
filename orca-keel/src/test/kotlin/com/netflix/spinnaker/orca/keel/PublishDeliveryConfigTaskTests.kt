@@ -42,9 +42,9 @@ import java.lang.IllegalArgumentException
 
 internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
   data class ManifestLocation(
-    val scmType: String,
-    val project: String,
-    val repository: String,
+    val repoType: String,
+    val projectKey: String,
+    val repositorySlug: String,
     val directory: String,
     val manifest: String,
     val ref: String
@@ -58,9 +58,9 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
     }
 
     val manifestLocation = ManifestLocation(
-      scmType = "stash",
-      project = "SPKR",
-      repository = "keeldemo",
+      repoType = "stash",
+      projectKey = "SPKR",
+      repositorySlug = "keeldemo",
       directory = ".",
       manifest = "spinnaker.yml",
       ref = "refs/heads/master"
@@ -112,9 +112,9 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
         expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
         verify(exactly = 1) {
           scmService.getDeliveryConfigManifest(
-            manifestLocation.scmType,
-            manifestLocation.project,
-            manifestLocation.repository,
+            manifestLocation.repoType,
+            manifestLocation.projectKey,
+            manifestLocation.repositorySlug,
             manifestLocation.directory,
             manifestLocation.manifest,
             manifestLocation.ref
@@ -136,7 +136,7 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
       context("with required stage context missing") {
         test("throws an exception") {
           expectThrows<IllegalArgumentException> {
-            execute(manifestLocation.toMap().also { it.remove("scmType") })
+            execute(manifestLocation.toMap().also { it.remove("repoType") })
           }
         }
       }
@@ -151,9 +151,9 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
           expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
           verify(exactly = 1) {
             scmService.getDeliveryConfigManifest(
-              manifestLocation.scmType,
-              manifestLocation.project,
-              manifestLocation.repository,
+              manifestLocation.repoType,
+              manifestLocation.projectKey,
+              manifestLocation.repositorySlug,
               null,
               "spinnaker.yml",
               "refs/heads/master"
@@ -183,9 +183,9 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
           expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
           verify(exactly = 1) {
             scmService.getDeliveryConfigManifest(
-              manifestLocation.scmType,
-              manifestLocation.project,
-              manifestLocation.repository,
+              manifestLocation.repoType,
+              manifestLocation.projectKey,
+              manifestLocation.repositorySlug,
               manifestLocation.directory,
               manifestLocation.manifest,
               manifestLocation.ref
@@ -197,14 +197,14 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
       context("with some missing information in stage context") {
         test("uses trigger information to fill in the blanks") {
           val result = execute(manifestLocation.toMap().also {
-            it.remove("project")
-            it.remove("repository")
+            it.remove("projectKey")
+            it.remove("repositorySlug")
             it.remove("ref")
           })
           expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
           verify(exactly = 1) {
             scmService.getDeliveryConfigManifest(
-              manifestLocation.scmType,
+              manifestLocation.repoType,
               (trigger as GitTrigger).project,
               trigger.slug,
               manifestLocation.directory,
@@ -245,9 +245,9 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
           with(scmService) {
             every {
               getDeliveryConfigManifest(
-                manifestLocation.scmType,
-                manifestLocation.project,
-                manifestLocation.repository,
+                manifestLocation.repoType,
+                manifestLocation.projectKey,
+                manifestLocation.repositorySlug,
                 manifestLocation.directory,
                 manifestLocation.manifest,
                 manifestLocation.ref
@@ -269,9 +269,9 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
           with(scmService) {
             every {
               getDeliveryConfigManifest(
-                manifestLocation.scmType,
-                manifestLocation.project,
-                manifestLocation.repository,
+                manifestLocation.repoType,
+                manifestLocation.projectKey,
+                manifestLocation.repositorySlug,
                 manifestLocation.directory,
                 manifestLocation.manifest,
                 manifestLocation.ref
@@ -284,7 +284,7 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
 
         test("task retries if max retries not reached") {
           var result: TaskResult
-          for (attempt in 1..PublishDeliveryConfigTask.MAX_RETRIES) {
+          for (attempt in 1 until PublishDeliveryConfigTask.MAX_RETRIES) {
             result = execute(manifestLocation.toMap().also { it["attempt"] = attempt })
             expectThat(result.status).isEqualTo(ExecutionStatus.RUNNING)
             expectThat(result.context["attempt"]).isEqualTo(attempt + 1)
@@ -292,7 +292,7 @@ internal class PublishDeliveryConfigTaskTests : JUnit5Minutests {
         }
 
         test("task fails if max retries reached") {
-          val result = execute(manifestLocation.toMap().also { it["attempt"] = PublishDeliveryConfigTask.MAX_RETRIES + 1 })
+          val result = execute(manifestLocation.toMap().also { it["attempt"] = PublishDeliveryConfigTask.MAX_RETRIES })
           expectThat(result.status).isEqualTo(ExecutionStatus.TERMINAL)
         }
       }

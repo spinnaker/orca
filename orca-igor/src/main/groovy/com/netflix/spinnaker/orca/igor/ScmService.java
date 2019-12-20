@@ -18,14 +18,14 @@ public class ScmService {
   }
 
   public Map<String, Object> getDeliveryConfigManifest(
-      String scmType,
-      String project,
-      String repository,
+      String repoType,
+      String projectKey,
+      String repositorySlug,
       @Nullable String directory,
       @Nullable String manifest,
       @Nullable String ref) {
     return igorService.getDeliveryConfigManifest(
-        scmType, project, repository, directory, manifest, ref);
+        repoType, projectKey, repositorySlug, directory, manifest, ref);
   }
 
   private final IgorService igorService;

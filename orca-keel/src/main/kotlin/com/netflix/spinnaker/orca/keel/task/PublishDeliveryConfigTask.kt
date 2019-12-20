@@ -49,19 +49,12 @@ constructor(
     val context = objectMapper.convertValue<PublishDeliveryConfigContext>(stage.context)
     val trigger = stage.execution.trigger
     val user = trigger.user ?: "anonymous"
-
-    if (context.attempt > context.maxRetries!!) {
-      val error = "Maximum number of retries exceeded (${context.maxRetries})"
-      log.error("$error. Aborting.")
-      return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to error)).build()
-    }
-
     val manifestLocation = processDeliveryConfigLocation(trigger, context)
 
     return try {
       log.debug("Retrieving keel manifest at $manifestLocation")
       val deliveryConfig = scmService.getDeliveryConfigManifest(
-        context.scmType, context.project, context.repository, context.directory, context.manifest, context.ref)
+        context.repoType, context.projectKey, context.repositorySlug, context.directory, context.manifest, context.ref)
 
       log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
       keelService.publishDeliveryConfig(deliveryConfig, user)
@@ -86,30 +79,30 @@ constructor(
         context.ref = "refs/heads/${trigger.branch}"
         log.debug("Inferred context.ref from trigger: ${context.ref}")
       }
-      if (context.scmType == null) {
-        context.scmType = trigger.source
-        log.debug("Inferred context.scmType from trigger: ${context.scmType}")
+      if (context.repoType == null) {
+        context.repoType = trigger.source
+        log.debug("Inferred context.scmType from trigger: ${context.repoType}")
       }
-      if (context.project == null) {
-        context.project = trigger.project
-        log.debug("Inferred context.project from trigger: ${context.project}")
+      if (context.projectKey == null) {
+        context.projectKey = trigger.project
+        log.debug("Inferred context.project from trigger: ${context.projectKey}")
       }
-      if (context.repository == null) {
-        context.repository = trigger.slug
-        log.debug("Inferred context.repository from trigger: ${context.repository}")
+      if (context.repositorySlug == null) {
+        context.repositorySlug = trigger.slug
+        log.debug("Inferred context.repository from trigger: ${context.repositorySlug}")
       }
     } else {
       // otherwise, apply defaults where possible, or fail
       if (context.ref == null) {
         context.ref = "refs/heads/master"
       }
-      if (context.scmType == null || context.project == null || context.repository == null) {
-        throw IllegalArgumentException("scmType, project and repository are required fields in the stage if there's no git trigger.")
+      if (context.repoType == null || context.projectKey == null || context.repositorySlug == null) {
+        throw IllegalArgumentException("repoType, projectKey and repositorySlug are required fields in the stage if there's no git trigger.")
       }
     }
 
     // this is just a friend URI-like string to refer to the delivery config location in logs
-    return "${context.scmType}://${context.project}/${context.repository}/<manifestBaseDir>/${context.directory
+    return "${context.repoType}://${context.projectKey}/${context.repositorySlug}/<manifestBaseDir>/${context.directory
       ?: ""}/${context.manifest}@${context.ref}"
   }
 
@@ -134,8 +127,16 @@ constructor(
     }
   }
 
-  private fun buildRetry(context: PublishDeliveryConfigContext) =
-    TaskResult.builder(ExecutionStatus.RUNNING).context(context.incrementAttempt().toMap()).build()
+  private fun buildRetry(context: PublishDeliveryConfigContext): TaskResult {
+    context.incrementAttempt()
+    return if (context.attempt > context.maxRetries!!) {
+      val error = "Maximum number of retries exceeded (${context.maxRetries})"
+      log.error("$error. Aborting.")
+      TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to error)).build()
+    } else {
+      TaskResult.builder(ExecutionStatus.RUNNING).context(context.toMap()).build()
+    }
+  }
 
   private fun buildError(errorDetails: String?) =
     TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to errorDetails)).build()
@@ -152,9 +153,9 @@ constructor(
     }
 
   data class PublishDeliveryConfigContext(
-    var scmType: String? = null,
-    var project: String? = null,
-    var repository: String? = null,
+    var repoType: String? = null,
+    var projectKey: String? = null,
+    var repositorySlug: String? = null,
     var directory: String? = null, // as in, the directory *under* whatever manifest base path is configured in igor (e.g. ".netflix")
     var manifest: String? = "spinnaker.yml",
     var ref: String? = null,

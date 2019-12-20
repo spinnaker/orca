@@ -89,9 +89,9 @@ public interface IgorService {
 
   @GET("/delivery-config/manifest")
   Map<String, Object> getDeliveryConfigManifest(
-      @Query("scmType") String scmType,
-      @Query("project") String project,
-      @Query("repository") String repository,
+      @Query("scmType") String repoType,
+      @Query("project") String projectKey,
+      @Query("repository") String repositorySlug,
       @Query("directory") @Nullable String directory,
       @Query("manifest") @Nullable String manifest,
       @Query("ref") @Nullable String ref);
