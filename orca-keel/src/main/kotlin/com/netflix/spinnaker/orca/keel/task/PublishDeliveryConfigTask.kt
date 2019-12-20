@@ -99,39 +99,43 @@ constructor(
 
       TaskResult.builder(ExecutionStatus.SUCCEEDED).context(emptyMap<String, Any?>()).build()
     } catch (e: RetrofitError) {
-      when {
-        e.kind == RetrofitError.Kind.NETWORK -> {
-          // retry if unable to connect
-          log.error("network error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${e.friendlyMessage}")
-          buildRetry(context)
-        }
-        e.response?.status == HttpStatus.NOT_FOUND.value() -> {
-          // just give up on 404
-          val errorDetails = "404 response from downstream service, giving up: ${e.friendlyMessage}"
-          log.error(errorDetails)
-          buildError(errorDetails)
-        }
-        else -> {
-          // retry on other status codes
-          log.error("HTTP error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${e.friendlyMessage}")
-          buildRetry(context)
-        }
-      }
+      handleFailure(e, context)
     } catch (e: Exception) {
       log.error("Unexpected exception while executing {}, aborting.", javaClass.simpleName, e)
       buildError(e.message)
     }
   }
 
-  override fun getBackoffPeriod() = TimeUnit.SECONDS.toMillis(30)
-
-  override fun getTimeout() = TimeUnit.SECONDS.toMillis(180)
+  private fun handleFailure(e: RetrofitError, context: PublishDeliveryConfigContext): TaskResult {
+    return when {
+      e.kind == RetrofitError.Kind.NETWORK -> {
+        // retry if unable to connect
+        log.error("network error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${e.friendlyMessage}")
+        buildRetry(context)
+      }
+      e.response?.status == HttpStatus.NOT_FOUND.value() -> {
+        // just give up on 404
+        val errorDetails = "404 response from downstream service, giving up: ${e.friendlyMessage}"
+        log.error(errorDetails)
+        buildError(errorDetails)
+      }
+      else -> {
+        // retry on other status codes
+        log.error("HTTP error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${e.friendlyMessage}")
+        buildRetry(context)
+      }
+    }
+  }
 
   private fun buildRetry(context: PublishDeliveryConfigContext) =
     TaskResult.builder(ExecutionStatus.RUNNING).context(context.incrementAttempt().toMap()).build()
 
   private fun buildError(errorDetails: String?) =
     TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to errorDetails)).build()
+
+  override fun getBackoffPeriod() = TimeUnit.SECONDS.toMillis(30)
+
+  override fun getTimeout() = TimeUnit.SECONDS.toMillis(180)
 
   val RetrofitError.friendlyMessage: String
     get() = "HTTP ${response.status} ${response.url}: ${cause?.message ?: message}"
