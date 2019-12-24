@@ -94,7 +94,6 @@ public class HuaweiCloudSecurityGroupUpserter implements SecurityGroupUpserter, 
               upsertedSecurityGroup.getRegion());
 
       return securityGroup != null;
-
     } catch (RetrofitError e) {
       if (404 != e.getResponse().getStatus()) {
         throw e;
