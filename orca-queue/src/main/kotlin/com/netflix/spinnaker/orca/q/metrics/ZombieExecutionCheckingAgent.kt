@@ -52,7 +52,7 @@ import java.util.Optional
 @ConditionalOnExpression(
   "\${queue.zombie-check.enabled:false}")
 @ConditionalOnBean(MonitorableQueue::class)
-class ZombiePipelineCheckingAgent
+class ZombieExecutionCheckingAgent
 @Autowired constructor(
   private val queue: MonitorableQueue,
   private val registry: Registry,

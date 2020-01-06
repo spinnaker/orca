@@ -50,7 +50,7 @@ import java.time.Instant.now
 import java.time.temporal.ChronoUnit.HOURS
 import java.util.Optional
 
-object ZombiePipelineCheckingAgentTest : SubjectSpek<ZombiePipelineCheckingAgent>({
+object ZombieExecutionCheckingAgentTest : SubjectSpek<ZombieExecutionCheckingAgent>({
 
   val queue: MonitorableQueue = mock()
   val repository: ExecutionRepository = mock()
@@ -65,7 +65,7 @@ object ZombiePipelineCheckingAgentTest : SubjectSpek<ZombiePipelineCheckingAgent
   }
 
   subject(GROUP) {
-    ZombiePipelineCheckingAgent(
+    ZombieExecutionCheckingAgent(
       queue,
       registry,
       repository,
