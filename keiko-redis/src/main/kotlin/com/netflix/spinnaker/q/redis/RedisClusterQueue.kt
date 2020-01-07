@@ -30,8 +30,8 @@ import org.springframework.scheduling.annotation.Scheduled
 import redis.clients.jedis.JedisCluster
 import redis.clients.jedis.Transaction
 import redis.clients.jedis.exceptions.JedisDataException
-import redis.clients.jedis.params.ZAddParams.zAddParams
-import redis.clients.jedis.util.JedisClusterCRC16
+import redis.clients.jedis.params.sortedset.ZAddParams.zAddParams
+import redis.clients.util.JedisClusterCRC16
 import java.io.IOException
 import java.time.Clock
 import java.time.Duration
@@ -221,7 +221,7 @@ class RedisClusterQueue(
         found = result
           .map { mapper.readValue<Message>(it.value) }
           .any(predicate)
-        cursor = getCursor()
+        cursor = stringCursor
       }
       if (cursor == "0") break
     }

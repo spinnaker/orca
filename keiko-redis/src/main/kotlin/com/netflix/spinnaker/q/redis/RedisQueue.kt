@@ -44,10 +44,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.commands.ScriptingCommands
+import redis.clients.jedis.ScriptingCommands
 import redis.clients.jedis.exceptions.JedisDataException
-import redis.clients.jedis.params.ZAddParams.zAddParams
-import redis.clients.jedis.util.Pool
+import redis.clients.jedis.params.sortedset.ZAddParams.zAddParams
+import redis.clients.util.Pool
 import java.io.IOException
 import java.time.Clock
 import java.time.Duration
@@ -252,7 +252,7 @@ class RedisQueue(
           found = result
             .map { mapper.readValue<Message>(it.value) }
             .any(predicate)
-          cursor = getCursor()
+          cursor = stringCursor
         }
         if (cursor == "0") break
       }

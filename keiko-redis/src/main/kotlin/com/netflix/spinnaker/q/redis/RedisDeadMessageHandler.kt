@@ -21,7 +21,7 @@ import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.util.Pool
+import redis.clients.util.Pool
 import java.time.Clock
 
 /**
