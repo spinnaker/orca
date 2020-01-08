@@ -19,9 +19,11 @@ package com.netflix.spinnaker.orca.front50.model;
 import java.util.List;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class PluginArtifact {
   @Nonnull private String id;
   private String description;

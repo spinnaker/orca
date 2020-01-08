@@ -46,8 +46,8 @@ public class DeletePluginArtifactTask implements Task {
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull Stage stage) {
-    DeletePluginArtifactTask.StageData stageData =
-        stage.mapTo(DeletePluginArtifactTask.StageData.class);
+    StageData stageData = stage.mapTo(StageData.class);
+
     String pluginArtifactId = stageData.pluginArtifactId;
 
     if (pluginArtifactId == null) {
