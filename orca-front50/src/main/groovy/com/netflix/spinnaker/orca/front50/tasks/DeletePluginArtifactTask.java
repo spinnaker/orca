@@ -57,7 +57,8 @@ public class DeletePluginArtifactTask implements Task {
     log.debug("Deleting front50 plugin artifact `{}`", pluginArtifactId);
     Response response = front50Service.deletePluginArtifact(pluginArtifactId);
 
-    if (response.getStatus() != HttpStatus.NO_CONTENT.value()) {
+    if (response.getStatus() != HttpStatus.NO_CONTENT.value()
+        || response.getStatus() != HttpStatus.NOT_FOUND.value()) {
       log.warn(
           "Failed to delete `{}`, received unexpected response status `{}`",
           pluginArtifactId,
@@ -66,7 +67,8 @@ public class DeletePluginArtifactTask implements Task {
     }
 
     Map<String, Object> outputs = new HashMap<>();
-    outputs.put("deletedPluginArtifactId", pluginArtifactId);
+    outputs.put("front50ResponseStatus", response.getStatus());
+    outputs.put("pluginArtifactId", pluginArtifactId);
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build();
   }
