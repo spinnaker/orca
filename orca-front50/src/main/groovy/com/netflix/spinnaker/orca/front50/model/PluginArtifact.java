@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.front50.model;
 
 import java.util.List;
-import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import lombok.Builder;
 import lombok.Data;
@@ -35,13 +34,6 @@ public class PluginArtifact {
 
   @Data
   public static class Release {
-    public static final Pattern SUPPORTS_PATTERN =
-        Pattern.compile(
-            "^(?<service>[\\w\\-]+)(?<operator>[><=]{1,2})(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)$");
-    public static final String SUPPORTS_PATTERN_SERVICE_GROUP = "service";
-    public static final String SUPPORTS_PATTERN_OPERATOR_GROUP = "operator";
-    public static final String SUPPORTS_PATTERN_VERSION_GROUP = "version";
-
     private String version;
     private String date;
 
