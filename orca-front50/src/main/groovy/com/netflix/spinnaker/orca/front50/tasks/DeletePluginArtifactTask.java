@@ -58,7 +58,7 @@ public class DeletePluginArtifactTask implements Task {
     Response response = front50Service.deletePluginArtifact(pluginArtifactId);
 
     if (response.getStatus() != HttpStatus.NO_CONTENT.value()
-        || response.getStatus() != HttpStatus.NOT_FOUND.value()) {
+        && response.getStatus() != HttpStatus.NOT_FOUND.value()) {
       log.warn(
           "Failed to delete `{}`, received unexpected response status `{}`",
           pluginArtifactId,
