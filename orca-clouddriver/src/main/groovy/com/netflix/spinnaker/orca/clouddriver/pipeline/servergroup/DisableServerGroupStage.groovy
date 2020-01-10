@@ -47,7 +47,13 @@ class DisableServerGroupStage extends TargetServerGroupLinearStageSupport {
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
       .withTask("disableServerGroup", DisableServerGroupTask)
       .withTask("monitorServerGroup", MonitorKatoTask)
-      .withTask("waitForDownInstances", WaitForRequiredInstancesDownTask)
+
+    // When using AWS, disabling a server group doesn't cause the instances to go
+    // down or scale in. So there's no point in waiting for down instances - it just
+    // slows things down.
+    if (stage.context["cloudProvider"] != "aws") {
+      builder.withTask("waitForDownInstances", WaitForRequiredInstancesDownTask)
+    }
 
     if (isForceCacheRefreshEnabled(dynamicConfigService)) {
       builder.withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
