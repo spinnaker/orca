@@ -28,9 +28,6 @@ public class PluginArtifact {
   private String description;
   private String provider;
   @Nonnull private List<Release> releases;
-  private Long createTs;
-  private Long lastModified;
-  private String lastModifiedBy;
 
   @Data
   public static class Release {
