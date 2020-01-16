@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline.model
+package com.netflix.spinnaker.orca.pipeline;
 
-/**
- * Defines properties that are common across different types of source code triggers.
- */
-interface SourceCodeTrigger : Trigger {
-  val source: String
-  val project: String
-  val branch: String
-  val slug: String
-  val hash: String
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.tasks.DependsOnExecutionTask;
+import javax.annotation.Nonnull;
+
+public class DependsOnExecutionStage implements StageDefinitionBuilder {
+
+  public static final String STAGE_TYPE = "dependsOnExecution";
+
+  @Override
+  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+    builder.withTask("dependsOnExecution", DependsOnExecutionTask.class);
+  }
 }

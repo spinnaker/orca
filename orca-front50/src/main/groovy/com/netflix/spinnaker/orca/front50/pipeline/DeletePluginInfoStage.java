@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline.model
+package com.netflix.spinnaker.orca.front50.pipeline;
 
-/**
- * Defines properties that are common across different types of source code triggers.
- */
-interface SourceCodeTrigger : Trigger {
-  val source: String
-  val project: String
-  val branch: String
-  val slug: String
-  val hash: String
+import com.netflix.spinnaker.orca.front50.tasks.DeletePluginInfoTask;
+import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.pipeline.TaskNode;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import javax.annotation.Nonnull;
+
+public class DeletePluginInfoStage implements StageDefinitionBuilder {
+  @Override
+  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+    builder.withTask("deletePluginInfo", DeletePluginInfoTask.class);
+  }
 }
