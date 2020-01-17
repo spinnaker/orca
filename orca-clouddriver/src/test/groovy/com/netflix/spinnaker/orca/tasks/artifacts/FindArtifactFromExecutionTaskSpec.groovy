@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.FindArtifactFromEx
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -33,11 +33,11 @@ class FindArtifactFromExecutionTaskSpec extends Specification {
   def ARTIFACT_A = Artifact.builder().type("kubernetes/replicaSet").build()
   def ARTIFACT_B = Artifact.builder().type("kubernetes/configMap").build()
 
-  ArtifactResolver artifactResolver = Mock(ArtifactResolver)
+  ArtifactUtils artifactUtils = Mock(ArtifactUtils)
   Execution execution = Mock(Execution)
 
   @Subject
-  FindArtifactFromExecutionTask task = new FindArtifactFromExecutionTask(artifactResolver)
+  FindArtifactFromExecutionTask task = new FindArtifactFromExecutionTask(artifactUtils)
 
   def "finds a single artifact"() {
     given:
@@ -56,8 +56,8 @@ class FindArtifactFromExecutionTaskSpec extends Specification {
     TaskResult result = task.execute(stage)
 
     then:
-    1 * artifactResolver.getArtifactsForPipelineId(PIPELINE, EXECUTION_CRITERIA) >> pipelineArtifacts
-    1 * artifactResolver.resolveExpectedArtifacts(expectedArtifacts, pipelineArtifacts, null, false) >> resolvedArtifacts
+    1 * artifactUtils.getArtifactsForPipelineId(PIPELINE, EXECUTION_CRITERIA) >> pipelineArtifacts
+    1 * artifactUtils.resolveExpectedArtifacts(expectedArtifacts, pipelineArtifacts, null, false) >> resolvedArtifacts
     result.context.resolvedExpectedArtifacts == expectedArtifacts
     result.context.artifacts == resolvedArtifacts
   }
@@ -79,8 +79,8 @@ class FindArtifactFromExecutionTaskSpec extends Specification {
     TaskResult result = task.execute(stage)
 
     then:
-    1 * artifactResolver.getArtifactsForPipelineId(PIPELINE, EXECUTION_CRITERIA) >> pipelineArtifacts
-    1 * artifactResolver.resolveExpectedArtifacts(expectedArtifacts, pipelineArtifacts, null, false) >> resolvedArtifacts
+    1 * artifactUtils.getArtifactsForPipelineId(PIPELINE, EXECUTION_CRITERIA) >> pipelineArtifacts
+    1 * artifactUtils.resolveExpectedArtifacts(expectedArtifacts, pipelineArtifacts, null, false) >> resolvedArtifacts
     result.context.resolvedExpectedArtifacts == expectedArtifacts
     result.context.artifacts == resolvedArtifacts
   }
