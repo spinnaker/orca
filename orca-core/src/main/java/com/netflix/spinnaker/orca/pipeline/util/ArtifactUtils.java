@@ -224,33 +224,18 @@ public class ArtifactUtils {
   public void resolveArtifacts(@Nonnull Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
     List<ExpectedArtifact> expectedArtifacts =
-        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
-            .map(
-                list ->
-                    list.stream()
-                        .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
-                        .collect(toList()))
-            .orElse(emptyList());
-
-    List<Artifact> receivedArtifactsFromPipeline =
-        Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
-            .map(
-                list ->
-                    list.stream()
-                        .map(it -> objectMapper.convertValue(it, Artifact.class))
-                        .collect(toList()))
-            .orElse(emptyList());
-    List<Artifact> artifactsFromTrigger =
-        Optional.ofNullable((List<?>) trigger.get("artifacts"))
-            .map(
-                list ->
-                    list.stream()
-                        .map(it -> objectMapper.convertValue(it, Artifact.class))
-                        .collect(toList()))
-            .orElse(emptyList());
+        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts")).orElse(emptyList())
+            .stream()
+            .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
+            .collect(toList());
 
     List<Artifact> receivedArtifacts =
-        Stream.concat(receivedArtifactsFromPipeline.stream(), artifactsFromTrigger.stream())
+        Stream.concat(
+                Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts")).orElse(emptyList())
+                    .stream(),
+                Optional.ofNullable((List<?>) trigger.get("artifacts")).orElse(emptyList())
+                    .stream())
+            .map(it -> objectMapper.convertValue(it, Artifact.class))
             .distinct()
             .collect(toList());
 
