@@ -250,9 +250,8 @@ public class ArtifactUtils {
       return;
     }
 
-    List<Artifact> priorArtifacts = getPriorArtifacts(pipeline);
     ArtifactResolver.ResolveResult resolveResult =
-        ArtifactResolver.getInstance(receivedArtifacts, priorArtifacts, true)
+        ArtifactResolver.getInstance(receivedArtifacts, () -> getPriorArtifacts(pipeline), true)
             .resolveExpectedArtifacts(expectedArtifacts);
     LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(receivedArtifacts);
     allArtifacts.addAll(resolveResult.getResolvedArtifacts());

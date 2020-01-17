@@ -93,7 +93,7 @@ final class ArtifactResolverTest {
   void ignoresPriorArtifacts() {
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(GCE_IMAGE_ARTIFACT), ImmutableList.of(DOCKER_ARTIFACT), true);
+            ImmutableList.of(GCE_IMAGE_ARTIFACT), () -> ImmutableList.of(DOCKER_ARTIFACT), true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -109,7 +109,7 @@ final class ArtifactResolverTest {
   void resolvesFromPriorArtifacts() {
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(GCE_IMAGE_ARTIFACT), ImmutableList.of(DOCKER_ARTIFACT), true);
+            ImmutableList.of(GCE_IMAGE_ARTIFACT), () -> ImmutableList.of(DOCKER_ARTIFACT), true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -168,7 +168,7 @@ final class ArtifactResolverTest {
     Artifact defaultArtifact = DOCKER_ARTIFACT.toBuilder().name("default").build();
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(currentArtifact), ImmutableList.of(priorArtifact), true);
+            ImmutableList.of(currentArtifact), () -> ImmutableList.of(priorArtifact), true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -190,7 +190,7 @@ final class ArtifactResolverTest {
     Artifact priorArtifact = DOCKER_ARTIFACT.toBuilder().name("prior").build();
     Artifact defaultArtifact = DOCKER_ARTIFACT.toBuilder().name("default").build();
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(null, ImmutableList.of(priorArtifact), true);
+        ArtifactResolver.getInstance(null, () -> ImmutableList.of(priorArtifact), true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -233,7 +233,7 @@ final class ArtifactResolverTest {
             .build();
 
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(null, ImmutableList.of(GCE_IMAGE_ARTIFACT), true);
+        ArtifactResolver.getInstance(null, () -> ImmutableList.of(GCE_IMAGE_ARTIFACT), true);
 
     ResolveResult result =
         resolver.resolveExpectedArtifacts(

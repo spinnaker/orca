@@ -19,6 +19,8 @@ package com.netflix.spinnaker.orca.pipeline.util;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.String.format;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
@@ -36,17 +38,20 @@ import lombok.Getter;
 @ParametersAreNonnullByDefault
 public final class ArtifactResolver {
   @Nonnull private final ImmutableList<Artifact> currentArtifacts;
-  @Nonnull private final ImmutableList<Artifact> priorArtifacts;
+  @Nonnull private final Supplier<ImmutableList<Artifact>> priorArtifacts;
   private final boolean requireUniqueMatches;
 
   private ArtifactResolver(
       @Nullable Iterable<Artifact> currentArtifacts,
-      @Nullable Iterable<Artifact> priorArtifacts,
+      @Nullable Supplier<? extends Iterable<Artifact>> priorArtifacts,
       boolean requireUniqueMatches) {
     this.currentArtifacts =
         currentArtifacts == null ? ImmutableList.of() : ImmutableList.copyOf(currentArtifacts);
     this.priorArtifacts =
-        priorArtifacts == null ? ImmutableList.of() : ImmutableList.copyOf(priorArtifacts);
+        Suppliers.memoize(
+            priorArtifacts == null
+                ? ImmutableList::of
+                : Suppliers.compose(ImmutableList::copyOf, priorArtifacts));
     this.requireUniqueMatches = requireUniqueMatches;
   }
 
@@ -54,15 +59,19 @@ public final class ArtifactResolver {
    * Returns an instance of an {@link ArtifactResolver} that resolves against the supplied current
    * artifacts, and prior artifacts.
    *
+   * <p>The {@link Supplier} for prior artifacts is memoized for the lifetime of this instance and
+   * will be called at most once, the first time prior artifacts are needed by this instance.
+   *
    * @param currentArtifacts The current artifacts to consider when resolving expected artifacts
-   * @param priorArtifacts The prior artifacts to consider when resolving expected artifacts
+   * @param priorArtifacts A supplier that when invoked returns an {@link Iterable} of the prior
+   *     artifacts to consider when resolving artifacts
    * @param requireUniqueMatches Whether the resolver should require that each expected artifact
    *     matches at most one artifact.
    * @return An instance of {@link ArtifactResolver}
    */
   public static ArtifactResolver getInstance(
       @Nullable Iterable<Artifact> currentArtifacts,
-      @Nullable Iterable<Artifact> priorArtifacts,
+      @Nullable Supplier<? extends Iterable<Artifact>> priorArtifacts,
       boolean requireUniqueMatches) {
     return new ArtifactResolver(currentArtifacts, priorArtifacts, requireUniqueMatches);
   }
@@ -71,7 +80,7 @@ public final class ArtifactResolver {
     Optional<Artifact> resolved = matchSingleArtifact(expectedArtifact, currentArtifacts);
 
     if (!resolved.isPresent() && expectedArtifact.isUsePriorArtifact()) {
-      resolved = matchSingleArtifact(expectedArtifact, priorArtifacts);
+      resolved = matchSingleArtifact(expectedArtifact, priorArtifacts.get());
     }
 
     if (!resolved.isPresent() && expectedArtifact.isUseDefaultArtifact()) {
