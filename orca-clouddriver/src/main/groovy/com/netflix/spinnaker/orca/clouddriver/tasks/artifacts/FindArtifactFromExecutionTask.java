@@ -23,12 +23,12 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -64,11 +64,12 @@ public class FindArtifactFromExecutionTask implements Task {
           artifactUtils.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
     }
 
-    Set<Artifact> matchingArtifacts =
-        artifactUtils.resolveExpectedArtifacts(expectedArtifacts, priorArtifacts, null, false);
+    ArtifactResolver.ResolveResult resolveResult =
+        ArtifactResolver.getInstance(priorArtifacts, null, false)
+            .resolveExpectedArtifacts(expectedArtifacts);
 
-    outputs.put("resolvedExpectedArtifacts", expectedArtifacts);
-    outputs.put("artifacts", matchingArtifacts);
+    outputs.put("resolvedExpectedArtifacts", resolveResult.getResolvedExpectedArtifacts());
+    outputs.put("artifacts", resolveResult.getResolvedArtifacts());
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).outputs(outputs).build();
   }
