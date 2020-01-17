@@ -16,12 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
@@ -32,7 +35,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.Execu
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -223,38 +225,30 @@ public class ArtifactUtils {
 
   public void resolveArtifacts(@Nonnull Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
-    List<ExpectedArtifact> expectedArtifacts =
+    ImmutableList<ExpectedArtifact> expectedArtifacts =
         Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts")).orElse(emptyList())
             .stream()
             .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
-            .collect(toList());
+            .collect(toImmutableList());
 
-    List<Artifact> receivedArtifacts =
+    ImmutableSet<Artifact> receivedArtifacts =
         Stream.concat(
                 Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts")).orElse(emptyList())
                     .stream(),
                 Optional.ofNullable((List<?>) trigger.get("artifacts")).orElse(emptyList())
                     .stream())
             .map(it -> objectMapper.convertValue(it, Artifact.class))
-            .distinct()
-            .collect(toList());
-
-    if (expectedArtifacts.isEmpty()) {
-      try {
-        trigger.put(
-            "artifacts",
-            objectMapper.readValue(objectMapper.writeValueAsString(receivedArtifacts), List.class));
-      } catch (IOException e) {
-        log.warn("Failure storing received artifacts: {}", e.getMessage(), e);
-      }
-      return;
-    }
+            .collect(toImmutableSet());
 
     ArtifactResolver.ResolveResult resolveResult =
         ArtifactResolver.getInstance(receivedArtifacts, () -> getPriorArtifacts(pipeline), true)
             .resolveExpectedArtifacts(expectedArtifacts);
-    LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(receivedArtifacts);
-    allArtifacts.addAll(resolveResult.getResolvedArtifacts());
+
+    ImmutableSet<Artifact> allArtifacts =
+        ImmutableSet.<Artifact>builder()
+            .addAll(receivedArtifacts)
+            .addAll(resolveResult.getResolvedArtifacts())
+            .build();
 
     try {
       trigger.put(
