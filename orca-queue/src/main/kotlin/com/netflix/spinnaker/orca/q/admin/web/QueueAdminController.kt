@@ -15,11 +15,13 @@
  */
 package com.netflix.spinnaker.orca.q.admin.web
 
+import com.netflix.spinnaker.orca.q.StartWaitingExecutions
 import com.netflix.spinnaker.orca.q.admin.HydrateQueueCommand
 import com.netflix.spinnaker.orca.q.admin.HydrateQueueInput
 import com.netflix.spinnaker.orca.q.admin.HydrateQueueOutput
+import com.netflix.spinnaker.q.Queue
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 import javax.ws.rs.QueryParam
@@ -27,10 +29,11 @@ import javax.ws.rs.QueryParam
 @RestController
 @RequestMapping("/admin/queue")
 class QueueAdminController(
-  private val hydrateCommand: HydrateQueueCommand
+  private val hydrateCommand: HydrateQueueCommand,
+  private val queue: Queue
 ) {
 
-  @RequestMapping(value = ["/hydrate"], method = [(RequestMethod.POST)])
+  @PostMapping(value = ["/hydrate"])
   fun hydrateQueue(
     @QueryParam("dryRun") dryRun: Boolean?,
     @QueryParam("executionId") executionId: String?,
@@ -43,4 +46,13 @@ class QueueAdminController(
       if (endMs != null) Instant.ofEpochMilli(endMs) else null,
       dryRun ?: true
     ))
+
+  @PostMapping(value = ["kickPending"])
+  fun kickPendingExecutions(
+    @QueryParam("pipelineConfigId") pipelineConfigId: String,
+    @QueryParam("purge") purge: Boolean?
+  ) {
+
+    queue.push(StartWaitingExecutions(pipelineConfigId, purge ?: false))
+  }
 }
