@@ -28,7 +28,6 @@ import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import java.util.Optional;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -42,16 +41,12 @@ public final class ArtifactResolver {
   private final boolean requireUniqueMatches;
 
   private ArtifactResolver(
-      @Nullable Iterable<Artifact> currentArtifacts,
-      @Nullable Supplier<? extends Iterable<Artifact>> priorArtifacts,
+      Iterable<Artifact> currentArtifacts,
+      Supplier<? extends Iterable<Artifact>> priorArtifacts,
       boolean requireUniqueMatches) {
-    this.currentArtifacts =
-        currentArtifacts == null ? ImmutableList.of() : ImmutableList.copyOf(currentArtifacts);
+    this.currentArtifacts = ImmutableList.copyOf(currentArtifacts);
     this.priorArtifacts =
-        Suppliers.memoize(
-            priorArtifacts == null
-                ? ImmutableList::of
-                : Suppliers.compose(ImmutableList::copyOf, priorArtifacts));
+        Suppliers.memoize(Suppliers.compose(ImmutableList::copyOf, priorArtifacts));
     this.requireUniqueMatches = requireUniqueMatches;
   }
 
@@ -70,10 +65,24 @@ public final class ArtifactResolver {
    * @return An instance of {@link ArtifactResolver}
    */
   public static ArtifactResolver getInstance(
-      @Nullable Iterable<Artifact> currentArtifacts,
-      @Nullable Supplier<? extends Iterable<Artifact>> priorArtifacts,
+      Iterable<Artifact> currentArtifacts,
+      Supplier<? extends Iterable<Artifact>> priorArtifacts,
       boolean requireUniqueMatches) {
     return new ArtifactResolver(currentArtifacts, priorArtifacts, requireUniqueMatches);
+  }
+
+  /**
+   * Returns an instance of an {@link ArtifactResolver} that resolves against the supplied current
+   * artifacts.
+   *
+   * @param currentArtifacts The current artifacts to consider when resolving expected artifacts
+   * @param requireUniqueMatches Whether the resolver should require that each expected artifact
+   *     matches at most one artifact.
+   * @return An instance of {@link ArtifactResolver}
+   */
+  public static ArtifactResolver getInstance(
+      Iterable<Artifact> currentArtifacts, boolean requireUniqueMatches) {
+    return new ArtifactResolver(currentArtifacts, ImmutableList::of, requireUniqueMatches);
   }
 
   private Optional<Artifact> resolveSingleArtifact(ExpectedArtifact expectedArtifact) {
@@ -134,11 +143,7 @@ public final class ArtifactResolver {
    * @param expectedArtifacts The expected artifacts to resolve
    * @return The result of the artifact resolution
    */
-  public ResolveResult resolveExpectedArtifacts(
-      @Nullable Iterable<ExpectedArtifact> expectedArtifacts) {
-    if (expectedArtifacts == null) {
-      expectedArtifacts = ImmutableList.of();
-    }
+  public ResolveResult resolveExpectedArtifacts(Iterable<ExpectedArtifact> expectedArtifacts) {
     // We keep track of resolved artifacts in an ImmutableSet.Builder so that duplicates are not
     // added (in the case that an artifact matches more than one expected artifact). An ImmutableSet
     // iterates in the order elements were added (including via the builder), so calling asList()

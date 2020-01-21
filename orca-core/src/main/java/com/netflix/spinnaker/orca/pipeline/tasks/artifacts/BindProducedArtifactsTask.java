@@ -60,8 +60,7 @@ public class BindProducedArtifactsTask implements Task {
 
     List<Artifact> artifacts = artifactUtils.getArtifacts(stage);
     ArtifactResolver.ResolveResult resolveResult =
-        ArtifactResolver.getInstance(artifacts, null, false)
-            .resolveExpectedArtifacts(expectedArtifacts);
+        ArtifactResolver.getInstance(artifacts, false).resolveExpectedArtifacts(expectedArtifacts);
 
     outputs.put("artifacts", resolveResult.getResolvedArtifacts());
     outputs.put("resolvedExpectedArtifacts", resolveResult.getResolvedExpectedArtifacts());

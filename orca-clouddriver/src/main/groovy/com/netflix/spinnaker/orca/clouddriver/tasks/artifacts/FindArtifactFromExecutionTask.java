@@ -17,6 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.artifacts;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -46,7 +47,7 @@ public class FindArtifactFromExecutionTask implements Task {
     FindArtifactFromExecutionContext context = stage.mapTo(FindArtifactFromExecutionContext.class);
     Map<String, Object> outputs = new HashMap<>();
     String pipeline = context.getPipeline();
-    List<ExpectedArtifact> expectedArtifacts = context.getExpectedArtifacts();
+    ImmutableList<ExpectedArtifact> expectedArtifacts = context.getExpectedArtifacts();
     FindArtifactFromExecutionContext.ExecutionOptions executionOptions =
         context.getExecutionOptions();
 
@@ -65,7 +66,7 @@ public class FindArtifactFromExecutionTask implements Task {
     }
 
     ArtifactResolver.ResolveResult resolveResult =
-        ArtifactResolver.getInstance(priorArtifacts, null, false)
+        ArtifactResolver.getInstance(priorArtifacts, false)
             .resolveExpectedArtifacts(expectedArtifacts);
 
     outputs.put("resolvedExpectedArtifacts", resolveResult.getResolvedExpectedArtifacts());
