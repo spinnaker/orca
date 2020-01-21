@@ -18,11 +18,15 @@ package com.netflix.spinnaker.orca.front50.model;
 
 import java.util.List;
 import javax.annotation.Nonnull;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PluginInfo {
   @Nonnull private String id;
   private String description;
