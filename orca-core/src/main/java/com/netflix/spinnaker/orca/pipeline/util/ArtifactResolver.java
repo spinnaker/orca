@@ -85,37 +85,6 @@ public final class ArtifactResolver {
     return new ArtifactResolver(currentArtifacts, ImmutableList::of, requireUniqueMatches);
   }
 
-  private Optional<Artifact> resolveSingleArtifact(ExpectedArtifact expectedArtifact) {
-    Optional<Artifact> resolved = matchSingleArtifact(expectedArtifact, currentArtifacts);
-
-    if (!resolved.isPresent() && expectedArtifact.isUsePriorArtifact()) {
-      resolved = matchSingleArtifact(expectedArtifact, priorArtifacts.get());
-    }
-
-    if (!resolved.isPresent() && expectedArtifact.isUseDefaultArtifact()) {
-      resolved = Optional.ofNullable(expectedArtifact.getDefaultArtifact());
-    }
-
-    return resolved;
-  }
-
-  private Optional<Artifact> matchSingleArtifact(
-      ExpectedArtifact expectedArtifact, ImmutableList<Artifact> possibleArtifacts) {
-    ImmutableList<Artifact> matches =
-        possibleArtifacts.stream().filter(expectedArtifact::matches).collect(toImmutableList());
-
-    if (matches.isEmpty()) {
-      return Optional.empty();
-    }
-
-    if (matches.size() > 1 && requireUniqueMatches) {
-      throw new InvalidRequestException(
-          "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
-    }
-
-    return Optional.of(matches.get(0));
-  }
-
   /**
    * Resolves the input expected artifacts, returning the result of the resolution as a {@link
    * ResolveResult}.
@@ -164,6 +133,37 @@ public final class ArtifactResolver {
       boundExpectedArtifacts.add(expectedArtifact.toBuilder().boundArtifact(resolved).build());
     }
     return new ResolveResult(resolvedArtifacts.build().asList(), boundExpectedArtifacts.build());
+  }
+
+  private Optional<Artifact> resolveSingleArtifact(ExpectedArtifact expectedArtifact) {
+    Optional<Artifact> resolved = matchSingleArtifact(expectedArtifact, currentArtifacts);
+
+    if (!resolved.isPresent() && expectedArtifact.isUsePriorArtifact()) {
+      resolved = matchSingleArtifact(expectedArtifact, priorArtifacts.get());
+    }
+
+    if (!resolved.isPresent() && expectedArtifact.isUseDefaultArtifact()) {
+      resolved = Optional.ofNullable(expectedArtifact.getDefaultArtifact());
+    }
+
+    return resolved;
+  }
+
+  private Optional<Artifact> matchSingleArtifact(
+      ExpectedArtifact expectedArtifact, ImmutableList<Artifact> possibleArtifacts) {
+    ImmutableList<Artifact> matches =
+        possibleArtifacts.stream().filter(expectedArtifact::matches).collect(toImmutableList());
+
+    if (matches.isEmpty()) {
+      return Optional.empty();
+    }
+
+    if (matches.size() > 1 && requireUniqueMatches) {
+      throw new InvalidRequestException(
+          "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
+    }
+
+    return Optional.of(matches.get(0));
   }
 
   /**
