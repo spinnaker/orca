@@ -241,7 +241,10 @@ public class ArtifactUtils {
             .collect(toImmutableSet());
 
     ArtifactResolver.ResolveResult resolveResult =
-        ArtifactResolver.getInstance(receivedArtifacts, () -> getPriorArtifacts(pipeline), true)
+        ArtifactResolver.getInstance(
+                receivedArtifacts,
+                () -> getPriorArtifacts(pipeline),
+                /* requireUniqueMatches= */ true)
             .resolveExpectedArtifacts(expectedArtifacts);
 
     ImmutableSet<Artifact> allArtifacts =

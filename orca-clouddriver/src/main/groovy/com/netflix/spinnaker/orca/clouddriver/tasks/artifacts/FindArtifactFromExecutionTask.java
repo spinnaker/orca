@@ -66,7 +66,7 @@ public class FindArtifactFromExecutionTask implements Task {
     }
 
     ArtifactResolver.ResolveResult resolveResult =
-        ArtifactResolver.getInstance(priorArtifacts, false)
+        ArtifactResolver.getInstance(priorArtifacts, /* requireUniqueMatches= */ false)
             .resolveExpectedArtifacts(expectedArtifacts);
 
     outputs.put("resolvedExpectedArtifacts", resolveResult.getResolvedExpectedArtifacts());

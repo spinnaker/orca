@@ -44,7 +44,9 @@ final class ArtifactResolverTest {
   @Test
   void testExactMatch() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(DOCKER_ARTIFACT, GCE_IMAGE_ARTIFACT), true);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(DOCKER_ARTIFACT, GCE_IMAGE_ARTIFACT),
+            /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -60,7 +62,9 @@ final class ArtifactResolverTest {
   @Test
   void testRegexMatch() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(DOCKER_ARTIFACT, GCE_IMAGE_ARTIFACT), true);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(DOCKER_ARTIFACT, GCE_IMAGE_ARTIFACT),
+            /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -76,7 +80,8 @@ final class ArtifactResolverTest {
   @Test
   void testNoMatch() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(GCE_IMAGE_ARTIFACT), true);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(GCE_IMAGE_ARTIFACT), /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -91,7 +96,9 @@ final class ArtifactResolverTest {
   void ignoresPriorArtifacts() {
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(GCE_IMAGE_ARTIFACT), () -> ImmutableList.of(DOCKER_ARTIFACT), true);
+            ImmutableList.of(GCE_IMAGE_ARTIFACT),
+            () -> ImmutableList.of(DOCKER_ARTIFACT),
+            /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -107,7 +114,9 @@ final class ArtifactResolverTest {
   void resolvesFromPriorArtifacts() {
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(GCE_IMAGE_ARTIFACT), () -> ImmutableList.of(DOCKER_ARTIFACT), true);
+            ImmutableList.of(GCE_IMAGE_ARTIFACT),
+            () -> ImmutableList.of(DOCKER_ARTIFACT),
+            /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -125,7 +134,8 @@ final class ArtifactResolverTest {
   @Test
   void ignoresDefaultArtifact() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(GCE_IMAGE_ARTIFACT), true);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(GCE_IMAGE_ARTIFACT), /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -142,7 +152,8 @@ final class ArtifactResolverTest {
   @Test
   void resolvesFromDefaultArtifact() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(GCE_IMAGE_ARTIFACT), true);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(GCE_IMAGE_ARTIFACT), /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -166,7 +177,9 @@ final class ArtifactResolverTest {
     Artifact defaultArtifact = DOCKER_ARTIFACT.toBuilder().name("default").build();
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(currentArtifact), () -> ImmutableList.of(priorArtifact), true);
+            ImmutableList.of(currentArtifact),
+            () -> ImmutableList.of(priorArtifact),
+            /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -189,7 +202,9 @@ final class ArtifactResolverTest {
     Artifact defaultArtifact = DOCKER_ARTIFACT.toBuilder().name("default").build();
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(), () -> ImmutableList.of(priorArtifact), true);
+            ImmutableList.of(),
+            () -> ImmutableList.of(priorArtifact),
+            /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -208,7 +223,8 @@ final class ArtifactResolverTest {
 
   @Test
   void handlesEmptyInput() {
-    ArtifactResolver resolver = ArtifactResolver.getInstance(ImmutableList.of(), true);
+    ArtifactResolver resolver =
+        ArtifactResolver.getInstance(ImmutableList.of(), /* requireUniqueMatches= */ true);
 
     ResolveResult result = resolver.resolveExpectedArtifacts(ImmutableList.of());
 
@@ -233,7 +249,9 @@ final class ArtifactResolverTest {
 
     ArtifactResolver resolver =
         ArtifactResolver.getInstance(
-            ImmutableList.of(), () -> ImmutableList.of(GCE_IMAGE_ARTIFACT), true);
+            ImmutableList.of(),
+            () -> ImmutableList.of(GCE_IMAGE_ARTIFACT),
+            /* requireUniqueMatches= */ true);
 
     ResolveResult result =
         resolver.resolveExpectedArtifacts(
@@ -249,7 +267,8 @@ final class ArtifactResolverTest {
   @Test
   void failsWithMultipleMatches() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(DOCKER_ARTIFACT, DOCKER_ARTIFACT), true);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(DOCKER_ARTIFACT, DOCKER_ARTIFACT), /* requireUniqueMatches= */ true);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -263,7 +282,8 @@ final class ArtifactResolverTest {
   @Test
   void allowsMultipleMatches() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(DOCKER_ARTIFACT, DOCKER_ARTIFACT), false);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(DOCKER_ARTIFACT, DOCKER_ARTIFACT), /* requireUniqueMatches= */ false);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
@@ -280,7 +300,8 @@ final class ArtifactResolverTest {
   @Test
   void multiplyMatchingArtifactsAreReturnedOnce() {
     ArtifactResolver resolver =
-        ArtifactResolver.getInstance(ImmutableList.of(DOCKER_ARTIFACT, DOCKER_ARTIFACT), false);
+        ArtifactResolver.getInstance(
+            ImmutableList.of(DOCKER_ARTIFACT, DOCKER_ARTIFACT), /* requireUniqueMatches= */ false);
 
     ExpectedArtifact expected =
         ExpectedArtifact.builder()
