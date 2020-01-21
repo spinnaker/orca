@@ -140,7 +140,7 @@ public final class ArtifactResolver {
       expectedArtifacts = ImmutableList.of();
     }
     // We keep track of resolved artifacts in an ImmutableSet.Builder so that duplicates are not
-    // added (in the case that an artifact matches more than on expected artifact). An ImmutableSet
+    // added (in the case that an artifact matches more than one expected artifact). An ImmutableSet
     // iterates in the order elements were added (including via the builder), so calling asList()
     // on the resulting set will return the resolved artifacts in the order they were resolved.
     ImmutableSet.Builder<Artifact> resolvedArtifacts = ImmutableSet.builder();
