@@ -32,6 +32,7 @@ import com.netflix.spinnaker.orca.pipeline.model.StageContext;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -79,18 +80,12 @@ public class ArtifactUtils {
     }
 
     return Optional.ofNullable((List<?>) ((StageContext) stage.getContext()).getAll("artifacts"))
-        .map(
-            list ->
-                list.stream()
-                    .filter(Objects::nonNull)
-                    .flatMap(it -> ((List<?>) it).stream())
-                    .map(
-                        a ->
-                            a instanceof Map
-                                ? objectMapper.convertValue(a, Artifact.class)
-                                : (Artifact) a)
-                    .collect(Collectors.toList()))
-        .orElse(emptyList());
+        .map(Collection::stream)
+        .orElse(Stream.empty())
+        .filter(Objects::nonNull)
+        .flatMap(it -> ((List<?>) it).stream())
+        .map(a -> a instanceof Map ? objectMapper.convertValue(a, Artifact.class) : (Artifact) a)
+        .collect(Collectors.toList());
   }
 
   public @Nonnull List<Artifact> getAllArtifacts(@Nonnull Execution execution) {
@@ -108,15 +103,9 @@ public class ArtifactUtils {
         Stage.topologicalSort(execution.getStages())
             .filter(stageFilter.orElse(s -> true))
             .filter(s -> s.getOutputs().containsKey("artifacts"))
-            .flatMap(
-                s ->
-                    ((List<?>) s.getOutputs().get("artifacts"))
-                        .stream()
-                            .map(
-                                a ->
-                                    a instanceof Map
-                                        ? objectMapper.convertValue(a, Artifact.class)
-                                        : (Artifact) a))
+            .flatMap(s -> ((List<?>) s.getOutputs().get("artifacts")).stream())
+            .map(
+                a -> a instanceof Map ? objectMapper.convertValue(a, Artifact.class) : (Artifact) a)
             .collect(Collectors.toList());
     Collections.reverse(emittedArtifacts);
 
@@ -170,29 +159,25 @@ public class ArtifactUtils {
       return null;
     }
 
-    List<ExpectedArtifact> expectedArtifacts =
+    Optional<ExpectedArtifact> expectedArtifactOptional =
         Optional.ofNullable(
                 (List<?>) ((StageContext) stage.getContext()).getAll("resolvedExpectedArtifacts"))
+            .map(Collection::stream)
+            .orElse(Stream.empty())
+            .filter(Objects::nonNull)
+            .flatMap(it -> ((List<?>) it).stream())
             .map(
-                list ->
-                    list.stream()
-                        .filter(Objects::nonNull)
-                        .flatMap(it -> ((List<?>) it).stream())
-                        .map(
-                            a ->
-                                a instanceof Map
-                                    ? objectMapper.convertValue(a, ExpectedArtifact.class)
-                                    : (ExpectedArtifact) a)
-                        .collect(Collectors.toList()))
-            .orElse(emptyList());
-
-    final Optional<ExpectedArtifact> expectedArtifactOptional =
-        expectedArtifacts.stream().filter(e -> e.getId().equals(id)).findFirst();
+                a ->
+                    a instanceof Map
+                        ? objectMapper.convertValue(a, ExpectedArtifact.class)
+                        : (ExpectedArtifact) a)
+            .filter(e -> e.getId().equals(id))
+            .findFirst();
 
     expectedArtifactOptional.ifPresent(
         expectedArtifact -> {
-          final Artifact boundArtifact = expectedArtifact.getBoundArtifact();
-          final Artifact matchArtifact = expectedArtifact.getMatchArtifact();
+          Artifact boundArtifact = expectedArtifact.getBoundArtifact();
+          Artifact matchArtifact = expectedArtifact.getMatchArtifact();
           if (boundArtifact != null
               && matchArtifact != null
               && boundArtifact.getArtifactAccount() == null) {
@@ -224,17 +209,20 @@ public class ArtifactUtils {
   public void resolveArtifacts(@Nonnull Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
     ImmutableList<ExpectedArtifact> expectedArtifacts =
-        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts")).orElse(emptyList())
-            .stream()
+        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
+            .map(Collection::stream)
+            .orElse(Stream.empty())
             .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
             .collect(toImmutableList());
 
     ImmutableSet<Artifact> receivedArtifacts =
         Stream.concat(
-                Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts")).orElse(emptyList())
-                    .stream(),
-                Optional.ofNullable((List<?>) trigger.get("artifacts")).orElse(emptyList())
-                    .stream())
+                Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
+                    .map(Collection::stream)
+                    .orElse(Stream.empty()),
+                Optional.ofNullable((List<?>) trigger.get("artifacts"))
+                    .map(Collection::stream)
+                    .orElse(Stream.empty()))
             .map(it -> objectMapper.convertValue(it, Artifact.class))
             .collect(toImmutableSet());
 
