@@ -258,10 +258,9 @@ public interface ExecutionRepository {
         Long bStartTime = b.getStartTime();
 
         if (aStartTime == null) {
-          return -1;
-        }
-        if (bStartTime == null) {
-          return 0;
+          return bStartTime == null ? 0 : -1;
+        } else if (bStartTime == null) {
+          return 1;
         }
 
         int startCompare = bStartTime.compareTo(aStartTime);

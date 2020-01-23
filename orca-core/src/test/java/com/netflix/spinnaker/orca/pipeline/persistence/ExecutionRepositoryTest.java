@@ -41,11 +41,9 @@ final class ExecutionRepositoryTest {
     Execution a = withStartTimeAndId(null, EARLIER_ULID);
     Execution b = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
 
-    // TODO(ezimanyi): Violates Comparable contract
-    assertThat(START_TIME_OR_ID.compare(a, a)).isLessThan(0);
+    assertThat(START_TIME_OR_ID.compare(a, a)).isEqualTo(0);
     assertThat(START_TIME_OR_ID.compare(a, b)).isLessThan(0);
-    // TODO(ezimanyi): Violates Comparable contract
-    assertThat(START_TIME_OR_ID.compare(b, a)).isEqualTo(0);
+    assertThat(START_TIME_OR_ID.compare(b, a)).isGreaterThan(0);
   }
 
   @Test
