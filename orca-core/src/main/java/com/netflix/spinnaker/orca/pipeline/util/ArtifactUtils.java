@@ -35,6 +35,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.Execu
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,7 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 @Component
@@ -188,20 +188,16 @@ public class ArtifactUtils {
   }
 
   public List<Artifact> getArtifactsForPipelineId(String pipelineId, ExecutionCriteria criteria) {
-    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
-
-    return execution == null ? Collections.emptyList() : getAllArtifacts(execution);
+    return getExecutionForPipelineId(pipelineId, criteria)
+        .map(this::getAllArtifacts)
+        .orElse(Collections.emptyList());
   }
 
   public List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
       String pipelineId, String stageRef, ExecutionCriteria criteria) {
-    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
-
-    if (execution == null) {
-      return Collections.emptyList();
-    }
-
-    return getAllArtifacts(execution, true, Optional.of(it -> !stageRef.equals(it.getRefId())));
+    return getExecutionForPipelineId(pipelineId, criteria)
+        .map(e -> getAllArtifacts(e, true, Optional.of(it -> !stageRef.equals(it.getRefId()))))
+        .orElse(Collections.emptyList());
   }
 
   public void resolveArtifacts(Map pipeline) {
@@ -267,12 +263,11 @@ public class ArtifactUtils {
     return getArtifactsForPipelineId((String) pipeline.get("id"), criteria);
   }
 
-  @Nullable
-  private Execution getExecutionForPipelineId(String pipelineId, ExecutionCriteria criteria) {
+  private Optional<Execution> getExecutionForPipelineId(
+      String pipelineId, ExecutionCriteria criteria) {
     return executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
-        .subscribeOn(Schedulers.io()).toSortedList(startTimeOrId).toBlocking().single().stream()
-        .findFirst()
-        .orElse(null);
+        .subscribeOn(Schedulers.io()).toList().toBlocking().single().stream()
+        .min(startTimeOrId);
   }
 
   private static class ArtifactResolutionException extends RuntimeException {
@@ -281,12 +276,12 @@ public class ArtifactUtils {
     }
   }
 
-  private static Func2<Execution, Execution, Integer> startTimeOrId =
-      (a, b) -> {
-        Long aStartTime = Optional.ofNullable(a.getStartTime()).orElse(0L);
-        Long bStartTime = Optional.ofNullable(b.getStartTime()).orElse(0L);
-
-        int startTimeCmp = bStartTime.compareTo(aStartTime);
-        return startTimeCmp != 0L ? startTimeCmp : b.getId().compareTo(a.getId());
-      };
+  // Consider moving this to ExecutionRepository.ExecutionComparator or re-using START_TIME_OR_ID
+  // from there. The only difference is that START_TIME_OR_ID sorts executions with a null start
+  // time first, followed by executions in order of recency (by start time then by id). We don't
+  // want executions with a null start time showing up first here as then a single execution with
+  // a null start time would always get selected by getExecutionForPipelineId.
+  private static Comparator<Execution> startTimeOrId =
+      Comparator.comparing(Execution::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
+          .thenComparing(Execution::getId, Comparator.reverseOrder());
 }
