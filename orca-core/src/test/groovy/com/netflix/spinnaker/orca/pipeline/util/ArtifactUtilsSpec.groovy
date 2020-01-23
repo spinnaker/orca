@@ -259,40 +259,6 @@ class ArtifactUtilsSpec extends Specification {
     artifact.type == "correct"
   }
 
-  @Unroll
-  def "should find a matching artifact for #expected"() {
-    when:
-    def artifactUtils = makeArtifactUtils()
-    def expected = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def artifact = artifactUtils.resolveSingleArtifact(expected, existing, null, true)
-
-    then:
-    artifact == desired
-
-    where:
-    matchArtifact                                              | existing                                                                                                                     || desired
-    Artifact.builder().type("docker/image").build()            | [Artifact.builder().type("docker/image").build(), Artifact.builder().type("amazon/ami").build()]                             || Artifact.builder().type("docker/image").build()
-    Artifact.builder().type("docker/.*").build()               | [Artifact.builder().type("docker/image").build(), Artifact.builder().type("amazon/ami").build()]                             || Artifact.builder().type("docker/image").build()
-    Artifact.builder().type("docker/.*").name("image").build() | [Artifact.builder().type("docker/image").name("bad").build(), Artifact.builder().type("docker/image").name("image").build()] || Artifact.builder().type("docker/image").name("image").build()
-  }
-
-  @Unroll
-  def "should fail find a matching artifact for #expected"() {
-    when:
-    def artifactUtils = makeArtifactUtils()
-    def expected = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
-    def artifact = artifactUtils.resolveSingleArtifact(expected, existing, null, true)
-
-    then:
-    artifact == null
-
-    where:
-    matchArtifact                                             | existing
-    Artifact.builder().type("image/image").build()            | [Artifact.builder().type("docker/image").build(), Artifact.builder().type("amazon/ami").build()]
-    Artifact.builder().type("flocker/.*").build()             | [Artifact.builder().type("docker/image").build(), Artifact.builder().type("amazon/ami").build()]
-    Artifact.builder().type("docker/.*").name("none").build() | [Artifact.builder().type("docker/image").name("bad").build(), Artifact.builder().type("docker/image").name("image").build()]
-  }
-
   def "should find all artifacts from an execution, in reverse order"() {
     when:
     def execution = pipeline {
@@ -401,71 +367,10 @@ class ArtifactUtilsSpec extends Specification {
     artifacts*.type == ["1", "trigger"]
   }
 
-  @Unroll
-  def "should resolve expected artifacts from pipeline for default #defaultArtifact, available #available, and prior #prior"() {
+  def "resolveArtifacts sets the bound artifact on an expected artifact"() {
     given:
     def matchArtifact = Artifact.builder().type("docker/.*").build()
-    when:
-    def artifactUtils = makeArtifactUtils()
-    def expectedArtifact = ExpectedArtifact.builder()
-      .matchArtifact(matchArtifact)
-      .defaultArtifact(defaultArtifact)
-      .useDefaultArtifact(defaultArtifact != null)
-      .usePriorArtifact(usePriorArtifact)
-      .build()
-    def bound = artifactUtils.resolveExpectedArtifacts([expectedArtifact], available, prior, true)
-
-    then:
-    bound.size() == expectedBound.size()
-    bound.findAll({ a -> expectedBound.contains(a) }).size() == bound.size()
-
-    where:
-    defaultArtifact                                 | usePriorArtifact | available                                         | prior                                             || expectedBound
-    null                                            | false            | [Artifact.builder().type("docker/image").build()] | null                                              || [Artifact.builder().type("docker/image").build()]
-    Artifact.builder().type("google/image").build() | false            | [Artifact.builder().type("bad").build()]          | null                                              || [Artifact.builder().type("google/image").build()]
-    null                                            | true             | [Artifact.builder().type("bad").build()]          | [Artifact.builder().type("docker/image").build()] || [Artifact.builder().type("docker/image").build()]
-  }
-
-  def "can resolve both a prior artifact and a default artifact from the same pipeline"() {
-    given:
-    def dockerArtifact = Artifact.builder().type("docker/image").build()
-    def gceImage = Artifact.builder().type("google/image").build()
-    def expectedArtifacts = [
-      ExpectedArtifact.builder()
-        .matchArtifact(Artifact.builder().type("google/.*").build())
-        .usePriorArtifact(true)
-        .build(),
-      ExpectedArtifact.builder()
-        .matchArtifact(Artifact.builder().type("docker/.*").build())
-        .useDefaultArtifact(true)
-        .defaultArtifact(dockerArtifact)
-        .build()
-    ]
-    def availableArtifacts = [
-      Artifact.builder().type("bad").build(),
-      Artifact.builder().type("more bad").build()
-    ]
-    def priorArtifacts = [
-      gceImage
-    ]
-    def expectedBound = [
-      dockerArtifact,
-      gceImage
-    ]
-
-    when:
-    def artifactUtils = makeArtifactUtils()
-    def bound = artifactUtils.resolveExpectedArtifacts(expectedArtifacts, availableArtifacts, priorArtifacts, true)
-
-    then:
-    bound.size() == expectedBound.size()
-    bound.findAll({ a -> expectedBound.contains(a) }).size() == bound.size()
-  }
-
-  def "resolveArtifacts sets the bound artifact on an expected artifact when the expectedArtifact is ExpectedArtifact"() {
-    given:
-    def matchArtifact = Artifact.builder().type("docker/.*").build()
-    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).id("id1").build()
+    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
     def receivedArtifact = Artifact.builder().name("my-artifact").type("docker/image").build()
     def pipeline = [
       id: "abc",
@@ -477,37 +382,19 @@ class ArtifactUtilsSpec extends Specification {
 
     when:
     artifactUtils.resolveArtifacts(pipeline)
+    List<ExpectedArtifact> resolvedArtifacts = objectMapper.convertValue(
+      pipeline.trigger.resolvedExpectedArtifacts,
+      new TypeReference<List<ExpectedArtifact>>() {})
 
     then:
-    pipeline.expectedArtifacts.size() == 1
-    pipeline.expectedArtifacts[0].boundArtifact == receivedArtifact
-  }
-
-  def "resolveArtifacts sets the bound artifact on an expected artifact when the expectedArtifact is Map<String, Object>"() {
-    given:
-    def matchArtifact = Artifact.builder().type("docker/.*").build()
-    def expectedArtifact = toMap(ExpectedArtifact.builder().matchArtifact(matchArtifact).id("id1").build())
-    def receivedArtifact = toMap(Artifact.builder().name("my-artifact").type("docker/image").build())
-    def pipeline = [
-            id: "abc",
-            trigger: [:],
-            expectedArtifacts: [expectedArtifact],
-            receivedArtifacts: [receivedArtifact],
-    ]
-    def artifactUtils = makeArtifactUtils()
-
-    when:
-    artifactUtils.resolveArtifacts(pipeline)
-
-    then:
-    pipeline.expectedArtifacts.size() == 1
-    pipeline.expectedArtifacts[0].boundArtifact == receivedArtifact
+    resolvedArtifacts.size() == 1
+    resolvedArtifacts.get(0).getBoundArtifact() == receivedArtifact
   }
 
   def "resolveArtifacts adds received artifacts to the trigger, skipping duplicates"() {
     given:
     def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
-    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).id("id1").build()
+    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
     def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
     def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
     def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
@@ -533,7 +420,7 @@ class ArtifactUtilsSpec extends Specification {
   def "resolveArtifacts is idempotent"() {
     given:
     def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
-    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).id("id1").build()
+    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
     def receivedArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/image").build()
     def triggerArtifact = Artifact.builder().name("my-trigger-artifact").type("docker/image").build()
     def bothArtifact = Artifact.builder().name("my-both-artifact").type("docker/image").build()
@@ -559,9 +446,5 @@ class ArtifactUtilsSpec extends Specification {
 
   private List<Artifact> extractTriggerArtifacts(Map<String, Object> trigger) {
     return objectMapper.convertValue(trigger.artifacts, new TypeReference<List<Artifact>>(){});
-  }
-
-  private Map<String, Object> toMap(Object value) {
-    return objectMapper.convertValue(value, Map.class)
   }
 }
