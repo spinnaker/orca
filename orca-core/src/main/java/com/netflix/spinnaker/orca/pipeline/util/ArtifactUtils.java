@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
@@ -41,7 +42,6 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -52,6 +52,7 @@ import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 @Component
+@NonnullByDefault
 public class ArtifactUtils {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
@@ -70,7 +71,7 @@ public class ArtifactUtils {
     this.contextParameterProcessor = contextParameterProcessor;
   }
 
-  public @Nonnull List<Artifact> getArtifacts(@Nonnull Stage stage) {
+  public List<Artifact> getArtifacts(Stage stage) {
     if (!(stage.getContext() instanceof StageContext)) {
       log.warn(
           "Unable to read artifacts from unknown context type: {} ({})",
@@ -88,14 +89,12 @@ public class ArtifactUtils {
         .collect(Collectors.toList());
   }
 
-  public @Nonnull List<Artifact> getAllArtifacts(@Nonnull Execution execution) {
+  public List<Artifact> getAllArtifacts(Execution execution) {
     return getAllArtifacts(execution, true, Optional.empty());
   }
 
-  public @Nonnull List<Artifact> getAllArtifacts(
-      @Nonnull Execution execution,
-      Boolean includeTrigger,
-      Optional<Predicate<Stage>> stageFilter) {
+  public List<Artifact> getAllArtifacts(
+      Execution execution, boolean includeTrigger, Optional<Predicate<Stage>> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
@@ -146,7 +145,7 @@ public class ArtifactUtils {
     return objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
   }
 
-  public @Nullable Artifact getBoundArtifactForId(@Nonnull Stage stage, @Nullable String id) {
+  public @Nullable Artifact getBoundArtifactForId(Stage stage, @Nullable String id) {
     if (StringUtils.isEmpty(id)) {
       return null;
     }
@@ -188,15 +187,14 @@ public class ArtifactUtils {
     return expectedArtifactOptional.map(ExpectedArtifact::getBoundArtifact).orElse(null);
   }
 
-  public @Nonnull List<Artifact> getArtifactsForPipelineId(
-      @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
+  public List<Artifact> getArtifactsForPipelineId(String pipelineId, ExecutionCriteria criteria) {
     Execution execution = getExecutionForPipelineId(pipelineId, criteria);
 
     return execution == null ? Collections.emptyList() : getAllArtifacts(execution);
   }
 
-  public @Nonnull List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
-      @Nonnull String pipelineId, @Nonnull String stageRef, @Nonnull ExecutionCriteria criteria) {
+  public List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
+      String pipelineId, String stageRef, ExecutionCriteria criteria) {
     Execution execution = getExecutionForPipelineId(pipelineId, criteria);
 
     if (execution == null) {
@@ -206,7 +204,7 @@ public class ArtifactUtils {
     return getAllArtifacts(execution, true, Optional.of(it -> !stageRef.equals(it.getRefId())));
   }
 
-  public void resolveArtifacts(@Nonnull Map pipeline) {
+  public void resolveArtifacts(Map pipeline) {
     Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
     ImmutableList<ExpectedArtifact> expectedArtifacts =
         Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
@@ -259,7 +257,7 @@ public class ArtifactUtils {
     }
   }
 
-  private List<Artifact> getPriorArtifacts(final Map<String, Object> pipeline) {
+  private List<Artifact> getPriorArtifacts(Map<String, Object> pipeline) {
     // set pageSize to a single record to avoid hydrating all of the stored Executions for
     // the pipeline, since getArtifactsForPipelineId only uses the most recent Execution from the
     // returned Observable<Execution>
@@ -269,8 +267,8 @@ public class ArtifactUtils {
     return getArtifactsForPipelineId((String) pipeline.get("id"), criteria);
   }
 
-  private Execution getExecutionForPipelineId(
-      @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
+  @Nullable
+  private Execution getExecutionForPipelineId(String pipelineId, ExecutionCriteria criteria) {
     return executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
         .subscribeOn(Schedulers.io()).toSortedList(startTimeOrId).toBlocking().single().stream()
         .findFirst()

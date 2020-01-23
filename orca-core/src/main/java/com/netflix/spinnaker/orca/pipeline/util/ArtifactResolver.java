@@ -23,21 +23,20 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import java.util.Optional;
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /** This class handles resolving a collection of {@link ExpectedArtifact} instances. */
-@ParametersAreNonnullByDefault
+@NonnullByDefault
 public final class ArtifactResolver {
-  @Nonnull private final ImmutableList<Artifact> currentArtifacts;
-  @Nonnull private final Supplier<ImmutableList<Artifact>> priorArtifacts;
+  private final ImmutableList<Artifact> currentArtifacts;
+  private final Supplier<ImmutableList<Artifact>> priorArtifacts;
   private final boolean requireUniqueMatches;
 
   private ArtifactResolver(
@@ -178,12 +177,12 @@ public final class ArtifactResolver {
      * expected artifact. If an artifact matches more than one expected artifact, it is returned
      * only once.
      */
-    @Nonnull private final ImmutableList<Artifact> resolvedArtifacts;
+    private final ImmutableList<Artifact> resolvedArtifacts;
     /**
      * This field contains the resolved expected artifacts; each resolved expected artifact is a
      * copy of the input expected artifact with its {@link ExpectedArtifact#getBoundArtifact()} set
      * to the artifact that it matched during resolution.
      */
-    @Nonnull private final ImmutableList<ExpectedArtifact> resolvedExpectedArtifacts;
+    private final ImmutableList<ExpectedArtifact> resolvedExpectedArtifacts;
   }
 }
