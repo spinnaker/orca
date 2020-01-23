@@ -90,17 +90,16 @@ public class ArtifactUtils {
   }
 
   public List<Artifact> getAllArtifacts(Execution execution) {
-    return getAllArtifacts(execution, true, Optional.empty());
+    return getAllArtifacts(execution, s -> true);
   }
 
-  public List<Artifact> getAllArtifacts(
-      Execution execution, boolean includeTrigger, Optional<Predicate<Stage>> stageFilter) {
+  private List<Artifact> getAllArtifacts(Execution execution, Predicate<Stage> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
     List<Artifact> emittedArtifacts =
         Stage.topologicalSort(execution.getStages())
-            .filter(stageFilter.orElse(s -> true))
+            .filter(stageFilter)
             .filter(s -> s.getOutputs().containsKey("artifacts"))
             .flatMap(s -> ((List<?>) s.getOutputs().get("artifacts")).stream())
             .map(
@@ -109,15 +108,8 @@ public class ArtifactUtils {
     Collections.reverse(emittedArtifacts);
 
     // Get all artifacts in the parent pipeline's trigger; these artifacts go at the end of the
-    // list,
-    // after any that were emitted by the pipeline
-    if (includeTrigger) {
-      List<Artifact> triggerArtifacts =
-          objectMapper.convertValue(
-              execution.getTrigger().getArtifacts(), new TypeReference<List<Artifact>>() {});
-
-      emittedArtifacts.addAll(triggerArtifacts);
-    }
+    // list, after any that were emitted by the pipeline
+    emittedArtifacts.addAll(execution.getTrigger().getArtifacts());
 
     return emittedArtifacts;
   }
@@ -196,7 +188,7 @@ public class ArtifactUtils {
   public List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
       String pipelineId, String stageRef, ExecutionCriteria criteria) {
     return getExecutionForPipelineId(pipelineId, criteria)
-        .map(e -> getAllArtifacts(e, true, Optional.of(it -> !stageRef.equals(it.getRefId()))))
+        .map(e -> getAllArtifacts(e, it -> !stageRef.equals(it.getRefId())))
         .orElse(Collections.emptyList());
   }
 
