@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.pipeline.util;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.String.format;
 
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -28,6 +27,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -45,7 +45,7 @@ public final class ArtifactResolver {
       boolean requireUniqueMatches) {
     this.currentArtifacts = ImmutableList.copyOf(currentArtifacts);
     this.priorArtifacts =
-        Suppliers.memoize(Suppliers.compose(ImmutableList::copyOf, priorArtifacts));
+        Suppliers.memoize(Suppliers.compose(ImmutableList::copyOf, priorArtifacts::get));
     this.requireUniqueMatches = requireUniqueMatches;
   }
 
