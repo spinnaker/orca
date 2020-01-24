@@ -52,7 +52,10 @@ class AmazonSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
             allVPCs, operation.vpcId as String, region, operation.credentials as String
         ).id
       }
-
+      /**
+       * Additional security group details can be used to pass additional details that can be used in custom preprocessor in clouddriver,
+       * In order to consume this detail, changes are required in clouddriver preprocessor/atomic operation.
+       */
       return [
           (SecurityGroupUpserter.OPERATION): [
               name                : operation.securityGroupName,
