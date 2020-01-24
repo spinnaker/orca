@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google, Inc.
+ * Copyright 2020 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -16,401 +16,173 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.String.format;
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.model.StageContext;
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import rx.functions.Func2;
-import rx.schedulers.Schedulers;
+import java.util.function.Supplier;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@Component
-public class ArtifactResolver {
+/** This class handles resolving a collection of {@link ExpectedArtifact} instances. */
+@NonnullByDefault
+public final class ArtifactResolver {
+  private final ImmutableList<Artifact> currentArtifacts;
+  private final Supplier<ImmutableList<Artifact>> priorArtifacts;
+  private final boolean requireUniqueMatches;
 
-  private final Logger log = LoggerFactory.getLogger(getClass());
-
-  private final ObjectMapper objectMapper;
-  private final ExecutionRepository executionRepository;
-  private final ContextParameterProcessor contextParameterProcessor;
-
-  @Autowired
-  public ArtifactResolver(
-      ObjectMapper objectMapper,
-      ExecutionRepository executionRepository,
-      ContextParameterProcessor contextParameterProcessor) {
-    this.objectMapper = objectMapper;
-    this.executionRepository = executionRepository;
-    this.contextParameterProcessor = contextParameterProcessor;
-  }
-
-  public @Nonnull List<Artifact> getArtifacts(@Nonnull Stage stage) {
-    if (stage.getContext() instanceof StageContext) {
-      return Optional.ofNullable((List<?>) ((StageContext) stage.getContext()).getAll("artifacts"))
-          .map(
-              list ->
-                  list.stream()
-                      .filter(Objects::nonNull)
-                      .flatMap(it -> ((List<?>) it).stream())
-                      .map(
-                          a ->
-                              a instanceof Map
-                                  ? objectMapper.convertValue(a, Artifact.class)
-                                  : (Artifact) a)
-                      .collect(Collectors.toList()))
-          .orElse(emptyList());
-    } else {
-      log.warn(
-          "Unable to read artifacts from unknown context type: {} ({})",
-          stage.getContext().getClass(),
-          stage.getExecution().getId());
-      return emptyList();
-    }
-  }
-
-  public @Nonnull List<Artifact> getAllArtifacts(@Nonnull Execution execution) {
-    return getAllArtifacts(execution, true, Optional.empty());
-  }
-
-  public @Nonnull List<Artifact> getAllArtifacts(
-      @Nonnull Execution execution,
-      Boolean includeTrigger,
-      Optional<Predicate<Stage>> stageFilter) {
-    // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
-    // then reverse the result so that artifacts from later stages will appear
-    // earlier in the results.
-    List<Artifact> emittedArtifacts =
-        Stage.topologicalSort(execution.getStages())
-            .filter(stageFilter.orElse(s -> true))
-            .filter(s -> s.getOutputs().containsKey("artifacts"))
-            .flatMap(
-                s ->
-                    ((List<?>) s.getOutputs().get("artifacts"))
-                        .stream()
-                            .map(
-                                a ->
-                                    a instanceof Map
-                                        ? objectMapper.convertValue(a, Artifact.class)
-                                        : (Artifact) a))
-            .collect(Collectors.toList());
-    Collections.reverse(emittedArtifacts);
-
-    // Get all artifacts in the parent pipeline's trigger; these artifacts go at the end of the
-    // list,
-    // after any that were emitted by the pipeline
-    if (includeTrigger) {
-      List<Artifact> triggerArtifacts =
-          objectMapper.convertValue(
-              execution.getTrigger().getArtifacts(), new TypeReference<List<Artifact>>() {});
-
-      emittedArtifacts.addAll(triggerArtifacts);
-    }
-
-    return emittedArtifacts;
+  private ArtifactResolver(
+      Iterable<Artifact> currentArtifacts,
+      Supplier<? extends Iterable<Artifact>> priorArtifacts,
+      boolean requireUniqueMatches) {
+    this.currentArtifacts = ImmutableList.copyOf(currentArtifacts);
+    this.priorArtifacts =
+        Suppliers.memoize(Suppliers.compose(ImmutableList::copyOf, priorArtifacts::get));
+    this.requireUniqueMatches = requireUniqueMatches;
   }
 
   /**
-   * Used to fully resolve a bound artifact on a stage that can either select an expected artifact
-   * ID for an expected artifact defined in a prior stage or as a trigger constraint OR define an
-   * inline expression-evaluable default artifact.
+   * Returns an instance of an {@link ArtifactResolver} that resolves against the supplied current
+   * artifacts, and prior artifacts.
    *
-   * @param stage The stage containing context to evaluate expressions on the bound artifact.
-   * @param id An expected artifact id. Either id or artifact must be specified.
-   * @param artifact An inline default artifact. Either id or artifact must be specified.
-   * @return A bound artifact with expressions evaluated.
+   * <p>The {@link Supplier} for prior artifacts is memoized for the lifetime of this instance and
+   * will be called at most once, the first time prior artifacts are needed by this instance.
+   *
+   * @param currentArtifacts The current artifacts to consider when resolving expected artifacts
+   * @param priorArtifacts A supplier that when invoked returns an {@link Iterable} of the prior
+   *     artifacts to consider when resolving artifacts
+   * @param requireUniqueMatches Whether the resolver should require that each expected artifact
+   *     matches at most one artifact.
+   * @return An instance of {@link ArtifactResolver}
    */
-  public @Nullable Artifact getBoundArtifactForStage(
-      Stage stage, @Nullable String id, @Nullable Artifact artifact) {
-    Artifact boundArtifact = id != null ? getBoundArtifactForId(stage, id) : artifact;
-    Map<String, Object> boundArtifactMap =
-        objectMapper.convertValue(boundArtifact, new TypeReference<Map<String, Object>>() {});
-
-    Map<String, Object> evaluatedBoundArtifactMap =
-        contextParameterProcessor.process(
-            boundArtifactMap, contextParameterProcessor.buildExecutionContext(stage), true);
-
-    return objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
-  }
-
-  public @Nullable Artifact getBoundArtifactForId(@Nonnull Stage stage, @Nullable String id) {
-    if (isEmpty(id)) {
-      return null;
-    }
-
-    List<ExpectedArtifact> expectedArtifacts;
-    if (stage.getContext() instanceof StageContext) {
-      expectedArtifacts =
-          Optional.ofNullable(
-                  (List<?>) ((StageContext) stage.getContext()).getAll("resolvedExpectedArtifacts"))
-              .map(
-                  list ->
-                      list.stream()
-                          .filter(Objects::nonNull)
-                          .flatMap(it -> ((List<?>) it).stream())
-                          .map(
-                              a ->
-                                  a instanceof Map
-                                      ? objectMapper.convertValue(a, ExpectedArtifact.class)
-                                      : (ExpectedArtifact) a)
-                          .collect(Collectors.toList()))
-              .orElse(emptyList());
-    } else {
-      log.warn(
-          "Unable to read resolved expected artifacts from unknown context type: {} ({})",
-          stage.getContext().getClass(),
-          stage.getExecution().getId());
-      expectedArtifacts = new ArrayList<>();
-    }
-
-    final Optional<ExpectedArtifact> expectedArtifactOptional =
-        expectedArtifacts.stream().filter(e -> e.getId().equals(id)).findFirst();
-
-    expectedArtifactOptional.ifPresent(
-        expectedArtifact -> {
-          final Artifact boundArtifact = expectedArtifact.getBoundArtifact();
-          final Artifact matchArtifact = expectedArtifact.getMatchArtifact();
-          if (boundArtifact != null
-              && matchArtifact != null
-              && boundArtifact.getArtifactAccount() == null) {
-            boundArtifact.setArtifactAccount(matchArtifact.getArtifactAccount());
-          }
-        });
-
-    return expectedArtifactOptional.map(ExpectedArtifact::getBoundArtifact).orElse(null);
-  }
-
-  public @Nonnull List<Artifact> getArtifactsForPipelineId(
-      @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
-    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
-
-    return execution == null ? Collections.emptyList() : getAllArtifacts(execution);
-  }
-
-  public @Nonnull List<Artifact> getArtifactsForPipelineIdWithoutStageRef(
-      @Nonnull String pipelineId, @Nonnull String stageRef, @Nonnull ExecutionCriteria criteria) {
-    Execution execution = getExecutionForPipelineId(pipelineId, criteria);
-
-    if (execution == null) {
-      return Collections.emptyList();
-    }
-
-    return getAllArtifacts(execution, true, Optional.of(it -> !stageRef.equals(it.getRefId())));
-  }
-
-  public void resolveArtifacts(@Nonnull Map pipeline) {
-    Map<String, Object> trigger = (Map<String, Object>) pipeline.get("trigger");
-    List<ExpectedArtifact> expectedArtifacts =
-        Optional.ofNullable((List<?>) pipeline.get("expectedArtifacts"))
-            .map(
-                list ->
-                    list.stream()
-                        .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
-                        .collect(toList()))
-            .orElse(emptyList());
-
-    List<Artifact> receivedArtifactsFromPipeline =
-        Optional.ofNullable((List<?>) pipeline.get("receivedArtifacts"))
-            .map(
-                list ->
-                    list.stream()
-                        .map(it -> objectMapper.convertValue(it, Artifact.class))
-                        .collect(toList()))
-            .orElse(emptyList());
-    List<Artifact> artifactsFromTrigger =
-        Optional.ofNullable((List<?>) trigger.get("artifacts"))
-            .map(
-                list ->
-                    list.stream()
-                        .map(it -> objectMapper.convertValue(it, Artifact.class))
-                        .collect(toList()))
-            .orElse(emptyList());
-
-    List<Artifact> receivedArtifacts =
-        Stream.concat(receivedArtifactsFromPipeline.stream(), artifactsFromTrigger.stream())
-            .distinct()
-            .collect(toList());
-
-    if (expectedArtifacts.isEmpty()) {
-      try {
-        trigger.put(
-            "artifacts",
-            objectMapper.readValue(objectMapper.writeValueAsString(receivedArtifacts), List.class));
-      } catch (IOException e) {
-        log.warn("Failure storing received artifacts: {}", e.getMessage(), e);
-      }
-      return;
-    }
-
-    List<Artifact> priorArtifacts = getPriorArtifacts(pipeline);
-    LinkedHashSet<Artifact> resolvedArtifacts =
-        resolveExpectedArtifacts(expectedArtifacts, receivedArtifacts, priorArtifacts, true);
-    LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(receivedArtifacts);
-    allArtifacts.addAll(resolvedArtifacts);
-
-    try {
-      trigger.put(
-          "artifacts",
-          objectMapper.readValue(objectMapper.writeValueAsString(allArtifacts), List.class));
-      trigger.put(
-          "expectedArtifacts",
-          objectMapper.readValue(objectMapper.writeValueAsString(expectedArtifacts), List.class));
-      trigger.put(
-          "resolvedExpectedArtifacts",
-          objectMapper.readValue(
-              objectMapper.writeValueAsString(expectedArtifacts),
-              List.class)); // Add the actual expectedArtifacts we included in the ids.
-    } catch (IOException e) {
-      throw new ArtifactResolutionException(
-          "Failed to store artifacts in trigger: " + e.getMessage(), e);
-    }
-  }
-
-  private List<Artifact> getPriorArtifacts(final Map<String, Object> pipeline) {
-    // set pageSize to a single record to avoid hydrating all of the stored Executions for
-    // the pipeline, since getArtifactsForPipelineId only uses the most recent Execution from the
-    // returned Observable<Execution>
-    ExecutionCriteria criteria = new ExecutionCriteria();
-    criteria.setPageSize(1);
-    criteria.setSortType(ExecutionRepository.ExecutionComparator.START_TIME_OR_ID);
-    return getArtifactsForPipelineId((String) pipeline.get("id"), criteria);
-  }
-
-  public Artifact resolveSingleArtifact(
-      ExpectedArtifact expectedArtifact,
-      List<Artifact> possibleMatches,
-      List<Artifact> priorArtifacts,
+  public static ArtifactResolver getInstance(
+      Iterable<Artifact> currentArtifacts,
+      Supplier<? extends Iterable<Artifact>> priorArtifacts,
       boolean requireUniqueMatches) {
-    Artifact resolved =
-        matchSingleArtifact(expectedArtifact, possibleMatches, requireUniqueMatches);
+    return new ArtifactResolver(currentArtifacts, priorArtifacts, requireUniqueMatches);
+  }
 
-    if (resolved == null && expectedArtifact.isUsePriorArtifact() && priorArtifacts != null) {
-      resolved = matchSingleArtifact(expectedArtifact, priorArtifacts, requireUniqueMatches);
-      expectedArtifact.setBoundArtifact(resolved);
+  /**
+   * Returns an instance of an {@link ArtifactResolver} that resolves against the supplied current
+   * artifacts.
+   *
+   * @param currentArtifacts The current artifacts to consider when resolving expected artifacts
+   * @param requireUniqueMatches Whether the resolver should require that each expected artifact
+   *     matches at most one artifact.
+   * @return An instance of {@link ArtifactResolver}
+   */
+  public static ArtifactResolver getInstance(
+      Iterable<Artifact> currentArtifacts, boolean requireUniqueMatches) {
+    return new ArtifactResolver(currentArtifacts, ImmutableList::of, requireUniqueMatches);
+  }
+
+  /**
+   * Resolves the input expected artifacts, returning the result of the resolution as a {@link
+   * ResolveResult}.
+   *
+   * <p>Resolving an expected artifact means finding an artifact that matches that expected
+   * artifact. To find a matching artifact, the following are considered in order:
+   *
+   * <ul>
+   *   <li>The {@link ArtifactResolver}'s current artifacts
+   *   <li>If the expected artifact has {@link ExpectedArtifact#isUsePriorArtifact()} true, the
+   *       {@link ArtifactResolver}'s prior artifacts
+   *   <li>If the expected artifact has {@link ExpectedArtifact#isUseDefaultArtifact()} true, the
+   *       {@link ExpectedArtifact}'s default artifact
+   * </ul>
+   *
+   * In order to determine whether an {@link ExpectedArtifact} matches an {@link Artifact}, the
+   * expected artifact's {@link ExpectedArtifact#matches(Artifact)} method is used.
+   *
+   * <p>If an expected artifact does not match any artifacts, an {@link InvalidRequestException} is
+   * thrown.
+   *
+   * <p>If {@link #requireUniqueMatches} is true, and an expected artifact matches more than one
+   * artifact in any of the above steps, an {@link InvalidRequestException} is thrown.
+   *
+   * @param expectedArtifacts The expected artifacts to resolve
+   * @return The result of the artifact resolution
+   */
+  public ResolveResult resolveExpectedArtifacts(Iterable<ExpectedArtifact> expectedArtifacts) {
+    // We keep track of resolved artifacts in an ImmutableSet.Builder so that duplicates are not
+    // added (in the case that an artifact matches more than one expected artifact). An ImmutableSet
+    // iterates in the order elements were added (including via the builder), so calling asList()
+    // on the resulting set will return the resolved artifacts in the order they were resolved.
+    ImmutableSet.Builder<Artifact> resolvedArtifacts = ImmutableSet.builder();
+    ImmutableList.Builder<ExpectedArtifact> boundExpectedArtifacts = ImmutableList.builder();
+
+    for (ExpectedArtifact expectedArtifact : expectedArtifacts) {
+      Artifact resolved =
+          resolveSingleArtifact(expectedArtifact)
+              .orElseThrow(
+                  () ->
+                      new InvalidRequestException(
+                          format(
+                              "Unmatched expected artifact %s could not be resolved.",
+                              expectedArtifact)));
+      resolvedArtifacts.add(resolved);
+      boundExpectedArtifacts.add(expectedArtifact.toBuilder().boundArtifact(resolved).build());
+    }
+    return new ResolveResult(resolvedArtifacts.build().asList(), boundExpectedArtifacts.build());
+  }
+
+  private Optional<Artifact> resolveSingleArtifact(ExpectedArtifact expectedArtifact) {
+    Optional<Artifact> resolved = matchSingleArtifact(expectedArtifact, currentArtifacts);
+
+    if (!resolved.isPresent() && expectedArtifact.isUsePriorArtifact()) {
+      resolved = matchSingleArtifact(expectedArtifact, priorArtifacts.get());
     }
 
-    if (resolved == null
-        && expectedArtifact.isUseDefaultArtifact()
-        && expectedArtifact.getDefaultArtifact() != null) {
-      resolved = expectedArtifact.getDefaultArtifact();
-      expectedArtifact.setBoundArtifact(resolved);
+    if (!resolved.isPresent() && expectedArtifact.isUseDefaultArtifact()) {
+      resolved = Optional.ofNullable(expectedArtifact.getDefaultArtifact());
     }
 
     return resolved;
   }
 
-  private Artifact matchSingleArtifact(
-      ExpectedArtifact expectedArtifact,
-      List<Artifact> possibleMatches,
-      boolean requireUniqueMatches) {
-    if (expectedArtifact.getBoundArtifact() != null) {
-      return expectedArtifact.getBoundArtifact();
-    }
-    List<Artifact> matches =
-        possibleMatches.stream().filter(expectedArtifact::matches).collect(toList());
-    Artifact result;
-    switch (matches.size()) {
-      case 0:
-        return null;
-      case 1:
-        result = matches.get(0);
-        break;
-      default:
-        if (requireUniqueMatches) {
-          throw new InvalidRequestException(
-              "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
-        }
-        result = matches.get(0);
+  private Optional<Artifact> matchSingleArtifact(
+      ExpectedArtifact expectedArtifact, ImmutableList<Artifact> possibleArtifacts) {
+    ImmutableList<Artifact> matches =
+        possibleArtifacts.stream().filter(expectedArtifact::matches).collect(toImmutableList());
+
+    if (matches.isEmpty()) {
+      return Optional.empty();
     }
 
-    expectedArtifact.setBoundArtifact(result);
-    return result;
-  }
-
-  public Set<Artifact> resolveExpectedArtifacts(
-      List<ExpectedArtifact> expectedArtifacts,
-      List<Artifact> receivedArtifacts,
-      boolean requireUniqueMatches) {
-    return resolveExpectedArtifacts(
-        expectedArtifacts, receivedArtifacts, null, requireUniqueMatches);
-  }
-
-  public LinkedHashSet<Artifact> resolveExpectedArtifacts(
-      List<ExpectedArtifact> expectedArtifacts,
-      List<Artifact> receivedArtifacts,
-      List<Artifact> priorArtifacts,
-      boolean requireUniqueMatches) {
-    LinkedHashSet<Artifact> resolvedArtifacts = new LinkedHashSet<>();
-
-    for (ExpectedArtifact expectedArtifact : expectedArtifacts) {
-      Artifact resolved =
-          resolveSingleArtifact(
-              expectedArtifact, receivedArtifacts, priorArtifacts, requireUniqueMatches);
-      if (resolved == null) {
-        throw new InvalidRequestException(
-            format("Unmatched expected artifact %s could not be resolved.", expectedArtifact));
-      } else {
-        resolvedArtifacts.add(resolved);
-      }
+    if (matches.size() > 1 && requireUniqueMatches) {
+      throw new InvalidRequestException(
+          "Expected artifact " + expectedArtifact + " matches multiple artifacts " + matches);
     }
 
-    return resolvedArtifacts;
+    return Optional.of(matches.get(0));
   }
 
-  private Execution getExecutionForPipelineId(
-      @Nonnull String pipelineId, @Nonnull ExecutionCriteria criteria) {
-    return executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
-        .subscribeOn(Schedulers.io()).toSortedList(startTimeOrId).toBlocking().single().stream()
-        .findFirst()
-        .orElse(null);
+  /**
+   * This class represents the result of calling {@link
+   * ArtifactResolver#resolveExpectedArtifacts(Iterable)}.
+   */
+  @AllArgsConstructor(access = AccessLevel.PRIVATE)
+  @Getter
+  public static final class ResolveResult {
+    /**
+     * This field contains the resolved artifacts; these are the artifacts that matched any input
+     * expected artifact. If an artifact matches more than one expected artifact, it is returned
+     * only once.
+     */
+    private final ImmutableList<Artifact> resolvedArtifacts;
+    /**
+     * This field contains the resolved expected artifacts; each resolved expected artifact is a
+     * copy of the input expected artifact with its {@link ExpectedArtifact#getBoundArtifact()} set
+     * to the artifact that it matched during resolution.
+     */
+    private final ImmutableList<ExpectedArtifact> resolvedExpectedArtifacts;
   }
-
-  private static class ArtifactResolutionException extends RuntimeException {
-    ArtifactResolutionException(String message, Throwable cause) {
-      super(message, cause);
-    }
-  }
-
-  @Data
-  public static class ResolveResult {
-    Set<Artifact> resolvedArtifacts = new HashSet<>();
-    Set<ExpectedArtifact> unresolvedExpectedArtifacts = new HashSet<>();
-  }
-
-  private static Func2<Execution, Execution, Integer> startTimeOrId =
-      (a, b) -> {
-        Long aStartTime = Optional.ofNullable(a.getStartTime()).orElse(0L);
-        Long bStartTime = Optional.ofNullable(b.getStartTime()).orElse(0L);
-
-        int startTimeCmp = bStartTime.compareTo(aStartTime);
-        return startTimeCmp != 0L ? startTimeCmp : b.getId().compareTo(a.getId());
-      };
 }
