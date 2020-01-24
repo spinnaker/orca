@@ -47,6 +47,16 @@ final class ExecutionRepositoryTest {
   }
 
   @Test
+  void nullStartTimesSortById() {
+    Execution a = withStartTimeAndId(null, LATER_ULID_1);
+    Execution b = withStartTimeAndId(null, EARLIER_ULID);
+
+    assertThat(START_TIME_OR_ID.compare(a, a)).isEqualTo(0);
+    assertThat(START_TIME_OR_ID.compare(a, b)).isLessThan(0);
+    assertThat(START_TIME_OR_ID.compare(b, a)).isGreaterThan(0);
+  }
+
+  @Test
   void laterStartTimeSortsFirst() {
     Execution a = withStartTimeAndId(LATER_TIME, EARLIER_ULID);
     Execution b = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
