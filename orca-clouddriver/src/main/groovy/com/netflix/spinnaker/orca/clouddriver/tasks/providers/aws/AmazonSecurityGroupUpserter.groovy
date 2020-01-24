@@ -62,7 +62,8 @@ class AmazonSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
               description         : operation.description,
               securityGroupIngress: operation.securityGroupIngress,
               ipIngress           : operation.ipIngress,
-              ingressAppendOnly   : operation.ingressAppendOnly ?: false
+              ingressAppendOnly   : operation.ingressAppendOnly ?: false,
+              additionalSecurityGroupDetails : operation.additionalSecurityGroupDetails
           ]
       ]
     }
