@@ -40,12 +40,10 @@ public final class PatchManifestTask extends AbstractCloudProviderAwareTask impl
   public static final String TASK_NAME = "patchManifest";
 
   private final KatoService katoService;
-  private final ManifestEvaluator manifestEvaluator;
 
   @Autowired
-  public PatchManifestTask(KatoService katoService, ManifestEvaluator manifestEvaluator) {
+  public PatchManifestTask(KatoService katoService) {
     this.katoService = katoService;
-    this.manifestEvaluator = manifestEvaluator;
   }
 
   @Override
@@ -59,8 +57,7 @@ public final class PatchManifestTask extends AbstractCloudProviderAwareTask impl
   private ImmutableMap<String, Map> getOperation(Stage stage) {
     PatchManifestContext context = stage.mapTo(PatchManifestContext.class);
     MergeStrategy mergeStrategy = context.getOptions().getMergeStrategy();
-    ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, context);
-    List<Map<Object, Object>> patchBody = result.getManifests();
+    List<Map<Object, Object>> patchBody = context.getManifests();
 
     if (patchBody.isEmpty()) {
       throw new IllegalArgumentException(
@@ -74,8 +71,6 @@ public final class PatchManifestTask extends AbstractCloudProviderAwareTask impl
     Map<String, Object> task = new HashMap<>(stage.getContext());
     task.put("source", "text");
     task.put("patchBody", mergeStrategy == MergeStrategy.JSON ? patchBody : patchBody.get(0));
-    task.put("requiredArtifacts", result.getRequiredArtifacts());
-    task.put("allArtifacts", result.getOptionalArtifacts());
 
     return ImmutableMap.of(TASK_NAME, task);
   }

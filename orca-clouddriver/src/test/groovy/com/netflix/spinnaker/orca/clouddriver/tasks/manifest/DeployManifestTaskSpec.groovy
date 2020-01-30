@@ -16,15 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.KatoService
-import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
-import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
@@ -33,13 +28,9 @@ class DeployManifestTaskSpec extends Specification {
   String TASK_ID = "12345"
 
   KatoService katoService = Mock(KatoService)
-  def artifactUtils = Stub(ArtifactUtils) {
-    getArtifacts(*_) >> []
-  }
 
   @Subject
-  DeployManifestTask task = new DeployManifestTask(katoService, new ManifestEvaluator(artifactUtils,
-    Mock(ContextParameterProcessor), new ObjectMapper(), Mock(OortService), new RetrySupport()))
+  DeployManifestTask task = new DeployManifestTask(katoService)
 
   def "enables traffic when the trafficManagement field is absent"() {
     given:

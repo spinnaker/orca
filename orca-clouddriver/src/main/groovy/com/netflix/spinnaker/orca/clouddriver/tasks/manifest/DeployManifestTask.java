@@ -39,12 +39,10 @@ public final class DeployManifestTask extends AbstractCloudProviderAwareTask imp
   public static final String TASK_NAME = "deployManifest";
 
   private final KatoService katoService;
-  private final ManifestEvaluator manifestEvaluator;
 
   @Autowired
-  public DeployManifestTask(KatoService katoService, ManifestEvaluator manifestEvaluator) {
+  public DeployManifestTask(KatoService katoService) {
     this.katoService = katoService;
-    this.manifestEvaluator = manifestEvaluator;
   }
 
   @Override
@@ -57,14 +55,10 @@ public final class DeployManifestTask extends AbstractCloudProviderAwareTask imp
 
   private ImmutableMap<String, Map> getOperation(Stage stage) {
     DeployManifestContext context = stage.mapTo(DeployManifestContext.class);
-    ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, context);
 
     Map<String, Object> task = new HashMap<>(stage.getContext());
 
     task.put("source", "text");
-    task.put("manifests", result.getManifests());
-    task.put("requiredArtifacts", result.getRequiredArtifacts());
-    task.put("optionalArtifacts", result.getOptionalArtifacts());
     if (context.getTrafficManagement().isEnabled()) {
       task.put("services", context.getTrafficManagement().getOptions().getServices());
       task.put("enableTraffic", context.getTrafficManagement().getOptions().isEnableTraffic());
