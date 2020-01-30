@@ -17,7 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks
 
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.annotations.VisibleForTesting
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.exceptions.SpinnakerException
+import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -44,29 +48,27 @@ import java.util.concurrent.TimeUnit
 @CompileStatic
 class MonitorKatoTask implements RetryableTask, CloudProviderAware {
 
-  /**
-   * How long to continue trying to look up a task that reports a 404 Not Found.
-   *
-   * Allows for replication lag if reading tasks from a read-replica of the clouddriver main redis.
-   */
-  @Value('${tasks.monitor-kato-task.task-not-found-timeout-ms:120000}')
-  long taskNotFoundTimeoutMs
-
   private final Clock clock
   private final Registry registry
   private final KatoService kato
   private final DynamicConfigService dynamicConfigService
+  private final RetrySupport retrySupport
+  private static final int MAX_NOTFOUND_RETRIES = 30
+
+  @VisibleForTesting
+  static final int MAX_HTTP_INTERNAL_RETRIES = 5
 
   @Autowired
-  MonitorKatoTask(KatoService katoService, Registry registry, DynamicConfigService dynamicConfigService) {
-    this(katoService, registry, Clock.systemUTC(), dynamicConfigService)
+  MonitorKatoTask(KatoService katoService, Registry registry, DynamicConfigService dynamicConfigService, RetrySupport retrySupport) {
+    this(katoService, registry, Clock.systemUTC(), dynamicConfigService, retrySupport)
   }
 
-  MonitorKatoTask(KatoService katoService, Registry registry, Clock clock, DynamicConfigService dynamicConfigService) {
+  MonitorKatoTask(KatoService katoService, Registry registry, Clock clock, DynamicConfigService dynamicConfigService, RetrySupport retrySupport) {
     this.registry = registry
     this.clock = clock
     this.kato = katoService
     this.dynamicConfigService = dynamicConfigService
+    this.retrySupport = retrySupport
   }
 
   long getBackoffPeriod() { 5000L }
@@ -89,33 +91,20 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
     }
 
     Task katoTask
-    def skipReplica = stage.context."kato.task.skipReplica" ?: false
     try {
-      katoTask = kato.lookupTask(taskId.id, skipReplica as Boolean).toBlocking().first()
+      retrySupport.retry({
+        katoTask = kato.lookupTask(taskId.id, false)
+      }, MAX_HTTP_INTERNAL_RETRIES, Duration.ofMillis(100), false)
     } catch (RetrofitError re) {
-      //handle a 404 if a task update has not successfully replicated to a read replica
       if (re.kind == RetrofitError.Kind.HTTP && re.response.status == HttpURLConnection.HTTP_NOT_FOUND) {
-        def firstNotFoundRetry = stage.context."kato.task.firstNotFoundRetry" as Long
+        def notFoundRetryCount = ((stage.context."kato.task.notFoundRetryCount" as Long) ?: 0) + 1
 
-        def now = clock.millis()
-        def ctx = [:]
-        if (firstNotFoundRetry == null || firstNotFoundRetry == -1) {
-          ctx['kato.task.firstNotFoundRetry'] = now
-          firstNotFoundRetry = now
-        }
-
-        if (now - firstNotFoundRetry > taskNotFoundTimeoutMs) {
-          if (skipReplica) {
-            // immediately fail the first time it gets a 404 directly from the master
-            throw re
-          }
-
-          registry.counter("monitorKatoTask.taskNotFound.timeout").increment()
-          ctx['kato.task.skipReplica'] = true
+        def ctx = ['kato.task.notFoundRetryCount': notFoundRetryCount]
+        if (notFoundRetryCount >= MAX_NOTFOUND_RETRIES) {
+          throw re
         }
 
         registry.counter("monitorKatoTask.taskNotFound.retry").increment()
-        ctx['kato.task.notFoundRetryCount'] = ((stage.context."kato.task.notFoundRetryCount" as Integer) ?: 0) + 1
         return TaskResult.builder(ExecutionStatus.RUNNING).context(ctx).build()
       } else {
         throw re
@@ -202,7 +191,12 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
       log.info("Retrying kato task ${katoTask.id} (retry: ${retryCount}) with exception: {}", getException(katoTask))
     }
 
-    TaskResult.builder(status).context(outputs).build()
+    if (status == ExecutionStatus.RUNNING) {
+      // Reset the retry count since we might need to retry again on the next round
+      outputs['kato.task.notFoundRetryCount'] = 0
+    }
+
+    return TaskResult.builder(status).context(outputs).build()
   }
 
   private boolean shouldRetry(Task katoTask, ExecutionStatus status) {
