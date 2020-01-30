@@ -91,10 +91,17 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
     }
 
     Task katoTask
+    def outputs = [
+        'kato.task.terminalRetryCount': 0,
+        'kato.task.firstNotFoundRetry': -1L,
+        'kato.task.notFoundRetryCount': 0
+    ] as Map<String, ?>
+
     try {
       retrySupport.retry({
         katoTask = kato.lookupTask(taskId.id, false)
       }, MAX_HTTP_INTERNAL_RETRIES, Duration.ofMillis(100), false)
+      outputs['kato.task.notFoundRetryCount'] = 0
     } catch (RetrofitError re) {
       if (re.kind == RetrofitError.Kind.HTTP && re.response.status == HttpURLConnection.HTTP_NOT_FOUND) {
         def notFoundRetryCount = ((stage.context."kato.task.notFoundRetryCount" as Long) ?: 0) + 1
@@ -118,12 +125,7 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
       status = ExecutionStatus.RUNNING
     }
 
-    def outputs = [
-      'kato.task.terminalRetryCount': 0,
-      'kato.task.firstNotFoundRetry': -1L,
-      'kato.task.notFoundRetryCount': 0,
-      'kato.task.lastStatus': status
-    ] as Map<String, ?>
+    outputs['kato.task.lastStatus'] = status
 
     if (status == ExecutionStatus.SUCCEEDED) {
       def deployed = getDeployedNames(katoTask)
@@ -189,11 +191,6 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
       stage.context."kato.task.retriedOperation" = true
 
       log.info("Retrying kato task ${katoTask.id} (retry: ${retryCount}) with exception: {}", getException(katoTask))
-    }
-
-    if (status == ExecutionStatus.RUNNING) {
-      // Reset the retry count since we might need to retry again on the next round
-      outputs['kato.task.notFoundRetryCount'] = 0
     }
 
     return TaskResult.builder(status).context(outputs).build()
