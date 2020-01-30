@@ -111,10 +111,9 @@ class KubernetesJobRunnerSpec extends Specification {
     ObjectMapper objectMapper = new ObjectMapper()
     OortService oortService = Mock(OortService)
     ContextParameterProcessor contextParameterProcessor = Mock(ContextParameterProcessor)
-    KatoService katoService = Mock(KatoService)
     RetrySupport retrySupport = new RetrySupport()
     ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
-      artifactUtils, contextParameterProcessor, katoService, objectMapper, oortService, retrySupport
+      artifactUtils, contextParameterProcessor, objectMapper, oortService, retrySupport
     )
     def stage = new Stage(Execution.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",

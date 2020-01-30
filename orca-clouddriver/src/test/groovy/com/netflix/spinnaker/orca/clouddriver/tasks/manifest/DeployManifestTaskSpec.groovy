@@ -38,8 +38,8 @@ class DeployManifestTaskSpec extends Specification {
   }
 
   @Subject
-  DeployManifestTask task = new DeployManifestTask(new ManifestEvaluator(artifactUtils,
-    Mock(ContextParameterProcessor), katoService, new ObjectMapper(), Mock(OortService), new RetrySupport()))
+  DeployManifestTask task = new DeployManifestTask(katoService, new ManifestEvaluator(artifactUtils,
+    Mock(ContextParameterProcessor), new ObjectMapper(), Mock(OortService), new RetrySupport()))
 
   def "enables traffic when the trafficManagement field is absent"() {
     given:

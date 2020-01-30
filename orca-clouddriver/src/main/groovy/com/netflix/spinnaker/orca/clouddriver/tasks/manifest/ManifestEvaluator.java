@@ -22,16 +22,11 @@ import static java.util.Collections.emptyList;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.BindArtifact;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
@@ -41,7 +36,6 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +60,6 @@ public class ManifestEvaluator implements CloudProviderAware {
 
   private final ArtifactUtils artifactUtils;
   private final ContextParameterProcessor contextParameterProcessor;
-  private final KatoService katoService;
   private final ObjectMapper objectMapper;
   private final OortService oortService;
   private final RetrySupport retrySupport;
@@ -75,13 +68,11 @@ public class ManifestEvaluator implements CloudProviderAware {
   public ManifestEvaluator(
       ArtifactUtils artifactUtils,
       ContextParameterProcessor contextParameterProcessor,
-      KatoService katoService,
       ObjectMapper objectMapper,
       OortService oortService,
       RetrySupport retrySupport) {
     this.artifactUtils = artifactUtils;
     this.contextParameterProcessor = contextParameterProcessor;
-    this.katoService = katoService;
     this.objectMapper = objectMapper;
     this.oortService = oortService;
     this.retrySupport = retrySupport;
@@ -245,26 +236,5 @@ public class ManifestEvaluator implements CloudProviderAware {
 
   private ImmutableList<Artifact> getOptionalArtifacts(Stage stage) {
     return ImmutableList.copyOf(artifactUtils.getArtifacts(stage));
-  }
-
-  // todo(mneterval): remove this task-specific logic from this class
-  public TaskResult buildTaskResult(String taskName, Stage stage, Map<String, Object> task) {
-    Map<String, Map> operation =
-        new ImmutableMap.Builder<String, Map>().put(taskName, task).build();
-
-    TaskId taskId =
-        katoService
-            .requestOperations(getCloudProvider(stage), Collections.singletonList(operation))
-            .toBlocking()
-            .first();
-
-    Map<String, Object> outputs =
-        new ImmutableMap.Builder<String, Object>()
-            .put("kato.result.expected", true)
-            .put("kato.last.task.id", taskId)
-            .put("deploy.account.name", getCredentials(stage))
-            .build();
-
-    return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build();
   }
 }

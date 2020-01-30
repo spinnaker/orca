@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.BindArtifact;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.Source;
@@ -49,7 +48,6 @@ final class ManifestEvaluatorTest {
 
   @Mock private ArtifactUtils artifactUtils;
   @Mock private ContextParameterProcessor contextParameterProcessor;
-  @Mock private KatoService katoService;
   @Mock private OortService oortService;
 
   private final List<Map<Object, Object>> manifests =
@@ -67,7 +65,6 @@ final class ManifestEvaluatorTest {
         new ManifestEvaluator(
             artifactUtils,
             contextParameterProcessor,
-            katoService,
             new ObjectMapper(),
             oortService,
             new RetrySupport());
