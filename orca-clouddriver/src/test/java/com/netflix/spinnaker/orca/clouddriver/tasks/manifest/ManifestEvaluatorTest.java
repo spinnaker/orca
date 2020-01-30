@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.BindArtifact;
@@ -64,7 +65,12 @@ final class ManifestEvaluatorTest {
   void setup() {
     manifestEvaluator =
         new ManifestEvaluator(
-            artifactUtils, oortService, new ObjectMapper(), contextParameterProcessor, katoService);
+            artifactUtils,
+            contextParameterProcessor,
+            katoService,
+            new ObjectMapper(),
+            oortService,
+            new RetrySupport());
   }
 
   @Test
@@ -77,16 +83,15 @@ final class ManifestEvaluatorTest {
     assertThat(result.getManifests()).isEqualTo(manifests);
   }
 
-  // todo(mneterval): throw an error for null text manifests when text source specified
-  // @Test
-  // void nullTextManifestFailure() {
-  //   Stage stage = new Stage();
-  //   DeployManifestContext context =
-  // DeployManifestContext.builder().source(Source.Text).manifests(null).build();
-  //
-  //   assertThatThrownBy(() -> manifestEvaluator.evaluate(stage, context))
-  //     .isInstanceOf(IllegalArgumentException.class);
-  // }
+  @Test
+  void nullTextManifestFailure() {
+    Stage stage = new Stage();
+    DeployManifestContext context =
+        DeployManifestContext.builder().source(Source.Text).manifests(null).build();
+
+    assertThatThrownBy(() -> manifestEvaluator.evaluate(stage, context))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 
   @Test
   void artifactManifestSuccess() {

@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
@@ -38,7 +39,7 @@ class DeployManifestTaskSpec extends Specification {
 
   @Subject
   DeployManifestTask task = new DeployManifestTask(new ManifestEvaluator(artifactUtils,
-    Mock(OortService), new ObjectMapper(), Mock(ContextParameterProcessor), katoService))
+    Mock(ContextParameterProcessor), katoService, new ObjectMapper(), Mock(OortService), new RetrySupport()))
 
   def "enables traffic when the trafficManagement field is absent"() {
     given:
@@ -122,6 +123,7 @@ class DeployManifestTaskSpec extends Specification {
       account: "my-k8s-account",
       cloudProvider: "kubernetes",
       source: "text",
+      manifests: []
     ] + extraParams)
   }
 }
