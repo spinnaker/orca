@@ -113,7 +113,7 @@ class KubernetesJobRunnerSpec extends Specification {
     ContextParameterProcessor contextParameterProcessor = Mock(ContextParameterProcessor)
     RetrySupport retrySupport = new RetrySupport()
     ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
-      artifactUtils, contextParameterProcessor, objectMapper, oortService, retrySupport
+      artifactUtils, contextParameterProcessor, oortService, retrySupport
     )
     def stage = new Stage(Execution.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",

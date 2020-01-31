@@ -16,12 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Collections.emptyList;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
@@ -29,6 +31,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.BindArtifact;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
@@ -36,7 +39,6 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,10 +59,10 @@ import retrofit.client.Response;
 public class ManifestEvaluator implements CloudProviderAware {
   private static final ThreadLocal<Yaml> yamlParser =
       ThreadLocal.withInitial(() -> new Yaml(new SafeConstructor()));
+  private static final ObjectMapper objectMapper = OrcaObjectMapper.getInstance();
 
   private final ArtifactUtils artifactUtils;
   private final ContextParameterProcessor contextParameterProcessor;
-  private final ObjectMapper objectMapper;
   private final OortService oortService;
   private final RetrySupport retrySupport;
 
@@ -68,12 +70,10 @@ public class ManifestEvaluator implements CloudProviderAware {
   public ManifestEvaluator(
       ArtifactUtils artifactUtils,
       ContextParameterProcessor contextParameterProcessor,
-      ObjectMapper objectMapper,
       OortService oortService,
       RetrySupport retrySupport) {
     this.artifactUtils = artifactUtils;
     this.contextParameterProcessor = contextParameterProcessor;
-    this.objectMapper = objectMapper;
     this.oortService = oortService;
     this.retrySupport = retrySupport;
   }
@@ -104,10 +104,13 @@ public class ManifestEvaluator implements CloudProviderAware {
   }
 
   private ImmutableList<Map<Object, Object>> getManifests(Stage stage, ManifestContext context) {
-    if (ManifestContext.Source.Artifact.equals(context.getSource())) {
-      return getManifestsFromArtifact(stage, context);
+    switch (context.getSource()) {
+      case Artifact:
+        return getManifestsFromArtifact(stage, context);
+      case Text:
+        return getManifestsFromText(context);
     }
-    return getManifestsFromText(context);
+    throw new IllegalStateException("Unknown ManifestContext.Source " + context.getSource());
   }
 
   private ImmutableList<Map<Object, Object>> getManifestsFromText(ManifestContext context) {
@@ -138,13 +141,14 @@ public class ManifestEvaluator implements CloudProviderAware {
     return getSpelEvaluatedManifests(unevaluatedManifests, stage);
   }
 
-  private ImmutableList<Map<Object, Object>> coerceManifestToList(Object manifest) {
+  private ImmutableList<ImmutableMap<Object, Object>> coerceManifestToList(Object manifest) {
     if (manifest instanceof List) {
       return ImmutableList.copyOf(
-          objectMapper.convertValue(manifest, new TypeReference<List<Map<Object, Object>>>() {}));
+          objectMapper.convertValue(
+              manifest, new TypeReference<List<ImmutableMap<Object, Object>>>() {}));
     }
-    Map<Object, Object> singleManifest =
-        (Map<Object, Object>) objectMapper.convertValue(manifest, Map.class);
+    ImmutableMap<Object, Object> singleManifest =
+        objectMapper.convertValue(manifest, new TypeReference<ImmutableMap<Object, Object>>() {});
     return ImmutableList.of(singleManifest);
   }
 
@@ -172,31 +176,32 @@ public class ManifestEvaluator implements CloudProviderAware {
       manifestArtifact.setArtifactAccount(context.getManifestArtifactAccount());
     }
 
-    if (manifestArtifact.getArtifactAccount() == null) {
-      throw new IllegalArgumentException("No manifest artifact account was specified.");
-    }
+    checkArgument(
+        manifestArtifact.getArtifactAccount() != null,
+        "No manifest artifact account was specified.");
 
     return manifestArtifact;
   }
 
   private ImmutableList<Map<Object, Object>> getSpelEvaluatedManifests(
       ImmutableList<Map<Object, Object>> unevaluatedManifests, Stage stage) {
-    Map<String, Object> manifestWrapper = new HashMap<>();
-    manifestWrapper.put("manifests", unevaluatedManifests);
+    Map<String, Object> processorInput = ImmutableMap.of("manifests", unevaluatedManifests);
 
-    manifestWrapper =
+    Map<String, Object> processorResult =
         contextParameterProcessor.process(
-            manifestWrapper, contextParameterProcessor.buildExecutionContext(stage), true);
+            processorInput,
+            contextParameterProcessor.buildExecutionContext(stage),
+            /* allowUnknownKeys= */ true);
 
-    if (manifestWrapper.containsKey(PipelineExpressionEvaluator.SUMMARY)) {
+    if (processorResult.containsKey(PipelineExpressionEvaluator.SUMMARY)) {
       throw new IllegalStateException(
           String.format(
               "Failure evaluating manifest expressions: %s",
-              manifestWrapper.get(PipelineExpressionEvaluator.SUMMARY)));
+              processorResult.get(PipelineExpressionEvaluator.SUMMARY)));
     }
 
     List<Map<Object, Object>> evaluatedManifests =
-        (List<Map<Object, Object>>) manifestWrapper.get("manifests");
+        (List<Map<Object, Object>>) processorResult.get("manifests");
     return ImmutableList.copyOf(evaluatedManifests);
   }
 

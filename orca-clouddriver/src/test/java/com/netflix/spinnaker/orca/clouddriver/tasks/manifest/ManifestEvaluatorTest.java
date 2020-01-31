@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
@@ -63,11 +62,7 @@ final class ManifestEvaluatorTest {
   void setup() {
     manifestEvaluator =
         new ManifestEvaluator(
-            artifactUtils,
-            contextParameterProcessor,
-            new ObjectMapper(),
-            oortService,
-            new RetrySupport());
+            artifactUtils, contextParameterProcessor, oortService, new RetrySupport());
   }
 
   @Test
