@@ -43,7 +43,7 @@ public class WaitTask implements RetryableTask {
 
     Instant now = clock.instant();
 
-    if (context.isSkipRemainingWait() || context.getWaitDuration().isZero()) {
+    if (context.isSkipRemainingWait()) {
       return TaskResult.SUCCEEDED;
     } else if (stage.getStartTime() != null
         && Instant.ofEpochMilli(stage.getStartTime())
@@ -69,7 +69,7 @@ public class WaitTask implements RetryableTask {
     }
 
     // Return a backoff time that reflects the requested waitTime
-    if (stage.getStartTime() != null && context.getWaitDuration() != null) {
+    if (stage.getStartTime() != null) {
       Instant now = clock.instant();
       Instant completion =
           Instant.ofEpochMilli(stage.getStartTime()).plus(context.getWaitDuration());

@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import java.time.Duration;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,7 +32,7 @@ public class WaitStage implements StageDefinitionBuilder {
   public static String STAGE_TYPE = "wait";
 
   @Override
-  public void taskGraph(@NotNull Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull Stage stage, TaskNode.Builder builder) {
     builder.withTask("wait", WaitTask.class);
   }
 
