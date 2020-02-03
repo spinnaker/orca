@@ -25,6 +25,7 @@ import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
 
 import javax.servlet.http.HttpServletResponse
+import com.netflix.spinnaker.kork.common.Header
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
 import com.netflix.spinnaker.orca.igor.BuildService
@@ -264,7 +265,7 @@ class OperationsControllerSpec extends Specification {
     buildService.getBuild(buildNumber, master, job) >> buildInfo
 
     if (queryUser) {
-      MDC.put(AuthenticatedRequest.Header.USER.header, queryUser)
+      MDC.put(Header.USER.header, queryUser)
     }
     when:
     controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
@@ -634,7 +635,8 @@ class OperationsControllerSpec extends Specification {
   def "should call webhookService and return correct information"() {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "failFastStatusCodes", "waitForCompletion", "statusUrlResolution",
-                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses",
+                                   "signalCancellation", "cancelEndpoint", "cancelMethod", "cancelPayload"]
 
     when:
     def preconfiguredWebhooks = controller.preconfiguredWebhooks()
@@ -653,7 +655,8 @@ class OperationsControllerSpec extends Specification {
   def "should not return protected preconfigured webhooks if user don't have the role"() {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "failFastStatusCodes", "waitForCompletion", "statusUrlResolution",
-                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses",
+                                   "signalCancellation", "cancelEndpoint", "cancelMethod", "cancelPayload"]
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
@@ -686,7 +689,8 @@ class OperationsControllerSpec extends Specification {
   def "should return protected preconfigured webhooks if user have the role"() {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "failFastStatusCodes", "waitForCompletion", "statusUrlResolution",
-                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses",
+                                   "signalCancellation", "cancelEndpoint", "cancelMethod", "cancelPayload"]
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
       startedPipeline = mapper.readValue(json, Execution)
       startedPipeline.id = UUID.randomUUID().toString()
@@ -772,7 +776,7 @@ class OperationsControllerSpec extends Specification {
       url: "a", customHeaders: customHeaders, method: HttpMethod.POST, payload: "b",
       failFastStatusCodes: [500, 501], waitForCompletion: true, statusUrlResolution: WebhookProperties.StatusUrlResolution.webhookResponse,
       statusUrlJsonPath: "c", statusJsonPath: "d", progressJsonPath: "e", successStatuses: "f", canceledStatuses: "g", terminalStatuses: "h", parameters: null, parameterData: null,
-      permissions: permissions
+      permissions: permissions, signalCancellation: true, cancelEndpoint: "i", cancelMethod: HttpMethod.POST, cancelPayload: "j"
     )
   }
 }
