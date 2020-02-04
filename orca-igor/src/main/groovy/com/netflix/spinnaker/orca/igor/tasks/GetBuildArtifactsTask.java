@@ -28,7 +28,6 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,16 +38,16 @@ public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> 
 
   @Override
   protected @Nonnull TaskResult tryExecute(@Nonnull CIStageDefinition stageDefinition) {
-    if (StringUtils.isEmpty(stageDefinition.getPropertyFile())) {
-      return TaskResult.SUCCEEDED;
-    }
     List<Artifact> artifacts =
         buildService.getArtifacts(
             stageDefinition.getBuildNumber(),
             stageDefinition.getPropertyFile(),
             stageDefinition.getMaster(),
             stageDefinition.getJob());
-    Map<String, List<Artifact>> outputs = Collections.singletonMap("artifacts", artifacts);
+    Map<String, List<Artifact>> outputs =
+        (artifacts != null && !artifacts.isEmpty())
+            ? Collections.singletonMap("artifacts", artifacts)
+            : Collections.emptyMap();
     return TaskResult.builder(ExecutionStatus.SUCCEEDED)
         .context(Collections.emptyMap())
         .outputs(outputs)
