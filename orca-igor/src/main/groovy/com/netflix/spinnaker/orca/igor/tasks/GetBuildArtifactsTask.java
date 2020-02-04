@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.igor.tasks;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -38,7 +36,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> {
   private final BuildService buildService;
-  private final ObjectMapper objectMapper;
 
   @Override
   protected @Nonnull TaskResult tryExecute(@Nonnull CIStageDefinition stageDefinition) {
@@ -51,13 +48,7 @@ public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> 
     if (artifacts == null) {
       artifacts = new ArrayList<>();
     }
-    if (stageDefinition.getBuildInfo() != null
-        && stageDefinition.getBuildInfo().containsKey("artifacts")) {
-      artifacts.addAll(
-          objectMapper.convertValue(
-              stageDefinition.getBuildInfo().get("artifacts"),
-              new TypeReference<ArrayList<Artifact>>() {}));
-    }
+    artifacts.addAll(stageDefinition.getBuildInfo().getArtifacts());
     Map<String, List<Artifact>> outputs = Collections.singletonMap("artifacts", artifacts);
     return TaskResult.builder(ExecutionStatus.SUCCEEDED)
         .context(Collections.emptyMap())

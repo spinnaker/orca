@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.igor.tasks
 
-import com.fasterxml.jackson.databind.ObjectMapper
+
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.BuildService
@@ -35,7 +35,7 @@ class GetBuildArtifactsTaskSpec extends Specification {
   def PROPERTY_FILE = "my-file"
 
   @Subject
-  GetBuildArtifactsTask task = new GetBuildArtifactsTask(buildService, new ObjectMapper())
+  GetBuildArtifactsTask task = new GetBuildArtifactsTask(buildService)
 
   def "retrieves artifacts and adds them to the stage outputs"() {
     given:
