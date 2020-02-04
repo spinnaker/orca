@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.igor.tasks
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.BuildService
@@ -34,9 +35,9 @@ class GetBuildArtifactsTaskSpec extends Specification {
   def PROPERTY_FILE = "my-file"
 
   @Subject
-  GetBuildArtifactsTask task = new GetBuildArtifactsTask(buildService)
+  GetBuildArtifactsTask task = new GetBuildArtifactsTask(buildService, new ObjectMapper())
 
-  def "retreives artifacts and adds them to the stage outputs"() {
+  def "retrieves artifacts and adds them to the stage outputs"() {
     given:
     def stage = createStage(PROPERTY_FILE)
 
@@ -89,6 +90,32 @@ class GetBuildArtifactsTaskSpec extends Specification {
     1 * buildService.getArtifacts(BUILD_NUMBER, null, MASTER, JOB)  >> [testArtifact]
     artifacts.size() == 1
     artifacts.get(0).getName() == "my-artifact"
+  }
+
+  def "adds artifacts found in buildInfo to the output"() {
+    given:
+    def stage = createStage(null)
+    stage.context.buildInfo = [
+        artifacts: [[
+            reference: "another-artifact_0.0.1553618414_amd64.deb",
+            fileName: "another-artifact_0.0.1553618414_amd64.deb",
+            relativePath: "another-artifact_0.0.1553618414_amd64.deb",
+            name: "another-artifact",
+            displayPath: "another-artifact_0.0.1553618414_amd64.deb",
+            type: "deb",
+            version: "0.0.1553618414",
+            decorated: true
+        ]]
+    ]
+
+    when:
+    TaskResult result = task.execute(stage)
+    def artifacts = result.getOutputs().get("artifacts") as List<Artifact>
+
+    then:
+    1 * buildService.getArtifacts(BUILD_NUMBER, null, MASTER, JOB)  >> [testArtifact]
+    artifacts.size() == 2
+    artifacts*.name == ["my-artifact", "another-artifact"]
   }
 
   def createStage(String propertyFile) {

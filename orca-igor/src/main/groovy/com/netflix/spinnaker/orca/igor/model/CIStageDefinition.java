@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 
@@ -29,6 +30,7 @@ public class CIStageDefinition implements RetryableStageDefinition {
   private final String job;
   private final String propertyFile;
   private final Integer buildNumber;
+  private final Map<String, Object> buildInfo;
   private final boolean waitForCompletion;
   private final List<ExpectedArtifact> expectedArtifacts;
   private final int consecutiveErrors;
@@ -41,6 +43,7 @@ public class CIStageDefinition implements RetryableStageDefinition {
       @JsonProperty("job") String job,
       @JsonProperty("property") String propertyFile,
       @JsonProperty("buildNumber") Integer buildNumber,
+      @JsonProperty("buildInfo") Map<String, Object> buildInfo,
       @JsonProperty("waitForCompletion") Boolean waitForCompletion,
       @JsonProperty("expectedArtifacts") List<ExpectedArtifact> expectedArtifacts,
       @JsonProperty("consecutiveErrors") Integer consecutiveErrors) {
@@ -48,6 +51,7 @@ public class CIStageDefinition implements RetryableStageDefinition {
     this.job = job;
     this.propertyFile = propertyFile;
     this.buildNumber = buildNumber;
+    this.buildInfo = buildInfo;
     this.waitForCompletion = Optional.ofNullable(waitForCompletion).orElse(true);
     this.expectedArtifacts =
         Collections.unmodifiableList(
