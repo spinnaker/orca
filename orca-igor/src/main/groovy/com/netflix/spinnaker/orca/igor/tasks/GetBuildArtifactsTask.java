@@ -45,7 +45,7 @@ public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> 
             stageDefinition.getMaster(),
             stageDefinition.getJob());
     Map<String, List<Artifact>> outputs =
-        (artifacts != null && !artifacts.isEmpty())
+        (artifacts != null)
             ? Collections.singletonMap("artifacts", artifacts)
             : Collections.emptyMap();
     return TaskResult.builder(ExecutionStatus.SUCCEEDED)

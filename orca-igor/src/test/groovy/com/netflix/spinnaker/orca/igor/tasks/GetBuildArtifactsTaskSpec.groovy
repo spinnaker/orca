@@ -63,28 +63,32 @@ class GetBuildArtifactsTaskSpec extends Specification {
     artifacts.size() == 0
   }
 
-  def "does not fetch artifacts if the property file is empty"() {
+  def "fetches artifacts if the property file is empty"() {
     given:
     def stage = createStage("")
 
     when:
     TaskResult result = task.execute(stage)
+    def artifacts = result.getOutputs().get("artifacts") as List<Artifact>
 
     then:
-    0 * buildService.getArtifacts(*_)
-    result.outputs.size() == 0
+    1 * buildService.getArtifacts(BUILD_NUMBER, "", MASTER, JOB) >> [testArtifact]
+    artifacts.size() == 1
+    artifacts.get(0).getName() == "my-artifact"
   }
 
-  def "does not fetch artifacts if the property file is null"() {
+  def "fetches artifacts if the property file is null"() {
     given:
     def stage = createStage(null)
 
     when:
     TaskResult result = task.execute(stage)
+    def artifacts = result.getOutputs().get("artifacts") as List<Artifact>
 
     then:
-    0 * buildService.getArtifacts(*_)
-    result.outputs.size() == 0
+    1 * buildService.getArtifacts(BUILD_NUMBER, null, MASTER, JOB)  >> [testArtifact]
+    artifacts.size() == 1
+    artifacts.get(0).getName() == "my-artifact"
   }
 
   def createStage(String propertyFile) {
