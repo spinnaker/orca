@@ -327,8 +327,12 @@ final class WaitForManifestStableTaskTest {
   }
 
   private static class ManifestBuilder {
-    private Boolean stable;
-    private Boolean failed;
+    private static final Manifest.Condition UNSTABLE =
+        new Manifest.Condition(false, UNSTABLE_MESSAGE);
+    private static final Manifest.Condition FAILED = new Manifest.Condition(true, FAILED_MESSAGE);
+
+    private boolean stable;
+    private boolean failed;
 
     ManifestBuilder stable(boolean state) {
       stable = state;
@@ -341,16 +345,9 @@ final class WaitForManifestStableTaskTest {
     }
 
     private Manifest.Status getStatus() {
-      Manifest.Status.StatusBuilder statusBuilder = Manifest.Status.builder();
-      if (stable != null) {
-        String stableMessage = stable ? null : UNSTABLE_MESSAGE;
-        statusBuilder.stable(new Manifest.Condition(stable, stableMessage));
-      }
-      if (failed != null) {
-        String failedMessage = failed ? FAILED_MESSAGE : null;
-        statusBuilder.failed(new Manifest.Condition(failed, failedMessage));
-      }
-      return statusBuilder.build();
+      Manifest.Condition stableCondition = stable ? Manifest.Condition.emptyTrue() : UNSTABLE;
+      Manifest.Condition failedCondition = failed ? FAILED : Manifest.Condition.emptyFalse();
+      return Manifest.Status.builder().stable(stableCondition).failed(failedCondition).build();
     }
 
     public Manifest build() {

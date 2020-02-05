@@ -75,11 +75,11 @@ final class ManifestTest {
   void defaultsFields() throws IOException {
     String resource = getResource("manifests/empty.json");
     Manifest manifest = objectMapper.readValue(resource, Manifest.class);
-    assertThat(manifest.getManifest()).isNull();
-    assertThat(manifest.getArtifacts()).isNull();
-    assertThat(manifest.getStatus()).isNull();
-    assertThat(manifest.getName()).isNull();
-    assertThat(manifest.getWarnings()).isNull();
+    assertThat(manifest.getManifest()).isNotNull();
+    assertThat(manifest.getArtifacts()).isEmpty();
+    assertThat(manifest.getStatus()).isEqualTo(Manifest.Status.builder().build());
+    assertThat(manifest.getName()).isEmpty();
+    assertThat(manifest.getWarnings()).isEmpty();
   }
 
   @Test
@@ -122,8 +122,8 @@ final class ManifestTest {
     String resource = getResource("manifests/unknown.json");
     Manifest manifest = objectMapper.readValue(resource, Manifest.class);
     assertThat(manifest.getStatus()).isNotNull();
-    assertThat(manifest.getStatus().getStable()).isNull();
-    assertThat(manifest.getStatus().getFailed()).isNull();
+    assertThat(manifest.getStatus().getStable()).isEqualTo(Manifest.Condition.emptyFalse());
+    assertThat(manifest.getStatus().getFailed()).isEqualTo(Manifest.Condition.emptyFalse());
   }
 
   @Test
@@ -131,8 +131,8 @@ final class ManifestTest {
     String resource = getResource("manifests/explicit-null.json");
     Manifest manifest = objectMapper.readValue(resource, Manifest.class);
     assertThat(manifest.getStatus()).isNotNull();
-    assertThat(manifest.getStatus().getStable()).isNull();
-    assertThat(manifest.getStatus().getFailed()).isNull();
+    assertThat(manifest.getStatus().getStable()).isEqualTo(Manifest.Condition.emptyFalse());
+    assertThat(manifest.getStatus().getFailed()).isEqualTo(Manifest.Condition.emptyFalse());
   }
 
   private static String getResource(String name) {

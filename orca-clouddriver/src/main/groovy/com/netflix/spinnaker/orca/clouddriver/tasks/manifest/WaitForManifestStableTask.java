@@ -109,19 +109,19 @@ public class WaitForManifestStableTask
                 .build();
 
         Status status = manifest.getStatus();
-        if (status.getFailed() != null && status.getFailed().isState()) {
+        if (status.getFailed().isState()) {
           failedManifests.add(manifestNameAndLocation);
           String failureMessage = identifier + ": " + status.getFailed().getMessage();
           messages.add(failureMessage);
           failureMessages.add(failureMessage);
-        } else if (status.getStable() != null && status.getStable().isState()) {
+        } else if (status.getStable().isState()) {
           stableManifests.add(manifestNameAndLocation);
         } else {
           anyIncomplete = true;
           messages.add(identifier + ": waiting for manifest to stabilize");
         }
 
-        if (manifest.getWarnings() != null && !manifest.getWarnings().isEmpty()) {
+        if (!manifest.getWarnings().isEmpty()) {
           warnings.addAll(manifest.getWarnings());
         }
       }
