@@ -61,7 +61,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
         .taskById(taskId)
         .let { task ->
           if (task == null) {
-            log.error("InvalidTaskId: Unable to find task {} in existing tasks {} while processing message {}", taskId, mapper.writeValueAsString(stage), this)
+            log.error("InvalidTaskId: Unable to find task {} in stage '{}' while processing message {}", taskId, mapper.writeValueAsString(stage), this)
             queue.push(InvalidTaskId(this))
           } else {
             block.invoke(stage, task)
