@@ -15,23 +15,22 @@
  */
 package com.netflix.spinnaker.orca.peering
 
-import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.persistence.DualExecutionRepository
+import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 
-/**
- * Requires DualExecutionRepository being enabled to run migrations.
- */
 class PeeringAgent(
-  clusterLock: NotificationClusterLock,
-  private val front50Service: Front50Service,
-  private val dualExecutionRepository: DualExecutionRepository,
-  private val pollingIntervalMs: Long
+  jooq: DSLContext,
+  peeredPoolName: String,
+  private val peeredId: String,
+  private val pollingIntervalMs: Long,
+  clusterLock: NotificationClusterLock
 ) : AbstractPollingNotificationAgent(clusterLock) {
 
   private val log = LoggerFactory.getLogger(javaClass)
+  private val srcDB: SqlDbRawAccess = SqlDbRawAccess(jooq, peeredPoolName)
+  private val destDB: SqlDbRawAccess = SqlDbRawAccess(jooq, "default")
 
   override fun tick() {
     log.info("Hello, is it me you're peering for?")

@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.core.RetrySupport
+import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.routing.withPool
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -74,7 +75,8 @@ class SqlExecutionRepository(
   private val retryProperties: RetryProperties,
   private val batchReadSize: Int = 10,
   private val stageReadSize: Int = 200,
-  private val poolName: String = "default"
+  private val poolName: String = "default",
+  handlePartitions: List<String>? = null
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -82,6 +84,18 @@ class SqlExecutionRepository(
   }
 
   private val log = LoggerFactory.getLogger(javaClass)
+  private val handlePartitions: List<String> = mutableListOf()
+
+  init {
+    if (partitionName != null) {
+      if (handlePartitions != null) {
+        (this.handlePartitions as MutableList).addAll(handlePartitions)
+      }
+      if (!this.handlePartitions.contains(partitionName)) {
+        (this.handlePartitions as MutableList).add(partitionName)
+      }
+    }
+  }
 
   override fun store(execution: Execution) {
     withPool(poolName) {
@@ -627,13 +641,14 @@ class SqlExecutionRepository(
       val stageTableName = execution.type.stagesTableName
       val status = execution.status.toString()
       val body = mapper.writeValueAsString(execution)
+      val effectivePartition = execution.partition ?: partitionName
 
       val (executionId, legacyId) = mapLegacyId(ctx, tableName, execution.id, execution.startTime)
 
       val insertPairs = mapOf(
         field("id") to executionId,
         field("legacy_id") to legacyId,
-        field(name("partition")) to partitionName,
+        field(name("partition")) to effectivePartition,
         field("status") to status,
         field("application") to execution.application,
         field("build_time") to (execution.buildTime ?: currentTimeMillis()),
@@ -651,6 +666,10 @@ class SqlExecutionRepository(
         field("canceled") to execution.isCanceled,
         field("updated_at") to currentTimeMillis()
       )
+
+      if (handlePartitions.any() && effectivePartition != null && !handlePartitions.contains(effectivePartition)) {
+        throw SystemException("Attempted to persist an execution that is not owned by this instance: $executionId is currently owned by $effectivePartition but this instance can handle $handlePartitions")
+      }
 
       when (execution.type) {
         PIPELINE -> upsert(
@@ -780,9 +799,6 @@ class SqlExecutionRepository(
   private fun SelectConnectByStep<out Record>.statusIn(
     statuses: Collection<ExecutionStatus>
   ): SelectConnectByStep<out Record> {
-    // jOOQ doesn't seem to play well with Kotlin here. Using the vararg interface for `in` doesn't construct the
-    // SQL clause correctly, and I can't seem to get Kotlin to use the Collection<T> interface. We can manually
-    // build this clause and it remain reasonably safe.
     if (statuses.isEmpty() || statuses.size == ExecutionStatus.values().size) {
       return this
     }
@@ -883,7 +899,7 @@ class SqlExecutionRepository(
       .from(type.tableName)
 
   private fun selectFields() =
-    listOf(field("id"), field("body"))
+    listOf(field("id"), field("body"), field("`partition`"))
 
   private fun SelectForUpdateStep<out Record>.fetchExecutions() =
     ExecutionMapper(mapper, stageReadSize).map(fetch().intoResultSet(), jooq)

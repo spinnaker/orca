@@ -143,5 +143,11 @@ public class PipelineBuilder {
     return this;
   }
 
+  public PipelineBuilder withPartition(String partition) {
+    pipeline.setPartition(partition);
+
+    return this;
+  }
+
   private final Execution pipeline;
 }
