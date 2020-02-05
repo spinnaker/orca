@@ -17,7 +17,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
@@ -45,7 +44,6 @@ public class WaitForManifestStableTask
   public static final String TASK_NAME = "waitForManifestToStabilize";
 
   private final OortService oortService;
-  private final ObjectMapper objectMapper;
 
   @Override
   public long getBackoffPeriod() {

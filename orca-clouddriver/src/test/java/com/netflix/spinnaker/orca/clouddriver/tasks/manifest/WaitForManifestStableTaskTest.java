@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -50,7 +49,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void terminalWhenFailedStable() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
@@ -67,7 +66,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void terminalWhenFailedUnstable() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
@@ -84,7 +83,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void runningWhenUnstable() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
@@ -101,7 +100,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void succeededWhenStable() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
@@ -118,7 +117,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void runningWhenUnknown() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
@@ -135,7 +134,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void doesNotRecheckManifests() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(
@@ -168,7 +167,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void waitsForMultipleManifests() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(
@@ -204,7 +203,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void waitsForAllManifestsWhenOneFailed() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(
@@ -243,7 +242,7 @@ final class WaitForManifestStableTaskTest {
   @Test
   void waitsForAllManifestsWhenOneFailedAndOneUnknown() {
     OortService oortService = mock(OortService.class);
-    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService, new ObjectMapper());
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
     Stage myStage =
         createStageWithManifests(
