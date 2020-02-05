@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
+import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 
@@ -34,6 +35,20 @@ class PeeringAgent(
 
   override fun tick() {
     log.info("Hello, is it me you're peering for?")
+
+    /* Sh!t this needs to do:
+        * migrate the completed executions
+          * select completed from oldDb where `partition` is peeredId
+          * copy them over
+          * Note the diff here is important because we might have a previously migrated running execution
+        * migrate running executions
+          * select all running form oldDb
+     */
+
+    // Get all executions we already have from the peer
+    val executionType = Execution.ExecutionType.PIPELINE
+    val existingExecutions = destDB.getAllExecutionIds(executionType, peeredId)
+    val peerExecutions = srcDB.getAllExecutionIds(executionType, peeredId)
   }
 
   override fun getPollingInterval() = pollingIntervalMs

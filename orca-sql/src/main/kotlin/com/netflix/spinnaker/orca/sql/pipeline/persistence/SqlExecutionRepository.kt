@@ -57,6 +57,7 @@ import org.jooq.impl.DSL.count
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.name
 import org.jooq.impl.DSL.table
+import org.jooq.impl.DSL.value
 import org.slf4j.LoggerFactory
 import rx.Observable
 import java.lang.System.currentTimeMillis
@@ -110,10 +111,14 @@ class SqlExecutionRepository(
   }
 
   override fun updateStageContext(stage: Stage) {
+    validateHandledPartitionOrThrow(stage.execution)
+
     storeStage(stage)
   }
 
   override fun removeStage(execution: Execution, stageId: String) {
+    validateHandledPartitionOrThrow(execution)
+
     withPool(poolName) {
       jooq.transactional {
         it.delete(execution.type.stagesTableName)
@@ -134,6 +139,8 @@ class SqlExecutionRepository(
   }
 
   override fun cancel(type: ExecutionType, id: String, user: String?, reason: String?) {
+    validateHandledPartitionOrThrow(type, id)
+
     withPool(poolName) {
       jooq.transactional {
         selectExecution(it, type, id)
@@ -155,6 +162,8 @@ class SqlExecutionRepository(
   }
 
   override fun pause(type: ExecutionType, id: String, user: String?) {
+    validateHandledPartitionOrThrow(type, id)
+
     withPool(poolName) {
       jooq.transactional {
         selectExecution(it, type, id)
@@ -179,6 +188,8 @@ class SqlExecutionRepository(
   }
 
   override fun resume(type: ExecutionType, id: String, user: String?, ignoreCurrentStatus: Boolean) {
+    validateHandledPartitionOrThrow(type, id)
+
     withPool(poolName) {
       jooq.transactional {
         selectExecution(it, type, id)
@@ -207,6 +218,8 @@ class SqlExecutionRepository(
   }
 
   override fun updateStatus(type: ExecutionType, id: String, status: ExecutionStatus) {
+    validateHandledPartitionOrThrow(type, id)
+
     withPool(poolName) {
       jooq.transactional {
         selectExecution(it, type, id)
@@ -225,6 +238,8 @@ class SqlExecutionRepository(
   }
 
   override fun delete(type: ExecutionType, id: String) {
+    validateHandledPartitionOrThrow(type, id)
+
     val correlationField = if (type == PIPELINE) "pipeline_id" else "orchestration_id"
     val (ulid, _) = mapLegacyId(jooq, type.tableName, id)
 
@@ -502,13 +517,17 @@ class SqlExecutionRepository(
 
   override fun countActiveExecutions(): ActiveExecutionsReport {
     withPool(poolName) {
+      val partitionPredicate = if (partitionName != null) field("`partition`").eq(partitionName) else value(1).eq(value(1))
+
       val orchestrationsQuery = jooq.selectCount()
         .from(ORCHESTRATION.tableName)
         .where(field("status").eq(RUNNING.toString()))
+        .and(partitionPredicate)
         .asField<Int>("orchestrations")
       val pipelinesQuery = jooq.selectCount()
         .from(PIPELINE.tableName)
         .where(field("status").eq(RUNNING.toString()))
+        .and(partitionPredicate)
         .asField<Int>("pipelines")
 
       val record = jooq.select(orchestrationsQuery, pipelinesQuery).fetchOne()
@@ -632,7 +651,8 @@ class SqlExecutionRepository(
   }
 
   private fun storeExecutionInternal(ctx: DSLContext, execution: Execution, storeStages: Boolean = false) {
-    // TODO rz - Nasty little hack here to save the execution without any of its stages.
+    validateHandledPartitionOrThrow(execution)
+
     val stages = execution.stages.toMutableList().toList()
     execution.stages.clear()
 
@@ -641,14 +661,13 @@ class SqlExecutionRepository(
       val stageTableName = execution.type.stagesTableName
       val status = execution.status.toString()
       val body = mapper.writeValueAsString(execution)
-      val effectivePartition = execution.partition ?: partitionName
 
       val (executionId, legacyId) = mapLegacyId(ctx, tableName, execution.id, execution.startTime)
 
       val insertPairs = mapOf(
         field("id") to executionId,
         field("legacy_id") to legacyId,
-        field(name("partition")) to effectivePartition,
+        field(name("partition")) to partitionName,
         field("status") to status,
         field("application") to execution.application,
         field("build_time") to (execution.buildTime ?: currentTimeMillis()),
@@ -666,10 +685,6 @@ class SqlExecutionRepository(
         field("canceled") to execution.isCanceled,
         field("updated_at") to currentTimeMillis()
       )
-
-      if (handlePartitions.any() && effectivePartition != null && !handlePartitions.contains(effectivePartition)) {
-        throw SystemException("Attempted to persist an execution that is not owned by this instance: $executionId is currently owned by $effectivePartition but this instance can handle $handlePartitions")
-      }
 
       when (execution.type) {
         PIPELINE -> upsert(
@@ -912,6 +927,26 @@ class SqlExecutionRepository(
       override fun iterator(): Iterator<Execution> =
         PagedIterator(batchReadSize, Execution::getId, nextPage)
     }
+
+  private fun validateHandledPartitionOrThrow(execution: Execution) {
+    val partition = execution.partition
+
+    if (handlePartitions.any() && partition != null && !handlePartitions.contains(partition)) {
+      throw SystemException("Attempted to persist an execution that is not owned by this instance: ${execution.id} is currently owned by $partition but this instance can handle $handlePartitions")
+    }
+  }
+
+  private fun validateHandledPartitionOrThrow(executionType: ExecutionType, id: String) {
+    // Short circuit if we are handling all partitions
+    if (handlePartitions.any()) {
+      try {
+        val execution = retrieve(executionType, id)
+        validateHandledPartitionOrThrow(execution)
+      } catch (_: ExecutionNotFoundException) {
+        // Execution not found, we can proceed since the rest is likely a noop anyway
+      }
+    }
+  }
 
   class SyntheticStageRequired : IllegalArgumentException("Only synthetic stages can be inserted ad-hoc")
 }

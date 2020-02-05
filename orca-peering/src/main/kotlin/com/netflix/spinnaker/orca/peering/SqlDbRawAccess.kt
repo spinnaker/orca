@@ -36,7 +36,7 @@ class SqlDbRawAccess(
   /**
    * Returns a list of all execution IDs in the DB
    */
-  fun getAllExecutionIds(executionType: Execution.ExecutionType): List<String> {
+  fun getAllExecutionIds(executionType: Execution.ExecutionType, peeredId: String): List<String> {
     return withPool(poolName) {
       jooq
         .select(DSL.field("id"))
