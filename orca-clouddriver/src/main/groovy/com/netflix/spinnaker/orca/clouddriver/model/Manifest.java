@@ -17,28 +17,67 @@
 
 package com.netflix.spinnaker.orca.clouddriver.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.List;
 import java.util.Map;
-import lombok.Data;
+import javax.annotation.Nullable;
+import lombok.Builder;
+import lombok.Value;
 
-@Data
-public class Manifest {
-  private Map<String, Object> manifest;
-  private List<Artifact> artifacts;
-  private Status status;
-  private String name;
-  private List warnings;
+@JsonDeserialize(builder = Manifest.ManifestBuilder.class)
+@Value
+public final class Manifest {
+  private final Map<String, Object> manifest;
+  private final List<Artifact> artifacts;
+  private final Status status;
+  private final String name;
+  private final List<String> warnings;
 
-  @Data
-  public static class Status {
-    Condition stable;
-    Condition failed;
+  @Builder(toBuilder = true)
+  private Manifest(
+      Map<String, Object> manifest,
+      List<Artifact> artifacts,
+      Status status,
+      String name,
+      List<String> warnings) {
+    this.manifest = manifest;
+    this.artifacts = artifacts;
+    this.status = status;
+    this.name = name;
+    this.warnings = warnings;
   }
 
-  @Data
-  public static class Condition {
-    boolean state;
-    String message;
+  @JsonDeserialize(builder = Manifest.Status.StatusBuilder.class)
+  @Value
+  public static final class Status {
+    private final Condition stable;
+    private final Condition failed;
+
+    @Builder(toBuilder = true)
+    private Status(Condition stable, Condition failed) {
+      this.stable = stable;
+      this.failed = failed;
+    }
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static final class StatusBuilder {}
   }
+
+  @Value
+  public static final class Condition {
+    private final boolean state;
+    private final String message;
+
+    public Condition(
+        @JsonProperty("state") boolean state, @Nullable @JsonProperty("message") String message) {
+      this.state = state;
+      this.message = message;
+    }
+  }
+
+  @JsonPOJOBuilder(withPrefix = "")
+  public static final class ManifestBuilder {}
 }

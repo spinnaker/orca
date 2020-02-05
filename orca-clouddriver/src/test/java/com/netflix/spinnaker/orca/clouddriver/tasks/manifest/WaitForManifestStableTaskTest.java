@@ -340,30 +340,21 @@ final class WaitForManifestStableTaskTest {
       return this;
     }
 
-    private static Manifest.Condition getCondition(boolean status, String message) {
-      Manifest.Condition result = new Manifest.Condition();
-      result.setState(status);
-      result.setMessage(message);
-      return result;
-    }
-
     private Manifest.Status getStatus() {
-      Manifest.Status status = new Manifest.Status();
+      Manifest.Status.StatusBuilder statusBuilder = Manifest.Status.builder();
       if (stable != null) {
         String stableMessage = stable ? null : UNSTABLE_MESSAGE;
-        status.setStable(getCondition(stable, stableMessage));
+        statusBuilder.stable(new Manifest.Condition(stable, stableMessage));
       }
       if (failed != null) {
         String failedMessage = failed ? FAILED_MESSAGE : null;
-        status.setFailed(getCondition(failed, failedMessage));
+        statusBuilder.failed(new Manifest.Condition(failed, failedMessage));
       }
-      return status;
+      return statusBuilder.build();
     }
 
     public Manifest build() {
-      Manifest result = new Manifest();
-      result.setStatus(getStatus());
-      return result;
+      return Manifest.builder().status(getStatus()).build();
     }
   }
 }
