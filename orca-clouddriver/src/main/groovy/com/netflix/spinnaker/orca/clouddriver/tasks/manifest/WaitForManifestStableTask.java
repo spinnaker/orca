@@ -71,10 +71,7 @@ public class WaitForManifestStableTask
     List<Map<String, String>> failedManifests = context.getFailedManifests();
     List warnings = context.getWarnings();
 
-    boolean allStable = true;
-    boolean anyFailed = false;
-    boolean anyUnknown = false;
-
+    boolean anyIncomplete = false;
     for (Map.Entry<String, List<String>> entry : deployedManifests.entrySet()) {
       String location = entry.getKey();
       for (String name : entry.getValue()) {
@@ -107,34 +104,23 @@ public class WaitForManifestStableTask
               e);
         }
 
-        Status status = manifest.getStatus();
-        if (status.getStable() == null || !status.getStable().isState()) {
-          allStable = false;
-          messages.add(identifier + ": waiting for manifest to stabilize");
-        }
-
         Map<String, String> manifestNameAndLocation =
             ImmutableMap.<String, String>builder()
                 .put("manifestName", name)
                 .put("location", location)
                 .build();
 
+        Status status = manifest.getStatus();
         if (status.getFailed() != null && status.getFailed().isState()) {
-          anyFailed = true;
           failedManifests.add(manifestNameAndLocation);
           String failureMessage = identifier + ": " + status.getFailed().getMessage();
           messages.add(failureMessage);
           failureMessages.add(failureMessage);
-        }
-
-        if (status.getStable() == null && status.getFailed() == null) {
-          anyUnknown = true;
-        }
-
-        if (status.getStable() != null
-            && status.getStable().isState()
-            && (status.getFailed() == null || !status.getFailed().isState())) {
+        } else if (status.getStable() != null && status.getStable().isState()) {
           stableManifests.add(manifestNameAndLocation);
+        } else {
+          anyIncomplete = true;
+          messages.add(identifier + ": waiting for manifest to stabilize");
         }
 
         if (manifest.getWarnings() != null && !manifest.getWarnings().isEmpty()) {
@@ -143,8 +129,8 @@ public class WaitForManifestStableTask
       }
     }
 
-    ImmutableMap.Builder builder =
-        new ImmutableMap.Builder<String, Object>()
+    ImmutableMap.Builder<String, Object> builder =
+        ImmutableMap.<String, Object>builder()
             .put("messages", messages)
             .put("stableManifests", stableManifests)
             .put("failedManifests", failedManifests);
@@ -158,18 +144,20 @@ public class WaitForManifestStableTask
 
     Map<String, Object> newContext = builder.build();
 
-    if (!anyUnknown && anyFailed) {
-      return TaskResult.builder(ExecutionStatus.TERMINAL).context(newContext).build();
-    } else if (allStable) {
+    if (anyIncomplete) {
+      return TaskResult.builder(ExecutionStatus.RUNNING)
+          .context(newContext)
+          .outputs(new HashMap<>())
+          .build();
+    }
+
+    if (failedManifests.isEmpty()) {
       return TaskResult.builder(ExecutionStatus.SUCCEEDED)
           .context(newContext)
           .outputs(new HashMap<>())
           .build();
     } else {
-      return TaskResult.builder(ExecutionStatus.RUNNING)
-          .context(newContext)
-          .outputs(new HashMap<>())
-          .build();
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(newContext).build();
     }
   }
 

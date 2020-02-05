@@ -76,7 +76,6 @@ class WaitForManifestStableTaskSpec extends Specification {
     result.status == TERMINAL
     result.context == createContext([
       messages       : [
-        "'my-manifest-1' in 'my-namespace' for account my-k8s-account: waiting for manifest to stabilize",
         "'my-manifest-1' in 'my-namespace' for account my-k8s-account: failed to stabilize"
       ],
       failedManifests: [[manifestName: "my-manifest-1", location: "my-namespace"]],
@@ -129,7 +128,6 @@ class WaitForManifestStableTaskSpec extends Specification {
       messages       : [
         "'my-manifest-2' in 'my-namespace' for account my-k8s-account: waiting for manifest to stabilize",
         "'my-manifest-3' in 'my-namespace' for account my-k8s-account: failed to stabilize",
-        "'my-manifest-4' in 'my-namespace' for account my-k8s-account: waiting for manifest to stabilize",
         "'my-manifest-4' in 'my-namespace' for account my-k8s-account: failed to stabilize"
       ],
       exception      : [

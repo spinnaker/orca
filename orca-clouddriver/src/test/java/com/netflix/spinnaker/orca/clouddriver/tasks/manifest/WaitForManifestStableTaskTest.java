@@ -77,8 +77,7 @@ final class WaitForManifestStableTaskTest {
 
     TaskResult result = task.execute(myStage);
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
-    assertThat(getMessages(result))
-        .containsExactly(waitingToStabilizeMessage(MANIFEST_1), failedMessage(MANIFEST_1));
+    assertThat(getMessages(result)).containsExactly(failedMessage(MANIFEST_1));
     assertThat(getErrors(result)).containsExactly(failedMessage(MANIFEST_1));
   }
 
@@ -217,32 +216,28 @@ final class WaitForManifestStableTaskTest {
         .thenReturn(manifestBuilder().stable(false).failed(false).build());
 
     TaskResult result = task.execute(myStage);
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
+    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result))
-        .containsExactly(
-            waitingToStabilizeMessage(MANIFEST_1),
-            failedMessage(MANIFEST_1),
-            waitingToStabilizeMessage(MANIFEST_2));
+        .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
     assertThat(getErrors(result)).containsExactly(failedMessage(MANIFEST_1));
 
-    // TODO(ezimanyi): The TERMINAL status above is a bug; we should not fail until all manifests
-    // have reported status and
-    // return TERMINAL at that point.
+    reset(oortService);
 
-    //    reset(oortService);
-    //
-    //    when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_2, false))
-    //        .thenReturn(manifestBuilder().stable(true).failed(false).build());
-    //
-    //    result =
-    //        task.execute(
-    //            createStageWithContext(
-    //                ImmutableMap.<String, Object>builder()
-    //                    .putAll(myStage.getContext())
-    //                    .putAll(result.getContext())
-    //                    .build()));
-    //
-    // AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
+    when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_2, false))
+        .thenReturn(manifestBuilder().stable(true).failed(false).build());
+
+    result =
+        task.execute(
+            createStageWithContext(
+                ImmutableMap.<String, Object>builder()
+                    .putAll(myStage.getContext())
+                    .putAll(result.getContext())
+                    .build()));
+
+    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
+    assertThat(getMessages(result))
+        .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
+    assertThat(getErrors(result)).containsExactly(failedMessage(MANIFEST_1));
   }
 
   @Test
@@ -262,10 +257,7 @@ final class WaitForManifestStableTaskTest {
     TaskResult result = task.execute(myStage);
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.RUNNING);
     assertThat(getMessages(result))
-        .containsExactly(
-            waitingToStabilizeMessage(MANIFEST_1),
-            failedMessage(MANIFEST_1),
-            waitingToStabilizeMessage(MANIFEST_2));
+        .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
 
     reset(oortService);
 
@@ -279,14 +271,9 @@ final class WaitForManifestStableTaskTest {
                     .putAll(myStage.getContext())
                     .putAll(result.getContext())
                     .build()));
-    // TODO(ezimanyi): This is a bug; we should fail the task because my-manifest-1 failed on the
-    // first poll
-    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.TERMINAL);
     assertThat(getMessages(result))
-        .containsExactly(
-            waitingToStabilizeMessage(MANIFEST_1),
-            failedMessage(MANIFEST_1),
-            waitingToStabilizeMessage(MANIFEST_2));
+        .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
   }
 
   private static String waitingToStabilizeMessage(String manifest) {
