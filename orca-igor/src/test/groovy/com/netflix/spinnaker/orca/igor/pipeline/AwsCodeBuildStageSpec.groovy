@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.igor.pipeline
 
 import com.netflix.spinnaker.orca.igor.tasks.MonitorAwsCodeBuildTask
-import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StartAwsCodeBuildTask
 import spock.lang.Specification
 
