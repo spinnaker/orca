@@ -23,12 +23,13 @@ class SqlDbRawAccess(
   /**
    *  Returns a list of execution IDs for completed executions
    */
-  fun getCompletedExecutionIds(executionType: Execution.ExecutionType): List<String> {
+  fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
     return withPool(poolName) {
       jooq
         .select(DSL.field("id"))
         .from(getTableName(executionType))
         .where(DSL.field("status").`in`(*_completedStatuses.toTypedArray()))
+        .and(DSL.field("partition").eq(partitionName))
         .fetch(DSL.field("id"), String::class.java)
     }
   }
@@ -36,11 +37,12 @@ class SqlDbRawAccess(
   /**
    * Returns a list of all execution IDs in the DB
    */
-  fun getAllExecutionIds(executionType: Execution.ExecutionType, peeredId: String): List<String> {
+  fun getAllExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
     return withPool(poolName) {
       jooq
         .select(DSL.field("id"))
         .from(getTableName(executionType))
+        .where(DSL.field("partition").eq(partitionName))
         .fetch(DSL.field("id"), String::class.java)
     }
   }
