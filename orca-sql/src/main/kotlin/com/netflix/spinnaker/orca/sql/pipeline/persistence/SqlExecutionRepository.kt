@@ -17,7 +17,6 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.routing.withPool
 import com.netflix.spinnaker.orca.ExecutionStatus
@@ -76,8 +75,7 @@ class SqlExecutionRepository(
   private val retryProperties: RetryProperties,
   private val batchReadSize: Int = 10,
   private val stageReadSize: Int = 200,
-  private val poolName: String = "default",
-  handlePartitions: List<String>? = null
+  private val poolName: String = "default"
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -85,18 +83,6 @@ class SqlExecutionRepository(
   }
 
   private val log = LoggerFactory.getLogger(javaClass)
-  private val handlePartitions: List<String> = mutableListOf()
-
-  init {
-    if (partitionName != null) {
-      if (handlePartitions != null) {
-        (this.handlePartitions as MutableList).addAll(handlePartitions)
-      }
-      if (!this.handlePartitions.contains(partitionName)) {
-        (this.handlePartitions as MutableList).add(partitionName)
-      }
-    }
-  }
 
   override fun store(execution: Execution) {
     withPool(poolName) {
@@ -931,14 +917,14 @@ class SqlExecutionRepository(
   private fun validateHandledPartitionOrThrow(execution: Execution) {
     val partition = execution.partition
 
-    if (handlePartitions.any() && partition != null && !handlePartitions.contains(partition)) {
-      throw SystemException("Attempted to persist an execution that is not owned by this instance: ${execution.id} is currently owned by $partition but this instance can handle $handlePartitions")
+    if (partition != null && (partitionName != partition)) {
+      throw ForeignExecutionException(execution.id, partition, partitionName)
     }
   }
 
   private fun validateHandledPartitionOrThrow(executionType: ExecutionType, id: String) {
     // Short circuit if we are handling all partitions
-    if (handlePartitions.any()) {
+    if (partitionName != null) {
       try {
         val execution = retrieve(executionType, id)
         validateHandledPartitionOrThrow(execution)

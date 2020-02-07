@@ -36,7 +36,7 @@ class PeeringConfiguration {
     clusterLock: NotificationClusterLock,
     @Value("\${pollers.peering.pool-name}") peeredPoolName: String,
     @Value("\${pollers.peering.id}") peeredId: String,
-    @Value("\${pollers.peering.interval-ms:3600000}") pollIntervalMs: Long
+    @Value("\${pollers.peering.interval-ms:5000}") pollIntervalMs: Long
   ): PeeringAgent {
     return PeeringAgent(jooq, peeredPoolName, peeredId, pollIntervalMs, clusterLock)
   }

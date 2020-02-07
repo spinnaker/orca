@@ -1,12 +1,13 @@
 package com.netflix.spinnaker.orca.peering
 
+import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.kork.sql.routing.withPool
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.jooq.DSLContext
 import org.jooq.Record
+import org.jooq.SQLDialect
 import org.jooq.impl.DSL
-import org.jooq.impl.DSL.concat
 import org.slf4j.LoggerFactory
 
 /**
@@ -19,33 +20,63 @@ class SqlDbRawAccess(
 
   private val log = LoggerFactory.getLogger(this.javaClass)
   private val _completedStatuses = ExecutionStatus.COMPLETED.map { it.toString() }
+  private var maxPacketSize: Long = 0
+
+  fun init() {
+    if (maxPacketSize == 0L) {
+      if (jooq.dialect() != SQLDialect.MYSQL) {
+        throw UnsupportedOperationException("Peering only supported on MySQL right now")
+      }
+
+      maxPacketSize = jooq
+        .resultQuery("SHOW VARIABLES WHERE Variable_name='max_allowed_packet'")
+        .fetchOne(DSL.field("Value"), Long::class.java) / 2
+    }
+  }
+  /**
+   *  Returns a list of execution IDs for completed executions
+   */
+  fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String, builtAfter: Long): List<String> {
+    return withPool(poolName) {
+      jooq
+        .select(DSL.field("id"))
+        .from(getTableName(executionType))
+        .where(DSL.field("status").`in`(*_completedStatuses.toTypedArray())
+          .and(DSL.field("build_time").ge(builtAfter))
+          .and(DSL.field("`partition`").eq(partitionName).or(DSL.field("`partition`").isNull)))
+        .fetch(DSL.field("id"), String::class.java)
+    }
+  }
 
   /**
    *  Returns a list of execution IDs for completed executions
    */
-  fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
+  fun getRunningExecutionIds(executionType: Execution.ExecutionType, partitionName: String, builtAfter: Long): List<String> {
     return withPool(poolName) {
       jooq
         .select(DSL.field("id"))
         .from(getTableName(executionType))
-        .where(DSL.field("status").`in`(*_completedStatuses.toTypedArray()))
-        .and(DSL.field("partition").eq(partitionName))
+        .where(DSL.field("status").notIn(*_completedStatuses.toTypedArray())
+          .and(DSL.field("build_time").ge(builtAfter))
+          .and(DSL.field("`partition`").eq(partitionName).or(DSL.field("`partition`").isNull)))
         .fetch(DSL.field("id"), String::class.java)
     }
   }
 
-  /**
-   * Returns a list of all execution IDs in the DB
-   */
-  fun getAllExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
-    return withPool(poolName) {
-      jooq
-        .select(DSL.field("id"))
-        .from(getTableName(executionType))
-        .where(DSL.field("partition").eq(partitionName))
-        .fetch(DSL.field("id"), String::class.java)
-    }
-  }
+//  /**
+//   * Returns a list of all execution IDs in the DB
+//   */
+//  fun getAllExecutionIds(executionType: Execution.ExecutionType, partitionName: String, updatedAfter: Long): List<ExecutionDiffKey> {
+//    return withPool(poolName) {
+//      jooq
+//        .select(DSL.field("id"), DSL.field("updated_at"), DSL.field("status"))
+//        .from(getTableName(executionType))
+//        .where(DSL.field("partition").eq(partitionName)
+//          .and(DSL.field("updated_at").gt(updatedAfter))
+//        )
+//        .fetchInto(ExecutionDiffKey::class.java)
+//    }
+//  }
 
   /**
    * Returns a list of stage IDs that belong to the given executions
@@ -84,6 +115,7 @@ class SqlDbRawAccess(
     }
   }
 
+  /* TODO(mvulfson): Deal with OCA later
   /**
    * Get combined id (full concatenated primary key) of OCA cache statuses that belong to executions that have been completed
    */
@@ -148,6 +180,7 @@ class SqlDbRawAccess(
         .fetch(DSL.field("combinedid"), String::class.java)
     }
   }
+  */
 
   /**
    * Load given records into the specified table using jooq loader api
@@ -157,23 +190,57 @@ class SqlDbRawAccess(
       return 0
     }
 
-    val allFields = records[0].fields()
-    records.forEach { r -> r.changed(true) }
+    val allFields = records[0].fields().toList()
+    var persisted = 0
 
-    val loader = withPool(poolName) {
-      jooq
-        .loadInto(DSL.table(tableName))
-        .loadRecords(records)
-        .fields(*allFields)
-        .execute()
+    withPool(poolName) {
+      val updateSet = allFields.map {
+        it to DSL.field("VALUES({0})", it.dataType, it)
+      }.toMap()
+
+      var cumulativeSize = 0
+      var batchQuery = jooq
+        .insertInto(DSL.table(tableName))
+        .columns(allFields)
+
+      records.forEach { it ->
+        val values = it.intoList()
+        val totalRecordSize = values.sumBy { value -> value?.toString()?.length ?: 0 }
+
+        if (cumulativeSize + totalRecordSize > maxPacketSize) {
+          if (cumulativeSize == 0) {
+            throw SystemException("Can't persist a single row for table $tableName due to maxPacketSize restriction. Row size = $totalRecordSize")
+          }
+
+          // Dump it to the DB
+          batchQuery
+            .onDuplicateKeyUpdate()
+            .set(updateSet)
+            .execute()
+
+          batchQuery = jooq
+            .insertInto(DSL.table(tableName))
+            .columns(allFields)
+            .values(values)
+          cumulativeSize = 0
+        } else {
+          batchQuery = batchQuery
+            .values(values)
+        }
+
+        persisted++
+        cumulativeSize += totalRecordSize
+      }
+
+      if (cumulativeSize > 0) {
+        // Dump the last bit to the DB
+        batchQuery
+          .onDuplicateKeyUpdate()
+          .set(updateSet)
+          .execute()
+      }
     }
 
-    val errList = loader.errors()
-
-    for (err in errList) {
-      log.error("Failed to import row: ${err.row()[0]}", err.exception())
-    }
-
-    return loader.stored()
+    return persisted
   }
 }

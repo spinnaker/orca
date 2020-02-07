@@ -1,5 +1,6 @@
 package com.netflix.spinnaker.orca.peering
 
+import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.jooq.Record
 import org.jooq.Table
@@ -28,3 +29,9 @@ internal fun getStagesTableName(executionType: Execution.ExecutionType): Table<R
 internal fun getOcaStatusTableName() = "oca_cache_status"
 
 internal fun getOcaCacheUuidTableName() = "oca_cache_uuids"
+
+data class ExecutionDiffKey(
+  val id: String,
+  val updated_at: Long,
+  val status: ExecutionStatus
+)
