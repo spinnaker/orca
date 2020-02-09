@@ -176,7 +176,8 @@ class ExplicitRollbackSpec extends Specification {
         serverGroupName: restoreServerGroupName,
         region         : "us-west-1",
         account        : "test",
-        cloudProvider  : "aws"
+        cloudProvider  : "aws",
+        accountName    : null
       ],
       credentials: "test"
     ]
