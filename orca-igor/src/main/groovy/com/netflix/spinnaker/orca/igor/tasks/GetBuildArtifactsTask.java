@@ -28,7 +28,6 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,9 +38,6 @@ public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> 
 
   @Override
   protected @Nonnull TaskResult tryExecute(@Nonnull CIStageDefinition stageDefinition) {
-    if (StringUtils.isEmpty(stageDefinition.getPropertyFile())) {
-      return TaskResult.SUCCEEDED;
-    }
     List<Artifact> artifacts =
         buildService.getArtifacts(
             stageDefinition.getBuildNumber(),
