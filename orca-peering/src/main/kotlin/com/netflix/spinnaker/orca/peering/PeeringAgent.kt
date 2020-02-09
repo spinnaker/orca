@@ -45,7 +45,7 @@ class PeeringAgent(
   private val chunkSize = 100
 
   // Number of threads to use for copy purposes
-  private val threadCount = 100
+  private val threadCount = 200
 
   override fun tick() {
     log.info("Hello, is it me you're peering for?")

@@ -28,9 +28,14 @@ class SqlDbRawAccess(
         throw UnsupportedOperationException("Peering only supported on MySQL right now")
       }
 
-      maxPacketSize = jooq
-        .resultQuery("SHOW VARIABLES WHERE Variable_name='max_allowed_packet'")
-        .fetchOne(DSL.field("Value"), Long::class.java) / 2
+      maxPacketSize = withPool(poolName) {
+        jooq
+          .resultQuery("SHOW VARIABLES WHERE Variable_name='max_allowed_packet'")
+          .fetchOne(DSL.field("Value"), Long::class.java)
+      }
+
+      log.info("Initialized SqlDbRawAccess with pool=$poolName and maxPacketSize=$maxPacketSize")
+      maxPacketSize /= 2
     }
   }
   /**
@@ -205,7 +210,7 @@ class SqlDbRawAccess(
 
       records.forEach { it ->
         val values = it.intoList()
-        val totalRecordSize = values.sumBy { value -> value?.toString()?.length ?: 0 }
+        val totalRecordSize = values.sumBy { value -> (value?.toString()?.length ?: 4) + 1 }
 
         if (cumulativeSize + totalRecordSize > maxPacketSize) {
           if (cumulativeSize == 0) {
