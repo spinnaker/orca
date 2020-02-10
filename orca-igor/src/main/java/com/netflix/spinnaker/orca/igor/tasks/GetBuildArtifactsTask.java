@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.BuildService;
 import com.netflix.spinnaker.orca.igor.model.CIStageDefinition;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,10 @@ public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> 
             stageDefinition.getPropertyFile(),
             stageDefinition.getMaster(),
             stageDefinition.getJob());
+    if (artifacts == null) {
+      artifacts = new ArrayList<>();
+    }
+    artifacts.addAll(stageDefinition.getBuildInfo().getArtifacts());
     Map<String, List<Artifact>> outputs = Collections.singletonMap("artifacts", artifacts);
     return TaskResult.builder(ExecutionStatus.SUCCEEDED)
         .context(Collections.emptyMap())
