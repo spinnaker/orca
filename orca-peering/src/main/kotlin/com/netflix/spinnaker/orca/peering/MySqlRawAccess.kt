@@ -2,49 +2,38 @@ package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.kork.sql.routing.withPool
-import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.jooq.DSLContext
 import org.jooq.Record
-import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.table
-import org.slf4j.LoggerFactory
 
 /**
  * Provides raw access to various tables in the orca SQL
+ * TODO(mvulfson): Need an extension point to deal with cases such as OCA
  */
-class SqlDbRawAccess(
+class MySqlRawAccess(
   private val jooq: DSLContext,
   private val poolName: String
-) {
+) : SqlRawAccess() {
 
-  private val log = LoggerFactory.getLogger(this.javaClass)
-  private val completedStatuses = ExecutionStatus.COMPLETED.map { it.toString() }
   private var maxPacketSize: Long = 0
 
   init {
-    if (jooq.dialect() != SQLDialect.MYSQL) {
-      throw UnsupportedOperationException("Peering only supported on MySQL right now")
-    }
-
     maxPacketSize = withPool(poolName) {
       jooq
         .resultQuery("SHOW VARIABLES WHERE Variable_name='max_allowed_packet'")
         .fetchOne(field("Value"), Long::class.java)
     }
 
-    log.info("Initialized SqlDbRawAccess with pool=$poolName and maxPacketSize=$maxPacketSize")
+    log.info("Initialized MySqlRawAccess with pool=$poolName and maxPacketSize=$maxPacketSize")
 
     // Hack: we don't count the full SQL statement length, so subtract a reasonable buffer for the boiler plate statement
     maxPacketSize -= 8192
   }
 
-  /**
-   *  Returns a list of execution IDs and their update_at times for completed executions
-   */
-  fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String, updatedAfter: Long): List<ExecutionDiffKey> {
+  override fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String, updatedAfter: Long): List<ExecutionDiffKey> {
     return withPool(poolName) {
       jooq
         .select(field("id"), field("updated_at"))
@@ -56,10 +45,7 @@ class SqlDbRawAccess(
     }
   }
 
-  /**
-   *  Returns a list of execution IDs for active (not completed) executions
-   */
-  fun getActiveExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
+  override fun getActiveExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
     return withPool(poolName) {
       jooq
         .select(field("id"))
@@ -70,10 +56,7 @@ class SqlDbRawAccess(
     }
   }
 
-  /**
-   * Returns a list of stage IDs that belong to the given executions
-   */
-  fun getStageIdsForExecutions(executionType: Execution.ExecutionType, executionIds: List<String>): List<String> {
+  override fun getStageIdsForExecutions(executionType: Execution.ExecutionType, executionIds: List<String>): List<String> {
     return withPool(poolName) {
       jooq
         .select(field("id"))
@@ -83,10 +66,7 @@ class SqlDbRawAccess(
     }
   }
 
-  /**
-   * Returns (a list of) full execution DB records with given execution IDs
-   */
-  fun getExecutions(executionType: Execution.ExecutionType, ids: List<String>): org.jooq.Result<Record> {
+  override fun getExecutions(executionType: Execution.ExecutionType, ids: List<String>): org.jooq.Result<Record> {
     return withPool(poolName) {
       jooq.select(DSL.asterisk())
         .from(getExecutionTable(executionType))
@@ -95,10 +75,7 @@ class SqlDbRawAccess(
     }
   }
 
-  /**
-   * Returns (a list of) full stage DB records with given stage IDs
-   */
-  fun getStages(executionType: Execution.ExecutionType, stageIds: List<String>): org.jooq.Result<Record> {
+  override fun getStages(executionType: Execution.ExecutionType, stageIds: List<String>): org.jooq.Result<Record> {
     return withPool(poolName) {
       jooq.select(DSL.asterisk())
         .from(getStagesTable(executionType))
@@ -107,12 +84,18 @@ class SqlDbRawAccess(
     }
   }
 
-  // TODO(mvulfson): Need an extension point to deal with cases such as OCA
+  override fun deleteStages(executionType: Execution.ExecutionType, stageIdsToDelete: List<String>) {
+    withPool(poolName) {
+      for (chunk in stageIdsToDelete.chunked(100)) {
+        jooq
+          .deleteFrom(getStagesTable(executionType))
+          .where(field("id").`in`(*chunk.toTypedArray()))
+          .execute()
+      }
+    }
+  }
 
-  /**
-   * Load given records into the specified table using jooq loader api
-   */
-  fun loadRecords(tableName: String, records: org.jooq.Result<Record>): Int {
+  override fun loadRecords(tableName: String, records: org.jooq.Result<Record>): Int {
     if (records.isEmpty()) {
       return 0
     }
@@ -170,20 +153,4 @@ class SqlDbRawAccess(
 
     return persisted
   }
-
-  fun deleteStages(executionType: Execution.ExecutionType, stageIdsToDelete: List<String>) {
-    withPool(poolName) {
-      for (chunk in stageIdsToDelete.chunked(100)) {
-        jooq
-          .deleteFrom(getStagesTable(executionType))
-          .where(field("id").`in`(*chunk.toTypedArray()))
-          .execute()
-      }
-    }
-  }
-
-  data class ExecutionDiffKey(
-    val id: String,
-    val updated_at: Long
-  )
 }

@@ -73,12 +73,12 @@ class PeeringAgent(
   /**
    * Source (our peers) database access layer
    */
-  private val srcDB: SqlDbRawAccess,
+  private val srcDB: SqlRawAccess,
 
   /**
    * Destination (our own) database access layer
    */
-  private val destDB: SqlDbRawAccess,
+  private val destDB: SqlRawAccess,
 
   /**
    * Used to dynamically turn off either all of peering or peering of a specific host

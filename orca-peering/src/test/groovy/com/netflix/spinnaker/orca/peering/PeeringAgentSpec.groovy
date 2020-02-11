@@ -16,10 +16,8 @@
 
 package com.netflix.spinnaker.orca.peering
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import org.jooq.DSLContext
 import spock.lang.Specification
 import spock.lang.Subject
@@ -40,8 +38,8 @@ class PeeringAgentSpec extends Specification {
       Mock(NotificationClusterLock)
   )
 
-  SqlDbRawAccess src = Stub(SqlDbRawAccess)
-  SqlDbRawAccess dest = Stub(SqlDbRawAccess)
+  MySqlRawAccess src = Stub(MySqlRawAccess)
+  MySqlRawAccess dest = Stub(MySqlRawAccess)
 
   def setupSpec() {
     peeringAgent.srcDB = src

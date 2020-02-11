@@ -20,8 +20,10 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.peering.PeeringAgent
-import com.netflix.spinnaker.orca.peering.SqlDbRawAccess
+import com.netflix.spinnaker.orca.peering.MySqlRawAccess
+import com.netflix.spinnaker.orca.peering.SqlRawAccess
 import org.jooq.DSLContext
+import org.jooq.SQLDialect
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
@@ -54,8 +56,16 @@ class PeeringConfiguration {
         .setNameFormat(PeeringAgent::javaClass.name + "-%d")
         .build())
 
-    val srcDB = SqlDbRawAccess(jooq, peeredPoolName)
-    val destDB = SqlDbRawAccess(jooq, "default")
+    val srcDB: SqlRawAccess
+    val destDB: SqlRawAccess
+
+    when (jooq.dialect()) {
+      SQLDialect.MYSQL -> {
+        srcDB = MySqlRawAccess(jooq, peeredPoolName)
+        destDB = MySqlRawAccess(jooq, "default")
+      }
+      else -> throw UnsupportedOperationException("Peering only supported on MySQL right now")
+    }
 
     return PeeringAgent(peeredId, pollIntervalMs, executor, threadCount, chunkSize, clockDriftMs, srcDB, destDB, dynamicConfigService, registry, clusterLock)
   }
