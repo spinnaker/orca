@@ -59,7 +59,7 @@ class SqlDbRawAccess(
   /**
    *  Returns a list of execution IDs for active (not completed) executions
    */
-  fun getRunningExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
+  fun getActiveExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
     return withPool(poolName) {
       jooq
         .select(field("id"))

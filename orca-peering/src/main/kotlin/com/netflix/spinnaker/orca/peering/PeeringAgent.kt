@@ -91,7 +91,11 @@ class PeeringAgent(
   private val log = LoggerFactory.getLogger(javaClass)
   private var completedPipelinesMostRecentUpdatedTime = 0L
   private var completedOrchestrationsMostRecentUpdatedTime = 0L
-  private val timerId = registry.createId("peering.lag")
+
+  private val peeringLagTimerId = registry.createId("pollers.peering.lag").withTag("peerId", peeredId)
+  private val peeringNumPeeredId = registry.createId("pollers.peering.numProcessed").withTag("peerId", peeredId)
+  private val peeringNumStagesDeletedId = registry.createId("pollers.peering.numStagesDeleted").withTag("peerId", peeredId)
+  private val peeringNumErrorsId = registry.createId("pollers.peering.numErrors").withTag("peerId", peeredId)
 
   override fun tick() {
     if (dynamicConfigService.isEnabled("pollers.peering", true) &&
@@ -114,13 +118,10 @@ class PeeringAgent(
       copyCompletedExecutions(executionType)
     } else {
       registry
-        .timer(timerId
-          .withTags(
-            "executionType", executionType.toString(),
-            "peerId", peeredId))
+        .timer(peeringLagTimerId.tag(executionType))
         .record {
           copyCompletedExecutions(executionType)
-          copyRunningExecutions(executionType)
+          copyActiveExecutions(executionType)
         }
     }
   }
@@ -128,15 +129,19 @@ class PeeringAgent(
   /**
    * Migrate running/active executions of given type
    */
-  private fun copyRunningExecutions(executionType: Execution.ExecutionType) {
+  private fun copyActiveExecutions(executionType: Execution.ExecutionType) {
     log.debug("Starting active $executionType copy for peering")
 
-    val runningPipelineIds = srcDB.getRunningExecutionIds(executionType, peeredId)
+    val activePipelineIds = srcDB.getActiveExecutionIds(executionType, peeredId)
 
-    if (runningPipelineIds.isNotEmpty()) {
-      log.debug("Found ${runningPipelineIds.size} active $executionType, copying all")
-      val migrationResult = migrateInParallel(runningPipelineIds) { chunk -> migrateExecutionChunk(executionType, chunk) }
-      log.debug("Completed active $executionType peering: copied ${migrationResult.count} of ${runningPipelineIds.size}")
+    if (activePipelineIds.isNotEmpty()) {
+      log.debug("Found ${activePipelineIds.size} active $executionType, copying all")
+      val migrationResult = migrateInParallel(activePipelineIds) { chunk -> migrateExecutionChunk(executionType, chunk) }
+      log.debug("Completed active $executionType peering: copied ${migrationResult.count} of ${activePipelineIds.size}")
+
+      registry
+        .counter(peeringNumPeeredId.tag(executionType, ExecutionState.ACTIVE))
+        .increment(migrationResult.count.toLong())
     } else {
       log.debug("No active $executionType executions to copy for peering")
     }
@@ -171,6 +176,10 @@ class PeeringAgent(
       } else {
         completedPipelinesMostRecentUpdatedTime = migrationResult.latestUpdatedAt - clockDriftMs
       }
+
+      registry
+        .counter(peeringNumPeeredId.tag(executionType, ExecutionState.COMPLETED))
+        .increment(migrationResult.count.toLong())
     } else {
       log.debug("No completed $executionType executions to copy for peering")
     }
@@ -193,6 +202,9 @@ class PeeringAgent(
       val stagesToDelete = stagesPresent.filter { !stagesToMigrateHash.contains(it) }
       if (stagesToDelete.any()) {
         destDB.deleteStages(executionType, stagesToDelete)
+        registry
+          .counter(peeringNumStagesDeletedId.tag(executionType))
+          .increment(stagesToDelete.size.toLong())
       }
 
       for (chunk in stagesToMigrate.chunked(chunkSize)) {
@@ -210,6 +222,10 @@ class PeeringAgent(
       return MigrationChunkResult(latestUpdatedAt, idsToMigrate.size)
     } catch (e: Exception) {
       log.error("Failed to peer $executionType chunk (first id: ${idsToMigrate[0]})", e)
+
+      registry
+        .counter(peeringNumErrorsId.tag(executionType))
+        .increment()
     }
 
     return MigrationChunkResult(0, 0)

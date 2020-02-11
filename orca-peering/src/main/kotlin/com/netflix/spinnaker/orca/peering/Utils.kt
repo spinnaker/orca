@@ -1,13 +1,11 @@
 package com.netflix.spinnaker.orca.peering
 
+import com.netflix.spectator.api.Id
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.jooq.Record
 import org.jooq.Table
 import org.jooq.impl.DSL
 
-/**
- * Convert an execution type to its jooq table object.
- */
 internal fun getExecutionTable(executionType: Execution.ExecutionType): Table<Record> {
   return when (executionType) {
     Execution.ExecutionType.PIPELINE -> DSL.table("pipelines")
@@ -15,9 +13,6 @@ internal fun getExecutionTable(executionType: Execution.ExecutionType): Table<Re
   }
 }
 
-/**
- * Convert an execution type to its jooq stages table object.
- */
 internal fun getStagesTable(executionType: Execution.ExecutionType): Table<Record> {
   return when (executionType) {
     Execution.ExecutionType.PIPELINE -> DSL.table("pipeline_stages")
@@ -25,6 +20,18 @@ internal fun getStagesTable(executionType: Execution.ExecutionType): Table<Recor
   }
 }
 
-internal fun getOcaStatusTableName() = "oca_cache_status"
+internal fun Id.tag(executionType: Execution.ExecutionType): Id {
+  return this
+    .withTag("executionType", executionType.toString())
+}
 
-internal fun getOcaCacheUuidTableName() = "oca_cache_uuids"
+internal fun Id.tag(executionType: Execution.ExecutionType, state: ExecutionState): Id {
+  return this
+    .withTag("executionType", executionType.toString())
+    .withTag("state", state.toString())
+}
+
+internal enum class ExecutionState {
+  ACTIVE,
+  COMPLETED,
+}
