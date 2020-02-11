@@ -105,6 +105,31 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     "git/repo"   | "https://bitbucket.org/codebuild/repo.git" | "BITBUCKET" | "https://bitbucket.org/codebuild/repo.git"
   }
 
+  def "should use sourceType if presents"() {
+    given:
+    def context = getDefaultContext()
+    context.source.put("sourceType", "GITHUB_ENTERPRISE")
+    def artifact = Artifact.builder()
+        .type("git/repo")
+        .reference("https://github.com/codebuild/repo.git")
+        .artifactAccount("my-codebuild-account").build()
+    def stage = new Stage(
+        execution,
+        "awsCodeBuild",
+        context
+    )
+
+    when:
+    task.execute(stage)
+
+    then:
+    1 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
+    1 * igorService.startAwsCodeBuild(ACCOUNT, {
+      it.get("sourceLocationOverride") == "https://github.com/codebuild/repo.git"
+      it.get("sourceTypeOverride") == "GITHUB_ENTERPRISE"
+    }) >> igorResponse
+  }
+
   def "should throw exception if artifact type is unknown"() {
     given:
     def artifact = Artifact.builder()
@@ -144,7 +169,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     then:
     1 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
     IllegalStateException ex = thrown()
-    ex.getMessage() == "Only GitHub and BitBucket repositories are supported"
+    ex.getMessage() == "Source type could not be inferred from location"
   }
 
   def "should use sourceVersion if presents"() {

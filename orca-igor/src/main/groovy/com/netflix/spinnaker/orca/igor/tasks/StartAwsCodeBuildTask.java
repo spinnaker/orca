@@ -55,8 +55,11 @@ public class StartAwsCodeBuildTask implements Task {
 
     Map<String, Object> requestInput = new HashMap<>();
     appendProjectName(requestInput, stageDefinition.getProjectName());
-    if (stageDefinition.isSourceOverride()) {
-      appendSource(requestInput, getSourceArtifact(stage, stageDefinition));
+    if (stageDefinition.isSourceOverride() && stageDefinition.getSource() != null) {
+      appendSource(
+          requestInput,
+          getSourceArtifact(stage, stageDefinition),
+          stageDefinition.getSource().getSourceType());
     }
     // sourceVersion takes precedence of version in source artifact
     appendSourceVersion(requestInput, stageDefinition.getSourceVersion());
@@ -74,10 +77,14 @@ public class StartAwsCodeBuildTask implements Task {
     requestInput.put(PROJECT_NAME, projectName);
   }
 
-  private void appendSource(Map<String, Object> requestInput, Artifact artifact) {
+  private void appendSource(
+      Map<String, Object> requestInput, Artifact artifact, String sourceType) {
+    if (sourceType != null && !sourceType.equals("")) {
+      requestInput.put(SOURCE_TYPE, sourceType);
+    }
     switch (artifact.getType()) {
       case "s3/object":
-        requestInput.put(SOURCE_TYPE, "S3");
+        requestInput.putIfAbsent(SOURCE_TYPE, "S3");
         String s3Location = artifact.getReference();
         requestInput.put(
             SOURCE_LOCATION, s3Location.startsWith("s3://") ? s3Location.substring(5) : s3Location);
@@ -85,11 +92,15 @@ public class StartAwsCodeBuildTask implements Task {
       case "git/repo":
         requestInput.put(SOURCE_LOCATION, artifact.getReference());
         if (artifact.getReference().matches("^(http(s)?://)github.com/(.*)$")) {
-          requestInput.put(SOURCE_TYPE, "GITHUB");
+          requestInput.putIfAbsent(SOURCE_TYPE, "GITHUB");
         } else if (artifact.getReference().matches("^(http(s)?://)(.*@)?bitbucket.org/(.*)$")) {
-          requestInput.put(SOURCE_TYPE, "BITBUCKET");
+          requestInput.putIfAbsent(SOURCE_TYPE, "BITBUCKET");
+        } else if (artifact
+            .getReference()
+            .matches("^https://git-codecommit.(.*).amazonaws.com/(.*)$")) {
+          requestInput.putIfAbsent(SOURCE_TYPE, "CODECOMMIT");
         } else {
-          throw new IllegalStateException("Only GitHub and BitBucket repositories are supported");
+          throw new IllegalStateException("Source type could not be inferred from location");
         }
         break;
       default:

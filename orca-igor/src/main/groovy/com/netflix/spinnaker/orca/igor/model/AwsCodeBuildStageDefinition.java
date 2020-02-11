@@ -25,14 +25,15 @@ public class AwsCodeBuildStageDefinition implements RetryableStageDefinition {
   private String account;
   private String projectName;
   private boolean sourceOverride;
-  private AwsCodeBuildArtifact source;
+  private AwsCodeBuildSourceArtifact source;
   private String sourceVersion;
   private Map<String, String> environmentVariables;
   private AwsCodeBuildExecution buildInfo;
   private int consecutiveErrors;
 
   @Data
-  public static class AwsCodeBuildArtifact {
+  public static class AwsCodeBuildSourceArtifact {
+    private String sourceType;
     private String artifactId;
     private Artifact artifact;
   }
