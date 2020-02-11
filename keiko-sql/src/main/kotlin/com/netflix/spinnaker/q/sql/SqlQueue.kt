@@ -25,6 +25,8 @@ import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.QueueState
 import com.netflix.spinnaker.q.metrics.RetryPolled
 import com.netflix.spinnaker.q.migration.SerializationMigrator
+import com.netflix.spinnaker.q.sql.SqlQueue.RetryCategory.READ
+import com.netflix.spinnaker.q.sql.SqlQueue.RetryCategory.WRITE
 import de.huxhorn.sulky.ulid.ULID
 import io.github.resilience4j.retry.Retry
 import io.github.resilience4j.retry.RetryConfig
@@ -39,7 +41,6 @@ import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.select
 import org.jooq.impl.DSL.sql
 import org.jooq.impl.DSL.table
-import org.jooq.impl.DSL.update
 import org.jooq.util.mysql.MySQLDSL
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -52,6 +53,7 @@ import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.Optional
 import java.util.concurrent.TimeUnit
+import kotlin.Exception
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random.Default.nextLong
@@ -169,7 +171,7 @@ class SqlQueue(
     var lastId = "0"
 
     do {
-      val rs: ResultSet = withRetry(RetryCategory.READ) {
+      val rs: ResultSet = withRetry(READ) {
         jooq.select(idField, fingerprintField, bodyField)
           .from(messagesTable)
           .where(idField.gt(lastId))
@@ -269,7 +271,7 @@ class SqlQueue(
     }
 
     if (changed > 0) {
-      val rs = withRetry(RetryCategory.READ) {
+      val rs = withRetry(READ) {
         jooq.select(field("q.id").`as`("id"),
           field("q.fingerprint").`as`("fingerprint"),
           field("q.delivery").`as`("delivery"),
@@ -282,7 +284,9 @@ class SqlQueue(
           .intoResultSet()
       }
 
-      val lockedMessages = mutableListOf<LockedMessage>()
+      val candidates = mutableListOf<LockedMessage>()
+      val locked = mutableListOf<String>()
+      val toRelease = mutableSetOf<String>()
       var ulid = ULID.nextValue()
 
       while (rs.next()) {
@@ -306,7 +310,7 @@ class SqlQueue(
 
           val timeoutOverride = message.ackTimeoutMs ?: 0
 
-          lockedMessages.add(
+          candidates.add(
             LockedMessage(
               queueId = rs.getString("id"),
               fingerprint = fingerprint,
@@ -328,43 +332,43 @@ class SqlQueue(
         }
       }
 
-      val ids = lockedMessages
-        .map { it.queueId }
-        .toList()
-
-      val maxAttemptsUpdates = lockedMessages
-        .filter { it.maxAttempts > 0 }
-        .map {
-          update(messagesTable)
-            .set(bodyField, mapper.writeValueAsString(it.message))
-            .set(updatedAtField, now)
-            .where(fingerprintField.eq(it.fingerprint))
+      candidates.forEach { m ->
+        /**
+         * Message bodies are only updated on [poll] and [AttemptsAttribute] incremented
+         * for messages with [MaxAttemptsAttribute] set.
+         */
+        val body = when (m.maxAttempts > 0) {
+          true -> mapper.writeValueAsString(m.message)
+          else -> null
         }
-        .toList()
 
-      withRetry(RetryCategory.WRITE) {
-        jooq.transaction { config ->
-          val txn = DSL.using(config)
+        withRetry(WRITE) {
+          jooq.transaction { config ->
+            val txn = DSL.using(config)
+            val changed = txn.insertInto(unackedTable)
+              .set(idField, ulid.toString())
+              .set(fingerprintField, m.fingerprint)
+              .set(expiryField, m.expiry)
+              .onDuplicateKeyIgnore()
+              .execute()
 
-          txn.insertInto(
-            unackedTable,
-            idField,
-            fingerprintField,
-            expiryField)
-            .apply {
-              lockedMessages.forEach {
-                values(ulid.toString(), it.fingerprint, it.expiry)
-                ulid = ULID.nextMonotonicValue(ulid)
+            when (changed) {
+              0 -> toRelease.add(m.queueId)
+              else -> {
+                locked.add(m.queueId)
+                if (body != null) {
+                  txn.update(messagesTable)
+                    .set(bodyField, body)
+                    .set(updatedAtField, now)
+                    .where(fingerprintField.eq(m.fingerprint))
+                    .execute()
+                }
               }
             }
-            .onDuplicateKeyUpdate()
-            .set(expiryField, MySQLDSL.values(expiryField) as Any)
-            .execute()
-
-          if (maxAttemptsUpdates.isNotEmpty()) {
-            txn.batch(maxAttemptsUpdates).execute()
           }
         }
+
+        ulid = ULID.nextMonotonicValue(ulid)
       }
 
       /**
@@ -372,18 +376,29 @@ class SqlQueue(
        * If an instance crashes after committing the above txn but before the following delete,
        * [retry] will release the locks after [lockTtlSeconds] and another instance will grab them.
        */
-      ids.sorted().chunked(4).forEach { chunk ->
-        withRetry(RetryCategory.WRITE) {
+      locked.sorted().chunked(4).forEach { chunk ->
+        withRetry(WRITE) {
           jooq.deleteFrom(queueTable)
             .where(idField.`in`(*chunk.toTypedArray()))
             .execute()
         }
       }
 
-      lockedMessages.forEach {
-        fire(MessageProcessing(it.message, it.scheduledTime, clock.instant()))
-        callback(it.message, it.ackCallback)
+      toRelease.sorted().chunked(4).forEach { chunk ->
+        withRetry(WRITE) {
+          jooq.update(queueTable)
+            .set(lockedField, "0")
+            .where(idField.`in`(*chunk.toTypedArray()))
+            .execute()
+        }
       }
+
+      candidates
+        .filterNot { toRelease.contains(it.queueId) }
+        .forEach {
+          fire(MessageProcessing(it.message, it.scheduledTime, clock.instant()))
+          callback(it.message, it.ackCallback)
+        }
     }
 
     fire(QueuePolled)
@@ -398,7 +413,7 @@ class SqlQueue(
       message.getAttribute() ?: AttemptsAttribute()
     )
 
-    withRetry(RetryCategory.WRITE) {
+    withRetry(WRITE) {
       jooq.transaction { config ->
         val txn = DSL.using(config)
 
@@ -429,7 +444,7 @@ class SqlQueue(
   override fun reschedule(message: Message, delay: TemporalAmount) {
     val fingerprint = message.hashV2()
 
-    withRetry(RetryCategory.WRITE) {
+    withRetry(WRITE) {
       val rows = jooq.update(queueTable)
         .set(deliveryField, atTime(delay))
         .where(fingerprintField.eq(fingerprint))
@@ -450,7 +465,7 @@ class SqlQueue(
     val fingerprint = message.hashV2()
     var missing = false
 
-    withRetry(RetryCategory.WRITE) {
+    withRetry(WRITE) {
       jooq.transaction { config ->
         val txn = DSL.using(config)
 
@@ -487,7 +502,7 @@ class SqlQueue(
     val minMs = now.minus(TimeUnit.SECONDS.toMillis(lockTtlSeconds.toLong()))
     val minUlid = ULID.nextValue(minMs).toString()
 
-    val rs = withRetry(RetryCategory.READ) {
+    val rs = withRetry(READ) {
       jooq.select(idField, fingerprintField, deliveryField, lockedField)
         .from(queueTable)
         .where(
@@ -654,7 +669,7 @@ class SqlQueue(
     val order = orders.shuffled().first()
 
     // TODO: make limits/batchSizes configurable
-    val rs = withRetry(RetryCategory.READ) {
+    val rs = withRetry(READ) {
       jooq.select(
         field("m.id").`as`("mid"),
         field("q.id").`as`("qid"),
@@ -689,7 +704,7 @@ class SqlQueue(
     var deleted = 0
 
     candidates.chunked(100).forEach { chunk ->
-      withRetry(RetryCategory.WRITE) {
+      withRetry(WRITE) {
         deleted += jooq.deleteFrom(messagesTable)
           .where(
             idField.`in`(*chunk.toTypedArray()),
@@ -706,13 +721,13 @@ class SqlQueue(
   }
 
   private fun ackMessage(fingerprint: String) {
-    withRetry(RetryCategory.WRITE) {
+    withRetry(WRITE) {
       jooq.deleteFrom(unackedTable)
         .where(fingerprintField.eq(fingerprint))
         .execute()
     }
 
-    withRetry(RetryCategory.WRITE) {
+    withRetry(WRITE) {
       jooq.update(messagesTable)
         .set(updatedAtField, clock.millis())
         .where(fingerprintField.eq(fingerprint))
@@ -723,7 +738,7 @@ class SqlQueue(
   }
 
   private fun deleteAll(fingerprint: String) {
-    withRetry(RetryCategory.WRITE) {
+    withRetry(WRITE) {
       jooq.deleteFrom(queueTable)
         .where(fingerprintField.eq(fingerprint))
         .execute()
@@ -739,7 +754,7 @@ class SqlQueue(
   }
 
   private fun initTables() {
-    withRetry(RetryCategory.WRITE) {
+    withRetry(WRITE) {
       jooq.execute("CREATE TABLE IF NOT EXISTS $queueTableName LIKE ${queueBase}_template")
       jooq.execute("CREATE TABLE IF NOT EXISTS $unackedTableName LIKE ${unackedBase}_template")
       jooq.execute("CREATE TABLE IF NOT EXISTS $messagesTableName LIKE ${messagesBase}_template")
@@ -780,7 +795,7 @@ class SqlQueue(
   }
 
   private fun <T> withRetry(category: RetryCategory, action: () -> T): T {
-    return if (category == RetryCategory.WRITE) {
+    return if (category == WRITE) {
       val retry = Retry.of(
         "sqlWrite",
         RetryConfig.custom<T>()

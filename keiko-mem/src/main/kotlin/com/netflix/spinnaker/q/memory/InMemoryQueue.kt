@@ -70,11 +70,15 @@ class InMemoryQueue(
         Duration.ofMillis(envelope.payload.ackTimeoutMs as Long)
       }
 
-      unacked.put(envelope.copy(scheduledTime = clock.instant().plus(messageAckTimeout)))
-      fire(MessageProcessing(envelope.payload, envelope.scheduledTime, clock.instant()))
-      callback.invoke(envelope.payload) {
-        ack(envelope.id)
-        fire(MessageAcknowledged)
+      if (unacked.any { it.payload == envelope.payload }) {
+        queue.put(envelope)
+      } else {
+        unacked.put(envelope.copy(scheduledTime = clock.instant().plus(messageAckTimeout)))
+        fire(MessageProcessing(envelope.payload, envelope.scheduledTime, clock.instant()))
+        callback.invoke(envelope.payload) {
+          ack(envelope.id)
+          fire(MessageAcknowledged)
+        }
       }
     }
   }

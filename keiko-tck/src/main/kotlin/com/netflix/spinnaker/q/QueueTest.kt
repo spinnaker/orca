@@ -31,6 +31,7 @@ import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
+import org.mockito.internal.verification.Times
 import java.io.Closeable
 import java.time.Clock
 import java.time.Duration
@@ -496,6 +497,32 @@ abstract class QueueTest<out Q : Queue>(
 
         it("enqueued the second message") {
           verify(callback).invoke(eq(message), any())
+        }
+      }
+
+      and("an identical message is pushed and polled after the first is read but unacked") {
+        beforeGroup {
+          queue = createQueue(clock, deadLetterCallback).apply {
+            push(message)
+            poll { _, ack ->
+              push(message.copy())
+              poll { _, ack2 ->
+                ack2()
+              }
+              ack()
+            }
+          }
+        }
+
+        afterGroup(::stopQueue)
+        afterGroup(::resetMocks)
+
+        on("polling the queue again") {
+          queue!!.poll(callback)
+        }
+
+        it("the second message is still on the queue") {
+          verify(callback, Times(1)).invoke(eq(message), any())
         }
       }
 
