@@ -105,7 +105,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     "git/repo"   | "https://bitbucket.org/codebuild/repo.git" | "BITBUCKET" | "https://bitbucket.org/codebuild/repo.git"
   }
 
-  def "should use sourceType if presents"() {
+  def "should explicitly use sourceType if type could be inferred"() {
     given:
     def context = getDefaultContext()
     context.source.put("sourceType", "GITHUB_ENTERPRISE")
@@ -126,6 +126,31 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     1 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
     1 * igorService.startAwsCodeBuild(ACCOUNT, {
       it.get("sourceLocationOverride") == "https://github.com/codebuild/repo.git"
+      it.get("sourceTypeOverride") == "GITHUB_ENTERPRISE"
+    }) >> igorResponse
+  }
+
+  def "should use sourceType if type couldn't be inferred"() {
+    given:
+    def context = getDefaultContext()
+    context.source.put("sourceType", "GITHUB_ENTERPRISE")
+    def artifact = Artifact.builder()
+        .type("git/repo")
+        .reference("http://enterprise.com/repo.git")
+        .artifactAccount("my-codebuild-account").build()
+    def stage = new Stage(
+        execution,
+        "awsCodeBuild",
+        context
+    )
+
+    when:
+    task.execute(stage)
+
+    then:
+    1 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
+    1 * igorService.startAwsCodeBuild(ACCOUNT, {
+      it.get("sourceLocationOverride") == "http://enterprise.com/repo.git"
       it.get("sourceTypeOverride") == "GITHUB_ENTERPRISE"
     }) >> igorResponse
   }
@@ -170,6 +195,28 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     1 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
     IllegalStateException ex = thrown()
     ex.getMessage() == "Source type could not be inferred from location"
+  }
+
+  def "should throw exception if subpath is set"() {
+    given:
+    def artifact = Artifact.builder()
+        .type("git/repo")
+        .reference("location")
+        .artifactAccount("my-codebuild-account")
+        .metadata([subPath: "path"]).build()
+    def stage = new Stage(
+        execution,
+        "awsCodeBuild",
+        getDefaultContext()
+    )
+
+    when:
+    task.execute(stage)
+
+    then:
+    1 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
+    IllegalArgumentException ex = thrown()
+    ex.getMessage() == "Subpath is not supported by AWS CodeBuild stage"
   }
 
   def "should use sourceVersion if presents"() {

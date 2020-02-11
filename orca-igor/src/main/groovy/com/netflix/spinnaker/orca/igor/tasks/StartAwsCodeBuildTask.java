@@ -91,16 +91,18 @@ public class StartAwsCodeBuildTask implements Task {
         break;
       case "git/repo":
         requestInput.put(SOURCE_LOCATION, artifact.getReference());
-        if (artifact.getReference().matches("^(http(s)?://)github.com/(.*)$")) {
-          requestInput.putIfAbsent(SOURCE_TYPE, "GITHUB");
-        } else if (artifact.getReference().matches("^(http(s)?://)(.*@)?bitbucket.org/(.*)$")) {
-          requestInput.putIfAbsent(SOURCE_TYPE, "BITBUCKET");
-        } else if (artifact
-            .getReference()
-            .matches("^https://git-codecommit.(.*).amazonaws.com/(.*)$")) {
-          requestInput.putIfAbsent(SOURCE_TYPE, "CODECOMMIT");
-        } else {
-          throw new IllegalStateException("Source type could not be inferred from location");
+        if (!requestInput.containsKey(SOURCE_TYPE)) {
+          if (artifact.getReference().matches("^(http(s)?://)github.com/(.*)$")) {
+            requestInput.put(SOURCE_TYPE, "GITHUB");
+          } else if (artifact.getReference().matches("^(http(s)?://)(.*@)?bitbucket.org/(.*)$")) {
+            requestInput.put(SOURCE_TYPE, "BITBUCKET");
+          } else if (artifact
+              .getReference()
+              .matches("^https://git-codecommit.(.*).amazonaws.com/(.*)$")) {
+            requestInput.put(SOURCE_TYPE, "CODECOMMIT");
+          } else {
+            throw new IllegalStateException("Source type could not be inferred from location");
+          }
         }
         break;
       default:
@@ -147,6 +149,10 @@ public class StartAwsCodeBuildTask implements Task {
 
     if (artifact.getArtifactAccount() == null) {
       throw new IllegalArgumentException("No artifact account was specified.");
+    }
+
+    if (artifact.getMetadata() != null && artifact.getMetadata().containsKey("subPath")) {
+      throw new IllegalArgumentException("Subpath is not supported by AWS CodeBuild stage");
     }
     return artifact;
   }
