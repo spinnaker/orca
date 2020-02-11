@@ -15,13 +15,18 @@
  */
 package com.netflix.spinnaker.config
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.peering.PeeringAgent
+import com.netflix.spinnaker.orca.peering.SqlDbRawAccess
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.util.concurrent.Executors
 
 @Configuration
 /**
@@ -34,10 +39,24 @@ class PeeringConfiguration {
   fun peeringAgent(
     jooq: DSLContext,
     clusterLock: NotificationClusterLock,
+    dynamicConfigService: DynamicConfigService,
+    registry: Registry,
     @Value("\${pollers.peering.pool-name}") peeredPoolName: String,
     @Value("\${pollers.peering.id}") peeredId: String,
-    @Value("\${pollers.peering.interval-ms:5000}") pollIntervalMs: Long
+    @Value("\${pollers.peering.interval-ms:5000}") pollIntervalMs: Long,
+    @Value("\${pollers.peering.thread-count:200}") threadCount: Int,
+    @Value("\${pollers.peering.chunk-size:100}") chunkSize: Int,
+    @Value("\${pollers.peering.clock-drift-ms:5000}") clockDriftMs: Long
   ): PeeringAgent {
-    return PeeringAgent(jooq, peeredPoolName, peeredId, pollIntervalMs, clusterLock)
+    val executor = Executors.newFixedThreadPool(
+      threadCount,
+      ThreadFactoryBuilder()
+        .setNameFormat(PeeringAgent::javaClass.name + "-%d")
+        .build())
+
+    val srcDB = SqlDbRawAccess(jooq, peeredPoolName)
+    val destDB = SqlDbRawAccess(jooq, "default")
+
+    return PeeringAgent(peeredId, pollIntervalMs, executor, threadCount, chunkSize, clockDriftMs, srcDB, destDB, dynamicConfigService, registry, clusterLock)
   }
 }

@@ -8,6 +8,8 @@ import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
+import org.jooq.impl.DSL.field
+import org.jooq.impl.DSL.table
 import org.slf4j.LoggerFactory
 
 /**
@@ -19,69 +21,54 @@ class SqlDbRawAccess(
 ) {
 
   private val log = LoggerFactory.getLogger(this.javaClass)
-  private val _completedStatuses = ExecutionStatus.COMPLETED.map { it.toString() }
+  private val completedStatuses = ExecutionStatus.COMPLETED.map { it.toString() }
   private var maxPacketSize: Long = 0
 
-  fun init() {
-    if (maxPacketSize == 0L) {
-      if (jooq.dialect() != SQLDialect.MYSQL) {
-        throw UnsupportedOperationException("Peering only supported on MySQL right now")
-      }
-
-      maxPacketSize = withPool(poolName) {
-        jooq
-          .resultQuery("SHOW VARIABLES WHERE Variable_name='max_allowed_packet'")
-          .fetchOne(DSL.field("Value"), Long::class.java)
-      }
-
-      log.info("Initialized SqlDbRawAccess with pool=$poolName and maxPacketSize=$maxPacketSize")
-      maxPacketSize /= 2
+  init {
+    if (jooq.dialect() != SQLDialect.MYSQL) {
+      throw UnsupportedOperationException("Peering only supported on MySQL right now")
     }
-  }
-  /**
-   *  Returns a list of execution IDs for completed executions
-   */
-  fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String, builtAfter: Long): List<String> {
-    return withPool(poolName) {
+
+    maxPacketSize = withPool(poolName) {
       jooq
-        .select(DSL.field("id"))
-        .from(getTableName(executionType))
-        .where(DSL.field("status").`in`(*_completedStatuses.toTypedArray())
-          .and(DSL.field("build_time").ge(builtAfter))
-          .and(DSL.field("`partition`").eq(partitionName).or(DSL.field("`partition`").isNull)))
-        .fetch(DSL.field("id"), String::class.java)
+        .resultQuery("SHOW VARIABLES WHERE Variable_name='max_allowed_packet'")
+        .fetchOne(field("Value"), Long::class.java)
     }
+
+    log.info("Initialized SqlDbRawAccess with pool=$poolName and maxPacketSize=$maxPacketSize")
+
+    // Hack: we don't count the full SQL statement length, so subtract a reasonable buffer for the boiler plate statement
+    maxPacketSize -= 8192
   }
 
   /**
-   *  Returns a list of execution IDs for completed executions
+   *  Returns a list of execution IDs and their update_at times for completed executions
    */
-  fun getRunningExecutionIds(executionType: Execution.ExecutionType, partitionName: String, builtAfter: Long): List<String> {
+  fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String, updatedAfter: Long): List<ExecutionDiffKey> {
     return withPool(poolName) {
       jooq
-        .select(DSL.field("id"))
-        .from(getTableName(executionType))
-        .where(DSL.field("status").notIn(*_completedStatuses.toTypedArray())
-          .and(DSL.field("build_time").ge(builtAfter))
-          .and(DSL.field("`partition`").eq(partitionName).or(DSL.field("`partition`").isNull)))
-        .fetch(DSL.field("id"), String::class.java)
+        .select(field("id"), field("updated_at"))
+        .from(getExecutionTable(executionType))
+        .where(field("status").`in`(*completedStatuses.toTypedArray())
+          .and(field("updated_at").gt(updatedAfter))
+          .and(field("`partition`").eq(partitionName).or(field("`partition`").isNull)))
+        .fetchInto(ExecutionDiffKey::class.java)
     }
   }
 
-//  /**
-//   * Returns a list of all execution IDs in the DB
-//   */
-//  fun getAllExecutionIds(executionType: Execution.ExecutionType, partitionName: String, updatedAfter: Long): List<ExecutionDiffKey> {
-//    return withPool(poolName) {
-//      jooq
-//        .select(DSL.field("id"), DSL.field("updated_at"), DSL.field("status"))
-//        .from(getTableName(executionType))
-//        .where(DSL.field("partition").eq(partitionName)
-//          .and(DSL.field("updated_at").gt(updatedAfter))
-//        )
-//        .fetchInto(ExecutionDiffKey::class.java)
-//    }
-//  }
+  /**
+   *  Returns a list of execution IDs for active (not completed) executions
+   */
+  fun getRunningExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
+    return withPool(poolName) {
+      jooq
+        .select(field("id"))
+        .from(getExecutionTable(executionType))
+        .where(field("status").notIn(*completedStatuses.toTypedArray())
+          .and(field("`partition`").eq(partitionName).or(field("`partition`").isNull)))
+        .fetch(field("id"), String::class.java)
+    }
+  }
 
   /**
    * Returns a list of stage IDs that belong to the given executions
@@ -89,10 +76,10 @@ class SqlDbRawAccess(
   fun getStageIdsForExecutions(executionType: Execution.ExecutionType, executionIds: List<String>): List<String> {
     return withPool(poolName) {
       jooq
-        .select(DSL.field("id"))
-        .from(getStagesTableName(executionType))
-        .where(DSL.field("execution_id").`in`(*executionIds.toTypedArray()))
-        .fetch(DSL.field("id"), String::class.java)
+        .select(field("id"))
+        .from(getStagesTable(executionType))
+        .where(field("execution_id").`in`(*executionIds.toTypedArray()))
+        .fetch(field("id"), String::class.java)
     }
   }
 
@@ -102,8 +89,8 @@ class SqlDbRawAccess(
   fun getExecutions(executionType: Execution.ExecutionType, ids: List<String>): org.jooq.Result<Record> {
     return withPool(poolName) {
       jooq.select(DSL.asterisk())
-        .from(getTableName(executionType))
-        .where(DSL.field("id").`in`(*ids.toTypedArray()))
+        .from(getExecutionTable(executionType))
+        .where(field("id").`in`(*ids.toTypedArray()))
         .fetch()
     }
   }
@@ -114,78 +101,13 @@ class SqlDbRawAccess(
   fun getStages(executionType: Execution.ExecutionType, stageIds: List<String>): org.jooq.Result<Record> {
     return withPool(poolName) {
       jooq.select(DSL.asterisk())
-        .from(getStagesTableName(executionType))
-        .where(DSL.field("id").`in`(*stageIds.toTypedArray()))
+        .from(getStagesTable(executionType))
+        .where(field("id").`in`(*stageIds.toTypedArray()))
         .fetch()
     }
   }
 
-  /* TODO(mvulfson): Deal with OCA later
-  /**
-   * Get combined id (full concatenated primary key) of OCA cache statuses that belong to executions that have been completed
-   */
-  fun getCompletedOcaCacheStatusPrimaryIds(): List<String> {
-    return withPool(poolName) {
-      jooq
-        .select(concat(DSL.field("execution_id"), DSL.`val`("-"), DSL.field("cache_id")).`as`("combinedid"))
-        .from(getOcaStatusTableName())
-        .join(getTableName(Execution.ExecutionType.PIPELINE).`as`("p"))
-        .on("execution_id = p.id")
-        .where(DSL.field("p.status").`in`(*_completedStatuses.toTypedArray()))
-        .fetch(DSL.field("combinedid"), String::class.java)
-    }
-  }
-
-  /**
-   * Get combined id (full concatenated primary key) of all OCA cache statuses
-   */
-  fun getAllOcaCacheStatusPrimaryIds(): List<String> {
-    return withPool(poolName) {
-      jooq
-        .select(concat(DSL.field("execution_id"), DSL.`val`("-"), DSL.field("cache_id")).`as`("combinedid"))
-        .from(getOcaStatusTableName())
-        .fetch(DSL.field("combinedid"), String::class.java)
-    }
-  }
-
-  /**
-   * Get (a list of) full oca cache status records that have the specified primary key
-   */
-  fun getOcaCacheStatusesForIds(ids: List<String>): org.jooq.Result<Record> {
-    return withPool(poolName) {
-      jooq
-        .select(DSL.asterisk())
-        .from(getOcaStatusTableName())
-        .where(concat(DSL.field("execution_id"), DSL.`val`("-"), DSL.field("cache_id")).`in`(*ids.toTypedArray()))
-        .fetch()
-    }
-  }
-
-  /**
-   * Get (a list of) full oca cache uuid records that have the specified primary key
-   */
-  fun getOcaCacheUuidIdsForPrimaryKeys(ids: List<String>): org.jooq.Result<Record> {
-    return withPool(poolName) {
-      jooq
-        .select(DSL.asterisk())
-        .from(getOcaCacheUuidTableName())
-        .where(concat(DSL.field("env"), DSL.`val`("-"), DSL.field("cache_id")).`in`(*ids.toTypedArray()))
-        .fetch()
-    }
-  }
-
-  /**
-   * Get a list of all oca cache uuid primary keys
-   */
-  fun getAllOcaCacheUuidsPrimaryIds(): List<String> {
-    return withPool(poolName) {
-      jooq
-        .select(concat(DSL.field("env"), DSL.`val`("-"), DSL.field("cache_id")).`as`("combinedid"))
-        .from(getOcaCacheUuidTableName())
-        .fetch(DSL.field("combinedid"), String::class.java)
-    }
-  }
-  */
+  // TODO(mvulfson): Need an extension point to deal with cases such as OCA
 
   /**
    * Load given records into the specified table using jooq loader api
@@ -200,17 +122,17 @@ class SqlDbRawAccess(
 
     withPool(poolName) {
       val updateSet = allFields.map {
-        it to DSL.field("VALUES({0})", it.dataType, it)
+        it to field("VALUES({0})", it.dataType, it)
       }.toMap()
 
       var cumulativeSize = 0
       var batchQuery = jooq
-        .insertInto(DSL.table(tableName))
+        .insertInto(table(tableName))
         .columns(allFields)
 
       records.forEach { it ->
         val values = it.intoList()
-        val totalRecordSize = values.sumBy { value -> (value?.toString()?.length ?: 4) + 1 }
+        val totalRecordSize = (3 * values.size) + values.sumBy { value -> (value?.toString()?.length ?: 4) }
 
         if (cumulativeSize + totalRecordSize > maxPacketSize) {
           if (cumulativeSize == 0) {
@@ -224,7 +146,7 @@ class SqlDbRawAccess(
             .execute()
 
           batchQuery = jooq
-            .insertInto(DSL.table(tableName))
+            .insertInto(table(tableName))
             .columns(allFields)
             .values(values)
           cumulativeSize = 0
@@ -248,4 +170,20 @@ class SqlDbRawAccess(
 
     return persisted
   }
+
+  fun deleteStages(executionType: Execution.ExecutionType, stageIdsToDelete: List<String>) {
+    withPool(poolName) {
+      for (chunk in stageIdsToDelete.chunked(100)) {
+        jooq
+          .deleteFrom(getStagesTable(executionType))
+          .where(field("id").`in`(*chunk.toTypedArray()))
+          .execute()
+      }
+    }
+  }
+
+  data class ExecutionDiffKey(
+    val id: String,
+    val updated_at: Long
+  )
 }
