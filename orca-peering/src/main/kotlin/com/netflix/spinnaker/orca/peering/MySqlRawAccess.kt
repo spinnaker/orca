@@ -15,8 +15,9 @@ import org.jooq.impl.DSL.table
  */
 class MySqlRawAccess(
   private val jooq: DSLContext,
-  private val poolName: String
-) : SqlRawAccess() {
+  private val poolName: String,
+  chunkSize: Int
+) : SqlRawAccess(chunkSize) {
 
   private var maxPacketSize: Long = 0
 
@@ -86,9 +87,25 @@ class MySqlRawAccess(
 
   override fun deleteStages(executionType: Execution.ExecutionType, stageIdsToDelete: List<String>) {
     withPool(poolName) {
-      for (chunk in stageIdsToDelete.chunked(100)) {
+      for (chunk in stageIdsToDelete.chunked(chunkSize)) {
         jooq
           .deleteFrom(getStagesTable(executionType))
+          .where(field("id").`in`(*chunk.toTypedArray()))
+          .execute()
+      }
+    }
+  }
+
+  override fun deleteExecutions(executionType: Execution.ExecutionType, pipelineIdsToDelete: List<String>) {
+    withPool(poolName) {
+      for (chunk in pipelineIdsToDelete.chunked(chunkSize)) {
+        jooq
+          .deleteFrom(getStagesTable(executionType))
+          .where(field("execution_id").`in`(*chunk.toTypedArray()))
+          .execute()
+
+        jooq
+          .deleteFrom(getExecutionTable(executionType))
           .where(field("id").`in`(*chunk.toTypedArray()))
           .execute()
       }

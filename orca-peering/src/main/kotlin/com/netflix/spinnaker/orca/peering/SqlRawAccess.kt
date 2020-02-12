@@ -23,7 +23,9 @@ import org.jooq.Result
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class SqlRawAccess {
+abstract class SqlRawAccess(
+  val chunkSize: Int
+) {
   val log: Logger = LoggerFactory.getLogger(this.javaClass)
   val completedStatuses = ExecutionStatus.COMPLETED.map { it.toString() }
 
@@ -56,6 +58,11 @@ abstract class SqlRawAccess {
    * Deletes specified stages
    */
   abstract fun deleteStages(executionType: Execution.ExecutionType, stageIdsToDelete: List<String>)
+
+  /**
+   * Delete specified executions
+   */
+  abstract fun deleteExecutions(executionType: Execution.ExecutionType, pipelineIdsToDelete: List<String>)
 
   /**
    * Load given records into the specified table using jooq loader api

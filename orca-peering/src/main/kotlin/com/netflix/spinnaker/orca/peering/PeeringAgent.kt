@@ -91,13 +91,23 @@ class PeeringAgent(
   private val log = LoggerFactory.getLogger(javaClass)
   private var completedPipelinesMostRecentUpdatedTime = 0L
   private var completedOrchestrationsMostRecentUpdatedTime = 0L
+  private var runCount = 0
 
   private val peeringLagTimerId = registry.createId("pollers.peering.lag").withTag("peerId", peeredId)
-  private val peeringNumPeeredId = registry.createId("pollers.peering.numProcessed").withTag("peerId", peeredId)
+  private val peeringNumPeeredId = registry.createId("pollers.peering.numPeered").withTag("peerId", peeredId)
+  private val peeringNumDeletedId = registry.createId("pollers.peering.numDeleted").withTag("peerId", peeredId)
   private val peeringNumStagesDeletedId = registry.createId("pollers.peering.numStagesDeleted").withTag("peerId", peeredId)
   private val peeringNumErrorsId = registry.createId("pollers.peering.numErrors").withTag("peerId", peeredId)
 
   override fun tick() {
+    // Temporary "hack" to replicate deletes, for now we run a full diff (very expensive) every 10 ticks of the agent
+    // Better solution forth coming
+    if (runCount++ > 10) {
+      completedOrchestrationsMostRecentUpdatedTime = 0L
+      completedPipelinesMostRecentUpdatedTime = 0L
+      runCount = 0
+    }
+
     if (dynamicConfigService.isEnabled("pollers.peering", true) &&
       dynamicConfigService.isEnabled("pollers.peering.$peeredId", true)) {
       copyExecutions(Execution.ExecutionType.PIPELINE)
@@ -163,15 +173,31 @@ class PeeringAgent(
 
     val completedPipelineKeys = srcDB.getCompletedExecutionIds(executionType, peeredId, updatedAfter)
     val migratedPipelineKeys = destDB.getCompletedExecutionIds(executionType, peeredId, updatedAfter)
+
+    val completedPipelineKeysMap = completedPipelineKeys
       .map { it.id to it }
       .toMap()
+    val migratedPipelineKeysMap = migratedPipelineKeys
+      .map { it.id to it }
+      .toMap()
+
     val pipelineIdsToMigrate = completedPipelineKeys
-      .filter { key -> migratedPipelineKeys[key.id]?.updated_at ?: 0 < key.updated_at }
+      .filter { key -> migratedPipelineKeysMap[key.id]?.updated_at ?: 0 < key.updated_at }
       .map { it.id }
       .toList()
 
-    if (pipelineIdsToMigrate.isNotEmpty()) {
-      log.debug("Found ${completedPipelineKeys.size} completed $executionType candidates with ${migratedPipelineKeys.size} already copied for peering, ${pipelineIdsToMigrate.size} still need copying")
+    val pipelineIdsToDelete = migratedPipelineKeys
+      .filter { key -> !completedPipelineKeysMap.containsKey(key.id) }
+      .map { it.id }
+      .toList()
+
+    if (pipelineIdsToMigrate.isNotEmpty() && pipelineIdsToDelete.isNotEmpty()) {
+      log.debug("Found ${completedPipelineKeys.size} completed $executionType candidates with ${migratedPipelineKeys.size} already copied for peering, ${pipelineIdsToMigrate.size} still need copying and ${pipelineIdsToDelete.size} need to be deleted")
+      destDB.deleteExecutions(executionType, pipelineIdsToDelete)
+      registry
+        .counter(peeringNumDeletedId.tag(executionType))
+        .increment(pipelineIdsToDelete.size.toLong())
+
       val migrationResult = migrateInParallel(pipelineIdsToMigrate) { chunk -> migrateExecutionChunk(executionType, chunk) }
       if (migrationResult.hadErrors) {
         log.error("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with errors, see prior log statements")

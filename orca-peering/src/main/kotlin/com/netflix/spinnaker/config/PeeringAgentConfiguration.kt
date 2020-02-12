@@ -60,8 +60,8 @@ class PeeringAgentConfiguration {
 
     when (jooq.dialect()) {
       SQLDialect.MYSQL -> {
-        srcDB = MySqlRawAccess(jooq, peeredPoolName)
-        destDB = MySqlRawAccess(jooq, "default")
+        srcDB = MySqlRawAccess(jooq, peeredPoolName, chunkSize)
+        destDB = MySqlRawAccess(jooq, "default", chunkSize)
       }
       else -> throw UnsupportedOperationException("Peering only supported on MySQL right now")
     }
