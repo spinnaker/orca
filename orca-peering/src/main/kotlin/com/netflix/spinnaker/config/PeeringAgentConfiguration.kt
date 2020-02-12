@@ -35,7 +35,7 @@ import java.util.concurrent.Executors
  * TODO(mvulfson): this needs to support multiple (arbitrary number of) beans / peers defined in config
  * TODO(mvulfson): prob also worth creating ConfigurationProperties class for the props
  */
-class PeeringConfiguration {
+class PeeringAgentConfiguration {
   @Bean
   @ConditionalOnExpression("\${pollers.peering.enabled:false}")
   fun peeringAgent(
@@ -50,8 +50,7 @@ class PeeringConfiguration {
     @Value("\${pollers.peering.chunk-size:100}") chunkSize: Int,
     @Value("\${pollers.peering.clock-drift-ms:5000}") clockDriftMs: Long
   ): PeeringAgent {
-    val executor = Executors.newFixedThreadPool(
-      threadCount,
+    val executor = Executors.newCachedThreadPool(
       ThreadFactoryBuilder()
         .setNameFormat(PeeringAgent::javaClass.name + "-%d")
         .build())
