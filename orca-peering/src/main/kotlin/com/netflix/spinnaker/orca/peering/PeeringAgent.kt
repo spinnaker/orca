@@ -137,7 +137,11 @@ class PeeringAgent(
     if (activePipelineIds.isNotEmpty()) {
       log.debug("Found ${activePipelineIds.size} active $executionType, copying all")
       val migrationResult = migrateInParallel(activePipelineIds) { chunk -> migrateExecutionChunk(executionType, chunk) }
-      log.debug("Completed active $executionType peering: copied ${migrationResult.count} of ${activePipelineIds.size}")
+      if (migrationResult.hadErrors) {
+        log.error("Finished active $executionType peering: copied ${migrationResult.count} of ${activePipelineIds.size} with errors, see prior log statements")
+      } else {
+        log.debug("Finished active $executionType peering: copied ${migrationResult.count} of ${activePipelineIds.size}")
+      }
 
       registry
         .counter(peeringNumPeeredId.tag(executionType, ExecutionState.ACTIVE))
@@ -167,19 +171,19 @@ class PeeringAgent(
       .toList()
 
     if (pipelineIdsToMigrate.isNotEmpty()) {
-      log.debug("Found ${migratedPipelineKeys.size} $executionType candidates with ${migratedPipelineKeys.size} already copied for peering, ${pipelineIdsToMigrate.size} still need copying")
+      log.debug("Found ${completedPipelineKeys.size} completed $executionType candidates with ${migratedPipelineKeys.size} already copied for peering, ${pipelineIdsToMigrate.size} still need copying")
       val migrationResult = migrateInParallel(pipelineIdsToMigrate) { chunk -> migrateExecutionChunk(executionType, chunk) }
-      log.debug("Completed completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with latest updatedAt=${migrationResult.latestUpdatedAt}")
-
-      if (executionType == Execution.ExecutionType.ORCHESTRATION) {
-        completedOrchestrationsMostRecentUpdatedTime = migrationResult.latestUpdatedAt - clockDriftMs
+      if (migrationResult.hadErrors) {
+        log.error("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with errors, see prior log statements")
       } else {
-        completedPipelinesMostRecentUpdatedTime = migrationResult.latestUpdatedAt - clockDriftMs
-      }
+        log.debug("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with latest updatedAt=${migrationResult.latestUpdatedAt}")
 
-      registry
-        .counter(peeringNumPeeredId.tag(executionType, ExecutionState.COMPLETED))
-        .increment(migrationResult.count.toLong())
+        if (executionType == Execution.ExecutionType.ORCHESTRATION) {
+          completedOrchestrationsMostRecentUpdatedTime = migrationResult.latestUpdatedAt - clockDriftMs
+        } else {
+          completedPipelinesMostRecentUpdatedTime = migrationResult.latestUpdatedAt - clockDriftMs
+        }
+      }
     } else {
       log.debug("No completed $executionType executions to copy for peering")
     }
@@ -219,7 +223,10 @@ class PeeringAgent(
       }
       destDB.loadRecords(getExecutionTable(executionType).name, rows)
 
-      return MigrationChunkResult(latestUpdatedAt, idsToMigrate.size)
+      registry
+        .counter(peeringNumPeeredId.tag(executionType, ExecutionState.COMPLETED))
+        .increment(idsToMigrate.size.toLong())
+      return MigrationChunkResult(latestUpdatedAt, idsToMigrate.size, hadErrors = false)
     } catch (e: Exception) {
       log.error("Failed to peer $executionType chunk (first id: ${idsToMigrate[0]})", e)
 
@@ -228,7 +235,7 @@ class PeeringAgent(
         .increment()
     }
 
-    return MigrationChunkResult(0, 0)
+    return MigrationChunkResult(0, 0, hadErrors = true)
   }
 
   /**
@@ -245,14 +252,16 @@ class PeeringAgent(
     val effectiveThreadCount = min(threadCount, queue.size)
     log.info("Kicking off migration with (chunk size: $chunkSize, threadCount: $effectiveThreadCount)")
 
-    val futures = MutableList<Future<Long>>(effectiveThreadCount) { threadIndex ->
-      executor.submit(Callable<Long> {
-        var latestUpdatedAt: Long = 0
+    val futures = MutableList<Future<MigrationChunkResult>>(effectiveThreadCount) { threadIndex ->
+      executor.submit(Callable<MigrationChunkResult> {
+        var latestUpdatedAt = 0L
+        var hadErrors = false
 
         do {
           val chunkToProcess = queue.poll() ?: break
 
           val result = migrationAction(chunkToProcess)
+          hadErrors = hadErrors || result.hadErrors
           val migrated = migratedCount.addAndGet(result.count)
           latestUpdatedAt = max(latestUpdatedAt, result.latestUpdatedAt)
 
@@ -264,16 +273,19 @@ class PeeringAgent(
           }
         } while (true)
 
-        return@Callable latestUpdatedAt
+        return@Callable MigrationChunkResult(latestUpdatedAt, 0, hadErrors)
       })
     }
 
-    var latestUpdatedAt: Long = 0
+    var latestUpdatedAt = 0L
+    var hadErrors = false
     for (future in futures) {
-      latestUpdatedAt = max(latestUpdatedAt, future.get())
+      val singleResult = future.get()
+      hadErrors = hadErrors || singleResult.hadErrors
+      latestUpdatedAt = max(latestUpdatedAt, singleResult.latestUpdatedAt)
     }
 
-    return MigrationChunkResult(latestUpdatedAt, migratedCount.get())
+    return MigrationChunkResult(latestUpdatedAt, migratedCount.get(), hadErrors)
   }
 
   override fun getPollingInterval() = pollingIntervalMs
@@ -281,6 +293,7 @@ class PeeringAgent(
 
   data class MigrationChunkResult(
     val latestUpdatedAt: Long,
-    val count: Int
+    val count: Int,
+    val hadErrors: Boolean = false
   )
 }
