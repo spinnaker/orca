@@ -19,7 +19,6 @@ apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
   implementation(project(":orca-core"))
-  implementation(project(":orca-front50"))
 
   implementation("com.netflix.spinnaker.kork:kork-sql")
   implementation("org.jooq:jooq")
