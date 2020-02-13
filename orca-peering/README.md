@@ -1,18 +1,37 @@
 # Orca Peering
 
-This is an semi-experimental approach to solve the problem of having multiple `orca` installations (each with their own database) communicate changes with each other, for instance in a multi-region Spinnaker installation or during a database migration.
+This is an semi-experimental approach to solve the problem of having multiple `orca` installations (each with its own database) communicate changes with each other, for instance in a multi-region Spinnaker installation or during a database migration.
+
+Note: the word *instance* is used to refer to `orca` below but most likely this is actually a cluster of `orca` instances that all talk to the same database
+ 
+**Definitions:**
+* `peer`
+    An `orca` instance whose database (can be a read replica) we copy data from. Each `orca` instance has an ID, for example `us-east-1` or `us-west-2`.  
+    A peer is defined by specifying its database connection AND its ID (in the yaml config).  
+    For example, `orca` instance with ID `us-west-2` could peer `orca` instance with ID `us-east-1`, and vice-versa
+
+* `partition`
+    The executions stored in a DB are tagged with a partition, this is synonymous with peer ID described above.  
+    When an execution is "peered" (copied) from a peer with ID `us-east-1` that execution will be persisted in our local database with the `partition` set to `us-east-1`.  
+    *Note:* for historical reasons, the partition has been omitted in the executions.
+    Therefore, an `orca` instance will consider executions with `partition = NULL` OR `partition = MY_PARTITION_ID` to be owned by this instance. 
+
+* `foreign executions`
+    Foreign executions are executions that show up in the local database but are marked with `partition` of our peer.  
+    These executions are essentially read-only and the current `orca` instance can't perform any actions on these executions.
+
 
 The peering mechanism accomplishes a few things:
-1. (complete) Peer executions (pipelines and orchestrations) from one database (region) to another database (region)
-2. (in-progress) Allows for an `orca` operating with one database to perform actions on an execution being executed by an `orca` operating with a different database
-3. (still to come) Take ownership and resume an execution previously operated on by an `orca` with a different database
+1. (complete) Peer (copy) executions (both pipelines and orchestrations) from a database of a peer to the local instance database
+2. (in-progress) Allow for an `orca` instance to perform actions on a foreign execution (e.g. executions running on a peer)
+3. (still to come) Take ownership and resume an execution previously operated on by a peer
 
 
 ### Execution peering
 Execution peering is essentially copying of executions from one database to another.  
 In a typical topology for `orca` a single `orca` cluster will use a single [sql] database.
 The database stores all execution history as well as the execution queue.
-The history needs to be peered bu the the queue not be peered/replicated as that would cause issues with duplicate executions, etc.
+The history needs to be peered but the queue not be peered/replicated as that would cause issues with duplicate executions, etc.
 (additionally, the queue is extremely high bandwidth/change rate so replicating it would be difficult/require a lot of overhead on the DB)
 
 Logic for peering lives in [PeeringAgent.kt](./src/main/kotlin/com/netflix/spinnaker/orca/peering/PeeringAgent.kt), see comments for details on the algorithm.  
