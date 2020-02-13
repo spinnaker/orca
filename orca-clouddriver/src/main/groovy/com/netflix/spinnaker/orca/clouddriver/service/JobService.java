@@ -16,8 +16,11 @@
 
 package com.netflix.spinnaker.orca.clouddriver.service;
 
+import static java.util.stream.Collectors.toList;
+
+import com.netflix.spinnaker.orca.api.PreconfiguredJobConfigurationProvider;
+import com.netflix.spinnaker.orca.api.PreconfiguredJobStageProperties;
 import com.netflix.spinnaker.orca.clouddriver.config.JobConfigurationProperties;
-import com.netflix.spinnaker.orca.clouddriver.config.PreconfiguredJobStageProperties;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,11 +30,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class JobService {
 
-  @Autowired JobConfigurationProperties jobConfigurationProperties;
+  private final JobConfigurationProperties jobConfigurationProperties;
+
+  private final List<PreconfiguredJobConfigurationProvider> preconfiguredJobConfigurationProviders;
+
+  JobService(
+      @Autowired JobConfigurationProperties jobConfigurationProperties,
+      @Autowired(required = false)
+          List<PreconfiguredJobConfigurationProvider> preconfiguredJobConfigurationProviders) {
+    this.jobConfigurationProperties = jobConfigurationProperties;
+    this.preconfiguredJobConfigurationProviders = preconfiguredJobConfigurationProviders;
+  }
 
   public List<PreconfiguredJobStageProperties> getPreconfiguredStages() {
     if (jobConfigurationProperties.getTitus() == null
-        && jobConfigurationProperties.getKubernetes() == null) {
+        && jobConfigurationProperties.getKubernetes() == null
+        && preconfiguredJobConfigurationProviders == null) {
       return Collections.EMPTY_LIST;
     }
 
@@ -44,6 +58,23 @@ public class JobService {
     if (jobConfigurationProperties.getKubernetes() != null
         && !jobConfigurationProperties.getKubernetes().isEmpty()) {
       preconfiguredJobStageProperties.addAll(jobConfigurationProperties.getKubernetes());
+    }
+
+    // Also load job configs that are provided via extension implementations(plugins)
+    if (preconfiguredJobConfigurationProviders != null
+        && !preconfiguredJobConfigurationProviders.isEmpty()) {
+
+      List<PreconfiguredJobStageProperties> jobStageProperties =
+          preconfiguredJobConfigurationProviders.stream()
+              .flatMap(obj -> obj.getJobConfigurations().stream())
+              .collect(toList());
+
+      jobStageProperties.forEach(
+          properties -> {
+            if (properties.isValid()) {
+              preconfiguredJobStageProperties.add(properties);
+            }
+          });
     }
 
     return preconfiguredJobStageProperties;

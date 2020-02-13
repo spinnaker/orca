@@ -1,7 +1,7 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,28 +14,56 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.config;
+package com.netflix.spinnaker.orca.api;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public abstract class PreconfiguredJobStageProperties {
 
   private boolean enabled = true;
+
   private String label;
+
   private String description;
+
   private String type;
+
   private List<PreconfiguredJobStageParameter> parameters;
+
   private boolean waitForCompletion = true;
+
   private String cloudProvider;
+
   private String credentials;
+
   private String region;
+
   private String propertyFile;
+
   private boolean producesArtifacts = false;
+
+  PreconfiguredJobStageProperties(String label, String type, String cloudProvider) {
+    this.label = label;
+    this.type = type;
+    this.cloudProvider = cloudProvider;
+  }
 
   public List<String> getOverridableFields() {
     return Arrays.asList(
         "cloudProvider", "credentials", "region", "propertyFile", "waitForCompletion");
+  }
+
+  public boolean isValid() {
+    return this.label != null
+        && !this.label.isEmpty()
+        && this.cloudProvider != null
+        && !this.cloudProvider.isEmpty()
+        && this.type != null
+        && !this.type.isEmpty();
   }
 }

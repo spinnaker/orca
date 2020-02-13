@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.config;
 
+import com.netflix.spinnaker.orca.api.TitusPreconfiguredJobProperties;
 import java.util.List;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
