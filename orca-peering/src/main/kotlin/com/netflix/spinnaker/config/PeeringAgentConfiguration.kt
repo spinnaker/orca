@@ -24,17 +24,19 @@ import com.netflix.spinnaker.orca.peering.MySqlRawAccess
 import com.netflix.spinnaker.orca.peering.SqlRawAccess
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.Executors
+import javax.naming.ConfigurationException
 
 @Configuration
 /**
  * TODO(mvulfson): this needs to support multiple (arbitrary number of) beans / peers defined in config
- * TODO(mvulfson): prob also worth creating ConfigurationProperties class for the props
+ * We can do something similar what kork does for sql connection pools
  */
+@EnableConfigurationProperties(PeeringAgentConfigurationProperties::class)
 class PeeringAgentConfiguration {
   @Bean
   @ConditionalOnExpression("\${pollers.peering.enabled:false}")
@@ -43,16 +45,15 @@ class PeeringAgentConfiguration {
     clusterLock: NotificationClusterLock,
     dynamicConfigService: DynamicConfigService,
     registry: Registry,
-    @Value("\${pollers.peering.pool-name}") peeredPoolName: String,
-    @Value("\${pollers.peering.id}") peeredId: String,
-    @Value("\${pollers.peering.interval-ms:5000}") pollIntervalMs: Long,
-    @Value("\${pollers.peering.thread-count:30}") threadCount: Int,
-    @Value("\${pollers.peering.chunk-size:100}") chunkSize: Int,
-    @Value("\${pollers.peering.clock-drift-ms:5000}") clockDriftMs: Long
+    properties: PeeringAgentConfigurationProperties
   ): PeeringAgent {
+    if (properties.peerId == null || properties.poolName == null) {
+      throw ConfigurationException("pollers.peering.id and pollers.peering.poolName must be specified for peering")
+    }
+
     val executor = Executors.newCachedThreadPool(
       ThreadFactoryBuilder()
-        .setNameFormat(PeeringAgent::javaClass.name + "-%d")
+        .setNameFormat(PeeringAgent::javaClass.name + "-${properties.peerId}-%d")
         .build())
 
     val srcDB: SqlRawAccess
@@ -60,12 +61,23 @@ class PeeringAgentConfiguration {
 
     when (jooq.dialect()) {
       SQLDialect.MYSQL -> {
-        srcDB = MySqlRawAccess(jooq, peeredPoolName, chunkSize)
-        destDB = MySqlRawAccess(jooq, "default", chunkSize)
+        srcDB = MySqlRawAccess(jooq, properties.poolName!!, properties.chunkSize)
+        destDB = MySqlRawAccess(jooq, "default", properties.chunkSize)
       }
       else -> throw UnsupportedOperationException("Peering only supported on MySQL right now")
     }
 
-    return PeeringAgent(peeredId, pollIntervalMs, executor, threadCount, chunkSize, clockDriftMs, srcDB, destDB, dynamicConfigService, registry, clusterLock)
+    return PeeringAgent(
+      properties.peerId!!,
+      properties.intervalMs,
+      executor,
+      properties.threadCount,
+      properties.chunkSize,
+      properties.clockDriftMs,
+      srcDB,
+      destDB,
+      dynamicConfigService,
+      registry,
+      clusterLock)
   }
 }
