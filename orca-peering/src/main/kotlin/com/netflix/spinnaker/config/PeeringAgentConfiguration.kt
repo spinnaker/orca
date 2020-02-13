@@ -46,7 +46,7 @@ class PeeringAgentConfiguration {
     @Value("\${pollers.peering.pool-name}") peeredPoolName: String,
     @Value("\${pollers.peering.id}") peeredId: String,
     @Value("\${pollers.peering.interval-ms:5000}") pollIntervalMs: Long,
-    @Value("\${pollers.peering.thread-count:200}") threadCount: Int,
+    @Value("\${pollers.peering.thread-count:30}") threadCount: Int,
     @Value("\${pollers.peering.chunk-size:100}") chunkSize: Int,
     @Value("\${pollers.peering.clock-drift-ms:5000}") clockDriftMs: Long
   ): PeeringAgent {

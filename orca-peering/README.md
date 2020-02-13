@@ -57,7 +57,7 @@ pollers:
     poolName: foreign
     id: us-west-2
     intervalMs: 5000   # This is the default value
-    threadCount: 200   # This is the default value 
+    threadCount: 30    # This is the default value 
     chunkSize: 100     # This is the default value
     clockDriftMs: 5000 # This is the default value
 
@@ -86,28 +86,35 @@ sql:
 
 | Parameter | Default | Notes |
 |-----------|---------|-------|
-|`pollers.peering.enabled`| `false` | used to enabled or disable peering |
-|`pollers.peering.poolName`| [REQUIRED] | name of the pool to use for foreign database, see `sql.connectionPools.foreign` above |
-|`pollers.peering.id`| [REQUIRED] | id of the peer, this must be unique for each database |
-|`pollers.peering.intervalMs`| `5000` | interval to run migrations at (each run performs a delta copy).<br> Shorter = less lag but more CPU and DB load |
-|`pollers.peering.threadCount`| `200` | number of threads to use to perform bulk migration. A large number here only helps with the initial bulk import. After that, the delta is usually small enough that anything above 2 is unlikely to make a difference |
-|`pollers.peering.chunkSize`| `100` | chunk size used when copying data (this is the max number of rows that will be modified at a time) |
-|`pollers.peering.clockDriftMs`| `5000` | allows for this much clock drift across `orca` instances operating on a single DB|
+|`pollers.peering.enabled`          | `false`    | used to enabled or disable peering |
+|`pollers.peering.poolName`         | [REQUIRED] | name of the pool to use for foreign database, see `sql.connectionPools.foreign` above |
+|`pollers.peering.id`               | [REQUIRED] | id of the peer, this must be unique for each database |
+|`pollers.peering.intervalMs`       | `5000`     | interval to run migrations at (each run performs a delta copy).<br> Shorter = less lag but more CPU and DB load |
+|`pollers.peering.threadCount`      | `30`       | number of threads to use to perform bulk migration. A large number here only helps with the initial bulk import. After that, the delta is usually small enough that anything above 2 is unlikely to make a difference |
+|`pollers.peering.chunkSize`        | `100`      | chunk size used when copying data (this is the max number of rows that will be modified at a time) |
+|`pollers.peering.clockDriftMs`     | `5000`     | allows for this much clock drift across `orca` instances operating on a single DB|
 
 ### Emitted metrics
 The following metrics are emitted by the peering agent and can/should be used for monitoring health of the peering system.
 
 | Parameter | Notes |
 |-----------|-------|
-|`pollers.peering.lag`| Timer of how long it takes to perform a single migration loop, this + the agent `intervalMs` is the effective the lag. This should be a fairly steady number | 
-|`pollers.peering.numProcessed`| Counter of number of copied executions (should look fairly steady - i.e. mirror the number of active executions) | 
-|`pollers.peering.numStagesDeleted`| Counter of number of stages deleted during copy, purely informational| 
-|`pollers.peering.numErrors`| Counter of errors encountered during execution copying (this should be alerted on) | 
+|`pollers.peering.lag`              | Timer (seconds) of how long it takes to perform a single migration loop, this + the agent `intervalMs` is the effective lag. This should be a fairly steady number | 
+|`pollers.peering.numPeered`        | Counter of number of copied executions (should look fairly steady - i.e. mirror the number of active executions) | 
+|`pollers.peering.numDeleted`       | Counter of number of deleted executions | 
+|`pollers.peering.numStagesDeleted` | Counter of number of stages deleted during copy, purely informational| 
+|`pollers.peering.numErrors`        | Counter of errors encountered during execution copying (this should be alerted on) | 
+
+If using the peering feature, it is recommended that you configure alerts for the following metrics:  
+* `pollers.peering.numErrors > 0`
+* `pollers.peering.numPeered == 0` for some period of time (depends on your steady stage of active executions)
+* `pollers.peering.lag > 60` for some period of time (~3 minutes)
+
 
 ### Dynamic properties
 The following dynamic properties are exposed and can be controlled at runtime via `DynamicConfigService`.
 
 | Property | Default | Notes |
 |----------|---------|-------|
-|`pollers.peering.enabled` | `true` | if set to `false` turns of all peering |
+|`pollers.peering.enabled`          | `true` | if set to `false` turns of all peering |
 |`pollers.peering.<PEERID>.enabled` | `true` | if set to `false` turns of all peering for peer with give ID | 
