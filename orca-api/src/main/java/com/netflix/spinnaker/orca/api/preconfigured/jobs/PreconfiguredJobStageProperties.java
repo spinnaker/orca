@@ -21,7 +21,7 @@ import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Holds configurable properties for a Stage. */
+/** Holds configurable properties for a PreconfiguredJobStage. */
 @Data
 @NoArgsConstructor
 public abstract class PreconfiguredJobStageProperties {
@@ -32,7 +32,7 @@ public abstract class PreconfiguredJobStageProperties {
   /** Label to use on the Spinnaker UI while configuring pipeline stages. */
   private String label;
 
-  /** Description to use on the spinnaker UI while configuring pipeline stages. */
+  /** Description to use on the Spinnaker UI while configuring pipeline stages. */
   private String description;
 
   /** Represents stage type. */
