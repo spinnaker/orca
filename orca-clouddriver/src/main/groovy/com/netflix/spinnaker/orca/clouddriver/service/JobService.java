@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.service;
 
 import static java.util.stream.Collectors.toList;
 
-import com.netflix.spinnaker.orca.api.PreconfiguredJobConfigurationProvider;
-import com.netflix.spinnaker.orca.api.PreconfiguredJobStageProperties;
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobConfigurationProvider;
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties;
 import com.netflix.spinnaker.orca.clouddriver.config.JobConfigurationProperties;
 import java.util.ArrayList;
 import java.util.Collections;

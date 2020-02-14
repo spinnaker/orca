@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.preconfigured.jobs;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.api
 
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.TitusPreconfiguredJobProperties
 import spock.lang.Specification
 
 class TitusPreconfiguredJobPropertiesSpec extends Specification {

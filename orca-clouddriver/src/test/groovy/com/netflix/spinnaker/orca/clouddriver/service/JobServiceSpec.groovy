@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.service
 
-import com.netflix.spinnaker.orca.api.PreconfiguredJobConfigurationProvider
-import com.netflix.spinnaker.orca.api.PreconfiguredJobStageProperties
-import com.netflix.spinnaker.orca.api.TitusPreconfiguredJobProperties
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobConfigurationProvider
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.TitusPreconfiguredJobProperties
 import com.netflix.spinnaker.orca.clouddriver.config.JobConfigurationProperties
 import spock.lang.Specification
 

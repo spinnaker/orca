@@ -14,27 +14,34 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.preconfigured.jobs;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
+/** Definition of a parameter for the stage that user can provide input for. */
 @Data
 @NoArgsConstructor
 public class PreconfiguredStageParameter {
 
+  /** Name of the parameter for which user can provide value */
   @NonNull private String name;
 
+  /** Label to use on the Spinnaker UI. */
   @NonNull private String label;
 
+  /** Default value if not specified by the user. */
   private String defaultValue;
 
+  /** Description to show on the Spinnaker UI. */
   private String description;
 
+  /** Data Type of the parameter. */
   private PreconfiguredJobStageParameter.ParameterType type =
       PreconfiguredJobStageParameter.ParameterType.string;
 
+  /** The order in which this parameter will be displayed on the Spinnaker UI. */
   private int order;
 
   public enum ParameterType {

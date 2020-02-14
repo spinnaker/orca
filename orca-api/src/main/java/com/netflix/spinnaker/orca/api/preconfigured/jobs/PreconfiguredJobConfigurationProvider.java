@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.preconfigured.jobs;
 
 import com.netflix.spinnaker.kork.annotations.Beta;
 import java.util.List;
