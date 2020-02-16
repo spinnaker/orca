@@ -2,7 +2,7 @@
 
 This is an semi-experimental approach to solve the problem of having multiple `orca` installations (each with its own database) communicate changes with each other, for instance in a multi-region Spinnaker installation or during a database migration.
 
-Note: the word *instance* is used to refer to `orca` below but most likely this is actually a cluster of `orca` instances that all talk to the same database
+Note: the word *instance* is used to refer to `orca` below but most likely this is actually a cluster/installation of `orca` instances that all talk to the same database
  
 **Definitions:**
 * `peer`
@@ -100,7 +100,7 @@ sql:
       password: ${sql.passwords.orca_service}
       connectionTimeoutMs: 5000
       validationTimeoutMs: 5000
-      maxPoolSize: ${pollers.peering.clockDriftMs}
+      maxPoolSize: ${pollers.peering.threadCount}
 ``` 
 
 | Parameter | Default | Notes |
@@ -135,5 +135,5 @@ The following dynamic properties are exposed and can be controlled at runtime vi
 
 | Property | Default | Notes |
 |----------|---------|-------|
-|`pollers.peering.enabled`          | `true` | if set to `false` turns of all peering |
-|`pollers.peering.<PEERID>.enabled` | `true` | if set to `false` turns of all peering for peer with give ID | 
+|`pollers.peering.enabled`          | `true` | if set to `false` turns off all peering |
+|`pollers.peering.<PEERID>.enabled` | `true` | if set to `false` turns off all peering for peer with given ID | 

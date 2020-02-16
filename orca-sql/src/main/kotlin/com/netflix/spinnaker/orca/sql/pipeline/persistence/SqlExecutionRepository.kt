@@ -917,7 +917,7 @@ class SqlExecutionRepository(
   private fun validateHandledPartitionOrThrow(execution: Execution) {
     val partition = execution.partition
 
-    if (partition != null && (partitionName != partition)) {
+    if (partition != null && partitionName != null && partitionName != partition) {
       throw ForeignExecutionException(execution.id, partition, partitionName)
     }
   }

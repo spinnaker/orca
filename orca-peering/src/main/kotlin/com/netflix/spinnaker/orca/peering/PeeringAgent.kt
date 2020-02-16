@@ -15,22 +15,11 @@
  */
 package com.netflix.spinnaker.orca.peering
 
-import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.Execution
-import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
-import java.util.concurrent.Callable
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  *
@@ -45,22 +34,6 @@ class PeeringAgent(
    * Interval in ms at which this agent runs
    */
   private val pollingIntervalMs: Long,
-
-  /**
-   * Executor service to use for scheduling parallel copying
-   */
-  private val executor: ExecutorService,
-
-  /**
-   * Number of parallel threads to use for copying
-   * (it's expected that the executor is configured with this many as well)
-   */
-  private val threadCount: Int,
-
-  /**
-   * Chunk size to use during copy (this translates to how many IDs we mutate in a single DB query)
-   */
-  private val chunkSize: Int,
 
   /**
    * Maximum allowed clock drift when performing comparison of which executions need to be copied
@@ -84,7 +57,11 @@ class PeeringAgent(
    * Used to dynamically turn off either all of peering or peering of a specific host
    */
   private val dynamicConfigService: DynamicConfigService,
-  private val registry: Registry,
+
+  private val peeringMetrics: PeeringMetrics,
+
+  private val executionCopier: ExecutionCopier,
+
   clusterLock: NotificationClusterLock
 ) : AbstractPollingNotificationAgent(clusterLock) {
 
@@ -92,12 +69,6 @@ class PeeringAgent(
   private var completedPipelinesMostRecentUpdatedTime = 0L
   private var completedOrchestrationsMostRecentUpdatedTime = 0L
   private var runCount = 0
-
-  private val peeringLagTimerId = registry.createId("pollers.peering.lag").withTag("peerId", peeredId)
-  private val peeringNumPeeredId = registry.createId("pollers.peering.numPeered").withTag("peerId", peeredId)
-  private val peeringNumDeletedId = registry.createId("pollers.peering.numDeleted").withTag("peerId", peeredId)
-  private val peeringNumStagesDeletedId = registry.createId("pollers.peering.numStagesDeleted").withTag("peerId", peeredId)
-  private val peeringNumErrorsId = registry.createId("pollers.peering.numErrors").withTag("peerId", peeredId)
 
   override fun tick() {
     // Temporary "hack" to replicate deletes, for now we run a full diff (very expensive) every 10 ticks of the agent
@@ -110,12 +81,12 @@ class PeeringAgent(
 
     if (dynamicConfigService.isEnabled("pollers.peering", true) &&
       dynamicConfigService.isEnabled("pollers.peering.$peeredId", true)) {
-      copyExecutions(Execution.ExecutionType.PIPELINE)
-      copyExecutions(Execution.ExecutionType.ORCHESTRATION)
+      peerExecutions(Execution.ExecutionType.PIPELINE)
+      peerExecutions(Execution.ExecutionType.ORCHESTRATION)
     }
   }
 
-  private fun copyExecutions(executionType: Execution.ExecutionType) {
+  private fun peerExecutions(executionType: Execution.ExecutionType) {
     val mostRecentUpdatedTime = when (executionType) {
       Execution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
       Execution.ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
@@ -125,37 +96,32 @@ class PeeringAgent(
     // On first copy of completed executions, there is no point in copying active executions
     // because they will be woefully out of date (since the first bulk copy will likely take 20+ minutes)
     if (isFirstRun) {
-      copyCompletedExecutions(executionType)
+      peerCompletedExecutions(executionType)
     } else {
-      registry
-        .timer(peeringLagTimerId.tag(executionType))
-        .record {
-          copyCompletedExecutions(executionType)
-          copyActiveExecutions(executionType)
-        }
+      peeringMetrics.recordLag(executionType) {
+        peerCompletedExecutions(executionType)
+        peerActiveExecutions(executionType)
+      }
     }
   }
 
   /**
    * Migrate running/active executions of given type
    */
-  private fun copyActiveExecutions(executionType: Execution.ExecutionType) {
+  private fun peerActiveExecutions(executionType: Execution.ExecutionType) {
     log.debug("Starting active $executionType copy for peering")
 
     val activePipelineIds = srcDB.getActiveExecutionIds(executionType, peeredId)
 
     if (activePipelineIds.isNotEmpty()) {
       log.debug("Found ${activePipelineIds.size} active $executionType, copying all")
-      val migrationResult = migrateInParallel(activePipelineIds) { chunk -> migrateExecutionChunk(executionType, chunk) }
+      val migrationResult = executionCopier.copyInParallel(executionType, activePipelineIds, ExecutionState.ACTIVE)
+
       if (migrationResult.hadErrors) {
         log.error("Finished active $executionType peering: copied ${migrationResult.count} of ${activePipelineIds.size} with errors, see prior log statements")
       } else {
         log.debug("Finished active $executionType peering: copied ${migrationResult.count} of ${activePipelineIds.size}")
       }
-
-      registry
-        .counter(peeringNumPeeredId.tag(executionType, ExecutionState.ACTIVE))
-        .increment(migrationResult.count.toLong())
     } else {
       log.debug("No active $executionType executions to copy for peering")
     }
@@ -164,13 +130,14 @@ class PeeringAgent(
   /**
    * Migrate completed executions of given type
    */
-  private fun copyCompletedExecutions(executionType: Execution.ExecutionType) {
+  private fun peerCompletedExecutions(executionType: Execution.ExecutionType) {
     val updatedAfter = when (executionType) {
       Execution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
       Execution.ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
     }
     log.debug("Starting completed $executionType copy for peering with $executionType updatedAfter=$updatedAfter")
 
+    // Compute diff
     val completedPipelineKeys = srcDB.getCompletedExecutionIds(executionType, peeredId, updatedAfter)
     val migratedPipelineKeys = destDB.getCompletedExecutionIds(executionType, peeredId, updatedAfter)
 
@@ -191,14 +158,12 @@ class PeeringAgent(
       .map { it.id }
       .toList()
 
-    if (pipelineIdsToMigrate.isNotEmpty() && pipelineIdsToDelete.isNotEmpty()) {
+    if (pipelineIdsToMigrate.isNotEmpty() || pipelineIdsToDelete.isNotEmpty()) {
       log.debug("Found ${completedPipelineKeys.size} completed $executionType candidates with ${migratedPipelineKeys.size} already copied for peering, ${pipelineIdsToMigrate.size} still need copying and ${pipelineIdsToDelete.size} need to be deleted")
       destDB.deleteExecutions(executionType, pipelineIdsToDelete)
-      registry
-        .counter(peeringNumDeletedId.tag(executionType))
-        .increment(pipelineIdsToDelete.size.toLong())
+      peeringMetrics.incrementNumDeleted(executionType, pipelineIdsToDelete.size)
 
-      val migrationResult = migrateInParallel(pipelineIdsToMigrate) { chunk -> migrateExecutionChunk(executionType, chunk) }
+      val migrationResult = executionCopier.copyInParallel(executionType, pipelineIdsToMigrate, ExecutionState.COMPLETED)
       if (migrationResult.hadErrors) {
         log.error("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with errors, see prior log statements")
       } else {
@@ -215,111 +180,6 @@ class PeeringAgent(
     }
   }
 
-  /**
-   * Migrates executions (orchestrations or pipelines) and its stages given IDs of the executions
-   */
-  private fun migrateExecutionChunk(executionType: Execution.ExecutionType, idsToMigrate: List<String>): MigrationChunkResult {
-    var latestUpdatedAt = 0L
-    try {
-      // Step 1: Copy all stages
-      val stagesToMigrate = srcDB.getStageIdsForExecutions(executionType, idsToMigrate)
-
-      // It is possible that the source stage list has mutated. Normally, this is only possible when an execution
-      // is restarted (e.g. restarting a deploy stage will delete all its synthetic stages and start over).
-      // We delete all stages that are no longer in our peer first, then we update/copy all other stages
-      val stagesPresent = destDB.getStageIdsForExecutions(executionType, idsToMigrate)
-      val stagesToMigrateHash = stagesToMigrate.toHashSet()
-      val stagesToDelete = stagesPresent.filter { !stagesToMigrateHash.contains(it) }
-      if (stagesToDelete.any()) {
-        destDB.deleteStages(executionType, stagesToDelete)
-        registry
-          .counter(peeringNumStagesDeletedId.tag(executionType))
-          .increment(stagesToDelete.size.toLong())
-      }
-
-      for (chunk in stagesToMigrate.chunked(chunkSize)) {
-        val rows = srcDB.getStages(executionType, chunk)
-        destDB.loadRecords(getStagesTable(executionType).name, rows)
-      }
-
-      // Step 2: Copy all executions
-      val rows = srcDB.getExecutions(executionType, idsToMigrate)
-      rows.forEach { r -> r.set(DSL.field("partition"), peeredId)
-        latestUpdatedAt = max(latestUpdatedAt, r.get("updated_at", Long::class.java))
-      }
-      destDB.loadRecords(getExecutionTable(executionType).name, rows)
-
-      registry
-        .counter(peeringNumPeeredId.tag(executionType, ExecutionState.COMPLETED))
-        .increment(idsToMigrate.size.toLong())
-      return MigrationChunkResult(latestUpdatedAt, idsToMigrate.size, hadErrors = false)
-    } catch (e: Exception) {
-      log.error("Failed to peer $executionType chunk (first id: ${idsToMigrate[0]})", e)
-
-      registry
-        .counter(peeringNumErrorsId.tag(executionType))
-        .increment()
-    }
-
-    return MigrationChunkResult(0, 0, hadErrors = true)
-  }
-
-  /**
-   * Run migrations in parallel
-   * Chunks the specified IDs and uses the specified action to perform migrations on separate threads
-   */
-  private fun migrateInParallel(idsToMigrate: List<String>, migrationAction: (List<String>) -> MigrationChunkResult): MigrationChunkResult {
-    val queue = ConcurrentLinkedQueue(idsToMigrate.chunked(chunkSize))
-
-    val startTime = Instant.now()
-    val migratedCount = AtomicInteger(0)
-
-    // Only spin up as many threads as there are chunks to migrate (with upper bound of threadCount)
-    val effectiveThreadCount = min(threadCount, queue.size)
-    log.info("Kicking off migration with (chunk size: $chunkSize, threadCount: $effectiveThreadCount)")
-
-    val futures = MutableList<Future<MigrationChunkResult>>(effectiveThreadCount) { threadIndex ->
-      executor.submit(Callable<MigrationChunkResult> {
-        var latestUpdatedAt = 0L
-        var hadErrors = false
-
-        do {
-          val chunkToProcess = queue.poll() ?: break
-
-          val result = migrationAction(chunkToProcess)
-          hadErrors = hadErrors || result.hadErrors
-          val migrated = migratedCount.addAndGet(result.count)
-          latestUpdatedAt = max(latestUpdatedAt, result.latestUpdatedAt)
-
-          if (threadIndex == 0) {
-            // Only dump status logs for one of the threads - it's informational only anyway
-            val elapsedTime = Duration.between(startTime, Instant.now()).toMillis()
-            val etaMillis = (((idsToMigrate.size.toDouble() / migrated) * elapsedTime) - elapsedTime).toLong()
-            log.info("Migrated $migrated of ${idsToMigrate.size}, ETA: ${Duration.ofMillis(etaMillis)}")
-          }
-        } while (true)
-
-        return@Callable MigrationChunkResult(latestUpdatedAt, 0, hadErrors)
-      })
-    }
-
-    var latestUpdatedAt = 0L
-    var hadErrors = false
-    for (future in futures) {
-      val singleResult = future.get()
-      hadErrors = hadErrors || singleResult.hadErrors
-      latestUpdatedAt = max(latestUpdatedAt, singleResult.latestUpdatedAt)
-    }
-
-    return MigrationChunkResult(latestUpdatedAt, migratedCount.get(), hadErrors)
-  }
-
   override fun getPollingInterval() = pollingIntervalMs
   override fun getNotificationType(): String = this.javaClass.simpleName
-
-  data class MigrationChunkResult(
-    val latestUpdatedAt: Long,
-    val count: Int,
-    val hadErrors: Boolean = false
-  )
 }

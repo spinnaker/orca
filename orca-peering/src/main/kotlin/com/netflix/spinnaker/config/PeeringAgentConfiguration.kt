@@ -19,8 +19,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
+import com.netflix.spinnaker.orca.peering.ExecutionCopier
 import com.netflix.spinnaker.orca.peering.PeeringAgent
 import com.netflix.spinnaker.orca.peering.MySqlRawAccess
+import com.netflix.spinnaker.orca.peering.PeeringMetrics
 import com.netflix.spinnaker.orca.peering.SqlRawAccess
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
@@ -56,28 +58,29 @@ class PeeringAgentConfiguration {
         .setNameFormat(PeeringAgent::javaClass.name + "-${properties.peerId}-%d")
         .build())
 
-    val srcDB: SqlRawAccess
-    val destDB: SqlRawAccess
+    val sourceDB: SqlRawAccess
+    val destinationDB: SqlRawAccess
 
     when (jooq.dialect()) {
       SQLDialect.MYSQL -> {
-        srcDB = MySqlRawAccess(jooq, properties.poolName!!, properties.chunkSize)
-        destDB = MySqlRawAccess(jooq, "default", properties.chunkSize)
+        sourceDB = MySqlRawAccess(jooq, properties.poolName!!, properties.chunkSize)
+        destinationDB = MySqlRawAccess(jooq, "default", properties.chunkSize)
       }
       else -> throw UnsupportedOperationException("Peering only supported on MySQL right now")
     }
 
+    val metrics = PeeringMetrics(properties.peerId!!, registry)
+    val copier = ExecutionCopier(properties.peerId!!, sourceDB, destinationDB, executor, properties.threadCount, properties.chunkSize, metrics)
+
     return PeeringAgent(
       properties.peerId!!,
       properties.intervalMs,
-      executor,
-      properties.threadCount,
-      properties.chunkSize,
       properties.clockDriftMs,
-      srcDB,
-      destDB,
+      sourceDB,
+      destinationDB,
       dynamicConfigService,
-      registry,
+      metrics,
+      copier,
       clusterLock)
   }
 }

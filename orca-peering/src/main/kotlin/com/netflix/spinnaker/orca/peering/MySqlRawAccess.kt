@@ -13,7 +13,7 @@ import org.jooq.impl.DSL.table
  * Provides raw access to various tables in the orca SQL
  * TODO(mvulfson): Need an extension point to deal with cases such as OCA
  */
-class MySqlRawAccess(
+open class MySqlRawAccess(
   private val jooq: DSLContext,
   private val poolName: String,
   chunkSize: Int

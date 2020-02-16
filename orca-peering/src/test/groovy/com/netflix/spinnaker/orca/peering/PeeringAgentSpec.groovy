@@ -16,94 +16,134 @@
 
 package com.netflix.spinnaker.orca.peering
 
-
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import org.jooq.DSLContext
 import spock.lang.Specification
-import spock.lang.Subject
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.COMPLETED
-import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
 class PeeringAgentSpec extends Specification {
-  @Subject
-  def peeringAgent = new PeeringAgent(
-      Mock(DSLContext),
-      "peeredPoolName",
-      "peeredId",
-      42,
-      Mock(NotificationClusterLock)
-  )
+  MySqlRawAccess src = Mock(MySqlRawAccess)
+  MySqlRawAccess dest = Mock(MySqlRawAccess)
+  PeeringMetrics metrics = Mock(PeeringMetrics)
+  ExecutionCopier copier = Mock(ExecutionCopier)
+  DynamicConfigService dynamicConfigService = Mock(DynamicConfigService)
+  def clockDrift = 100
 
-  MySqlRawAccess src = Stub(MySqlRawAccess)
-  MySqlRawAccess dest = Stub(MySqlRawAccess)
-
-  def setupSpec() {
-    peeringAgent.srcDB = src
-    peeringAgent.destDB = dest
+  PeeringAgent constructPeeringAgent() {
+    return new PeeringAgent(
+        "peeredId",
+        1000,
+        clockDrift,
+        src,
+        dest,
+        dynamicConfigService,
+        metrics,
+        copier,
+        Mock(NotificationClusterLock)
+    )
   }
 
-  @Unroll
-  def "should copy new #status (completed) #executionType"() {
+  def "respects dynamic enabled prop"() {
     given:
-    1 * src.getCompletedExecutionIds(executionType, "peeredId") >> ["a", "b", "c"]
-    1 * dest.getCompletedExecutionIds(executionType, "peeredId") >> ["a", "b"]
+    def peeringAgent = constructPeeringAgent()
 
-    when:
+    when: 'disabled globally'
     peeringAgent.tick()
 
     then:
-    1 * dest.copyExecutionsWithIds(executionType, ["c"]) // TODO: missing API?
-    // TODO: check the stages are being copied too
+    1 * dynamicConfigService.isEnabled("pollers.peering", true) >> {
+      return false
+    }
+    0 * dynamicConfigService.isEnabled("pollers.peering.peeredId", true) >> {
+      return false
+    }
+    0 * src.getCompletedExecutionIds(_, _, _)
 
-    where:
-    executionType | status
-    PIPELINE      | COMPLETED
-    ORCHESTRATION | COMPLETED
-  }
-
-  @Unroll
-  def "should copy new #status (not completed) #executionType"() {
-    given:
-    // TODO: are running/completed/not started etc really treated differently?
-    1 * src.getAllExecutionIds(executionType, "peeredId") >> ["a", "b", "c"]
-    1 * dest.getAllExecutionIds(executionType, "peeredId") >> ["a", "b"]
-
-    when:
+    when: 'disabled for a given agent only'
     peeringAgent.tick()
 
     then:
-    1 * dest.copyExecutionsWithIds(executionType, ["c"]) // TODO: missing API?
-    // TODO: check the stages are being copied too
-
-    where:
-    executionType | status
-    PIPELINE      | RUNNING
-    ORCHESTRATION | RUNNING
+    1 * dynamicConfigService.isEnabled("pollers.peering", true) >> {
+      return true
+    }
+    1 * dynamicConfigService.isEnabled("pollers.peering.peeredId", true) >> {
+      return false
+    }
+    0 * src.getCompletedExecutionIds(_, _, _)
+    0 * dest.getCompletedExecutionIds(_, _, _)
   }
 
   @Unroll
-  def "should propagate deletions of #status #executionType"() {
-    given:
+  def "correctly computes the execution diff for completed #executionType"() {
+    def peeringAgent = constructPeeringAgent()
+    peeringAgent.completedPipelinesMostRecentUpdatedTime = 1
+    peeringAgent.completedOrchestrationsMostRecentUpdatedTime = 2
+    dynamicConfigService.isEnabled(_, _) >> { return true }
 
-    1 * src.getCompletedExecutionIds(executionType, "peeredId") >> ["b", "c"]
-    1 * dest.getCompletedExecutionIds(executionType, "peeredId") >> ["a", "b", "c"]
-
+    def callCount = (int)Math.signum(toDelete.size() + toCopy.size())
     when:
-    peeringAgent.tick()
+    peeringAgent.peerCompletedExecutions(executionType)
 
     then:
-    1 * dest.deleteExecutions(executionType, ["a"])
-    // TODO: check the stages are being deleted too
+    1 * src.getCompletedExecutionIds(executionType, "peeredId", mostRecentTimeStamp) >> srcKeys
+    1 * dest.getCompletedExecutionIds(executionType, "peeredId", mostRecentTimeStamp) >> destKeys
+
+    callCount * dest.deleteExecutions(executionType, toDelete)
+    callCount * metrics.incrementNumDeleted(executionType, toDelete.size())
+
+    callCount * copier.copyInParallel(executionType, toCopy, ExecutionState.COMPLETED) >>
+        new ExecutionCopier.MigrationChunkResult(30, 2, false)
+
+    if (executionType == PIPELINE) {
+      peeringAgent.completedPipelinesMostRecentUpdatedTime == srcKeys.max { it.updated_at }?.updated_at ?: 1
+      peeringAgent.completedOrchestrationsMostRecentUpdatedTime == 2
+    } else {
+      peeringAgent.completedPipelinesMostRecentUpdatedTime == 1
+      peeringAgent.completedOrchestrationsMostRecentUpdatedTime == srcKeys.max { it.updated_at }?.updated_at ?: 2
+    }
 
     where:
-    executionType | status
-    PIPELINE      | COMPLETED
-    ORCHESTRATION | COMPLETED
+    // Note: since the logic for executions and orchestrations should be the same, it's overkill to have the same set of tests for each
+    // but it's easy so why not?
+    executionType | mostRecentTimeStamp | srcKeys                                          | destKeys                                         || toDelete              | toCopy
+    PIPELINE      | 1                   | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] | [key("ID1", 10), key("ID2", 10), key("ID4", 10)] || ["ID4"]               | ["ID2", "ID3"]
+    PIPELINE      | 1                   | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] || []                    | []
+    PIPELINE      | 1                   | []                                               | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] || ["ID1", "ID2", "ID3"] | []
+    PIPELINE      | 1                   | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] | []                                               || []                    | ["ID1", "ID2", "ID3"]
+
+    ORCHESTRATION | 2                   | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] | [key("ID1", 10), key("ID2", 10), key("ID4", 10)] || ["ID4"]               | ["ID2", "ID3"]
+    ORCHESTRATION | 2                   | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] || []                    | []
+    ORCHESTRATION | 2                   | []                                               | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] || ["ID1", "ID2", "ID3"] | []
+    ORCHESTRATION | 2                   | [key("ID1", 10), key("ID2", 20), key("ID3", 30)] | []                                               || []                    | ["ID1", "ID2", "ID3"]
   }
 
+  def "copies all running executions of #executionType"() {
+    given:
+    def peeringAgent = constructPeeringAgent()
+    dynamicConfigService.isEnabled(_, _) >> { return true }
 
+    when:
+    peeringAgent.peerActiveExecutions(executionType)
+
+    then:
+    1 * src.getActiveExecutionIds(executionType, "peeredId") >> activeIds
+    copyCallCount * copier.copyInParallel(executionType, activeIds, ExecutionState.ACTIVE) >>
+        new ExecutionCopier.MigrationChunkResult(30, 2, false)
+
+    where:
+    executionType | activeIds       | copyCallCount
+    PIPELINE      | []              | 0
+    PIPELINE      | ["ID1"]         | 1
+    PIPELINE      | ["ID1", "ID4"]  | 1
+    ORCHESTRATION | []              | 0
+    ORCHESTRATION | ["ID1"]         | 1
+    ORCHESTRATION | ["ID1", "ID4"]  | 1
+  }
+
+  private static def key(id, updatedat) {
+    return new SqlRawAccess.ExecutionDiffKey(id, updatedat)
+  }
 }
