@@ -214,7 +214,6 @@ public class ExecutionLauncher {
                 ? null
                 : objectMapper.convertValue(config.get("source"), Execution.PipelineSource.class))
         .withSpelEvaluator(getString(config, "spelEvaluator"))
-        .withPartition(getString(config, "partition"))
         .withTemplateVariables((Map<String, Object>) config.get("templateVariables"))
         .build();
   }
@@ -257,7 +256,6 @@ public class ExecutionLauncher {
     orchestration.setOrigin((String) config.getOrDefault("origin", "unknown"));
     orchestration.setStartTimeExpiry((Long) config.get("startTimeExpiry"));
     orchestration.setSpelEvaluator(getString(config, "spelEvaluator"));
-    orchestration.setPartition(getString(config, "partition"));
 
     return orchestration;
   }
