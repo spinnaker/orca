@@ -27,6 +27,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
+@NoArgsConstructor
 @AllArgsConstructor
 public class TitusPreconfiguredJobProperties extends PreconfiguredJobStageProperties {
 
