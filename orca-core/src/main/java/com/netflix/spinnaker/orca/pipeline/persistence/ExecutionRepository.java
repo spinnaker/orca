@@ -156,6 +156,15 @@ public interface ExecutionRepository {
 
   List<String> retrieveAllExecutionIds(@Nonnull ExecutionType type);
 
+  @Nullable
+  default String getPartition() {
+    throw new UnsupportedOperationException();
+  }
+
+  default boolean handlesPartition(@Nullable String partition) {
+    return partition == null || getPartition() == null || partition.equals(getPartition());
+  }
+
   final class ExecutionCriteria {
     private int pageSize = 3500;
     private Collection<ExecutionStatus> statuses = new ArrayList<>();
