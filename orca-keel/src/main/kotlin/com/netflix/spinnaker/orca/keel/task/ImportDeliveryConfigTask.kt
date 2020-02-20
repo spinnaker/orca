@@ -180,7 +180,6 @@ constructor(
     const val MAX_RETRIES = 5
     const val UNAUTHORIZED_SCM_ACCESS_MESSAGE =
       "HTTP 401 response received while trying to read your delivery config file. " +
-      "Spinnaker may be missing permissions in your source code repository to read the file. " +
-      "Please consult your Spinnaker operator for details on how to add those permissions."
+      "Spinnaker may be missing permissions in your source code repository to read the file."
   }
 }
