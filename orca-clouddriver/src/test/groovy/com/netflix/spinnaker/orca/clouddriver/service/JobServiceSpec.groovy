@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobConfigu
 import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties
 import com.netflix.spinnaker.orca.api.preconfigured.jobs.TitusPreconfiguredJobProperties
 import com.netflix.spinnaker.orca.clouddriver.config.JobConfigurationProperties
+import org.springframework.beans.factory.ObjectProvider
 import spock.lang.Specification
 
 class JobServiceSpec extends Specification {
@@ -27,24 +28,27 @@ class JobServiceSpec extends Specification {
   def 'should initialize the preconfigured job stages with config objects'() {
     given:
     JobConfigurationProperties jobConfigurationProperties = new JobConfigurationProperties(titus: [new TitusPreconfiguredJobProperties("test", "type")])
-
+    ObjectProvider<List<PreconfiguredJobConfigurationProvider>>   provider = Mock()
     when:
-    List<PreconfiguredJobStageProperties> jobStageProperties = new JobService(jobConfigurationProperties, null).preconfiguredStages
+    List<PreconfiguredJobStageProperties> jobStageProperties = new JobService(jobConfigurationProperties, provider).preconfiguredStages
 
     then:
     jobStageProperties.size() == 1
+    1 * provider.getIfAvailable(_) >> []
   }
 
   def 'should initialize the preconfigured job stages via config objects & provider objects'() {
     given:
     JobConfigurationProperties jobConfigurationProperties = new JobConfigurationProperties(titus: [new TitusPreconfiguredJobProperties("test", "type")])
-    PreconfiguredJobConfigurationProvider provider = new TestPreconfiguredJobConfigurationProvider()
+    ObjectProvider<List<PreconfiguredJobConfigurationProvider>>   provider = Mock()
 
     when:
-    List<PreconfiguredJobStageProperties> jobStageProperties = new JobService(jobConfigurationProperties, [provider]).preconfiguredStages
+    List<PreconfiguredJobStageProperties> jobStageProperties = new JobService(jobConfigurationProperties, provider).preconfiguredStages
 
     then:
     jobStageProperties.size() == 2
+    1 * provider.getIfAvailable(_) >> [new TestPreconfiguredJobConfigurationProvider()]
+    0 * _
   }
 
   class TestPreconfiguredJobConfigurationProvider implements PreconfiguredJobConfigurationProvider {

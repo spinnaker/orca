@@ -22,47 +22,38 @@ import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobConfigu
 import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties;
 import com.netflix.spinnaker.orca.clouddriver.config.JobConfigurationProperties;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class JobService {
 
   private final JobConfigurationProperties jobConfigurationProperties;
 
   private final List<PreconfiguredJobConfigurationProvider> preconfiguredJobConfigurationProviders;
 
+  @Autowired
   JobService(
-      @Autowired JobConfigurationProperties jobConfigurationProperties,
-      @Autowired(required = false)
-          List<PreconfiguredJobConfigurationProvider> preconfiguredJobConfigurationProviders) {
+      JobConfigurationProperties jobConfigurationProperties,
+      ObjectProvider<List<PreconfiguredJobConfigurationProvider>>
+          preconfiguredJobConfigurationProviders) {
     this.jobConfigurationProperties = jobConfigurationProperties;
-    this.preconfiguredJobConfigurationProviders = preconfiguredJobConfigurationProviders;
+    this.preconfiguredJobConfigurationProviders =
+        preconfiguredJobConfigurationProviders.getIfAvailable(ArrayList::new);
   }
 
   public List<PreconfiguredJobStageProperties> getPreconfiguredStages() {
-    if (jobConfigurationProperties.getTitus() == null
-        && jobConfigurationProperties.getKubernetes() == null
-        && preconfiguredJobConfigurationProviders == null) {
-      return Collections.EMPTY_LIST;
-    }
 
     List<PreconfiguredJobStageProperties> preconfiguredJobStageProperties = new ArrayList<>();
-    if (jobConfigurationProperties.getTitus() != null
-        && !jobConfigurationProperties.getTitus().isEmpty()) {
-      preconfiguredJobStageProperties.addAll(jobConfigurationProperties.getTitus());
-    }
-
-    if (jobConfigurationProperties.getKubernetes() != null
-        && !jobConfigurationProperties.getKubernetes().isEmpty()) {
-      preconfiguredJobStageProperties.addAll(jobConfigurationProperties.getKubernetes());
-    }
+    preconfiguredJobStageProperties.addAll(jobConfigurationProperties.getTitus());
+    preconfiguredJobStageProperties.addAll(jobConfigurationProperties.getKubernetes());
 
     // Also load job configs that are provided via extension implementations(plugins)
-    if (preconfiguredJobConfigurationProviders != null
-        && !preconfiguredJobConfigurationProviders.isEmpty()) {
+    if (!preconfiguredJobConfigurationProviders.isEmpty()) {
 
       List<PreconfiguredJobStageProperties> jobStageProperties =
           preconfiguredJobConfigurationProviders.stream()
@@ -73,6 +64,11 @@ public class JobService {
           properties -> {
             if (properties.isValid()) {
               preconfiguredJobStageProperties.add(properties);
+            } else {
+              log.warn(
+                  "Pre Configured Job configuration provided via plugin is not valid: {} : {}",
+                  properties.getLabel(),
+                  properties.getType());
             }
           });
     }
