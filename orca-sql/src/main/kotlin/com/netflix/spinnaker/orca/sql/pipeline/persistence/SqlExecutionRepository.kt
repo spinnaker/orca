@@ -173,7 +173,7 @@ class SqlExecutionRepository(
       execution, dslContext ->
       if (execution.status != RUNNING) {
         throw UnpausablePipelineException("Unable to pause pipeline that is not RUNNING " +
-          "(executionId: $id, currentStatus: ${execution.status})")
+          "(executionId: ${execution.id}, currentStatus: ${execution.status})")
       }
       execution.status = PAUSED
       execution.paused = PausedDetails().apply {
@@ -194,7 +194,7 @@ class SqlExecutionRepository(
       execution, dslContext ->
       if (!ignoreCurrentStatus && execution.status != PAUSED) {
         throw UnresumablePipelineException("Unable to resume pipeline that is not PAUSED " +
-          "(executionId: $id, currentStatus: ${execution.status}")
+          "(executionId: ${execution.id}, currentStatus: ${execution.status}")
       }
       execution.status = RUNNING
       execution.paused?.resumedBy = user

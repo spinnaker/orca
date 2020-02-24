@@ -25,11 +25,11 @@ import com.netflix.spinnaker.kork.pubsub.aws.api.AmazonPubsubMessageHandlerFacto
 import com.netflix.spinnaker.kork.pubsub.aws.config.AmazonPubsubConfig;
 import com.netflix.spinnaker.kork.pubsub.aws.config.AmazonPubsubProperties;
 import com.netflix.spinnaker.kork.pubsub.config.PubsubConfig;
-import com.netflix.spinnaker.orca.config.PreprocessorConfiguration;
 import com.netflix.spinnaker.orca.interlink.Interlink;
 import com.netflix.spinnaker.orca.interlink.MessageFlagger;
 import com.netflix.spinnaker.orca.interlink.aws.InterlinkAmazonMessageHandler;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,14 +37,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import({
-  PreprocessorConfiguration.class,
-  PluginsAutoConfiguration.class,
-  PubsubConfig.class,
-  AmazonPubsubConfig.class
-})
+@Import({PubsubConfig.class, AmazonPubsubConfig.class})
 @ConditionalOnProperty("interlink.enabled")
 @EnableConfigurationProperties(InterlinkConfigurationProperties.class)
+@Slf4j
 public class InterlinkConfiguration {
   @Bean
   @ConditionalOnProperty({"pubsub.enabled", "pubsub.amazon.enabled"})
@@ -54,7 +50,9 @@ public class InterlinkConfiguration {
       @Override
       public AmazonPubsubMessageHandler create(
           AmazonPubsubProperties.AmazonPubsubSubscription subscription) {
-        if (!"interlink".equals(subscription.getName())) {
+        if (!Interlink.SUBSCRIPTION_NAME.equals(subscription.getName())) {
+          log.debug(
+              "Skipping non-interlink pubsub subscription named '{}'", subscription.getName());
           return null;
         }
 

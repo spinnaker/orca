@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class InterlinkConfigurationProperties {
   FlaggerProperties flagger;
 
+  /** see {@link com.netflix.spinnaker.orca.interlink.MessageFlagger} */
   @Data
   public static class FlaggerProperties {
     int maxSize = 32;

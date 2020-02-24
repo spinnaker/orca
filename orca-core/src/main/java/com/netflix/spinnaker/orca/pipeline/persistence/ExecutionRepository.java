@@ -156,13 +156,21 @@ public interface ExecutionRepository {
 
   List<String> retrieveAllExecutionIds(@Nonnull ExecutionType type);
 
+  /**
+   * Returns the name of the partition that this execution repository owns/handles. {@code null}
+   * means that it handles any partition (in other words, this execution repository is not partition
+   * aware)
+   */
   @Nullable
   default String getPartition() {
-    throw new UnsupportedOperationException();
+    return null;
   }
 
-  default boolean handlesPartition(@Nullable String partition) {
-    return partition == null || getPartition() == null || partition.equals(getPartition());
+  default boolean handlesPartition(@Nullable String partitionOfExecution) {
+    return partitionOfExecution == null // executions with no partition can be handled by anyone
+        || getPartition()
+            == null // this repository is not restricted to a partition, can handle any execution
+        || partitionOfExecution.equals(getPartition()); // both are set and must match
   }
 
   final class ExecutionCriteria {

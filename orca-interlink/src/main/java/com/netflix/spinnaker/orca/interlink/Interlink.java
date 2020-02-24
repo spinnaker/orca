@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.kork.exceptions.SystemException;
+import com.netflix.spinnaker.kork.exceptions.ConfigurationException;
 import com.netflix.spinnaker.kork.pubsub.PubsubPublishers;
 import com.netflix.spinnaker.kork.pubsub.model.PubsubPublisher;
 import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent;
@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Interlink {
+  public static final String SUBSCRIPTION_NAME = "interlink";
   private final PubsubPublisher publisher;
   private final ObjectMapper objectMapper;
   private final MessageFlagger flagger;
@@ -44,12 +45,12 @@ public class Interlink {
 
     publisher =
         publishers.getAll().stream()
-            .filter(pubsubPublisher -> "interlink".equals(pubsubPublisher.getTopicName()))
+            .filter(pubsubPublisher -> SUBSCRIPTION_NAME.equals(pubsubPublisher.getTopicName()))
             .findFirst()
             .orElse(null);
 
     if (publisher == null) {
-      throw new SystemException(
+      throw new ConfigurationException(
           "could not find interlink publisher in ["
               + publishers.getAll().stream()
                   .map(PubsubPublisher::getTopicName)
@@ -66,7 +67,9 @@ public class Interlink {
 
   public void publish(InterlinkEvent event) {
     if (flagger.isFlagged(event)) {
-      log.warn("Event {} has been flagged, not publishing to interlink", event);
+      log.warn(
+          "Event {} has been flagged for being published too many times, not publishing to interlink",
+          event);
       flaggedCounter.increment();
       return;
     }
