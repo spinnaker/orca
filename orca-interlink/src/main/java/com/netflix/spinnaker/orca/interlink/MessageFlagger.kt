@@ -20,7 +20,11 @@ import com.google.common.base.Preconditions
 import com.google.common.collect.EvictingQueue
 import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
+import com.netflix.spinnaker.config.InterlinkConfigurationProperties.FlaggerProperties
 import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 
 /**
  * To avoid pathological cases where 2 orca clusters end up endlessly bouncing the same message back and forth across the
@@ -41,20 +45,29 @@ import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
  * @param threshold a message with fingerprint F will be flagged if the number of times F is present in the queue is
  *    over the threshold
  */
-class MessageFlagger(maxSize: Int, val threshold: Int) {
-  val queue: EvictingQueue<HashCode> = EvictingQueue.create(maxSize)
-  val hasher = Hashing.goodFastHash(64)
+class MessageFlagger(val clock: Clock, val props: FlaggerProperties) {
+  private val queue: EvictingQueue<TimestampedHash> = EvictingQueue.create(props.maxSize)
+  private val hasher = Hashing.goodFastHash(64)
+  private val lookback = Duration.ofSeconds(props.lookbackSeconds)
 
   init {
-    Preconditions.checkArgument(maxSize >= threshold, "maxSize (%s) has to be larger than threshold (%s)", maxSize, threshold)
-    Preconditions.checkArgument(threshold > 0, "threshold (%s) has to be > 0", threshold)
+    Preconditions.checkArgument(props.maxSize >= props.threshold, "maxSize (%s) has to be larger than threshold (%s)", props.maxSize, props.threshold)
+    Preconditions.checkArgument(props.threshold > 0, "threshold (%s) has to be > 0", props.threshold)
   }
 
   fun isFlagged(event: InterlinkEvent): Boolean {
-    val hashCode = hasher.hashString("${event.eventType}:${event.executionId}:${event.executionType}", Charsets.UTF_8)
-    val count = queue.count { it == hashCode }
-    queue.add(hashCode)
+    if (!props.enabled) {
+      return false
+    }
 
-    return count >= threshold
+    val hash = hasher.hashString("${event.eventType}:${event.executionId}:${event.executionType}", Charsets.UTF_8)
+    val now = clock.instant()
+    val timeCutoff = now.minus(lookback)
+    val count = queue.count { it.timestamp.isAfter(timeCutoff) && it.hash == hash }
+    queue.add(TimestampedHash(now, hash))
+
+    return count >= props.threshold
   }
+
+  private data class TimestampedHash(val timestamp: Instant, val hash: HashCode)
 }

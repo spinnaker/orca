@@ -29,6 +29,7 @@ import com.netflix.spinnaker.orca.interlink.Interlink;
 import com.netflix.spinnaker.orca.interlink.MessageFlagger;
 import com.netflix.spinnaker.orca.interlink.aws.InterlinkAmazonMessageHandler;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
+import java.time.Clock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -68,14 +69,12 @@ public class InterlinkConfiguration {
       ObjectMapper objectMapper,
       InterlinkConfigurationProperties properties,
       Registry registry,
+      Clock clock,
 
       // injected here to make sure the provider ran before Interlink,
       // otherwise the publisher may not have been initialized
       SNSPublisherProvider snsProvider) {
     return new Interlink(
-        publishers,
-        objectMapper,
-        new MessageFlagger(properties.flagger.maxSize, properties.flagger.threshold),
-        registry);
+        publishers, objectMapper, new MessageFlagger(clock, properties.flagger), registry);
   }
 }

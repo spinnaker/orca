@@ -19,8 +19,12 @@ package com.netflix.spinnaker.orca.interlink
 import com.netflix.spinnaker.orca.interlink.events.CancelInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.DeleteInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
+import com.netflix.spinnaker.orca.time.MutableClock
 import spock.lang.Specification
 
+import java.time.Duration
+
+import static com.netflix.spinnaker.config.InterlinkConfigurationProperties.FlaggerProperties
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
 
 class MessageFlaggerSpec extends Specification {
@@ -29,10 +33,11 @@ class MessageFlaggerSpec extends Specification {
   def pause = new PauseInterlinkEvent(ORCHESTRATION, "id", "user")
   def delete = new DeleteInterlinkEvent(ORCHESTRATION, "id")
   def deleteOtherId = new DeleteInterlinkEvent(ORCHESTRATION, "otherId")
+  MutableClock clock = new MutableClock()
 
   def 'flagger should flag repeated messages'() {
     given:
-    def flagger = new MessageFlagger(32, 2)
+    def flagger = new MessageFlagger(clock, new FlaggerProperties(threshold: 2))
 
     expect:
     !flagger.isFlagged(cancel)
@@ -45,7 +50,7 @@ class MessageFlaggerSpec extends Specification {
 
   def 'older events are evicted and not tripping the flagger'() {
     given: 'a small flagger that does not allow duplicates'
-    def flagger = new MessageFlagger(3, 1)
+    def flagger = new MessageFlagger(clock, new FlaggerProperties(maxSize: 3, threshold: 1))
 
     expect:
     !flagger.isFlagged(cancel)
@@ -58,5 +63,21 @@ class MessageFlaggerSpec extends Specification {
 
     // this time, the duplicate should be flagged
     flagger.isFlagged(cancel)
+  }
+
+  def 'expired events do not count toward the threshold'() {
+    given: 'a small flagger that with a tight lookback window'
+    def flagger = new MessageFlagger(clock, new FlaggerProperties(maxSize: 3, threshold: 1, lookbackSeconds: 60))
+
+    expect: 'when time is frozen, we catch duplicate fingerprints'
+    !flagger.isFlagged(cancel)
+    !flagger.isFlagged(delete)
+    flagger.isFlagged(cancel)
+
+    when: 'when we advance time sufficiently'
+    clock.incrementBy(Duration.ofMinutes(2))
+
+    then: 'the same fingerprint is not flagged'
+    !flagger.isFlagged(cancel)
   }
 }

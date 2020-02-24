@@ -27,7 +27,9 @@ public class InterlinkConfigurationProperties {
   /** see {@link com.netflix.spinnaker.orca.interlink.MessageFlagger} */
   @Data
   public static class FlaggerProperties {
-    int maxSize = 32;
-    int threshold = 8;
+    public boolean enabled = true;
+    public int maxSize = 32;
+    public int threshold = 8;
+    public long lookbackSeconds = 60;
   }
 }
