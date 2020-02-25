@@ -69,7 +69,7 @@ public class Interlink {
     try {
       flagger.process(event);
     } catch (MessageFlaggedException e) {
-      log.warn("Will not publish event to interlink", e);
+      log.warn("Will not publish event {} to interlink", event, e);
       flaggedCounter.increment();
       return;
     }
