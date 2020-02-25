@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
+import javax.validation.constraints.NotNull;
 
 /** Common interface for all interlink event messages */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "eventType")
@@ -55,4 +56,10 @@ public interface InterlinkEvent {
   }
 
   void applyTo(ExecutionRepository executionRepository);
+
+  @JsonIgnore
+  @NotNull
+  default String getFingerprint() {
+    return getEventType() + ":" + getExecutionType() + ":" + getExecutionId();
+  }
 }

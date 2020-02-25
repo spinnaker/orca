@@ -55,18 +55,21 @@ class MessageFlagger(val clock: Clock, val props: FlaggerProperties) {
     Preconditions.checkArgument(props.threshold > 0, "threshold (%s) has to be > 0", props.threshold)
   }
 
-  fun isFlagged(event: InterlinkEvent): Boolean {
+  fun process(event: InterlinkEvent) {
     if (!props.enabled) {
-      return false
+      return
     }
 
-    val hash = hasher.hashString("${event.eventType}:${event.executionId}:${event.executionType}", Charsets.UTF_8)
+    val hash = hasher.hashString(event.getFingerprint(), Charsets.UTF_8)
     val now = clock.instant()
     val timeCutoff = now.minus(lookback)
-    val count = queue.count { it.timestamp.isAfter(timeCutoff) && it.hash == hash }
-    queue.add(TimestampedHash(now, hash))
+    val matches = queue.filter { it.timestamp.isAfter(timeCutoff) && it.hash == hash }.toList()
+    if (matches.count() >= props.threshold) {
+      throw MessageFlaggedException("Event '$event' with fingerprint '${event.fingerprint}' has been encountered " +
+        "${matches.count()} times in the last ${props.lookbackSeconds}s")
+    }
 
-    return count >= props.threshold
+    queue.add(TimestampedHash(now, hash))
   }
 
   private data class TimestampedHash(val timestamp: Instant, val hash: HashCode)

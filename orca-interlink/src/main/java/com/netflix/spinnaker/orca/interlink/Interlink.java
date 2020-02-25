@@ -66,10 +66,10 @@ public class Interlink {
   }
 
   public void publish(InterlinkEvent event) {
-    if (flagger.isFlagged(event)) {
-      log.warn(
-          "Event {} has been flagged for being published too many times, not publishing to interlink",
-          event);
+    try {
+      flagger.process(event);
+    } catch (MessageFlaggedException e) {
+      log.warn("Will not publish event to interlink", e);
       flaggedCounter.increment();
       return;
     }

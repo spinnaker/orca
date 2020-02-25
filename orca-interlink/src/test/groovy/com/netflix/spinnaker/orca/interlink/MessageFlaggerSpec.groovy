@@ -39,45 +39,59 @@ class MessageFlaggerSpec extends Specification {
     given:
     def flagger = new MessageFlagger(clock, new FlaggerProperties(threshold: 2))
 
-    expect:
-    !flagger.isFlagged(cancel)
-    !flagger.isFlagged(cancel)
-    !flagger.isFlagged(pause)
+    when:
+    flagger.process(cancel)
+    flagger.process(cancel)
+    flagger.process(pause)
 
-    // 3rd time this event is seen trips the flagger
-    flagger.isFlagged(cancel)
+    then:
+    noExceptionThrown()
+
+    when: '3rd time this event is seen trips the flagger'
+    flagger.process(cancel)
+
+    then:
+    thrown(MessageFlaggedException)
   }
 
   def 'older events are evicted and not tripping the flagger'() {
     given: 'a small flagger that does not allow duplicates'
     def flagger = new MessageFlagger(clock, new FlaggerProperties(maxSize: 3, threshold: 1))
 
-    expect:
-    !flagger.isFlagged(cancel)
-    !flagger.isFlagged(delete)
-    !flagger.isFlagged(pause)
-    !flagger.isFlagged(deleteOtherId)
+    when: 'sending a variety of messages that fall off the queue'
+    flagger.process(cancel)
+    flagger.process(delete)
+    flagger.process(pause)
+    flagger.process(deleteOtherId)
+    flagger.process(cancel)
 
-    // there was already a cancel, but it should have been evicted
-    !flagger.isFlagged(cancel)
+    then:
+    noExceptionThrown()
 
-    // this time, the duplicate should be flagged
-    flagger.isFlagged(cancel)
+    when: 'sending duplicates in a row'
+    flagger.process(cancel)
+
+    then:
+    thrown(MessageFlaggedException)
   }
 
   def 'expired events do not count toward the threshold'() {
     given: 'a small flagger that with a tight lookback window'
     def flagger = new MessageFlagger(clock, new FlaggerProperties(maxSize: 3, threshold: 1, lookbackSeconds: 60))
 
-    expect: 'when time is frozen, we catch duplicate fingerprints'
-    !flagger.isFlagged(cancel)
-    !flagger.isFlagged(delete)
-    flagger.isFlagged(cancel)
+    when: 'when time is frozen, we catch duplicate fingerprints'
+    flagger.process(cancel)
+    flagger.process(delete)
+    flagger.process(cancel)
+
+    then:
+    thrown(MessageFlaggedException)
 
     when: 'when we advance time sufficiently'
     clock.incrementBy(Duration.ofMinutes(2))
+    flagger.process(cancel)
 
     then: 'the same fingerprint is not flagged'
-    !flagger.isFlagged(cancel)
+    noExceptionThrown()
   }
 }
