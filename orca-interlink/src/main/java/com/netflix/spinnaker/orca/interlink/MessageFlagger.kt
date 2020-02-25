@@ -44,6 +44,7 @@ import java.time.Instant
  * @param maxSize the maximum number of fingerprints to consider
  * @param threshold a message with fingerprint F will be flagged if the number of times F is present in the queue is
  *    over the threshold
+ * @param lookback fingerprints older than the lookback duration will not count toward the threshold
  */
 class MessageFlagger(val clock: Clock, val props: FlaggerProperties) {
   private val queue: EvictingQueue<TimestampedHash> = EvictingQueue.create(props.maxSize)
