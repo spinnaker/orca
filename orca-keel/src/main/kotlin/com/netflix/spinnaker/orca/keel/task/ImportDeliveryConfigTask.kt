@@ -149,12 +149,13 @@ constructor(
   }
 
   private fun buildError(error: Any): TaskResult {
-    if (error is Map<*, *>) {
-      log.error(error["message"]?.toString())
+    val normalizedError = if (error is Map<*, *>) {
+      error["error"] ?: error
     } else {
-      log.error(error.toString())
+      error.toString()
     }
-    return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to error)).build()
+    log.error(normalizedError.toString())
+    return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to normalizedError)).build()
   }
 
   override fun getBackoffPeriod() = TimeUnit.SECONDS.toMillis(30)
