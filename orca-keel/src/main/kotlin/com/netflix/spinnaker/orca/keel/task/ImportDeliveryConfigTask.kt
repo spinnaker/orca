@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.keel.task
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.KeelService
 import com.netflix.spinnaker.orca.RetryableTask
@@ -115,6 +116,8 @@ constructor(
           // ...but give users a hint about 401 errors from igor/scm
           if (e.response?.status == 401 && URL(e.url).host.contains("igor")) {
             UNAUTHORIZED_SCM_ACCESS_MESSAGE
+          } else if (e.response?.status == 400 && URL(e.url).host.contains("keel") && e.response!!.body.length() > 0) {
+            objectMapper.readValue<Map<String, Any?>>(e.response!!.body.`in`())
           } else {
             "Non-retryable HTTP response ${e.response?.status} received from downstream service: ${e.friendlyMessage}"
           }
@@ -145,9 +148,13 @@ constructor(
     }
   }
 
-  private fun buildError(errorMessage: String): TaskResult {
-    log.error(errorMessage)
-    return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to errorMessage)).build()
+  private fun buildError(error: Any): TaskResult {
+    if (error is Map<*, *>) {
+      log.error(error["message"]?.toString())
+    } else {
+      log.error(error.toString())
+    }
+    return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to error)).build()
   }
 
   override fun getBackoffPeriod() = TimeUnit.SECONDS.toMillis(30)
