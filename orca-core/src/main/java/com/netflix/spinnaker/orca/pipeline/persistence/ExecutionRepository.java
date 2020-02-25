@@ -167,7 +167,8 @@ public interface ExecutionRepository {
   }
 
   default boolean handlesPartition(@Nullable String partitionOfExecution) {
-    return partitionOfExecution == null // executions with no partition are implied to be owned by current orca
+    return partitionOfExecution
+            == null // executions with no partition are implied to be owned by current orca
         || getPartition()
             == null // this repository is not restricted to a partition, can handle any execution
         || partitionOfExecution.equals(getPartition()); // both are set and must match
