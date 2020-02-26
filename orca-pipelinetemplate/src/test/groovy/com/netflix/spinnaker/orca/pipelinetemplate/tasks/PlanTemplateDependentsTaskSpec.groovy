@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipelinetemplate.PipelineTemplatePreprocessor
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate
 import spock.lang.Specification
@@ -61,7 +61,7 @@ class PlanTemplateDependentsTaskSpec extends Specification {
     ]
 
     when:
-    def result = task.execute(new Stage(PipelineExecution.newPipeline("orca"), "", [
+    def result = task.execute(new StageExecution(PipelineExecution.newPipeline("orca"), "", [
       pipelineTemplate: Base64.encoder.encodeToString(objectMapper.writeValueAsString(pipelineTemplate).bytes)
     ]))
 

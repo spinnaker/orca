@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.Capacity
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -56,7 +56,7 @@ public class ResizeStrategySupport {
 
     // no source server group specified, lookup current server group
     TargetServerGroup target = targetServerGroupResolver.resolve(
-      new Stage(null, null, null, baseContext + [target: TargetServerGroup.Params.Target.current_asg_dynamic])
+      new StageExecution(null, null, null, baseContext + [target: TargetServerGroup.Params.Target.current_asg_dynamic])
     )?.get(0)
 
     if (!target) {
@@ -126,7 +126,7 @@ public class ResizeStrategySupport {
   }
 
   ResizeStrategy.Capacity performScalingAndPinning(Capacity sourceCapacity,
-                                                   Stage stage,
+                                                   StageExecution stage,
                                                    ResizeStrategy.OptionalConfiguration resizeConfig) {
     ResizeStrategy.StageData stageData = stage.mapTo(ResizeStrategy.StageData)
 

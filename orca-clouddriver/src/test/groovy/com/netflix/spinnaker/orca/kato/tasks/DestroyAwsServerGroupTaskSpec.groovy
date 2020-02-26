@@ -24,13 +24,13 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceConfiguration
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 
 class DestroyAwsServerGroupTaskSpec extends Specification {
   @Subject task = new DestroyAwsServerGroupTask()
-  def stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever")
+  def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever")
   def mapper = OrcaObjectMapper.newInstance()
   def taskId = new TaskId(UUID.randomUUID().toString())
 
@@ -129,7 +129,7 @@ class DestroyAwsServerGroupTaskSpec extends Specification {
 
   def "task uses serverGroupName if present"() {
     given:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever2")
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever2")
     stage.context = [
       cloudProvider   : "aws",
       serverGroupName : "test-server-group",

@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
@@ -47,7 +47,7 @@ class DeleteCloudFormationChangeSetTaskSpec extends Specification {
       deleteChangeSet: true,
       regions: ['eu-west-1']
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
 
     when:
     def result = deleteCloudFormationChangeSetTask.execute(stage)
@@ -76,7 +76,7 @@ class DeleteCloudFormationChangeSetTaskSpec extends Specification {
       deleteChangeSet: false,
       regions: ['eu-west-1']
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
 
     when:
     def result = deleteCloudFormationChangeSetTask.execute(stage)

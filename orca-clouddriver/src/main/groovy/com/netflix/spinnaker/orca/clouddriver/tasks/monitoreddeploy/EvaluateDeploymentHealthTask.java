@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthRequest;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
@@ -43,7 +43,7 @@ public class EvaluateDeploymentHealthTask extends MonitoredDeployBaseTask {
 
   @Override
   public @Nonnull TaskResult executeInternal(
-      Stage stage, DeploymentMonitorDefinition monitorDefinition) {
+      StageExecution stage, DeploymentMonitorDefinition monitorDefinition) {
     EvaluateHealthRequest request = new EvaluateHealthRequest(stage);
 
     log.info(

@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentStep
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse
 import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployInternalStageData
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.RetrofitError
 import spock.lang.Specification
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider
@@ -57,7 +57,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     stageData.deploymentMonitor = new DeploymentMonitorStageConfig()
     stageData.deploymentMonitor.id = "LogMonitorId"
 
-    def stage = new Stage(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    def stage = new StageExecution(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
     stage.startTime = Instant.now().toEpochMilli()
 
     when: 'we can still retry'
@@ -84,7 +84,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
 
     when: 'we ran out of retries and failOnError = false but there is a stage override for failOnError=true'
     stageData.deploymentMonitor.failOnErrorOverride = true
-    stage = new Stage(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [
+    stage = new StageExecution(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [
       application: pipe.application,
       deployMonitorHttpRetryCount: MonitoredDeployBaseTask.MAX_RETRY_COUNT
     ])
@@ -122,7 +122,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     stageData.deploymentMonitor = new DeploymentMonitorStageConfig()
     stageData.deploymentMonitor.id = "LogMonitorId"
 
-    def stage = new Stage(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    def stage = new StageExecution(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
     stage.startTime = Instant.now().toEpochMilli()
 
     when: 'monitor returns an empty EvaluateHealthResponse'
@@ -152,7 +152,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     stageData.deploymentMonitor.id = "LogMonitorId"
 
     when: 'no override is provided'
-    def stage = new Stage(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    def stage = new StageExecution(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
 
     then:
     task.getTimeout() == 0
@@ -160,7 +160,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
 
     when: 'stage override is provided'
     stageData.deploymentMonitor.maxAnalysisMinutesOverride = new Integer(21)
-    stage = new Stage(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    stage = new StageExecution(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
 
     then:
     task.getDynamicTimeout(stage) == TimeUnit.MINUTES.toMillis(21)
@@ -180,7 +180,7 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     stageData.deploymentMonitor = new DeploymentMonitorStageConfig()
     stageData.deploymentMonitor.id = "LogMonitorId"
     stageData.deploymentMonitor.failOnErrorOverride = stageFailOnError
-    def stage = new Stage(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
+    def stage = new StageExecution(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
 
     when:
     def result = task.onTimeout(stage)

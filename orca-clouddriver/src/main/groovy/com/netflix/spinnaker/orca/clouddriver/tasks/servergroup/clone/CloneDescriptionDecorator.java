@@ -17,12 +17,13 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.clone;
 
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.List;
 import java.util.Map;
 
 public interface CloneDescriptionDecorator extends CloudProviderAware {
   boolean shouldDecorate(Map<String, Object> operation);
 
-  void decorate(Map<String, Object> operation, List<Map<String, Object>> descriptions, Stage stage);
+  void decorate(
+      Map<String, Object> operation, List<Map<String, Object>> descriptions, StageExecution stage);
 }

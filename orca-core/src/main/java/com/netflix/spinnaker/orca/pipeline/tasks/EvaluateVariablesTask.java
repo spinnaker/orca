@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -40,7 +40,7 @@ public class EvaluateVariablesTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     EvaluateVariablesStage.EvaluateVariablesStageContext context =
         stage.mapTo(EvaluateVariablesStage.EvaluateVariablesStageContext.class);
 

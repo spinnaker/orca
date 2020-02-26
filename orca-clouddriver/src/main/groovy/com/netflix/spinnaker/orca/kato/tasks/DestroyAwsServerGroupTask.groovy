@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.kato.pipeline.DestroyAsgStage.DESTROY_ASG_DESCRIPTIONS_KEY
@@ -46,7 +46,7 @@ class DestroyAwsServerGroupTask extends AbstractCloudProviderAwareTask implement
   TargetReferenceSupport targetReferenceSupport
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     Map context = convert(stage)
     String cloudProvider = getCloudProvider(stage)
     TaskId taskId = kato.requestOperations(cloudProvider, [[destroyServerGroup: context]])
@@ -62,7 +62,7 @@ class DestroyAwsServerGroupTask extends AbstractCloudProviderAwareTask implement
     ]).build()
   }
 
-  Map convert(Stage stage) {
+  Map convert(StageExecution stage) {
     def input = stage.context
     // TODO: Remove this if-block
     if (stage.context.containsKey(DESTROY_ASG_DESCRIPTIONS_KEY) &&

@@ -115,7 +115,7 @@ public class PipelineExpressionEvaluator {
       new Class[] {
         Artifact.class,
         PipelineExecution.class,
-        Stage.class,
+        StageExecution.class,
         Trigger.class,
         BuildInfo.class,
         JenkinsArtifact.class,

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 import spock.lang.Specification
@@ -62,7 +62,7 @@ class ClusterSizePreconditionTaskSpec extends Specification {
       serverGroups: serverGroups
     ]))
     def response = new Response('http://foo', 200, 'OK', [], body)
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), 'checkCluster', [
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), 'checkCluster', [
       context: [
         credentials: credentials,
         cluster    : cluster,
@@ -95,7 +95,7 @@ class ClusterSizePreconditionTaskSpec extends Specification {
       serverGroups: serverGroups
     ]))
     def response = new Response('http://foo', 200, 'OK', [], body)
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), 'checkCluster', [
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), 'checkCluster', [
       context: [
         credentials: credentials,
         cluster    : cluster,
@@ -123,7 +123,7 @@ class ClusterSizePreconditionTaskSpec extends Specification {
   @Unroll
   'cluster with name "#cluster" and moniker "#moniker" should have application name "#expected"'() {
     given:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), 'checkCluster', [
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), 'checkCluster', [
       context: [
         cluster: cluster,
         moniker: moniker,

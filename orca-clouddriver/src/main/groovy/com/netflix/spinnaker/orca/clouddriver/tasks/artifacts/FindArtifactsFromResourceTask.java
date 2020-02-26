@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.*;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +42,7 @@ public class FindArtifactsFromResourceTask extends AbstractCloudProviderAwareTas
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
     String account = getCredentials(stage);
     Map<String, Object> outputs = new HashMap<>();

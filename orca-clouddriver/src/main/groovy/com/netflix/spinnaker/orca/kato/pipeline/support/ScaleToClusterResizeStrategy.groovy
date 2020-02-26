@@ -20,7 +20,7 @@ import com.netflix.frigga.Names
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -36,7 +36,7 @@ class ScaleToClusterResizeStrategy implements ResizeStrategy{
   }
 
   @Override
-  CapacitySet capacityForOperation(Stage stage,
+  CapacitySet capacityForOperation(StageExecution stage,
                                    String account,
                                    String serverGroupName,
                                    String cloudProvider,

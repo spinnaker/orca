@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTa
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.clone.CloneDescriptionDecorator
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -43,7 +43,7 @@ class CloneServerGroupTask extends AbstractCloudProviderAwareTask implements Tas
   ObjectMapper mapper
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def operation = [:]
     operation.putAll(stage.context)
     String targetRegion = operation.region ?: operation.availabilityZones?.keySet()?.getAt(0) ?: operation.source?.region
@@ -80,7 +80,7 @@ class CloneServerGroupTask extends AbstractCloudProviderAwareTask implements Tas
     TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build()
   }
 
-  private List<Map<String, Object>> getDescriptions(Stage stage, Map operation) {
+  private List<Map<String, Object>> getDescriptions(StageExecution stage, Map operation) {
     log.info("Generating descriptions (cloudProvider: ${operation.cloudProvider}, getCloudProvider: ${getCloudProvider(operation)}, credentials: ${operation.credentials}, availabilityZones: ${operation.availabilityZones})")
 
     List<Map<String, Object>> descriptions = []

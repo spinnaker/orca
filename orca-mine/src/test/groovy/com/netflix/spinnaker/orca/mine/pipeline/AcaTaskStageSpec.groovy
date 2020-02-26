@@ -3,7 +3,7 @@ package com.netflix.spinnaker.orca.mine.pipeline
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
@@ -33,7 +33,7 @@ class AcaTaskStageSpec extends Specification {
 
     def canary = createCanary('123');
     def context = [canary: canary.clone()]
-    Stage stage = createStage(pipeline, context)
+    StageExecution stage = createStage(pipeline, context)
     AcaTaskStage acaTaskStage = new AcaTaskStage()
     MineService mineService = Mock()
     acaTaskStage.mineService = mineService
@@ -70,7 +70,7 @@ class AcaTaskStageSpec extends Specification {
 
     def canary = createCanary()
     def context = [canary: canary.clone()]
-    Stage stage = createStage(pipeline, context)
+    StageExecution stage = createStage(pipeline, context)
     AcaTaskStage acaTaskStage = new AcaTaskStage()
     MineService mineService = Mock()
     acaTaskStage.mineService = mineService
@@ -118,7 +118,7 @@ class AcaTaskStageSpec extends Specification {
   }
 
   def createStage(PipelineExecution pipeline, Map<String, Object> context) {
-    Stage stage = new Stage(pipeline, "acaTask", "ACA Task", context)
+    StageExecution stage = new StageExecution(pipeline, "acaTask", "ACA Task", context)
     stage.tasks = [
       new Task(
         id: "1",

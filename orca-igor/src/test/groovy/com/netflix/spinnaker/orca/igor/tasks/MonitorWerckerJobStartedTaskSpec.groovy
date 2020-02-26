@@ -11,7 +11,7 @@ package com.netflix.spinnaker.orca.igor.tasks
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.mock.env.MockEnvironment
 import spock.lang.Shared
 import spock.lang.Specification
@@ -28,7 +28,7 @@ class MonitorWerckerJobStartedTaskSpec extends Specification {
 
   def "should return running #expectedExecutionStatus if #result is not_built or #buildNumber missing"() {
     given:
-    def stage = new Stage(pipeline, "wercker", [master: "builds", job: "orca", queuedBuild: 4])
+    def stage = new StageExecution(pipeline, "wercker", [master: "builds", job: "orca", queuedBuild: 4])
 
     and:
     task.buildService = Stub(BuildService) {

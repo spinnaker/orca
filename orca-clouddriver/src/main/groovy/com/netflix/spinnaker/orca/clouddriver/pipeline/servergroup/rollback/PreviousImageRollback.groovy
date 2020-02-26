@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.WaitStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
@@ -57,7 +57,7 @@ class PreviousImageRollback implements Rollback {
   RetrySupport retrySupport
 
   @Override
-  List<Stage> buildStages(Stage parentStage) {
+  List<StageExecution> buildStages(StageExecution parentStage) {
     def previousImageRollbackSupport = new PreviousImageRollbackSupport(objectMapper, oortService, featuresService, retrySupport)
     def stages = []
 

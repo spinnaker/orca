@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,7 +69,7 @@ class CloudFoundryDeployServiceTaskTest {
 
     CloudFoundryDeployServiceTask task =
         new CloudFoundryDeployServiceTask(mapper, katoService, manifestEvaluator);
-    Stage stage = new Stage();
+    StageExecution stage = new StageExecution();
     stage.setContext(mapper.readValue(stageJson, Map.class));
     task.execute(stage);
 

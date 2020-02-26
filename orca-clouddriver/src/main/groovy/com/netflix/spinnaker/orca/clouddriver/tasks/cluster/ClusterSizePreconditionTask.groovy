@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.tasks.PreconditionTask
 import groovy.transform.Canonical
 import org.springframework.beans.factory.annotation.Autowired
@@ -107,7 +107,7 @@ class ClusterSizePreconditionTask extends AbstractCloudProviderAwareTask impleme
   }
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     ComparisonConfig config = stage.mapTo("/context", ComparisonConfig)
     config.validate()

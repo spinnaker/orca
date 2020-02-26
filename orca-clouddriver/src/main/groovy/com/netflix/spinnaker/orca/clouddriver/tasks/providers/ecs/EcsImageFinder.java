@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageFinder;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +41,7 @@ public class EcsImageFinder implements ImageFinder {
 
   @Override
   public Collection<ImageDetails> byTags(
-      Stage stage, String packageName, Map<String, String> tags) {
+      StageExecution stage, String packageName, Map<String, String> tags) {
     StageData stageData = (StageData) stage.mapTo(StageData.class);
 
     List<Map> result =

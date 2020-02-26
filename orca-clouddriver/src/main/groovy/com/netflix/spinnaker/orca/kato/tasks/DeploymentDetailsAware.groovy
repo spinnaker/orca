@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 
@@ -36,11 +36,11 @@ trait DeploymentDetailsAware {
   private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.getInstance()
 
   void withImageFromPrecedingStage(
-    Stage stage,
+    StageExecution stage,
     String targetRegion,
     String targetCloudProvider,
     Closure callback) {
-    Stage previousStage = getPreviousStageWithImage(stage, targetRegion, targetCloudProvider)
+    StageExecution previousStage = getPreviousStageWithImage(stage, targetRegion, targetCloudProvider)
     def result = [:]
     if (previousStage && isCloudProviderEqual(stage, previousStage)) {
       if (previousStage.context.containsKey("amiDetails")) {
@@ -57,12 +57,12 @@ trait DeploymentDetailsAware {
     }
   }
 
-  Stage getPreviousStageWithImage(Stage stage, String targetRegion, String targetCloudProvider) {
+  StageExecution getPreviousStageWithImage(StageExecution stage, String targetRegion, String targetCloudProvider) {
     if (stage.execution.type == ORCHESTRATION) {
       return null
     }
 
-    Stage ancestorWithImage = stage.findAncestor({
+    StageExecution ancestorWithImage = stage.findAncestor({
       def regions = (it.context.region ? [it.context.region] : it.context.regions) as Set<String>
       def cloudProviderFromContext = it.context.cloudProvider ?: it.context.cloudProviderType
       boolean hasTargetCloudProvider = !cloudProviderFromContext || targetCloudProvider == cloudProviderFromContext
@@ -83,7 +83,7 @@ trait DeploymentDetailsAware {
     }
   }
 
-  boolean isCloudProviderEqual(Stage stage, Stage previousStage){
+  boolean isCloudProviderEqual(StageExecution stage, StageExecution previousStage){
     if(previousStage.context.cloudProvider!=null && stage.context.cloudProvider!=null) {
       return previousStage.context.cloudProvider == stage.context.cloudProvider
     }
@@ -99,7 +99,7 @@ trait DeploymentDetailsAware {
   }
 
   void withImageFromDeploymentDetails(
-    Stage stage,
+    StageExecution stage,
     String targetRegion,
     String targetCloudProvider,
     Closure callback) {

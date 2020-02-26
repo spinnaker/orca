@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ public class JobUtils implements CloudProviderAware {
     this.katoRestService = katoRestService;
   }
 
-  public void cancelWait(Stage stage) {
+  public void cancelWait(StageExecution stage) {
     Map<String, List<String>> jobs =
         (Map<String, List<String>>) stage.getContext().getOrDefault("deploy.jobs", new HashMap<>());
     String account = getCredentials(stage);

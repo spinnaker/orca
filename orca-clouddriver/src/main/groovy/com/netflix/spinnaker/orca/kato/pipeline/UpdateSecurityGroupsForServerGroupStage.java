@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.UpdateLaunchConfigTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +41,7 @@ class UpdateSecurityGroupsForServerGroupStage implements StageDefinitionBuilder 
   }
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
         .withTask("updateLaunchConfig", UpdateLaunchConfigTask.class)
         .withTask("updateInstances", UpdateInstancesTask.class);

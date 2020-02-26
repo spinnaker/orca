@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -123,7 +123,7 @@ public class DeployedServerGroupsExpressionFunctionProvider implements Expressio
     List<Map<String, Object>> deployments;
   }
 
-  private static Predicate<Stage> matchesDeployedStage(String... id) {
+  private static Predicate<StageExecution> matchesDeployedStage(String... id) {
     List<String> idsOrNames = Arrays.asList(id);
     if (!idsOrNames.isEmpty()) {
       return stage ->

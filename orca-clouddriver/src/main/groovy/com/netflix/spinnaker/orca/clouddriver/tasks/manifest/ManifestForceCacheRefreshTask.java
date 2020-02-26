@@ -33,7 +33,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.*;
@@ -92,7 +92,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     Long startTime = stage.getStartTime();
     if (startTime == null) {
       throw new IllegalStateException("Stage has no start time, cannot be executing.");
@@ -221,7 +221,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
         .collect(Collectors.toList());
   }
 
-  private List<ScopedManifest> getDeployedManifests(Stage stage) {
+  private List<ScopedManifest> getDeployedManifests(StageExecution stage) {
     String account = getCredentials(stage);
     Map<String, List<String>> deployedManifests = manifestsToRefresh(stage);
     return deployedManifests.entrySet().stream()
@@ -255,7 +255,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
     }
   }
 
-  private StageData fromStage(Stage stage) {
+  private StageData fromStage(StageExecution stage) {
     try {
       return objectMapper.readValue(
           objectMapper.writeValueAsString(stage.getContext()), StageData.class);

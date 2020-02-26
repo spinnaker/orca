@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -38,7 +38,7 @@ abstract class AbstractDiscoveryTask implements Task {
   abstract String getAction()
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def taskId = kato.requestOperations([["${action}": stage.context]])
       .toBlocking()
       .first()

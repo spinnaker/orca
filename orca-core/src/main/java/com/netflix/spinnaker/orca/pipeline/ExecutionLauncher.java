@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Trigger;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -241,7 +241,7 @@ public class ExecutionLauncher {
       }
 
       // TODO: need to check it's valid?
-      Stage stage = new Stage(orchestration, type, context);
+      StageExecution stage = new StageExecution(orchestration, type, context);
       orchestration.getStages().add(stage);
     }
 

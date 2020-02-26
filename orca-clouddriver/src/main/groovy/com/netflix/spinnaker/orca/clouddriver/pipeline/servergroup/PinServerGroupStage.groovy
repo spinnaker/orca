@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ResizeServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
@@ -41,7 +41,7 @@ class PinServerGroupStage extends TargetServerGroupLinearStageSupport {
   public static final String TYPE = getType(PinServerGroupStage)
 
   @Override
-  protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {
+  protected void taskGraphInternal(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("resizeServerGroup", ResizeServerGroupTask)
       .withTask("monitorServerGroup", MonitorKatoTask)

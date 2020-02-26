@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.sql.ResultSet
@@ -89,7 +89,7 @@ class ExecutionMapper(
     executions.getValue(executionId)
       .stages
       .add(
-        mapper.readValue<Stage>(rs.getString("body"))
+        mapper.readValue<StageExecution>(rs.getString("body"))
           .apply {
             execution = executions.getValue(executionId)
           }

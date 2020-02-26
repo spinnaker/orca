@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditi
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -48,14 +48,14 @@ public class ConditionAwareDeployStagePreprocessor implements DeployStagePreProc
   }
 
   @Override
-  public boolean supports(Stage stage) {
+  public boolean supports(StageExecution stage) {
     // Restrict pausing deployments to Pipeline executions only
     // Orchestrations do not currently allow a user to skip the wait in the UI
     return stage.getExecution().getType().equals(PipelineExecution.ExecutionType.PIPELINE);
   }
 
   @Override
-  public List<StageDefinition> beforeStageDefinitions(Stage stage) {
+  public List<StageDefinition> beforeStageDefinitions(StageExecution stage) {
     try {
       final StageData stageData = stage.mapTo(StageData.class);
       Set<Condition> conditions =

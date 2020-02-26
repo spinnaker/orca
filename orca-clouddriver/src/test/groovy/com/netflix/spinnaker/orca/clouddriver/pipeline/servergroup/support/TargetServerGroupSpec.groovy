@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -71,7 +71,7 @@ class TargetServerGroupSpec extends Specification {
   def "dynamically bound stage"() {
 
     when:
-      def stage = new Stage(context: context, execution: new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "app"))
+      def stage = new StageExecution(context: context, execution: new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "app"))
 
     then:
       TargetServerGroup.isDynamicallyBound(stage) == want
@@ -96,7 +96,7 @@ class TargetServerGroupSpec extends Specification {
         target         : target,
         zones          : zones,
       ]
-      def stage = new Stage(context: context, execution: new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "app"))
+      def stage = new StageExecution(context: context, execution: new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "app"))
       def p = TargetServerGroup.Params.fromStage(stage)
 
     then:

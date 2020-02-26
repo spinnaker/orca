@@ -32,7 +32,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -64,13 +64,13 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("completeDeployCanary", CompleteDeployCanaryTask)
   }
 
   @Override
   @CompileDynamic
-  protected Collection<Map<String, Object>> parallelContexts(Stage stage) {
+  protected Collection<Map<String, Object>> parallelContexts(StageExecution stage) {
     List<Map> baselineAmis = findBaselineAmis(stage)
     Map defaultStageContext = stage.context
     List<Map> canaryDeployments = defaultStageContext.clusterPairs
@@ -100,7 +100,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @CompileDynamic
-  List<Map> findBaselineAmis(Stage stage) {
+  List<Map> findBaselineAmis(StageExecution stage) {
     Set<String> regions = stage.context.clusterPairs.collect {
       if (it.canary.availabilityZones) {
         it.canary.availabilityZones?.keySet() + it.baseline.availabilityZones?.keySet()
@@ -110,7 +110,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
     }.flatten()
 
     def findImageCtx = [application: stage.execution.application, account: stage.context.baseline.account, cluster: stage.context.baseline.cluster, regions: regions, cloudProvider: stage.context.baseline.cloudProvider ?: 'aws']
-    Stage s = new Stage(PipelineExecution.newOrchestration(stage.execution.application), "findImage", findImageCtx)
+    StageExecution s = new StageExecution(PipelineExecution.newOrchestration(stage.execution.application), "findImage", findImageCtx)
     try {
       TaskResult result = findImage.execute(s)
       return result.context.amiDetails
@@ -150,7 +150,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
     }
 
     @CompileDynamic
-    TaskResult execute(Stage stage) {
+    TaskResult execute(StageExecution stage) {
       def context = stage.context
       def allStages = stage.execution.stages
       def deployStages = allStages.findAll {
@@ -228,8 +228,8 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
 
   @Override
   @CompileDynamic
-  CancellableStage.Result cancel(Stage stage) {
-    def canary = stage.ancestors { Stage s, StageDefinitionBuilder stageBuilder ->
+  CancellableStage.Result cancel(StageExecution stage) {
+    def canary = stage.ancestors { StageExecution s, StageDefinitionBuilder stageBuilder ->
       stageBuilder instanceof CanaryStage
     } first()
     return ((CanaryStage) canary.stageBuilder).cancel(canary.stage)

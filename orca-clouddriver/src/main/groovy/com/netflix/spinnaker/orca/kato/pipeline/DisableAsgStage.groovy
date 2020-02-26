@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceLinearStageSupport
 import com.netflix.spinnaker.orca.kato.tasks.DisableAsgTask
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -38,7 +38,7 @@ class DisableAsgStage extends TargetReferenceLinearStageSupport {
   Class<? extends Task> waitForAllInstancesDownOnDisableTaskType
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
       .withTask("disableAsg", DisableAsgTask)

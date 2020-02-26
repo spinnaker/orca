@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.Task;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import groovy.transform.CompileStatic;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -57,7 +57,7 @@ public class CloudFoundryMonitorKatoServicesTask extends AbstractCloudProviderAw
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     TaskId taskId = stage.mapTo("/kato.last.task.id", TaskId.class);
     List<Map<String, Object>> katoTasks =
         Optional.ofNullable((List<Map<String, Object>>) stage.getContext().get("kato.tasks"))

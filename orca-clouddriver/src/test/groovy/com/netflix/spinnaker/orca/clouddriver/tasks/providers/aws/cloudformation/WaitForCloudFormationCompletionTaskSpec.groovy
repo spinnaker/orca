@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.RetrofitError
 import retrofit.client.Response
 import spock.lang.Specification
@@ -43,7 +43,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
       'changeSetName': 'changeSetName',
       'kato.tasks': [[resultObjects: [[stackId: 'stackId']]]]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def stack = [
       stackId: 'stackId',
       stackStatus: status,
@@ -84,7 +84,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
       'cloudProvider': 'aws',
       'kato.tasks': [[resultObjects: [[stackId: 'stackId']]]]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def stack = [stackStatus: 'CREATE_IN_PROGRESS']
 
     when:
@@ -110,7 +110,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
       'cloudProvider': 'aws',
       'kato.tasks': [[resultObjects: [[stackId: 'stackId']]]]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def error404 = RetrofitError.httpError("url", new Response("url", 404, "reason", [], null), null, null)
 
     when:
@@ -133,7 +133,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
       'changeSetName': 'changeSetName',
       'kato.tasks': [[resultObjects: [[stackId: 'stackId']]]]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def stack = [
       stackStatus: status,
       stackStatusReason: "Stack failed",
@@ -171,7 +171,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
       'cloudProvider': 'aws',
       'kato.tasks': [[resultObjects: [[stackId: 'stackId']]]]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def error500 = RetrofitError.httpError("url", new Response("url", 500, "reason", [], null), null, null)
 
     when:
@@ -194,7 +194,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
       'changeSetName': 'changeSetName',
       'kato.tasks': [[resultObjects: [[stackId: 'stackId']]]]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def stack = [
       stackStatus: 'UPDATE_COMPLETE',
       changeSets: [

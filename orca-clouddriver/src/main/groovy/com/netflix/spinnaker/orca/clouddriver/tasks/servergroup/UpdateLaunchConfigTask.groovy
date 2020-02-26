@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -41,7 +41,7 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
   String defaultBakeAccount
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def ops
     def cloudProvider = getCloudProvider(stage)
     if (cloudProvider == "aws") {
@@ -64,7 +64,7 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
     ]).build()
   }
 
-  private getAwsOps(Stage stage) {
+  private getAwsOps(StageExecution stage) {
     def operation = new HashMap(stage.context)
     operation.amiName = getImage(stage)
     operation.asgName = operation.asgName ?: operation.serverGroupName
@@ -82,7 +82,7 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
     ops
   }
 
-  private String getImage(Stage stage) {
+  private String getImage(StageExecution stage) {
     String amiName = stage.context.amiName
     String targetRegion = stage.context.region
     withImageFromPrecedingStage(stage, targetRegion, "aws") {

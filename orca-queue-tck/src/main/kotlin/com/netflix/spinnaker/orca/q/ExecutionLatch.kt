@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.context.ApplicationListener
 import org.springframework.context.ConfigurableApplicationContext
@@ -83,7 +83,7 @@ fun ConfigurableApplicationContext.runParentToCompletion(
   repository.waitForAllStagesToComplete(parent)
 }
 
-fun ConfigurableApplicationContext.restartAndRunToCompletion(stage: Stage, launcher: (PipelineExecution, String) -> Unit, repository: ExecutionRepository) {
+fun ConfigurableApplicationContext.restartAndRunToCompletion(stage: StageExecution, launcher: (PipelineExecution, String) -> Unit, repository: ExecutionRepository) {
   val execution = stage.execution
   val latch = ExecutionLatch(Predicate {
     it.executionId == execution.id
@@ -102,7 +102,7 @@ private fun ExecutionRepository.waitForAllStagesToComplete(execution: PipelineEx
     complete = retrieve(PIPELINE, execution.id)
       .run {
         status.isComplete && stages
-          .map(Stage::getStatus)
+          .map(StageExecution::getStatus)
           .all { it.isComplete || it == NOT_STARTED }
       }
   }

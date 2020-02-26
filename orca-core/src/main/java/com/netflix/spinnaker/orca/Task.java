@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca;
 
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -28,13 +28,13 @@ import javax.annotation.Nullable;
 
 public interface Task {
   @Nonnull
-  TaskResult execute(@Nonnull Stage stage);
+  TaskResult execute(@Nonnull StageExecution stage);
 
-  default @Nullable TaskResult onTimeout(@Nonnull Stage stage) {
+  default @Nullable TaskResult onTimeout(@Nonnull StageExecution stage) {
     return null;
   }
 
-  default void onCancel(@Nonnull Stage stage) {}
+  default void onCancel(@Nonnull StageExecution stage) {}
 
   default Collection<String> aliases() {
     if (getClass().isAnnotationPresent(Aliases.class)) {

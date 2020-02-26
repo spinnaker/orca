@@ -33,7 +33,7 @@ import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollbackSupport;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,7 +104,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     Map<String, String> rollbackTypes = new HashMap<>();
     Map<String, Map> rollbackContexts = new HashMap<>();
 

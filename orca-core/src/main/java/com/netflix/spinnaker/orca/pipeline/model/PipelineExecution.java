@@ -154,21 +154,21 @@ public class PipelineExecution implements Serializable {
 
   @JsonIgnore
   public @Nonnull Map<String, Object> getContext() {
-    return Stage.topologicalSort(stages)
-        .map(Stage::getOutputs)
+    return StageExecution.topologicalSort(stages)
+        .map(StageExecution::getOutputs)
         .map(Map::entrySet)
         .flatMap(Collection::stream)
         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (o, o2) -> o2));
   }
 
-  private final List<Stage> stages = new ArrayList<>();
+  private final List<StageExecution> stages = new ArrayList<>();
 
   /**
    * Gets the stages of this execution. Does not serialize the child Execution object from stages.
    * The child Execution object in Stage is a @JsonBackReference.
    */
   @JsonIgnoreProperties(value = "execution")
-  public @Nonnull List<Stage> getStages() {
+  public @Nonnull List<StageExecution> getStages() {
     return stages;
   }
 
@@ -339,12 +339,12 @@ public class PipelineExecution implements Serializable {
   }
 
   @Nullable
-  public Stage namedStage(String type) {
+  public StageExecution namedStage(String type) {
     return stages.stream().filter(it -> it.getType().equals(type)).findFirst().orElse(null);
   }
 
   @Nonnull
-  public Stage stageById(String stageId) {
+  public StageExecution stageById(String stageId) {
     return stages.stream()
         .filter(it -> it.getId().equals(stageId))
         .findFirst()
@@ -354,7 +354,7 @@ public class PipelineExecution implements Serializable {
   }
 
   @Nonnull
-  public Stage stageByRef(String refId) {
+  public StageExecution stageByRef(String refId) {
     return stages.stream()
         .filter(it -> refId.equals(it.getRefId()))
         .findFirst()

@@ -23,7 +23,7 @@ import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -73,7 +73,7 @@ public class ManifestLabelValueExpressionFunctionProvider implements ExpressionF
       throw new IllegalArgumentException("A labelKey is required for this function");
     }
 
-    Optional<Stage> stage =
+    Optional<StageExecution> stage =
         execution.getStages().stream()
             .filter(
                 s ->

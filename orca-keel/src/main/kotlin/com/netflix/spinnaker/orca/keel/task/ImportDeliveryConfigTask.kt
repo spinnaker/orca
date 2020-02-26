@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.pipeline.model.SourceCodeTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -46,7 +46,7 @@ constructor(
 ) : RetryableTask {
   private val log = LoggerFactory.getLogger(javaClass)
 
-  override fun execute(stage: Stage): TaskResult {
+  override fun execute(stage: StageExecution): TaskResult {
     val context = objectMapper.convertValue<ImportDeliveryConfigContext>(stage.context)
     val trigger = stage.execution.trigger
     val user = trigger.user ?: "anonymous"

@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.loadbalancer.UpsertLoadBalancerStage
 import com.netflix.spinnaker.orca.kato.pipeline.UpsertAmazonLoadBalancerStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -35,7 +35,7 @@ class UpsertAmazonDNSTask implements Task {
   KatoService kato
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def operation = [
       type          : stage.context.recordType,
       name          : stage.context.name,

@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.FindArtifactsFromR
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ResolveTargetManifestTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +30,7 @@ public class FindArtifactsFromResourceStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "findArtifactFromResource";
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
         .withTask(ResolveTargetManifestTask.TASK_NAME, ResolveTargetManifestTask.class)
         .withTask(FindArtifactsFromResourceTask.TASK_NAME, FindArtifactsFromResourceTask.class)

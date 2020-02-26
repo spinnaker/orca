@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,7 +64,8 @@ class CloudFoundryDestroyServiceTaskTest {
         TaskResult.builder(ExecutionStatus.SUCCEEDED).context(expectedContext).build();
 
     TaskResult result =
-        task.execute(new Stage(new PipelineExecution(PIPELINE, "orca"), "destroyService", context));
+        task.execute(
+            new StageExecution(new PipelineExecution(PIPELINE, "orca"), "destroyService", context));
 
     assertThat(result).isEqualToComparingFieldByFieldRecursively(expected);
   }

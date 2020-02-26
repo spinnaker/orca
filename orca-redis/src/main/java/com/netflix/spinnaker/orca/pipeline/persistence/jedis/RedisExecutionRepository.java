@@ -135,12 +135,12 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public void storeStage(@Nonnull Stage stage) {
+  public void storeStage(@Nonnull StageExecution stage) {
     storeStageInternal(getRedisDelegate(stage), stage, false);
   }
 
   @Override
-  public void updateStageContext(@Nonnull Stage stage) {
+  public void updateStageContext(@Nonnull StageExecution stage) {
     RedisClientDelegate delegate = getRedisDelegate(stage);
     String key = executionKey(stage);
     String contextKey = format("stage.%s.context", stage.getId());
@@ -181,7 +181,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public void addStage(@Nonnull Stage stage) {
+  public void addStage(@Nonnull StageExecution stage) {
     if (stage.getSyntheticStageOwner() == null || stage.getParentStageId() == null) {
       throw new IllegalArgumentException("Only synthetic stages can be inserted ad-hoc");
     }
@@ -885,11 +885,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
           String.format("Failed serializing execution json, id: %s", execution.getId()), e);
     }
 
-    List<Stage> stages = new ArrayList<>();
+    List<StageExecution> stages = new ArrayList<>();
     stageIds.forEach(
         stageId -> {
           String prefix = format("stage.%s.", stageId);
-          Stage stage = new Stage();
+          StageExecution stage = new StageExecution();
           try {
             stage.setId(stageId);
             stage.setRefId(map.get(prefix + "refId"));
@@ -932,7 +932,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
             if (map.get(prefix + "lastModified") != null) {
               stage.setLastModified(
                   mapper.readValue(
-                      map.get(prefix + "lastModified"), Stage.LastModifiedDetails.class));
+                      map.get(prefix + "lastModified"), StageExecution.LastModifiedDetails.class));
             }
             stage.setExecution(execution);
             stages.add(stage);
@@ -1019,7 +1019,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return map;
   }
 
-  protected Map<String, String> serializeStage(Stage stage) {
+  protected Map<String, String> serializeStage(StageExecution stage) {
     String prefix = format("stage.%s.", stage.getId());
     Map<String, String> map = new HashMap<>();
     map.put(prefix + "refId", stage.getRefId());
@@ -1332,7 +1332,9 @@ public class RedisExecutionRepository implements ExecutionRepository {
                   tx.del(indexKey);
                   tx.rpush(
                       indexKey,
-                      execution.getStages().stream().map(Stage::getId).toArray(String[]::new));
+                      execution.getStages().stream()
+                          .map(StageExecution::getId)
+                          .toArray(String[]::new));
                 }
                 tx.exec();
               });
@@ -1345,7 +1347,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
         });
   }
 
-  private void storeStageInternal(RedisClientDelegate delegate, Stage stage, Boolean updateIndex) {
+  private void storeStageInternal(
+      RedisClientDelegate delegate, StageExecution stage, Boolean updateIndex) {
     String key = executionKey(stage);
     String indexKey = format("%s:stageIndex", key);
 
@@ -1439,7 +1442,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return format("%s:%s", execution.getType(), execution.getId());
   }
 
-  private String executionKey(Stage stage) {
+  private String executionKey(StageExecution stage) {
     return format("%s:%s", stage.getExecution().getType(), stage.getExecution().getId());
   }
 
@@ -1459,7 +1462,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return getRedisDelegate(execution.getType(), execution.getId());
   }
 
-  private RedisClientDelegate getRedisDelegate(Stage stage) {
+  private RedisClientDelegate getRedisDelegate(StageExecution stage) {
     return getRedisDelegate(stage.getExecution().getType(), stage.getExecution().getId());
   }
 

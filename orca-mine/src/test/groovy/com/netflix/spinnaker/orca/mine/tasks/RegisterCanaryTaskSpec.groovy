@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.mine.tasks
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.pipeline.DeployCanaryStage
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Specification
@@ -38,7 +38,7 @@ class RegisterCanaryTaskSpec extends Specification {
 
     def canaryStageId = UUID.randomUUID().toString()
     def parentStageId = UUID.randomUUID().toString()
-    def deployCanaryStage = new Stage(pipeline, DeployCanaryStage.PIPELINE_CONFIG_TYPE, [
+    def deployCanaryStage = new StageExecution(pipeline, DeployCanaryStage.PIPELINE_CONFIG_TYPE, [
       canaryStageId       : canaryStageId,
       account             : 'test',
       canary              : [
@@ -96,7 +96,7 @@ class RegisterCanaryTaskSpec extends Specification {
                              ]]
     ])
     deployCanaryStage.parentStageId = parentStageId
-    def monitorCanaryStage = new Stage(pipeline, "monitorCanary", [:])
+    def monitorCanaryStage = new StageExecution(pipeline, "monitorCanary", [:])
 
     pipeline.stages.addAll([deployCanaryStage, monitorCanaryStage])
 
@@ -132,10 +132,10 @@ class RegisterCanaryTaskSpec extends Specification {
 
     given:
     def pipeline = PipelineExecution.newPipeline('foo')
-    def deployCanaryStage = new Stage(pipeline, DeployCanaryStage.PIPELINE_CONFIG_TYPE, [canary: canary, deployedClusterPairs: [:]])
+    def deployCanaryStage = new StageExecution(pipeline, DeployCanaryStage.PIPELINE_CONFIG_TYPE, [canary: canary, deployedClusterPairs: [:]])
     def parentStageId = UUID.randomUUID().toString()
     deployCanaryStage.parentStageId = parentStageId
-    def monitorCanaryStage = new Stage(pipeline, "monitorCanary", [:])
+    def monitorCanaryStage = new StageExecution(pipeline, "monitorCanary", [:])
 
     pipeline.stages.addAll([deployCanaryStage, monitorCanaryStage])
 

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.listeners;
 
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 
 public class DefaultPersister implements Persister {
@@ -29,7 +29,7 @@ public class DefaultPersister implements Persister {
   }
 
   @Override
-  public void save(Stage stage) {
+  public void save(StageExecution stage) {
     executionRepository.storeStage(stage);
   }
 

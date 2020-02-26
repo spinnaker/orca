@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.fixture
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask
@@ -39,8 +39,8 @@ fun pipeline(init: PipelineExecution.() -> Unit = {}): PipelineExecution {
 /**
  * Build a stage outside the context of an execution.
  */
-fun stage(init: Stage.() -> Unit): Stage {
-  val stage = Stage()
+fun stage(init: StageExecution.() -> Unit): StageExecution {
+  val stage = StageExecution()
   stage.execution = pipeline()
   stage.type = "test"
   stage.refId = "1"
@@ -54,8 +54,8 @@ fun stage(init: Stage.() -> Unit): Stage {
  *
  * Automatically hooks up execution.
  */
-fun PipelineExecution.stage(init: Stage.() -> Unit): Stage {
-  val stage = Stage()
+fun PipelineExecution.stage(init: StageExecution.() -> Unit): StageExecution {
+  val stage = StageExecution()
   stage.execution = this
   stage.type = "test"
   stage.refId = "1"
@@ -69,8 +69,8 @@ fun PipelineExecution.stage(init: Stage.() -> Unit): Stage {
  *
  * Automatically hooks up execution and parent stage.
  */
-fun Stage.stage(init: Stage.() -> Unit): Stage {
-  val stage = Stage()
+fun StageExecution.stage(init: StageExecution.() -> Unit): StageExecution {
+  val stage = StageExecution()
   stage.execution = execution
   stage.type = "test"
   stage.refId = "$refId<1"
@@ -84,7 +84,7 @@ fun Stage.stage(init: Stage.() -> Unit): Stage {
 /**
  * Build a task. Use in the context of [#stage].
  */
-fun Stage.task(init: Task.() -> Unit): Task {
+fun StageExecution.task(init: Task.() -> Unit): Task {
   val task = Task()
   task.implementingClass = NoOpTask::class.java.name
   task.name = "dummy"

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.RetrofitError
 import retrofit.client.Response
 import spock.lang.Shared
@@ -108,7 +108,7 @@ class SpinnakerMetadataServerGroupTagGeneratorSpec extends Specification {
       authentication = authenticatedUser ? new AuthenticationDetails(authenticatedUser) : null
       description = "this is my orchestration"
 
-      stages << new Stage(delegate, "wait")
+      stages << new StageExecution(delegate, "wait")
     }
 
     when:

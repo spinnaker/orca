@@ -15,17 +15,17 @@
  */
 package com.netflix.spinnaker.orca;
 
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Map;
 
 public interface CancellableStage {
-  Result cancel(Stage stage);
+  Result cancel(StageExecution stage);
 
   class Result {
     private final String stageId;
     private final Map details;
 
-    public Result(Stage stage, Map details) {
+    public Result(StageExecution stage, Map details) {
       this.stageId = stage.getId();
       this.details = details;
     }

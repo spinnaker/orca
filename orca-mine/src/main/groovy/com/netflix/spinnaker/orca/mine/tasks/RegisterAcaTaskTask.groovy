@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.mine.MineService
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -36,7 +36,7 @@ class RegisterAcaTaskTask implements Task {
   MineService mineService
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     String app = stage.context.application ?: stage.execution.application
 
     Map c = buildCanary(app, stage)
@@ -62,7 +62,7 @@ class RegisterAcaTaskTask implements Task {
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build()
   }
 
-  Map buildCanary(String app, Stage stage) {
+  Map buildCanary(String app, StageExecution stage) {
     Map c = stage.context.canary
     c.application = c.application ?: app
     c.canaryConfig.canaryHealthCheckHandler = c.canaryConfig.canaryHealthCheckHandler ?: [:]

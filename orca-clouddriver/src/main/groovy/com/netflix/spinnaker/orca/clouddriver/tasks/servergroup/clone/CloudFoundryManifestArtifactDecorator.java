@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.DeploymentManifest;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,7 +43,7 @@ public class CloudFoundryManifestArtifactDecorator implements CloneDescriptionDe
 
   @Override
   public void decorate(
-      Map<String, Object> operation, List<Map<String, Object>> descriptions, Stage stage) {
+      Map<String, Object> operation, List<Map<String, Object>> descriptions, StageExecution stage) {
     CloudFoundryCloneServerGroupOperation op =
         mapper.convertValue(operation, CloudFoundryCloneServerGroupOperation.class);
     DeploymentManifest manifest =

@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import retrofit.client.Header
@@ -37,7 +37,7 @@ class KubernetesJobRunnerSpec extends Specification {
     ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
     ManifestEvaluator manifestEvaluator = Mock(ManifestEvaluator)
-    def stage = new Stage(PipelineExecution.newPipeline("test"), "runJob", [
+    def stage = new StageExecution(PipelineExecution.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
       cluster: [
         foo: "bar"
@@ -61,7 +61,7 @@ class KubernetesJobRunnerSpec extends Specification {
     ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
     ManifestEvaluator manifestEvaluator = Mock(ManifestEvaluator)
-    def stage = new Stage(PipelineExecution.newPipeline("test"), "runJob", [
+    def stage = new StageExecution(PipelineExecution.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
       foo: "bar"
     ])
@@ -83,7 +83,7 @@ class KubernetesJobRunnerSpec extends Specification {
     ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
     ManifestEvaluator manifestEvaluator = Mock(ManifestEvaluator)
-    def stage = new Stage(PipelineExecution.newPipeline("test"), "runJob", [
+    def stage = new StageExecution(PipelineExecution.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
       manifest: [
         metadata: [
@@ -114,7 +114,7 @@ class KubernetesJobRunnerSpec extends Specification {
     ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
       artifactUtils, contextParameterProcessor, oortService, retrySupport
     )
-    def stage = new Stage(PipelineExecution.newPipeline("test"), "runJob", [
+    def stage = new StageExecution(PipelineExecution.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
       source: "artifact",
       manifestArtifactId: "foo",

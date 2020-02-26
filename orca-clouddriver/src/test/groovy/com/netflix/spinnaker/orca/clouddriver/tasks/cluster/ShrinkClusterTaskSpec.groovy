@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideC
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask.IsActive
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -53,7 +53,7 @@ class ShrinkClusterTaskSpec extends Specification {
   @Unroll
   def "stage context #desc"() {
     setup:
-    Stage orchestration = new Stage(PipelineExecution.newOrchestration("orca"), 'test', context)
+    StageExecution orchestration = new StageExecution(PipelineExecution.newOrchestration("orca"), 'test', context)
     Map cluster = [serverGroups: serverGroups]
 
     when:
@@ -93,7 +93,7 @@ class ShrinkClusterTaskSpec extends Specification {
       shrinkToSize: shrinkToSize,
       retainLargerOverNewer: retainLargerOverNewer
     ]
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), 'shrinkCluster', context)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), 'shrinkCluster', context)
 
     when:
     def toDelete = task.filterServerGroups(stage, account, location, serverGroups)

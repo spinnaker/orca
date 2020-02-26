@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component
 @Component
 class UpsertProjectStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("upsertProject", UpsertProjectTask)
   }
@@ -47,7 +47,7 @@ class UpsertProjectStage implements StageDefinitionBuilder {
     UpsertProjectTask() {}
 
     @Override
-    TaskResult execute(Stage stage) {
+    TaskResult execute(StageExecution stage) {
       if (!front50Service) {
         throw new UnsupportedOperationException("Unable to modify projects, front50 has not been enabled. Fix this by setting front50.enabled: true")
       }

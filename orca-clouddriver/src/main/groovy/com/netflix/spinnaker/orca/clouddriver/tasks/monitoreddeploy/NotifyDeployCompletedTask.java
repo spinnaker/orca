@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage;
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentCompletedRequest;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -40,7 +40,7 @@ public class NotifyDeployCompletedTask extends MonitoredDeployBaseTask {
 
   @Override
   public @Nonnull TaskResult executeInternal(
-      Stage stage, DeploymentMonitorDefinition monitorDefinition) {
+      StageExecution stage, DeploymentMonitorDefinition monitorDefinition) {
     DeploymentCompletedRequest request = new DeploymentCompletedRequest(stage);
 
     request.setStatus(

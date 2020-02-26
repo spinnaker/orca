@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMon
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryShareServiceTask;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +42,8 @@ class CloudFoundryShareServiceStagePreprocessorTest {
     Map<String, Object> context = new HashMap<>();
     context.put("cloudProvider", "my-cloud");
     context.put("manifest", Collections.singletonMap("type", "direct"));
-    Stage stage = new Stage(new PipelineExecution(PIPELINE, "orca"), "shareService", context);
+    StageExecution stage =
+        new StageExecution(new PipelineExecution(PIPELINE, "orca"), "shareService", context);
 
     TaskNode.Builder builder = new TaskNode.Builder(TaskNode.GraphType.FULL);
     preprocessor.addSteps(builder, stage);

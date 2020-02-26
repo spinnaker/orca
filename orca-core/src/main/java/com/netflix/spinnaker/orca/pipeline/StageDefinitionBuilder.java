@@ -25,7 +25,7 @@ import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.lang.annotation.ElementType;
@@ -41,31 +41,31 @@ import javax.annotation.Nullable;
 
 public interface StageDefinitionBuilder {
 
-  default @Nonnull TaskGraph buildTaskGraph(@Nonnull Stage stage) {
+  default @Nonnull TaskGraph buildTaskGraph(@Nonnull StageExecution stage) {
     Builder graphBuilder = Builder(FULL);
     taskGraph(stage, graphBuilder);
     return graphBuilder.build();
   }
 
-  default void taskGraph(@Nonnull Stage stage, @Nonnull Builder builder) {}
+  default void taskGraph(@Nonnull StageExecution stage, @Nonnull Builder builder) {}
 
   /**
    * Implement this method to define any stages that should run before any tasks in this stage as
    * part of a composed workflow.
    */
-  default void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {}
+  default void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
 
   /**
    * Implement this method to define any stages that should run after any tasks in this stage as
    * part of a composed workflow.
    */
-  default void afterStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {}
+  default void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
 
   /**
    * Implement this method to define any stages that should run in response to a failure in tasks,
    * before or after stages.
    */
-  default void onFailureStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder graph) {}
+  default void onFailureStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {}
 
   /** @return the stage type this builder handles. */
   default @Nonnull String getType() {
@@ -78,14 +78,14 @@ public interface StageDefinitionBuilder {
    * @return true to continue processing, false to stop generic processing of expressions
    */
   default boolean processExpressions(
-      @Nonnull Stage stage,
+      @Nonnull StageExecution stage,
       @Nonnull ContextParameterProcessor contextParameterProcessor,
       @Nonnull ExpressionEvaluationSummary summary) {
     return true;
   }
 
   /** Implementations can override this if they need any special cleanup on restart. */
-  default void prepareStageForRestart(@Nonnull Stage stage) {}
+  default void prepareStageForRestart(@Nonnull StageExecution stage) {}
 
   static String getType(Class<? extends StageDefinitionBuilder> clazz) {
     String className = clazz.getSimpleName();
@@ -97,14 +97,14 @@ public interface StageDefinitionBuilder {
   }
 
   @Deprecated
-  static @Nonnull Stage newStage(
+  static @Nonnull StageExecution newStage(
       @Nonnull PipelineExecution execution,
       @Nonnull String type,
       @Nullable String name,
       @Nonnull Map<String, Object> context,
-      @Nullable Stage parent,
+      @Nullable StageExecution parent,
       @Nullable SyntheticStageOwner stageOwner) {
-    Stage stage = new Stage(execution, type, name, context);
+    StageExecution stage = new StageExecution(execution, type, name, context);
     if (parent != null) {
       stage.setParentStageId(parent.getId());
     }

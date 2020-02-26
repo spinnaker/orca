@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +39,7 @@ public class BulkUpsertEntityTagsTask implements RetryableTask {
   }
 
   @Override
-  public TaskResult execute(Stage stage) {
+  public TaskResult execute(StageExecution stage) {
     TaskId taskId =
         kato.requestOperations(
                 Collections.singletonList(

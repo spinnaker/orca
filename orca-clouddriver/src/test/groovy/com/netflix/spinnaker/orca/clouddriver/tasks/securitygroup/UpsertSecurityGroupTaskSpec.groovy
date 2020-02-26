@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import rx.Observable
 import spock.lang.Shared
 import spock.lang.Specification
@@ -53,7 +53,7 @@ class UpsertSecurityGroupTaskSpec extends Specification {
     given:
       KatoService katoService = Mock(KatoService)
       def task = new UpsertSecurityGroupTask(kato: katoService, securityGroupUpserters: [aUpserter, bUpserter])
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever", [credentials: "abc", cloudProvider: cloudProvider])
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", [credentials: "abc", cloudProvider: cloudProvider])
 
     when:
       def result = task.execute(stage)

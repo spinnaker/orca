@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTagger
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTaggerSpec
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Unroll
 
 class GoogleImageTaggerSpec extends ImageTaggerSpec {
@@ -38,11 +38,11 @@ class GoogleImageTaggerSpec extends ImageTaggerSpec {
     given:
     def pipeline = PipelineExecution.newPipeline("orca")
 
-    def stage1 = new Stage(pipeline, "", [
+    def stage1 = new StageExecution(pipeline, "", [
       imageId      : imageId,
       cloudProvider: "gce"
     ])
-    def stage2 = new Stage(pipeline, "", [
+    def stage2 = new StageExecution(pipeline, "", [
       imageNames   : imageName ? [imageName] : null,
       cloudProvider: "gce"
     ])
@@ -80,7 +80,7 @@ class GoogleImageTaggerSpec extends ImageTaggerSpec {
 
   def "should build upsertImageTags operation"() {
     given:
-    def stage = new Stage(PipelineExecution.newOrchestration("orca"), "", [
+    def stage = new StageExecution(PipelineExecution.newOrchestration("orca"), "", [
       account   : "my-google-account",
       imageNames: ["my-gce-image"],
       tags      : [

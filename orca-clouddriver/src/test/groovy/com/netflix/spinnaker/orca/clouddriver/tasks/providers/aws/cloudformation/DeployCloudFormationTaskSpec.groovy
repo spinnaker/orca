@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -50,7 +50,7 @@ class DeployCloudFormationTaskSpec extends Specification {
       source: 'text',
       regions: ['eu-west-1'],
       templateBody: [key: 'value']]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
 
     when:
     def result = deployCloudFormationTask.execute(stage)
@@ -73,7 +73,7 @@ class DeployCloudFormationTaskSpec extends Specification {
       source: 'text',
       regions: ['eu-west-1'],
       templateBody: 'key: "value"']
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
 
     when:
     def result = deployCloudFormationTask.execute(stage)
@@ -100,7 +100,7 @@ class DeployCloudFormationTaskSpec extends Specification {
       templateBody: templateBody,
       regions: regions
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
 
     when:
     def result = deployCloudFormationTask.execute(stage)
@@ -135,7 +135,7 @@ class DeployCloudFormationTaskSpec extends Specification {
       stackArtifactAccount: stackArtifactAccount,
       regions: ['eu-west-1'],
       templateBody: [key: 'value']]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
 
     when:
     def result = deployCloudFormationTask.execute(stage)

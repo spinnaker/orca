@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.Canonical
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,7 +34,7 @@ class CleanupCanaryTask extends AbstractCloudProviderAwareTask implements Task {
   @Autowired KatoService katoService
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def canary = stage.mapTo("/canary", Canary)
     if (canary.health?.health == Health.UNHEALTHY.health && !canary.canaryConfig?.actionsForUnhealthyCanary?.find {
       it.action == Action.TERMINATE

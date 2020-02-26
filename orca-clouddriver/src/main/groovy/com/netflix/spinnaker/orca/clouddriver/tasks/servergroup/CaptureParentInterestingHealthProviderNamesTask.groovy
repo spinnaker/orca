@@ -21,14 +21,14 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.stereotype.Component
 
 @Component
 class CaptureParentInterestingHealthProviderNamesTask implements Task, CloudProviderAware {
 
   @Override
-  public TaskResult execute(Stage stage) {
+  public TaskResult execute(StageExecution stage) {
     def parentStage = stage.execution.stages.find { it.id == stage.parentStageId }
     def interestingHealthProviderNames = parentStage?.context?.interestingHealthProviderNames as List<String>
 

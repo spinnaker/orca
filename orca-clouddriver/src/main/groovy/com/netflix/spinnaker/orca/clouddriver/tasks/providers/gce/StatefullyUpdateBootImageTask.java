@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce.StatefullyU
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -53,7 +53,7 @@ public final class StatefullyUpdateBootImageTask extends AbstractCloudProviderAw
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     StageData data = stage.mapTo(StageData.class);
 
     List<TargetServerGroup> resolvedServerGroups = resolver.resolve(stage);

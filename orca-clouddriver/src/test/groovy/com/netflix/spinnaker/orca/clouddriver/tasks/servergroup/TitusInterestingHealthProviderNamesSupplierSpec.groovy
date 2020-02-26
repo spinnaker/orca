@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Specification
@@ -37,7 +37,7 @@ class TitusInterestingHealthProviderNamesSupplierSpec extends Specification {
   @Unroll
   def "should only support if cloudProvider is titus and stage type in [enableServerGroup, cloneServerGroup]"() {
     given:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), stageType, stageContext)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), stageType, stageContext)
 
     expect:
     titusInterestingHealthProviderNamesSupplier.supports(cloudProvider, stage) == supports
@@ -55,7 +55,7 @@ class TitusInterestingHealthProviderNamesSupplierSpec extends Specification {
   @Unroll
   def "should process interestingHealthNames by inspecting labels on titus serverGroup"() {
     given:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "createServerGroup", stageContext)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "createServerGroup", stageContext)
     def response = mapper.writeValueAsString([
       application: "app",
       region: "region",

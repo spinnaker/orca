@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy;
 import com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy.EvaluateDeploymentHealthTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -43,7 +43,7 @@ public class EvaluateDeploymentHealthStage implements StageDefinitionBuilder {
       StageDefinitionBuilder.getType(EvaluateDeploymentHealthStage.class);
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("evaluateDeploymentHealth", EvaluateDeploymentHealthTask.class);
   }
 }

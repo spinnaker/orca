@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import rx.Observable
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -61,7 +61,7 @@ class CanaryStageSpec extends Specification {
 
     TaskId taskId = new TaskId(UUID.randomUUID().toString())
 
-    Stage canceledStage = stage {
+    StageExecution canceledStage = stage {
       context = stageContext
       startTime = 5
       endTime = 10

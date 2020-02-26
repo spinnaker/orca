@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.commands.InstanceUptimeCommand
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -45,7 +45,7 @@ class VerifyInstanceUptimeTask extends AbstractCloudProviderAwareTask implements
   ObjectMapper objectMapper
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     if (!instanceUptimeCommand || !stage.context.instanceUptimes) {
       return TaskResult.ofStatus(ExecutionStatus.SUCCEEDED)
     }

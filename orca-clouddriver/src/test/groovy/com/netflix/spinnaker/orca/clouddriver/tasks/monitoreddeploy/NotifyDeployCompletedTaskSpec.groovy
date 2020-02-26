@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorService
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentCompletedRequest
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentMonitorStageConfig
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.client.Response
 import spock.lang.Specification
 
@@ -68,7 +68,7 @@ class NotifyDeployCompletedTaskSpec extends Specification {
     stageData.deploymentMonitor.id = "LogMonitorId"
     stageData.application = pipe.application
 
-    def stage = new Stage(pipe, NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
+    def stage = new StageExecution(pipe, NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
     stage.context.put("hasDeploymentFailed", false)
 
     when:
@@ -130,9 +130,9 @@ class NotifyDeployCompletedTaskSpec extends Specification {
     stageData.application = pipe.application
 
 
-    def notifyCompleteStage = new Stage(pipe, NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
-    def rollbackStage = new Stage(pipe, RollbackClusterStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
-    def createServerGroupStage = new Stage(pipe, CreateServerGroupStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
+    def notifyCompleteStage = new StageExecution(pipe, NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
+    def rollbackStage = new StageExecution(pipe, RollbackClusterStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
+    def createServerGroupStage = new StageExecution(pipe, CreateServerGroupStage.PIPELINE_CONFIG_TYPE, mapper.convertValue(stageData, Map))
     rollbackStage.status = ExecutionStatus.SUCCEEDED
 
     notifyCompleteStage.setParentStageId(createServerGroupStage.getId())

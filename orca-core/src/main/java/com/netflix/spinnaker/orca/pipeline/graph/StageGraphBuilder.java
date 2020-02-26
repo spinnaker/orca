@@ -23,7 +23,7 @@ import static java.lang.String.format;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import java.util.HashSet;
 import java.util.Optional;
@@ -34,15 +34,15 @@ import javax.annotation.Nullable;
 
 public class StageGraphBuilder {
 
-  private final Stage parent;
+  private final StageExecution parent;
   private final SyntheticStageOwner type;
-  private final MutableGraph<Stage> graph =
+  private final MutableGraph<StageExecution> graph =
       GraphBuilder.directed().build(); // TODO: is this actually useful?
-  private final Optional<Stage> requiredPrefix;
-  private @Nullable Stage lastAdded = null;
+  private final Optional<StageExecution> requiredPrefix;
+  private @Nullable StageExecution lastAdded = null;
 
   private StageGraphBuilder(
-      Stage parent, SyntheticStageOwner type, Optional<Stage> requiredPrefix) {
+      StageExecution parent, SyntheticStageOwner type, Optional<StageExecution> requiredPrefix) {
     this.parent = parent;
     this.type = type;
     this.requiredPrefix = requiredPrefix;
@@ -50,43 +50,44 @@ public class StageGraphBuilder {
   }
 
   /** Create a new builder for the before stages of {@code parent}. */
-  public static @Nonnull StageGraphBuilder beforeStages(@Nonnull Stage parent) {
+  public static @Nonnull StageGraphBuilder beforeStages(@Nonnull StageExecution parent) {
     return new StageGraphBuilder(parent, STAGE_BEFORE, Optional.empty());
   }
 
   /** Create a new builder for the before stages of {@code parent}. */
   public static @Nonnull StageGraphBuilder beforeStages(
-      @Nonnull Stage parent, @Nullable Stage requiredPrefix) {
+      @Nonnull StageExecution parent, @Nullable StageExecution requiredPrefix) {
     return new StageGraphBuilder(parent, STAGE_BEFORE, Optional.ofNullable(requiredPrefix));
   }
 
   /** Create a new builder for the after stages of {@code parent}. */
-  public static @Nonnull StageGraphBuilder afterStages(@Nonnull Stage parent) {
+  public static @Nonnull StageGraphBuilder afterStages(@Nonnull StageExecution parent) {
     return new StageGraphBuilder(parent, STAGE_AFTER, Optional.empty());
   }
 
   /**
    * Adds a new stage to the graph. By default the new stage is not dependent on any others. Use
-   * {@link #connect(Stage, Stage)} to make it depend on other stages or have other stages depend on
-   * it.
+   * {@link #connect(StageExecution, StageExecution)} to make it depend on other stages or have
+   * other stages depend on it.
    *
    * @param init builder for setting up the stage. You do not need to configure {@link
-   *     Stage#execution}, {@link Stage#parentStageId}, {@link Stage#syntheticStageOwner} or {@link
-   *     Stage#refId} as this method will do that automatically.
+   *     StageExecution#execution}, {@link StageExecution#parentStageId}, {@link
+   *     StageExecution#syntheticStageOwner} or {@link StageExecution#refId} as this method will do
+   *     that automatically.
    * @return the newly created stage.
    */
-  public @Nonnull Stage add(@Nonnull Consumer<Stage> init) {
-    Stage stage = newStage(init);
+  public @Nonnull StageExecution add(@Nonnull Consumer<StageExecution> init) {
+    StageExecution stage = newStage(init);
     add(stage);
     return stage;
   }
 
   /**
    * Adds a new stage to the graph. By default the new stage is not dependent on any others. Use
-   * {@link #connect(Stage, Stage)} to make it depend on other stages or have other stages depend on
-   * it.
+   * {@link #connect(StageExecution, StageExecution)} to make it depend on other stages or have
+   * other stages depend on it.
    */
-  public void add(@Nonnull Stage stage) {
+  public void add(@Nonnull StageExecution stage) {
     stage.setExecution(parent.getExecution());
     stage.setParentStageId(parent.getId());
     stage.setSyntheticStageOwner(type);
@@ -98,25 +99,26 @@ public class StageGraphBuilder {
 
   /**
    * Adds a new stage to the graph and makes it depend on {@code previous} via its {@link
-   * Stage#requisiteStageRefIds}.
+   * StageExecution#requisiteStageRefIds}.
    *
    * @param previous The stage the new stage will depend on. If {@code previous} does not already
    *     exist in the graph, this method will add it.
    * @param init See {@link #add(Consumer)}
    * @return the newly created stage.
    */
-  public @Nonnull Stage connect(@Nonnull Stage previous, @Nonnull Consumer<Stage> init) {
-    Stage stage = add(init);
+  public @Nonnull StageExecution connect(
+      @Nonnull StageExecution previous, @Nonnull Consumer<StageExecution> init) {
+    StageExecution stage = add(init);
     connect(previous, stage);
     return stage;
   }
 
   /**
-   * Makes {@code next} depend on {@code previous} via its {@link Stage#requisiteStageRefIds}. If
-   * either {@code next} or {@code previous} are not yet present in the graph this method will add
-   * them.
+   * Makes {@code next} depend on {@code previous} via its {@link
+   * StageExecution#requisiteStageRefIds}. If either {@code next} or {@code previous} are not yet
+   * present in the graph this method will add them.
    */
-  public void connect(@Nonnull Stage previous, @Nonnull Stage next) {
+  public void connect(@Nonnull StageExecution previous, @Nonnull StageExecution next) {
     add(previous);
     add(next);
     Set<String> requisiteStageRefIds = new HashSet<>(next.getRequisiteStageRefIds());
@@ -128,14 +130,14 @@ public class StageGraphBuilder {
   /**
    * Adds a new stage to the graph and makes it depend on the last stage that was added if any. This
    * is convenient for straightforward stage graphs to avoid having to pass around references to
-   * stages in order to use {@link #connect(Stage, Consumer)}.
+   * stages in order to use {@link #connect(StageExecution, Consumer)}.
    *
    * <p>If no stages have been added so far, this is synonymous with calling {@link #add(Consumer)}.
    *
    * @param init See {@link #add(Consumer)}
    * @return the newly created stage.
    */
-  public @Nonnull Stage append(@Nonnull Consumer<Stage> init) {
+  public @Nonnull StageExecution append(@Nonnull Consumer<StageExecution> init) {
     if (lastAdded == null) {
       return add(init);
     } else {
@@ -143,7 +145,7 @@ public class StageGraphBuilder {
     }
   }
 
-  public void append(@Nonnull Stage stage) {
+  public void append(@Nonnull StageExecution stage) {
     if (lastAdded == null) {
       add(stage);
     } else {
@@ -155,7 +157,7 @@ public class StageGraphBuilder {
    * Builds and returns the stages represented in the graph. This method is not typically useful to
    * implementors of {@link StageDefinitionBuilder}, it's used internally and by tests.
    */
-  public @Nonnull Iterable<Stage> build() {
+  public @Nonnull Iterable<StageExecution> build() {
     requiredPrefix.ifPresent(
         prefix ->
             graph
@@ -183,8 +185,8 @@ public class StageGraphBuilder {
         parent.getRefId(), type == STAGE_BEFORE ? "<" : ">", offset + graph.nodes().size());
   }
 
-  private Stage newStage(Consumer<Stage> init) {
-    Stage stage = new Stage();
+  private StageExecution newStage(Consumer<StageExecution> init) {
+    StageExecution stage = new StageExecution();
     init.accept(stage);
     return stage;
   }

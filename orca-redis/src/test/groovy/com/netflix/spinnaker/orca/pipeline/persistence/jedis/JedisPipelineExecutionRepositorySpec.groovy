@@ -23,7 +23,7 @@ import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineExecutionRepositoryTck
 import redis.clients.jedis.Jedis
@@ -648,7 +648,7 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
     repository.store(pipeline)
 
     def stage = newStage(pipeline, "whatever", "one-whatever", [:], pipeline.namedStage("one"), STAGE_BEFORE)
-    stage.lastModified = new Stage.LastModifiedDetails(user: "rfletcher@netflix.com", allowedAccounts: ["whatever"], lastModifiedTime: System.currentTimeMillis())
+    stage.lastModified = new StageExecution.LastModifiedDetails(user: "rfletcher@netflix.com", allowedAccounts: ["whatever"], lastModifiedTime: System.currentTimeMillis())
     stage.startTime = System.currentTimeMillis()
     stage.endTime = System.currentTimeMillis()
     stage.refId = "1<1"

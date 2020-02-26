@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.WaitForUpserte
 import com.netflix.spinnaker.orca.kato.tasks.securitygroup.CopySecurityGroupTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class CopySecurityGroupStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("copySecurityGroup", CopySecurityGroupTask)
       .withTask("monitorUpsert", MonitorKatoTask)

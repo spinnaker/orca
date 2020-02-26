@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -40,7 +40,7 @@ class DeregisterInstancesFromLoadBalancerTask extends AbstractInstanceLoadBalanc
   }
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
     String serverGroupName = stage.context.serverGroupName ?: stage.context.asgName

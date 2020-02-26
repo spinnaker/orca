@@ -39,8 +39,8 @@ import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.PausedDetails
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Stage.STAGE_TIMEOUT_OVERRIDE_KEY
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution.STAGE_TIMEOUT_OVERRIDE_KEY
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -1589,10 +1589,10 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           whenever(cloudProviderAwareTask.getDynamicBackoffPeriod(any(), any())) doReturn backOff.taskBackOffMs
           whenever(dynamicConfigService.getConfig(eq(Long::class.java), eq("tasks.global.backOffPeriod"), any())) doReturn backOff.globalBackOffMs
           whenever(cloudProviderAwareTask.hasCloudProvider(any())) doReturn true
-          whenever(cloudProviderAwareTask.getCloudProvider(any<Stage>())) doReturn "aws"
+          whenever(cloudProviderAwareTask.getCloudProvider(any<StageExecution>())) doReturn "aws"
           whenever(dynamicConfigService.getConfig(eq(Long::class.java), eq("tasks.aws.backOffPeriod"), any())) doReturn backOff.cloudProviderBackOffMs
           whenever(cloudProviderAwareTask.hasCredentials(any())) doReturn true
-          whenever(cloudProviderAwareTask.getCredentials(any<Stage>())) doReturn "someAccount"
+          whenever(cloudProviderAwareTask.getCredentials(any<StageExecution>())) doReturn "someAccount"
           whenever(dynamicConfigService.getConfig(eq(Long::class.java), eq("tasks.aws.someAccount.backOffPeriod"), any())) doReturn backOff.accountBackOffMs
 
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline

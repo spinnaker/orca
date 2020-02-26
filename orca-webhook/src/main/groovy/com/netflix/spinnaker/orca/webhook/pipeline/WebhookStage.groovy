@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
@@ -50,7 +50,7 @@ class WebhookStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     StageData stageData = stage.mapTo(StageData)
 
     if (stageData.monitorOnly && !stageData.waitForCompletion) {
@@ -74,7 +74,7 @@ class WebhookStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void onFailureStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder graph) {
+  void onFailureStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     new MonitorWebhookTask(webhookService).onCancel(stage)
   }
 

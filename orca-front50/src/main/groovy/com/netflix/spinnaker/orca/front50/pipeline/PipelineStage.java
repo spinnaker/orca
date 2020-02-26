@@ -25,8 +25,8 @@ import com.netflix.spinnaker.orca.front50.tasks.StartPipelineTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.StageContext;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import org.slf4j.Logger;
@@ -46,7 +46,7 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   ExecutionRepository executionRepository;
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     // only start the pipeline if no execution ID already exists
     if (stage.getContext().get("executionId") == null) {
       builder.withTask("startPipeline", StartPipelineTask.class);
@@ -67,7 +67,7 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public void prepareStageForRestart(Stage stage) {
+  public void prepareStageForRestart(StageExecution stage) {
     StageContext context = (StageContext) stage.getContext();
 
     context.remove("status");
@@ -84,7 +84,7 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public CancellableStage.Result cancel(Stage stage) {
+  public CancellableStage.Result cancel(StageExecution stage) {
     String readableStageDetails =
         format(
             "(stageId: %s, executionId: %s, context: %s)",

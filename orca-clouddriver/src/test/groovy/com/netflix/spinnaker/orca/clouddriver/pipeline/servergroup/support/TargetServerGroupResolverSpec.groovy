@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -105,9 +105,9 @@ class TargetServerGroupResolverSpec extends Specification {
     TargetServerGroup want = new TargetServerGroup(name: "testTSG", region: "north-pole")
     TargetServerGroup decoy = new TargetServerGroup(name: "testTSG", region: "south-pole")
 
-    Stage commonParent
-    Stage dtsgStage
-    Stage stageLookingForRefs
+    StageExecution commonParent
+    StageExecution dtsgStage
+    StageExecution stageLookingForRefs
     pipeline {
       commonParent = stage {
         refId = "1"

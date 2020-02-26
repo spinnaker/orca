@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servicebroker.AbstractWaitForServiceTask;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -66,7 +66,8 @@ class AbstractCloudFoundryWaitForServiceOperationTaskTest<T extends AbstractWait
     context.put("service.instance.name", serviceInstanceName);
 
     TaskResult result =
-        task.execute(new Stage(new PipelineExecution(PIPELINE, "orca"), operationType, context));
+        task.execute(
+            new StageExecution(new PipelineExecution(PIPELINE, "orca"), operationType, context));
 
     assertThat(result.getStatus().toString()).isEqualTo(expectedStatus.toString());
   }

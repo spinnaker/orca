@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.jetbrains.spek.api.Spek
@@ -127,13 +127,13 @@ internal object DeployCanaryServerGroupsStageTest : Spek({
   }
 })
 
-fun List<Stage>.named(name: String, block: Stage.() -> Unit) {
+fun List<StageExecution>.named(name: String, block: StageExecution.() -> Unit) {
   find { it.name == name }
     ?.apply(block)
-    ?: fail("Expected a stage named '$name' but found ${map(Stage::getName)}")
+    ?: fail("Expected a stage named '$name' but found ${map(StageExecution::getName)}")
 }
 
-fun StageDefinitionBuilder.beforeStages(stage: Stage) =
+fun StageDefinitionBuilder.beforeStages(stage: StageExecution) =
   StageGraphBuilder.beforeStages(stage).let { graph ->
     beforeStages(stage, graph)
     graph.build().toList().also {

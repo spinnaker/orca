@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.RestartStage
 import com.netflix.spinnaker.orca.q.StartStage
@@ -220,7 +220,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
         pipeline
           .stages
           .filter { it.parentStageId == message.stageId }
-          .map(Stage::getId)
+          .map(StageExecution::getId)
           .forEach {
             verify(repository).removeStage(pipeline, it)
           }
@@ -229,14 +229,14 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
       val nestedSyntheticStageIds = pipeline
         .stages
         .filter { it.parentStageId == message.stageId }
-        .map(Stage::getId)
+        .map(StageExecution::getId)
 
       it("removes the nested synthetic stages") {
         assertThat(nestedSyntheticStageIds).isNotEmpty
         pipeline
           .stages
           .filter { it.parentStageId in nestedSyntheticStageIds }
-          .map(Stage::getId)
+          .map(StageExecution::getId)
           .forEach {
             verify(repository).removeStage(pipeline, it)
           }
@@ -310,7 +310,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
 
     it("removes downstream stages' tasks") {
       val downstreamStageIds = setOf("2", "3").map { pipeline.stageByRef(it).id }
-      argumentCaptor<Stage>().apply {
+      argumentCaptor<StageExecution>().apply {
         verify(repository, atLeast(2)).storeStage(capture())
         downstreamStageIds.forEach {
           assertThat(allValues.map { it.id }).contains(it)
@@ -383,7 +383,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
 
     it("removes join stages' tasks") {
       val downstreamStageIds = setOf("1", "3", "4").map { pipeline.stageByRef(it).id }
-      argumentCaptor<Stage>().apply {
+      argumentCaptor<StageExecution>().apply {
         verify(repository, times(3)).storeStage(capture())
         assertThat(allValues.map { it.id }).isEqualTo(downstreamStageIds)
         allValues.forEach {
@@ -448,7 +448,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
   }
 })
 
-fun StageDefinitionBuilder.plan(stage: Stage) {
+fun StageDefinitionBuilder.plan(stage: StageExecution) {
   stage.type = type
   buildTasks(stage)
   buildBeforeStages(stage)

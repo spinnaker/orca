@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import spock.lang.Shared
 import spock.lang.Specification
@@ -49,7 +49,7 @@ class ResizeAsgStageSpec extends Specification {
     setup:
     def config = [asgName    : "testapp-asg-v000", regions: ["us-west-1", "us-east-1"], capacity: [min: 0, max: 0, desired: 0],
                   credentials: "test"]
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "resizeAsg", config)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "resizeAsg", config)
     def graphBefore = StageGraphBuilder.beforeStages(stage)
     def graphAfter = StageGraphBuilder.afterStages(stage)
 
@@ -111,7 +111,7 @@ class ResizeAsgStageSpec extends Specification {
     setup:
     def config = [cluster : "testapp-asg", target: target, regions: ["us-west-1", "us-east-1"],
                   capacity: [min: 0, max: 0, desired: 0], credentials: "test"]
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "resizeAsg", config)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "resizeAsg", config)
 
     def graphBefore = StageGraphBuilder.beforeStages(stage)
     def graphAfter = StageGraphBuilder.afterStages(stage)
@@ -158,7 +158,7 @@ class ResizeAsgStageSpec extends Specification {
     setup:
     def config = [cluster : "testapp-asg", target: target, regions: ["us-east-1"],
                   capacity: [min: 0, max: 0, desired: 0], credentials: "test"]
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "resizeAsg", config)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "resizeAsg", config)
     def graphBefore = StageGraphBuilder.beforeStages(stage)
     def graphAfter = StageGraphBuilder.afterStages(stage)
 

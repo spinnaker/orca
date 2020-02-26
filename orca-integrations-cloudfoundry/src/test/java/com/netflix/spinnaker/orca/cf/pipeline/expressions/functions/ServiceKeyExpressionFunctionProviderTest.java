@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider.FunctionDefinition;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 
@@ -72,29 +72,29 @@ class ServiceKeyExpressionFunctionProviderTest {
     Map<String, Object> contextWithoutServiceKey = createContextMap(katoTaskMapWithoutResults);
     Map<String, Object> contextWithRunningTask = createContextMap(katoTaskMapRunning);
 
-    Stage stage1 =
-        new Stage(
+    StageExecution stage1 =
+        new StageExecution(
             new PipelineExecution(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-1",
             contextWithServiceKey);
     stage1.setStatus(SUCCEEDED);
-    Stage stage2 =
-        new Stage(
+    StageExecution stage2 =
+        new StageExecution(
             new PipelineExecution(PIPELINE, "orca"),
             "deployService",
             "stage-name-2",
             contextWithoutServiceKey);
     stage2.setStatus(SUCCEEDED);
-    Stage stage3 =
-        new Stage(
+    StageExecution stage3 =
+        new StageExecution(
             new PipelineExecution(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-3",
             contextWithoutServiceKey);
     stage3.setStatus(SUCCEEDED);
-    Stage stage4 =
-        new Stage(
+    StageExecution stage4 =
+        new StageExecution(
             new PipelineExecution(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-4",
@@ -132,8 +132,8 @@ class ServiceKeyExpressionFunctionProviderTest {
         new PipelineExecution(PIPELINE, "stage-name-1", "application-name");
     Map<String, Object> contextWithoutServiceKey = createContextMap(katoTaskMapWithoutResults);
 
-    Stage stage =
-        new Stage(
+    StageExecution stage =
+        new StageExecution(
             new PipelineExecution(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-3",

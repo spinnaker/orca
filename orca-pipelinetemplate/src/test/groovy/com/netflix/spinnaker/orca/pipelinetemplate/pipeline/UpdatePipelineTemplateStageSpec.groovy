@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.pipeline.UpdatePipelineStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate.Configuration
 import spock.lang.Specification
@@ -82,7 +82,7 @@ class UpdatePipelineTemplateStageSpec extends Specification {
 
     and:
     def config = [pipelineTemplate: Base64.encoder.encodeToString(new ObjectMapper().writeValueAsString(pipelineTemplate).bytes)]
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "updatePipelineTemplate", config)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "updatePipelineTemplate", config)
     def graphBefore = StageGraphBuilder.beforeStages(stage)
     def graphAfter = StageGraphBuilder.afterStages(stage)
 

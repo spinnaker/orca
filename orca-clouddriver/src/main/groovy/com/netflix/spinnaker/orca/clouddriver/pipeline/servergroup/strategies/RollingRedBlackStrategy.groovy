@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.WaitStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -64,7 +64,7 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
   ScaleDownClusterStage scaleDownClusterStage
 
   @Override
-  List<Stage> composeBeforeStages(Stage stage) {
+  List<StageExecution> composeBeforeStages(StageExecution stage) {
     if (!pipelineStage) {
       throw new IllegalStateException("Rolling red/black cannot be run without front50 enabled. Please set 'front50.enabled: true' in your orca config.")
     }
@@ -94,7 +94,7 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
   }
 
   @Override
-  List<Stage> composeAfterStages(Stage stage) {
+  List<StageExecution> composeAfterStages(StageExecution stage) {
     def stages = []
     def stageData = stage.mapTo(RollingRedBlackStageData)
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stage)
@@ -277,7 +277,7 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
   }
 
   @Override
-  List<Stage> composeOnFailureStages(Stage parent) {
+  List<StageExecution> composeOnFailureStages(StageExecution parent) {
     def source = null
     def stages = []
 
@@ -325,11 +325,11 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
     return stages
   }
 
-  ResizeStrategy.Source lookupSourceServerGroup(Stage stage) {
+  ResizeStrategy.Source lookupSourceServerGroup(StageExecution stage) {
     ResizeStrategy.Source source = null
     StageData.Source sourceServerGroup
 
-    Stage parentCreateServerGroupStage = stage.directAncestors()
+    StageExecution parentCreateServerGroupStage = stage.directAncestors()
       .find() { it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE || it.type == CloneServerGroupStage.PIPELINE_CONFIG_TYPE }
 
     StageData parentStageData = parentCreateServerGroupStage.mapTo(StageData)
@@ -348,12 +348,12 @@ class RollingRedBlackStrategy implements Strategy, ApplicationContextAware {
     return source
   }
 
-  List<Stage> getBeforeCleanupStages(Stage parentStage,
-                                     RollingRedBlackStageData stageData,
-                                     AbstractDeployStrategyStage.CleanupConfig cleanupConfig,
-                                     String sourceServerGroupName,
-                                     String deployedServerGroupName,
-                                     int percentageComplete) {
+  List<StageExecution> getBeforeCleanupStages(StageExecution parentStage,
+                                              RollingRedBlackStageData stageData,
+                                              AbstractDeployStrategyStage.CleanupConfig cleanupConfig,
+                                              String sourceServerGroupName,
+                                              String deployedServerGroupName,
+                                              int percentageComplete) {
     def stages = []
 
     if (stageData.getDelayBeforeCleanup()) {

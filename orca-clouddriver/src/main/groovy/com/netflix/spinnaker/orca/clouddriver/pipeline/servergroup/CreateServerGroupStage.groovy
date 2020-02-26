@@ -34,7 +34,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -63,7 +63,7 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
   }
 
   @Override
-  protected List<TaskNode.TaskDefinition> basicTasks(Stage stage) {
+  protected List<TaskNode.TaskDefinition> basicTasks(StageExecution stage) {
     def taggingEnabled = featuresService.areEntityTagsAvailable()
 
     def tasks = [
@@ -89,7 +89,7 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
   }
 
   @Override
-  void onFailureStages(@Nonnull Stage stage, StageGraphBuilder graph) {
+  void onFailureStages(@Nonnull StageExecution stage, StageGraphBuilder graph) {
     def stageData = stage.mapTo(StageData)
     if (!stageData.rollback?.onFailure) {
       super.onFailureStages(stage, graph)

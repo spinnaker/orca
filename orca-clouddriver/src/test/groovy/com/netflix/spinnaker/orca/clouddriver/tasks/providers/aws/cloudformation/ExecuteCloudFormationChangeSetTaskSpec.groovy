@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
@@ -61,7 +61,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
         ]
       ]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     stage.setOutputs(outputs)
 
     when:
@@ -86,7 +86,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
       'actionOnReplacement': 'skip',
       'changeSetName': 'changeSetName'
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def outputs = [
       changeSets: [
         [
@@ -135,7 +135,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
       'deleteChangeSet': true,
       'changeSetName': 'deletedOne'
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def outputs = [
       changeSets: [
         [
@@ -162,7 +162,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
       'actionOnReplacement': 'fail',
       'changeSetName': 'changeSetName'
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     def outputs = [
       changeSets: [
         [

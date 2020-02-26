@@ -20,7 +20,7 @@ import com.netflix.spinnaker.kork.exceptions.SpinnakerException
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.orca.pipeline.model.Stage.topologicalSort
+import static StageExecution.topologicalSort
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.*
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage

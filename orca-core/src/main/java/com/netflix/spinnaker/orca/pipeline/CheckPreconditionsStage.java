@@ -23,7 +23,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.PreconditionTask;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,7 +46,7 @@ public class CheckPreconditionsStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     if (!isTopLevelStage(stage)) {
       String preconditionType = stage.getContext().get("preconditionType").toString();
       if (preconditionType == null) {
@@ -66,7 +66,7 @@ public class CheckPreconditionsStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+  public void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     if (isTopLevelStage(parent)) {
       parallelContexts(parent).stream()
           .map(
@@ -82,12 +82,12 @@ public class CheckPreconditionsStage implements StageDefinitionBuilder {
     }
   }
 
-  private boolean isTopLevelStage(Stage stage) {
+  private boolean isTopLevelStage(StageExecution stage) {
     return stage.getParentStageId() == null;
   }
 
   @SuppressWarnings("unchecked")
-  private Collection<Map<String, Object>> parallelContexts(Stage stage) {
+  private Collection<Map<String, Object>> parallelContexts(StageExecution stage) {
     stage.resolveStrategyParams();
     Map<String, Object> baseContext = new HashMap<>(stage.getContext());
     List<Map<String, Object>> preconditions =

@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesT
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.EnableServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -41,7 +41,7 @@ class EnableServerGroupStage extends TargetServerGroupLinearStageSupport {
   }
 
   @Override
-  protected void taskGraphInternal(Stage stage, TaskNode.Builder builder) {
+  protected void taskGraphInternal(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
       .withTask("enableServerGroup", EnableServerGroupTask)

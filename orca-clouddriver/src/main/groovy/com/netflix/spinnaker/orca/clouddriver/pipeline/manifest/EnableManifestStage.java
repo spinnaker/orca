@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ResolveTargetManife
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.WaitForManifestStableTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,7 +32,7 @@ public class EnableManifestStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "enableManifest";
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
         .withTask(ResolveTargetManifestTask.TASK_NAME, ResolveTargetManifestTask.class)
         .withTask(EnableManifestTask.TASK_NAME, EnableManifestTask.class)

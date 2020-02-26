@@ -6,7 +6,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.KayentaService
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -17,7 +17,7 @@ class ResolveKayentaConfigIdTask(
 
   private val log = LoggerFactory.getLogger(javaClass)
 
-  override fun execute(stage: Stage): TaskResult {
+  override fun execute(stage: StageExecution): TaskResult {
     val configName = stage.mapTo<String?>("/canaryConfigName")
     val currentApplication = stage.execution.application
     val canaryConfigList = kayentaService.getAllCanaryConfigs()

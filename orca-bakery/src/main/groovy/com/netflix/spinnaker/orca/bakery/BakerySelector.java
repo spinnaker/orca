@@ -23,7 +23,7 @@ import com.netflix.spinnaker.kork.web.selector.v2.SelectableService.Parameter;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfigurationProperties;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.*;
 import java.util.function.Function;
 
@@ -53,7 +53,7 @@ public class BakerySelector {
    * @param stage bake stage
    * @return a bakery service with associated configuration
    */
-  public SelectableService.SelectedService<BakeryService> select(Stage stage) {
+  public SelectableService.SelectedService<BakeryService> select(StageExecution stage) {
     if (!shouldSelect(stage)) {
       return new SelectableService.SelectedService<>(defaultService, defaultConfig, null);
     }
@@ -109,7 +109,7 @@ public class BakerySelector {
         baseUrls, defaultService, defaultConfig, getBakeryServiceByUrlFx);
   }
 
-  private boolean shouldSelect(Stage stage) {
+  private boolean shouldSelect(StageExecution stage) {
     if (selectableService == null || selectableService.getServices().size() < 2) {
       return false;
     }

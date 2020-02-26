@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.CaptureSour
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,14 +41,14 @@ public class GceDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  public ImmutableList<StepDefinition> additionalSteps(Stage stage) {
+  public ImmutableList<StepDefinition> additionalSteps(StageExecution stage) {
     return ImmutableList.of(
         new StepDefinition(
             "snapshotSourceServerGroup", CaptureSourceServerGroupCapacityTask.class));
   }
 
   @Override
-  public ImmutableList<StageDefinition> afterStageDefinitions(Stage stage) {
+  public ImmutableList<StageDefinition> afterStageDefinitions(StageExecution stage) {
     return ImmutableList.of(
         new StageDefinition(
             "restoreMinCapacityFromSnapshot",
@@ -57,7 +57,7 @@ public class GceDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  public boolean supports(Stage stage) {
+  public boolean supports(StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
     return stageData.getCloudProvider().equals("gce");
   }

@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 import java.time.Clock
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -50,7 +50,7 @@ class BakeStageSpec extends Specification {
       }
     }
 
-    def bakeStage = new Stage(pipeline, "bake", "Bake!", bakeStageContext + [refId: "1"])
+    def bakeStage = new StageExecution(pipeline, "bake", "Bake!", bakeStageContext + [refId: "1"])
     def builder = new BakeStage(
       clock: Clock.fixed(EPOCH.plus(1, HOURS).plus(15, MINUTES).plus(12, SECONDS), UTC),
       regionCollector: new RegionCollector()

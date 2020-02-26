@@ -69,7 +69,7 @@ public class PipelineBuilder {
         && !(Arrays.asList("aws", "titus")).contains(context.get("providerType"))) {
       type += "_" + context.get("providerType");
     }
-    pipeline.getStages().add(new Stage(pipeline, type, name, context));
+    pipeline.getStages().add(new StageExecution(pipeline, type, name, context));
     return this;
   }
 

@@ -20,7 +20,7 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.PercentileTimer
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.DelegatingExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -65,13 +65,13 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun storeStage(stage: Stage) {
+  override fun storeStage(stage: StageExecution) {
     withMetrics("storeStage") {
       executionRepository.storeStage(stage)
     }
   }
 
-  override fun updateStageContext(stage: Stage) {
+  override fun updateStageContext(stage: StageExecution) {
     withMetrics("updateStageContext") {
       executionRepository.updateStageContext(stage)
     }
@@ -83,7 +83,7 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun addStage(stage: Stage) {
+  override fun addStage(stage: StageExecution) {
     withMetrics("addStage") {
       executionRepository.addStage(stage)
     }

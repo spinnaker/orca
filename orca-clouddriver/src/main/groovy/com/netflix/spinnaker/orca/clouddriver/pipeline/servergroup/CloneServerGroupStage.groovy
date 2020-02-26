@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CloneServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.AddServerGroupEntityTagsTask
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -51,7 +51,7 @@ class CloneServerGroupStage extends AbstractDeployStrategyStage {
   }
 
   @Override
-  protected List<TaskNode.TaskDefinition> basicTasks(Stage stage) {
+  protected List<TaskNode.TaskDefinition> basicTasks(StageExecution stage) {
     def taggingEnabled = featuresService.areEntityTagsAvailable()
 
     def tasks = [

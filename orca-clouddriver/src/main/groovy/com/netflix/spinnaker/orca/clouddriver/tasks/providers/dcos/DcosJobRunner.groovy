@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.dcos
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
@@ -28,7 +28,7 @@ class DcosJobRunner implements JobRunner {
   String cloudProvider = "dcos"
 
   @Override
-  List<Map> getOperations(Stage stage) {
+  List<Map> getOperations(StageExecution stage) {
     def operation = [:]
 
     // If this stage was synthesized by a parallel deploy stage, the operation properties will be under 'cluster'.
@@ -44,7 +44,7 @@ class DcosJobRunner implements JobRunner {
   }
 
   @Override
-  Map<String, Object> getAdditionalOutputs(Stage stage, List<Map> operations) {
+  Map<String, Object> getAdditionalOutputs(StageExecution stage, List<Map> operations) {
     return [:]
   }
 }

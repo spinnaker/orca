@@ -146,7 +146,7 @@ public class ContextParameterProcessor {
    * @param stage Stage to build context for
    * @return StageContext (really a map) for the merged context
    */
-  public StageContext buildExecutionContext(Stage stage) {
+  public StageContext buildExecutionContext(StageExecution stage) {
     Map<String, Object> augmentedContext = new HashMap<>(stage.getContext());
     PipelineExecution execution = stage.getExecution();
 

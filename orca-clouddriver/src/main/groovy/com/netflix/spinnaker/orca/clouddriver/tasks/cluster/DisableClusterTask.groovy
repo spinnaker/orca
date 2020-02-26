@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.Canonical
 import org.springframework.stereotype.Component
 
@@ -41,13 +41,13 @@ class DisableClusterTask extends AbstractClusterWideClouddriverTask {
   }
 
   @Override
-  protected Map buildOperationPayload(Stage stage, TargetServerGroup serverGroup) {
+  protected Map buildOperationPayload(StageExecution stage, TargetServerGroup serverGroup) {
     DisableOperation disableOperation = stage.mapTo(DisableOperation)
     return super.buildOperationPayload(stage, serverGroup) + [desiredPercentage: disableOperation.desiredPercentage]
   }
 
   @Override
-  List<TargetServerGroup> filterServerGroups(Stage stage, String account, Location location, List<TargetServerGroup> serverGroups) {
+  List<TargetServerGroup> filterServerGroups(StageExecution stage, String account, Location location, List<TargetServerGroup> serverGroups) {
     List<TargetServerGroup> filtered = super.filterServerGroups(stage, account, location, serverGroups)
 
     def disableClusterConfig = stage.mapTo(DisableClusterConfig)

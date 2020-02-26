@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -45,7 +45,7 @@ abstract class AbstractAwsScalingProcessTask extends AbstractCloudProviderAwareT
   abstract List<String> filterProcesses(TargetServerGroup targetServerGroup, List<String> processes)
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     TargetServerGroup targetServerGroup
     if (TargetServerGroup.isDynamicallyBound(stage)) {
       // Dynamically resolved server groups look back at previous stages to find the name

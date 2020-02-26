@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.AmazonServerGr
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.GoogleServerGroupCreator
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import rx.Observable
@@ -607,14 +607,14 @@ class CreateServerGroupTaskSpec extends Specification {
 
   private def buildStageForPipeline(
     def pipeline, String stageType, def context = [:]) {
-    def stage = new Stage(pipeline, stageType, context)
+    def stage = new StageExecution(pipeline, stageType, context)
 
     pipeline.stages << stage
 
     return stage
   }
 
-  private void makeDependentOn(Stage dependent, Stage dependency) {
+  private void makeDependentOn(StageExecution dependent, StageExecution dependency) {
     if (!dependency.refId) {
       dependency.refId = UUID.randomUUID()
     }
@@ -622,7 +622,7 @@ class CreateServerGroupTaskSpec extends Specification {
     dependent.requisiteStageRefIds = [dependency.refId]
   }
 
-  private void makeChildOf(Stage child, Stage parent) {
+  private void makeChildOf(StageExecution child, StageExecution parent) {
     child.parentStageId = parent.id
   }
 

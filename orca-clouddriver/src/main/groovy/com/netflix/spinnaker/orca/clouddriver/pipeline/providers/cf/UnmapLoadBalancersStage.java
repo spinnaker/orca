@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import groovy.transform.CompileStatic;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @CompileStatic
 class UnmapLoadBalancersStage implements StageDefinitionBuilder, CloudProviderAware {
   @Override
-  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask("unmapLoadBalancers", UnmapLoadBalancersTask.class)
         .withTask("monitorTask", MonitorKatoTask.class)

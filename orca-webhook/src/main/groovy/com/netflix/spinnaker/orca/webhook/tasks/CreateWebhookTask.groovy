@@ -24,7 +24,7 @@ import com.jayway.jsonpath.JsonPath
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
@@ -52,7 +52,7 @@ class CreateWebhookTask implements RetryableTask {
   WebhookService webhookService
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     Map<String, ?> outputs = [webhook: [:]]
     WebhookStage.StageData stageData = stage.mapTo(WebhookStage.StageData)
 

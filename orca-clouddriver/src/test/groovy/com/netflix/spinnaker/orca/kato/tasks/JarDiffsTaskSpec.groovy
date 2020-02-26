@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion
 import com.netflix.spinnaker.orca.libdiffs.Library
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -168,7 +168,7 @@ class JarDiffsTaskSpec extends Specification {
     def pipe = pipeline {
       application = "app"
     }
-    def stage = new Stage(pipe, 'jarDiff', config)
+    def stage = new StageExecution(pipe, 'jarDiff', config)
 
     stage.context << deployContext
 
@@ -206,7 +206,7 @@ class JarDiffsTaskSpec extends Specification {
     def pipe = pipeline {
       application = "app"
     }
-    def stage = new Stage(pipe, 'jarDiff', config)
+    def stage = new StageExecution(pipe, 'jarDiff', config)
 
     stage.context << deployContext
 
@@ -236,7 +236,7 @@ class JarDiffsTaskSpec extends Specification {
 
   def "return success if retries limit hit"() {
     given:
-    def stage = new Stage(pipeline, "jarDiffs", [jarDiffsRetriesRemaining: 0])
+    def stage = new StageExecution(pipeline, "jarDiffs", [jarDiffsRetriesRemaining: 0])
 
     when:
     def result = task.execute(stage)

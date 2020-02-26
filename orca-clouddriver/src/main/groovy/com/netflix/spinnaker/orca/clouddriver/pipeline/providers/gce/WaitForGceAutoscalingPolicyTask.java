@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import lombok.Data;
@@ -43,7 +43,7 @@ public class WaitForGceAutoscalingPolicyTask implements RetryableTask {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     StageData data = stage.mapTo(StageData.class);
     String autoscalingMode =
         (String)

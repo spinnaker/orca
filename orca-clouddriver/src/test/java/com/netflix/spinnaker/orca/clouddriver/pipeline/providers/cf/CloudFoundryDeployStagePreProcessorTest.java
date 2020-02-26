@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ServerGroupFo
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsEmptyListForRedBlack() {
-    Stage stage = new Stage();
+    StageExecution stage = new StageExecution();
     Map<String, Object> context = new HashMap<>();
     context.put("strategy", "redblack");
     context.put("cloudProvider", "cloudfoundry");
@@ -55,7 +55,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsEmptyListIfRollbackIsNull() {
-    Stage stage = new Stage();
+    StageExecution stage = new StageExecution();
     Map<String, Object> context = new HashMap<>();
     context.put("strategy", "redblack");
     context.put("cloudProvider", "cloudfoundry");
@@ -69,7 +69,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsEmptyListIfRollbackOnFailureIsFalse() {
-    Stage stage = new Stage();
+    StageExecution stage = new StageExecution();
     Map<String, Object> context = new HashMap<>();
     context.put("strategy", "redblack");
     context.put("cloudProvider", "cloudfoundry");
@@ -84,7 +84,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsCacheRefreshAndRollbackForCfRollingRedBlack() {
-    Stage stage = new Stage();
+    StageExecution stage = new StageExecution();
     StageData.Source source = new StageData.Source();
     source.setServerGroupName("sourceServerGroupName");
     Map<String, Object> context = new HashMap<>();

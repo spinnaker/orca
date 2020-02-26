@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import spock.lang.Specification
 
@@ -32,7 +32,7 @@ class ExpressionUtilsSpec extends Specification {
     new ContextParameterProcessor(),
     new StageDefinitionBuilderFactory() {
       @Override
-      StageDefinitionBuilder builderFor(@Nonnull Stage stage) {
+      StageDefinitionBuilder builderFor(@Nonnull StageExecution stage) {
         return new EvaluateVariablesStage(new ObjectMapper())
       }
     });
@@ -104,12 +104,12 @@ class ExpressionUtilsSpec extends Specification {
 
   private static def createExecution() {
     def execution = new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "test")
-    def stage1 = new Stage(execution, "evaluateVariables")
+    def stage1 = new StageExecution(execution, "evaluateVariables")
     stage1.refId = "1"
     stage1.outputs = [varFromStage1: 100]
     execution.stages.add(stage1)
 
-    def stage2 = new Stage(execution, "evaluateVariables")
+    def stage2 = new StageExecution(execution, "evaluateVariables")
     stage2.refId = "2"
     stage2.outputs = [varFromStage2: 200]
     execution.stages.add(stage2)

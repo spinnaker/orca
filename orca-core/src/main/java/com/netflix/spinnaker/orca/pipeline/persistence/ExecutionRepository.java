@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.telemetry.Instrumented;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.time.Instant;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -31,13 +31,13 @@ import rx.Observable;
 public interface ExecutionRepository {
   void store(@Nonnull PipelineExecution execution);
 
-  void storeStage(@Nonnull Stage stage);
+  void storeStage(@Nonnull StageExecution stage);
 
-  void updateStageContext(@Nonnull Stage stage);
+  void updateStageContext(@Nonnull StageExecution stage);
 
   void removeStage(@Nonnull PipelineExecution execution, @Nonnull String stageId);
 
-  void addStage(@Nonnull Stage stage);
+  void addStage(@Nonnull StageExecution stage);
 
   @Instrumented(metricName = "cancelNullReason")
   void cancel(@Nonnull ExecutionType type, @Nonnull String id);

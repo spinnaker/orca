@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
@@ -85,7 +85,7 @@ public class ServiceKeyExpressionFunctionProvider implements ExpressionFunctionP
         .orElse(Collections.emptyMap());
   }
 
-  private static Predicate<Stage> matchesServiceKeyStage(String idOrName) {
+  private static Predicate<StageExecution> matchesServiceKeyStage(String idOrName) {
     return stage ->
         CREATE_SERVICE_KEY_STAGE_NAME.equals(stage.getType())
             && stage.getStatus() == ExecutionStatus.SUCCEEDED

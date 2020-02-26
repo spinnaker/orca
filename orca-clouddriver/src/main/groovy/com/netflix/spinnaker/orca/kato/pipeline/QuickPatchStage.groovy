@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.tasks.quip.ResolveQuipVersionTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -57,19 +57,19 @@ class QuickPatchStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "quickPatch"
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("resolveQuipVersion", ResolveQuipVersionTask)
   }
 
   @Override
-  void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     // mark as SUCCEEDED otherwise a stage w/o child tasks will remain in NOT_STARTED
     parent.status = ExecutionStatus.SUCCEEDED
   }
 
   @Override
-  void afterStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder graph) {
-    List<Stage> stages = new ArrayList<>()
+  void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
+    List<StageExecution> stages = new ArrayList<>()
     Map<String, Object> nextStageContext = new HashMap<>()
 
     def instances = getInstancesForCluster(stage)
@@ -112,7 +112,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
     stages.forEach({ graph.append(it) })
   }
 
-  Map getInstancesForCluster(Stage stage) {
+  Map getInstancesForCluster(StageExecution stage) {
     ConcurrentHashMap instances = new ConcurrentHashMap(oortHelper.getInstancesForCluster(stage.context, null, true, false))
     return instances
   }

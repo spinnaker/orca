@@ -18,12 +18,11 @@
 package com.netflix.spinnaker.orca.front50.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import retrofit.RetrofitError
 
@@ -38,7 +37,7 @@ abstract class AbstractFront50Task implements Task {
   abstract String getNotificationType()
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Front50 was not enabled. Fix this by setting front50.enabled: true")
     }

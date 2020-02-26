@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluat
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SpelEvaluatorVersion
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SUMMARY
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageContext
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import org.slf4j.Logger
@@ -46,7 +46,7 @@ interface ExpressionAware {
   val log: Logger
     get() = LoggerFactory.getLogger(javaClass)
 
-  fun Stage.withMergedContext(): Stage {
+  fun StageExecution.withMergedContext(): StageExecution {
     val evalSummary = ExpressionEvaluationSummary()
     val processed = processEntries(this, evalSummary)
     val execution = execution
@@ -99,7 +99,7 @@ interface ExpressionAware {
     return this
   }
 
-  fun Stage.includeExpressionEvaluationSummary() {
+  fun StageExecution.includeExpressionEvaluationSummary() {
     when {
       hasFailedExpressions() ->
         try {
@@ -112,11 +112,11 @@ interface ExpressionAware {
     }
   }
 
-  fun Stage.hasFailedExpressions(): Boolean =
+  fun StageExecution.hasFailedExpressions(): Boolean =
     (SUMMARY in this.context) &&
       ((this.context[SUMMARY] as Map<*, *>).size > 0)
 
-  fun Stage.shouldFailOnFailedExpressionEvaluation(): Boolean {
+  fun StageExecution.shouldFailOnFailedExpressionEvaluation(): Boolean {
     return this.hasFailedExpressions() && this.context.containsKey("failOnFailedExpressions") &&
       this.context["failOnFailedExpressions"] as Boolean
   }
@@ -131,7 +131,7 @@ interface ExpressionAware {
       mapOf("details" to mapOf("errors" to mergedErrors))
     }
 
-  private fun processEntries(stage: Stage, summary: ExpressionEvaluationSummary): StageContext {
+  private fun processEntries(stage: StageExecution, summary: ExpressionEvaluationSummary): StageContext {
     var shouldContinueProcessing = true
 
     val spelVersion = contextParameterProcessor.getEffectiveSpelVersionToUse(stage.execution.spelEvaluator)

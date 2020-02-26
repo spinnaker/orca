@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.parent
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -55,7 +55,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
     return exceptionHandler?.handle(taskName ?: "unspecified", ex)
   }
 
-  fun TaskLevel.withTask(block: (Stage, Task) -> Unit) =
+  fun TaskLevel.withTask(block: (StageExecution, Task) -> Unit) =
     withStage { stage ->
       stage
         .taskById(taskId)
@@ -69,7 +69,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
         }
     }
 
-  fun StageLevel.withStage(block: (Stage) -> Unit) =
+  fun StageLevel.withStage(block: (StageExecution) -> Unit) =
     withExecution { execution ->
       try {
         execution
@@ -79,7 +79,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
              * Mutates it.context in a required way (such as removing refId and requisiteRefIds from the
              * context map) for some non-linear stage features.
              */
-            Stage(execution, it.type, it.context)
+            StageExecution(execution, it.type, it.context)
           }
           .let(block)
       } catch (e: IllegalArgumentException) {
@@ -96,7 +96,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
       queue.push(InvalidExecutionId(this))
     }
 
-  fun Stage.startNext() {
+  fun StageExecution.startNext() {
     execution.let { execution ->
       val downstreamStages = downstreamStages()
       val phase = syntheticStageOwner

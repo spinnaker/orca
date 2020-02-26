@@ -20,14 +20,14 @@ package com.netflix.spinnaker.orca.igor.pipeline;
 import com.netflix.spinnaker.orca.igor.tasks.GetBuildPropertiesTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class GetPropertiesStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("getPropertiesFile", GetBuildPropertiesTask.class);
   }
 }

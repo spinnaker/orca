@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.SimpleStage
 import com.netflix.spinnaker.orca.api.SimpleStageInput
 import com.netflix.spinnaker.orca.api.SimpleStageOutput
 import com.netflix.spinnaker.orca.api.SimpleStageStatus
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -52,7 +53,7 @@ class SimpleTaskSpec extends Specification {
   def "should check dynamic config property"() {
     when:
     def task = new SimpleTask(myStage)
-    def results = task.execute(new com.netflix.spinnaker.orca.pipeline.model.Stage())
+    def results = task.execute(new StageExecution())
 
     then:
     results.getStatus() == ExecutionStatus.SUCCEEDED

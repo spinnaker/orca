@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.RequestBase;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -40,7 +40,7 @@ public class NotifyDeployStartingTask extends MonitoredDeployBaseTask {
 
   @Override
   public @Nonnull TaskResult executeInternal(
-      Stage stage, DeploymentMonitorDefinition monitorDefinition) {
+      StageExecution stage, DeploymentMonitorDefinition monitorDefinition) {
     RequestBase request = new RequestBase(stage);
     EvaluateHealthResponse response = monitorDefinition.getService().notifyStarting(request);
 

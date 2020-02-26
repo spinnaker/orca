@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -47,7 +47,7 @@ class DetermineSourceServerGroupTask implements RetryableTask {
   SourceResolver sourceResolver
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def stageData = stage.mapTo(StageData)
     Boolean isNotFound = false
     if (!stageData.source && !stageData.region && !stageData.availabilityZones) {
@@ -113,13 +113,13 @@ class DetermineSourceServerGroupTask implements RetryableTask {
     return TaskResult.builder(ExecutionStatus.RUNNING).context(ctx).build()
   }
 
-  Boolean useSourceCapacity(Stage stage, StageData.Source source) {
+  Boolean useSourceCapacity(StageExecution stage, StageData.Source source) {
     if (source?.useSourceCapacity != null) return source.useSourceCapacity
     if (stage.context.useSourceCapacity != null) return (stage.context.useSourceCapacity as Boolean)
     return null
   }
 
-  Boolean preferSourceCapacity(Stage stage) {
+  Boolean preferSourceCapacity(StageExecution stage) {
     return stage.context.getOrDefault("preferSourceCapacity", false)
   }
 }

@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentStep;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployInternalStageData;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.StatusExplanation;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -85,7 +85,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   @Override
-  public long getDynamicTimeout(Stage stage) {
+  public long getDynamicTimeout(StageExecution stage) {
     MonitoredDeployInternalStageData stageData =
         stage.mapTo(MonitoredDeployInternalStageData.class);
 
@@ -112,7 +112,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   @Override
-  public @Nullable TaskResult onTimeout(@Nonnull Stage stage) {
+  public @Nullable TaskResult onTimeout(@Nonnull StageExecution stage) {
     ExecutionStatus taskStatus;
     String message;
     DeploymentMonitorDefinition monitorDefinition = getDeploymentMonitorDefinition(stage);
@@ -131,7 +131,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   @Override
-  public @Nonnull TaskResult execute(@Nonnull Stage stage) {
+  public @Nonnull TaskResult execute(@Nonnull StageExecution stage) {
     MonitoredDeployStageData context = getStageContext(stage);
     DeploymentMonitorDefinition monitorDefinition = getDeploymentMonitorDefinition(stage);
 
@@ -158,12 +158,12 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   public @Nonnull TaskResult executeInternal(
-      Stage stage, DeploymentMonitorDefinition monitorDefinition) {
+      StageExecution stage, DeploymentMonitorDefinition monitorDefinition) {
     throw new UnsupportedOperationException("Must implement executeInternal method");
   }
 
   private TaskResult handleError(
-      Stage stage,
+      StageExecution stage,
       Exception e,
       boolean retryAllowed,
       DeploymentMonitorDefinition monitorDefinition) {
@@ -256,14 +256,14 @@ public class MonitoredDeployBaseTask implements RetryableTask {
     return taskResultBuilder.context("deploymentMonitorReasons", explanation).build();
   }
 
-  private DeploymentMonitorDefinition getDeploymentMonitorDefinition(Stage stage) {
+  private DeploymentMonitorDefinition getDeploymentMonitorDefinition(StageExecution stage) {
     MonitoredDeployStageData context = getStageContext(stage);
 
     return deploymentMonitorServiceProvider.getDefinitionById(
         context.getDeploymentMonitor().getId());
   }
 
-  private MonitoredDeployStageData getStageContext(Stage stage) {
+  private MonitoredDeployStageData getStageContext(StageExecution stage) {
     return stage.mapTo(MonitoredDeployStageData.class);
   }
 
@@ -291,7 +291,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
     return String.format("status: %s\nheaders: %s\nresponse body: %s", status, headers, body);
   }
 
-  private boolean shouldFailOnError(Stage stage, DeploymentMonitorDefinition definition) {
+  private boolean shouldFailOnError(StageExecution stage, DeploymentMonitorDefinition definition) {
     MonitoredDeployInternalStageData stageData =
         stage.mapTo(MonitoredDeployInternalStageData.class);
 

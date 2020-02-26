@@ -19,13 +19,13 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ServerGroupForceCacheRefreshStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("refreshServerGroup", ServerGroupCacheForceRefreshTask.class);
   }
 }

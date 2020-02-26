@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ScalingGroupDescriptionSupport;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +37,7 @@ public class ModifyScalingGroupTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     List list = new ArrayList<>();
     Map<String, Map> objectMap = new HashMap<>(16);
     Map<String, Object> context = stage.getContext();

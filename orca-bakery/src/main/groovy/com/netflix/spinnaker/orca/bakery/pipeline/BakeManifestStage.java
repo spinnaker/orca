@@ -20,14 +20,14 @@ package com.netflix.spinnaker.orca.bakery.pipeline;
 import com.netflix.spinnaker.orca.bakery.tasks.manifests.CreateBakeManifestTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import org.springframework.stereotype.Component;
 
 @Component
 public class BakeManifestStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
         .withTask("createBake", CreateBakeManifestTask.class)
         .withTask("bindProducedArtifacts", BindProducedArtifactsTask.class);

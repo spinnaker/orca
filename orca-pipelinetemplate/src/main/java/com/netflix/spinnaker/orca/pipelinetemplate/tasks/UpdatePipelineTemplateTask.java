@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +43,7 @@ public class UpdatePipelineTemplateTask implements RetryableTask, SavePipelineTe
 
   @SuppressWarnings("unchecked")
   @Override
-  public TaskResult execute(Stage stage) {
+  public TaskResult execute(StageExecution stage) {
     if (front50Service == null) {
       throw new UnsupportedOperationException(
           "Front50 is not enabled, no way to fetch pager duty. Fix this by setting front50.enabled: true");

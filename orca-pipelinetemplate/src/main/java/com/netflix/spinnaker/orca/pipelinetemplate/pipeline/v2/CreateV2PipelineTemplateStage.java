@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.pipelinetemplate.pipeline.v2;
 
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipelinetemplate.tasks.v2.CreateV2PipelineTemplateTask;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class CreateV2PipelineTemplateStage implements StageDefinitionBuilder {
 
   @Override
-  public void taskGraph(Stage stage, Builder builder) {
+  public void taskGraph(StageExecution stage, Builder builder) {
     builder.withTask("createPipelineTemplate", CreateV2PipelineTemplateTask.class);
   }
 }

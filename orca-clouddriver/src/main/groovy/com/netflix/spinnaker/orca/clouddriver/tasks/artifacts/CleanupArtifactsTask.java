@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -42,7 +42,7 @@ public class CleanupArtifactsTask extends AbstractCloudProviderAwareTask impleme
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     Map<String, Object> context = stage.getContext();
     String credentials = getCredentials(stage);
     String cloudProvider = getCloudProvider(stage);

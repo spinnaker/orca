@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Shared
@@ -39,7 +39,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
     }
 
     @Override
-    void verifyServerGroupsExist(Stage stage) {
+    void verifyServerGroupsExist(StageExecution stage) {
       // do nothing
     }
   }
@@ -50,7 +50,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
       oort.getServerGroup("test", "us-east-1", "kato-main-v000") >> { new Response('kato', 200, 'ok', [], new TypedString(mapper.writeValueAsString(serverGroup))) }
       task.oortService = oort
       def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]]]
-    def stage = new Stage(PipelineExecution.newOrchestration("orca"), "resizeAsg", context)
+    def stage = new StageExecution(PipelineExecution.newOrchestration("orca"), "resizeAsg", context)
 
     when:
       def result = task.execute(stage)
@@ -106,7 +106,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
     oort.getServerGroup("test", "us-east-1", "kato-main-v000") >> { new Response('kato', 200, 'ok', [], new TypedString(mapper.writeValueAsString(serverGroup))) }
     task.oortService = oort
     def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]]]
-    def stage = new Stage(PipelineExecution.newOrchestration("orca"), "resizeAsg", context)
+    def stage = new StageExecution(PipelineExecution.newOrchestration("orca"), "resizeAsg", context)
 
     when:
     def result = task.execute(stage)
@@ -139,7 +139,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
     oort.getServerGroup("test", "us-east-1", "kato-main-v000") >> { new Response('kato', 200, 'ok', [], new TypedString(mapper.writeValueAsString(serverGroup))) }
     task.oortService = oort
     def context = [account: "test", "deploy.server.groups": ["us-east-1": ["kato-main-v000"]]]
-    def stage = new Stage(PipelineExecution.newOrchestration("orca"), "resizeAsg", context)
+    def stage = new StageExecution(PipelineExecution.newOrchestration("orca"), "resizeAsg", context)
 
     when:
     def result = task.execute(stage)
@@ -207,7 +207,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
 
     then:
     result == task.hasSucceeded(
-      new Stage(PipelineExecution.newPipeline("orca"), "", "", context),
+      new StageExecution(PipelineExecution.newPipeline("orca"), "", "", context),
       serverGroup, instances, null
     )
 

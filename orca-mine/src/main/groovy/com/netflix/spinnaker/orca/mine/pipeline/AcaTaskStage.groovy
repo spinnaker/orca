@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.mine.tasks.MonitorAcaTaskTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterAcaTaskTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -38,7 +38,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   MineService mineService
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("registerGenericCanary", RegisterAcaTaskTask)
       .withTask("monitorGenericCanary", MonitorAcaTaskTask)
@@ -46,7 +46,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  void prepareStageForRestart(Stage stage) {
+  void prepareStageForRestart(StageExecution stage) {
     if (stage.context.canary) {
       def previousCanary = stage.context.canary.clone()
       if (!stage.context.restartDetails) stage.context.restartDetails = [:]
@@ -63,14 +63,14 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  CancellableStage.Result cancel(Stage stage) {
+  CancellableStage.Result cancel(StageExecution stage) {
     log.info("Cancelling stage (stageId: ${stage.id}, executionId: ${stage.execution.id}, context: ${stage.context as Map})")
     def cancelCanaryResults = cancelCanary(stage, "Pipeline execution (${stage.execution?.id}) canceled");
     log.info("Canceled AcaTaskStage for pipeline: ${stage.execution?.id} with results: ${cancelCanaryResults}")
     return new CancellableStage.Result(stage, ["canary": cancelCanaryResults])
   }
 
-  Map cancelCanary(Stage stage, String reason)  {
+  Map cancelCanary(StageExecution stage, String reason)  {
     if(stage?.context?.canary?.id) {
       try {
         def cancelCanaryResults = mineService.cancelCanary(stage.context.canary.id as String, reason)

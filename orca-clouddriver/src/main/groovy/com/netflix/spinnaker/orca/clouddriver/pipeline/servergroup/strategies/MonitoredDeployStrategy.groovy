@@ -35,7 +35,7 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployIntern
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.WaitStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -58,7 +58,7 @@ class MonitoredDeployStrategy implements Strategy {
   DeploymentMonitorServiceProvider deploymentMonitorServiceProvider
 
   @Override
-  List<Stage> composeBeforeStages(Stage stage) {
+  List<StageExecution> composeBeforeStages(StageExecution stage) {
     def stageData = stage.mapTo(MonitoredDeployStageData)
 
     if (stageData.deploymentMonitor?.id) {
@@ -89,7 +89,7 @@ class MonitoredDeployStrategy implements Strategy {
   }
 
   @Override
-  List<Stage> composeAfterStages(Stage stage) {
+  List<StageExecution> composeAfterStages(StageExecution stage) {
     def stages = []
     def stageData = stage.mapTo(MonitoredDeployStageData)
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stage)
@@ -247,7 +247,7 @@ class MonitoredDeployStrategy implements Strategy {
       if (stageData.deploymentMonitor?.id) {
         evalContext.currentProgress = p
 
-        Stage evaluateHealthStage = newStage(
+        StageExecution evaluateHealthStage = newStage(
           stage.execution,
           EvaluateDeploymentHealthStage.PIPELINE_CONFIG_TYPE,
           "Evaluate health of deployed instances",
@@ -281,7 +281,7 @@ class MonitoredDeployStrategy implements Strategy {
         preferLargerOverNewer        : false,
 
       ]
-      Stage scaleDownStage = newStage(
+      StageExecution scaleDownStage = newStage(
         stage.execution,
         ScaleDownClusterStage.PIPELINE_CONFIG_TYPE,
         "scaleDown",
@@ -322,7 +322,7 @@ class MonitoredDeployStrategy implements Strategy {
         allowDeleteActive    : false,
         retainLargerOverNewer: false
       ]
-      Stage shrinkClusterStage = newStage(
+      StageExecution shrinkClusterStage = newStage(
         stage.execution,
         ShrinkClusterStage.STAGE_TYPE,
         "shrinkCluster",
@@ -337,7 +337,7 @@ class MonitoredDeployStrategy implements Strategy {
     }
 
     if (stageData.deploymentMonitor?.id) {
-      Stage notifyDeployCompletedStage = newStage(
+      StageExecution notifyDeployCompletedStage = newStage(
         stage.execution,
         NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy complete",
@@ -355,7 +355,7 @@ class MonitoredDeployStrategy implements Strategy {
   }
 
   @Override
-  List<Stage> composeOnFailureStages(Stage parent) {
+  List<StageExecution> composeOnFailureStages(StageExecution parent) {
     def source = null
     def stages = []
 
@@ -428,7 +428,7 @@ class MonitoredDeployStrategy implements Strategy {
     return stages
   }
 
-  List<Stage> composeRollbackStages(Stage parent) {
+  List<StageExecution> composeRollbackStages(StageExecution parent) {
     CreateServerGroupStage.StageData stageData = parent.mapTo(CreateServerGroupStage.StageData)
     MonitoredDeployStageData monitoredDeployStageData = parent.mapTo(MonitoredDeployStageData)
     String deployedServerGroupName = stageData.getServerGroup()
@@ -446,7 +446,7 @@ class MonitoredDeployStrategy implements Strategy {
       return Collections.emptyList()
     }
 
-    List<Stage> stages = new ArrayList<>()
+    List<StageExecution> stages = new ArrayList<>()
 
     stages << newStage(
       parent.execution,
@@ -492,11 +492,11 @@ class MonitoredDeployStrategy implements Strategy {
     return stages
   }
 
-  ResizeStrategy.Source lookupSourceServerGroup(Stage stage) {
+  ResizeStrategy.Source lookupSourceServerGroup(StageExecution stage) {
     ResizeStrategy.Source source = null
     StageData.Source sourceServerGroup
 
-    Stage parentCreateServerGroupStage = stage.directAncestors()
+    StageExecution parentCreateServerGroupStage = stage.directAncestors()
       .find() {
         it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE || it.type == CloneServerGroupStage.PIPELINE_CONFIG_TYPE
       }

@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.titus.TitusServerG
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -44,7 +44,7 @@ class DetermineHealthProvidersTaskSpec extends Specification {
   @Unroll
   def "should set interestingHealthProviderNames based on application config"() {
     given:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "", stageContext)
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "", stageContext)
 
     if (application) {
       1 * front50Service.get(application.name) >> application

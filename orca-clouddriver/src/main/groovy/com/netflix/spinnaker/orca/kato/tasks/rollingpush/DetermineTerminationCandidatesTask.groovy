@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -35,7 +35,7 @@ class DetermineTerminationCandidatesTask implements Task {
   ObjectMapper objectMapper
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def stageData = stage.mapTo(StageData)
     def response = oortService.getServerGroupFromCluster(stageData.application, stageData.account, stageData.cluster, stage.context.asgName, stage.context.region, stage.context.cloudProvider ?: 'aws')
     def serverGroup = objectMapper.readValue(response.body.in(), Map)

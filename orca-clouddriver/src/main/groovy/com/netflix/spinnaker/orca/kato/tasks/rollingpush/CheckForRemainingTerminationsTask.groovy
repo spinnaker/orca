@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.stereotype.Component
 
 import java.time.Instant
@@ -28,7 +28,7 @@ import java.time.Instant
 class CheckForRemainingTerminationsTask implements Task {
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def remainingTerminations = stage.context.terminationInstanceIds as List<String>
 
     if (!remainingTerminations) {

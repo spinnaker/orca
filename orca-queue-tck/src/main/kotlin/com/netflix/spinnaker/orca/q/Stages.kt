@@ -21,14 +21,14 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import java.lang.RuntimeException
 
 val singleTaskStage = object : StageDefinitionBuilder {
   override fun getType() = "singleTaskStage"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 }
@@ -39,7 +39,7 @@ val zeroTaskStage = object : StageDefinitionBuilder {
 
 val multiTaskStage = object : StageDefinitionBuilder {
   override fun getType() = "multiTaskStage"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder
       .withTask<DummyTask>("dummy1")
       .withTask<DummyTask>("dummy2")
@@ -49,11 +49,11 @@ val multiTaskStage = object : StageDefinitionBuilder {
 
 val stageWithSyntheticBefore = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticBefore"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
-  override fun beforeStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.append(newStage(parent.execution, singleTaskStage.type, "pre1", parent.context, parent, STAGE_BEFORE))
     graph.append(newStage(parent.execution, singleTaskStage.type, "pre2", parent.context, parent, STAGE_BEFORE))
   }
@@ -61,11 +61,11 @@ val stageWithSyntheticBefore = object : StageDefinitionBuilder {
 
 val stageWithSyntheticOnFailure = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticOnFailure"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
-  override fun onFailureStages(stage: Stage, graph: StageGraphBuilder) {
+  override fun onFailureStages(stage: StageExecution, graph: StageGraphBuilder) {
     graph.append {
       it.type = singleTaskStage.type
       it.name = "onFailure1"
@@ -82,7 +82,7 @@ val stageWithSyntheticOnFailure = object : StageDefinitionBuilder {
 val stageWithSyntheticBeforeAndNoTasks = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticBeforeAndNoTasks"
 
-  override fun beforeStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.append(newStage(parent.execution, singleTaskStage.type, "pre", parent.context, parent, STAGE_BEFORE))
   }
 }
@@ -90,22 +90,22 @@ val stageWithSyntheticBeforeAndNoTasks = object : StageDefinitionBuilder {
 val stageWithSyntheticBeforeAndAfterAndNoTasks = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticBeforeAndAfterAndNoTasks"
 
-  override fun beforeStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.append(newStage(parent.execution, singleTaskStage.type, "pre", parent.context, parent, STAGE_BEFORE))
   }
 
-  override fun afterStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.append(newStage(parent.execution, singleTaskStage.type, "post", parent.context, parent, STAGE_AFTER))
   }
 }
 
 val stageWithSyntheticAfter = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticAfter"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
-  override fun afterStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.append {
       it.type = singleTaskStage.type
       it.name = "post1"
@@ -121,11 +121,11 @@ val stageWithSyntheticAfter = object : StageDefinitionBuilder {
 
 val stageWithParallelAfter = object : StageDefinitionBuilder {
   override fun getType() = "stageWithParallelAfter"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
-  override fun afterStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.add {
       it.type = singleTaskStage.type
       it.name = "post1"
@@ -142,7 +142,7 @@ val stageWithParallelAfter = object : StageDefinitionBuilder {
 val stageWithSyntheticAfterAndNoTasks = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticAfterAndNoTasks"
 
-  override fun afterStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.append(newStage(parent.execution, singleTaskStage.type, "post", parent.context, parent, STAGE_AFTER))
   }
 }
@@ -150,13 +150,13 @@ val stageWithSyntheticAfterAndNoTasks = object : StageDefinitionBuilder {
 val stageWithNestedSynthetics = object : StageDefinitionBuilder {
   override fun getType() = "stageWithNestedSynthetics"
 
-  override fun afterStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
     graph.append(newStage(parent.execution, stageWithSyntheticBefore.type, "post", parent.context, parent, STAGE_AFTER))
   }
 }
 
 val stageWithParallelBranches = object : StageDefinitionBuilder {
-  override fun beforeStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     listOf("us-east-1", "us-west-2", "eu-west-1")
       .map { region ->
         newStage(parent.execution, singleTaskStage.type, "run in $region", parent.context + mapOf("region" to region), parent, STAGE_BEFORE)
@@ -165,14 +165,14 @@ val stageWithParallelBranches = object : StageDefinitionBuilder {
         graph.add(stage) }
   }
 
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder.withTask<DummyTask>("post-branch")
   }
 }
 
 val rollingPushStage = object : StageDefinitionBuilder {
   override fun getType() = "rolling"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder
       .withTask<DummyTask>("beforeLoop")
       .withLoop { subGraph ->
@@ -187,14 +187,14 @@ val rollingPushStage = object : StageDefinitionBuilder {
 
 val webhookStage = object : StageDefinitionBuilder {
   override fun getType() = "webhook"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     builder.withTask<DummyTask>("createWebhook")
   }
 }
 
 val failPlanningStage = object : StageDefinitionBuilder {
   override fun getType() = "failPlanning"
-  override fun taskGraph(stage: Stage, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: Builder) {
     throw RuntimeException("o noes")
   }
 }

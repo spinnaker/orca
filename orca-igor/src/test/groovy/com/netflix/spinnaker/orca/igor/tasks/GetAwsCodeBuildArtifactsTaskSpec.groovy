@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.RetrofitError
 import spock.lang.Specification
 import spock.lang.Subject
@@ -43,7 +43,7 @@ class GetAwsCodeBuildArtifactsTaskSpec extends Specification {
         Artifact.builder().reference("abc").name("abc").build(),
         Artifact.builder().reference("def").name("def").build()
     ]
-    def stage = new Stage(execution, "awsCodeBuild", [
+    def stage = new StageExecution(execution, "awsCodeBuild", [
         account: ACCOUNT,
         buildInfo: [
             arn: ARN
@@ -62,7 +62,7 @@ class GetAwsCodeBuildArtifactsTaskSpec extends Specification {
 
   def "task returns RUNNING when communcation with igor fails"() {
     given:
-    def stage = new Stage(execution, "awsCodeBuild", [
+    def stage = new StageExecution(execution, "awsCodeBuild", [
         account: ACCOUNT,
         buildInfo: [
             arn: ARN

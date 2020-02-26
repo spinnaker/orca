@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalan
 import com.netflix.spinnaker.orca.kato.tasks.CopyAmazonLoadBalancerTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class CopyAmazonLoadBalancerStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("copyAmazonLoadBalancer", CopyAmazonLoadBalancerTask)
       .withTask("monitorCopy", MonitorKatoTask)

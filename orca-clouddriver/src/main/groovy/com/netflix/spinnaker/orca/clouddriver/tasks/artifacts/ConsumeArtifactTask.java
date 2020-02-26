@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.io.InputStream;
 import java.util.Map;
@@ -50,7 +50,7 @@ public class ConsumeArtifactTask implements Task {
   }
 
   @Override
-  public TaskResult execute(@NonNull Stage stage) {
+  public TaskResult execute(@NonNull StageExecution stage) {
     Map<String, Object> task = stage.getContext();
     String artifactId = (String) task.get("consumeArtifactId");
 

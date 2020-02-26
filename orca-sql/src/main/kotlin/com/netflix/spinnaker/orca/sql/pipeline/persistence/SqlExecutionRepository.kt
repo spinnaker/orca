@@ -38,7 +38,7 @@ import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.PausedDetails
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -129,13 +129,13 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun storeStage(stage: Stage) {
+  override fun storeStage(stage: StageExecution) {
     withPool(poolName) {
       jooq.transactional { storeStageInternal(it, stage) }
     }
   }
 
-  override fun updateStageContext(stage: Stage) {
+  override fun updateStageContext(stage: StageExecution) {
     validateHandledPartitionOrThrow(stage.execution)
 
     storeStage(stage)
@@ -152,7 +152,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun addStage(stage: Stage) {
+  override fun addStage(stage: StageExecution) {
     if (stage.syntheticStageOwner == null || stage.parentStageId == null) {
       throw SyntheticStageRequired()
     }
@@ -755,7 +755,7 @@ class SqlExecutionRepository(
     }
   }
 
-  private fun storeStageInternal(ctx: DSLContext, stage: Stage, executionId: String? = null) {
+  private fun storeStageInternal(ctx: DSLContext, stage: StageExecution, executionId: String? = null) {
     val stageTable = stage.execution.type.stagesTableName
     val table = stage.execution.type.tableName
     val body = mapper.writeValueAsString(stage)

@@ -19,7 +19,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import org.slf4j.LoggerFactory
@@ -111,11 +111,11 @@ class DualExecutionRepository(
     select(execution).store(execution)
   }
 
-  override fun storeStage(stage: Stage) {
+  override fun storeStage(stage: StageExecution) {
     select(stage.execution).storeStage(stage)
   }
 
-  override fun updateStageContext(stage: Stage) {
+  override fun updateStageContext(stage: StageExecution) {
     select(stage.execution).updateStageContext(stage)
   }
 
@@ -123,7 +123,7 @@ class DualExecutionRepository(
     select(execution).removeStage(execution, stageId)
   }
 
-  override fun addStage(stage: Stage) {
+  override fun addStage(stage: StageExecution) {
     select(stage.execution).addStage(stage)
   }
 

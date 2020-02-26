@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,12 +38,12 @@ class HighlanderStrategy implements Strategy, ApplicationContextAware {
   ApplicationContext applicationContext
 
   @Override
-  List<Stage> composeBeforeStages(Stage parent) {
+  List<StageExecution> composeBeforeStages(StageExecution parent) {
     return Collections.emptyList()
   }
 
   @Override
-  List<Stage> composeAfterStages(Stage stage) {
+  List<StageExecution> composeAfterStages(StageExecution stage) {
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stage)
     Map shrinkContext = [
         (cleanupConfig.location.singularType()): cleanupConfig.location.value,

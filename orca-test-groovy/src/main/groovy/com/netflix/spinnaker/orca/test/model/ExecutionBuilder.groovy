@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.test.model
 
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileStatic
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static groovy.lang.Closure.DELEGATE_FIRST
@@ -68,15 +68,15 @@ class ExecutionBuilder {
   }
 
   /**
-   * Constructs and returns a {@link Stage} instance.
+   * Constructs and returns a {@link StageExecution} instance.
    *
    * @param builder used for customizing the stage.
    * @return a stage.
    */
-  static Stage stage(
-    @DelegatesTo(value = Stage, strategy = DELEGATE_FIRST)
+  static StageExecution stage(
+    @DelegatesTo(value = StageExecution, strategy = DELEGATE_FIRST)
       Closure builder = {}) {
-    def stage = new Stage()
+    def stage = new StageExecution()
     stage.type = "test"
 
     def execution = findExecution(builder) ?: pipeline()
@@ -111,11 +111,11 @@ class ExecutionBuilder {
     }
   }
 
-  private static Stage findParentStage(Closure closure) {
+  private static StageExecution findParentStage(Closure closure) {
     if (closure.owner instanceof Closure) {
       def enclosingClosure = (closure.owner as Closure)
-      if (enclosingClosure.delegate instanceof Stage) {
-        return enclosingClosure.delegate as Stage
+      if (enclosingClosure.delegate instanceof StageExecution) {
+        return enclosingClosure.delegate as StageExecution
       } else {
         return findParentStage(enclosingClosure)
       }

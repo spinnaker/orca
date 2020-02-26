@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Shared
@@ -32,7 +32,7 @@ import spock.lang.Unroll
 class WaitForAllNetflixAWSInstancesDownTaskSpec extends Specification {
   @Subject task = new WaitForAllNetflixAWSInstancesDownTask() {
     @Override
-    void verifyServerGroupsExist(Stage stage) {
+    void verifyServerGroupsExist(StageExecution stage) {
       // do nothing
     }
   }
@@ -68,7 +68,7 @@ class WaitForAllNetflixAWSInstancesDownTaskSpec extends Specification {
     }
 
     and:
-    def stage = new Stage(pipeline, "asgActionWaitForDownInstances", [
+    def stage = new StageExecution(pipeline, "asgActionWaitForDownInstances", [
       "targetop.asg.enableAsg.name"   : "front50-v000",
       "targetop.asg.enableAsg.regions": ['us-west-1'],
       "account.name"                  : "test"
@@ -82,7 +82,7 @@ class WaitForAllNetflixAWSInstancesDownTaskSpec extends Specification {
   @Unroll
   void 'should succeed as #hasSucceeded based on instance providers #healthProviderNames for instances #instances'() {
     given:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "")
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "")
 
     expect:
     hasSucceeded == task.hasSucceeded(stage, [minSize: 0], instances, healthProviderNames)

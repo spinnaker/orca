@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.kato.pipeline.ResizeAsgStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -41,7 +41,7 @@ class ResizeAsgTask implements Task {
   ResizeSupport resizeSupport
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def operation = convert(stage)
     def taskId = kato.requestOperations([[resizeAsgDescription: operation]])
                      .toBlocking()
@@ -59,7 +59,7 @@ class ResizeAsgTask implements Task {
     ]).build()
   }
 
-  Map convert(Stage stage) {
+  Map convert(StageExecution stage) {
     Map context = stage.context
     if (targetReferenceSupport.isDynamicallyBound(stage)) {
       def targetReference = targetReferenceSupport.getDynamicallyBoundTargetAsgReference(stage)

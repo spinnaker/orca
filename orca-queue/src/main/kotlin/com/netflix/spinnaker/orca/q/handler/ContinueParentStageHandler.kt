@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ext.allAfterStagesComplete
 import com.netflix.spinnaker.orca.ext.allBeforeStagesSuccessful
 import com.netflix.spinnaker.orca.ext.anyBeforeStagesFailed
 import com.netflix.spinnaker.orca.ext.hasTasks
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CompleteStage
@@ -67,7 +67,7 @@ class ContinueParentStageHandler(
     }
   }
 
-  private fun Stage.runFirstTask() {
+  private fun StageExecution.runFirstTask() {
     val firstTask = tasks.first()
     if (firstTask.status == NOT_STARTED) {
       queue.push(StartTask(this, firstTask))

@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.test.SqlTestUtil.TestDatabase
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineExecutionRepositoryTck
 import org.jooq.impl.DSL
@@ -91,7 +91,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     given:
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution e = new PipelineExecution(PIPELINE, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage", [foo: 'FOO']))
 
     when:
     repo.store(e)
@@ -110,7 +110,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     given:
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution e = new PipelineExecution(PIPELINE, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage", [foo: 'FOO']))
     e.partition = "foreign"
 
     when:
@@ -127,7 +127,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     given:
     ExecutionRepository repo = createExecutionRepository(null)
     PipelineExecution e = new PipelineExecution(PIPELINE, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage", [foo: 'FOO']))
     e.partition = "foreign"
 
     when:
@@ -141,7 +141,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     given:
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution e = new PipelineExecution(PIPELINE, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage", [foo: 'FOO']))
     repo.store(e)
 
     currentDatabase.context
@@ -179,7 +179,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     def id = ulid.nextULID()
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution e = new PipelineExecution(PIPELINE, id, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage", [foo: 'FOO']))
 
     when:
     repo.store(e)
@@ -198,7 +198,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     def id = UUID.randomUUID().toString()
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution e = new PipelineExecution(PIPELINE, id, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage", [foo: 'FOO']))
 
     when:
     repo.store(e)
@@ -217,7 +217,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     def id = UUID.randomUUID().toString()
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution e = new PipelineExecution(PIPELINE, id, "myapp")
-    Stage s = new Stage(e, "wait", "wait stage", [foo: 2])
+    StageExecution s = new StageExecution(e, "wait", "wait stage", [foo: 2])
     // try to create cyclic reference
     s.context.foo = s
     e.stages.add(s)
@@ -239,7 +239,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     def id = ulid.nextULID()
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution orig = new PipelineExecution(PIPELINE, id, "myapp")
-    orig.stages.add(new Stage(orig, "wait", "wait stage 0", [foo: 'FOO']))
+    orig.stages.add(new StageExecution(orig, "wait", "wait stage 0", [foo: 'FOO']))
     repo.store(orig)
 
     when:
@@ -256,7 +256,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     def id = UUID.randomUUID().toString()
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution orig = new PipelineExecution(PIPELINE, id, "myapp")
-    orig.stages.add(new Stage(orig, "wait", "wait stage 0", [foo: 'FOO']))
+    orig.stages.add(new StageExecution(orig, "wait", "wait stage 0", [foo: 'FOO']))
     repo.store(orig)
 
     when:
@@ -273,7 +273,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     given:
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution orig = new PipelineExecution(PIPELINE, "myapp")
-    orig.stages.add(new Stage(orig, "wait", "wait stage 0", [foo: 'FOO']))
+    orig.stages.add(new StageExecution(orig, "wait", "wait stage 0", [foo: 'FOO']))
     repo.store(orig)
 
     when:
@@ -295,7 +295,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     def id = UUID.randomUUID().toString()
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution orig = new PipelineExecution(PIPELINE, id, "myapp")
-    orig.stages.add(new Stage(orig, "wait", "wait stage 0", [foo: 'FOO']))
+    orig.stages.add(new StageExecution(orig, "wait", "wait stage 0", [foo: 'FOO']))
     repo.store(orig)
 
     when:
@@ -316,13 +316,13 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     given:
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution orig = new PipelineExecution(PIPELINE, "myapp")
-    orig.stages.add(new Stage(orig, "wait", "wait stage", [foo: 'FOO']))
+    orig.stages.add(new StageExecution(orig, "wait", "wait stage", [foo: 'FOO']))
     repo.store(orig)
 
     when:
     PipelineExecution e = new PipelineExecution(PIPELINE, orig.id, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage 1", [foo: 'FOO']))
-    e.stages.add(new Stage(e, "wait", "wait stage 2", [bar: 'BAR']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage 1", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage 2", [bar: 'BAR']))
     repo.store(e)
 
     def pipelines = repo.retrieve(PIPELINE).toList().toBlocking().single()
@@ -342,13 +342,13 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     def id = UUID.randomUUID().toString()
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution orig = new PipelineExecution(PIPELINE, id, "myapp")
-    orig.stages.add(new Stage(orig, "wait", "wait stage", [foo: 'FOO']))
+    orig.stages.add(new StageExecution(orig, "wait", "wait stage", [foo: 'FOO']))
     repo.store(orig)
 
     when:
     PipelineExecution e = new PipelineExecution(PIPELINE, id, "myapp")
-    e.stages.add(new Stage(e, "wait", "wait stage 1", [foo: 'FOO']))
-    e.stages.add(new Stage(e, "wait", "wait stage 2", [bar: 'BAR']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage 1", [foo: 'FOO']))
+    e.stages.add(new StageExecution(e, "wait", "wait stage 2", [bar: 'BAR']))
     repo.store(e)
 
     def pipelines = repo.retrieve(PIPELINE).toList().toBlocking().single()
@@ -366,7 +366,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
     given:
     ExecutionRepository repo = createExecutionRepository()
     PipelineExecution orig = new PipelineExecution(PIPELINE, "myapp")
-    orig.stages.add(new Stage(orig, "wait", "wait stage", [foo: 'FOO']))
+    orig.stages.add(new StageExecution(orig, "wait", "wait stage", [foo: 'FOO']))
     repo.store(orig)
 
     when:

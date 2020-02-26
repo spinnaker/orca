@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -471,7 +471,7 @@ class TaskController {
       stage.context.putAll(context)
       validateStageUpdate(stage)
 
-      stage.lastModified = new Stage.LastModifiedDetails(
+      stage.lastModified = new StageExecution.LastModifiedDetails(
         user: AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
         allowedAccounts: AuthenticatedRequest.getSpinnakerAccounts().orElse(null)?.split(",") ?: [],
         lastModifiedTime: System.currentTimeMillis()
@@ -488,7 +488,7 @@ class TaskController {
   }
 
   // If other execution mutations need validation, factor this out.
-  void validateStageUpdate(Stage stage) {
+  void validateStageUpdate(StageExecution stage) {
     if (stage.context.manualSkip
       && !stageDefinitionBuilderFactory.builderFor(stage)?.canManuallySkip()) {
       throw new CannotUpdateExecutionStage("Cannot manually skip stage.")
@@ -561,7 +561,7 @@ class TaskController {
  * Adds trigger and execution to stage context so that expression evaluation can be tested.
  * This is not great, because it's brittle, but it's very useful to be able to test expressions.
  */
-  private Map<String, Object> augmentContext(Stage stage) {
+  private Map<String, Object> augmentContext(StageExecution stage) {
     Map<String, Object> augmentedContext = stage.context
     augmentedContext.put("trigger", stage.execution.trigger)
     augmentedContext.put("execution", stage.execution)

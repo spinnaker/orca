@@ -45,7 +45,7 @@ class CreateBakeTaskSpec extends Specification {
 
   @Subject
     task = new CreateBakeTask()
-  Stage bakeStage
+  StageExecution bakeStage
   def mapper = OrcaObjectMapper.newInstance()
 
   ArtifactUtils artifactUtils = Stub() {

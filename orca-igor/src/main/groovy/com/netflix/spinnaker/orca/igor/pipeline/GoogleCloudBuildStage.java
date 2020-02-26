@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.igor.tasks.MonitorGoogleCloudBuildTask;
 import com.netflix.spinnaker.orca.igor.tasks.StartGoogleCloudBuildTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class GoogleCloudBuildStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     GoogleCloudBuildStageDefinition stageDefinition =
         stage.mapTo(GoogleCloudBuildStageDefinition.class);
     builder

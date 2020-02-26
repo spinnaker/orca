@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
@@ -44,8 +44,8 @@ public final class TaskResult {
   /**
    * Pipeline-scoped data.
    *
-   * <p>Data stored in outputs will be available (via {@link Stage#getContext()} to tasks in later
-   * stages of the pipeline.
+   * <p>Data stored in outputs will be available (via {@link StageExecution#getContext()} to tasks
+   * in later stages of the pipeline.
    */
   @Singular("output")
   private final ImmutableMap<String, ?> outputs;

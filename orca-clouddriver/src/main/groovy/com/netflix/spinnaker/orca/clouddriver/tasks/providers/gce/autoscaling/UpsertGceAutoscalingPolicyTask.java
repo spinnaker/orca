@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +47,7 @@ public class UpsertGceAutoscalingPolicyTask extends AbstractCloudProviderAwareTa
   }
 
   @Override
-  public TaskResult execute(Stage stage) {
+  public TaskResult execute(StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
     TargetServerGroup targetServerGroup;
     if (TargetServerGroup.isDynamicallyBound(stage)) {

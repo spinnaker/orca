@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.dryrun
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.q.buildBeforeStages
 import com.netflix.spinnaker.orca.q.buildTasks
 import com.netflix.spinnaker.orca.q.multiTaskStage
@@ -36,7 +36,7 @@ import org.jetbrains.spek.api.dsl.on
 
 object DryRunStageTest : Spek({
 
-  fun StageDefinitionBuilder.plan(stage: Stage) {
+  fun StageDefinitionBuilder.plan(stage: StageExecution) {
     stage.type = type
     buildTasks(stage)
     buildBeforeStages(stage)

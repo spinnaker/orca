@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
@@ -51,7 +51,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
 
   def "retrieves values from a property file if specified"() {
     given:
-    def stage = new Stage(execution, "jenkins", [master: MASTER, job: JOB, buildNumber: 4, propertyFile: PROPERTY_FILE])
+    def stage = new StageExecution(execution, "jenkins", [master: MASTER, job: JOB, buildNumber: 4, propertyFile: PROPERTY_FILE])
 
     and:
     buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >> [val1: "one", val2: "two"]
@@ -66,7 +66,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
 
   def "retrieves complex from a property file"() {
     given:
-    def stage = new Stage(execution, "jenkins", [master: "builds", job: "orca", buildNumber: 4, propertyFile: PROPERTY_FILE])
+    def stage = new StageExecution(execution, "jenkins", [master: "builds", job: "orca", buildNumber: 4, propertyFile: PROPERTY_FILE])
 
     and:
     buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >>
@@ -82,11 +82,11 @@ class GetBuildPropertiesTaskSpec extends Specification {
 
   def "resolves artifact from a property file"() {
     given:
-    def stage = new Stage(execution, "jenkins", [master           : MASTER,
-                                                 job              : JOB,
-                                                 buildNumber      : BUILD_NUMBER,
-                                                 propertyFile     : PROPERTY_FILE,
-                                                 expectedArtifacts: [[matchArtifact: [type: "docker/image"]],]])
+    def stage = new StageExecution(execution, "jenkins", [master           : MASTER,
+                                                          job              : JOB,
+                                                          buildNumber      : BUILD_NUMBER,
+                                                          propertyFile     : PROPERTY_FILE,
+                                                          expectedArtifacts: [[matchArtifact: [type: "docker/image"]],]])
     def bindTask = new BindProducedArtifactsTask()
 
     and:
@@ -168,7 +168,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
   }
 
   def createStage(String propertyFile) {
-    return new Stage(Stub(PipelineExecution), "jenkins", [
+    return new StageExecution(Stub(PipelineExecution), "jenkins", [
       master: MASTER,
       job: JOB,
       buildNumber: BUILD_NUMBER,

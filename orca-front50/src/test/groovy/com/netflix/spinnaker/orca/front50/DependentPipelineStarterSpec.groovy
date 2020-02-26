@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
@@ -548,7 +548,7 @@ class DependentPipelineStarterSpec extends Specification {
     1 * executionLauncher.start(*_) >> {
       def p = mapper.readValue(it[1], Map)
       return pipeline {
-        JavaType type = mapper.getTypeFactory().constructCollectionType(List, Stage)
+        JavaType type = mapper.getTypeFactory().constructCollectionType(List, StageExecution)
         trigger = mapper.convertValue(p.trigger, Trigger)
         stages.addAll(mapper.convertValue(p.stages, type))
       }
@@ -682,7 +682,7 @@ class DependentPipelineStarterSpec extends Specification {
       execution = it[0]
       execution = mapper.readValue(it[1], Map)
       return pipeline {
-        JavaType type = mapper.getTypeFactory().constructCollectionType(List, Stage)
+        JavaType type = mapper.getTypeFactory().constructCollectionType(List, StageExecution)
         trigger = mapper.convertValue(execution.trigger, Trigger)
         stages.addAll(mapper.convertValue(execution.stages, type))
       }

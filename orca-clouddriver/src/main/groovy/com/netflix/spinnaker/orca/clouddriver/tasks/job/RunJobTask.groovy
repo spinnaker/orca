@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -47,19 +47,19 @@ class RunJobTask extends AbstractCloudProviderAwareTask implements RetryableTask
 
   @Override
   @Nullable
-  TaskResult onTimeout(@Nonnull Stage stage) {
+  TaskResult onTimeout(@Nonnull StageExecution stage) {
     jobUtils.cancelWait(stage)
 
     return null;
   }
 
   @Override
-  void onCancel(@Nonnull Stage stage) {
+  void onCancel(@Nonnull StageExecution stage) {
     jobUtils.cancelWait(stage)
   }
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     String credentials = getCredentials(stage)
     String cloudProvider = getCloudProvider(stage)
 

@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -63,10 +63,10 @@ data class StartTask(
   constructor(source: StageLevel, taskId: String) :
     this(source, source.stageId, taskId)
 
-  constructor(source: Stage, taskId: String) :
+  constructor(source: StageExecution, taskId: String) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, taskId)
 
-  constructor(source: Stage, task: com.netflix.spinnaker.orca.pipeline.model.Task) :
+  constructor(source: StageExecution, task: com.netflix.spinnaker.orca.pipeline.model.Task) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, task.id)
 }
 
@@ -153,7 +153,7 @@ data class StartStage(
   constructor(source: StageLevel) :
     this(source, source.stageId)
 
-  constructor(source: Stage) :
+  constructor(source: StageExecution) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -171,7 +171,7 @@ data class ContinueParentStage(
   constructor(source: StageLevel, phase: SyntheticStageOwner) :
     this(source.executionType, source.executionId, source.application, source.stageId, phase)
 
-  constructor(source: Stage, phase: SyntheticStageOwner) :
+  constructor(source: StageExecution, phase: SyntheticStageOwner) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, phase)
 }
 
@@ -188,7 +188,7 @@ data class CompleteStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(source: Stage) :
+  constructor(source: StageExecution) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -202,7 +202,7 @@ data class SkipStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(source: Stage) :
+  constructor(source: StageExecution) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -216,7 +216,7 @@ data class AbortStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(source: Stage) :
+  constructor(source: StageExecution) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -245,7 +245,7 @@ data class RestartStage(
   constructor(source: PipelineExecution, stageId: String, user: String?) :
     this(source.type, source.id, source.application, stageId, user)
 
-  constructor(stage: Stage, user: String?) :
+  constructor(stage: StageExecution, user: String?) :
     this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id, user)
 }
 
@@ -259,7 +259,7 @@ data class ResumeStage(
   constructor(source: ExecutionLevel, stageId: String) :
     this(source.executionType, source.executionId, source.application, stageId)
 
-  constructor(source: Stage) :
+  constructor(source: StageExecution) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -273,7 +273,7 @@ data class CancelStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(stage: Stage) :
+  constructor(stage: StageExecution) :
     this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id)
 }
 

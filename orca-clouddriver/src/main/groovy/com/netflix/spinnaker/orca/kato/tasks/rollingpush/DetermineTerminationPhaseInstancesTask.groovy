@@ -20,14 +20,14 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstanceSupport
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.stereotype.Component
 
 @Component
 class DetermineTerminationPhaseInstancesTask implements Task {
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     List<String> terms = stage.context.terminationInstanceIds as List<String>
     int concurrentRelaunches = (stage.context.termination?.concurrentRelaunches as Integer) ?: 1
 

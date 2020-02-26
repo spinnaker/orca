@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.isInitial
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -131,7 +131,7 @@ class HydrateQueueCommand(
     )
   }
 
-  private fun processStage(stage: Stage): List<Action> {
+  private fun processStage(stage: StageExecution): List<Action> {
     if (stage.status == NOT_STARTED) {
       if (stage.allUpstreamStagesComplete()) {
         return listOf(Action(
@@ -177,7 +177,7 @@ class HydrateQueueCommand(
     return listOf()
   }
 
-  private fun processTask(stage: Stage, task: Task): Action {
+  private fun processTask(stage: StageExecution, task: Task): Action {
     return if (task.status == RUNNING) {
       if (task.isRetryable()) {
         Action(
@@ -265,13 +265,13 @@ class HydrateQueueCommand(
   private fun Task.isRetryable(): Boolean =
     RetryableTask::class.java.isAssignableFrom(type)
 
-  private fun Stage.toActionContext() = ActionContext(
+  private fun StageExecution.toActionContext() = ActionContext(
     stageId = id,
     stageType = type,
     stageStartTime = startTime
   )
 
-  private fun Task.toActionContext(stage: Stage) = stage.toActionContext().copy(
+  private fun Task.toActionContext(stage: StageExecution) = stage.toActionContext().copy(
     taskId = id,
     taskType = name,
     taskStartTime = startTime

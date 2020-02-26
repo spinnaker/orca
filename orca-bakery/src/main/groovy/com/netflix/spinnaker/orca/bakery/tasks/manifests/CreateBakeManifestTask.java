@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
 import com.netflix.spinnaker.orca.bakery.api.manifests.helm.HelmBakeManifestRequest;
 import com.netflix.spinnaker.orca.bakery.api.manifests.kustomize.KustomizeBakeManifestRequest;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.Collections;
@@ -73,7 +73,7 @@ public class CreateBakeManifestTask implements RetryableTask {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     if (bakery == null) {
       throw new IllegalStateException(
           "A BakeryService must be configured in order to run a Bake Manifest task.");

@@ -18,7 +18,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -29,7 +29,7 @@ class WaitForAllInstancesNotUpTaskSpec extends Specification {
   @Unroll
   void "should succeed as #hasSucceeded based on instance providers #healthProviderNames for instances #instances"() {
     given:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "")
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "")
 
     expect:
     hasSucceeded == task.hasSucceeded(stage, [minSize: 0], instances, healthProviderNames)

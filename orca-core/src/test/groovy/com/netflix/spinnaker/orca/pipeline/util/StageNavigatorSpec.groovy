@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.util
 
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -156,8 +156,8 @@ class StageNavigatorSpec extends Specification {
     }
   }
 
-  private Stage buildStage(String type) {
-    def pipelineStage = new Stage(execution, type)
+  private StageExecution buildStage(String type) {
+    def pipelineStage = new StageExecution(execution, type)
 
     execution.stages << pipelineStage
 

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -50,7 +50,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
           ]
         ]
       ]
-      def stage = new Stage(pipeline, 'test', 'test', context)
+      def stage = new StageExecution(pipeline, 'test', 'test', context)
       stage.setOutputs(outputs)
     when:
       def result = evaluateCloudFormationChangeSetExecutionTask.execute(stage)
@@ -88,7 +88,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
         ]
       ]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     stage.setOutputs(outputs)
     when:
     def result = evaluateCloudFormationChangeSetExecutionTask.execute(stage)
@@ -121,7 +121,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
         ]
       ]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecution(pipeline, 'test', 'test', context)
     stage.setOutputs(outputs)
     when:
     def result = evaluateCloudFormationChangeSetExecutionTask.execute(stage)

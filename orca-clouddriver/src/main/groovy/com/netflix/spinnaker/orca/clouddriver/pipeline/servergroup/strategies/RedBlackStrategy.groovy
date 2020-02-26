@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGr
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.WaitStage
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
@@ -52,17 +52,17 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
   ApplicationContext applicationContext
 
   @Override
-  List<Stage> composeBeforeStages(Stage parent) {
+  List<StageExecution> composeBeforeStages(StageExecution parent) {
     return Collections.emptyList()
   }
 
   @Override
-  List<Stage> composeAfterStages(Stage stage) {
-    List<Stage> stages = new ArrayList<>()
+  List<StageExecution> composeAfterStages(StageExecution stage) {
+    List<StageExecution> stages = new ArrayList<>()
     StageData stageData = stage.mapTo(StageData)
     Map<String, Object> baseContext = AbstractDeployStrategyStage.CleanupConfig.toContext(stageData)
 
-    Stage parentCreateServerGroupStage = stage.directAncestors().find() { it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE || it.type == CloneServerGroupStage.PIPELINE_CONFIG_TYPE }
+    StageExecution parentCreateServerGroupStage = stage.directAncestors().find() { it.type == CreateServerGroupStage.PIPELINE_CONFIG_TYPE || it.type == CloneServerGroupStage.PIPELINE_CONFIG_TYPE }
     if (parentCreateServerGroupStage == null) {
       throw new IllegalStateException("Failed to determine source server group from parent stage while planning red/black flow")
     }

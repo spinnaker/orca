@@ -20,8 +20,6 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.annotations.VisibleForTesting
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.kork.exceptions.SpinnakerException
-import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
@@ -29,13 +27,12 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SystemNotification
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
@@ -76,7 +73,7 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
   long getTimeout() { 3600000L }
 
   @Override
-  long getDynamicBackoffPeriod(Stage stage, Duration taskDuration) {
+  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     if ((stage.context."kato.task.lastStatus" as ExecutionStatus) == ExecutionStatus.TERMINAL) {
       return Math.max(backoffPeriod, TimeUnit.MINUTES.toMillis(2))
     }
@@ -84,7 +81,7 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
   }
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     TaskId taskId = stage.context."kato.last.task.id" as TaskId
     if (!taskId) {
       return TaskResult.ofStatus(ExecutionStatus.SUCCEEDED)

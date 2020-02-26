@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelStage
 import com.netflix.spinnaker.orca.q.CompleteExecution
@@ -107,14 +107,14 @@ class CompleteExecutionHandler(
   }
 
   private val PipelineExecution.topLevelStages
-    get(): List<Stage> = stages.filter { it.parentStageId == null }
+    get(): List<StageExecution> = stages.filter { it.parentStageId == null }
 
   private fun PipelineExecution.shouldOverrideSuccess(): Boolean =
     stages
       .filter { it.status == STOPPED }
       .any { it.context["completeOtherBranchesThenFail"] == true }
 
-  private fun List<Stage>.otherBranchesIncomplete() =
+  private fun List<StageExecution>.otherBranchesIncomplete() =
     any { it.status == RUNNING } ||
       any { it.status == NOT_STARTED && it.allUpstreamStagesComplete() }
 

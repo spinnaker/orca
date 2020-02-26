@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -59,7 +59,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
   }
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     LBUpsertContext context = stage.mapTo(LBUpsertContext.class)
 
     if (!context.refreshState.hasRequested) {
@@ -89,7 +89,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
   }
 
   @Override
-  long getDynamicBackoffPeriod(Stage stage, Duration taskDuration) {
+  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     LBUpsertContext context = stage.mapTo(LBUpsertContext.class)
     if (context.refreshState.seenPendingCacheUpdates) {
       return getBackoffPeriod()
@@ -100,7 +100,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
     }
   }
 
-  private TaskResult requestCacheUpdates(Stage stage, LBUpsertContext context) {
+  private TaskResult requestCacheUpdates(StageExecution stage, LBUpsertContext context) {
     String cloudProvider = getCloudProvider(stage)
 
     List<Boolean> requestStatuses = new ArrayList<>()
@@ -146,7 +146,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
     }
   }
 
-  private void checkPending(Stage stage, LBUpsertContext context) {
+  private void checkPending(StageExecution stage, LBUpsertContext context) {
     String cloudProvider = getCloudProvider(stage)
 
     Collection<Map> pendingCacheUpdates = retrySupport.retry({

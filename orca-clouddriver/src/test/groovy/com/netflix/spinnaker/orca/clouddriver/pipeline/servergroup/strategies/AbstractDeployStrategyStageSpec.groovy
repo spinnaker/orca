@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -52,7 +52,7 @@ class AbstractDeployStrategyStageSpec extends Specification {
       noStrategy = noStrat
     }
 
-    Stage stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever", [strategy: specifiedStrategy])
+    StageExecution stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", [strategy: specifiedStrategy])
 
     when:
     def tasks = testStage.buildTaskGraph(stage)

@@ -21,7 +21,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import spock.lang.Specification
 import spock.lang.Subject
@@ -187,7 +187,7 @@ class RestrictPipelineExecutionDuringTimeWindowSpec extends Specification {
       maxDelay: max,
       minDelay: min
     ]
-    Stage restrictExecutionStage = stage([window("10:00", "13:00")], jitterContext)
+    StageExecution restrictExecutionStage = stage([window("10:00", "13:00")], jitterContext)
 
     restrictExecutionDuringTimeWindow.taskGraph(restrictExecutionStage, builder)
 
@@ -233,18 +233,18 @@ class RestrictPipelineExecutionDuringTimeWindowSpec extends Specification {
     return [startHour: startHour, startMin: startMin, endHour: endHour, endMin: endMin]
   }
 
-  private Stage stage(List<Map> windows) {
+  private StageExecution stage(List<Map> windows) {
     Map restrictedExecutionWindow = [whitelist: windows]
     Map context = [restrictedExecutionWindow: restrictedExecutionWindow]
     def pipeline = PipelineExecution.newPipeline("orca")
-    return new Stage(pipeline, "testRestrictExecution", context)
+    return new StageExecution(pipeline, "testRestrictExecution", context)
   }
 
-  private Stage stage(List<Map> windows, Map<String, Object> jitterContext) {
+  private StageExecution stage(List<Map> windows, Map<String, Object> jitterContext) {
     Map restrictedExecutionWindow = [whitelist: windows]
     restrictedExecutionWindow.jitter = jitterContext
     Map context = [restrictedExecutionWindow: restrictedExecutionWindow]
     def pipeline = PipelineExecution.newPipeline("orca")
-    return new Stage(pipeline, "testRestrictExecution", context)
+    return new StageExecution(pipeline, "testRestrictExecution", context)
   }
 }

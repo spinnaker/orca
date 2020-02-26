@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -40,7 +40,7 @@ class AddServerGroupEntityTagsTaskSpec extends Specification {
 
   void "should return with failed/continue status if tagging operation fails"() {
     when:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever", [
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", [
       "deploy.server.groups": [
         "us-east-1": ["foo-v001"]
       ]
@@ -57,7 +57,7 @@ class AddServerGroupEntityTagsTaskSpec extends Specification {
     AddServerGroupEntityTagsTask emptyTask = new AddServerGroupEntityTagsTask(kato: katoService, tagGenerators: [])
 
     when:
-    def stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever", [
+    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", [
       "deploy.server.groups": [
         "us-east-1": ["foo-v001"],
       ]

@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
@@ -44,10 +44,10 @@ class RunCanaryIntervalsStage(private val clock: Clock) : StageDefinitionBuilder
     .newInstance()
     .disable(WRITE_DATES_AS_TIMESTAMPS) // we want Instant serialized as ISO string
 
-  override fun taskGraph(stage: Stage, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
   }
 
-  private fun getDeployDetails(stage: Stage): DeployedServerGroupContext? {
+  private fun getDeployDetails(stage: StageExecution): DeployedServerGroupContext? {
     val deployedServerGroupsStage = stage.parent?.execution?.stages?.find {
       it.type == DeployCanaryServerGroupsStage.STAGE_TYPE && it.parentStageId == stage.parentStageId
     }
@@ -59,7 +59,7 @@ class RunCanaryIntervalsStage(private val clock: Clock) : StageDefinitionBuilder
     return DeployedServerGroupContext.from(data)
   }
 
-  override fun beforeStages(parent: Stage, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     val canaryConfig = parent.mapTo<KayentaCanaryContext>("/canaryConfig")
 
     val lifetime: Duration = if (canaryConfig.endTime != null) {

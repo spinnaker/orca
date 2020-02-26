@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.U
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
@@ -95,8 +95,8 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
 
     fun execute(context: Map<String, Any?>) =
       subject.execute(
-        Stage(
-          PipelineExecution(Execution.ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
+        StageExecution(
+          PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
           PipelineExecution.ExecutionType.PIPELINE.toString(),
           context
         )

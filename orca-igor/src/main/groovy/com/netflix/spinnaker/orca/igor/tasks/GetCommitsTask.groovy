@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -55,7 +55,7 @@ class GetCommitsTask implements DiffTask {
   Front50Service front50Service
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     def retriesRemaining = stage.context.getCommitsRetriesRemaining != null ? stage.context.getCommitsRetriesRemaining : MAX_RETRIES
     // is igor not configured or have we exceeded configured retries
     if (!scmService || retriesRemaining == 0) {

@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import spock.lang.Specification
 import spock.lang.Subject
@@ -45,7 +45,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
 
   def "should start a build"() {
     given:
-    def stage = new Stage(execution, "awsCodeBuild", [account: ACCOUNT, projectName: PROJECT_NAME])
+    def stage = new StageExecution(execution, "awsCodeBuild", [account: ACCOUNT, projectName: PROJECT_NAME])
 
     when:
     TaskResult result = task.execute(stage)
@@ -58,7 +58,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
 
   def "should not override source if sourceOverride is false"() {
     given:
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         getDefaultContext(false)
@@ -82,7 +82,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .reference(artifactReference)
         .version("master")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -114,7 +114,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("https://github.com/codebuild/repo.git")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         context
@@ -139,7 +139,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("http://enterprise.com/repo.git")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         context
@@ -162,7 +162,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("unknown")
         .reference("location")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -183,7 +183,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("location")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -205,7 +205,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .reference("location")
         .artifactAccount("my-codebuild-account")
         .metadata([subPath: "path"]).build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -229,7 +229,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .reference("https://github.com/codebuild/repo.git")
         .version("master")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         context
@@ -247,7 +247,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
 
   def "should correctly append image, buildspec and env vars"() {
     given:
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         getDefaultContext(false)
@@ -275,7 +275,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     def context = getDefaultContext(false)
     context.source.buildspec = ""
     context.image = ""
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         context
@@ -322,7 +322,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("https://github.com/codebuild/another-repo.git")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         context
@@ -393,7 +393,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("https://github.com/codebuild/another-repo.git")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecution(
         execution,
         "awsCodeBuild",
         context

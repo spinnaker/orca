@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceLinearStageSupport
 import com.netflix.spinnaker.orca.kato.tasks.EnableAsgTask
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component
 @Deprecated
 class EnableAsgStage extends TargetReferenceLinearStageSupport {
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("enableAsg", EnableAsgTask)
       .withTask("monitorAsg", MonitorKatoTask)

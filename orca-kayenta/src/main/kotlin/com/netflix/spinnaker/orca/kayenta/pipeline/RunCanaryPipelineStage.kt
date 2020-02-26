@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.kayenta.tasks.RunKayentaCanaryTask
 import com.netflix.spinnaker.orca.kayenta.tasks.ResolveKayentaConfigIdTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.lang.String.format
@@ -39,7 +39,7 @@ class RunCanaryPipelineStage(
 
   private val log = LoggerFactory.getLogger(javaClass)
 
-  override fun taskGraph(stage: Stage, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
       val context = stage.mapTo<RunCanaryContext>()
       if (context.canaryConfigId.isNullOrEmpty()) {
         if (context.canaryConfigName.isNullOrEmpty()) {
@@ -56,7 +56,7 @@ class RunCanaryPipelineStage(
     return STAGE_TYPE
   }
 
-  override fun cancel(stage: Stage): CancellableStage.Result {
+  override fun cancel(stage: StageExecution): CancellableStage.Result {
     val context = stage.context
     val canaryPipelineExecutionId = context["canaryPipelineExecutionId"] as String?
 

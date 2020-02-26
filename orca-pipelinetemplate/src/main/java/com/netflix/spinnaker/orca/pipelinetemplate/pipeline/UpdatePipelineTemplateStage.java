@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.front50.pipeline.UpdatePipelineStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipelinetemplate.tasks.PlanTemplateDependentsTask;
 import com.netflix.spinnaker.orca.pipelinetemplate.tasks.UpdatePipelineTemplateTask;
@@ -44,7 +44,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
   private UpdatePipelineStage updatePipelineStage;
 
   @Override
-  public void taskGraph(Stage stage, Builder builder) {
+  public void taskGraph(StageExecution stage, Builder builder) {
     if (!Boolean.valueOf(
         stage.getContext().getOrDefault("skipPlanDependents", "false").toString())) {
       builder.withTask("planDependentPipelines", PlanTemplateDependentsTask.class);
@@ -54,7 +54,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void afterStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder graph) {
+  public void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     if (front50Service == null) {
       return;
     }
@@ -80,7 +80,8 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
         .forEach(graph::append);
   }
 
-  private Stage configureSavePipelineStage(Stage stage, Map<String, Object> pipeline) {
+  private StageExecution configureSavePipelineStage(
+      StageExecution stage, Map<String, Object> pipeline) {
     Map<String, Object> context = new HashMap<>();
 
     try {

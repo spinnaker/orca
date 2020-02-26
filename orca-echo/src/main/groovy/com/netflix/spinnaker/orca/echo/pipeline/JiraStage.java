@@ -19,14 +19,14 @@ package com.netflix.spinnaker.orca.echo.pipeline;
 import com.netflix.spinnaker.orca.echo.tasks.CreateJiraIssueTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JiraStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("createJiraIssue", CreateJiraIssueTask.class);
   }
 }

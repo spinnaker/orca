@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -61,7 +61,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
   DynamicConfigService dynamicConfigService
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("restoreMinCapacity", ApplySourceServerGroupCapacityTask)
       .withTask("waitForCapacityMatch", MonitorKatoTask)
@@ -72,7 +72,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void afterStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     try {
       def taggingEnabled = featuresService.areEntityTagsAvailable()
       if (!taggingEnabled) {
@@ -105,7 +105,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
     }
   }
 
-  private static List<Map> fetchEntityTags(OortService oortService, RetrySupport retrySupport, Stage stage) {
+  private static List<Map> fetchEntityTags(OortService oortService, RetrySupport retrySupport, StageExecution stage) {
     def serverGroupName = stage.context.serverGroupName
     def credentials = stage.context.credentials
     def region = getRegion(stage)
@@ -131,7 +131,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
     }, 5, 2000, false)
   }
 
-  private static String getRegion(Stage stage) {
+  private static String getRegion(StageExecution stage) {
     return ((Map<String, Object>) stage.context."deploy.server.groups")?.keySet()?.getAt(0)
   }
 }

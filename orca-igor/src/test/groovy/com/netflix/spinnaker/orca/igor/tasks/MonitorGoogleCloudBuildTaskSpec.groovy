@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import retrofit.RetrofitError
 import spock.lang.Specification
 import spock.lang.Subject
@@ -44,7 +44,7 @@ class MonitorGoogleCloudBuildTaskSpec extends Specification {
       .id(BUILD_ID)
       .status(GoogleCloudBuild.Status.valueOf(buildStatus))
       .build()
-    def stage = new Stage(execution, "googleCloudBuild", [
+    def stage = new StageExecution(execution, "googleCloudBuild", [
       account: ACCOUNT,
       buildInfo: [
         id: BUILD_ID
@@ -74,7 +74,7 @@ class MonitorGoogleCloudBuildTaskSpec extends Specification {
 
   def "task returns RUNNING when communcation with igor fails"() {
     given:
-    def stage = new Stage(execution, "googleCloudBuild", [
+    def stage = new StageExecution(execution, "googleCloudBuild", [
       account: ACCOUNT,
       buildInfo: [
         id: BUILD_ID

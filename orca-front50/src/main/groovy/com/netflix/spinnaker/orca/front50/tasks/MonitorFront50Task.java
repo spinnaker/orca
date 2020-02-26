@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.DeliveryConfig;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -76,7 +76,7 @@ public class MonitorFront50Task implements RetryableTask {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     if (front50Service == null) {
       throw new UnsupportedOperationException(
           "Front50 was not enabled. Fix this by setting front50.enabled: true");

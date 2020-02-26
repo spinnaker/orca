@@ -22,8 +22,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.StageContext;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.EvaluateVariablesTask;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.*;
@@ -44,13 +44,13 @@ public class EvaluateVariablesStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("evaluateVariables", EvaluateVariablesTask.class);
   }
 
   @Override
   public boolean processExpressions(
-      @Nonnull Stage stage,
+      @Nonnull StageExecution stage,
       @Nonnull ContextParameterProcessor contextParameterProcessor,
       @Nonnull ExpressionEvaluationSummary summary) {
 

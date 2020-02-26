@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerG
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.AbstractServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,7 +49,7 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
   ExecutionRepository executionRepository
 
   @Override
-  Map convert(Stage stage) {
+  Map convert(StageExecution stage) {
     try {
       TargetServerGroupContext operationContext = getTargetServerGroupContext(stage)
 
@@ -99,7 +99,7 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
   }
 
   @Override
-  Moniker convertMoniker(Stage stage) {
+  Moniker convertMoniker(StageExecution stage) {
     // Used in AbstractServerGroupTask.execute() but not needed here.
     return null
   }
@@ -109,7 +109,7 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
    *
    * This may exist either on the current stage (if a Rollback) or on an upstream deploy stage (if a standard deploy)
    */
-  TargetServerGroupContext getTargetServerGroupContext(Stage stage) {
+  TargetServerGroupContext getTargetServerGroupContext(StageExecution stage) {
     if (stage.context.target) {
       // target server group coordinates have been explicitly provided (see RollbackServerGroupStage)
       def ancestorCaptureStage = getAncestorSnapshotStage(stage)
@@ -152,7 +152,7 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
    *
    * This can either be in the current pipeline or a dependent child pipeline in the event of a 'custom' deploy strategy.
    */
-  static Stage getAncestorDeployStage(ExecutionRepository executionRepository, Stage stage) {
+  static StageExecution getAncestorDeployStage(ExecutionRepository executionRepository, StageExecution stage) {
     def deployStage = getAncestorSnapshotStage(stage)
     if (deployStage.context.strategy == "custom") {
       def pipelineStage = stage.execution.stages.find {
@@ -170,12 +170,12 @@ class ApplySourceServerGroupCapacityTask extends AbstractServerGroupTask {
   /**
    * Find an ancestor (or synthetic sibling) stage w/ `sourceServerGroupCapacitySnapshot` in it's context.
    */
-  static Stage getAncestorSnapshotStage(Stage stage) {
+  static StageExecution getAncestorSnapshotStage(StageExecution stage) {
     def ancestors = stage.ancestors().findAll { ancestorStage ->
       ancestorStage.context.containsKey("sourceServerGroupCapacitySnapshot")
     }
 
-    Stage ancestor = (ancestors != null && !ancestors.isEmpty()) ? ancestors[0] : stage.execution.stages.find {
+    StageExecution ancestor = (ancestors != null && !ancestors.isEmpty()) ? ancestors[0] : stage.execution.stages.find {
       // find a synthetic sibling w/ 'sourceServerGroupCapacitySnapshot' in the event of there being no suitable
       // ancestors (ie. rollback stages)
       it.context.containsKey("sourceServerGroupCapacitySnapshot") && it.parentStageId == stage.parentStageId

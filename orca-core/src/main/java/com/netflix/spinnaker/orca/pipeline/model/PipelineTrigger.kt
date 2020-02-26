@@ -38,7 +38,7 @@ data class PipelineTrigger
   override var resolvedExpectedArtifacts: List<ExpectedArtifact> = mutableListOf()
 
   @JsonIgnore
-  val parentStage: Stage? =
+  val parentStage: StageExecution? =
     if (parentPipelineStageId != null) {
       parentExecution.stageById(parentPipelineStageId)
     } else {

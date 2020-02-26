@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -30,7 +30,7 @@ class DeployCloudFormationStageTest extends Specification {
 
   def "should return CloudFormation execution ID"() {
     given:
-    def stage = new Stage(new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "testApp"), "cf", [:])
+    def stage = new StageExecution(new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "testApp"), "cf", [:])
 
     when:
     if (isChangeSet) {

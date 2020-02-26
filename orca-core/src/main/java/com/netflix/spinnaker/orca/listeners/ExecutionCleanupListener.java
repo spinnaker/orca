@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.listeners;
 
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.List;
 
 public class ExecutionCleanupListener implements ExecutionListener {
@@ -37,7 +37,7 @@ public class ExecutionCleanupListener implements ExecutionListener {
       return;
     }
 
-    List<Stage> stages = execution.getStages();
+    List<StageExecution> stages = execution.getStages();
     stages.forEach(
         it -> {
           if (it.getContext().containsKey("targetReferences")) {

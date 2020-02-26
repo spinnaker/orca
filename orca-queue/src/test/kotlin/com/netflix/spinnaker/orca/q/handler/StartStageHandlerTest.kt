@@ -35,7 +35,7 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -558,7 +558,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("injects a 'wait for execution window' stage before any other synthetic stages") {
-          argumentCaptor<Stage>().apply {
+          argumentCaptor<StageExecution>().apply {
             verify(repository, times(3)).addStage(capture())
             assertSoftly {
               assertThat(firstValue.type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
@@ -599,7 +599,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("injects a 'wait for execution window' stage before any other synthetic stages") {
-          argumentCaptor<Stage>().apply {
+          argumentCaptor<StageExecution>().apply {
             verify(repository, times(4)).addStage(capture())
             assertSoftly {
               assertThat(firstValue.type)
@@ -919,7 +919,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("does not build more synthetic stages") {
         val stage = pipeline.stageById(message.stageId)
-        assertThat(pipeline.stages.mapNotNull(Stage::getParentStageId))
+        assertThat(pipeline.stages.mapNotNull(StageExecution::getParentStageId))
           .doesNotContain(stage.id)
       }
     }

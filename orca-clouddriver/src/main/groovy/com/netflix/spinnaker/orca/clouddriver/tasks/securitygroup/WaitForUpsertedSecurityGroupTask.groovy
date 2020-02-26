@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -35,7 +35,7 @@ class WaitForUpsertedSecurityGroupTask implements RetryableTask, CloudProviderAw
   List<SecurityGroupUpserter> securityGroupUpserters
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     def upserter = securityGroupUpserters.find { it.cloudProvider == cloudProvider }
     if (!upserter) {

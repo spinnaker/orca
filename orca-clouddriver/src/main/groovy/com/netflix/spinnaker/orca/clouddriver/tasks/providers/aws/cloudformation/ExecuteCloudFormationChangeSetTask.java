@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,7 +48,7 @@ public class ExecuteCloudFormationChangeSetTask extends AbstractCloudProviderAwa
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
 
     String actionOnReplacement =
         (String)
@@ -115,7 +115,7 @@ public class ExecuteCloudFormationChangeSetTask extends AbstractCloudProviderAwa
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
   }
 
-  private Optional<Map> getCurrentChangeSet(Stage stage) {
+  private Optional<Map> getCurrentChangeSet(StageExecution stage) {
     String changeSetName = (String) stage.getContext().get("changeSetName");
 
     Map outputs = stage.getOutputs();

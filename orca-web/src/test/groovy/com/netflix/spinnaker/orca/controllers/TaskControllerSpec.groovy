@@ -132,7 +132,7 @@ class TaskControllerSpec extends Specification {
     def orchestration = orchestration {
       id = "1"
       application = "covfefe"
-      stages << new Stage(delegate, "OrchestratedType")
+      stages << new StageExecution(delegate, "OrchestratedType")
       stages.first().context = [customOutput: "variable"]
     }
 
@@ -333,7 +333,7 @@ class TaskControllerSpec extends Specification {
   void 'should update existing stage context'() {
     given:
     def pipeline = PipelineExecution.newPipeline("covfefe")
-    def pipelineStage = new Stage(pipeline, "test", [value: "1"])
+    def pipelineStage = new StageExecution(pipeline, "test", [value: "1"])
     pipelineStage.id = "s1"
     pipeline.stages.add(pipelineStage)
 
@@ -351,7 +351,7 @@ class TaskControllerSpec extends Specification {
         stage.context == [
         judgmentStatus: "stop", value: "1", lastModifiedBy: "anonymous"
       ]
-    } as Stage)
+    } as StageExecution)
     1 * executionRunner.reschedule(pipeline)
     0 * _
 

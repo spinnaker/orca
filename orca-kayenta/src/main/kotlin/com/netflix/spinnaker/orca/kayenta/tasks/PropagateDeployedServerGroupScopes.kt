@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryServerGroupsStage.Companion.DEPLOY_CONTROL_SERVER_GROUPS
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryServerGroupsStage.Companion.DEPLOY_EXPERIMENT_SERVER_GROUPS
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.stereotype.Component
 
 @Component
@@ -39,7 +39,7 @@ class PropagateDeployedServerGroupScopes(
     return accountId
   }
 
-  override fun execute(stage: Stage): TaskResult {
+  override fun execute(stage: StageExecution): TaskResult {
     val serverGroupPairs =
       stage.childrenOf(DEPLOY_CONTROL_SERVER_GROUPS) zip stage.childrenOf(DEPLOY_EXPERIMENT_SERVER_GROUPS)
 
@@ -66,7 +66,7 @@ class PropagateDeployedServerGroupScopes(
   }
 }
 
-private fun Stage.childrenOf(name: String): List<Stage> {
+private fun StageExecution.childrenOf(name: String): List<StageExecution> {
   val stage = execution.stages.find {
     it.name == name &&
       it.topLevelStage == topLevelStage

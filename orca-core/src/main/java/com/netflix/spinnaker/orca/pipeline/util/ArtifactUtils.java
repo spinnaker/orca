@@ -28,8 +28,8 @@ import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.StageContext;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.io.IOException;
@@ -71,7 +71,7 @@ public class ArtifactUtils {
     this.contextParameterProcessor = contextParameterProcessor;
   }
 
-  public List<Artifact> getArtifacts(Stage stage) {
+  public List<Artifact> getArtifacts(StageExecution stage) {
     if (!(stage.getContext() instanceof StageContext)) {
       log.warn(
           "Unable to read artifacts from unknown context type: {} ({})",
@@ -94,12 +94,12 @@ public class ArtifactUtils {
   }
 
   private List<Artifact> getAllArtifacts(
-      PipelineExecution execution, Predicate<Stage> stageFilter) {
+      PipelineExecution execution, Predicate<StageExecution> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
     List<Artifact> emittedArtifacts =
-        Stage.topologicalSort(execution.getStages())
+        StageExecution.topologicalSort(execution.getStages())
             .filter(stageFilter)
             .filter(s -> s.getOutputs().containsKey("artifacts"))
             .flatMap(s -> ((List<?>) s.getOutputs().get("artifacts")).stream())
@@ -126,7 +126,7 @@ public class ArtifactUtils {
    * @return A bound artifact with expressions evaluated.
    */
   public @Nullable Artifact getBoundArtifactForStage(
-      Stage stage, @Nullable String id, @Nullable Artifact artifact) {
+      StageExecution stage, @Nullable String id, @Nullable Artifact artifact) {
     Artifact boundArtifact = id != null ? getBoundArtifactForId(stage, id) : artifact;
     Map<String, Object> boundArtifactMap =
         objectMapper.convertValue(boundArtifact, new TypeReference<Map<String, Object>>() {});
@@ -138,7 +138,7 @@ public class ArtifactUtils {
     return objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
   }
 
-  public @Nullable Artifact getBoundArtifactForId(Stage stage, @Nullable String id) {
+  public @Nullable Artifact getBoundArtifactForId(StageExecution stage, @Nullable String id) {
     if (StringUtils.isEmpty(id)) {
       return null;
     }

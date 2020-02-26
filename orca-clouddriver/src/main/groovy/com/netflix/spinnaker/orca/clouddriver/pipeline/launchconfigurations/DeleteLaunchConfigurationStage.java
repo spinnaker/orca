@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.launchconfigurations.DeleteLaunchConfigurationTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Set;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DeleteLaunchConfigurationStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(@NotNull Stage stage, @NotNull TaskNode.Builder builder) {
+  public void taskGraph(@NotNull StageExecution stage, @NotNull TaskNode.Builder builder) {
     builder
         .withTask("deleteLaunchConfiguration", DeleteLaunchConfigurationTask.class)
         .withTask("monitorDeleteSnapshot", MonitorKatoTask.class);

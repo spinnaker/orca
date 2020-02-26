@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.ExecutionContext;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,7 +90,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param execution the current execution
    * @return the currently executing stage
    */
-  public static Stage currentStage(PipelineExecution execution) {
+  public static StageExecution currentStage(PipelineExecution execution) {
     ExecutionContext executionContext = ExecutionContext.get();
     if (executionContext == null) {
       throw new SpelHelperFunctionException("An execution context is required for this function");
@@ -113,7 +113,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param refId the stage reference ID
    * @return a stage specified by refId
    */
-  public static Stage stageByRefId(PipelineExecution execution, String refId) {
+  public static StageExecution stageByRefId(PipelineExecution execution, String refId) {
     if (refId == null) {
       throw new SpelHelperFunctionException(
           format(
@@ -137,7 +137,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param id the name or id of the stage to find
    * @return a stage specified by id
    */
-  public static Stage stage(PipelineExecution execution, String id) {
+  public static StageExecution stage(PipelineExecution execution, String id) {
     return execution.getStages().stream()
         .filter(i -> id != null && (id.equals(i.getName()) || id.equals(i.getId())))
         .findFirst()
@@ -169,7 +169,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @return the judgment input text
    */
   public static String judgment(PipelineExecution execution, String id) {
-    Stage stageWithJudgmentInput =
+    StageExecution stageWithJudgmentInput =
         execution.getStages().stream()
             .filter(isManualStageWithManualInput(id))
             .findFirst()
@@ -189,7 +189,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
     return judgment(execution, id);
   }
 
-  private static Predicate<Stage> isManualStageWithManualInput(String id) {
+  private static Predicate<StageExecution> isManualStageWithManualInput(String id) {
     return i ->
         (id != null && id.equals(i.getName()))
             && (i.getContext() != null

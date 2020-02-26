@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -53,19 +53,19 @@ class EchoNotifyingStageListener implements StageListener {
   }
 
   @Override
-  void beforeTask(Persister persister, Stage stage, Task task) {
+  void beforeTask(Persister persister, StageExecution stage, Task task) {
     recordEvent('task', 'starting', stage, task)
   }
 
   @Override
   @CompileDynamic
-  void beforeStage(Persister persister, Stage stage) {
+  void beforeStage(Persister persister, StageExecution stage) {
     recordEvent("stage", "starting", stage)
   }
 
   @Override
   void afterTask(Persister persister,
-                 Stage stage,
+                 StageExecution stage,
                  Task task,
                  ExecutionStatus executionStatus,
                  boolean wasSuccessful) {
@@ -78,7 +78,7 @@ class EchoNotifyingStageListener implements StageListener {
 
   @Override
   @CompileDynamic
-  void afterStage(Persister persister, Stage stage) {
+  void afterStage(Persister persister, StageExecution stage) {
     // STOPPED stages are "successful" because they allow the pipeline to
     // proceed but they are still failures in terms of the stage and should
     // send failure notifications
@@ -94,15 +94,15 @@ class EchoNotifyingStageListener implements StageListener {
     }
   }
 
-  private void recordEvent(String type, String phase, Stage stage, Task task) {
+  private void recordEvent(String type, String phase, StageExecution stage, Task task) {
     recordEvent(type, phase, stage, Optional.of(task))
   }
 
-  private void recordEvent(String type, String phase, Stage stage) {
+  private void recordEvent(String type, String phase, StageExecution stage) {
     recordEvent(type, phase, stage, Optional.empty())
   }
 
-  private void recordEvent(String type, String phase, Stage stage, Optional<Task> maybeTask) {
+  private void recordEvent(String type, String phase, StageExecution stage, Optional<Task> maybeTask) {
     try {
       def event = [
         details: [
