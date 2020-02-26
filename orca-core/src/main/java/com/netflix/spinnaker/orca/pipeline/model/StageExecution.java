@@ -63,7 +63,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class StageExecution implements Serializable {
+public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecution, Serializable {
 
   private static final ULID ID_GENERATOR = new ULID();
 
