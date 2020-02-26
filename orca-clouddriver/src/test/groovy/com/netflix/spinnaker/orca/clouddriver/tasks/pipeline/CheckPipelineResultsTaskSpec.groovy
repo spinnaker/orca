@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -37,7 +37,7 @@ class CheckPipelineResultsTaskSpec extends Specification {
       application: 'app1',
       'pipeline.name': 'pipeline1'
     ]
-    final Task savePipelineTask = new Task().with {
+    final TaskExecution savePipelineTask = new TaskExecution().with {
       setName('savePipeline')
       setStatus(ExecutionStatus.SUCCEEDED)
       return it
@@ -62,7 +62,7 @@ class CheckPipelineResultsTaskSpec extends Specification {
       'pipeline.name': 'pipeline1',
       'isExistingPipeline': true
     ]
-    final Task savePipelineTask = new Task().with {
+    final TaskExecution savePipelineTask = new TaskExecution().with {
       setName('savePipeline')
       setStatus(ExecutionStatus.SUCCEEDED)
       return it
@@ -86,7 +86,7 @@ class CheckPipelineResultsTaskSpec extends Specification {
       application: 'app1',
       'pipeline.name': 'pipeline1'
     ]
-    final Task savePipelineTask = new Task().with {
+    final TaskExecution savePipelineTask = new TaskExecution().with {
       setName('savePipeline')
       setStatus(ExecutionStatus.TERMINAL)
       return it

@@ -23,7 +23,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** A "task" is a component piece of a stage */
-public class Task {
+public class TaskExecution {
   private String id;
 
   public @Nonnull String getId() {

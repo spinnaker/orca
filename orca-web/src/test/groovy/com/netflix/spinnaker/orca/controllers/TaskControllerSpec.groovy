@@ -112,8 +112,8 @@ class TaskControllerSpec extends Specification {
       application = "covfefe"
       stage {
         type = "test"
-        tasks = [new Task(id:'1', name: 'jobOne', startTime: 1L, endTime: 2L, implementingClass: 'Class' ),
-                 new Task(id:'2', name: 'jobTwo', startTime: 1L, endTime: 2L, implementingClass: 'Class' )]
+        tasks = [new TaskExecution(id:'1', name: 'jobOne', startTime: 1L, endTime: 2L, implementingClass: 'Class' ),
+                 new TaskExecution(id:'2', name: 'jobTwo', startTime: 1L, endTime: 2L, implementingClass: 'Class' )]
       }
     }])
 

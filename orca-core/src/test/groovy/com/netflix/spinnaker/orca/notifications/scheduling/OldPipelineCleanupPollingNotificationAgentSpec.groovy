@@ -19,7 +19,7 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 
@@ -158,7 +158,7 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
           type = "whatever"
           startTime = time
           status = ExecutionStatus.SUCCEEDED
-          tasks = [new Task()]
+          tasks = [new TaskExecution()]
         }
       }
     }

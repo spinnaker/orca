@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.q.Attribute
 import com.netflix.spinnaker.q.Message
@@ -66,7 +67,7 @@ data class StartTask(
   constructor(source: StageExecution, taskId: String) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, taskId)
 
-  constructor(source: StageExecution, task: com.netflix.spinnaker.orca.pipeline.model.Task) :
+  constructor(source: StageExecution, task: TaskExecution) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, task.id)
 }
 

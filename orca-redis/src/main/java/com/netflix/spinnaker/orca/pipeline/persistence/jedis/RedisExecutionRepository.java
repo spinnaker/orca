@@ -71,7 +71,8 @@ import rx.schedulers.Schedulers;
 
 public class RedisExecutionRepository implements ExecutionRepository {
 
-  private static final TypeReference<List<Task>> LIST_OF_TASKS = new TypeReference<List<Task>>() {};
+  private static final TypeReference<List<TaskExecution>> LIST_OF_TASKS =
+      new TypeReference<List<TaskExecution>>() {};
   private static final TypeReference<Map<String, Object>> MAP_STRING_TO_OBJECT =
       new TypeReference<Map<String, Object>>() {};
   private static final TypeReference<List<SystemNotification>> LIST_OF_SYSTEM_NOTIFICATIONS =

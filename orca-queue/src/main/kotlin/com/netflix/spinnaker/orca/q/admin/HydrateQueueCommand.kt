@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.isInitial
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CompleteExecution
@@ -177,7 +177,7 @@ class HydrateQueueCommand(
     return listOf()
   }
 
-  private fun processTask(stage: StageExecution, task: Task): Action {
+  private fun processTask(stage: StageExecution, task: TaskExecution): Action {
     return if (task.status == RUNNING) {
       if (task.isRetryable()) {
         Action(
@@ -259,10 +259,10 @@ class HydrateQueueCommand(
   }
 
   @Suppress("UNCHECKED_CAST")
-  private val com.netflix.spinnaker.orca.pipeline.model.Task.type
+  private val TaskExecution.type
     get() = taskResolver.getTaskClass(implementingClass)
 
-  private fun Task.isRetryable(): Boolean =
+  private fun TaskExecution.isRetryable(): Boolean =
     RetryableTask::class.java.isAssignableFrom(type)
 
   private fun StageExecution.toActionContext() = ActionContext(
@@ -271,7 +271,7 @@ class HydrateQueueCommand(
     stageStartTime = startTime
   )
 
-  private fun Task.toActionContext(stage: StageExecution) = stage.toActionContext().copy(
+  private fun TaskExecution.toActionContext(stage: StageExecution) = stage.toActionContext().copy(
     taskId = id,
     taskType = name,
     taskStartTime = startTime

@@ -36,7 +36,7 @@ import com.netflix.spinnaker.orca.ext.syntheticStages
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -259,7 +259,7 @@ class CompleteStageHandler(
 
   private fun StageExecution.determineStatus(): ExecutionStatus {
     val syntheticStatuses = syntheticStages().map(StageExecution::getStatus)
-    val taskStatuses = tasks.map(Task::getStatus)
+    val taskStatuses = tasks.map(TaskExecution::getStatus)
     val planningStatus = if (hasPlanningFailure()) listOf(failureStatus()) else emptyList()
     val allStatuses = syntheticStatuses + taskStatuses + planningStatus
     val afterStageStatuses = afterStages().map(StageExecution::getStatus)

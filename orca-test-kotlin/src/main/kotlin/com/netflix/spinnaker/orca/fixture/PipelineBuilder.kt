@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.tasks.NoOpTask
 import java.lang.System.currentTimeMillis
 
@@ -84,8 +84,8 @@ fun StageExecution.stage(init: StageExecution.() -> Unit): StageExecution {
 /**
  * Build a task. Use in the context of [#stage].
  */
-fun StageExecution.task(init: Task.() -> Unit): Task {
-  val task = Task()
+fun StageExecution.task(init: TaskExecution.() -> Unit): TaskExecution {
+  val task = TaskExecution()
   task.implementingClass = NoOpTask::class.java.name
   task.name = "dummy"
   tasks.add(task)

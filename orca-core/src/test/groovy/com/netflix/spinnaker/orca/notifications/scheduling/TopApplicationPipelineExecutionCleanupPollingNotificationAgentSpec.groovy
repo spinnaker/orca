@@ -20,7 +20,7 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -117,7 +117,7 @@ class TopApplicationPipelineExecutionCleanupPollingNotificationAgentSpec extends
         stage {
           startTime = time
           status = ExecutionStatus.SUCCEEDED
-          tasks = [new Task()]
+          tasks = [new TaskExecution()]
         }
         pipelineConfigId = configId
         status = ExecutionStatus.SUCCEEDED

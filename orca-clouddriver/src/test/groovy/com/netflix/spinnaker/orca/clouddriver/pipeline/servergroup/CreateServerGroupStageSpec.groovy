@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
-import com.netflix.spinnaker.kork.dynamicconfig.SpringDynamicConfigService
+
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import org.springframework.mock.env.MockEnvironment
 
 import java.util.concurrent.TimeUnit
@@ -56,7 +56,7 @@ class CreateServerGroupStageSpec extends Specification {
         "strategy"            : strategy
       ]
       tasks = [
-        new Task(status: failedTask ? ExecutionStatus.TERMINAL : ExecutionStatus.SUCCEEDED)
+        new TaskExecution(status: failedTask ? ExecutionStatus.TERMINAL : ExecutionStatus.SUCCEEDED)
       ]
     }
 

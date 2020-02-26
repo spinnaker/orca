@@ -4,7 +4,7 @@ import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import spock.lang.Shared
@@ -31,7 +31,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
 
   def "triggers an event when a task step starts"() {
     given:
-    def task = new Task(status: NOT_STARTED)
+    def task = new TaskExecution(status: NOT_STARTED)
 
     when:
     echoListener.beforeTask(persister, pipelineStage, task)
@@ -42,7 +42,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
 
   def "triggers an event when a stage starts"() {
     given:
-    def task = new Task(stageStart: true)
+    def task = new TaskExecution(stageStart: true)
 
     when:
     echoListener.beforeStage(persister, pipelineStage)
@@ -53,7 +53,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
 
   def "triggers an event when a task starts"() {
     given:
-    def task = new Task(stageStart: false)
+    def task = new TaskExecution(stageStart: false)
 
     and:
     def events = []
@@ -70,7 +70,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
   @Unroll
   def "triggers an event when a task completes"() {
     given:
-    def task = new Task(name: taskName, stageEnd: isEnd)
+    def task = new TaskExecution(name: taskName, stageEnd: isEnd)
 
     when:
     echoListener.afterTask(persister, stage, task, executionStatus, wasSuccessful)
@@ -108,7 +108,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
   @Unroll
   def "sends the correct data to echo when the task completes"() {
     given:
-    def task = new Task(name: taskName)
+    def task = new TaskExecution(name: taskName)
 
     and:
     def message

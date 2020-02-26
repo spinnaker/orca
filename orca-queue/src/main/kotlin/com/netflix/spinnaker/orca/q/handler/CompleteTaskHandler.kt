@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.ext.nextTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.CompleteStage
@@ -87,7 +87,7 @@ class CompleteTaskHandler(
     }
   }
 
-  fun shouldCompleteStage(task: Task, status: ExecutionStatus, originalStatus: ExecutionStatus?): Boolean {
+  fun shouldCompleteStage(task: TaskExecution, status: ExecutionStatus, originalStatus: ExecutionStatus?): Boolean {
     if (task.isStageEnd) {
       // last task in the stage
       return true
@@ -117,7 +117,7 @@ class CompleteTaskHandler(
     }
   }
 
-  private fun trackResult(stage: StageExecution, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
+  private fun trackResult(stage: StageExecution, taskModel: TaskExecution, status: ExecutionStatus) {
     val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
     val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
 

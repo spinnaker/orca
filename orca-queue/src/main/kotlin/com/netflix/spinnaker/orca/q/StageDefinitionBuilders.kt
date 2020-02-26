@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 
 /**
  * Build and append the tasks for [stage].
@@ -53,7 +53,7 @@ private fun processTaskNode(
   element.apply {
     when (value) {
       is TaskDefinition -> {
-        val task = Task()
+        val task = TaskExecution()
         task.id = (stage.tasks.size + 1).toString()
         task.name = value.name
         task.implementingClass = value.implementingClass.name

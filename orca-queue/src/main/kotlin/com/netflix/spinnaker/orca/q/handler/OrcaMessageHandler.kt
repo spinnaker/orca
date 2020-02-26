@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.ext.parent
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
@@ -55,7 +55,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
     return exceptionHandler?.handle(taskName ?: "unspecified", ex)
   }
 
-  fun TaskLevel.withTask(block: (StageExecution, Task) -> Unit) =
+  fun TaskLevel.withTask(block: (StageExecution, TaskExecution) -> Unit) =
     withStage { stage ->
       stage
         .taskById(taskId)

@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.commands
 
-import com.netflix.spinnaker.orca.pipeline.model.Task
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 
@@ -46,7 +46,7 @@ class ForcePipelineExecutionCancellationCommandSpec extends Specification {
       stage {
         id = "s2"
         status = RUNNING
-        tasks.add(new Task(id: "t1", status: RUNNING))
+        tasks.add(new TaskExecution(id: "t1", status: RUNNING))
       }
       stage {
         id = "s3"

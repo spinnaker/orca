@@ -45,6 +45,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -180,7 +181,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun trackResult(stage: StageExecution, thisInvocationStartTimeMs: Long, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, status: ExecutionStatus) {
+  private fun trackResult(stage: StageExecution, thisInvocationStartTimeMs: Long, taskModel: TaskExecution, status: ExecutionStatus) {
     val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
     val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
 
@@ -197,7 +198,7 @@ class RunTaskHandler(
 
   override val messageType = RunTask::class.java
 
-  private fun RunTask.withTask(block: (StageExecution, com.netflix.spinnaker.orca.pipeline.model.Task, Task) -> Unit) =
+  private fun RunTask.withTask(block: (StageExecution, TaskExecution, Task) -> Unit) =
     withTask { stage, taskModel ->
       tasks
         .find { taskType.isAssignableFrom(it.javaClass) }
@@ -210,7 +211,7 @@ class RunTaskHandler(
         }
     }
 
-  private fun Task.backoffPeriod(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: StageExecution): TemporalAmount =
+  private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecution): TemporalAmount =
     when (this) {
       is RetryableTask -> Duration.ofMillis(
         retryableBackOffPeriod(taskModel, stage).coerceAtMost(taskExecutionInterceptors.maxBackoff())
@@ -226,7 +227,7 @@ class RunTaskHandler(
    * `tasks.aws.backoffPeriod` will be used (given the criteria matches and unless the default dynamicBackOffPeriod is greater).
    */
   private fun RetryableTask.retryableBackOffPeriod(
-    taskModel: com.netflix.spinnaker.orca.pipeline.model.Task,
+    taskModel: TaskExecution,
     stage: StageExecution
   ): Long {
     val dynamicBackOffPeriod = getDynamicBackoffPeriod(
@@ -271,7 +272,7 @@ class RunTaskHandler(
     return DurationFormatUtils.formatDurationWords(timeout, true, true)
   }
 
-  private fun Task.checkForTimeout(stage: StageExecution, taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, message: Message) {
+  private fun Task.checkForTimeout(stage: StageExecution, taskModel: TaskExecution, message: Message) {
     if (stage.type == RestrictExecutionDuringTimeWindow.TYPE) {
       return
     } else {
@@ -280,7 +281,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun Task.checkForTaskTimeout(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, stage: StageExecution, message: Message) {
+  private fun Task.checkForTaskTimeout(taskModel: TaskExecution, stage: StageExecution, message: Message) {
     if (this is RetryableTask) {
       val startTime = taskModel.startTime.toInstant()
       if (startTime != null) {
@@ -367,7 +368,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun StageExecution.withLoggingContext(taskModel: com.netflix.spinnaker.orca.pipeline.model.Task, block: () -> Unit) {
+  private fun StageExecution.withLoggingContext(taskModel: TaskExecution, block: () -> Unit) {
     try {
       MDC.put("stageType", type)
       MDC.put("taskType", taskModel.implementingClass)

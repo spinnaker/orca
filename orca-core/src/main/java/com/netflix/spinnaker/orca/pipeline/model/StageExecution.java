@@ -262,13 +262,13 @@ public class StageExecution implements Serializable {
    * in a stage. Because tasks can be dynamically composed, this list is open updated during a
    * stage's execution.
    */
-  private List<Task> tasks = new ArrayList<>();
+  private List<TaskExecution> tasks = new ArrayList<>();
 
-  public @Nonnull List<Task> getTasks() {
+  public @Nonnull List<TaskExecution> getTasks() {
     return tasks;
   }
 
-  public void setTasks(@Nonnull List<Task> tasks) {
+  public void setTasks(@Nonnull List<TaskExecution> tasks) {
     this.tasks = new ArrayList<>(tasks);
   }
 
@@ -354,7 +354,7 @@ public class StageExecution implements Serializable {
     return Objects.hash(id);
   }
 
-  public Task taskById(String taskId) {
+  public TaskExecution taskById(String taskId) {
     return tasks.stream().filter(it -> it.getId().equals(taskId)).findFirst().orElse(null);
   }
 
