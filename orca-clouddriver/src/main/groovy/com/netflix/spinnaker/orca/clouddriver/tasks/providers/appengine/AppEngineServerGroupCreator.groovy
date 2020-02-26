@@ -19,12 +19,12 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 
 @Component
 class AppEngineServerGroupCreator implements ServerGroupCreator {
@@ -60,7 +60,7 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
   }
 
   void appendArtifactData(Stage stage, Map operation) {
-    Execution execution = stage.getExecution()
+    PipelineExecution execution = stage.getExecution()
     if (execution.type == PIPELINE) {
       String expectedId = operation.expectedArtifactId?.trim()
       Artifact expectedArtifact = operation.expectedArtifact

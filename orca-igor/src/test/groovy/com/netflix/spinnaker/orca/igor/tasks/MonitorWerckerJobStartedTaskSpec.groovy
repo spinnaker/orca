@@ -10,11 +10,9 @@ package com.netflix.spinnaker.orca.igor.tasks
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.mock.env.MockEnvironment
-import retrofit.RetrofitError
-import retrofit.client.Response
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -26,7 +24,7 @@ class MonitorWerckerJobStartedTaskSpec extends Specification {
   MonitorWerckerJobStartedTask task = new MonitorWerckerJobStartedTask();
 
   @Shared
-  def pipeline = Execution.newPipeline("orca")
+  def pipeline = PipelineExecution.newPipeline("orca")
 
   def "should return running #expectedExecutionStatus if #result is not_built or #buildNumber missing"() {
     given:

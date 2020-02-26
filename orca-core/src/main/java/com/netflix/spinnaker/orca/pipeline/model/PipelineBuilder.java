@@ -25,7 +25,7 @@ import java.util.Map;
 @Deprecated
 public class PipelineBuilder {
   public PipelineBuilder(String application) {
-    pipeline = Execution.newPipeline(application);
+    pipeline = PipelineExecution.newPipeline(application);
   }
 
   public PipelineBuilder withId(String id) {
@@ -91,10 +91,11 @@ public class PipelineBuilder {
     return this;
   }
 
-  public Execution build() {
+  public PipelineExecution build() {
     pipeline.setBuildTime(System.currentTimeMillis());
     pipeline.setAuthentication(
-        Execution.AuthenticationDetails.build().orElse(new Execution.AuthenticationDetails()));
+        PipelineExecution.AuthenticationDetails.build()
+            .orElse(new PipelineExecution.AuthenticationDetails()));
 
     return pipeline;
   }
@@ -119,7 +120,7 @@ public class PipelineBuilder {
     return this;
   }
 
-  public PipelineBuilder withSource(Execution.PipelineSource source) {
+  public PipelineBuilder withSource(PipelineExecution.PipelineSource source) {
     pipeline.setSource(source);
     return this;
   }
@@ -143,5 +144,5 @@ public class PipelineBuilder {
     return this;
   }
 
-  private final Execution pipeline;
+  private final PipelineExecution pipeline;
 }

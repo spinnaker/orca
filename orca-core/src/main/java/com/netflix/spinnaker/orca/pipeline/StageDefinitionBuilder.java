@@ -24,7 +24,7 @@ import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
@@ -98,7 +98,7 @@ public interface StageDefinitionBuilder {
 
   @Deprecated
   static @Nonnull Stage newStage(
-      @Nonnull Execution execution,
+      @Nonnull PipelineExecution execution,
       @Nonnull String type,
       @Nullable String name,
       @Nonnull Map<String, Object> context,

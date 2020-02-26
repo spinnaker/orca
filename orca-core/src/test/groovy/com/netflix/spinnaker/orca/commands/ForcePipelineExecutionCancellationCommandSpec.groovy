@@ -24,11 +24,11 @@ import java.time.Instant
 import java.time.ZoneId
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
-class ForceExecutionCancellationCommandSpec extends Specification {
+class ForcePipelineExecutionCancellationCommandSpec extends Specification {
 
   ExecutionRepository executionRepository = Mock()
   Clock clock = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())

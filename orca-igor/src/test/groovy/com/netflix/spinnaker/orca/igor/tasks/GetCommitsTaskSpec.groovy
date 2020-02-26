@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.igor.ScmService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
@@ -186,7 +186,7 @@ class GetCommitsTaskSpec extends Specification {
     jobState = 'SUCCESS'
   }
 
-  Stage setupGetCommits(Map contextMap, String account, String app, String sourceImage, String targetImage, String region, String cluster, String serverGroup, int serverGroupCalls = 1, int oortCalls = 1, Execution pipeline = this.pipeline) {
+  Stage setupGetCommits(Map contextMap, String account, String app, String sourceImage, String targetImage, String region, String cluster, String serverGroup, int serverGroupCalls = 1, int oortCalls = 1, PipelineExecution pipeline = this.pipeline) {
     def stage = new Stage(pipeline, "stash", contextMap)
 
     task.scmService = Stub(ScmService) {

@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.front50.pipeline;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 
@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.front50.tasks.MonitorPipelineTask;
 import com.netflix.spinnaker.orca.front50.tasks.StartPipelineTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.StageContext;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -100,7 +100,7 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
                   "Stage %s could not be canceled w/o front50 enabled. Please set 'front50.enabled: true' in your orca config.",
                   readableStageDetails));
         } else {
-          Execution childPipeline = executionRepository.retrieve(PIPELINE, executionId);
+          PipelineExecution childPipeline = executionRepository.retrieve(PIPELINE, executionId);
           if (!childPipeline.isCanceled()) {
             // flag the child pipeline as canceled (actual cancellation will happen asynchronously)
             executionRepository.cancel(

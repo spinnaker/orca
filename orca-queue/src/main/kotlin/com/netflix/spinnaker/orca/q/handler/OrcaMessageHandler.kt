@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.parent
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -88,7 +88,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
       }
     }
 
-  fun ExecutionLevel.withExecution(block: (Execution) -> Unit) =
+  fun ExecutionLevel.withExecution(block: (PipelineExecution) -> Unit) =
     try {
       val execution = repository.retrieve(executionType, executionId)
       block.invoke(execution)
@@ -112,7 +112,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
     }
   }
 
-  fun Execution.shouldQueue(): Boolean {
+  fun PipelineExecution.shouldQueue(): Boolean {
     val configId = pipelineConfigId
     return when {
       !isLimitConcurrent -> false

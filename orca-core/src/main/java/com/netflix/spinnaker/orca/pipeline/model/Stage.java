@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -100,7 +100,7 @@ public class Stage implements Serializable {
   public Stage() {}
 
   @SuppressWarnings("unchecked")
-  public Stage(Execution execution, String type, String name, Map<String, Object> context) {
+  public Stage(PipelineExecution execution, String type, String name, Map<String, Object> context) {
     this.execution = execution;
     this.type = type;
     this.name = name;
@@ -117,11 +117,11 @@ public class Stage implements Serializable {
     this.context.putAll(context);
   }
 
-  public Stage(Execution execution, String type, Map<String, Object> context) {
+  public Stage(PipelineExecution execution, String type, Map<String, Object> context) {
     this(execution, type, null, context);
   }
 
-  public Stage(Execution execution, String type) {
+  public Stage(PipelineExecution execution, String type) {
     this(execution, type, emptyMap());
   }
 
@@ -171,14 +171,14 @@ public class Stage implements Serializable {
   }
 
   /** Gets the execution object for this stage */
-  private Execution execution;
+  private PipelineExecution execution;
 
   @JsonBackReference
-  public @Nonnull Execution getExecution() {
+  public @Nonnull PipelineExecution getExecution() {
     return execution;
   }
 
-  public void setExecution(@Nonnull Execution execution) {
+  public void setExecution(@Nonnull PipelineExecution execution) {
     this.execution = execution;
   }
 
@@ -478,7 +478,8 @@ public class Stage implements Serializable {
     return Stage.findAncestor(this, this.execution, predicate);
   }
 
-  private static Stage findAncestor(Stage stage, Execution execution, Predicate<Stage> predicate) {
+  private static Stage findAncestor(
+      Stage stage, PipelineExecution execution, Predicate<Stage> predicate) {
     Stage matchingStage = null;
 
     if (stage != null && !stage.getRequisiteStageRefIds().isEmpty()) {
@@ -532,7 +533,7 @@ public class Stage implements Serializable {
         && (execution.getTrigger() instanceof PipelineTrigger)) {
       PipelineTrigger parentTrigger = (PipelineTrigger) execution.getTrigger();
 
-      Execution parentPipelineExecution = parentTrigger.getParentExecution();
+      PipelineExecution parentPipelineExecution = parentTrigger.getParentExecution();
       String parentPipelineStageId = parentTrigger.getParentPipelineStageId();
 
       Optional<Stage> parentPipelineStage =

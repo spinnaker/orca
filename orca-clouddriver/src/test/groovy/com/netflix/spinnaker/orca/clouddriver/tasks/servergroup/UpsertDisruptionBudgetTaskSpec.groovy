@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 
@@ -35,7 +35,7 @@ class UpsertDisruptionBudgetTaskSpec extends Specification {
       disruptionBudget: ["unhealthyTasksLimit": ["limitOfUnhealthyContainers": 15]]
     ]
 
-    def stage = new Stage(Execution.newPipeline("orca"), "upsertDisruptionBudget", context)
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "upsertDisruptionBudget", context)
     and:
     List<Map> operations = []
     def katoService = Mock(KatoService) {

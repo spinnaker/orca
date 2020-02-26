@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toMap;
@@ -37,17 +37,17 @@ import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class Execution implements Serializable {
+public class PipelineExecution implements Serializable {
 
   public static final DefaultTrigger NO_TRIGGER = new DefaultTrigger("none");
   private static final ULID ID_GENERATOR = new ULID();
 
-  public Execution(ExecutionType type, String application) {
+  public PipelineExecution(ExecutionType type, String application) {
     this(type, ID_GENERATOR.nextULID(), application);
   }
 
   @JsonCreator
-  public Execution(
+  public PipelineExecution(
       @JsonProperty("type") ExecutionType type,
       @JsonProperty("id") String id,
       @JsonProperty("application") String application) {
@@ -368,7 +368,7 @@ public class Execution implements Serializable {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    Execution execution = (Execution) o;
+    PipelineExecution execution = (PipelineExecution) o;
     return Objects.equals(id, execution.id);
   }
 
@@ -378,13 +378,13 @@ public class Execution implements Serializable {
   }
 
   @Deprecated
-  public static Execution newOrchestration(String application) {
-    return new Execution(ORCHESTRATION, application);
+  public static PipelineExecution newOrchestration(String application) {
+    return new PipelineExecution(ORCHESTRATION, application);
   }
 
   @Deprecated
-  public static Execution newPipeline(String application) {
-    return new Execution(PIPELINE, application);
+  public static PipelineExecution newPipeline(String application) {
+    return new PipelineExecution(PIPELINE, application);
   }
 
   public static class AuthenticationDetails implements Serializable {

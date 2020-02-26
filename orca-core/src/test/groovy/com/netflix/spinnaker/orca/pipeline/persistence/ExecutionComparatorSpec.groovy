@@ -15,10 +15,10 @@
  */
 package com.netflix.spinnaker.orca.pipeline.persistence
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import spock.lang.Specification
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.*
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.*
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL_ASC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_DESC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
@@ -27,10 +27,10 @@ class ExecutionComparatorSpec extends Specification {
 
   def "sorting naturally orders by ID"() {
     given:
-    List<Execution> executions = [
-      new Execution(PIPELINE, "3", "foo"),
-      new Execution(PIPELINE, "1", "foo"),
-      new Execution(PIPELINE, "2", "foo")
+    List<PipelineExecution> executions = [
+        new PipelineExecution(PIPELINE, "3", "foo"),
+        new PipelineExecution(PIPELINE, "1", "foo"),
+        new PipelineExecution(PIPELINE, "2", "foo")
     ]
 
     when:
@@ -42,11 +42,11 @@ class ExecutionComparatorSpec extends Specification {
 
   def "sort by START_TIME_OR_ID"() {
     given:
-    List<Execution> executions = [
-      new Execution(PIPELINE, "3", "foo").with { startTime = 1000L; it },
-      new Execution(PIPELINE, "1", "foo").with { startTime = 1000L; it },
-      new Execution(PIPELINE, "2", "foo").with { startTime = 1500L; it },
-      new Execution(PIPELINE, "4", "foo")
+    List<PipelineExecution> executions = [
+        new PipelineExecution(PIPELINE, "3", "foo").with { startTime = 1000L; it },
+        new PipelineExecution(PIPELINE, "1", "foo").with { startTime = 1000L; it },
+        new PipelineExecution(PIPELINE, "2", "foo").with { startTime = 1500L; it },
+        new PipelineExecution(PIPELINE, "4", "foo")
     ]
 
     when:
@@ -58,11 +58,11 @@ class ExecutionComparatorSpec extends Specification {
 
   def "sort by REVERSE_BUILD_TIME"() {
     given:
-    List<Execution> executions = [
-      new Execution(PIPELINE, "3", "foo").with { buildTime = 1000L; it },
-      new Execution(PIPELINE, "1", "foo").with { buildTime = 1000L; it },
-      new Execution(PIPELINE, "2", "foo").with { buildTime = 1500L; it },
-      new Execution(PIPELINE, "4", "foo")
+    List<PipelineExecution> executions = [
+        new PipelineExecution(PIPELINE, "3", "foo").with { buildTime = 1000L; it },
+        new PipelineExecution(PIPELINE, "1", "foo").with { buildTime = 1000L; it },
+        new PipelineExecution(PIPELINE, "2", "foo").with { buildTime = 1500L; it },
+        new PipelineExecution(PIPELINE, "4", "foo")
     ]
 
     when:

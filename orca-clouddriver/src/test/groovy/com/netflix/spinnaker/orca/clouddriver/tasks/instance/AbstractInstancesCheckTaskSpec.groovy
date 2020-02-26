@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -85,7 +85,7 @@ class AbstractInstancesCheckTaskSpec extends Specification {
     task.objectMapper = OrcaObjectMapper.newInstance()
     task.hasSucceededSpy = Mock(HasSucceededSpy)
 
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     def stage = new Stage(pipeline, "whatever", [
       "account.name"                  : "test",
       "targetop.asg.enableAsg.name"   : "front50-v000",
@@ -125,7 +125,7 @@ class AbstractInstancesCheckTaskSpec extends Specification {
     task.objectMapper = OrcaObjectMapper.newInstance()
     task.hasSucceededSpy = Mock(HasSucceededSpy)
 
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     def stage = new Stage(pipeline, "whatever", [
       "account.name"                  : "test",
       "targetop.asg.enableAsg.name"   : "front50-v000",
@@ -177,7 +177,7 @@ class AbstractInstancesCheckTaskSpec extends Specification {
     task.objectMapper = OrcaObjectMapper.newInstance()
     task.hasSucceededSpy = Mock(HasSucceededSpy)
 
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     def stage = new Stage(pipeline, "whatever", [
       "account.name"                  : "test",
       "targetop.asg.enableAsg.name"   : "front50-v000",

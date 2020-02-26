@@ -25,7 +25,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.FindArtifactFromExecutionTask;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
@@ -37,7 +37,7 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 @RunWith(JUnitPlatform.class)
-final class FindArtifactFromExecutionTaskTest {
+final class FindArtifactFromPipelineExecutionTaskTest {
   private static final String PIPELINE = "my pipeline";
   private static final Artifact ARTIFACT_A =
       Artifact.builder().type("kubernetes/replicaSet").build();
@@ -54,7 +54,9 @@ final class FindArtifactFromExecutionTaskTest {
     ImmutableList<Artifact> pipelineArtifacts = ImmutableList.of(ARTIFACT_A, ARTIFACT_B);
     Stage stage =
         new Stage(
-            mock(Execution.class), "findArtifactFromExecution", getStageContext(expectedArtifacts));
+            mock(PipelineExecution.class),
+            "findArtifactFromExecution",
+            getStageContext(expectedArtifacts));
 
     ArtifactUtils artifactUtils = mock(ArtifactUtils.class);
     when(artifactUtils.getArtifactsForPipelineId(
@@ -80,7 +82,9 @@ final class FindArtifactFromExecutionTaskTest {
     ImmutableList<Artifact> pipelineArtifacts = ImmutableList.of(ARTIFACT_A, ARTIFACT_B);
     Stage stage =
         new Stage(
-            mock(Execution.class), "findArtifactFromExecution", getStageContext(expectedArtifacts));
+            mock(PipelineExecution.class),
+            "findArtifactFromExecution",
+            getStageContext(expectedArtifacts));
 
     ArtifactUtils artifactUtils = mock(ArtifactUtils.class);
     when(artifactUtils.getArtifactsForPipelineId(

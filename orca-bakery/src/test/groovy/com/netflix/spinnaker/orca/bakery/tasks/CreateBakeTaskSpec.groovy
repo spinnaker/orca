@@ -66,7 +66,7 @@ class CreateBakeTaskSpec extends Specification {
     baseLabel: "release"
   ]
 
-  Execution pipeline = pipeline {
+  PipelineExecution pipeline = pipeline {
     stage {
       type = "bake"
       context = bakeConfig

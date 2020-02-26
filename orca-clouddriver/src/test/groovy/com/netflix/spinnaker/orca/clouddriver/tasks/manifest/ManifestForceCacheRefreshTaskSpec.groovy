@@ -21,7 +21,7 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import spock.lang.Specification
@@ -32,7 +32,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static java.net.HttpURLConnection.HTTP_ACCEPTED
 import static java.net.HttpURLConnection.HTTP_OK
 
@@ -627,7 +627,7 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
   }
 
   private Stage mockStage(Map context) {
-    Stage stage = new Stage(new Execution(PIPELINE, "test"), "whatever", context)
+    Stage stage = new Stage(new PipelineExecution(PIPELINE, "test"), "whatever", context)
     stage.setStartTime(now.toEpochMilli())
     return stage
   }

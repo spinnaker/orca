@@ -20,7 +20,7 @@ package com.netflix.spinnaker.orca.igor.tasks
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
@@ -120,7 +120,7 @@ class GetBuildArtifactsTaskSpec extends Specification {
   }
 
   def createStage(String propertyFile) {
-    return new Stage(Stub(Execution), "jenkins", [
+    return new Stage(Stub(PipelineExecution), "jenkins", [
       master: MASTER,
       job: JOB,
       buildNumber: BUILD_NUMBER,

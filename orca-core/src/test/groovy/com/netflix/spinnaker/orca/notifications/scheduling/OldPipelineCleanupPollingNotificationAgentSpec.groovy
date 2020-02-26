@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.notifications.scheduling
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
@@ -27,7 +27,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -143,7 +143,7 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
   }
 
   private
-  static Collection<Execution> buildPipelines(List<Instant> startTimes, String configId) {
+  static Collection<PipelineExecution> buildPipelines(List<Instant> startTimes, String configId) {
     (1..startTimes.size()).collect {
       def n = it
       def time = startTimes.get(n - 1).toEpochMilli()

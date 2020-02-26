@@ -27,14 +27,14 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initTcMysqlDatabase
 import static java.time.temporal.ChronoUnit.DAYS
 
@@ -93,8 +93,8 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     allExecutions*.name.sort() == ["#01", "#02", "#11", "#12", "#13", "#14", "#15"]
   }
 
-  Execution buildExecution(int daysOffset) {
-    Execution e = new Execution(PIPELINE, "app")
+  PipelineExecution buildExecution(int daysOffset) {
+    PipelineExecution e = new PipelineExecution(PIPELINE, "app")
     e.status = ExecutionStatus.SUCCEEDED
     e.pipelineConfigId = "pipeline-001"
     e.buildTime = Instant.now().minus(daysOffset, DAYS).toEpochMilli()

@@ -22,13 +22,13 @@ import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 
 @Slf4j
 @CompileStatic
@@ -51,7 +51,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
   }
 
   @Override
-  void beforeExecution(Persister persister, Execution execution) {
+  void beforeExecution(Persister persister, PipelineExecution execution) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
         processSpelInNotifications(execution)
@@ -77,7 +77,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
 
   @Override
   void afterExecution(Persister persister,
-                      Execution execution,
+                      PipelineExecution execution,
                       ExecutionStatus executionStatus,
                       boolean wasSuccessful) {
     try {
@@ -103,7 +103,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
     }
   }
 
-  private void processSpelInNotifications(Execution execution) {
+  private void processSpelInNotifications(PipelineExecution execution) {
     List<Map<String, Object>> spelProcessedNotifications = execution.notifications.collect({
       contextParameterProcessor.process(it, contextParameterProcessor.buildExecutionContext(execution), true)
     })
@@ -119,7 +119,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
    *
    * @param pipeline
    */
-  private void addApplicationNotifications(Execution pipeline) {
+  private void addApplicationNotifications(PipelineExecution pipeline) {
     def user = pipeline.getAuthentication()?.toKorkUser()
     ApplicationNotifications notifications
     if (user?.isPresent()) {
@@ -157,7 +157,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
     }
   }
 
-  private Map<String, Object> buildContent(Execution execution) {
+  private Map<String, Object> buildContent(PipelineExecution execution) {
     return contextParameterProcessor.process(
       [
         execution: execution,

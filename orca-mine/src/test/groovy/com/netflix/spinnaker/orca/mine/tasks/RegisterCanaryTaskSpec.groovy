@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.mine.tasks
 
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.pipeline.DeployCanaryStage
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -34,7 +34,7 @@ class RegisterCanaryTaskSpec extends Specification {
 
   def 'canary registration'() {
     setup:
-    def pipeline = Execution.newPipeline('foo')
+    def pipeline = PipelineExecution.newPipeline('foo')
 
     def canaryStageId = UUID.randomUUID().toString()
     def parentStageId = UUID.randomUUID().toString()
@@ -131,7 +131,7 @@ class RegisterCanaryTaskSpec extends Specification {
   void "should set stage timeout to #expectedTimeoutHours hours based on a lifetime of #lifetimeHours hours and warmup of #warmupMinutes minutes"() {
 
     given:
-    def pipeline = Execution.newPipeline('foo')
+    def pipeline = PipelineExecution.newPipeline('foo')
     def deployCanaryStage = new Stage(pipeline, DeployCanaryStage.PIPELINE_CONFIG_TYPE, [canary: canary, deployedClusterPairs: [:]])
     def parentStageId = UUID.randomUUID().toString()
     deployCanaryStage.parentStageId = parentStageId

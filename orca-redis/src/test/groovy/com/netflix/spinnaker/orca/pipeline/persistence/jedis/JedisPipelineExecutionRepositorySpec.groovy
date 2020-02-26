@@ -22,10 +22,10 @@ import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepositoryTck
+import com.netflix.spinnaker.orca.pipeline.persistence.PipelineExecutionRepositoryTck
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.util.Pool
 import spock.lang.AutoCleanup
@@ -37,8 +37,8 @@ import java.util.concurrent.CountDownLatch
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.*
@@ -46,7 +46,7 @@ import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepositor
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.util.concurrent.TimeUnit.SECONDS
 
-class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecutionRepository> {
+class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<RedisExecutionRepository> {
 
   @Shared
   @AutoCleanup("destroy")
@@ -361,7 +361,7 @@ class JedisExecutionRepositorySpec extends ExecutionRepositoryTck<RedisExecution
     })
 
     when:
-    List<Execution> retrieved = repository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    List<PipelineExecution> retrieved = repository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
       Arrays.asList("pipeline-2", "pipeline-3"),
       9L,
       11L,

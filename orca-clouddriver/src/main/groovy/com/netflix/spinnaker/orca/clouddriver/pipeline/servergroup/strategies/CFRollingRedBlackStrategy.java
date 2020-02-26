@@ -32,7 +32,7 @@ import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
@@ -174,7 +174,7 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
     // Start off with deploying one instance of the new version
     ((Map<String, Object>) manifest.get("direct")).put("instances", 1);
 
-    Execution execution = stage.getExecution();
+    PipelineExecution execution = stage.getExecution();
     String executionId = execution.getId();
     List<Integer> targetPercentages = stageData.getTargetPercentages();
     if (targetPercentages.isEmpty() || targetPercentages.get(targetPercentages.size() - 1) != 100) {

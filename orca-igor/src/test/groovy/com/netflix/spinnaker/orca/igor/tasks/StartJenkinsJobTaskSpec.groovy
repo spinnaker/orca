@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.igor.tasks
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import spock.lang.Shared
@@ -38,7 +38,7 @@ class StartJenkinsJobTaskSpec extends Specification {
   }
 
   @Shared
-  def pipeline = Execution.newPipeline("orca")
+  def pipeline = PipelineExecution.newPipeline("orca")
 
     def "should trigger build without parameters"() {
         given:

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import spock.lang.Specification
@@ -38,7 +38,7 @@ class ExpressionUtilsSpec extends Specification {
     });
 
   def 'should evaluate variables correctly with v4'() {
-    Execution execution = createExecution()
+    PipelineExecution execution = createExecution()
 
     when:
     def result = utils.evaluateVariables(execution, ['1', '2'], 'v4',
@@ -58,7 +58,7 @@ class ExpressionUtilsSpec extends Specification {
   }
 
   def 'should correctly use refIds'() {
-    Execution execution = createExecution()
+    PipelineExecution execution = createExecution()
 
     when:
     def result = utils.evaluateVariables(execution, ['1'], 'v4',
@@ -81,7 +81,7 @@ class ExpressionUtilsSpec extends Specification {
   }
 
   def 'should fail to evaluate variables that depend on prior variables in same stage when in v3'() {
-    Execution execution = createExecution()
+    PipelineExecution execution = createExecution()
 
     when:
     def result = utils.evaluateVariables(execution, ['1', '2'], 'v3',
@@ -103,7 +103,7 @@ class ExpressionUtilsSpec extends Specification {
   }
 
   private static def createExecution() {
-    def execution = new Execution(Execution.ExecutionType.PIPELINE, "test")
+    def execution = new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "test")
     def stage1 = new Stage(execution, "evaluateVariables")
     stage1.refId = "1"
     stage1.outputs = [varFromStage1: 100]

@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.matches;
@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,7 +67,8 @@ class CloudFoundryCreateServiceKeyTaskTest {
     TaskResult expected =
         TaskResult.builder(ExecutionStatus.SUCCEEDED).context(expectedContext).build();
 
-    TaskResult result = task.execute(new Stage(new Execution(PIPELINE, "orca"), type, context));
+    TaskResult result =
+        task.execute(new Stage(new PipelineExecution(PIPELINE, "orca"), type, context));
 
     assertThat(result).isEqualToComparingFieldByFieldRecursively(expected);
   }

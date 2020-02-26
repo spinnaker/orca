@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.Bake
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -38,7 +38,7 @@ class CompletedBakeTaskSpec extends Specification {
 
   @Subject task = new CompletedBakeTask()
 
-  @Shared Execution pipeline = pipeline()
+  @Shared PipelineExecution pipeline = pipeline()
 
   @Shared notFoundError = RetrofitError.httpError(
     null,

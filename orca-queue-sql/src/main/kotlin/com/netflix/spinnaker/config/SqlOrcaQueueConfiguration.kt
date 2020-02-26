@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.orca.TaskResolver
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.q.migration.ExecutionTypeDeserializer
 import com.netflix.spinnaker.orca.q.migration.TaskTypeDeserializer
 import com.netflix.spinnaker.q.metrics.EventPublisher
@@ -55,7 +55,7 @@ class SqlOrcaQueueConfiguration : SqlQueueConfiguration() {
       registerModule(KotlinModule())
       registerModule(
         SimpleModule()
-          .addDeserializer(Execution.ExecutionType::class.java, ExecutionTypeDeserializer())
+          .addDeserializer(PipelineExecution.ExecutionType::class.java, ExecutionTypeDeserializer())
           .addDeserializer(Class::class.java, TaskTypeDeserializer(taskResolver))
       )
       disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

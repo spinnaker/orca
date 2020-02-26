@@ -17,13 +17,11 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.bakery.pipeline.BakeStage
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -38,7 +36,7 @@ class QuickPatchStageSpec extends Specification {
 
   def "no-ops if there are no instances"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "quickPatch", context)
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "quickPatch", context)
     def graphBefore = StageGraphBuilder.beforeStages(stage)
     def graphAfter = StageGraphBuilder.afterStages(stage)
 
@@ -66,7 +64,7 @@ class QuickPatchStageSpec extends Specification {
       region     : "us-east-1",
       baseOs     : "ubuntu"
     ]
-    def stage = new Stage(Execution.newPipeline("orca"), "quickPatch", config)
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "quickPatch", config)
     def graphBefore = StageGraphBuilder.beforeStages(stage)
     def graphAfter = StageGraphBuilder.afterStages(stage)
 
@@ -95,7 +93,7 @@ class QuickPatchStageSpec extends Specification {
       baseOs     : "ubuntu"
     ]
     oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
-    def stage = new Stage(Execution.newPipeline("orca"), "quickPatch", config)
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "quickPatch", config)
     def graphBefore = StageGraphBuilder.beforeStages(stage)
     def graphAfter = StageGraphBuilder.afterStages(stage)
     def syntheticStages = []
@@ -134,7 +132,7 @@ class QuickPatchStageSpec extends Specification {
 
   def "configures rolling quickpatch"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "quickPatch", config)
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "quickPatch", config)
     def graphAfter = StageGraphBuilder.afterStages(stage)
     def syntheticStages = []
 

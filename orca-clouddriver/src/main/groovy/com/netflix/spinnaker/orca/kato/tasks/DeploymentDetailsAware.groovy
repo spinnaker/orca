@@ -18,11 +18,11 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 
 /**
  * Tasks may implement this trait to get convention-based access to deployment details that should come from in order of preference:
@@ -75,7 +75,7 @@ trait DeploymentDetailsAware {
     return ancestorWithImage
   }
 
-  List<Execution> getPipelineExecutions(Execution execution) {
+  List<PipelineExecution> getPipelineExecutions(PipelineExecution execution) {
     if (execution?.type == PIPELINE) {
       return [execution] + getPipelineExecutions(getParentPipelineExecution(execution))
     } else {
@@ -90,7 +90,7 @@ trait DeploymentDetailsAware {
     return true
   }
 
-  private Execution getParentPipelineExecution(Execution execution) {
+  private PipelineExecution getParentPipelineExecution(PipelineExecution execution) {
     // The initial stage execution is a Pipeline, and the ancestor executions are Maps.
     if (execution.type == PIPELINE && execution.trigger instanceof PipelineTrigger) {
       return (execution.trigger as PipelineTrigger).parentExecution
@@ -108,7 +108,7 @@ trait DeploymentDetailsAware {
 
     if (!deploymentDetails) {
       // If no deployment details were found in the stage context, check outputs of each stage of each pipeline up the tree.
-      List<Execution> pipelineExecutions = getPipelineExecutions(stage.execution)
+      List<PipelineExecution> pipelineExecutions = getPipelineExecutions(stage.execution)
 
       deploymentDetails = pipelineExecutions.findResult { execution ->
         execution.stages.findResult {

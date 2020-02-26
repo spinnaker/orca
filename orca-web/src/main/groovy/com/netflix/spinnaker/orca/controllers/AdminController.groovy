@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.web.exceptions.ValidationException
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand
 import com.netflix.spinnaker.orca.eureka.NoDiscoveryApplicationStatusPublisher
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -77,7 +77,7 @@ class AdminController {
 
   @RequestMapping(value = "/forceCancelExecution", method = RequestMethod.PUT)
   void forceExecutionStatus(@RequestParam(value = "executionId", required = true) String executionId,
-                            @RequestParam(value = "executionType", required = false, defaultValue = "PIPELINE") Execution.ExecutionType executionType,
+                            @RequestParam(value = "executionType", required = false, defaultValue = "PIPELINE") PipelineExecution.ExecutionType executionType,
                             @RequestParam(value = "canceledBy", required = false, defaultValue = "admin") String canceledBy)  {
     forceExecutionCancellationCommand.forceCancel(executionType, executionId, canceledBy)
   }

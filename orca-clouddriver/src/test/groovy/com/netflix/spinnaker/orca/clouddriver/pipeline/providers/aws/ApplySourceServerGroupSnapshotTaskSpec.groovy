@@ -19,14 +19,14 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
@@ -94,7 +94,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
   @Unroll
   void "should support ancestor deploy stages w/ a #strategy strategy"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "", [
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "", [
       strategy                         : strategy,
       sourceServerGroupCapacitySnapshot: [
         min    : 0,
@@ -226,7 +226,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
 
   void "should get TargetServerGroupContext from coordinates from upstream deploy stage"() {
     given:
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     def deployStage = new Stage(pipeline, "", [
       refId                            : "1",
       "deploy.server.groups"           : ["us-west-2a": ["asg-v001"]],

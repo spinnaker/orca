@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -34,7 +34,7 @@ class TargetReferenceSupportSpec extends Specification {
   OortService oort
   TargetReferenceSupport subject
 
-  def pipeline = Execution.newPipeline("orca")
+  def pipeline = PipelineExecution.newPipeline("orca")
 
   def cluster = [serverGroups: [
                                 [

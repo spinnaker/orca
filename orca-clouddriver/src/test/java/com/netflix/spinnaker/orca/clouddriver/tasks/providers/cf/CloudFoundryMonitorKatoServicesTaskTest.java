@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.matches;
@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.Task;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;
 import javax.annotation.Nullable;
@@ -87,7 +87,7 @@ class CloudFoundryMonitorKatoServicesTaskTest {
     context.put("region", region);
 
     TaskResult result =
-        task.execute(new Stage(new Execution(PIPELINE, "orca"), "deployService", context));
+        task.execute(new Stage(new PipelineExecution(PIPELINE, "orca"), "deployService", context));
 
     assertThat(result).isEqualToComparingFieldByFieldRecursively(expected);
   }

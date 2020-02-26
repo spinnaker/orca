@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
@@ -121,7 +121,7 @@ class StartPipelineTask implements Task {
   //
   // In the case of the implicit pipeline invocation, the MDC is empty, which is why we fall back
   // to Execution.AuthenticationDetails of the parent pipeline.
-  User getUser(Execution parentPipeline) {
+  User getUser(PipelineExecution parentPipeline) {
     def korkUsername = AuthenticatedRequest.getSpinnakerUser()
     if (korkUsername.isPresent()) {
       def korkAccounts = AuthenticatedRequest.getSpinnakerAccounts().orElse("")

@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
@@ -47,7 +47,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
   GetBuildPropertiesTask task = new GetBuildPropertiesTask(buildService)
 
   @Shared
-  def execution = Stub(Execution)
+  def execution = Stub(PipelineExecution)
 
   def "retrieves values from a property file if specified"() {
     given:
@@ -168,7 +168,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
   }
 
   def createStage(String propertyFile) {
-    return new Stage(Stub(Execution), "jenkins", [
+    return new Stage(Stub(PipelineExecution), "jenkins", [
       master: MASTER,
       job: JOB,
       buildNumber: BUILD_NUMBER,

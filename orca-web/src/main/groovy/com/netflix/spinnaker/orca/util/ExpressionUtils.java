@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.exceptions.UserException;
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import com.netflix.spinnaker.orca.q.handler.ExpressionAware;
@@ -49,7 +49,7 @@ public class ExpressionUtils implements ExpressionAware {
   }
 
   public Map<String, Object> evaluateVariables(
-      @Nonnull Execution execution,
+      @Nonnull PipelineExecution execution,
       @Nonnull List<String> requisiteStageRefIds,
       @Nullable String spelVersionOverride,
       @Nonnull List<Map<String, String>> expressions) {

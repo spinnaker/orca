@@ -2,7 +2,7 @@ package com.netflix.spinnaker.orca.mine.pipeline
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.mine.MineService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -29,7 +29,7 @@ class AcaTaskStageSpec extends Specification {
   def "restart aca task should cancel off the original canary and clean up the stage context"() {
     given:
     def executionRepository = Mock(ExecutionRepository)
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
 
     def canary = createCanary('123');
     def context = [canary: canary.clone()]
@@ -66,7 +66,7 @@ class AcaTaskStageSpec extends Specification {
   def "restart aca task should not cancel off the original canary if there is no canary id and clean up the stage context"() {
     given:
     def executionRepository = Mock(ExecutionRepository)
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
 
     def canary = createCanary()
     def context = [canary: canary.clone()]
@@ -117,7 +117,7 @@ class AcaTaskStageSpec extends Specification {
     canary
   }
 
-  def createStage(Execution pipeline, Map<String, Object> context) {
+  def createStage(PipelineExecution pipeline, Map<String, Object> context) {
     Stage stage = new Stage(pipeline, "acaTask", "ACA Task", context)
     stage.tasks = [
       new Task(

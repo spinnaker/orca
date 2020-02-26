@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Client
@@ -50,7 +50,7 @@ class TriggerQuipTaskSpec extends Specification {
   String app = 'foo'
 
   @Shared
-  Execution pipe = pipeline {
+  PipelineExecution pipe = pipeline {
     application = app
   }
 

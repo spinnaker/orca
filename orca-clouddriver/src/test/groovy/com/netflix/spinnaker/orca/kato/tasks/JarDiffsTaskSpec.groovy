@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion
 import com.netflix.spinnaker.orca.libdiffs.Library
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -41,7 +41,7 @@ class JarDiffsTaskSpec extends Specification {
   InstanceService instanceService = Mock(InstanceService)
 
   @Shared
-  Execution pipeline = Execution.newPipeline("orca")
+  PipelineExecution pipeline = PipelineExecution.newPipeline("orca")
 
   def setup() {
     GroovyMock(OortHelper, global: true)

@@ -24,7 +24,7 @@ import retrofit.client.Response
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.AuthenticationDetails
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.AuthenticationDetails
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND
 

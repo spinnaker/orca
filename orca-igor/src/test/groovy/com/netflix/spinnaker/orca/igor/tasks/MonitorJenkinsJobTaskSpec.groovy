@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.igor.tasks
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -32,7 +32,7 @@ class MonitorJenkinsJobTaskSpec extends Specification {
   MonitorJenkinsJobTask task = new MonitorJenkinsJobTask()
 
   @Shared
-  def pipeline = Execution.newPipeline("orca")
+  def pipeline = PipelineExecution.newPipeline("orca")
 
   @Unroll
   def "should return #taskStatus if job is #jobState"() {

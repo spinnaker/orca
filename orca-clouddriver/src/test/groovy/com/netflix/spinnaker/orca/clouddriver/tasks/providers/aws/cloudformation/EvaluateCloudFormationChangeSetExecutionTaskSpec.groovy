@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
@@ -31,7 +31,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
   @Unroll
   def "should put in context if the changeSet if a replacement if not present"(){
     given:
-      def pipeline = Execution.newPipeline('orca')
+      def pipeline = PipelineExecution.newPipeline('orca')
       def context = [
         cloudProvider: 'aws',
         changeSetName: 'changeSetName',
@@ -68,7 +68,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
   @Unroll
   def "Should return succeed if already set in context changeSetIsReplacement to false"(){
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       cloudProvider: 'aws',
       changeSetName: 'changeSetName',
@@ -100,7 +100,7 @@ class EvaluateCloudFormationChangeSetExecutionTaskSpec extends Specification {
   @Unroll
   def "Should set actionOnReplacement in context with the value from UI"(){
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       cloudProvider: 'aws',
       changeSetName: 'changeSetName',

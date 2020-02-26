@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentMonitorStag
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentStep
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse
 import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployInternalStageData
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import spock.lang.Specification
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 
 class EvaluateDeploymentHealthTaskSpec extends Specification {
-  Execution pipe = pipeline {
+  PipelineExecution pipe = pipeline {
   }
 
   def "should retry retrofit errors"() {

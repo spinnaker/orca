@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import rx.Observable
 import spock.lang.Specification
@@ -37,7 +37,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
   def "should put a kato task information as output"() {
     given:
     def taskId = new TaskId(id: 'id')
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       credentials: 'creds',
       cloudProvider: 'aws',
@@ -79,7 +79,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
   @Unroll
   def "should finish successfully unless is a replacement and it's configured to skip"(){
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'cloudProvider': 'aws',
       'isChangeSet': true,
@@ -128,7 +128,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
 
   def "should end up succesfully when the changeset has been deleted in previous tasks"() {
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'cloudProvider': 'aws',
       'isChangeSet': true,
@@ -155,7 +155,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
   }
   def "should throw and exception when is a changeset and is set to fail"() {
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'cloudProvider': 'aws',
       'isChangeSet': true,

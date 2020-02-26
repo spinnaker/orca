@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.pipeline.persistence
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
@@ -32,9 +32,9 @@ import java.time.Instant
 import java.time.ZoneOffset
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL_ASC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
@@ -44,7 +44,7 @@ import static java.time.temporal.ChronoUnit.HOURS
 
 @Subject(ExecutionRepository)
 @Unroll
-abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Specification {
+abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> extends Specification {
 
   @Subject
   ExecutionRepository repository
@@ -596,7 +596,7 @@ abstract class ExecutionRepositoryTck<T extends ExecutionRepository> extends Spe
 
     expect:
     with(repository.retrieve(PIPELINE, execution.id)) {
-      trigger.parentExecution instanceof Execution
+      trigger.parentExecution instanceof PipelineExecution
     }
   }
 

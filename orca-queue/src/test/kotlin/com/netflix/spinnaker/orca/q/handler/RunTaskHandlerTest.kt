@@ -37,8 +37,8 @@ import com.netflix.spinnaker.orca.fixture.task
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.PausedDetails
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Stage.STAGE_TIMEOUT_OVERRIDE_KEY
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository

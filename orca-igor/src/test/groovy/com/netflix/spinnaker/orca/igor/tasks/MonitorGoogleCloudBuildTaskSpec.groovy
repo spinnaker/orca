@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import spock.lang.Specification
@@ -31,7 +31,7 @@ class MonitorGoogleCloudBuildTaskSpec extends Specification {
   def ACCOUNT = "my-account"
   def BUILD_ID = "0cc67a01-714f-49c7-aaf3-d09b5ec1a18a"
 
-  Execution execution = Mock(Execution)
+  PipelineExecution execution = Mock(PipelineExecution)
   IgorService igorService = Mock(IgorService)
 
   @Subject

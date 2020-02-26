@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileDynamic
@@ -110,7 +110,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
     }.flatten()
 
     def findImageCtx = [application: stage.execution.application, account: stage.context.baseline.account, cluster: stage.context.baseline.cluster, regions: regions, cloudProvider: stage.context.baseline.cloudProvider ?: 'aws']
-    Stage s = new Stage(Execution.newOrchestration(stage.execution.application), "findImage", findImageCtx)
+    Stage s = new Stage(PipelineExecution.newOrchestration(stage.execution.application), "findImage", findImageCtx)
     try {
       TaskResult result = findImage.execute(s)
       return result.context.amiDetails

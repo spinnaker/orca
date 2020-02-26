@@ -33,11 +33,11 @@ import com.netflix.spinnaker.orca.interlink.events.CancelInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.DeleteInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.Execution.PausedDetails
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.PausedDetails
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -123,7 +123,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun store(execution: Execution) {
+  override fun store(execution: PipelineExecution) {
     withPool(poolName) {
       jooq.transactional { storeExecutionInternal(it, execution, true) }
     }
@@ -141,7 +141,7 @@ class SqlExecutionRepository(
     storeStage(stage)
   }
 
-  override fun removeStage(execution: Execution, stageId: String) {
+  override fun removeStage(execution: PipelineExecution, stageId: String) {
     validateHandledPartitionOrThrow(execution)
 
     withPool(poolName) {
@@ -165,7 +165,7 @@ class SqlExecutionRepository(
 
   fun doForeignAware(
     event: InterlinkEvent,
-    block: (execution: Execution, dslContext: DSLContext) -> Unit
+    block: (execution: PipelineExecution, dslContext: DSLContext) -> Unit
   ) {
     withPool(poolName) {
       jooq.transactional { dslContext ->
@@ -184,7 +184,7 @@ class SqlExecutionRepository(
 
   override fun cancel(type: ExecutionType, id: String, user: String?, reason: String?) {
     doForeignAware(CancelInterlinkEvent(type, id, user, reason)) {
-      execution: Execution, dslContext: DSLContext ->
+      execution: PipelineExecution, dslContext: DSLContext ->
       execution.isCanceled = true
       if (user != null) {
         execution.canceledBy = user
@@ -297,16 +297,16 @@ class SqlExecutionRepository(
     selectExecution(jooq, type, id)
       ?: throw ExecutionNotFoundException("No $type found for $id")
 
-  override fun retrieve(type: ExecutionType): Observable<Execution> =
+  override fun retrieve(type: ExecutionType): Observable<PipelineExecution> =
     Observable.from(fetchExecutions { pageSize, cursor ->
       selectExecutions(type, pageSize, cursor)
     })
 
-  override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<Execution> {
+  override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<PipelineExecution> {
     return retrieve(type, criteria, null)
   }
 
-  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<Execution> {
+  private fun retrieve(type: ExecutionType, criteria: ExecutionCriteria, partition: String?): Observable<PipelineExecution> {
     withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
@@ -334,7 +334,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun retrievePipelinesForApplication(application: String): Observable<Execution> =
+  override fun retrievePipelinesForApplication(application: String): Observable<PipelineExecution> =
     withPool(poolName) {
       Observable.from(fetchExecutions { pageSize, cursor ->
         selectExecutions(PIPELINE, pageSize, cursor) {
@@ -346,7 +346,7 @@ class SqlExecutionRepository(
   override fun retrievePipelinesForPipelineConfigId(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
-  ): Observable<Execution> {
+  ): Observable<PipelineExecution> {
     // When not filtering by status, provide an index hint to ensure use of `pipeline_config_id_idx` which
     // fully satisfies the where clause and order by. Without, some lookups by config_id matching thousands
     // of executions triggered costly full table scans.
@@ -385,7 +385,7 @@ class SqlExecutionRepository(
   override fun retrieveOrchestrationsForApplication(
     application: String,
     criteria: ExecutionCriteria
-  ): Observable<Execution> {
+  ): Observable<PipelineExecution> {
     return Observable.from(retrieveOrchestrationsForApplication(application, criteria, NATURAL_ASC))
   }
 
@@ -393,7 +393,7 @@ class SqlExecutionRepository(
     application: String,
     criteria: ExecutionCriteria,
     sorter: ExecutionComparator?
-  ): MutableList<Execution> {
+  ): MutableList<PipelineExecution> {
     withPool(poolName) {
       return jooq.selectExecutions(
         ORCHESTRATION,
@@ -431,7 +431,7 @@ class SqlExecutionRepository(
       ORCHESTRATION -> retrieveOrchestrationForCorrelationId(correlationId)
     }
 
-  override fun retrieveOrchestrationForCorrelationId(correlationId: String): Execution {
+  override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
     withPool(poolName) {
       val execution = jooq.selectExecution(ORCHESTRATION)
         .where(field("id").eq(
@@ -457,7 +457,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun retrievePipelineForCorrelationId(correlationId: String): Execution {
+  override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
     withPool(poolName) {
       val execution = jooq.selectExecution(PIPELINE)
         .where(field("id").eq(
@@ -483,7 +483,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun retrieveBufferedExecutions(): MutableList<Execution> =
+  override fun retrieveBufferedExecutions(): MutableList<PipelineExecution> =
     ExecutionCriteria().setStatuses(BUFFERED)
       .let { criteria ->
         rx.Observable.merge(
@@ -570,7 +570,7 @@ class SqlExecutionRepository(
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria
-  ): List<Execution> {
+  ): List<PipelineExecution> {
     withPool(poolName) {
       val select = jooq.selectExecutions(
         PIPELINE,
@@ -611,8 +611,8 @@ class SqlExecutionRepository(
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria
-  ): List<Execution> {
-    val allExecutions = mutableListOf<Execution>()
+  ): List<PipelineExecution> {
+    val allExecutions = mutableListOf<PipelineExecution>()
     var page = 1
     val pageSize = executionCriteria.pageSize
     var moreResults = true
@@ -676,7 +676,7 @@ class SqlExecutionRepository(
     }
   }
 
-  private fun storeExecutionInternal(ctx: DSLContext, execution: Execution, storeStages: Boolean = false) {
+  private fun storeExecutionInternal(ctx: DSLContext, execution: PipelineExecution, storeStages: Boolean = false) {
     validateHandledPartitionOrThrow(execution)
 
     val stages = execution.stages.toMutableList().toList()
@@ -782,7 +782,7 @@ class SqlExecutionRepository(
     upsert(ctx, stageTable, insertPairs, updatePairs, stage.id)
   }
 
-  private fun storeCorrelationIdInternal(ctx: DSLContext, execution: Execution) {
+  private fun storeCorrelationIdInternal(ctx: DSLContext, execution: PipelineExecution) {
     if (execution.trigger.correlationId != null && !execution.status.isComplete) {
       val executionIdField = when (execution.type) {
         PIPELINE -> field("pipeline_id")
@@ -861,7 +861,7 @@ class SqlExecutionRepository(
     type: ExecutionType,
     id: String,
     forUpdate: Boolean = false
-  ): Execution? {
+  ): PipelineExecution? {
     withPool(poolName) {
       val select = ctx.selectExecution(type).where(id.toWhereCondition())
       if (forUpdate) {
@@ -876,7 +876,7 @@ class SqlExecutionRepository(
     limit: Int,
     cursor: String?,
     where: ((SelectJoinStep<Record>) -> SelectConditionStep<Record>)? = null
-  ): Collection<Execution> {
+  ): Collection<PipelineExecution> {
     withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
@@ -948,13 +948,13 @@ class SqlExecutionRepository(
   private fun SelectForUpdateStep<out Record>.fetchExecution() =
     fetchExecutions().firstOrNull()
 
-  private fun fetchExecutions(nextPage: (Int, String?) -> Iterable<Execution>) =
-    object : Iterable<Execution> {
-      override fun iterator(): Iterator<Execution> =
-        PagedIterator(batchReadSize, Execution::getId, nextPage)
+  private fun fetchExecutions(nextPage: (Int, String?) -> Iterable<PipelineExecution>) =
+    object : Iterable<PipelineExecution> {
+      override fun iterator(): Iterator<PipelineExecution> =
+        PagedIterator(batchReadSize, PipelineExecution::getId, nextPage)
     }
 
-  private fun isForeign(execution: Execution, shouldThrow: Boolean = false): Boolean {
+  private fun isForeign(execution: PipelineExecution, shouldThrow: Boolean = false): Boolean {
     val partition = execution.partition
     val foreign = !handlesPartition(partition)
     if (foreign && shouldThrow) {
@@ -985,7 +985,7 @@ class SqlExecutionRepository(
   private fun validateHandledPartitionOrThrow(executionType: ExecutionType, id: String): Boolean =
     isForeign(executionType, id, true)
 
-  private fun validateHandledPartitionOrThrow(execution: Execution): Boolean =
+  private fun validateHandledPartitionOrThrow(execution: PipelineExecution): Boolean =
     isForeign(execution, true)
 
   class SyntheticStageRequired : IllegalArgumentException("Only synthetic stages can be inserted ad-hoc")

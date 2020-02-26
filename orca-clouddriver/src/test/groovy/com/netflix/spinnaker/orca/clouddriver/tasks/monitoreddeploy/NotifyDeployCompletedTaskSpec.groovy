@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.Mo
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorService
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentCompletedRequest
 import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentMonitorStageConfig
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.client.Response
 import spock.lang.Specification
@@ -38,7 +38,7 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 
 class NotifyDeployCompletedTaskSpec extends Specification {
   ObjectMapper mapper = new ObjectMapper()
-  Execution pipe = pipeline {
+  PipelineExecution pipe = pipeline {
   }
 
   def "should indicate deployment success or failure when no rollback is performed"() {

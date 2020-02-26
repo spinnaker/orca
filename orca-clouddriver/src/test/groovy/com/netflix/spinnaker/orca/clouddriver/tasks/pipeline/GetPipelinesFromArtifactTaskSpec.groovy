@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import retrofit.client.Response
@@ -44,7 +44,7 @@ class GetPipelinesFromArtifactTaskSpec extends Specification {
     def context = [
       pipelinesArtifactId: '123'
     ]
-    def result = task.execute(new Stage(Execution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new Stage(PipelineExecution.newPipeline("orca"), "whatever", context))
 
     then:
     1 * artifactUtils.getBoundArtifactForStage(_, '123', _) >> Artifact.builder().type('http/file')
@@ -63,7 +63,7 @@ class GetPipelinesFromArtifactTaskSpec extends Specification {
     def context = [
       pipelinesArtifactId: '123'
     ]
-    def result = task.execute(new Stage(Execution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new Stage(PipelineExecution.newPipeline("orca"), "whatever", context))
 
     then:
     1 * artifactUtils.getBoundArtifactForStage(_, '123', _) >> Artifact.builder().type('http/file')
@@ -86,7 +86,7 @@ class GetPipelinesFromArtifactTaskSpec extends Specification {
     def context = [
       pipelinesArtifactId: '123'
     ]
-    def result = task.execute(new Stage(Execution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new Stage(PipelineExecution.newPipeline("orca"), "whatever", context))
 
     then:
     1 * artifactUtils.getBoundArtifactForStage(_, '123', _) >> null

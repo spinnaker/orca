@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.Collections;
@@ -60,7 +60,7 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
             .build();
     ManifestEvaluator.Result evaluatedManifest = manifestEvaluator.evaluate(stage, manifestContext);
 
-    final Execution execution = stage.getExecution();
+    final PipelineExecution execution = stage.getExecution();
     ImmutableMap.Builder<String, Object> operation =
         ImmutableMap.<String, Object>builder()
             .put("application", context.get("application"))

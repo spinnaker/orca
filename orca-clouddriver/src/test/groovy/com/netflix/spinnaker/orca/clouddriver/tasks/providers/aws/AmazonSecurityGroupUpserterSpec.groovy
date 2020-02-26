@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 
 import com.netflix.spinnaker.orca.clouddriver.MortService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -42,7 +42,7 @@ class AmazonSecurityGroupUpserterSpec extends Specification {
 
   def "should throw exception on missing region"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "upsertSecurityGroup", [:])
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "upsertSecurityGroup", [:])
 
     when:
       upserter.getOperationContext(stage)

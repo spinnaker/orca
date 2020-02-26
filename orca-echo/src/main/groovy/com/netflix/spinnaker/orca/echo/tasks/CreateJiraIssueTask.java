@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.echo.JiraService;
 import com.netflix.spinnaker.orca.echo.JiraService.CreateJiraIssueResponse;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +55,7 @@ public class CreateJiraIssueTask implements RetryableTask {
     JiraService.CreateIssueRequest createIssueRequest =
         stage.mapTo(JiraService.CreateIssueRequest.class);
     Optional.ofNullable(stage.getExecution().getAuthentication())
-        .map(Execution.AuthenticationDetails::getUser)
+        .map(PipelineExecution.AuthenticationDetails::getUser)
         .ifPresent(createIssueRequest::setReporter);
 
     CreateJiraIssueResponse createJiraIssueResponse =

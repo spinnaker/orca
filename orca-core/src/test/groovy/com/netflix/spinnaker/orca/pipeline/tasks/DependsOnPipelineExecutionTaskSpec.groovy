@@ -23,11 +23,11 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.orchestration
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
-class DependsOnExecutionTaskSpec extends Specification {
+class DependsOnPipelineExecutionTaskSpec extends Specification {
 
   def repository = Mock(ExecutionRepository)
   def task = new DependsOnExecutionTask(repository)

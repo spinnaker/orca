@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -54,8 +54,8 @@ import retrofit.http.Query
 import javax.servlet.http.HttpServletResponse
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import static net.logstash.logback.argument.StructuredArguments.value
 
 @RestController
@@ -283,7 +283,7 @@ class OperationsController {
     }
 
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
-      Execution parentExecution
+      PipelineExecution parentExecution
       try {
         parentExecution = executionRepository.retrieve(PIPELINE, pipeline.trigger.parentPipelineId)
       } catch (ExecutionNotFoundException e) {

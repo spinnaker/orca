@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.ERROR
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SpelEvaluatorVersion
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SUMMARY
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.StageContext
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor

@@ -114,7 +114,7 @@ public class PipelineExpressionEvaluator {
   private static Class[] extraAllowedReturnTypes =
       new Class[] {
         Artifact.class,
-        Execution.class,
+        PipelineExecution.class,
         Stage.class,
         Trigger.class,
         BuildInfo.class,
@@ -123,8 +123,8 @@ public class PipelineExpressionEvaluator {
         ConcourseBuildInfo.class,
         SourceControl.class,
         ExecutionStatus.class,
-        Execution.AuthenticationDetails.class,
-        Execution.PausedDetails.class
+        PipelineExecution.AuthenticationDetails.class,
+        PipelineExecution.PausedDetails.class
       };
 
   private final ExpressionParser parser = new SpelExpressionParser();
@@ -183,7 +183,7 @@ public class PipelineExpressionEvaluator {
               .forEach(
                   f -> {
                     if (!f.getParameters().isEmpty()
-                        && f.getParameters().get(0).getType() == Execution.class) {
+                        && f.getParameters().get(0).getType() == PipelineExecution.class) {
                       this.executionAwareFunctions.add(f.getName());
                     }
                   });

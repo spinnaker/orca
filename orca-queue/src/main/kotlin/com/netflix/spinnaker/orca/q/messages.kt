@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.q
 import com.fasterxml.jackson.annotation.JsonTypeName
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
@@ -242,7 +242,7 @@ data class RestartStage(
   override val stageId: String,
   val user: String?
 ) : Message(), StageLevel {
-  constructor(source: Execution, stageId: String, user: String?) :
+  constructor(source: PipelineExecution, stageId: String, user: String?) :
     this(source.type, source.id, source.application, stageId, user)
 
   constructor(stage: Stage, user: String?) :
@@ -283,7 +283,7 @@ data class StartExecution(
   override val executionId: String,
   override val application: String
 ) : Message(), ExecutionLevel {
-  constructor(source: Execution) :
+  constructor(source: PipelineExecution) :
     this(source.type, source.id, source.application)
 }
 
@@ -293,7 +293,7 @@ data class RescheduleExecution(
   override val executionId: String,
   override val application: String
 ) : Message(), ExecutionLevel {
-  constructor(source: Execution) :
+  constructor(source: PipelineExecution) :
     this(source.type, source.id, source.application)
 }
 
@@ -306,7 +306,7 @@ data class CompleteExecution(
   constructor(source: ExecutionLevel) :
     this(source.executionType, source.executionId, source.application)
 
-  constructor(source: Execution) :
+  constructor(source: PipelineExecution) :
     this(source.type, source.id, source.application)
 }
 
@@ -316,7 +316,7 @@ data class ResumeExecution(
   override val executionId: String,
   override val application: String
 ) : Message(), ExecutionLevel {
-  constructor(source: Execution) :
+  constructor(source: PipelineExecution) :
     this(source.type, source.id, source.application)
 }
 
@@ -328,10 +328,10 @@ data class CancelExecution(
   val user: String?,
   val reason: String?
 ) : Message(), ExecutionLevel {
-  constructor(source: Execution, user: String?, reason: String?) :
+  constructor(source: PipelineExecution, user: String?, reason: String?) :
     this(source.type, source.id, source.application, user, reason)
 
-  constructor(source: Execution) :
+  constructor(source: PipelineExecution) :
     this(source.type, source.id, source.application, null, null)
 
   constructor(source: ExecutionLevel) :

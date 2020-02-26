@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -35,7 +35,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
   @Unroll
   def "should succeed if the stack creation is '#status' and if isChangeSet property is '#isChangeSet'"() {
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'credentials': 'creds',
       'cloudProvider': 'aws',
@@ -78,7 +78,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
   @Unroll
   def "should be running while deploy is in '#status'"() {
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'credentials': 'creds',
       'cloudProvider': 'aws',
@@ -104,7 +104,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
   }
 
   def "should be running while clouddriver doesn't return the stack (still not cached)"() {
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'credentials': 'creds',
       'cloudProvider': 'aws',
@@ -125,7 +125,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
   @Unroll
   def "should error on known error states or unknown stack status"() {
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'credentials': 'creds',
       'cloudProvider': 'aws',
@@ -165,7 +165,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
   }
 
   def "should error when clouddriver responds with an error other than 404"() {
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'credentials': 'creds',
       'cloudProvider': 'aws',
@@ -186,7 +186,7 @@ class WaitForCloudFormationCompletionTaskSpec extends Specification {
 
   @Unroll
   def "should get the change set status if it's a change set"() {
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecution.newPipeline('orca')
     def context = [
       'credentials': 'creds',
       'cloudProvider': 'aws',

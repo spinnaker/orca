@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServer
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -38,7 +38,7 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
 
   def "should extract server groups from parent stages"() {
     given:
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     pipeline.stages << new Stage(pipeline, "test")
     pipeline.stages << new Stage(pipeline, CreateServerGroupStage.PIPELINE_CONFIG_TYPE, [
       "deploy.account.name" : account,
@@ -111,7 +111,7 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
 
   def "should succeed immediately if cluster not found and continueIfClusterNotFound flag set in context"() {
     given:
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     def stage = new Stage(pipeline, DisableServerGroupStage.PIPELINE_CONFIG_TYPE, [
       continueIfClusterNotFound: true,
       cluster: 'foo',
@@ -137,7 +137,7 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
 
   def "should succeed immediately if cluster is empty and continueIfClusterNotFound flag set in context"() {
     given:
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     def stage = new Stage(pipeline, DisableServerGroupStage.PIPELINE_CONFIG_TYPE, [
       continueIfClusterNotFound: true,
       cluster: 'foo',
@@ -164,7 +164,7 @@ class AbstractClusterWideClouddriverTaskSpec extends Specification {
   @Unroll
   'cluster with name "#cluster" and moniker "#moniker" should have application name "#expected"'() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), 'clusterSelection', [
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), 'clusterSelection', [
       cluster: cluster,
       moniker: moniker,
       credentials: 'foo'

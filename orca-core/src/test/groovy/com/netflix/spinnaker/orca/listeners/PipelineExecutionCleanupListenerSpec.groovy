@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.listeners
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 import spock.lang.Subject
@@ -25,7 +25,7 @@ import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 
-class ExecutionCleanupListenerSpec extends Specification {
+class PipelineExecutionCleanupListenerSpec extends Specification {
   @Subject
   def executionCleanupListener = new ExecutionCleanupListener()
 
@@ -34,7 +34,7 @@ class ExecutionCleanupListenerSpec extends Specification {
   @Unroll
   def "should only cleanup successfully completed pipelines"() {
     given:
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
     pipeline.status = executionStatus
     pipeline.stages << new Stage(pipeline, "", [
       targetReferences: "my-target-reference"

@@ -23,16 +23,16 @@ import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications.Notification
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import org.slf4j.MDC
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 
-class EchoNotifyingExecutionListenerSpec extends Specification {
+class EchoNotifyingPipelineExecutionListenerSpec extends Specification {
 
   def echoService = Mock(EchoService)
   def front50Service = Mock(Front50Service)
@@ -87,7 +87,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   void "sends events with expected type to Echo"() {
     given:
-    def pipeline = Execution.newPipeline("myapp")
+    def pipeline = PipelineExecution.newPipeline("myapp")
 
     when:
     echoListener.beforeExecution(null, pipeline)
@@ -104,7 +104,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   void "adds notifications to pipeline on beforeExecution"() {
     given:
-    def pipeline = Execution.newPipeline("myapp")
+    def pipeline = PipelineExecution.newPipeline("myapp")
 
     when:
     echoListener.beforeExecution(null, pipeline)
@@ -118,7 +118,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   void "adds notifications to pipeline on afterExecution"() {
     given:
-    def pipeline = Execution.newPipeline("myapp")
+    def pipeline = PipelineExecution.newPipeline("myapp")
 
     when:
     echoListener.afterExecution(null, pipeline, ExecutionStatus.TERMINAL, false)
@@ -132,7 +132,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   void "dedupes notifications"() {
     given:
-    def pipeline = Execution.newPipeline("myapp")
+    def pipeline = PipelineExecution.newPipeline("myapp")
     def pipelineConfiguredNotification = [
       when   : ["pipeline.started", "pipeline.completed"],
       type   : "slack",
@@ -155,7 +155,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   void "evaluates SpEL and correctly dedupes notifications"() {
     given:
-    def pipeline = Execution.newPipeline("myapp")
+    def pipeline = PipelineExecution.newPipeline("myapp")
     def pipelineConfiguredNotification = [
       when   : ["pipeline.started", "pipeline.completed"],
       type   : "slack",
@@ -178,7 +178,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   void "handles case where no notifications are present"() {
     given:
-    def pipeline = Execution.newPipeline("myapp")
+    def pipeline = PipelineExecution.newPipeline("myapp")
 
     when:
     echoListener.beforeExecution(null, pipeline)
@@ -192,7 +192,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   void "handles case where no application notifications are present"() {
     given:
-    def pipeline = Execution.newPipeline("myapp")
+    def pipeline = PipelineExecution.newPipeline("myapp")
     def pipelineConfiguredNotification = [
       when   : ["pipeline.started", "pipeline.completed"],
       type   : "slack",
@@ -213,8 +213,8 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
 
   def "propagates authentication details to front50"() {
     given:
-    def pipeline = new Execution(PIPELINE, "myapp")
-    pipeline.setAuthentication(new Execution.AuthenticationDetails("user@schibsted.com", "someAccount", "anotherAccount"))
+    def pipeline = new PipelineExecution(PIPELINE, "myapp")
+    pipeline.setAuthentication(new PipelineExecution.AuthenticationDetails("user@schibsted.com", "someAccount", "anotherAccount"))
 
     when:
     echoListener.beforeExecution(null, pipeline)
@@ -245,7 +245,7 @@ class EchoNotifyingExecutionListenerSpec extends Specification {
       when   : ["pipeline.starting", "pipeline.complete", "pipeline.failed"]
     ])
     notifications.set("slack", [notification1, notification2])
-    def pipeline = new Execution(PIPELINE, "myapp")
+    def pipeline = new PipelineExecution(PIPELINE, "myapp")
 
     when:
     echoListener.beforeExecution(null, pipeline)

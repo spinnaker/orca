@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionStarted
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException
@@ -68,12 +68,12 @@ class RedisActiveExecutionsMonitor(
   private val executor = Executors.newScheduledThreadPool(2)
 
   private val activePipelineCounter = registry.gauge(
-    registry.createId("executions.active").withTag("executionType", Execution.ExecutionType.PIPELINE.toString()),
+    registry.createId("executions.active").withTag("executionType", PipelineExecution.ExecutionType.PIPELINE.toString()),
     AtomicInteger(0)
   )
 
   private val activeOrchestrationCounter = registry.gauge(
-    registry.createId("executions.active").withTag("executionType", Execution.ExecutionType.ORCHESTRATION.toString()),
+    registry.createId("executions.active").withTag("executionType", PipelineExecution.ExecutionType.ORCHESTRATION.toString()),
     AtomicInteger(0)
   )
 
@@ -110,8 +110,8 @@ class RedisActiveExecutionsMonitor(
       log.info("Refreshing active execution gauges (active: ${executions.size})")
 
       val executionByType = executions.groupBy { it.type }
-      activePipelineCounter.set(executionByType.get(Execution.ExecutionType.PIPELINE)?.size ?: 0)
-      activeOrchestrationCounter.set(executionByType.get(Execution.ExecutionType.ORCHESTRATION)?.size ?: 0)
+      activePipelineCounter.set(executionByType.get(PipelineExecution.ExecutionType.PIPELINE)?.size ?: 0)
+      activeOrchestrationCounter.set(executionByType.get(PipelineExecution.ExecutionType.ORCHESTRATION)?.size ?: 0)
     }
   }
 
@@ -137,7 +137,7 @@ class RedisActiveExecutionsMonitor(
   fun cleanup() {
     val orphans = getActiveExecutions()
       .map {
-        val execution: Execution
+        val execution: PipelineExecution
         try {
           execution = executionRepository.retrieve(it.type, it.id)
         } catch (e: ExecutionNotFoundException) {
@@ -167,8 +167,8 @@ class RedisActiveExecutionsMonitor(
     }
   }
 
-  private fun startExecution(executionType: Execution.ExecutionType, executionId: String) {
-    val execution: Execution
+  private fun startExecution(executionType: PipelineExecution.ExecutionType, executionId: String) {
+    val execution: PipelineExecution
     try {
       execution = executionRepository.retrieve(executionType, executionId)
     } catch (e: ExecutionNotFoundException) {
@@ -202,7 +202,7 @@ class RedisActiveExecutionsMonitor(
 
   data class ActiveExecution(
     val id: String,
-    val type: Execution.ExecutionType,
+    val type: PipelineExecution.ExecutionType,
     val application: String
   )
 }

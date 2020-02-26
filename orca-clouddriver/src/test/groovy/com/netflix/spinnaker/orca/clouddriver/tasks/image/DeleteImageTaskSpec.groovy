@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.image
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Specification
 
@@ -33,7 +33,7 @@ class DeleteImageTaskSpec extends Specification {
       imageIds: ["ami-123", "ami-321"]
     ]
 
-    def stage = new Stage(Execution.newPipeline("orca"), "deleteImage", context)
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "deleteImage", context)
 
     and:
     List<Map> operations = []

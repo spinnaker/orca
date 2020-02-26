@@ -31,7 +31,7 @@ data class PipelineTrigger
   override var isRebake: Boolean = false,
   override var isDryRun: Boolean = false,
   override var isStrategy: Boolean = false,
-  val parentExecution: Execution,
+  val parentExecution: PipelineExecution,
   val parentPipelineStageId: String? = null
 ) : Trigger {
   override var other: Map<String, Any> = mutableMapOf()

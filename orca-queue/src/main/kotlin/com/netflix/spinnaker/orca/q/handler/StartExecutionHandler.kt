@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.ext.initialStages
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.StartExecution
@@ -70,7 +70,7 @@ class StartExecutionHandler(
     }
   }
 
-  private fun start(execution: Execution) {
+  private fun start(execution: PipelineExecution) {
     if (execution.isAfterStartTimeExpiry()) {
       log.warn("Execution (type ${execution.type}, id {}, application: {}) start was canceled because" +
         "start time would be after defined start time expiry (now: ${clock.millis()}, expiry: ${execution.startTimeExpiry})",
@@ -97,7 +97,7 @@ class StartExecutionHandler(
     }
   }
 
-  private fun terminate(execution: Execution) {
+  private fun terminate(execution: PipelineExecution) {
     if (execution.status == CANCELED || execution.isCanceled) {
       publisher.publishEvent(ExecutionComplete(this, execution.type, execution.id, execution.status))
       execution.pipelineConfigId?.let {
@@ -111,7 +111,7 @@ class StartExecutionHandler(
     }
   }
 
-  private fun Execution.isAfterStartTimeExpiry() =
+  private fun PipelineExecution.isAfterStartTimeExpiry() =
     startTimeExpiry
       ?.let { Instant.ofEpochMilli(it) }
       ?.isBefore(clock.instant()) ?: false

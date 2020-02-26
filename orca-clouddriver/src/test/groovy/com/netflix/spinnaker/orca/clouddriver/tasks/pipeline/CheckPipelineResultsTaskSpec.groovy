@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import spock.lang.Specification
@@ -42,7 +42,7 @@ class CheckPipelineResultsTaskSpec extends Specification {
       setStatus(ExecutionStatus.SUCCEEDED)
       return it
     }
-    final Stage stage = new Stage(Execution.newPipeline("orca"), "whatever", context).with {
+    final Stage stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever", context).with {
       setTasks([savePipelineTask])
       return it
     }
@@ -67,7 +67,7 @@ class CheckPipelineResultsTaskSpec extends Specification {
       setStatus(ExecutionStatus.SUCCEEDED)
       return it
     }
-    final Stage stage = new Stage(Execution.newPipeline("orca"), "whatever", context).with {
+    final Stage stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever", context).with {
       setTasks([savePipelineTask])
       return it
     }
@@ -91,7 +91,7 @@ class CheckPipelineResultsTaskSpec extends Specification {
       setStatus(ExecutionStatus.TERMINAL)
       return it
     }
-    final Stage stage = new Stage(Execution.newPipeline("orca"), "whatever", context).with {
+    final Stage stage = new Stage(PipelineExecution.newPipeline("orca"), "whatever", context).with {
       setTasks([savePipelineTask])
       return it
     }

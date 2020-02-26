@@ -18,7 +18,7 @@
 package com.netflix.spinnaker.orca.webhook.tasks
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import org.springframework.http.HttpStatus
@@ -31,7 +31,7 @@ import spock.lang.Unroll
 
 class MonitorWebhookTaskSpec extends Specification {
 
-  def pipeline = Execution.newPipeline("orca")
+  def pipeline = PipelineExecution.newPipeline("orca")
 
   @Subject
   MonitorWebhookTask monitorWebhookTask = new MonitorWebhookTask()

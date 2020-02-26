@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.test.model
 
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.transform.CompileStatic
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
@@ -28,15 +28,15 @@ import static java.lang.System.currentTimeMillis
 class ExecutionBuilder {
 
   /**
-   * Constructs and returns a {@link Execution} instance.
+   * Constructs and returns a {@link PipelineExecution} instance.
    *
    * @param builder used for customizing the pipeline.
    * @return a pipeline.
    */
-  static Execution pipeline(
-    @DelegatesTo(value = Execution, strategy = DELEGATE_FIRST)
+  static PipelineExecution pipeline(
+    @DelegatesTo(value = PipelineExecution, strategy = DELEGATE_FIRST)
       Closure builder = {}) {
-    def pipeline = Execution.newPipeline("covfefe")
+    def pipeline = PipelineExecution.newPipeline("covfefe")
     pipeline.trigger = new DefaultTrigger("manual", null, "user@example.com")
     pipeline.buildTime = currentTimeMillis()
 
@@ -48,15 +48,15 @@ class ExecutionBuilder {
   }
 
   /**
-   * Constructs and returns a {@link Execution} instance.
+   * Constructs and returns a {@link PipelineExecution} instance.
    *
    * @param builder used for customizing the orchestration.
    * @return an orchestration.
    */
-  static Execution orchestration(
-    @DelegatesTo(value = Execution, strategy = DELEGATE_FIRST)
+  static PipelineExecution orchestration(
+    @DelegatesTo(value = PipelineExecution, strategy = DELEGATE_FIRST)
       Closure builder = {}) {
-    def orchestration = Execution.newOrchestration("covfefe")
+    def orchestration = PipelineExecution.newOrchestration("covfefe")
     orchestration.buildTime = currentTimeMillis()
     orchestration.trigger = new DefaultTrigger("manual")
 
@@ -98,11 +98,11 @@ class ExecutionBuilder {
     return stage
   }
 
-  private static Execution findExecution(Closure closure) {
+  private static PipelineExecution findExecution(Closure closure) {
     if (closure.owner instanceof Closure) {
       def enclosingClosure = (closure.owner as Closure)
-      if (enclosingClosure.delegate instanceof Execution) {
-        return enclosingClosure.delegate as Execution
+      if (enclosingClosure.delegate instanceof PipelineExecution) {
+        return enclosingClosure.delegate as PipelineExecution
       } else {
         return findExecution(enclosingClosure)
       }

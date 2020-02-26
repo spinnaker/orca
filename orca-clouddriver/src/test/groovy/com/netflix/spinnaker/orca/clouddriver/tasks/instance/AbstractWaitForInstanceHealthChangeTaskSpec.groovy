@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Shared
 import spock.lang.Specification
@@ -25,7 +25,7 @@ import spock.lang.Unroll
 
 class AbstractWaitForInstanceHealthChangeTaskSpec extends Specification {
   @Shared
-  Execution pipeline = Execution.newPipeline("orca")
+  PipelineExecution pipeline = PipelineExecution.newPipeline("orca")
 
   @Unroll
   void 'should be #expectedResult for #instanceDetails with #interestingHealthProviderNames relevant health providers (WaitForDownInstances)'() {

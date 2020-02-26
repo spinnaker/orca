@@ -928,7 +928,7 @@ class ContextParameterProcessorSpec extends Specification {
       }
     }
 
-    pipe.setAuthentication(new Execution.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
+    pipe.setAuthentication(new PipelineExecution.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
 
     def stage = pipe.stages.find { it.name == "Wait1" }
     def ctx = contextParameterProcessor.buildExecutionContext(stage)

@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import retrofit.RetrofitError
 import spock.lang.Specification
@@ -32,7 +32,7 @@ class MonitorAwsCodeBuildTaskSpec extends Specification {
   String BUILD_ID = "test:c7715bbf-5c12-44d6-87ef-8149473e02f7"
   String ARN = "arn:aws:codebuild:us-west-2:123456789012:build/$BUILD_ID"
 
-  Execution execution = Mock(Execution)
+  PipelineExecution execution = Mock(PipelineExecution)
   IgorService igorService = Mock(IgorService)
 
   @Subject

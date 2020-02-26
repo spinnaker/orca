@@ -4,7 +4,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForRequiredInstancesDownTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Shared
 import spock.lang.Specification
@@ -113,7 +113,7 @@ class WaitForClusterDisableTaskSpec extends Specification {
   @Unroll
   def "fails with '#message' when clusterData=#clusterData"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "test", [
+    def stage = new Stage(PipelineExecution.newPipeline("orca"), "test", [
       cluster: clusterName,
       credentials: 'test',
       "deploy.server.groups": [

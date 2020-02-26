@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -57,7 +57,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
   ]
   def objectMapper = new ObjectMapper()
 
-  Execution execution = Mock(Execution)
+  PipelineExecution execution = Mock(PipelineExecution)
   IgorService igorService = Mock(IgorService)
   OortService oortService = Mock(OortService)
   ArtifactUtils artifactUtils = Mock(ArtifactUtils)

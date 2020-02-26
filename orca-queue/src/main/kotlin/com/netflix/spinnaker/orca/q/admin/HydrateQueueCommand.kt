@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.ext.allBeforeStagesSuccessful
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.isInitial
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -63,7 +63,7 @@ class HydrateQueueCommand(
   private val log = LoggerFactory.getLogger(javaClass)
 
   override fun invoke(p1: HydrateQueueInput): HydrateQueueOutput {
-    val pInTimeWindow = { execution: Execution -> inTimeWindow(p1, execution) }
+    val pInTimeWindow = { execution: PipelineExecution -> inTimeWindow(p1, execution) }
 
     val targets = if (p1.executionId == null) {
       executionRepository
@@ -109,7 +109,7 @@ class HydrateQueueCommand(
     return output
   }
 
-  internal fun processExecution(execution: Execution): ProcessedExecution {
+  internal fun processExecution(execution: PipelineExecution): ProcessedExecution {
     val actions = mutableListOf<Action>()
 
     execution.stages
@@ -228,31 +228,31 @@ class HydrateQueueCommand(
     }
   }
 
-  private fun inTimeWindow(input: HydrateQueueInput, execution: Execution): Boolean =
+  private fun inTimeWindow(input: HydrateQueueInput, execution: PipelineExecution): Boolean =
     execution.startTime
       ?.let { Instant.ofEpochMilli(it) }
       ?.let { !(input.start?.isBefore(it) == true || input.end?.isAfter(it) == true) }
       ?: true
 
-  private fun ExecutionRepository.retrieveRunning(): Observable<Execution> =
+  private fun ExecutionRepository.retrieveRunning(): Observable<PipelineExecution> =
     rx.Observable.merge(
-      retrieve(Execution.ExecutionType.ORCHESTRATION, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING)),
-      retrieve(Execution.ExecutionType.PIPELINE, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING))
+      retrieve(PipelineExecution.ExecutionType.ORCHESTRATION, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING)),
+      retrieve(PipelineExecution.ExecutionType.PIPELINE, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING))
     )
 
-  private fun ExecutionRepository.retrieveSingleRunning(executionId: String): Observable<Execution> {
+  private fun ExecutionRepository.retrieveSingleRunning(executionId: String): Observable<PipelineExecution> {
     // TODO rz - Ugh. So dumb.
     val execution = try {
-      retrieve(Execution.ExecutionType.ORCHESTRATION, executionId)
+      retrieve(PipelineExecution.ExecutionType.ORCHESTRATION, executionId)
     } catch (e: ExecutionNotFoundException) {
       try {
-        retrieve(Execution.ExecutionType.PIPELINE, executionId)
+        retrieve(PipelineExecution.ExecutionType.PIPELINE, executionId)
       } catch (e: ExecutionNotFoundException) {
         null
       }
     }
     return if (execution == null || execution.status != RUNNING) {
-      rx.Observable.empty<Execution>()
+      rx.Observable.empty<PipelineExecution>()
     } else {
       rx.Observable.just(execution)
     }

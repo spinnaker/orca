@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.notifications.scheduling
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
@@ -27,11 +27,11 @@ import spock.lang.Unroll
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
-class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specification {
+class TopApplicationPipelineExecutionCleanupPollingNotificationAgentSpec extends Specification {
   @Unroll
   void "filter should only consider SUCCEEDED executions"() {
     given:
@@ -107,9 +107,9 @@ class TopApplicationExecutionCleanupPollingNotificationAgentSpec extends Specifi
     1 * executionRepository.delete(ORCHESTRATION, orchestrations[0].id)
   }
 
-  private static Collection<Execution> buildExecutions(AtomicInteger stageStartTime,
-                                                       int count,
-                                                       String configId = null) {
+  private static Collection<PipelineExecution> buildExecutions(AtomicInteger stageStartTime,
+                                                               int count,
+                                                               String configId = null) {
     (1..count).collect {
       def time = stageStartTime.incrementAndGet()
       pipeline {

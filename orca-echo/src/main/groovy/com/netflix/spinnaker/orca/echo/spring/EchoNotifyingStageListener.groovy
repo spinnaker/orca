@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.Task
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -32,7 +32,7 @@ import groovy.util.logging.Slf4j
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
 import static com.netflix.spinnaker.orca.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
 
 /**
  * Converts execution events to Echo events.
@@ -141,7 +141,7 @@ class EchoNotifyingStageListener implements StageListener {
     }
   }
 
-  private Map<String, Object> buildContext(Execution execution, Map context) {
+  private Map<String, Object> buildContext(PipelineExecution execution, Map context) {
     return contextParameterProcessor.process(
       context,
       [execution: execution] as Map<String, Object>,

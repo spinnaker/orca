@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.webhook.pipeline
 
 import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import com.netflix.spinnaker.orca.webhook.tasks.CreateWebhookTask
@@ -38,7 +38,7 @@ class WebhookStageSpec extends Specification {
   def "Should create correct tasks"() {
     given:
     def stage = new Stage(
-      Execution.newPipeline("orca"),
+      PipelineExecution.newPipeline("orca"),
       "webhook",
       [
         waitForCompletion: waitForCompletion,

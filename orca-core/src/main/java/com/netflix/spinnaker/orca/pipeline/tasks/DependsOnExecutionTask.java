@@ -21,8 +21,8 @@ import static java.lang.String.format;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -58,7 +58,7 @@ public class DependsOnExecutionTask implements OverridableTimeoutRetryableTask {
     TaskContext context = stage.mapTo(TaskContext.class);
 
     try {
-      Execution execution =
+      PipelineExecution execution =
           repository.retrieve(
               ExecutionType.valueOf(context.executionType.toUpperCase()), context.executionId);
       ExecutionStatus status = execution.getStatus();

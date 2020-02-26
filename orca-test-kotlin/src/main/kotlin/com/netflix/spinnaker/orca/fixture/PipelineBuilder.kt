@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.fixture
 
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.Task
@@ -28,8 +28,8 @@ import java.lang.System.currentTimeMillis
 /**
  * Build a pipeline.
  */
-fun pipeline(init: Execution.() -> Unit = {}): Execution {
-  val pipeline = Execution(PIPELINE, "covfefe")
+fun pipeline(init: PipelineExecution.() -> Unit = {}): PipelineExecution {
+  val pipeline = PipelineExecution(PIPELINE, "covfefe")
   pipeline.trigger = DefaultTrigger("manual")
   pipeline.buildTime = currentTimeMillis()
   pipeline.init()
@@ -54,7 +54,7 @@ fun stage(init: Stage.() -> Unit): Stage {
  *
  * Automatically hooks up execution.
  */
-fun Execution.stage(init: Stage.() -> Unit): Stage {
+fun PipelineExecution.stage(init: Stage.() -> Unit): Stage {
   val stage = Stage()
   stage.execution = this
   stage.type = "test"

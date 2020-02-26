@@ -42,8 +42,8 @@ import com.netflix.spinnaker.orca.ext.failureStatus
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -349,7 +349,7 @@ class RunTaskHandler(
         ))
     )
 
-  private fun Execution.pausedDurationRelativeTo(instant: Instant?): Duration {
+  private fun PipelineExecution.pausedDurationRelativeTo(instant: Instant?): Duration {
     val pausedDetails = paused
     return if (pausedDetails != null) {
       if (pausedDetails.pauseTime.toInstant()?.isAfter(instant) == true) {

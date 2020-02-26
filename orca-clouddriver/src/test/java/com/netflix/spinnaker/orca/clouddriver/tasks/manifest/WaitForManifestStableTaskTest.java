@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.HashMap;
 import java.util.List;
@@ -289,7 +289,7 @@ final class WaitForManifestStableTaskTest {
   private Stage createStageWithManifests(
       ImmutableMap<String, ImmutableList<String>> manifestsByNamespace) {
     return new Stage(
-        new Execution(Execution.ExecutionType.PIPELINE, "test"),
+        new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "test"),
         "test",
         new HashMap<>(
             ImmutableMap.of(
@@ -319,7 +319,9 @@ final class WaitForManifestStableTaskTest {
 
   private Stage createStageWithContext(Map<String, ?> context) {
     return new Stage(
-        new Execution(Execution.ExecutionType.PIPELINE, "test"), "test", new HashMap<>(context));
+        new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "test"),
+        "test",
+        new HashMap<>(context));
   }
 
   private static ManifestBuilder manifestBuilder() {

@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.pipeline.persistence;
 
 import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_AFTER;
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.Comparator;
 import java.util.List;
@@ -34,7 +34,7 @@ public class ExecutionRepositoryUtil {
    * execution.
    */
   public static void sortStagesByReference(
-      @Nonnull Execution execution, @Nonnull List<Stage> stages) {
+      @Nonnull PipelineExecution execution, @Nonnull List<Stage> stages) {
     if (!execution.getStages().isEmpty()) {
       throw new StagesAlreadySorted();
     }

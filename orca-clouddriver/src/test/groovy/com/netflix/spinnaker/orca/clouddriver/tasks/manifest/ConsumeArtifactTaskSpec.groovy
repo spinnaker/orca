@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.ConsumeArtifactTask
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import retrofit.client.Response
@@ -45,7 +45,7 @@ class ConsumeArtifactTaskSpec extends Specification {
 
   def "parses JSON artifact into task outputs"() {
     given:
-    def stage = new Stage(Stub(Execution), "consumeArtifact", [
+    def stage = new Stage(Stub(PipelineExecution), "consumeArtifact", [
       artifactId: "12345",
       artifactAccount: "test",
     ])

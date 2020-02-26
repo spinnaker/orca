@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
@@ -154,7 +154,7 @@ private fun Stage.buildExecutionWindow(): Stage? {
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun Execution.injectStage(index: Int, stage: Stage) {
+private fun PipelineExecution.injectStage(index: Int, stage: Stage) {
   stages.add(index, stage)
 }
 

@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
 import static java.util.Collections.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,7 +38,7 @@ import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.io.ByteArrayInputStream;
@@ -97,7 +97,9 @@ class CFRollingRedBlackStrategyTest {
     context.put("delayBeforeScaleDownSec", 5L);
     Stage deployServerGroupStage =
         new Stage(
-            new Execution(PIPELINE, "unit"), CreateServerGroupStage.PIPELINE_CONFIG_TYPE, context);
+            new PipelineExecution(PIPELINE, "unit"),
+            CreateServerGroupStage.PIPELINE_CONFIG_TYPE,
+            context);
     when(targetServerGroupResolver.resolve(any()))
         .thenReturn(singletonList(new TargetServerGroup(Collections.emptyMap())));
     when(resizeStrategySupport.getCapacity(any(), any(), any(), any()))
@@ -140,7 +142,9 @@ class CFRollingRedBlackStrategyTest {
     context.put("delayBeforeCleanup", 5L);
     Stage deployServerGroupStage =
         new Stage(
-            new Execution(PIPELINE, "unit"), CreateServerGroupStage.PIPELINE_CONFIG_TYPE, context);
+            new PipelineExecution(PIPELINE, "unit"),
+            CreateServerGroupStage.PIPELINE_CONFIG_TYPE,
+            context);
 
     when(targetServerGroupResolver.resolve(any()))
         .thenReturn(singletonList(new TargetServerGroup(Collections.emptyMap())));
@@ -188,7 +192,9 @@ class CFRollingRedBlackStrategyTest {
     ResizeStrategy.Capacity resizeTo4Capacity = new ResizeStrategy.Capacity(4, 4, 4);
     Stage deployServerGroupStage =
         new Stage(
-            new Execution(PIPELINE, "unit"), CreateServerGroupStage.PIPELINE_CONFIG_TYPE, context);
+            new PipelineExecution(PIPELINE, "unit"),
+            CreateServerGroupStage.PIPELINE_CONFIG_TYPE,
+            context);
 
     List<Stage> stages = strategy.composeFlow(deployServerGroupStage);
 
@@ -224,7 +230,9 @@ class CFRollingRedBlackStrategyTest {
     context.put("source", createSource());
     Stage deployServerGroupStage =
         new Stage(
-            new Execution(PIPELINE, "unit"), CreateServerGroupStage.PIPELINE_CONFIG_TYPE, context);
+            new PipelineExecution(PIPELINE, "unit"),
+            CreateServerGroupStage.PIPELINE_CONFIG_TYPE,
+            context);
     ResizeStrategy.Capacity initialSourceCapacity = new ResizeStrategy.Capacity(8, 8, 8);
     ResizeStrategy.Capacity resetOriginalCapacity =
         new ResizeStrategy.Capacity(initialSourceCapacity.getMax(), 0, 0);
@@ -295,7 +303,9 @@ class CFRollingRedBlackStrategyTest {
     Response oortServiceResponse = createMockOortServiceResponse(body);
     Stage deployServerGroupStage =
         new Stage(
-            new Execution(PIPELINE, "unit"), CreateServerGroupStage.PIPELINE_CONFIG_TYPE, context);
+            new PipelineExecution(PIPELINE, "unit"),
+            CreateServerGroupStage.PIPELINE_CONFIG_TYPE,
+            context);
     ResizeStrategy.Capacity resizeTo4Capacity = new ResizeStrategy.Capacity(4, 4, 4);
 
     when(artifactUtils.getBoundArtifactForStage(any(), any(), any()))
@@ -351,7 +361,8 @@ class CFRollingRedBlackStrategyTest {
     ResizeStrategy.Capacity resetOriginalCapacity =
         new ResizeStrategy.Capacity(initialSourceCapacity.getMax(), 0, 0);
 
-    Stage deployServerGroupStage = new Stage(new Execution(PIPELINE, "unit"), "type", context);
+    Stage deployServerGroupStage =
+        new Stage(new PipelineExecution(PIPELINE, "unit"), "type", context);
     Artifact boundArtifactForStage = Artifact.builder().build();
     Map<String, Object> application = new HashMap<>();
     application.put("instances", "4");

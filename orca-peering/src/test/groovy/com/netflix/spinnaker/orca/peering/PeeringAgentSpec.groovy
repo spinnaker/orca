@@ -21,8 +21,8 @@ import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
 
 class PeeringAgentSpec extends Specification {
   MySqlRawAccess src = Mock(MySqlRawAccess)

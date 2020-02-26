@@ -20,7 +20,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+
 import javax.validation.constraints.NotNull;
 
 /** Common interface for all interlink event messages */
@@ -42,7 +43,7 @@ public interface InterlinkEvent {
   @JsonIgnore
   EventType getEventType();
 
-  Execution.ExecutionType getExecutionType();
+  PipelineExecution.ExecutionType getExecutionType();
 
   String getExecutionId();
 

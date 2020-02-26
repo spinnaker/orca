@@ -19,8 +19,9 @@ package com.netflix.spinnaker.orca.interlink.events;
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.PAUSE;
 
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import javax.annotation.Nullable;
+
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,12 +33,12 @@ import lombok.NonNull;
 public class PauseInterlinkEvent implements InterlinkEvent {
   final EventType eventType = PAUSE;
   @Nullable String partition;
-  @NonNull Execution.ExecutionType executionType;
+  @NonNull PipelineExecution.ExecutionType executionType;
   @NonNull String executionId;
   @Nullable String pausedBy;
 
   public PauseInterlinkEvent(
-      @NonNull Execution.ExecutionType executionType,
+      @NonNull PipelineExecution.ExecutionType executionType,
       @NonNull String executionId,
       @Nullable String pausedBy) {
     this.executionType = executionType;

@@ -17,13 +17,13 @@ package com.netflix.spinnaker.orca.commands
 
 import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.LoggerFactory
 import java.time.Clock
 
 /**
- * When an [Execution] is zombied and cannot be rehydrated back onto the queue, this
+ * When an [PipelineExecution] is zombied and cannot be rehydrated back onto the queue, this
  * command can be used to cleanup.
  *
  * TODO(rz): Fix zombies.
@@ -35,7 +35,7 @@ class ForceExecutionCancellationCommand(
 
   private val log = LoggerFactory.getLogger(javaClass)
 
-  fun forceCancel(executionType: Execution.ExecutionType, executionId: String, canceledBy: String) {
+  fun forceCancel(executionType: PipelineExecution.ExecutionType, executionId: String, canceledBy: String) {
     log.info("Forcing cancel of $executionType:$executionId by: $canceledBy")
     val execution = executionRepository.retrieve(executionType, executionId)
 
@@ -44,7 +44,7 @@ class ForceExecutionCancellationCommand(
     }
   }
 
-  private fun forceCancel(execution: Execution, canceledBy: String): Boolean {
+  private fun forceCancel(execution: PipelineExecution, canceledBy: String): Boolean {
     val now = clock.instant().toEpochMilli()
 
     var changes = false

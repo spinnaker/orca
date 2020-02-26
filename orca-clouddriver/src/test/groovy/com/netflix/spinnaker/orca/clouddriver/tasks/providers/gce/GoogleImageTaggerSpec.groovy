@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTagger
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTaggerSpec
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.Stage
 import spock.lang.Unroll
 
@@ -36,7 +36,7 @@ class GoogleImageTaggerSpec extends ImageTaggerSpec {
   @Unroll
   def "should throw exception if image does not exist"() {
     given:
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecution.newPipeline("orca")
 
     def stage1 = new Stage(pipeline, "", [
       imageId      : imageId,
@@ -80,7 +80,7 @@ class GoogleImageTaggerSpec extends ImageTaggerSpec {
 
   def "should build upsertImageTags operation"() {
     given:
-    def stage = new Stage(Execution.newOrchestration("orca"), "", [
+    def stage = new Stage(PipelineExecution.newOrchestration("orca"), "", [
       account   : "my-google-account",
       imageNames: ["my-gce-image"],
       tags      : [

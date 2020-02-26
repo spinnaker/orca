@@ -19,8 +19,9 @@ package com.netflix.spinnaker.orca.interlink.events;
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.DELETE;
 
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import javax.annotation.Nullable;
+
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,11 +33,11 @@ import lombok.NonNull;
 public class DeleteInterlinkEvent implements InterlinkEvent {
   final EventType eventType = DELETE;
   @Nullable String partition;
-  @NonNull Execution.ExecutionType executionType;
+  @NonNull PipelineExecution.ExecutionType executionType;
   @NonNull String executionId;
 
   public DeleteInterlinkEvent(
-      @NonNull Execution.ExecutionType executionType, @NonNull String executionId) {
+      @NonNull PipelineExecution.ExecutionType executionType, @NonNull String executionId) {
     this.executionType = executionType;
     this.executionId = executionId;
   }

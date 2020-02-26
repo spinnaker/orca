@@ -37,7 +37,7 @@ import spock.lang.Unroll
 import java.time.Clock
 import java.time.Instant
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
@@ -91,8 +91,8 @@ class TaskControllerSpec extends Specification {
 
   void 'should cancel a list of tasks by id'() {
     given:
-    def orc1 = Stub(Execution)
-    def orc2 = Stub(Execution)
+    def orc1 = Stub(PipelineExecution)
+    def orc2 = Stub(PipelineExecution)
     when:
     def response = mockMvc.perform(
       put('/tasks/cancel').contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(["id1", "id2"]))
@@ -254,7 +254,7 @@ class TaskControllerSpec extends Specification {
 
   void '/applications/{application}/evaluateExpressions precomputes values'() {
     given:
-    executionRepository.retrieve(Execution.ExecutionType.PIPELINE, "1") >> {
+    executionRepository.retrieve(PipelineExecution.ExecutionType.PIPELINE, "1") >> {
       pipeline {
         id = "1"
         application = "doesn't matter"
@@ -332,7 +332,7 @@ class TaskControllerSpec extends Specification {
 
   void 'should update existing stage context'() {
     given:
-    def pipeline = Execution.newPipeline("covfefe")
+    def pipeline = PipelineExecution.newPipeline("covfefe")
     def pipelineStage = new Stage(pipeline, "test", [value: "1"])
     pipelineStage.id = "s1"
     pipeline.stages.add(pipelineStage)
@@ -387,7 +387,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _ ) >> pipelines.findAll {
         it.pipelineConfigId == "1"
       }.collect { config ->
-        Execution pipeline = pipeline {
+        PipelineExecution pipeline = pipeline {
           id = config.id
           application = app
           startTime = config.startTime
@@ -438,7 +438,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
-      Execution pipeline = pipeline {
+      PipelineExecution pipeline = pipeline {
         id = config.id
         application = app
         startTime = config.startTime
@@ -490,7 +490,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
-      Execution pipeline = pipeline {
+      PipelineExecution pipeline = pipeline {
         id = config.id
         application = app
         startTime = config.startTime
@@ -536,7 +536,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
-      Execution pipeline = pipeline {
+      PipelineExecution pipeline = pipeline {
         id = config.id
         application = app1
         startTime = config.startTime
@@ -578,7 +578,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["2"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "2"
     }.collect { config ->
-      Execution pipeline = pipeline {
+      PipelineExecution pipeline = pipeline {
         id = config.id
         application = app
         startTime = config.startTime
@@ -620,7 +620,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
-      Execution pipeline = pipeline {
+      PipelineExecution pipeline = pipeline {
         id = config.id
         application = app
         startTime = config.startTime
@@ -661,7 +661,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
-      Execution pipeline = pipeline {
+      PipelineExecution pipeline = pipeline {
         id = config.id
         application = app
         startTime = config.startTime
@@ -708,7 +708,7 @@ class TaskControllerSpec extends Specification {
     executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
-      Execution pipeline = pipeline {
+      PipelineExecution pipeline = pipeline {
         id = config.id
         application = app
         startTime = config.startTime

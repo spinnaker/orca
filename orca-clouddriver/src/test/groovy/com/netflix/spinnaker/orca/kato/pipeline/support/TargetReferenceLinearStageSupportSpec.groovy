@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
@@ -155,7 +155,7 @@ class TargetReferenceLinearStageSupportSpec extends Specification {
         credentials: 'test',
         cluster    : 'myappcluster'
       ],
-      Execution.newPipeline("orca")
+      PipelineExecution.newPipeline("orca")
     )
 
     when:
