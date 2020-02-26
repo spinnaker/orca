@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.config
+package com.netflix.spinnaker.orca.interlink
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.netflix.spinnaker.kork.exceptions.SystemException
 
-@ConfigurationProperties("pollers.peering")
-class PeeringAgentConfigurationProperties {
-  var enabled: Boolean = true
-  var intervalMs: Long = 5000
-  var poolName: String? = null
-  var peerId: String? = null
-  var threadCount: Int = 30
-  var chunkSize: Int = 100
-  var clockDriftMs: Long = 5000
-
-  // Only read via dynamicConfigService, here for completeness
-  var maxAllowedDeleteCount: Int = 1000
-}
+class MessageFlaggedException(message: String?) : SystemException(message)

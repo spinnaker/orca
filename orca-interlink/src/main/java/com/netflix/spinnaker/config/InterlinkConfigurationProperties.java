@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.config
+package com.netflix.spinnaker.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("pollers.peering")
-class PeeringAgentConfigurationProperties {
-  var enabled: Boolean = true
-  var intervalMs: Long = 5000
-  var poolName: String? = null
-  var peerId: String? = null
-  var threadCount: Int = 30
-  var chunkSize: Int = 100
-  var clockDriftMs: Long = 5000
+@Data
+@ConfigurationProperties(prefix = "interlink")
+public class InterlinkConfigurationProperties {
+  FlaggerProperties flagger;
 
-  // Only read via dynamicConfigService, here for completeness
-  var maxAllowedDeleteCount: Int = 1000
+  /** see {@link com.netflix.spinnaker.orca.interlink.MessageFlagger} */
+  @Data
+  public static class FlaggerProperties {
+    public boolean enabled = true;
+    public int maxSize = 32;
+    public int threshold = 8;
+    public long lookbackSeconds = 60;
+  }
 }

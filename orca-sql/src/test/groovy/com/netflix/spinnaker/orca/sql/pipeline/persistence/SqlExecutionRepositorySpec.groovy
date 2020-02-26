@@ -77,13 +77,13 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<ExecutionReposit
 
   @Override
   ExecutionRepository createExecutionRepositoryPrevious() {
-    new SqlExecutionRepository("test", previousDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName")
+    new SqlExecutionRepository("test", previousDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", null)
   }
 
   ExecutionRepository createExecutionRepository(String partition) {
     return com.netflix.spinnaker.kork.telemetry.InstrumentedProxy.proxy(
         new DefaultRegistry(),
-        new SqlExecutionRepository(partition, currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName"),
+        new SqlExecutionRepository(partition, currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", null),
         "namespace")
   }
 
@@ -121,6 +121,9 @@ class SqlExecutionRepositorySpec extends ExecutionRepositoryTck<ExecutionReposit
   }
 
   def "persists foreign executions when own partition is not set"() {
+    // Need to clear the DB here
+    cleanup()
+
     given:
     ExecutionRepository repo = createExecutionRepository(null)
     Execution e = new Execution(PIPELINE, "myapp")
