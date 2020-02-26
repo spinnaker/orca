@@ -103,18 +103,16 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
       )
 
     val parsingError = mapOf(
-      "error" to mapOf(
+      "message" to "Parsing error",
+      "details" to mapOf(
         "message" to "Parsing error",
-        "details" to mapOf(
-          "message" to "Parsing error",
-          "path" to listOf(
-            mapOf(
-              "type" to "SomeClass",
-              "field" to "someField"
-            )
-          ),
-          "pathExpression" to ".someField"
-        )
+        "path" to listOf(
+          mapOf(
+            "type" to "SomeClass",
+            "field" to "someField"
+          )
+        ),
+        "pathExpression" to ".someField"
       )
     )
   }
