@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.config;
+apply from: "$rootDir/gradle/kotlin.gradle"
+apply from: "$rootDir/gradle/spock.gradle"
 
-import com.netflix.spinnaker.orca.config.PreconfiguredStageParameter;
-import lombok.Data;
+dependencies {
+  implementation(project(":orca-core"))
 
-@Data
-public class PreconfiguredJobStageParameter extends PreconfiguredStageParameter {
+  implementation("com.netflix.spinnaker.kork:kork-sql")
+  implementation("org.jooq:jooq")
+  implementation("org.springframework.boot:spring-boot-autoconfigure")
 
-  String mapping;
+  testImplementation(project(":orca-test-groovy"))
 }
