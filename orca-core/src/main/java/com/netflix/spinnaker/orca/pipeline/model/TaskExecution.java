@@ -23,7 +23,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** A "task" is a component piece of a stage */
-public class TaskExecution {
+public class TaskExecution implements com.netflix.spinnaker.orca.api.TaskExecution {
   private String id;
 
   public @Nonnull String getId() {
