@@ -28,7 +28,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 
 @Slf4j
 @CompileStatic

@@ -54,8 +54,8 @@ import retrofit.http.Query
 import javax.servlet.http.HttpServletResponse
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import static net.logstash.logback.argument.StructuredArguments.value
 
 @RestController

@@ -19,6 +19,7 @@ import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.PercentileTimer
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.DelegatingExecutionRepository
@@ -89,67 +90,67 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun cancel(type: PipelineExecution.ExecutionType, id: String) {
+  override fun cancel(type: ExecutionType, id: String) {
     withMetrics("cancel2") {
       executionRepository.cancel(type, id)
     }
   }
 
-  override fun cancel(type: PipelineExecution.ExecutionType, id: String, user: String?, reason: String?) {
+  override fun cancel(type: ExecutionType, id: String, user: String?, reason: String?) {
     withMetrics("cancel4") {
       executionRepository.cancel(type, id, user, reason)
     }
   }
 
-  override fun pause(type: PipelineExecution.ExecutionType, id: String, user: String?) {
+  override fun pause(type: ExecutionType, id: String, user: String?) {
     withMetrics("pause") {
       executionRepository.pause(type, id, user)
     }
   }
 
-  override fun resume(type: PipelineExecution.ExecutionType, id: String, user: String?) {
+  override fun resume(type: ExecutionType, id: String, user: String?) {
     withMetrics("resume3") {
       executionRepository.resume(type, id, user)
     }
   }
 
-  override fun resume(type: PipelineExecution.ExecutionType, id: String, user: String?, ignoreCurrentStatus: Boolean) {
+  override fun resume(type: ExecutionType, id: String, user: String?, ignoreCurrentStatus: Boolean) {
     withMetrics("resume4") {
       executionRepository.resume(type, id, user, ignoreCurrentStatus)
     }
   }
 
-  override fun isCanceled(type: PipelineExecution.ExecutionType, id: String): Boolean {
+  override fun isCanceled(type: ExecutionType, id: String): Boolean {
     return withMetrics("isCanceled") {
       executionRepository.isCanceled(type, id)
     }
   }
 
-  override fun updateStatus(type: PipelineExecution.ExecutionType, id: String, status: ExecutionStatus) {
+  override fun updateStatus(type: ExecutionType, id: String, status: ExecutionStatus) {
     withMetrics("updateStatus") {
       executionRepository.updateStatus(type, id, status)
     }
   }
 
-  override fun delete(type: PipelineExecution.ExecutionType, id: String) {
+  override fun delete(type: ExecutionType, id: String) {
     withMetrics("delete") {
       executionRepository.delete(type, id)
     }
   }
 
-  override fun retrieve(type: PipelineExecution.ExecutionType, id: String): PipelineExecution {
+  override fun retrieve(type: ExecutionType, id: String): PipelineExecution {
     return withMetrics("retrieve2") {
       executionRepository.retrieve(type, id)
     }
   }
 
-  override fun retrieve(type: PipelineExecution.ExecutionType): Observable<PipelineExecution> {
+  override fun retrieve(type: ExecutionType): Observable<PipelineExecution> {
     return withMetrics("retrieve1") {
       executionRepository.retrieve(type)
     }
   }
 
-  override fun retrieve(type: PipelineExecution.ExecutionType, criteria: ExecutionRepository.ExecutionCriteria): Observable<PipelineExecution> {
+  override fun retrieve(type: ExecutionType, criteria: ExecutionRepository.ExecutionCriteria): Observable<PipelineExecution> {
     return withMetrics("retrieve3") {
       executionRepository.retrieve(type, criteria)
     }
@@ -195,7 +196,7 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun retrieveByCorrelationId(executionType: PipelineExecution.ExecutionType, correlationId: String): PipelineExecution {
+  override fun retrieveByCorrelationId(executionType: ExecutionType, correlationId: String): PipelineExecution {
     return withMetrics("retrieveByCorrelationId") {
       executionRepository.retrieveByCorrelationId(executionType, correlationId)
     }
@@ -213,13 +214,13 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun retrieveAllApplicationNames(type: PipelineExecution.ExecutionType?): List<String> {
+  override fun retrieveAllApplicationNames(type: ExecutionType?): List<String> {
     return withMetrics("retrieveAllApplicationNames1") {
       executionRepository.retrieveAllApplicationNames(type)
     }
   }
 
-  override fun retrieveAllApplicationNames(type: PipelineExecution.ExecutionType?, minExecutions: Int): List<String> {
+  override fun retrieveAllApplicationNames(type: ExecutionType?, minExecutions: Int): List<String> {
     return withMetrics("retrieveAllApplicationNames2") {
       executionRepository.retrieveAllApplicationNames(type, minExecutions)
     }
@@ -255,13 +256,13 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun hasExecution(type: PipelineExecution.ExecutionType, id: String): Boolean {
+  override fun hasExecution(type: ExecutionType, id: String): Boolean {
     return withMetrics("hasExecution") {
       executionRepository.hasExecution(type, id)
     }
   }
 
-  override fun retrieveAllExecutionIds(type: PipelineExecution.ExecutionType): MutableList<String> {
+  override fun retrieveAllExecutionIds(type: ExecutionType): MutableList<String> {
     return withMetrics("retrieveAllExecutionIds") {
       executionRepository.retrieveAllExecutionIds(type)
     }

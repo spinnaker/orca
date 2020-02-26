@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component
 
 import java.util.concurrent.Callable
 
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 
 @Component
 @Slf4j

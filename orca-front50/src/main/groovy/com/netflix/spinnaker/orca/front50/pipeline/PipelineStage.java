@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.front50.pipeline;
 
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 

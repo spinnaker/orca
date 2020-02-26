@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.events;
 
 import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType;
+import com.netflix.spinnaker.orca.api.ExecutionType;
 import javax.annotation.Nonnull;
 
 public final class ExecutionComplete extends ExecutionEvent {

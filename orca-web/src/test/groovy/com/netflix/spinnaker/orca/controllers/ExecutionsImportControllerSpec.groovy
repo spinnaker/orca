@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.controllers
 
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.model.ExecutionImportResponse
@@ -46,7 +47,7 @@ class ExecutionsImportControllerSpec extends Specification {
   def 'should throw error while saving execution with status: #invalidStatus '() {
     given:
     String executionId =  new ULID().nextULID()
-    PipelineExecution execution = new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, executionId, 'testapp')
+    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, executionId, 'testapp')
 
     when:
     execution.status = invalidStatus
@@ -55,7 +56,7 @@ class ExecutionsImportControllerSpec extends Specification {
     then:
     thrown(InvalidRequestException)
     1 * front50Service.get('testapp') >> { new Application(name: 'testapp') }
-    1 * executionRepository.retrieve(PipelineExecution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
+    1 * executionRepository.retrieve(ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
     0 * _
 
     where:
@@ -66,7 +67,7 @@ class ExecutionsImportControllerSpec extends Specification {
   def 'should succeed while saving execution with status: #validStatus '() {
     given:
     String executionId = new ULID().nextULID()
-    PipelineExecution execution = new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, executionId, 'testapp')
+    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, executionId, 'testapp')
 
     when:
     execution.status = validStatus
@@ -75,7 +76,7 @@ class ExecutionsImportControllerSpec extends Specification {
     then:
     noExceptionThrown()
     1 * front50Service.get('testapp') >> { new Application(name: 'testapp') }
-    1 * executionRepository.retrieve(PipelineExecution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
+    1 * executionRepository.retrieve(ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
     1 * executionRepository.store(execution)
     0 * _
     result.executionId == executionId
@@ -88,7 +89,7 @@ class ExecutionsImportControllerSpec extends Specification {
   def 'should succeed to import if unable to retrieve app from front50'() {
     given:
     String executionId = new ULID().nextULID()
-    PipelineExecution execution = new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, executionId, 'testapp')
+    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, executionId, 'testapp')
     execution.status = ExecutionStatus.SUCCEEDED
 
     when:
@@ -97,7 +98,7 @@ class ExecutionsImportControllerSpec extends Specification {
     then:
     noExceptionThrown()
     1 * front50Service.get('testapp') >> { throw RetrofitError.unexpectedError('http://test.front50.com', new RuntimeException())}
-    1 * executionRepository.retrieve(PipelineExecution.ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
+    1 * executionRepository.retrieve(ExecutionType.PIPELINE, executionId) >> { throw new ExecutionNotFoundException('No execution')}
     1 * executionRepository.store(execution)
     0 * _
     result.executionId == executionId

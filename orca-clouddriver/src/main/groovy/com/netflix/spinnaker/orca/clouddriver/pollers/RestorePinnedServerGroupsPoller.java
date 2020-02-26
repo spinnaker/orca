@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
@@ -185,7 +186,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
         AuthenticatedRequest.propagate(
                 () ->
                     executionLauncher.start(
-                        PipelineExecution.ExecutionType.ORCHESTRATION,
+                        ExecutionType.ORCHESTRATION,
                         objectMapper.writeValueAsString(cleanupOperation)),
                 systemUser)
             .call();
@@ -330,7 +331,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
     public String location;
     public String serverGroup;
 
-    public PipelineExecution.ExecutionType executionType;
+    public ExecutionType executionType;
     public String executionId;
     public String stageId;
 

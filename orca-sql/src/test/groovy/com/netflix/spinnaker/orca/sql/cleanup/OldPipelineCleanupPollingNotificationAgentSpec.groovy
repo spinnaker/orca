@@ -34,7 +34,7 @@ import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepositor
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initTcMysqlDatabase
 import static java.time.temporal.ChronoUnit.DAYS
 

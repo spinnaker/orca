@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.front50.tasks
 
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
@@ -35,7 +36,7 @@ class DeletePluginInfoTaskSpec extends Specification {
   def "Should call front50 delete plugin info"() {
     given:
     String pluginId = "netflix.stage-plugin"
-    StageExecution stage = new StageExecution(new PipelineExecution(PipelineExecution.ExecutionType.ORCHESTRATION, null),
+    StageExecution stage = new StageExecution(new PipelineExecution(ExecutionType.ORCHESTRATION, null),
       "deletePluginInfo", [pluginInfoId: pluginId])
 
     when:

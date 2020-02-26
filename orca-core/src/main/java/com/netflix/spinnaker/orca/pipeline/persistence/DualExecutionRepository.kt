@@ -16,9 +16,10 @@
 package com.netflix.spinnaker.orca.pipeline.persistence
 
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
@@ -84,7 +85,7 @@ class DualExecutionRepository(
     return select(execution.type, execution.id)
   }
 
-  private fun select(type: PipelineExecution.ExecutionType?, id: String): ExecutionRepository {
+  private fun select(type: ExecutionType?, id: String): ExecutionRepository {
     if (type == null) {
       return select(id)
     } else {
@@ -127,50 +128,50 @@ class DualExecutionRepository(
     select(stage.execution).addStage(stage)
   }
 
-  override fun cancel(type: PipelineExecution.ExecutionType, id: String) {
+  override fun cancel(type: ExecutionType, id: String) {
     select(type, id).cancel(type, id)
   }
 
-  override fun cancel(type: PipelineExecution.ExecutionType, id: String, user: String?, reason: String?) {
+  override fun cancel(type: ExecutionType, id: String, user: String?, reason: String?) {
     select(type, id).cancel(type, id, user, reason)
   }
 
-  override fun pause(type: PipelineExecution.ExecutionType, id: String, user: String?) {
+  override fun pause(type: ExecutionType, id: String, user: String?) {
     select(type, id).pause(type, id, user)
   }
 
-  override fun resume(type: PipelineExecution.ExecutionType, id: String, user: String?) {
+  override fun resume(type: ExecutionType, id: String, user: String?) {
     select(type, id).resume(type, id, user)
   }
 
-  override fun resume(type: PipelineExecution.ExecutionType, id: String, user: String?, ignoreCurrentStatus: Boolean) {
+  override fun resume(type: ExecutionType, id: String, user: String?, ignoreCurrentStatus: Boolean) {
     select(type, id).resume(type, id, user, ignoreCurrentStatus)
   }
 
-  override fun isCanceled(type: PipelineExecution.ExecutionType?, id: String): Boolean {
+  override fun isCanceled(type: ExecutionType?, id: String): Boolean {
     return select(type, id).isCanceled(type, id)
   }
 
-  override fun updateStatus(type: PipelineExecution.ExecutionType?, id: String, status: ExecutionStatus) {
+  override fun updateStatus(type: ExecutionType?, id: String, status: ExecutionStatus) {
     select(type, id).updateStatus(type, id, status)
   }
 
-  override fun retrieve(type: PipelineExecution.ExecutionType, id: String): PipelineExecution {
+  override fun retrieve(type: ExecutionType, id: String): PipelineExecution {
     return select(type, id).retrieve(type, id)
   }
 
-  override fun delete(type: PipelineExecution.ExecutionType, id: String) {
+  override fun delete(type: ExecutionType, id: String) {
     return select(type, id).delete(type, id)
   }
 
-  override fun retrieve(type: PipelineExecution.ExecutionType): Observable<PipelineExecution> {
+  override fun retrieve(type: ExecutionType): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrieve(type),
       previous.retrieve(type)
     ).distinct { it.id }
   }
 
-  override fun retrieve(type: PipelineExecution.ExecutionType, criteria: ExecutionCriteria): Observable<PipelineExecution> {
+  override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrieve(type, criteria),
       previous.retrieve(type, criteria)
@@ -262,7 +263,7 @@ class DualExecutionRepository(
     }
   }
 
-  override fun retrieveByCorrelationId(executionType: PipelineExecution.ExecutionType, correlationId: String): PipelineExecution {
+  override fun retrieveByCorrelationId(executionType: ExecutionType, correlationId: String): PipelineExecution {
     return try {
       primary.retrieveByCorrelationId(executionType, correlationId)
     } catch (e: ExecutionNotFoundException) {
@@ -293,7 +294,7 @@ class DualExecutionRepository(
     ).toList().toBlocking().single().distinctBy { it.id }.toMutableList()
   }
 
-  override fun retrieveAllApplicationNames(executionType: PipelineExecution.ExecutionType?): MutableList<String> {
+  override fun retrieveAllApplicationNames(executionType: ExecutionType?): MutableList<String> {
     return Observable.merge(
       Observable.from(primary.retrieveAllApplicationNames(executionType)),
       Observable.from(previous.retrieveAllApplicationNames(executionType))
@@ -301,7 +302,7 @@ class DualExecutionRepository(
   }
 
   override fun retrieveAllApplicationNames(
-    executionType: PipelineExecution.ExecutionType?,
+    executionType: ExecutionType?,
     minExecutions: Int
   ): MutableList<String> {
     return Observable.merge(
@@ -310,11 +311,11 @@ class DualExecutionRepository(
     ).toList().toBlocking().single().distinct().toMutableList()
   }
 
-  override fun hasExecution(type: PipelineExecution.ExecutionType, id: String): Boolean {
+  override fun hasExecution(type: ExecutionType, id: String): Boolean {
     return primary.hasExecution(type, id) || previous.hasExecution(type, id)
   }
 
-  override fun retrieveAllExecutionIds(type: PipelineExecution.ExecutionType): MutableList<String> {
+  override fun retrieveAllExecutionIds(type: ExecutionType): MutableList<String> {
     return Observable.merge(
       Observable.from(primary.retrieveAllExecutionIds(type)),
       Observable.from(previous.retrieveAllExecutionIds(type))

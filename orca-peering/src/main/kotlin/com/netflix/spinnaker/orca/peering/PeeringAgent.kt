@@ -16,9 +16,9 @@
 package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import org.slf4j.LoggerFactory
 import kotlin.math.max
 
@@ -82,15 +82,15 @@ class PeeringAgent(
 
     if (dynamicConfigService.isEnabled("pollers.peering", true) &&
       dynamicConfigService.isEnabled("pollers.peering.$peeredId", true)) {
-      peerExecutions(PipelineExecution.ExecutionType.PIPELINE)
-      peerExecutions(PipelineExecution.ExecutionType.ORCHESTRATION)
+      peerExecutions(ExecutionType.PIPELINE)
+      peerExecutions(ExecutionType.ORCHESTRATION)
     }
   }
 
-  private fun peerExecutions(executionType: PipelineExecution.ExecutionType) {
+  private fun peerExecutions(executionType: ExecutionType) {
     val mostRecentUpdatedTime = when (executionType) {
-      PipelineExecution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
-      PipelineExecution.ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
+      ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
+      ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
     }
     val isFirstRun = mostRecentUpdatedTime == 0L
 
@@ -109,7 +109,7 @@ class PeeringAgent(
   /**
    * Migrate running/active executions of given type
    */
-  private fun peerActiveExecutions(executionType: PipelineExecution.ExecutionType) {
+  private fun peerActiveExecutions(executionType: ExecutionType) {
     log.debug("Starting active $executionType copy for peering")
 
     val activePipelineIds = srcDB.getActiveExecutionIds(executionType, peeredId)
@@ -132,24 +132,24 @@ class PeeringAgent(
   /**
    * Migrate completed executions of given type
    */
-  private fun peerCompletedExecutions(executionType: PipelineExecution.ExecutionType) {
+  private fun peerCompletedExecutions(executionType: ExecutionType) {
     val updatedAfter = when (executionType) {
-      PipelineExecution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
-      PipelineExecution.ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
+      ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
+      ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
     }
 
     log.debug("Starting completed $executionType copy for peering with $executionType updatedAfter=$updatedAfter")
 
     val newLatestUpdateTime = doMigrate(executionType, updatedAfter) - clockDriftMs
 
-    if (executionType == PipelineExecution.ExecutionType.ORCHESTRATION) {
+    if (executionType == ExecutionType.ORCHESTRATION) {
       completedOrchestrationsMostRecentUpdatedTime = max(0, newLatestUpdateTime)
     } else {
       completedPipelinesMostRecentUpdatedTime = max(0, newLatestUpdateTime)
     }
   }
 
-  private fun doMigrate(executionType: PipelineExecution.ExecutionType, updatedAfter: Long): Long {
+  private fun doMigrate(executionType: ExecutionType, updatedAfter: Long): Long {
     // Compute diff
     val completedPipelineKeys = srcDB.getCompletedExecutionIds(executionType, peeredId, updatedAfter)
       .plus(srcDB.getCompletedExecutionIds(executionType, null, updatedAfter))

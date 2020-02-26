@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryDeployServiceTask;

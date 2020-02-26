@@ -20,6 +20,7 @@ import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepositor
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -94,8 +95,7 @@ final class PipelineExecutionRepositoryTest {
   }
 
   private PipelineExecution withStartTimeAndId(Long startTime, String id) {
-    PipelineExecution execution =
-        new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, id, APPLICATION);
+    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, id, APPLICATION);
     execution.setStartTime(startTime);
     return execution;
   }

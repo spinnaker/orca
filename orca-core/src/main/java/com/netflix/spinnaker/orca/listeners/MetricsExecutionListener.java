@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.listeners;
 
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
 
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;

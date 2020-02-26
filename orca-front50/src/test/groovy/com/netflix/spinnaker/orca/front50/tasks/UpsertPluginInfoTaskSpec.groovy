@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.front50.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.PluginInfo
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
@@ -43,7 +44,7 @@ class UpsertPluginInfoTaskSpec extends Specification {
       .releases([new PluginInfo.Release()])
       .build()
 
-    StageExecution stage = new StageExecution(new PipelineExecution(PipelineExecution.ExecutionType.ORCHESTRATION, null),
+    StageExecution stage = new StageExecution(new PipelineExecution(ExecutionType.ORCHESTRATION, null),
       "upsertPluginInfo", [pluginInfo: pluginInfo])
 
     when:

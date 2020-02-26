@@ -19,6 +19,8 @@ package com.netflix.spinnaker.orca.controllers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.Collections2
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator
@@ -37,7 +39,7 @@ import spock.lang.Unroll
 import java.time.Clock
 import java.time.Instant
 
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.time.ZoneOffset.UTC
@@ -254,7 +256,7 @@ class TaskControllerSpec extends Specification {
 
   void '/applications/{application}/evaluateExpressions precomputes values'() {
     given:
-    executionRepository.retrieve(PipelineExecution.ExecutionType.PIPELINE, "1") >> {
+    executionRepository.retrieve(ExecutionType.PIPELINE, "1") >> {
       pipeline {
         id = "1"
         application = "doesn't matter"

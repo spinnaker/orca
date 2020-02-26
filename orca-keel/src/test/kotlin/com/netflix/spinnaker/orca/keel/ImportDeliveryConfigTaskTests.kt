@@ -21,6 +21,7 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.KeelService
 import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE
@@ -96,8 +97,8 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
     fun execute(context: Map<String, Any?>) =
       subject.execute(
         StageExecution(
-          PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
-          PipelineExecution.ExecutionType.PIPELINE.toString(),
+          PipelineExecution(ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
+          ExecutionType.PIPELINE.toString(),
           context
         )
       )

@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.notifications.scheduling;
 
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.LongTaskTimer;

@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.util
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
@@ -103,7 +104,7 @@ class ExpressionUtilsSpec extends Specification {
   }
 
   private static def createExecution() {
-    def execution = new PipelineExecution(PipelineExecution.ExecutionType.PIPELINE, "test")
+    def execution = new PipelineExecution(ExecutionType.PIPELINE, "test")
     def stage1 = new StageExecution(execution, "evaluateVariables")
     stage1.refId = "1"
     stage1.outputs = [varFromStage1: 100]

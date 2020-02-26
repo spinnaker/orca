@@ -20,7 +20,7 @@ import spock.lang.Specification
 import spock.lang.Subject
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType
+import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 

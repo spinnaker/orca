@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toMap;
@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import de.huxhorn.sulky.ulid.ULID;
@@ -37,7 +38,8 @@ import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class PipelineExecution implements Serializable {
+public class PipelineExecution
+    implements com.netflix.spinnaker.orca.api.PipelineExecution, Serializable {
 
   public static final DefaultTrigger NO_TRIGGER = new DefaultTrigger("none");
   private static final ULID ID_GENERATOR = new ULID();
@@ -490,16 +492,6 @@ public class PipelineExecution implements Serializable {
     @JsonIgnore
     public long getPausedMs() {
       return (pauseTime != null && resumeTime != null) ? resumeTime - pauseTime : 0;
-    }
-  }
-
-  public enum ExecutionType {
-    PIPELINE,
-    ORCHESTRATION;
-
-    @Override
-    public String toString() {
-      return name().toLowerCase();
     }
   }
 
