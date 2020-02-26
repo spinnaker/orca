@@ -91,16 +91,8 @@ public class CompoundExecutionOperator {
       ExecutionType executionType,
       String executionId) {
     try {
-      retrySupport.retry(
-          () -> {
-            runnerAction.run();
-            return true;
-          },
-          5,
-          Duration.ofMillis(100),
-          false);
-
-      repositoryAction.run();
+      runWithRetries(runnerAction);
+      runWithRetries(repositoryAction);
     } catch (Exception e) {
       log.error(
           "Failed to {} execution with executionType={} and executionId={}",
@@ -109,5 +101,16 @@ public class CompoundExecutionOperator {
           executionId,
           e);
     }
+  }
+
+  private void runWithRetries(Runnable action) {
+    retrySupport.retry(
+        () -> {
+          action.run();
+          return true;
+        },
+        5,
+        Duration.ofMillis(100),
+        false);
   }
 }
