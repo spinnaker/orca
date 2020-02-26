@@ -111,13 +111,14 @@ constructor(
           "Network error talking to downstream service, attempt ${context.attempt} of ${context.maxRetries}: ${e.friendlyMessage}")
       }
       e.response?.status in 400..499 -> {
+        val response = e.response!!
         // just give up on 4xx errors, which are unlikely to resolve with retries
         buildError(
           // ...but give users a hint about 401 errors from igor/scm
-          if (e.response?.status == 401 && URL(e.url).host.contains("igor")) {
+          if (response.status == 401 && URL(e.url).host.contains("igor")) {
             UNAUTHORIZED_SCM_ACCESS_MESSAGE
-          } else if (e.response?.status == 400 && URL(e.url).host.contains("keel") && e.response!!.body.length() > 0) {
-            objectMapper.readValue<Map<String, Any?>>(e.response!!.body.`in`())
+          } else if (response.status == 400 && URL(e.url).host.contains("keel") && response.body.length() > 0) {
+            objectMapper.readValue<Map<String, Any?>>(response.body.`in`())
           } else {
             "Non-retryable HTTP response ${e.response?.status} received from downstream service: ${e.friendlyMessage}"
           }
