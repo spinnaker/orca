@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.api.SimpleStage
-import com.netflix.spinnaker.orca.api.SimpleStageInput
-import com.netflix.spinnaker.orca.api.SimpleStageOutput
-import com.netflix.spinnaker.orca.api.SimpleStageStatus
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageStatus
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import spock.lang.Specification
 import spock.lang.Subject

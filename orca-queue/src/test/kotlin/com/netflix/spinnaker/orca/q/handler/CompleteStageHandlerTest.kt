@@ -26,10 +26,10 @@ import com.netflix.spinnaker.orca.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.StageResolver
-import com.netflix.spinnaker.orca.api.SimpleStage
-import com.netflix.spinnaker.orca.api.SimpleStageInput
-import com.netflix.spinnaker.orca.api.SimpleStageOutput
-import com.netflix.spinnaker.orca.api.SimpleStageStatus
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageStatus
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
