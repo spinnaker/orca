@@ -5,8 +5,8 @@ import static com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage.GUID_KEY;
 import static com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage.TARGET_TEMPLATE_ID_KEY;
 
 import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.gremlin.AttackParameters;
 import com.netflix.spinnaker.orca.gremlin.GremlinService;
 import com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage;

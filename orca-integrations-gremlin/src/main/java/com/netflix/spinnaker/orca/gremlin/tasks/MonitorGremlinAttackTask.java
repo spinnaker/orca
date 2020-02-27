@@ -4,8 +4,8 @@ import static com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage.TERMINAL_
 
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.gremlin.AttackStatus;
 import com.netflix.spinnaker.orca.gremlin.GremlinService;
 import com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage;

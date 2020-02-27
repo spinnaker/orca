@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location;

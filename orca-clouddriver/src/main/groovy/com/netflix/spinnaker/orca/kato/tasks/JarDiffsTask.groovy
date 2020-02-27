@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 import java.util.regex.Matcher
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper

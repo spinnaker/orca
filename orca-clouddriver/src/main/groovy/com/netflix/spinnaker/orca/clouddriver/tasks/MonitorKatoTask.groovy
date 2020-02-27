@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId

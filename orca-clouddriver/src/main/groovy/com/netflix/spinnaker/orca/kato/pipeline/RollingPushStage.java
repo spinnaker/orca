@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.kato.pipeline;
 import static java.lang.String.format;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.TerminateInstancesTask;

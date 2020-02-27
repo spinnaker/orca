@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.igor.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild

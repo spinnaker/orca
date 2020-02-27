@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution

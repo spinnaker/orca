@@ -3,7 +3,7 @@ package com.netflix.spinnaker.orca.kayenta.tasks
 import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution

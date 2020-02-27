@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask

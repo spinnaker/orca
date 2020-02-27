@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca
 
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import spock.lang.Specification

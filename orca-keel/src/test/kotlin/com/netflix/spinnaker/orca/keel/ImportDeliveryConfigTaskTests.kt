@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.KeelService
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask

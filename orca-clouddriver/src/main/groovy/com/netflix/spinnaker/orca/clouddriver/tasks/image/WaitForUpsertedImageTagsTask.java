@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.Collection;

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.tasks;
 
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.time.Clock;

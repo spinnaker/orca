@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce;
 
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;

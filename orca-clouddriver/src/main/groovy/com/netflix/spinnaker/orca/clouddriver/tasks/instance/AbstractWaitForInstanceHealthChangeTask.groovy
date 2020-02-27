@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.beans.factory.annotation.Autowired

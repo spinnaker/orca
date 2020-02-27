@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder

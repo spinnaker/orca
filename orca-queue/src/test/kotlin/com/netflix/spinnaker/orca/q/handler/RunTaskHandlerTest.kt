@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.StageResolver
 import com.netflix.spinnaker.orca.TaskExecutionInterceptor
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.fixture.pipeline

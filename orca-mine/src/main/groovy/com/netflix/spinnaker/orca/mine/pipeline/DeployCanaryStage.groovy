@@ -21,7 +21,7 @@ import com.netflix.frigga.ami.AppVersion
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware

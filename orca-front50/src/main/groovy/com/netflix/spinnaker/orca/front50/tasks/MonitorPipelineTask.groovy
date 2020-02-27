@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.front50.tasks
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository

@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.echo.tasks;
 
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.echo.JiraService;
 import com.netflix.spinnaker.orca.echo.JiraService.CreateJiraIssueResponse;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;

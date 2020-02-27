@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.springframework.stereotype.Component

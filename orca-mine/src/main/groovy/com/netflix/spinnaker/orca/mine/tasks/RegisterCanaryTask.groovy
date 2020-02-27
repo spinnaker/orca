@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.mine.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.pipeline.DeployCanaryStage
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution

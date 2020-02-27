@@ -21,7 +21,7 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.DeliveryConfig;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;

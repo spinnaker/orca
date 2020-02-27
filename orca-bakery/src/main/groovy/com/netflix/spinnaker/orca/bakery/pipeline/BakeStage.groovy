@@ -25,7 +25,7 @@ import java.time.Clock
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.bakery.tasks.CompletedBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.CreateBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask

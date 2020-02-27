@@ -35,7 +35,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.ext.withTask

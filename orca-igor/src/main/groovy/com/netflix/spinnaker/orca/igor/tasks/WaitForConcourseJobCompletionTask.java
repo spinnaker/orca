@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.BuildService;
 import com.netflix.spinnaker.orca.igor.model.ConcourseStageDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.ConcourseBuildInfo;

@@ -20,7 +20,7 @@ package com.netflix.spinnaker.orca.echo.tasks
 
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution

@@ -24,7 +24,7 @@ import static java.util.Collections.singletonList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import java.time.Instant;

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForRequiredInstancesDownTask

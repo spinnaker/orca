@@ -22,8 +22,8 @@ import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpression
 import static java.util.Collections.singletonMap;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.Map;

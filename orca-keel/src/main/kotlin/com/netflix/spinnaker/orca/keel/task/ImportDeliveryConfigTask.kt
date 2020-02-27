@@ -22,7 +22,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.KeelService
 import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.pipeline.model.SourceCodeTrigger
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution

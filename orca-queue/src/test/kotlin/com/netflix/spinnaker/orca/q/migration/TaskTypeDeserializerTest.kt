@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResolver
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.assertj.core.api.Assertions
 import org.jetbrains.spek.api.Spek

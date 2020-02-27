@@ -29,7 +29,7 @@ import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;

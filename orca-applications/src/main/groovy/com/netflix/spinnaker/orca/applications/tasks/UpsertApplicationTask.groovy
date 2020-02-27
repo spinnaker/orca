@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.applications.tasks
 
 import com.netflix.spinnaker.fiat.model.resources.Permissions
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.applications.utils.ApplicationNameValidator
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.front50.tasks.AbstractFront50Task

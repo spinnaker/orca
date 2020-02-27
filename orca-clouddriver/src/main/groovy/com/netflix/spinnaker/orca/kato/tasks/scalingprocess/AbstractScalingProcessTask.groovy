@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.kato.tasks.scalingprocess
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport

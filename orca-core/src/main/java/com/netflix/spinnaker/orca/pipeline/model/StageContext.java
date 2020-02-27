@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-public class StageContext extends ForwardingMap<String, Object> {
+public class StageContext extends ForwardingMap<String, Object> implements Map<String, Object> {
 
   private final StageExecution stage;
   private final Map<String, Object> delegate;

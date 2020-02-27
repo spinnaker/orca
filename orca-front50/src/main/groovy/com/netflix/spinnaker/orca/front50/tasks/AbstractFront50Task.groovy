@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.front50.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution

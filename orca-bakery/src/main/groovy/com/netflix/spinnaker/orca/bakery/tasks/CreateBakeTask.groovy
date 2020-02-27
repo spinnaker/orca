@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.BakeRequest
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus

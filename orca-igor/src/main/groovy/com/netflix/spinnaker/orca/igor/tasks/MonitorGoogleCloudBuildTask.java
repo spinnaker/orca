@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;

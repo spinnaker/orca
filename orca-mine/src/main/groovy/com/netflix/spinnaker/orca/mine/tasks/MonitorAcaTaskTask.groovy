@@ -21,7 +21,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution

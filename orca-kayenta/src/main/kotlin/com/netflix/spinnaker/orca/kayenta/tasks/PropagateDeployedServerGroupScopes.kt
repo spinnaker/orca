@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryServerGroupsStage.Companion.DEPLOY_CONTROL_SERVER_GROUPS

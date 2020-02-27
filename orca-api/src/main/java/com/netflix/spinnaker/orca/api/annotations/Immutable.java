@@ -12,22 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.annotations;
 
-import java.util.Map;
-import javax.annotation.Nonnull;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 
-public interface StageExecution {
-
-  @Nonnull
-  String getId();
-
-  /**
-   * TODO(rz): Would be nice to not represent this as a {@code Map<S, O>}. I quickly tried to change
-   * this to a StageExecutionContext interface that extended Map, but it cascaded a lot of changes
-   * in core that I wasn't comfortable with changing. Maybe later.
-   */
-  @Nonnull
-  Map<String, Object> getContext();
-}
+/**
+ * Signals that the annotated element is an immutable object. Write operations against this element
+ * will fail.
+ */
+@Target({ElementType.FIELD, ElementType.LOCAL_VARIABLE, ElementType.PARAMETER})
+public @interface Immutable {}

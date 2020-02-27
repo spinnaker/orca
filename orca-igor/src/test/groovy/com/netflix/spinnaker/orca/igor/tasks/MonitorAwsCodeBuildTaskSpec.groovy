@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.igor.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution

@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.pipelinetemplate.tasks.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;

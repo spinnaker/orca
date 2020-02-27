@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.dryrun
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.dryrun.stub.OutputStub
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
 import org.slf4j.LoggerFactory
