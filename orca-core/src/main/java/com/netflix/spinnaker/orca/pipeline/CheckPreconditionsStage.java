@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
+import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage;
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 

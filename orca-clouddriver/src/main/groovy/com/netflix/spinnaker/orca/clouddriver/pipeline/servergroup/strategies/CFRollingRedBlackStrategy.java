@@ -20,6 +20,7 @@ import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySup
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage;
@@ -34,7 +35,6 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import groovy.util.logging.Slf4j;
 import java.io.IOException;

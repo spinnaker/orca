@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component
 
 import java.util.stream.Collectors
 
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
+import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import static java.time.Clock.systemUTC
 import static java.time.ZoneOffset.UTC
 

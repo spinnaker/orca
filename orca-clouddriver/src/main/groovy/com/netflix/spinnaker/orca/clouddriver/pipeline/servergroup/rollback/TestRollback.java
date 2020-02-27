@@ -19,9 +19,9 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback;
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

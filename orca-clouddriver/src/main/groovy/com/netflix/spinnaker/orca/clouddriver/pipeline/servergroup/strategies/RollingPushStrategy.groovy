@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.ModifyAsgLaunchConfigurationStag
 import com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
+import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.transform.Immutable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
