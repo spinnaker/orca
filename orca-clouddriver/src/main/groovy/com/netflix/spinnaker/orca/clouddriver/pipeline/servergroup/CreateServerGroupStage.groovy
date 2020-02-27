@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
 
 import javax.annotation.Nonnull

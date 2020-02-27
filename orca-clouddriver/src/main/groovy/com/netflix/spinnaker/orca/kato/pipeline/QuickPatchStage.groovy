@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import javax.annotation.Nonnull
 import java.util.concurrent.ConcurrentHashMap
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.tasks.quip.ResolveQuipVersionTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder

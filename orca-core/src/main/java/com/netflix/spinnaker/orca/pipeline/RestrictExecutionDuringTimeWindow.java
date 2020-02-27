@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.*;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.*;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Calendar.*;

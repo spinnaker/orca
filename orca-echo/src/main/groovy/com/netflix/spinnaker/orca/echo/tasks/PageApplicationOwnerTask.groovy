@@ -17,7 +17,6 @@
 
 package com.netflix.spinnaker.orca.echo.tasks
 
-import com.fasterxml.jackson.databind.ObjectMapper
 
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.RetryableTask
@@ -29,7 +28,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 
 @Slf4j
 @Component

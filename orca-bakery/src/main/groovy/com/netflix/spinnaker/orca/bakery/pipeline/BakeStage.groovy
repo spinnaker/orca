@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import java.time.Clock
 import javax.annotation.Nonnull
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.bakery.tasks.CompletedBakeTask

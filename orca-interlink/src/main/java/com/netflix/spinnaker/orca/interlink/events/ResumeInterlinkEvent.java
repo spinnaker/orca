@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.interlink.events;
 
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.RESUME;
 
+import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
 import javax.annotation.Nullable;
 
@@ -33,13 +34,13 @@ import lombok.NonNull;
 public class ResumeInterlinkEvent implements InterlinkEvent {
   final EventType eventType = RESUME;
   @Nullable String partition;
-  @NonNull PipelineExecution.ExecutionType executionType;
+  @NonNull ExecutionType executionType;
   @NonNull String executionId;
   @Nullable String user;
   @NonNull Boolean ignoreCurrentStatus;
 
   public ResumeInterlinkEvent(
-      @NonNull PipelineExecution.ExecutionType executionType,
+      @NonNull ExecutionType executionType,
       @NonNull String executionId,
       @Nullable String user,
       @NonNull Boolean ignoreCurrentStatus) {

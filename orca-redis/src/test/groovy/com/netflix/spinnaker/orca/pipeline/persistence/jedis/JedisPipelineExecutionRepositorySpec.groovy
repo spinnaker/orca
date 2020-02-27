@@ -34,8 +34,8 @@ import spock.lang.Unroll
 
 import java.util.concurrent.CountDownLatch
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE

@@ -20,7 +20,7 @@ import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
 
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import java.util.concurrent.TimeUnit;
 

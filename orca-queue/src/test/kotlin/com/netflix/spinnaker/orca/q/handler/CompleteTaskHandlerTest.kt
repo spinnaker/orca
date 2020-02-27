@@ -17,13 +17,13 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.NoopRegistry
-import com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
-import com.netflix.spinnaker.orca.ExecutionStatus.FAILED_CONTINUE
-import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.ExecutionStatus.REDIRECT
-import com.netflix.spinnaker.orca.ExecutionStatus.SKIPPED
-import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
+import com.netflix.spinnaker.orca.api.ExecutionStatus.FAILED_CONTINUE
+import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.ExecutionStatus.REDIRECT
+import com.netflix.spinnaker.orca.api.ExecutionStatus.SKIPPED
+import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.StageResolver
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.events.TaskComplete

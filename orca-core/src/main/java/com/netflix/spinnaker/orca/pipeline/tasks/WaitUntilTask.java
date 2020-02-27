@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING;
 import static java.util.Collections.singletonMap;
 
 import com.netflix.spinnaker.orca.RetryableTask;

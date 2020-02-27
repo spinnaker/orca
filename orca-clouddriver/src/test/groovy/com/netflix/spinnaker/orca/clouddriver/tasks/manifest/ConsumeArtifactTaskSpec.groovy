@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.ConsumeArtifactTask
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution

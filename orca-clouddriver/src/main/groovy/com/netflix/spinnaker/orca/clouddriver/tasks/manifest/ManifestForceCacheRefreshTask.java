@@ -17,8 +17,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING;
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

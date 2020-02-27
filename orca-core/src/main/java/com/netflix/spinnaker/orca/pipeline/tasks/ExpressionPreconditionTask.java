@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
-import static com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL;
 import static com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SUMMARY;
 import static java.util.Collections.singletonMap;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.Map;

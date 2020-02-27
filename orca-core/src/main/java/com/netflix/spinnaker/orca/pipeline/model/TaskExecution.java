@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED;
 
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 

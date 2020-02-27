@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.lang.String.join;
@@ -40,7 +40,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.support.RequisiteStageRefIdDeserializer;
 import de.huxhorn.sulky.ulid.ULID;

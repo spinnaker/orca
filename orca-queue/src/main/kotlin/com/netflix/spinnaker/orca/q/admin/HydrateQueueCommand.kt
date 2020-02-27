@@ -16,8 +16,8 @@
 package com.netflix.spinnaker.orca.q.admin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.ExecutionType

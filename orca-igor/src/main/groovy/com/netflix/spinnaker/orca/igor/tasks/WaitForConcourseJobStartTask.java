@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.igor.tasks;
 
-import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.igor.ConcourseService;
 import com.netflix.spinnaker.orca.igor.model.ConcourseStageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.flex.tasks
 
 import com.netflix.frigga.Names
 import com.netflix.spinnaker.moniker.Moniker
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.flex.FlexService

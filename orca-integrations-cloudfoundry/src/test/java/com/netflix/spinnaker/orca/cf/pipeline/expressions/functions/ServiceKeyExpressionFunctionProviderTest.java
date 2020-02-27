@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.cf.pipeline.expressions.functions;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING;
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED;
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static java.util.Collections.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider.FunctionDefinition;
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.*;

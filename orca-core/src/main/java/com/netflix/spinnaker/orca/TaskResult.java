@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca;
 
 import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import lombok.Builder;
 import lombok.Data;

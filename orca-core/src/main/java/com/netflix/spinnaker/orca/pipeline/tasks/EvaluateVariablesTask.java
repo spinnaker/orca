@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks;
 
-import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
 import java.util.HashMap;

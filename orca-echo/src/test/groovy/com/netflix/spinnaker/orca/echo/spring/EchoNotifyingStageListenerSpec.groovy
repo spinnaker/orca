@@ -11,7 +11,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.*
 
 class EchoNotifyingStageListenerSpec extends Specification {
 

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.persistence.jedis;
 
 import static com.google.common.collect.Maps.filterValues;
-import static com.netflix.spinnaker.orca.ExecutionStatus.BUFFERED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.BUFFERED;
 import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static com.netflix.spinnaker.orca.config.RedisConfiguration.Clients.EXECUTION_REPOSITORY;
@@ -38,7 +38,7 @@ import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.*;

@@ -23,7 +23,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.*
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage

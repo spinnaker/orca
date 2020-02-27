@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.flex.tasks
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.flex.FlexService
 import com.netflix.spinnaker.orca.flex.model.ElasticIpResult
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution

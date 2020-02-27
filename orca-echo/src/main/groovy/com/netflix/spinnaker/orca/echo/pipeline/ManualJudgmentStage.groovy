@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.echo.pipeline
 
+import com.netflix.spinnaker.orca.api.ExecutionStatus
+
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.*

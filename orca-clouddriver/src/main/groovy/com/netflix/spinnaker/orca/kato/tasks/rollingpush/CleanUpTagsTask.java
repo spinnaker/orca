@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.rollingpush;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.RetryableTask;

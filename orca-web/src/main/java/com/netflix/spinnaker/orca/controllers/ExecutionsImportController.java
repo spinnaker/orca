@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.controllers;
 
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.Application;
 import com.netflix.spinnaker.orca.model.ExecutionImportResponse;

@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.pipeline;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.LOOP;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.Task;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

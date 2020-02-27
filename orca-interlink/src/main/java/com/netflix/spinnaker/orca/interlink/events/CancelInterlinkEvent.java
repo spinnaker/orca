@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.interlink.events;
 
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.CANCEL;
 
+import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
 import javax.annotation.Nullable;
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,13 +33,13 @@ import lombok.NonNull;
 public class CancelInterlinkEvent implements InterlinkEvent {
   final EventType eventType = CANCEL;
   @Nullable String partition;
-  @NonNull PipelineExecution.ExecutionType executionType;
+  @NonNull ExecutionType executionType;
   @NonNull String executionId;
   @Nullable String canceledBy;
   @Nullable String cancellationReason;
 
   public CancelInterlinkEvent(
-      @NonNull PipelineExecution.ExecutionType executionType,
+      @NonNull ExecutionType executionType,
       @NonNull String executionId,
       @Nullable String canceledBy,
       @Nullable String cancellationReason) {

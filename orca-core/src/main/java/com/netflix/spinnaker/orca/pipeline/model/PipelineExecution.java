@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import static com.netflix.spinnaker.orca.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static java.util.Arrays.asList;
@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.netflix.spinnaker.orca.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
