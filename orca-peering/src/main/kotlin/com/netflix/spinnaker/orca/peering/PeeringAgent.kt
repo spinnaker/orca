@@ -86,6 +86,24 @@ class PeeringAgent(
     }
   }
 
+  /**
+   * This variant of peerExecutions can be used by an external system as a "hint" that a given execution should be
+   * peered immediately.
+   * This is useful for user actions (e.g. cancel/skip wait/manual judge/delete/etc) where waiting for the peering agent
+   * would result in a suboptimal experience
+   */
+  public fun peerExecutions(executionType: Execution.ExecutionType, executionIds: List<String>) {
+    try {
+      val migrationResult = executionCopier.copyInParallel(executionType, executionIds, ExecutionState.ACTIVE)
+
+      if (migrationResult.hadErrors) {
+        log.error("Failed to peer specific executions: {}", executionIds.joinToString())
+      }
+    } catch (e: Exception) {
+      log.error("Failed to peer specific executions: {}", executionIds.joinToString(), e)
+    }
+  }
+
   private fun peerExecutions(executionType: Execution.ExecutionType) {
     val mostRecentUpdatedTime = when (executionType) {
       Execution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime

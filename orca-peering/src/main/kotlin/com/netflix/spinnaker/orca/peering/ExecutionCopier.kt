@@ -133,6 +133,8 @@ open class ExecutionCopier(
       val executionRows = srcDB.getExecutions(executionType, idsToMigrate)
       val stagesToMigrate = srcDB.getStageIdsForExecutions(executionType, idsToMigrate)
 
+      val executionsNoLongerPresent = arrayListOf<String>()
+
       // Step 1: Copy over stages before the executions themselves -
       // if we saved executions first the user could request an execution but it wouldn't have any stages yet
 
@@ -152,12 +154,34 @@ open class ExecutionCopier(
         destDB.loadRecords(getStagesTable(executionType).name, stageRows)
       }
 
+      val partitionField = DSL.field("partition")
+
       // Step 2: Copy all executions
-      executionRows.forEach { r -> r.set(DSL.field("partition"), peeredId)
-        latestUpdatedAt = max(latestUpdatedAt, r.get("updated_at", Long::class.java))
+      if (executionRows.size < idsToMigrate.size) {
+        // There must've been some executions that have been deleted during our diff calculation, find out which ones
+        val idsToMigrateHash = idsToMigrate.toHashSet()
+
+        executionRows.forEach { r ->
+          r.set(partitionField, peeredId)
+          latestUpdatedAt = max(latestUpdatedAt, r.get("updated_at", Long::class.java))
+          idsToMigrateHash.remove(r.get("id"))
+        }
+
+        executionsNoLongerPresent.addAll(idsToMigrateHash)
+      } else {
+        executionRows.forEach { r ->
+          r.set(partitionField, peeredId)
+          latestUpdatedAt = max(latestUpdatedAt, r.get("updated_at", Long::class.java))
+        }
       }
       destDB.loadRecords(getExecutionTable(executionType).name, executionRows)
       peeringMetrics.incrementNumPeered(executionType, state, idsToMigrate.size)
+
+      // If we found any executions that are no longer there, delete them from the destination
+      if (executionsNoLongerPresent.any()) {
+        destDB.deleteExecutions(executionType, idsToMigrate)
+        peeringMetrics.incrementNumDeleted(executionType, idsToMigrate.size)
+      }
 
       return MigrationChunkResult(latestUpdatedAt, idsToMigrate.size, hadErrors = false)
     } catch (e: Exception) {
