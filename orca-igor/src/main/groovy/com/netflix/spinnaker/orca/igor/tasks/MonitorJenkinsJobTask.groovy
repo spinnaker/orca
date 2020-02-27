@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 class MonitorJenkinsJobTask implements OverridableTimeoutRetryableTask {
 
   long backoffPeriod = 10000
-  long timeout = TimeUnit.HOURS.toMillis(2)
+  long timeout = TimeUnit.HOURS.toMillis(4)
 
   @Autowired
   BuildService buildService
