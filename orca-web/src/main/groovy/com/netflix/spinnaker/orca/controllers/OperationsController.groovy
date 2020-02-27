@@ -32,7 +32,7 @@ import com.netflix.spinnaker.orca.front50.PipelineModelMutator
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
+import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils

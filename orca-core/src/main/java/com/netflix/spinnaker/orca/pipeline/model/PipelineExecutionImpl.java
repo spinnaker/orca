@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.Trigger;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import de.huxhorn.sulky.ulid.ULID;

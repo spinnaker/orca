@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
+import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
@@ -24,7 +25,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.GoogleServerGr
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import rx.Observable
 import spock.lang.Shared

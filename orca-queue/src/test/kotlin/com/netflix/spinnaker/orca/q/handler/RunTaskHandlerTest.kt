@@ -1411,11 +1411,11 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
     given("parameters in the context and in the pipeline") {
       val pipeline = pipeline {
-        trigger = DefaultTrigger(type = "manual", parameters = mapOf("dummy" to "foo"))
+        trigger = DefaultTrigger(type = "manual", parameters = mutableMapOf("dummy" to "foo"))
         stage {
           refId = "1"
           type = "jenkins"
-          context["parameters"] = mapOf(
+          context["parameters"] = mutableMapOf(
             "message" to "o hai"
           )
           task {

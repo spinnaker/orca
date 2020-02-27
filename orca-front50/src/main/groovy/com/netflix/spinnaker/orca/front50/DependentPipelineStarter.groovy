@@ -21,10 +21,10 @@ import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest

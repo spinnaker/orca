@@ -24,7 +24,8 @@ test {
 }
 
 dependencies {
-  api "com.netflix.spinnaker.kork:kork-plugins-api"
+  api("com.netflix.spinnaker.kork:kork-plugins-api")
+  api("com.netflix.spinnaker.kork:kork-artifacts")
 
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")

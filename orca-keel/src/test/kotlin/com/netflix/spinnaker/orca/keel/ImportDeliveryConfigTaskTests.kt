@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.KeelService
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE
@@ -29,7 +30,6 @@ import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
 import io.mockk.every

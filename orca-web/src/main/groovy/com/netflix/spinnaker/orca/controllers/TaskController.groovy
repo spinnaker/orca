@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
+import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -651,7 +651,7 @@ class TaskController {
   }
 
   private static void clearTriggerStages(Map trigger) {
-    if (trigger.type.toLowerCase() != "pipeline") {
+    if (trigger.type?.toLowerCase() != "pipeline") {
       return
     }
     ((List) trigger.parentExecution.stages).clear()

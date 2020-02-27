@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import javax.annotation.Nonnull
@@ -27,7 +28,6 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j

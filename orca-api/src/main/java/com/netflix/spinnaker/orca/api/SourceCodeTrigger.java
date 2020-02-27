@@ -13,16 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.orca.api;
 
-package com.netflix.spinnaker.orca.pipeline.model
+import javax.annotation.Nonnull;
 
-/**
- * Defines properties that are common across different types of source code triggers.
- */
-interface SourceCodeTrigger : Trigger {
-  val source: String
-  val project: String
-  val branch: String
-  val slug: String
-  val hash: String
+public interface SourceCodeTrigger extends Trigger {
+
+  @Nonnull
+  String getSource();
+
+  @Nonnull
+  String getProject();
+
+  @Nonnull
+  String getBranch();
+
+  @Nonnull
+  String getSlug();
+
+  @Nonnull
+  String getHash();
 }

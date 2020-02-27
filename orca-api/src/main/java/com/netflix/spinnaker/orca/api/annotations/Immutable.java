@@ -23,5 +23,5 @@ import java.lang.annotation.Target;
  * Signals that the annotated element is an immutable object. Write operations against this element
  * will fail.
  */
-@Target({ElementType.FIELD, ElementType.LOCAL_VARIABLE, ElementType.PARAMETER})
+@Target({ElementType.FIELD, ElementType.LOCAL_VARIABLE, ElementType.PARAMETER, ElementType.METHOD})
 public @interface Immutable {}

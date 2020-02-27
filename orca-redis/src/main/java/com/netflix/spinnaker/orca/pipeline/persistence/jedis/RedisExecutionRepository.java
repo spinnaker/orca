@@ -41,6 +41,7 @@ import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.api.TaskExecution;
+import com.netflix.spinnaker.orca.api.Trigger;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.*;

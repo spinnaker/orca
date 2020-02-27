@@ -31,6 +31,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskExecution;
+import com.netflix.spinnaker.orca.api.Trigger;
+import com.netflix.spinnaker.orca.jackson.mixin.TriggerMixin;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl;
@@ -59,6 +61,7 @@ public class OrcaObjectMapper {
     resolver.addMapping(TaskExecution.class, TaskExecutionImpl.class);
     resolver.addMapping(StageExecution.class, StageExecutionImpl.class);
     resolver.addMapping(PipelineExecution.class, PipelineExecutionImpl.class);
+    module.setMixInAnnotation(Trigger.class, TriggerMixin.class);
     module.setAbstractTypes(resolver);
 
     instance.registerModule(module);

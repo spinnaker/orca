@@ -43,6 +43,7 @@ import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskExecution;
+import com.netflix.spinnaker.orca.api.Trigger;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.support.RequisiteStageRefIdDeserializer;

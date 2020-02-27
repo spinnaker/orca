@@ -28,6 +28,7 @@ import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
+import com.netflix.spinnaker.orca.api.Trigger;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;

@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.bakery.tasks
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.web.selector.v2.SelectableService
+import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.BakeRequest
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus

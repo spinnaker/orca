@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import com.google.common.base.Strings;
+import com.netflix.spinnaker.orca.api.Trigger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
