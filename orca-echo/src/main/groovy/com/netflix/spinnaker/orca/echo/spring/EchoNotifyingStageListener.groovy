@@ -17,12 +17,12 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.kork.common.Header
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -53,7 +53,7 @@ class EchoNotifyingStageListener implements StageListener {
   }
 
   @Override
-  void beforeTask(Persister persister, StageExecutionImpl stage, TaskExecutionImpl task) {
+  void beforeTask(Persister persister, StageExecutionImpl stage, TaskExecution task) {
     recordEvent('task', 'starting', stage, task)
   }
 
@@ -66,7 +66,7 @@ class EchoNotifyingStageListener implements StageListener {
   @Override
   void afterTask(Persister persister,
                  StageExecutionImpl stage,
-                 TaskExecutionImpl task,
+                 TaskExecution task,
                  ExecutionStatus executionStatus,
                  boolean wasSuccessful) {
     if (executionStatus == RUNNING) {
@@ -94,7 +94,7 @@ class EchoNotifyingStageListener implements StageListener {
     }
   }
 
-  private void recordEvent(String type, String phase, StageExecutionImpl stage, TaskExecutionImpl task) {
+  private void recordEvent(String type, String phase, StageExecutionImpl stage, TaskExecution task) {
     recordEvent(type, phase, stage, Optional.of(task))
   }
 
@@ -102,7 +102,7 @@ class EchoNotifyingStageListener implements StageListener {
     recordEvent(type, phase, stage, Optional.empty())
   }
 
-  private void recordEvent(String type, String phase, StageExecutionImpl stage, Optional<TaskExecutionImpl> maybeTask) {
+  private void recordEvent(String type, String phase, StageExecutionImpl stage, Optional<TaskExecution> maybeTask) {
     try {
       def event = [
         details: [
@@ -122,7 +122,7 @@ class EchoNotifyingStageListener implements StageListener {
           name: stage.name
         ]
       ]
-      maybeTask.ifPresent { TaskExecutionImpl task ->
+      maybeTask.ifPresent { TaskExecution task ->
         event.content.taskName = "${stage.type}.${task.name}".toString()
       }
 
@@ -137,7 +137,7 @@ class EchoNotifyingStageListener implements StageListener {
         MDC.remove(Header.USER.header)
       }
     } catch (Exception e) {
-      log.error("Failed to send ${type} event ${phase} ${stage.execution.id} ${maybeTask.map { TaskExecutionImpl task -> task.name }}", e)
+      log.error("Failed to send ${type} event ${phase} ${stage.execution.id} ${maybeTask.map { TaskExecution task -> task.name }}", e)
     }
   }
 

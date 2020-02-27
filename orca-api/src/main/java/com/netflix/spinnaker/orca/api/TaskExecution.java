@@ -16,9 +16,55 @@
 package com.netflix.spinnaker.orca.api;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public interface TaskExecution {
 
   @Nonnull
   String getId();
+
+  void setId(@Nonnull String id);
+
+  @Nonnull
+  String getImplementingClass();
+
+  void setImplementingClass(@Nonnull String implementingClass);
+
+  @Nonnull
+  String getName();
+
+  void setName(@Nonnull String name);
+
+  /** TODO(rz): Convert to Instant */
+  @Nullable
+  Long getStartTime();
+
+  void setStartTime(@Nullable Long startTime);
+
+  /** TODO(rz): Convert to Instant */
+  @Nullable
+  Long getEndTime();
+
+  void setEndTime(@Nullable Long endTime);
+
+  @Nonnull
+  ExecutionStatus getStatus();
+
+  void setStatus(@Nonnull ExecutionStatus status);
+
+  boolean isStageStart();
+
+  void setStageStart(boolean stageStart);
+
+  boolean isStageEnd();
+
+  void setStageEnd(boolean stageEnd);
+
+  boolean isLoopStart();
+
+  void setLoopStart(boolean loopStart);
+
+  boolean isLoopEnd();
+
+  void setLoopEnd(boolean loopEnd);
 }

@@ -40,6 +40,7 @@ import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.TaskExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.*;
@@ -72,8 +73,8 @@ import rx.schedulers.Schedulers;
 
 public class RedisExecutionRepository implements ExecutionRepository {
 
-  private static final TypeReference<List<TaskExecutionImpl>> LIST_OF_TASKS =
-      new TypeReference<List<TaskExecutionImpl>>() {};
+  private static final TypeReference<List<TaskExecution>> LIST_OF_TASKS =
+      new TypeReference<List<TaskExecution>>() {};
   private static final TypeReference<Map<String, Object>> MAP_STRING_TO_OBJECT =
       new TypeReference<Map<String, Object>>() {};
   private static final TypeReference<List<SystemNotification>> LIST_OF_SYSTEM_NOTIFICATIONS =

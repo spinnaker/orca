@@ -35,9 +35,9 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -861,7 +861,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("builds tasks for the main branch") {
         val stage = pipeline.stageById(message.stageId)
-        assertThat(stage.tasks.map(TaskExecutionImpl::getName)).isEqualTo(listOf("post-branch"))
+        assertThat(stage.tasks.map(TaskExecution::getName)).isEqualTo(listOf("post-branch"))
       }
 
       it("builds synthetic stages for each parallel branch") {
@@ -914,7 +914,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       it("builds tasks for the branch") {
         val stage = pipeline.stageById(message.stageId)
         assertThat(stage.tasks).isNotEmpty
-        assertThat(stage.tasks.map(TaskExecutionImpl::getName)).isEqualTo(listOf("dummy"))
+        assertThat(stage.tasks.map(TaskExecution::getName)).isEqualTo(listOf("dummy"))
       }
 
       it("does not build more synthetic stages") {

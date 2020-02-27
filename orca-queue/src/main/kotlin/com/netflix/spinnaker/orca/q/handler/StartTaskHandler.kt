@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.TaskResolver
+import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.RunTask
@@ -58,6 +58,6 @@ class StartTaskHandler(
   override val messageType = StartTask::class.java
 
   @Suppress("UNCHECKED_CAST")
-  private val TaskExecutionImpl.type
+  private val TaskExecution.type
     get() = taskResolver.getTaskClass(implementingClass)
 }

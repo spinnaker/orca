@@ -24,10 +24,10 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 
 /**
  * @return the stage's first before stage or `null` if there are none.
@@ -47,7 +47,7 @@ fun StageExecutionImpl.isInitial(): Boolean =
 /**
  * @return the stage's first task or `null` if there are none.
  */
-fun StageExecutionImpl.firstTask(): TaskExecutionImpl? = tasks.firstOrNull()
+fun StageExecutionImpl.firstTask(): TaskExecution? = tasks.firstOrNull()
 
 /**
  * @return the stage's parent stage.
@@ -63,7 +63,7 @@ fun StageExecutionImpl.parent(): StageExecutionImpl =
  * @return the task that follows [task] or `null` if [task] is the end of the
  * stage.
  */
-fun StageExecutionImpl.nextTask(task: TaskExecutionImpl): TaskExecutionImpl? =
+fun StageExecutionImpl.nextTask(task: TaskExecution): TaskExecution? =
   if (task.isStageEnd) {
     null
   } else {

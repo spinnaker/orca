@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.fixture
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
@@ -84,7 +85,7 @@ fun StageExecutionImpl.stage(init: StageExecutionImpl.() -> Unit): StageExecutio
 /**
  * Build a task. Use in the context of [#stage].
  */
-fun StageExecutionImpl.task(init: TaskExecutionImpl.() -> Unit): TaskExecutionImpl {
+fun StageExecutionImpl.task(init: TaskExecution.() -> Unit): TaskExecution {
   val task = TaskExecutionImpl()
   task.implementingClass = NoOpTask::class.java.name
   task.name = "dummy"

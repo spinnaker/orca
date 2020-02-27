@@ -42,6 +42,7 @@ import com.google.common.collect.Sets;
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.support.RequisiteStageRefIdDeserializer;
@@ -265,13 +266,13 @@ public class StageExecutionImpl implements StageExecution, Serializable {
    * in a stage. Because tasks can be dynamically composed, this list is open updated during a
    * stage's execution.
    */
-  private List<TaskExecutionImpl> tasks = new ArrayList<>();
+  private List<TaskExecution> tasks = new ArrayList<>();
 
-  public @Nonnull List<TaskExecutionImpl> getTasks() {
+  public @Nonnull List<TaskExecution> getTasks() {
     return tasks;
   }
 
-  public void setTasks(@Nonnull List<TaskExecutionImpl> tasks) {
+  public void setTasks(@Nonnull List<TaskExecution> tasks) {
     this.tasks = new ArrayList<>(tasks);
   }
 
@@ -357,7 +358,7 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     return Objects.hash(id);
   }
 
-  public TaskExecutionImpl taskById(String taskId) {
+  public TaskExecution taskById(String taskId) {
     return tasks.stream().filter(it -> it.getId().equals(taskId)).findFirst().orElse(null);
   }
 

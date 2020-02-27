@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.ext.afterStages
 import com.netflix.spinnaker.orca.ext.allAfterStagesSuccessful
 import com.netflix.spinnaker.orca.ext.allBeforeStagesSuccessful
@@ -29,7 +30,6 @@ import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.isInitial
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CompleteExecution
@@ -178,7 +178,7 @@ class HydrateQueueCommand(
     return listOf()
   }
 
-  private fun processTask(stage: StageExecutionImpl, task: TaskExecutionImpl): Action {
+  private fun processTask(stage: StageExecutionImpl, task: TaskExecution): Action {
     return if (task.status == RUNNING) {
       if (task.isRetryable()) {
         Action(
@@ -260,10 +260,10 @@ class HydrateQueueCommand(
   }
 
   @Suppress("UNCHECKED_CAST")
-  private val TaskExecutionImpl.type
+  private val TaskExecution.type
     get() = taskResolver.getTaskClass(implementingClass)
 
-  private fun TaskExecutionImpl.isRetryable(): Boolean =
+  private fun TaskExecution.isRetryable(): Boolean =
     RetryableTask::class.java.isAssignableFrom(type)
 
   private fun StageExecutionImpl.toActionContext() = ActionContext(
@@ -272,7 +272,7 @@ class HydrateQueueCommand(
     stageStartTime = startTime
   )
 
-  private fun TaskExecutionImpl.toActionContext(stage: StageExecutionImpl) = stage.toActionContext().copy(
+  private fun TaskExecution.toActionContext(stage: StageExecutionImpl) = stage.toActionContext().copy(
     taskId = id,
     taskType = name,
     taskStartTime = startTime

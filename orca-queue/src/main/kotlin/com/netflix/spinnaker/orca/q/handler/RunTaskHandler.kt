@@ -44,8 +44,8 @@ import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -181,7 +181,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun trackResult(stage: StageExecutionImpl, thisInvocationStartTimeMs: Long, taskModel: TaskExecutionImpl, status: ExecutionStatus) {
+  private fun trackResult(stage: StageExecutionImpl, thisInvocationStartTimeMs: Long, taskModel: TaskExecution, status: ExecutionStatus) {
     val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
     val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
 
@@ -198,7 +198,7 @@ class RunTaskHandler(
 
   override val messageType = RunTask::class.java
 
-  private fun RunTask.withTask(block: (StageExecutionImpl, TaskExecutionImpl, Task) -> Unit) =
+  private fun RunTask.withTask(block: (StageExecutionImpl, TaskExecution, Task) -> Unit) =
     withTask { stage, taskModel ->
       tasks
         .find { taskType.isAssignableFrom(it.javaClass) }
@@ -211,7 +211,7 @@ class RunTaskHandler(
         }
     }
 
-  private fun Task.backoffPeriod(taskModel: TaskExecutionImpl, stage: StageExecutionImpl): TemporalAmount =
+  private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecutionImpl): TemporalAmount =
     when (this) {
       is RetryableTask -> Duration.ofMillis(
         retryableBackOffPeriod(taskModel, stage).coerceAtMost(taskExecutionInterceptors.maxBackoff())
@@ -227,7 +227,7 @@ class RunTaskHandler(
    * `tasks.aws.backoffPeriod` will be used (given the criteria matches and unless the default dynamicBackOffPeriod is greater).
    */
   private fun RetryableTask.retryableBackOffPeriod(
-    taskModel: TaskExecutionImpl,
+    taskModel: TaskExecution,
     stage: StageExecutionImpl
   ): Long {
     val dynamicBackOffPeriod = getDynamicBackoffPeriod(
@@ -272,7 +272,7 @@ class RunTaskHandler(
     return DurationFormatUtils.formatDurationWords(timeout, true, true)
   }
 
-  private fun Task.checkForTimeout(stage: StageExecutionImpl, taskModel: TaskExecutionImpl, message: Message) {
+  private fun Task.checkForTimeout(stage: StageExecutionImpl, taskModel: TaskExecution, message: Message) {
     if (stage.type == RestrictExecutionDuringTimeWindow.TYPE) {
       return
     } else {
@@ -281,7 +281,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun Task.checkForTaskTimeout(taskModel: TaskExecutionImpl, stage: StageExecutionImpl, message: Message) {
+  private fun Task.checkForTaskTimeout(taskModel: TaskExecution, stage: StageExecutionImpl, message: Message) {
     if (this is RetryableTask) {
       val startTime = taskModel.startTime.toInstant()
       if (startTime != null) {
@@ -368,7 +368,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun StageExecutionImpl.withLoggingContext(taskModel: TaskExecutionImpl, block: () -> Unit) {
+  private fun StageExecutionImpl.withLoggingContext(taskModel: TaskExecution, block: () -> Unit) {
     try {
       MDC.put("stageType", type)
       MDC.put("taskType", taskModel.implementingClass)
