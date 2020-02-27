@@ -20,8 +20,8 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import spock.lang.Specification
 import spock.lang.Subject
@@ -31,7 +31,7 @@ class GetAwsCodeBuildArtifactsTaskSpec extends Specification {
   String BUILD_ID = "test:c7715bbf-5c12-44d6-87ef-8149473e02f7"
   String ARN = "arn:aws:codebuild:us-west-2:123456789012:build/$BUILD_ID"
 
-  PipelineExecution execution = Mock(PipelineExecution)
+  PipelineExecutionImpl execution = Mock(PipelineExecutionImpl)
   IgorService igorService = Mock(IgorService)
 
   @Subject
@@ -43,7 +43,7 @@ class GetAwsCodeBuildArtifactsTaskSpec extends Specification {
         Artifact.builder().reference("abc").name("abc").build(),
         Artifact.builder().reference("def").name("def").build()
     ]
-    def stage = new StageExecution(execution, "awsCodeBuild", [
+    def stage = new StageExecutionImpl(execution, "awsCodeBuild", [
         account: ACCOUNT,
         buildInfo: [
             arn: ARN
@@ -62,7 +62,7 @@ class GetAwsCodeBuildArtifactsTaskSpec extends Specification {
 
   def "task returns RUNNING when communcation with igor fails"() {
     given:
-    def stage = new StageExecution(execution, "awsCodeBuild", [
+    def stage = new StageExecutionImpl(execution, "awsCodeBuild", [
         account: ACCOUNT,
         buildInfo: [
             arn: ARN

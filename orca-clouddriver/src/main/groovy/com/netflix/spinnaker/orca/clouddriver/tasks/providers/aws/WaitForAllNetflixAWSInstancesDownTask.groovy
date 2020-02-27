@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.AbstractWaitingForInstancesTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 import java.util.concurrent.TimeUnit
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 @Component
 class WaitForAllNetflixAWSInstancesDownTask extends AbstractWaitingForInstancesTask {
   @Override
-  protected boolean hasSucceeded(StageExecution stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
+  protected boolean hasSucceeded(StageExecutionImpl stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
     def oneHourAgo = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1)
 
     if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {

@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -45,7 +45,7 @@ public abstract class ImageTagger {
    *     operations as well as cloud provider-specific output key/value pairs to be included in the
    *     task's output.
    */
-  protected abstract OperationContext getOperationContext(StageExecution stage);
+  protected abstract OperationContext getOperationContext(StageExecutionImpl stage);
 
   /**
    * @return true when, according to the underlying cloud provider, image tags have been updated to
@@ -54,7 +54,7 @@ public abstract class ImageTagger {
   protected abstract boolean areImagesTagged(
       Collection<Image> targetImages,
       Collection<String> consideredStageRefIds,
-      StageExecution stage);
+      StageExecutionImpl stage);
 
   /** @return The cloud provider type that this object supports. */
   protected abstract String getCloudProvider();
@@ -67,7 +67,7 @@ public abstract class ImageTagger {
   protected Collection findImages(
       Collection<String> imageNames,
       Collection<String> consideredStageRefIds,
-      StageExecution stage,
+      StageExecutionImpl stage,
       Class matchedImageType) {
     List<String> upstreamImageIds = new ArrayList<>();
 
@@ -123,11 +123,11 @@ public abstract class ImageTagger {
 
   @VisibleForTesting
   Collection<String> upstreamImageIds(
-      StageExecution sourceStage,
+      StageExecutionImpl sourceStage,
       Collection<String> consideredStageRefIds,
       String cloudProviderType) {
-    List<StageExecution> ancestors = sourceStage.ancestors();
-    List<StageExecution> imageProvidingAncestorStages =
+    List<StageExecutionImpl> ancestors = sourceStage.ancestors();
+    List<StageExecutionImpl> imageProvidingAncestorStages =
         ancestors.stream()
             .filter(
                 stage -> {

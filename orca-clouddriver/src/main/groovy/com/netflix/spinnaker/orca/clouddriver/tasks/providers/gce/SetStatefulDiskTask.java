@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce.SetStateful
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +51,7 @@ public class SetStatefulDiskTask extends AbstractCloudProviderAwareTask {
   }
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
 
     StageData data = stage.mapTo(StageData.class);
 

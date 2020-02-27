@@ -22,7 +22,7 @@ import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE;
 import static com.netflix.spinnaker.orca.config.RedisConfiguration.Clients.EXECUTION_REPOSITORY;
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.NO_TRIGGER;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl.NO_TRIGGER;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.*;
@@ -43,7 +43,7 @@ import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.*;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.PausedDetails;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl.PausedDetails;
 import com.netflix.spinnaker.orca.pipeline.persistence.*;
 import java.io.IOException;
 import java.util.*;
@@ -72,8 +72,8 @@ import rx.schedulers.Schedulers;
 
 public class RedisExecutionRepository implements ExecutionRepository {
 
-  private static final TypeReference<List<TaskExecution>> LIST_OF_TASKS =
-      new TypeReference<List<TaskExecution>>() {};
+  private static final TypeReference<List<TaskExecutionImpl>> LIST_OF_TASKS =
+      new TypeReference<List<TaskExecutionImpl>>() {};
   private static final TypeReference<Map<String, Object>> MAP_STRING_TO_OBJECT =
       new TypeReference<Map<String, Object>>() {};
   private static final TypeReference<List<SystemNotification>> LIST_OF_SYSTEM_NOTIFICATIONS =
@@ -121,7 +121,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public void store(@Nonnull PipelineExecution execution) {
+  public void store(@Nonnull PipelineExecutionImpl execution) {
     RedisClientDelegate delegate = getRedisDelegate(execution);
     storeExecutionInternal(delegate, execution);
 
@@ -137,12 +137,12 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public void storeStage(@Nonnull StageExecution stage) {
+  public void storeStage(@Nonnull StageExecutionImpl stage) {
     storeStageInternal(getRedisDelegate(stage), stage, false);
   }
 
   @Override
-  public void updateStageContext(@Nonnull StageExecution stage) {
+  public void updateStageContext(@Nonnull StageExecutionImpl stage) {
     RedisClientDelegate delegate = getRedisDelegate(stage);
     String key = executionKey(stage);
     String contextKey = format("stage.%s.context", stage.getId());
@@ -161,7 +161,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public void removeStage(@Nonnull PipelineExecution execution, @Nonnull String stageId) {
+  public void removeStage(@Nonnull PipelineExecutionImpl execution, @Nonnull String stageId) {
     RedisClientDelegate delegate = getRedisDelegate(execution);
     String key = executionKey(execution);
     String indexKey = format("%s:stageIndex", key);
@@ -183,7 +183,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public void addStage(@Nonnull StageExecution stage) {
+  public void addStage(@Nonnull StageExecutionImpl stage) {
     if (stage.getSyntheticStageOwner() == null || stage.getParentStageId() == null) {
       throw new IllegalArgumentException("Only synthetic stages can be inserted ad-hoc");
     }
@@ -326,26 +326,26 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull PipelineExecution retrieve(@Nonnull ExecutionType type, @Nonnull String id) {
+  public @Nonnull PipelineExecutionImpl retrieve(@Nonnull ExecutionType type, @Nonnull String id) {
     RedisClientDelegate delegate = getRedisDelegate(type, id);
     return retrieveInternal(delegate, type, id);
   }
 
   @Override
-  public @Nonnull Observable<PipelineExecution> retrieve(@Nonnull ExecutionType type) {
-    List<Observable<PipelineExecution>> observables =
+  public @Nonnull Observable<PipelineExecutionImpl> retrieve(@Nonnull ExecutionType type) {
+    List<Observable<PipelineExecutionImpl>> observables =
         allRedisDelegates().stream().map(d -> all(type, d)).collect(Collectors.toList());
     return Observable.merge(observables);
   }
 
   @Override
-  public @Nonnull Observable<PipelineExecution> retrieve(
+  public @Nonnull Observable<PipelineExecutionImpl> retrieve(
       @Nonnull ExecutionType type, @Nonnull ExecutionCriteria criteria) {
-    List<Observable<PipelineExecution>> observables =
+    List<Observable<PipelineExecutionImpl>> observables =
         allRedisDelegates().stream()
             .map(
                 d -> {
-                  Observable<PipelineExecution> observable = all(type, d);
+                  Observable<PipelineExecutionImpl> observable = all(type, d);
                   if (!criteria.getStatuses().isEmpty()) {
                     observable =
                         observable.filter(
@@ -367,9 +367,9 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull Observable<PipelineExecution> retrievePipelinesForApplication(
+  public @Nonnull Observable<PipelineExecutionImpl> retrievePipelinesForApplication(
       @Nonnull String application) {
-    List<Observable<PipelineExecution>> observables =
+    List<Observable<PipelineExecutionImpl>> observables =
         allRedisDelegates().stream()
             .map(d -> allForApplication(PIPELINE, application, d))
             .collect(Collectors.toList());
@@ -377,7 +377,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
+  public @Nonnull Observable<PipelineExecutionImpl> retrievePipelinesForPipelineConfigId(
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria) {
     /*
      * Fetch pipeline ids from the primary redis (and secondary if configured)
@@ -437,7 +437,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     currentPipelineIds =
         currentPipelineIds.subList(0, Math.min(criteria.getPageSize(), currentPipelineIds.size()));
 
-    Observable<PipelineExecution> currentObservable =
+    Observable<PipelineExecutionImpl> currentObservable =
         retrieveObservable(
             PIPELINE,
             executionsByPipelineKey(pipelineConfigId),
@@ -457,7 +457,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
           previousPipelineIds.subList(
               0, Math.min(criteria.getPageSize(), previousPipelineIds.size()));
 
-      Observable<PipelineExecution> previousObservable =
+      Observable<PipelineExecutionImpl> previousObservable =
           retrieveObservable(
               PIPELINE,
               executionsByPipelineKey(pipelineConfigId),
@@ -477,17 +477,17 @@ public class RedisExecutionRepository implements ExecutionRepository {
    * @param limit and the param @offset are only implemented in SqlExecutionRepository
    */
   @Override
-  public @Nonnull List<PipelineExecution>
+  public @Nonnull List<PipelineExecutionImpl>
       retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
           @Nonnull List<String> pipelineConfigIds,
           long buildTimeStartBoundary,
           long buildTimeEndBoundary,
           ExecutionCriteria executionCriteria) {
-    List<PipelineExecution> executions = new ArrayList<>();
+    List<PipelineExecutionImpl> executions = new ArrayList<>();
     allRedisDelegates()
         .forEach(
             d -> {
-              List<PipelineExecution> pipelines =
+              List<PipelineExecutionImpl> pipelines =
                   getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(
                       d, pipelineConfigIds, buildTimeStartBoundary, buildTimeEndBoundary);
               executions.addAll(pipelines);
@@ -505,12 +505,13 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public List<PipelineExecution> retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
-      @Nonnull List<String> pipelineConfigIds,
-      long buildTimeStartBoundary,
-      long buildTimeEndBoundary,
-      ExecutionCriteria executionCriteria) {
-    List<PipelineExecution> executions =
+  public List<PipelineExecutionImpl>
+      retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+          @Nonnull List<String> pipelineConfigIds,
+          long buildTimeStartBoundary,
+          long buildTimeEndBoundary,
+          ExecutionCriteria executionCriteria) {
+    List<PipelineExecutionImpl> executions =
         retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
             pipelineConfigIds, buildTimeStartBoundary, buildTimeEndBoundary, executionCriteria);
 
@@ -519,7 +520,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull Observable<PipelineExecution> retrieveOrchestrationsForApplication(
+  public @Nonnull Observable<PipelineExecutionImpl> retrieveOrchestrationsForApplication(
       @Nonnull String application, @Nonnull ExecutionCriteria criteria) {
     String allOrchestrationsKey = appKey(ORCHESTRATION, application);
 
@@ -584,7 +585,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         currentOrchestrationIds.subList(
             0, Math.min(criteria.getPageSize(), currentOrchestrationIds.size()));
 
-    Observable<PipelineExecution> currentObservable =
+    Observable<PipelineExecutionImpl> currentObservable =
         retrieveObservable(
             ORCHESTRATION,
             allOrchestrationsKey,
@@ -604,7 +605,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
           previousOrchestrationIds.subList(
               0, Math.min(criteria.getPageSize(), previousOrchestrationIds.size()));
 
-      Observable<PipelineExecution> previousObservable =
+      Observable<PipelineExecutionImpl> previousObservable =
           retrieveObservable(
               ORCHESTRATION,
               allOrchestrationsKey,
@@ -621,11 +622,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Nonnull
   @Override
-  public List<PipelineExecution> retrieveOrchestrationsForApplication(
+  public List<PipelineExecutionImpl> retrieveOrchestrationsForApplication(
       @Nonnull String application,
       @Nonnull ExecutionCriteria criteria,
       @Nullable ExecutionComparator sorter) {
-    List<PipelineExecution> executions =
+    List<PipelineExecutionImpl> executions =
         retrieveOrchestrationsForApplication(application, criteria)
             .filter(
                 (orchestration) -> {
@@ -650,7 +651,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Nonnull
   @Override
-  public PipelineExecution retrieveByCorrelationId(
+  public PipelineExecutionImpl retrieveByCorrelationId(
       @Nonnull ExecutionType executionType, @Nonnull String correlationId)
       throws ExecutionNotFoundException {
     if (executionType == PIPELINE) {
@@ -660,7 +661,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull PipelineExecution retrieveOrchestrationForCorrelationId(
+  public @Nonnull PipelineExecutionImpl retrieveOrchestrationForCorrelationId(
       @Nonnull String correlationId) throws ExecutionNotFoundException {
     String key = format("correlation:%s", correlationId);
     return getRedisDelegate(key)
@@ -669,7 +670,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
               String orchestrationId = correlationRedis.get(key);
 
               if (orchestrationId != null) {
-                PipelineExecution orchestration =
+                PipelineExecutionImpl orchestration =
                     retrieveInternal(
                         getRedisDelegate(orchestrationKey(orchestrationId)),
                         ORCHESTRATION,
@@ -686,7 +687,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Nonnull
   @Override
-  public PipelineExecution retrievePipelineForCorrelationId(@Nonnull String correlationId)
+  public PipelineExecutionImpl retrievePipelineForCorrelationId(@Nonnull String correlationId)
       throws ExecutionNotFoundException {
     String key = format("pipelineCorrelation:%s", correlationId);
     return getRedisDelegate(key)
@@ -695,7 +696,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
               String pipelineId = correlationRedis.get(key);
 
               if (pipelineId != null) {
-                PipelineExecution pipeline =
+                PipelineExecutionImpl pipeline =
                     retrieveInternal(
                         getRedisDelegate(pipelineKey(pipelineId)), PIPELINE, pipelineId);
                 if (!pipeline.getStatus().isComplete()) {
@@ -709,8 +710,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull List<PipelineExecution> retrieveBufferedExecutions() {
-    List<Observable<PipelineExecution>> observables =
+  public @Nonnull List<PipelineExecutionImpl> retrieveBufferedExecutions() {
+    List<Observable<PipelineExecutionImpl>> observables =
         allRedisDelegates().stream()
             .map(
                 d ->
@@ -836,8 +837,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return map;
   }
 
-  protected PipelineExecution buildExecution(
-      @Nonnull PipelineExecution execution,
+  protected PipelineExecutionImpl buildExecution(
+      @Nonnull PipelineExecutionImpl execution,
       @Nonnull Map<String, String> map,
       List<String> stageIds) {
     Id serializationErrorId =
@@ -862,7 +863,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
       }
       execution.setAuthentication(
           mapper.readValue(
-              map.get("authentication"), PipelineExecution.AuthenticationDetails.class));
+              map.get("authentication"), PipelineExecutionImpl.AuthenticationDetails.class));
       if (map.get("paused") != null) {
         execution.setPaused(mapper.readValue(map.get("paused"), PausedDetails.class));
       }
@@ -870,7 +871,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
       execution.setOrigin(map.get("origin"));
       if (map.get("source") != null) {
         execution.setSource(
-            mapper.readValue(map.get("source"), PipelineExecution.PipelineSource.class));
+            mapper.readValue(map.get("source"), PipelineExecutionImpl.PipelineSource.class));
       }
       execution.setTrigger(
           map.get("trigger") != null
@@ -887,11 +888,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
           String.format("Failed serializing execution json, id: %s", execution.getId()), e);
     }
 
-    List<StageExecution> stages = new ArrayList<>();
+    List<StageExecutionImpl> stages = new ArrayList<>();
     stageIds.forEach(
         stageId -> {
           String prefix = format("stage.%s.", stageId);
-          StageExecution stage = new StageExecution();
+          StageExecutionImpl stage = new StageExecutionImpl();
           try {
             stage.setId(stageId);
             stage.setRefId(map.get(prefix + "refId"));
@@ -934,7 +935,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
             if (map.get(prefix + "lastModified") != null) {
               stage.setLastModified(
                   mapper.readValue(
-                      map.get(prefix + "lastModified"), StageExecution.LastModifiedDetails.class));
+                      map.get(prefix + "lastModified"),
+                      StageExecutionImpl.LastModifiedDetails.class));
             }
             stage.setExecution(execution);
             stages.add(stage);
@@ -974,7 +976,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return execution;
   }
 
-  protected Map<String, String> serializeExecution(@Nonnull PipelineExecution execution) {
+  protected Map<String, String> serializeExecution(@Nonnull PipelineExecutionImpl execution) {
     Map<String, String> map = new HashMap<>();
     try {
       map.put("application", execution.getApplication());
@@ -1021,7 +1023,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return map;
   }
 
-  protected Map<String, String> serializeStage(StageExecution stage) {
+  protected Map<String, String> serializeStage(StageExecutionImpl stage) {
     String prefix = format("stage.%s.", stage.getId());
     Map<String, String> map = new HashMap<>();
     map.put(prefix + "refId", stage.getRefId());
@@ -1125,7 +1127,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
    * @param buildTimeEndBoundary
    * @return Stream of executions for pipelineConfigId between the time boundaries.
    */
-  private Stream<PipelineExecution> getExecutionForPipelineConfigId(
+  private Stream<PipelineExecutionImpl> getExecutionForPipelineConfigId(
       RedisClientDelegate delegate,
       String pipelineConfigId,
       Long buildTimeStartBoundary,
@@ -1152,17 +1154,18 @@ public class RedisExecutionRepository implements ExecutionRepository {
                       c -> {
                         return c.lrange(stageIdsKey, 0, -1);
                       });
-              PipelineExecution execution =
-                  new PipelineExecution(PIPELINE, executionId, executionMap.get("application"));
+              PipelineExecutionImpl execution =
+                  new PipelineExecutionImpl(PIPELINE, executionId, executionMap.get("application"));
               return buildExecution(execution, executionMap, stageIds);
             });
   }
 
-  private List<PipelineExecution> getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(
-      RedisClientDelegate redisClientDelegate,
-      List<String> pipelineConfigIds,
-      long buildTimeStartBoundary,
-      long buildTimeEndBoundary) {
+  private List<PipelineExecutionImpl>
+      getPipelinesForPipelineConfigIdsBetweenBuildTimeBoundaryFromRedis(
+          RedisClientDelegate redisClientDelegate,
+          List<String> pipelineConfigIds,
+          long buildTimeStartBoundary,
+          long buildTimeEndBoundary) {
     return pipelineConfigIds.stream()
         .flatMap(
             pipelineConfigId ->
@@ -1174,18 +1177,18 @@ public class RedisExecutionRepository implements ExecutionRepository {
         .collect(Collectors.toList());
   }
 
-  protected Observable<PipelineExecution> all(
+  protected Observable<PipelineExecutionImpl> all(
       ExecutionType type, RedisClientDelegate redisClientDelegate) {
     return retrieveObservable(type, alljobsKey(type), queryAllScheduler, redisClientDelegate);
   }
 
-  protected Observable<PipelineExecution> allForApplication(
+  protected Observable<PipelineExecutionImpl> allForApplication(
       ExecutionType type, String application, RedisClientDelegate redisClientDelegate) {
     return retrieveObservable(
         type, appKey(type, application), queryByAppScheduler, redisClientDelegate);
   }
 
-  protected Observable<PipelineExecution> retrieveObservable(
+  protected Observable<PipelineExecutionImpl> retrieveObservable(
       ExecutionType type,
       String lookupKey,
       Scheduler scheduler,
@@ -1203,7 +1206,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @SuppressWarnings("unchecked")
-  protected Observable<PipelineExecution> retrieveObservable(
+  protected Observable<PipelineExecutionImpl> retrieveObservable(
       ExecutionType type,
       String lookupKey,
       Func1<String, Iterable<String>> lookupKeyFetcher,
@@ -1310,7 +1313,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
     }
   }
 
-  private void storeExecutionInternal(RedisClientDelegate delegate, PipelineExecution execution) {
+  private void storeExecutionInternal(
+      RedisClientDelegate delegate, PipelineExecutionImpl execution) {
     String key = executionKey(execution);
     String indexKey = format("%s:stageIndex", key);
     Map<String, String> map = serializeExecution(execution);
@@ -1335,7 +1339,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
                   tx.rpush(
                       indexKey,
                       execution.getStages().stream()
-                          .map(StageExecution::getId)
+                          .map(StageExecutionImpl::getId)
                           .toArray(String[]::new));
                 }
                 tx.exec();
@@ -1350,7 +1354,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   private void storeStageInternal(
-      RedisClientDelegate delegate, StageExecution stage, Boolean updateIndex) {
+      RedisClientDelegate delegate, StageExecutionImpl stage, Boolean updateIndex) {
     String key = executionKey(stage);
     String indexKey = format("%s:stageIndex", key);
 
@@ -1378,7 +1382,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
         });
   }
 
-  protected PipelineExecution retrieveInternal(
+  protected PipelineExecutionImpl retrieveInternal(
       RedisClientDelegate delegate, ExecutionType type, String id)
       throws ExecutionNotFoundException {
     String key = executionKey(type, id);
@@ -1411,7 +1415,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
           }
         });
 
-    PipelineExecution execution = new PipelineExecution(type, id, map.get("application"));
+    PipelineExecutionImpl execution = new PipelineExecutionImpl(type, id, map.get("application"));
     return buildExecution(execution, map, stageIds);
   }
 
@@ -1440,11 +1444,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return delegates;
   }
 
-  protected String executionKey(PipelineExecution execution) {
+  protected String executionKey(PipelineExecutionImpl execution) {
     return format("%s:%s", execution.getType(), execution.getId());
   }
 
-  private String executionKey(StageExecution stage) {
+  private String executionKey(StageExecutionImpl stage) {
     return format("%s:%s", stage.getExecution().getType(), stage.getExecution().getId());
   }
 
@@ -1460,11 +1464,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
     return format("%s:%s", ORCHESTRATION, id);
   }
 
-  private RedisClientDelegate getRedisDelegate(PipelineExecution execution) {
+  private RedisClientDelegate getRedisDelegate(PipelineExecutionImpl execution) {
     return getRedisDelegate(execution.getType(), execution.getId());
   }
 
-  private RedisClientDelegate getRedisDelegate(StageExecution stage) {
+  private RedisClientDelegate getRedisDelegate(StageExecutionImpl stage) {
     return getRedisDelegate(stage.getExecution().getType(), stage.getExecution().getId());
   }
 

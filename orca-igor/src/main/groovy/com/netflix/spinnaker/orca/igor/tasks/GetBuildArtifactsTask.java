@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.BuildService;
 import com.netflix.spinnaker.orca.igor.model.CIStageDefinition;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,7 @@ public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> 
   }
 
   @Override
-  protected @Nonnull CIStageDefinition mapStage(@Nonnull StageExecution stage) {
+  protected @Nonnull CIStageDefinition mapStage(@Nonnull StageExecutionImpl stage) {
     return stage.mapTo(CIStageDefinition.class);
   }
 }

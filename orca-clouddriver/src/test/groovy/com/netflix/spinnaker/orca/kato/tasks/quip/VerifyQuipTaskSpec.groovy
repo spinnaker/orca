@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import retrofit.client.Client
 import retrofit.client.Response
@@ -82,7 +82,7 @@ class VerifyQuipTaskSpec extends Specification {
     def pipe = pipeline {
       application = app
     }
-    def stage = new StageExecution(pipe, 'verifyQuip', [
+    def stage = new StageExecutionImpl(pipe, 'verifyQuip', [
       "clusterName"    : cluster,
       "account"        : account,
       "region"         : region,
@@ -109,7 +109,7 @@ class VerifyQuipTaskSpec extends Specification {
     def pipe = pipeline {
       application = app
     }
-    def stage = new StageExecution(pipe, 'verifyQuip', [
+    def stage = new StageExecutionImpl(pipe, 'verifyQuip', [
       "clusterName"    : cluster,
       "account"        : account,
       "region"         : region,
@@ -137,7 +137,7 @@ class VerifyQuipTaskSpec extends Specification {
     def pipe = pipeline {
       application = app
     }
-    def stage = new StageExecution(pipe, 'verifyQuip', [
+    def stage = new StageExecutionImpl(pipe, 'verifyQuip', [
       "clusterName"    : cluster,
       "account"        : account,
       "region"         : region,
@@ -165,7 +165,7 @@ class VerifyQuipTaskSpec extends Specification {
     def pipe = pipeline {
       application = app
     }
-    def stage = new StageExecution(pipe, 'verifyQuip', [
+    def stage = new StageExecutionImpl(pipe, 'verifyQuip', [
       "clusterName"    : cluster,
       "account"        : account,
       "region"         : region,
@@ -196,7 +196,7 @@ class VerifyQuipTaskSpec extends Specification {
     def pipe = pipeline {
       application = app
     }
-    def stage = new StageExecution(pipe, 'verifyQuip', [
+    def stage = new StageExecutionImpl(pipe, 'verifyQuip', [
       "clusterName"    : cluster,
       "account"        : account,
       "region"         : region,
@@ -227,7 +227,7 @@ class VerifyQuipTaskSpec extends Specification {
     def pipe = pipeline {
       application = app
     }
-    def stage = new StageExecution(pipe, 'verifyQuip', [
+    def stage = new StageExecutionImpl(pipe, 'verifyQuip', [
       "clusterName"    : cluster,
       "account"        : account,
       "region"         : region,
@@ -266,7 +266,7 @@ class VerifyQuipTaskSpec extends Specification {
     def pipe = pipeline {
       application = app
     }
-    def stage = new StageExecution(pipe, 'verifyQuip', [
+    def stage = new StageExecutionImpl(pipe, 'verifyQuip', [
       "clusterName"    : cluster,
       "account"        : account,
       "region"         : region,

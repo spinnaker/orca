@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -32,7 +32,7 @@ class DetermineTargetReferenceTask implements Task {
   TargetReferenceSupport targetReferenceSupport
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
       targetReferences: targetReferenceSupport.getTargetAsgReferences(stage)
     ]).build()

@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.*
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,7 +37,7 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired CanaryStage canaryStage
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
       .withTask("registerCanary", RegisterCanaryTask)
       .withTask("monitorCanary", MonitorCanaryTask)
@@ -54,7 +54,7 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  CancellableStage.Result cancel(StageExecution stage) {
+  CancellableStage.Result cancel(StageExecutionImpl stage) {
     def cancelCanaryResults = [:]
     def canaryId = stage.context.canary?.id as String
 
@@ -78,7 +78,7 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
       log.error("Unable to cancel canary '${canaryId}' in mine", e)
     }
 
-    StageExecution canaryStageInstance = stage.ancestors().find {
+    StageExecutionImpl canaryStageInstance = stage.ancestors().find {
       it.type == CanaryStage.PIPELINE_CONFIG_TYPE
     }
 

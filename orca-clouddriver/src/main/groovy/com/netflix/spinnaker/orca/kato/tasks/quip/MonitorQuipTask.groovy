@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -40,7 +40,7 @@ class MonitorQuipTask extends AbstractQuipTask implements RetryableTask {
    * I'm not dealing with it now since I think this will be used on a small scale, 1-2 instances at a time
    */
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     def result = TaskResult.ofStatus(ExecutionStatus.SUCCEEDED)
 
     //we skipped instances that were up to date

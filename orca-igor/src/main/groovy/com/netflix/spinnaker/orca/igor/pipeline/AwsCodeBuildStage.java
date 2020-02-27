@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.igor.tasks.StartAwsCodeBuildTask;
 import com.netflix.spinnaker.orca.igor.tasks.StopAwsCodeBuildTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +39,7 @@ public class AwsCodeBuildStage implements StageDefinitionBuilder, CancellableSta
   private final StopAwsCodeBuildTask stopAwsCodeBuildTask;
 
   @Override
-  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask("startAwsCodeBuildTask", StartAwsCodeBuildTask.class)
         .withTask("monitorAwsCodeBuildTask", MonitorAwsCodeBuildTask.class)
@@ -48,7 +48,7 @@ public class AwsCodeBuildStage implements StageDefinitionBuilder, CancellableSta
   }
 
   @Override
-  public Result cancel(StageExecution stage) {
+  public Result cancel(StageExecutionImpl stage) {
     log.info(
         String.format(
             "Cancelling stage (stageId: %s, executionId: %s context: %s)",

@@ -22,8 +22,8 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -53,7 +53,7 @@ class StartPipelineTask implements Task {
   }
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Cannot start a stored pipeline, front50 is not enabled. Fix this by setting front50.enabled: true")
     }
@@ -121,7 +121,7 @@ class StartPipelineTask implements Task {
   //
   // In the case of the implicit pipeline invocation, the MDC is empty, which is why we fall back
   // to Execution.AuthenticationDetails of the parent pipeline.
-  User getUser(PipelineExecution parentPipeline) {
+  User getUser(PipelineExecutionImpl parentPipeline) {
     def korkUsername = AuthenticatedRequest.getSpinnakerUser()
     if (korkUsername.isPresent()) {
       def korkAccounts = AuthenticatedRequest.getSpinnakerAccounts().orElse("")

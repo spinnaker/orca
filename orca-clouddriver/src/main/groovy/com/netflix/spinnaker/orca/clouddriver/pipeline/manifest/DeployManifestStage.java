@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class DeployManifestStage implements StageDefinitionBuilder {
   private final OortHelper oortHelper;
 
   @Override
-  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask(ResolveDeploySourceManifestTask.TASK_NAME, ResolveDeploySourceManifestTask.class)
         .withTask(DeployManifestTask.TASK_NAME, DeployManifestTask.class)
@@ -60,7 +60,7 @@ public class DeployManifestStage implements StageDefinitionBuilder {
         .withTask(BindProducedArtifactsTask.TASK_NAME, BindProducedArtifactsTask.class);
   }
 
-  public void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
+  public void afterStages(@Nonnull StageExecutionImpl stage, @Nonnull StageGraphBuilder graph) {
     TrafficManagement trafficManagement =
         stage.mapTo(DeployManifestContext.class).getTrafficManagement();
     if (trafficManagement.isEnabled()) {

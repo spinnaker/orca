@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.pipeline.persistence
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import spock.lang.Specification
 
 import static com.netflix.spinnaker.orca.api.ExecutionType.*
@@ -27,10 +27,10 @@ class ExecutionComparatorSpec extends Specification {
 
   def "sorting naturally orders by ID"() {
     given:
-    List<PipelineExecution> executions = [
-        new PipelineExecution(PIPELINE, "3", "foo"),
-        new PipelineExecution(PIPELINE, "1", "foo"),
-        new PipelineExecution(PIPELINE, "2", "foo")
+    List<PipelineExecutionImpl> executions = [
+      new PipelineExecutionImpl(PIPELINE, "3", "foo"),
+      new PipelineExecutionImpl(PIPELINE, "1", "foo"),
+      new PipelineExecutionImpl(PIPELINE, "2", "foo")
     ]
 
     when:
@@ -42,11 +42,11 @@ class ExecutionComparatorSpec extends Specification {
 
   def "sort by START_TIME_OR_ID"() {
     given:
-    List<PipelineExecution> executions = [
-        new PipelineExecution(PIPELINE, "3", "foo").with { startTime = 1000L; it },
-        new PipelineExecution(PIPELINE, "1", "foo").with { startTime = 1000L; it },
-        new PipelineExecution(PIPELINE, "2", "foo").with { startTime = 1500L; it },
-        new PipelineExecution(PIPELINE, "4", "foo")
+    List<PipelineExecutionImpl> executions = [
+      new PipelineExecutionImpl(PIPELINE, "3", "foo").with { startTime = 1000L; it },
+      new PipelineExecutionImpl(PIPELINE, "1", "foo").with { startTime = 1000L; it },
+      new PipelineExecutionImpl(PIPELINE, "2", "foo").with { startTime = 1500L; it },
+      new PipelineExecutionImpl(PIPELINE, "4", "foo")
     ]
 
     when:
@@ -58,11 +58,11 @@ class ExecutionComparatorSpec extends Specification {
 
   def "sort by REVERSE_BUILD_TIME"() {
     given:
-    List<PipelineExecution> executions = [
-        new PipelineExecution(PIPELINE, "3", "foo").with { buildTime = 1000L; it },
-        new PipelineExecution(PIPELINE, "1", "foo").with { buildTime = 1000L; it },
-        new PipelineExecution(PIPELINE, "2", "foo").with { buildTime = 1500L; it },
-        new PipelineExecution(PIPELINE, "4", "foo")
+    List<PipelineExecutionImpl> executions = [
+      new PipelineExecutionImpl(PIPELINE, "3", "foo").with { buildTime = 1000L; it },
+      new PipelineExecutionImpl(PIPELINE, "1", "foo").with { buildTime = 1000L; it },
+      new PipelineExecutionImpl(PIPELINE, "2", "foo").with { buildTime = 1500L; it },
+      new PipelineExecutionImpl(PIPELINE, "4", "foo")
     ]
 
     when:

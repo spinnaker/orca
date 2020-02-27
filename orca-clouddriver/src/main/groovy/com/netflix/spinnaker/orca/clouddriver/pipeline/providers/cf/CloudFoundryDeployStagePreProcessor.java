@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ServerGroupFo
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
@@ -37,7 +37,7 @@ class CloudFoundryDeployStagePreProcessor implements DeployStagePreProcessor {
   private ServerGroupForceCacheRefreshStage serverGroupForceCacheRefreshStage;
 
   @Override
-  public List<StageDefinition> onFailureStageDefinitions(StageExecution stage) {
+  public List<StageDefinition> onFailureStageDefinitions(StageExecutionImpl stage) {
     CfRollingRedBlackStageData stageData = stage.mapTo(CfRollingRedBlackStageData.class);
     List<StageDefinition> stageDefinitions = new ArrayList<>();
     Strategy strategy = Strategy.fromStrategyKey(stageData.getStrategy());
@@ -65,7 +65,7 @@ class CloudFoundryDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  public boolean supports(StageExecution stage) {
+  public boolean supports(StageExecutionImpl stage) {
     return "cloudfoundry".equals(stage.mapTo(StageData.class).getCloudProvider());
   }
 

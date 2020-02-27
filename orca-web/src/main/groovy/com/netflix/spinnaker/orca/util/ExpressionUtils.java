@@ -21,8 +21,8 @@ import com.netflix.spinnaker.kork.exceptions.UserException;
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import com.netflix.spinnaker.orca.q.handler.ExpressionAware;
 import java.util.HashMap;
@@ -49,7 +49,7 @@ public class ExpressionUtils implements ExpressionAware {
   }
 
   public Map<String, Object> evaluateVariables(
-      @Nonnull PipelineExecution execution,
+      @Nonnull PipelineExecutionImpl execution,
       @Nonnull List<String> requisiteStageRefIds,
       @Nullable String spelVersionOverride,
       @Nonnull List<Map<String, String>> expressions) {
@@ -70,8 +70,8 @@ public class ExpressionUtils implements ExpressionAware {
       execution.setSpelEvaluator(spelVersionOverride);
     }
 
-    StageExecution evalVarsStage =
-        new StageExecution(execution, EvaluateVariablesStage.STAGE_TYPE, stageContext);
+    StageExecutionImpl evalVarsStage =
+        new StageExecutionImpl(execution, EvaluateVariablesStage.STAGE_TYPE, stageContext);
 
     evalVarsStage = ExpressionAware.DefaultImpls.withMergedContext(this, evalVarsStage);
     ExpressionAware.DefaultImpls.includeExpressionEvaluationSummary(this, evalVarsStage);
@@ -96,7 +96,7 @@ public class ExpressionUtils implements ExpressionAware {
   }
 
   @Override
-  public boolean shouldFailOnFailedExpressionEvaluation(@NotNull StageExecution stage) {
+  public boolean shouldFailOnFailedExpressionEvaluation(@NotNull StageExecutionImpl stage) {
     return false;
   }
 
@@ -108,18 +108,18 @@ public class ExpressionUtils implements ExpressionAware {
   // problems)
   // Hence, the following methods just defer to the "DefaultImpls"
   @Override
-  public void includeExpressionEvaluationSummary(@NotNull StageExecution stage) {
+  public void includeExpressionEvaluationSummary(@NotNull StageExecutionImpl stage) {
     DefaultImpls.includeExpressionEvaluationSummary(this, stage);
   }
 
   @Override
-  public boolean hasFailedExpressions(@NotNull StageExecution stage) {
+  public boolean hasFailedExpressions(@NotNull StageExecutionImpl stage) {
     return DefaultImpls.hasFailedExpressions(this, stage);
   }
 
   @Override
   @Nonnull
-  public StageExecution withMergedContext(@NotNull StageExecution stage) {
+  public StageExecutionImpl withMergedContext(@NotNull StageExecutionImpl stage) {
     return DefaultImpls.withMergedContext(this, stage);
   }
 

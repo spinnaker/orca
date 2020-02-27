@@ -20,7 +20,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.mock.env.MockEnvironment
 import spock.lang.Specification
 import spock.lang.Subject
@@ -84,7 +84,7 @@ class RollbackClusterStageSpec extends Specification {
     afterStages*.context.region == ["us-east-1"]
   }
 
-  private Iterable<StageExecution> buildAfterStages(StageExecution stage) {
+  private Iterable<StageExecutionImpl> buildAfterStages(StageExecutionImpl stage) {
     def graph = StageGraphBuilder.afterStages(stage)
     stageBuilder.afterStages(stage, graph)
     return graph.build()

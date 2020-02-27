@@ -40,13 +40,13 @@ public class OptionalStageSupport {
    * {@code false}.
    */
   public static boolean isOptional(
-      StageExecution stage, ContextParameterProcessor contextParameterProcessor) {
+      StageExecutionImpl stage, ContextParameterProcessor contextParameterProcessor) {
     Map stageEnabled = (Map) stage.getContext().get("stageEnabled");
     String type = stageEnabled == null ? null : (String) stageEnabled.get("type");
     String optionalType = type == null ? null : type.toLowerCase();
     if (!OPTIONAL_STAGE_TYPES.containsKey(optionalType)) {
       if (stage.getSyntheticStageOwner() != null || stage.getParentStageId() != null) {
-        StageExecution parentStage =
+        StageExecutionImpl parentStage =
             stage.getExecution().getStages().stream()
                 .filter(it -> it.getId().equals(stage.getParentStageId()))
                 .findFirst()
@@ -83,7 +83,7 @@ public class OptionalStageSupport {
 
   /** Determines whether a stage is optional and should be skipped */
   private interface OptionalStageEvaluator {
-    boolean evaluate(StageExecution stage, ContextParameterProcessor contextParameterProcessor);
+    boolean evaluate(StageExecutionImpl stage, ContextParameterProcessor contextParameterProcessor);
   }
 
   /**
@@ -104,7 +104,7 @@ public class OptionalStageSupport {
 
     @Override
     public boolean evaluate(
-        StageExecution stage, ContextParameterProcessor contextParameterProcessor) {
+        StageExecutionImpl stage, ContextParameterProcessor contextParameterProcessor) {
       String expression =
           contextParameterProcessor
               .process(

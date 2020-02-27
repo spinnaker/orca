@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.image.UpsertImageTagsTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.WaitForUpsertedImageTagsTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,7 +31,7 @@ public class UpsertImageTagsStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "upsertImageTags";
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
         .withTask("upsertImageTags", UpsertImageTagsTask.class)
         .withTask("monitorUpsert", MonitorKatoTask.class)

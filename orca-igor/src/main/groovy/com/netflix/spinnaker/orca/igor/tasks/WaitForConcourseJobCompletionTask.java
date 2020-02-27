@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.BuildService;
 import com.netflix.spinnaker.orca.igor.model.ConcourseStageDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.ConcourseBuildInfo;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
@@ -40,7 +40,7 @@ public class WaitForConcourseJobCompletionTask implements OverridableTimeoutRetr
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     ConcourseStageDefinition stageDefinition = stage.mapTo(ConcourseStageDefinition.class);
     String jobPath =
         stageDefinition.getTeamName()

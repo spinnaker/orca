@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -33,7 +33,7 @@ public class PinnedServerGroupTagGenerator implements ServerGroupEntityTagGenera
 
   @Override
   public Collection<Map<String, Object>> generateTags(
-      StageExecution stage,
+      StageExecutionImpl stage,
       String serverGroup,
       String account,
       String location,

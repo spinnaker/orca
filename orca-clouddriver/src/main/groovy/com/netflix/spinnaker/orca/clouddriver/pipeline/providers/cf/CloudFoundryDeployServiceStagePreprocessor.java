@@ -22,18 +22,18 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMon
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryWaitForDeployServiceTask;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CloudFoundryDeployServiceStagePreprocessor implements DeployServiceStagePreprocessor {
   @Override
-  public boolean supports(StageExecution stage) {
+  public boolean supports(StageExecutionImpl stage) {
     return "cloudfoundry".equals(stage.mapTo(StageData.class).getCloudProvider());
   }
 
   @Override
-  public void addSteps(TaskNode.Builder builder, StageExecution stage) {
+  public void addSteps(TaskNode.Builder builder, StageExecutionImpl stage) {
     builder
         .withTask("deployService", CloudFoundryDeployServiceTask.class)
         .withTask("monitorDeployService", CloudFoundryMonitorKatoServicesTask.class)

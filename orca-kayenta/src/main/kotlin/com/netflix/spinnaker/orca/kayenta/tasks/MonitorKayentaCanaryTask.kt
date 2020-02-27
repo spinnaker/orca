@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.CanaryResults
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.kayenta.Thresholds
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit.HOURS
 
@@ -47,7 +47,7 @@ class MonitorKayentaCanaryTask(
     val scoreThresholds: Thresholds
   )
 
-  override fun execute(stage: StageExecution): TaskResult {
+  override fun execute(stage: StageExecutionImpl): TaskResult {
     val context = stage.mapTo<MonitorKayentaCanaryContext>()
     val canaryResults = kayentaService.getCanaryResults(context.storageAccountName, context.canaryPipelineExecutionId)
 

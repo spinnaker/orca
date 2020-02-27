@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +50,7 @@ public class UpsertImageTagsTask extends AbstractCloudProviderAwareTask implemen
   private Long upsertImageTagsTimeoutMillis;
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage);
 
     ImageTagger tagger =

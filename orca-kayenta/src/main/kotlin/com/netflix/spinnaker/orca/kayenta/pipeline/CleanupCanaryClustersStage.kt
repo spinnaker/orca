@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.kayenta.model.regions
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
@@ -35,7 +35,7 @@ class CleanupCanaryClustersStage : StageDefinitionBuilder {
     val STAGE_TYPE = "cleanupCanaryClusters"
   }
 
-  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
     val deployments = parent.deployments
 
     val disableStages = deployments.serverGroupPairs.flatMap { pair ->

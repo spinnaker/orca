@@ -41,6 +41,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.support.RequisiteStageRefIdDeserializer;
@@ -64,18 +65,18 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecution, Serializable {
+public class StageExecutionImpl implements StageExecution, Serializable {
 
   private static final ULID ID_GENERATOR = new ULID();
 
   /** Sorts stages into order according to their refIds / requisiteStageRefIds. */
-  public static Stream<StageExecution> topologicalSort(Collection<StageExecution> stages) {
-    List<StageExecution> unsorted =
+  public static Stream<StageExecutionImpl> topologicalSort(Collection<StageExecutionImpl> stages) {
+    List<StageExecutionImpl> unsorted =
         stages.stream().filter(it -> it.parentStageId == null).collect(toList());
-    ImmutableList.Builder<StageExecution> sorted = ImmutableList.builder();
+    ImmutableList.Builder<StageExecutionImpl> sorted = ImmutableList.builder();
     Set<String> refIds = new HashSet<>();
     while (!unsorted.isEmpty()) {
-      List<StageExecution> sortable =
+      List<StageExecutionImpl> sortable =
           unsorted.stream()
               .filter(it -> refIds.containsAll(it.getRequisiteStageRefIds()))
               .collect(toList());
@@ -99,11 +100,11 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
     return sorted.build().stream();
   }
 
-  public StageExecution() {}
+  public StageExecutionImpl() {}
 
   @SuppressWarnings("unchecked")
-  public StageExecution(
-      PipelineExecution execution, String type, String name, Map<String, Object> context) {
+  public StageExecutionImpl(
+      PipelineExecutionImpl execution, String type, String name, Map<String, Object> context) {
     this.execution = execution;
     this.type = type;
     this.name = name;
@@ -120,11 +121,12 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
     this.context.putAll(context);
   }
 
-  public StageExecution(PipelineExecution execution, String type, Map<String, Object> context) {
+  public StageExecutionImpl(
+      PipelineExecutionImpl execution, String type, Map<String, Object> context) {
     this(execution, type, null, context);
   }
 
-  public StageExecution(PipelineExecution execution, String type) {
+  public StageExecutionImpl(PipelineExecutionImpl execution, String type) {
     this(execution, type, emptyMap());
   }
 
@@ -174,14 +176,14 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
   }
 
   /** Gets the execution object for this stage */
-  private PipelineExecution execution;
+  private PipelineExecutionImpl execution;
 
   @JsonBackReference
-  public @Nonnull PipelineExecution getExecution() {
+  public @Nonnull PipelineExecutionImpl getExecution() {
     return execution;
   }
 
-  public void setExecution(@Nonnull PipelineExecution execution) {
+  public void setExecution(@Nonnull PipelineExecutionImpl execution) {
     this.execution = execution;
   }
 
@@ -263,13 +265,13 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
    * in a stage. Because tasks can be dynamically composed, this list is open updated during a
    * stage's execution.
    */
-  private List<TaskExecution> tasks = new ArrayList<>();
+  private List<TaskExecutionImpl> tasks = new ArrayList<>();
 
-  public @Nonnull List<TaskExecution> getTasks() {
+  public @Nonnull List<TaskExecutionImpl> getTasks() {
     return tasks;
   }
 
-  public void setTasks(@Nonnull List<TaskExecution> tasks) {
+  public void setTasks(@Nonnull List<TaskExecutionImpl> tasks) {
     this.tasks = new ArrayList<>(tasks);
   }
 
@@ -346,7 +348,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    StageExecution stage = (StageExecution) o;
+    StageExecutionImpl stage = (StageExecutionImpl) o;
     return Objects.equals(id, stage.id);
   }
 
@@ -355,7 +357,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
     return Objects.hash(id);
   }
 
-  public TaskExecution taskById(String taskId) {
+  public TaskExecutionImpl taskById(String taskId) {
     return tasks.stream().filter(it -> it.getId().equals(taskId)).findFirst().orElse(null);
   }
 
@@ -367,10 +369,10 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
    * - parent stages of this stage <br>
    * - synthetic stages that share a parent with this stage & occur prior to current stage <br>
    */
-  public List<StageExecution> ancestors() {
+  public List<StageExecutionImpl> ancestors() {
     if (execution != null) {
       Set<String> visited = Sets.newHashSetWithExpectedSize(execution.getStages().size());
-      return ImmutableList.<StageExecution>builder()
+      return ImmutableList.<StageExecutionImpl>builder()
           .add(this)
           .addAll(getAncestorsImpl(visited, false))
           .build();
@@ -386,10 +388,10 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
    * - parent stages of this stage <br>
    * - synthetic stages that share a parent with this stage & occur prior to current stage
    */
-  public List<StageExecution> directAncestors() {
+  public List<StageExecutionImpl> directAncestors() {
     if (execution != null) {
       Set<String> visited = Sets.newHashSetWithExpectedSize(execution.getStages().size());
-      return ImmutableList.<StageExecution>builder()
+      return ImmutableList.<StageExecutionImpl>builder()
           .add(this)
           .addAll(getAncestorsImpl(visited, true))
           .build();
@@ -407,25 +409,25 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
    *     stages this stage depends on (via requisiteRefIds)
    * @return list of ancestor stages
    */
-  private List<StageExecution> getAncestorsImpl(Set<String> visited, boolean directParentOnly) {
+  private List<StageExecutionImpl> getAncestorsImpl(Set<String> visited, boolean directParentOnly) {
     visited.add(this.refId);
 
     if (!requisiteStageRefIds.isEmpty() && !directParentOnly) {
       // Get stages this stage depends on via requisiteStageRefIds:
-      List<StageExecution> previousStages =
+      List<StageExecutionImpl> previousStages =
           execution.getStages().stream()
               .filter(it -> requisiteStageRefIds.contains(it.refId))
               .filter(it -> !visited.contains(it.refId))
               .collect(toList());
-      List<StageExecution> syntheticStages =
+      List<StageExecutionImpl> syntheticStages =
           execution.getStages().stream()
               .filter(
                   s ->
                       previousStages.stream()
-                          .map(StageExecution::getId)
+                          .map(StageExecutionImpl::getId)
                           .anyMatch(id -> id.equals(s.parentStageId)))
               .collect(toList());
-      return ImmutableList.<StageExecution>builder()
+      return ImmutableList.<StageExecutionImpl>builder()
           .addAll(previousStages)
           .addAll(syntheticStages)
           .addAll(
@@ -436,7 +438,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
     } else if (parentStageId != null && !visited.contains(parentStageId)) {
       // Get parent stages, but exclude already visited ones:
 
-      List<StageExecution> ancestors = new ArrayList<>();
+      List<StageExecutionImpl> ancestors = new ArrayList<>();
       if (getSyntheticStageOwner() == SyntheticStageOwner.STAGE_AFTER) {
         ancestors.addAll(
             execution.getStages().stream()
@@ -451,9 +453,9 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
           execution.getStages().stream()
               .filter(it -> it.id.equals(parentStageId))
               .findFirst()
-              .<List<StageExecution>>map(
+              .<List<StageExecutionImpl>>map(
                   parent ->
-                      ImmutableList.<StageExecution>builder()
+                      ImmutableList.<StageExecutionImpl>builder()
                           .add(parent)
                           .addAll(parent.getAncestorsImpl(visited, directParentOnly))
                           .build())
@@ -477,35 +479,37 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
    *
    * @return the first stage that matches the predicate, or null
    */
-  public StageExecution findAncestor(Predicate<StageExecution> predicate) {
-    return StageExecution.findAncestor(this, this.execution, predicate);
+  public StageExecutionImpl findAncestor(Predicate<StageExecutionImpl> predicate) {
+    return StageExecutionImpl.findAncestor(this, this.execution, predicate);
   }
 
-  private static StageExecution findAncestor(
-      StageExecution stage, PipelineExecution execution, Predicate<StageExecution> predicate) {
-    StageExecution matchingStage = null;
+  private static StageExecutionImpl findAncestor(
+      StageExecutionImpl stage,
+      PipelineExecutionImpl execution,
+      Predicate<StageExecutionImpl> predicate) {
+    StageExecutionImpl matchingStage = null;
 
     if (stage != null && !stage.getRequisiteStageRefIds().isEmpty()) {
-      List<StageExecution> previousStages =
+      List<StageExecutionImpl> previousStages =
           execution.getStages().stream()
               .filter(s -> stage.getRequisiteStageRefIds().contains(s.getRefId()))
               .collect(toList());
 
       Set<String> previousStageIds =
-          new HashSet<>(previousStages.stream().map(StageExecution::getId).collect(toList()));
-      List<StageExecution> syntheticStages =
+          new HashSet<>(previousStages.stream().map(StageExecutionImpl::getId).collect(toList()));
+      List<StageExecutionImpl> syntheticStages =
           execution.getStages().stream()
               .filter(s -> previousStageIds.contains(s.getParentStageId()))
               .collect(toList());
 
-      List<StageExecution> priorStages = new ArrayList<>();
+      List<StageExecutionImpl> priorStages = new ArrayList<>();
       priorStages.addAll(previousStages);
       priorStages.addAll(syntheticStages);
 
       matchingStage = priorStages.stream().filter(predicate).findFirst().orElse(null);
 
       if (matchingStage == null) {
-        for (StageExecution s : previousStages) {
+        for (StageExecutionImpl s : previousStages) {
           matchingStage = findAncestor(s, execution, predicate);
 
           if (matchingStage != null) {
@@ -514,7 +518,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
         }
       }
     } else if ((stage != null) && !Strings.isNullOrEmpty(stage.getParentStageId())) {
-      Optional<StageExecution> parent =
+      Optional<StageExecutionImpl> parent =
           execution.getStages().stream()
               .filter(s -> s.getId().equals(stage.getParentStageId()))
               .findFirst();
@@ -536,10 +540,10 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
         && (execution.getTrigger() instanceof PipelineTrigger)) {
       PipelineTrigger parentTrigger = (PipelineTrigger) execution.getTrigger();
 
-      PipelineExecution parentPipelineExecution = parentTrigger.getParentExecution();
+      PipelineExecutionImpl parentPipelineExecution = parentTrigger.getParentExecution();
       String parentPipelineStageId = parentTrigger.getParentPipelineStageId();
 
-      Optional<StageExecution> parentPipelineStage =
+      Optional<StageExecutionImpl> parentPipelineStage =
           parentPipelineExecution.getStages().stream()
               .filter(
                   s -> s.getType().equals("pipeline") && s.getId().equals(parentPipelineStageId))
@@ -548,7 +552,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
       if (parentPipelineStage.isPresent()) {
         matchingStage = findAncestor(parentPipelineStage.get(), parentPipelineExecution, predicate);
       } else {
-        List<StageExecution> parentPipelineStages =
+        List<StageExecutionImpl> parentPipelineStages =
             parentPipelineExecution.getStages().stream()
                 .sorted(
                     (s1, s2) -> {
@@ -573,7 +577,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
           matchingStage = parentPipelineStages.stream().filter(predicate).findFirst().orElse(null);
 
           if (matchingStage == null) {
-            StageExecution firstStage = parentPipelineStages.get(0);
+            StageExecutionImpl firstStage = parentPipelineStages.get(0);
 
             if (predicate.test(firstStage)) {
               matchingStage = firstStage;
@@ -592,18 +596,18 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
   }
 
   /** Recursively get all stages that are children of the current one */
-  public List<StageExecution> allDownstreamStages() {
-    List<StageExecution> children = new ArrayList<>();
+  public List<StageExecutionImpl> allDownstreamStages() {
+    List<StageExecutionImpl> children = new ArrayList<>();
 
     if (execution != null) {
       HashSet<String> visited = new HashSet<>();
-      LinkedList<StageExecution> queue = new LinkedList<>();
+      LinkedList<StageExecutionImpl> queue = new LinkedList<>();
 
       queue.push(this);
       boolean first = true;
 
       while (!queue.isEmpty()) {
-        StageExecution stage = queue.pop();
+        StageExecutionImpl stage = queue.pop();
         if (!first) {
           children.add(stage);
         }
@@ -611,7 +615,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
         first = false;
         visited.add(stage.refId);
 
-        List<StageExecution> childStages = stage.downstreamStages();
+        List<StageExecutionImpl> childStages = stage.downstreamStages();
 
         childStages.stream().filter(s -> !visited.contains(s.refId)).forEach(s -> queue.add(s));
       }
@@ -624,7 +628,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
    * Gets all direct children of the current stage. This is not a recursive method and will return
    * only the children in the first level of the stage.
    */
-  public List<StageExecution> directChildren() {
+  public List<StageExecutionImpl> directChildren() {
 
     if (execution != null) {
       return getExecution().getStages().stream()
@@ -718,7 +722,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
 
   /** Returns the parent of this stage or null if it is a top-level stage. */
   @JsonIgnore
-  public @Nullable StageExecution getParent() {
+  public @Nullable StageExecutionImpl getParent() {
     if (parentStageId == null) {
       return null;
     } else {
@@ -728,11 +732,11 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
 
   /** Returns the top-most stage. */
   @JsonIgnore
-  public StageExecution getTopLevelStage() {
-    StageExecution topLevelStage = this;
+  public StageExecutionImpl getTopLevelStage() {
+    StageExecutionImpl topLevelStage = this;
     while (topLevelStage.parentStageId != null) {
       String sid = topLevelStage.parentStageId;
-      Optional<StageExecution> stage =
+      Optional<StageExecutionImpl> stage =
           execution.getStages().stream().filter(s -> s.id.equals(sid)).findFirst();
       if (stage.isPresent()) {
         topLevelStage = stage.get();
@@ -749,8 +753,8 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
   }
 
   @JsonIgnore
-  public Optional<StageExecution> getParentWithTimeout() {
-    StageExecution current = this;
+  public Optional<StageExecutionImpl> getParentWithTimeout() {
+    StageExecutionImpl current = this;
     Optional<Long> timeout = Optional.empty();
 
     while (current != null && !timeout.isPresent()) {
@@ -857,7 +861,7 @@ public class StageExecution implements com.netflix.spinnaker.orca.api.StageExecu
   }
 
   @JsonIgnore
-  public List<StageExecution> downstreamStages() {
+  public List<StageExecutionImpl> downstreamStages() {
     return getExecution().getStages().stream()
         .filter(it -> it.getRequisiteStageRefIds().contains(getRefId()))
         .collect(toList());

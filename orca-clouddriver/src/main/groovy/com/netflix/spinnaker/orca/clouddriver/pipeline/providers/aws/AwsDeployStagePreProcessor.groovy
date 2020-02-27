@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.De
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.pipeline.CheckPreconditionsStage
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -36,7 +36,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   CheckPreconditionsStage checkPreconditionsStage
 
   @Override
-  List<StepDefinition> additionalSteps(StageExecution stage) {
+  List<StepDefinition> additionalSteps(StageExecutionImpl stage) {
     def stageData = stage.mapTo(StageData)
     Strategy strategy = Strategy.fromStrategyKey(stageData.strategy)
 
@@ -54,7 +54,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  List<StageDefinition> beforeStageDefinitions(StageExecution stage) {
+  List<StageDefinition> beforeStageDefinitions(StageExecutionImpl stage) {
     def stageData = stage.mapTo(StageData)
     def stageDefinitions = []
 
@@ -82,7 +82,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  List<StageDefinition> afterStageDefinitions(StageExecution stage) {
+  List<StageDefinition> afterStageDefinitions(StageExecutionImpl stage) {
     def stageData = stage.mapTo(StageData)
     def stageDefinitions = []
     Strategy strategy = Strategy.fromStrategyKey(stageData.strategy)
@@ -100,7 +100,7 @@ class AwsDeployStagePreProcessor implements DeployStagePreProcessor {
   }
 
   @Override
-  boolean supports(StageExecution stage) {
+  boolean supports(StageExecutionImpl stage) {
     def stageData = stage.mapTo(StageData)
     return stageData.cloudProvider == "aws" // && stageData.useSourceCapacity
   }

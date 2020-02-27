@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 
@@ -36,11 +36,11 @@ trait DeploymentDetailsAware {
   private ObjectMapper pipelineObjectMapper = OrcaObjectMapper.getInstance()
 
   void withImageFromPrecedingStage(
-    StageExecution stage,
-    String targetRegion,
-    String targetCloudProvider,
-    Closure callback) {
-    StageExecution previousStage = getPreviousStageWithImage(stage, targetRegion, targetCloudProvider)
+      StageExecutionImpl stage,
+      String targetRegion,
+      String targetCloudProvider,
+      Closure callback) {
+    StageExecutionImpl previousStage = getPreviousStageWithImage(stage, targetRegion, targetCloudProvider)
     def result = [:]
     if (previousStage && isCloudProviderEqual(stage, previousStage)) {
       if (previousStage.context.containsKey("amiDetails")) {
@@ -57,12 +57,12 @@ trait DeploymentDetailsAware {
     }
   }
 
-  StageExecution getPreviousStageWithImage(StageExecution stage, String targetRegion, String targetCloudProvider) {
+  StageExecutionImpl getPreviousStageWithImage(StageExecutionImpl stage, String targetRegion, String targetCloudProvider) {
     if (stage.execution.type == ORCHESTRATION) {
       return null
     }
 
-    StageExecution ancestorWithImage = stage.findAncestor({
+    StageExecutionImpl ancestorWithImage = stage.findAncestor({
       def regions = (it.context.region ? [it.context.region] : it.context.regions) as Set<String>
       def cloudProviderFromContext = it.context.cloudProvider ?: it.context.cloudProviderType
       boolean hasTargetCloudProvider = !cloudProviderFromContext || targetCloudProvider == cloudProviderFromContext
@@ -75,7 +75,7 @@ trait DeploymentDetailsAware {
     return ancestorWithImage
   }
 
-  List<PipelineExecution> getPipelineExecutions(PipelineExecution execution) {
+  List<PipelineExecutionImpl> getPipelineExecutions(PipelineExecutionImpl execution) {
     if (execution?.type == PIPELINE) {
       return [execution] + getPipelineExecutions(getParentPipelineExecution(execution))
     } else {
@@ -83,14 +83,14 @@ trait DeploymentDetailsAware {
     }
   }
 
-  boolean isCloudProviderEqual(StageExecution stage, StageExecution previousStage){
+  boolean isCloudProviderEqual(StageExecutionImpl stage, StageExecutionImpl previousStage){
     if(previousStage.context.cloudProvider!=null && stage.context.cloudProvider!=null) {
       return previousStage.context.cloudProvider == stage.context.cloudProvider
     }
     return true
   }
 
-  private PipelineExecution getParentPipelineExecution(PipelineExecution execution) {
+  private PipelineExecutionImpl getParentPipelineExecution(PipelineExecutionImpl execution) {
     // The initial stage execution is a Pipeline, and the ancestor executions are Maps.
     if (execution.type == PIPELINE && execution.trigger instanceof PipelineTrigger) {
       return (execution.trigger as PipelineTrigger).parentExecution
@@ -99,16 +99,16 @@ trait DeploymentDetailsAware {
   }
 
   void withImageFromDeploymentDetails(
-    StageExecution stage,
-    String targetRegion,
-    String targetCloudProvider,
-    Closure callback) {
+      StageExecutionImpl stage,
+      String targetRegion,
+      String targetCloudProvider,
+      Closure callback) {
     def result = [:]
     def deploymentDetails = (stage.context.deploymentDetails ?: []) as List<Map>
 
     if (!deploymentDetails) {
       // If no deployment details were found in the stage context, check outputs of each stage of each pipeline up the tree.
-      List<PipelineExecution> pipelineExecutions = getPipelineExecutions(stage.execution)
+      List<PipelineExecutionImpl> pipelineExecutions = getPipelineExecutions(stage.execution)
 
       deploymentDetails = pipelineExecutions.findResult { execution ->
         execution.stages.findResult {

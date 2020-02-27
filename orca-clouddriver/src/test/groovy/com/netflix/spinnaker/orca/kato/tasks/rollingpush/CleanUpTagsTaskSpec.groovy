@@ -6,8 +6,8 @@ import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 import spock.lang.Specification
@@ -16,7 +16,7 @@ class CleanUpTagsTaskSpec extends Specification {
   def "should create deleteEntityTags operations "() {
     given:
     def task = new CleanUpTagsTask()
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "")
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "")
     stage.context = [
       application: "app",
       cloudProvider: "aws",

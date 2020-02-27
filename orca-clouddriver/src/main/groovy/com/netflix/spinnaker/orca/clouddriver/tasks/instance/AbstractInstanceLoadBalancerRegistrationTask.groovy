@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 
 abstract class AbstractInstanceLoadBalancerRegistrationTask extends AbstractCloudProviderAwareTask implements Task {
@@ -34,7 +34,7 @@ abstract class AbstractInstanceLoadBalancerRegistrationTask extends AbstractClou
   abstract String getAction()
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     def taskId = kato.requestOperations(getCloudProvider(stage), [[(getAction()): stage.context]])
         .toBlocking()
         .first()

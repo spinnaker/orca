@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.Roll
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.TestRollback
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
 import org.springframework.stereotype.Component
@@ -38,7 +38,7 @@ class RollbackServerGroupStage implements StageDefinitionBuilder {
   AutowireCapableBeanFactory autowireCapableBeanFactory
 
   @Override
-  void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecutionImpl stage, @Nonnull StageGraphBuilder graph) {
     def stageData = stage.mapTo(StageData)
 
     if (!stageData.rollbackType) {

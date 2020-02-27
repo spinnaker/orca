@@ -22,7 +22,7 @@ import static java.util.Collections.singletonMap;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.WaitUntilStage;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -41,7 +41,7 @@ public class WaitUntilTask implements RetryableTask {
   }
 
   @Override
-  public @Nonnull TaskResult execute(@Nonnull StageExecution stage) {
+  public @Nonnull TaskResult execute(@Nonnull StageExecutionImpl stage) {
     WaitUntilStage.WaitUntilStageContext context =
         stage.mapTo(WaitUntilStage.WaitUntilStageContext.class);
 
@@ -66,7 +66,7 @@ public class WaitUntilTask implements RetryableTask {
   }
 
   @Override
-  public long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  public long getDynamicBackoffPeriod(StageExecutionImpl stage, Duration taskDuration) {
     WaitUntilStage.WaitUntilStageContext context =
         stage.mapTo(WaitUntilStage.WaitUntilStageContext.class);
 

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Shared
 import spock.lang.Specification
@@ -66,7 +66,7 @@ class DependsOnPipelineExecutionTaskSpec extends Specification {
     failed    || ExecutionStatus.CANCELED
   }
 
-  StageExecution getStage(String dependencyId) {
+  StageExecutionImpl getStage(String dependencyId) {
     return stage {
       refId = "1"
       type = "dependsOnExecution"

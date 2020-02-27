@@ -45,7 +45,7 @@ class CreateBakeTaskSpec extends Specification {
 
   @Subject
     task = new CreateBakeTask()
-  StageExecution bakeStage
+  StageExecutionImpl bakeStage
   def mapper = OrcaObjectMapper.newInstance()
 
   ArtifactUtils artifactUtils = Stub() {
@@ -66,7 +66,7 @@ class CreateBakeTaskSpec extends Specification {
     baseLabel: "release"
   ]
 
-  PipelineExecution pipeline = pipeline {
+  PipelineExecutionImpl pipeline = pipeline {
     stage {
       type = "bake"
       context = bakeConfig

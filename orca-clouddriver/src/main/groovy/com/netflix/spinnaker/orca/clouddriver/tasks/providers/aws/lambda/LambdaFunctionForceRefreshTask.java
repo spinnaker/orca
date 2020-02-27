@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ public class LambdaFunctionForceRefreshTask extends AbstractCloudProviderAwareTa
   @Autowired private CloudDriverCacheService cacheService;
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage);
 
     Map<String, Object> task = new HashMap<>(stage.getContext());

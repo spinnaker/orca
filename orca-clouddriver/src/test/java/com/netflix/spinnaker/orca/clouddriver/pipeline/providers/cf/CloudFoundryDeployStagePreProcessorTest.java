@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ServerGroupFo
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsEmptyListForRedBlack() {
-    StageExecution stage = new StageExecution();
+    StageExecutionImpl stage = new StageExecutionImpl();
     Map<String, Object> context = new HashMap<>();
     context.put("strategy", "redblack");
     context.put("cloudProvider", "cloudfoundry");
@@ -55,7 +55,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsEmptyListIfRollbackIsNull() {
-    StageExecution stage = new StageExecution();
+    StageExecutionImpl stage = new StageExecutionImpl();
     Map<String, Object> context = new HashMap<>();
     context.put("strategy", "redblack");
     context.put("cloudProvider", "cloudfoundry");
@@ -69,7 +69,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsEmptyListIfRollbackOnFailureIsFalse() {
-    StageExecution stage = new StageExecution();
+    StageExecutionImpl stage = new StageExecutionImpl();
     Map<String, Object> context = new HashMap<>();
     context.put("strategy", "redblack");
     context.put("cloudProvider", "cloudfoundry");
@@ -84,7 +84,7 @@ class CloudFoundryDeployStagePreProcessorTest {
 
   @Test
   void onFailureStageDefinitionsReturnsCacheRefreshAndRollbackForCfRollingRedBlack() {
-    StageExecution stage = new StageExecution();
+    StageExecutionImpl stage = new StageExecutionImpl();
     StageData.Source source = new StageData.Source();
     source.setServerGroupName("sourceServerGroupName");
     Map<String, Object> context = new HashMap<>();

@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +40,7 @@ public class UpsertEntityTagsTask extends AbstractCloudProviderAwareTask impleme
   }
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     TaskId taskId =
         kato.requestOperations(
                 Collections.singletonList(

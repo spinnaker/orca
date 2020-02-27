@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGro
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -44,7 +44,7 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired RetrySupport retrySupport
 
   @Override
-  void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
     Map canaryStageId = [
       canaryStageId   : parent.id,
       failPipeline    : parent.context.failPipeline,
@@ -67,7 +67,7 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  Result cancel(StageExecution stage) {
+  Result cancel(StageExecutionImpl stage) {
     Collection<Map<String, Object>> disableContexts = []
     Collection<Map<String, Object>> destroyContexts = []
 
@@ -138,7 +138,7 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
     }
 
     def destroyResults = destroyContexts.collect {
-      def destroyStage = new StageExecution()
+      def destroyStage = new StageExecutionImpl()
       destroyStage.execution = stage.execution
       destroyStage.context.putAll(it)
       destroyServerGroupTask.execute(destroyStage)

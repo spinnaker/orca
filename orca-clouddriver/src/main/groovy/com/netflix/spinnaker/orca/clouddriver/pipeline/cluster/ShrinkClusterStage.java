@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractWaitForClust
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.ShrinkClusterTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.WaitForClusterShrinkTask;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class ShrinkClusterStage extends AbstractClusterWideClouddriverOperationS
 
   @Override
   public void addAdditionalBeforeStages(
-      @Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
+      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
     if (Objects.equals(parent.getContext().get("allowDeleteActive"), true)) {
       Map<String, Object> context = new HashMap<>(parent.getContext());
       context.put("remainingEnabledServerGroups", parent.getContext().get("shrinkToSize"));

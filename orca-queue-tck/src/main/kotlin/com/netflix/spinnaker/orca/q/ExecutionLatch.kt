@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.ExecutionComplete
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.context.ApplicationListener
 import org.springframework.context.ConfigurableApplicationContext
@@ -46,7 +46,7 @@ class ExecutionLatch(private val predicate: Predicate<ExecutionComplete>) :
   fun await() = latch.await(10, TimeUnit.SECONDS)
 }
 
-fun ConfigurableApplicationContext.runToCompletion(execution: PipelineExecution, launcher: (PipelineExecution) -> Unit, repository: ExecutionRepository) {
+fun ConfigurableApplicationContext.runToCompletion(execution: PipelineExecutionImpl, launcher: (PipelineExecutionImpl) -> Unit, repository: ExecutionRepository) {
   val latch = ExecutionLatch(Predicate {
     it.executionId == execution.id
   })
@@ -66,9 +66,9 @@ fun ConfigurableApplicationContext.runToCompletion(execution: PipelineExecution,
  * completion, and subsequently completed via [runToCompletion].
  */
 fun ConfigurableApplicationContext.runParentToCompletion(
-  parent: PipelineExecution,
-  child: PipelineExecution,
-  launcher: (PipelineExecution) -> Unit,
+  parent: PipelineExecutionImpl,
+  child: PipelineExecutionImpl,
+  launcher: (PipelineExecutionImpl) -> Unit,
   repository: ExecutionRepository
 ) {
   val latch = ExecutionLatch(Predicate {
@@ -83,7 +83,7 @@ fun ConfigurableApplicationContext.runParentToCompletion(
   repository.waitForAllStagesToComplete(parent)
 }
 
-fun ConfigurableApplicationContext.restartAndRunToCompletion(stage: StageExecution, launcher: (PipelineExecution, String) -> Unit, repository: ExecutionRepository) {
+fun ConfigurableApplicationContext.restartAndRunToCompletion(stage: StageExecutionImpl, launcher: (PipelineExecutionImpl, String) -> Unit, repository: ExecutionRepository) {
   val execution = stage.execution
   val latch = ExecutionLatch(Predicate {
     it.executionId == execution.id
@@ -95,14 +95,14 @@ fun ConfigurableApplicationContext.restartAndRunToCompletion(stage: StageExecuti
   repository.waitForAllStagesToComplete(execution)
 }
 
-private fun ExecutionRepository.waitForAllStagesToComplete(execution: PipelineExecution) {
+private fun ExecutionRepository.waitForAllStagesToComplete(execution: PipelineExecutionImpl) {
   var complete = false
   while (!complete) {
     Thread.sleep(100)
     complete = retrieve(PIPELINE, execution.id)
       .run {
         status.isComplete && stages
-          .map(StageExecution::getStatus)
+          .map(StageExecutionImpl::getStatus)
           .all { it.isComplete || it == NOT_STARTED }
       }
   }

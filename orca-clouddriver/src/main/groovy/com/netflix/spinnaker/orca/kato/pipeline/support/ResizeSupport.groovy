@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.Capacity
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.OptionalConfiguration
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.ResizeAction
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileDynamic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -35,7 +35,7 @@ class ResizeSupport {
 
   @CompileDynamic
   @Deprecated
-  public List<Map<String, Object>> createResizeStageDescriptors(StageExecution stage, List<TargetReference> targetReferences) {
+  public List<Map<String, Object>> createResizeStageDescriptors(StageExecutionImpl stage, List<TargetReference> targetReferences) {
     def optionalConfig = stage.mapTo(OptionalConfiguration)
     Map<String, Map<String, Object>> descriptions = [:]
 

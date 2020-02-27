@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.igor.BuildService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -50,7 +50,7 @@ class MonitorJenkinsJobTask implements OverridableTimeoutRetryableTask {
   ]
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     String master = stage.context.master
     String job = stage.context.job
 

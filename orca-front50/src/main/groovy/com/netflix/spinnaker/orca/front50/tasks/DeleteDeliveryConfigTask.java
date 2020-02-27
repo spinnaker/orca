@@ -6,7 +6,7 @@ import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.DeliveryConfig;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Arrays;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -32,7 +32,7 @@ public class DeleteDeliveryConfigTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     StageData stageData = stage.mapTo(StageData.class);
 
     if (stageData.deliveryConfigId == null) {

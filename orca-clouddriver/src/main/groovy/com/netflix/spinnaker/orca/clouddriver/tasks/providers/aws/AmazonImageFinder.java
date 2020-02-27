@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.frigga.ami.AppVersion;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageFinder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -75,7 +75,7 @@ public class AmazonImageFinder implements ImageFinder {
 
   @Override
   public Collection<ImageDetails> byTags(
-      StageExecution stage, String packageName, Map<String, String> tags) {
+      StageExecutionImpl stage, String packageName, Map<String, String> tags) {
     StageData stageData = (StageData) stage.mapTo(StageData.class);
     List<AmazonImage> allMatchedImages =
         oortService.findImage(getCloudProvider(), packageName, null, null, prefixTags(tags))

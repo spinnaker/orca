@@ -26,8 +26,8 @@ import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
 
     when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false))
@@ -69,7 +69,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
 
     when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false))
@@ -86,7 +86,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
 
     when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false))
@@ -103,7 +103,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
 
     when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false))
@@ -120,7 +120,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1)));
 
     when(oortService.getManifest(ACCOUNT, NAMESPACE, MANIFEST_1, false))
@@ -137,7 +137,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(
             ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1, MANIFEST_2)));
 
@@ -170,7 +170,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(
             ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1, MANIFEST_2)));
 
@@ -206,7 +206,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(
             ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1, MANIFEST_2)));
 
@@ -245,7 +245,7 @@ final class WaitForManifestStableTaskTest {
     OortService oortService = mock(OortService.class);
     WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
 
-    StageExecution myStage =
+    StageExecutionImpl myStage =
         createStageWithManifests(
             ImmutableMap.of(NAMESPACE, ImmutableList.of(MANIFEST_1, MANIFEST_2)));
 
@@ -287,10 +287,10 @@ final class WaitForManifestStableTaskTest {
         "'%s' in '%s' for account %s: manifest failed", manifest, NAMESPACE, ACCOUNT);
   }
 
-  private StageExecution createStageWithManifests(
+  private StageExecutionImpl createStageWithManifests(
       ImmutableMap<String, ImmutableList<String>> manifestsByNamespace) {
-    return new StageExecution(
-        new PipelineExecution(ExecutionType.PIPELINE, "test"),
+    return new StageExecutionImpl(
+        new PipelineExecutionImpl(ExecutionType.PIPELINE, "test"),
         "test",
         new HashMap<>(
             ImmutableMap.of(
@@ -318,9 +318,9 @@ final class WaitForManifestStableTaskTest {
         .orElse(ImmutableList.of());
   }
 
-  private StageExecution createStageWithContext(Map<String, ?> context) {
-    return new StageExecution(
-        new PipelineExecution(ExecutionType.PIPELINE, "test"), "test", new HashMap<>(context));
+  private StageExecutionImpl createStageWithContext(Map<String, ?> context) {
+    return new StageExecutionImpl(
+        new PipelineExecutionImpl(ExecutionType.PIPELINE, "test"), "test", new HashMap<>(context));
   }
 
   private static ManifestBuilder manifestBuilder() {

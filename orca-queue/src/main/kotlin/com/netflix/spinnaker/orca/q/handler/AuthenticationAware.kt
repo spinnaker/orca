@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.AuthenticatedStage
 import com.netflix.spinnaker.orca.ExecutionContext
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import com.netflix.spinnaker.security.User
@@ -27,7 +27,7 @@ interface AuthenticationAware {
 
   val stageNavigator: StageNavigator
 
-  fun StageExecution.withAuth(block: () -> Unit) {
+  fun StageExecutionImpl.withAuth(block: () -> Unit) {
     val authenticatedUser = stageNavigator
       .ancestors(this)
       .firstOrNull { it.stageBuilder is AuthenticatedStage }

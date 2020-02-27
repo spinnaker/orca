@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.User
@@ -62,7 +62,7 @@ class DependentPipelineExecutionListenerSpec extends Specification {
     given:
     pipeline.stages.each {
       it.status = status
-      it.tasks = [Mock(TaskExecution)]
+      it.tasks = [Mock(TaskExecutionImpl)]
     }
 
     pipeline.pipelineConfigId = "97c435a0-0faf-11e5-a62b-696d38c37faa"
@@ -85,7 +85,7 @@ class DependentPipelineExecutionListenerSpec extends Specification {
     given:
     pipeline.stages.each {
       it.status = status
-      it.tasks = [Mock(TaskExecution)]
+      it.tasks = [Mock(TaskExecutionImpl)]
     }
 
     pipeline.pipelineConfigId = "97c435a0-0faf-11e5-a62b-696d38c37faa"
@@ -110,7 +110,7 @@ class DependentPipelineExecutionListenerSpec extends Specification {
     given:
     pipeline.stages.each {
       it.status = ExecutionStatus.SUCCEEDED
-      it.tasks = [Mock(TaskExecution)]
+      it.tasks = [Mock(TaskExecutionImpl)]
     }
 
     pipeline.pipelineConfigId = "97c435a0-0faf-11e5-a62b-696d38c37faa"
@@ -134,7 +134,7 @@ class DependentPipelineExecutionListenerSpec extends Specification {
     given:
     pipeline.stages.each {
       it.status = status
-      it.tasks = [Mock(TaskExecution)]
+      it.tasks = [Mock(TaskExecutionImpl)]
     }
 
     pipeline.pipelineConfigId = id
@@ -162,7 +162,7 @@ class DependentPipelineExecutionListenerSpec extends Specification {
     given:
     pipeline.stages.each {
       it.status = ExecutionStatus.SUCCEEDED
-      it.tasks = [Mock(TaskExecution)]
+      it.tasks = [Mock(TaskExecutionImpl)]
     }
 
     pipeline.pipelineConfigId = "97c435a0-0faf-11e5-a62b-696d38c37faa"
@@ -181,7 +181,7 @@ class DependentPipelineExecutionListenerSpec extends Specification {
     given:
     pipeline.stages.each {
       it.status = ExecutionStatus.SUCCEEDED
-      it.tasks = [Mock(TaskExecution)]
+      it.tasks = [Mock(TaskExecutionImpl)]
     }
 
     pipelineConfig.triggers.first().enabled = false
@@ -202,7 +202,7 @@ class DependentPipelineExecutionListenerSpec extends Specification {
   def "ignores executions with null pipelineConfigIds"() {
     pipeline.stages.each {
       it.status = ExecutionStatus.SUCCEEDED
-      it.tasks = [Mock(TaskExecution)]
+      it.tasks = [Mock(TaskExecutionImpl)]
     }
 
     pipelineConfig.triggers.first().pipeline = null

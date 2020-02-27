@@ -30,18 +30,18 @@ public class AlertOnAccessMap extends ForwardingMap<String, Object> {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
-  private final PipelineExecution execution;
+  private final PipelineExecutionImpl execution;
   private final Map<String, Object> delegate;
   private final Registry registry;
 
   public AlertOnAccessMap(
-      PipelineExecution execution, Registry registry, Map<String, Object> delegate) {
+      PipelineExecutionImpl execution, Registry registry, Map<String, Object> delegate) {
     this.execution = execution;
     this.registry = registry;
     this.delegate = delegate;
   }
 
-  public AlertOnAccessMap(PipelineExecution execution, Registry registry) {
+  public AlertOnAccessMap(PipelineExecutionImpl execution, Registry registry) {
     this(execution, registry, new HashMap<>());
   }
 

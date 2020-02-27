@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Locat
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -44,7 +44,7 @@ class TerminateInstanceAndDecrementServerGroupTask extends AbstractCloudProvider
   TrafficGuard trafficGuard
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
 

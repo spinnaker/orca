@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMonitorKatoServicesTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryUnshareServiceTask;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,8 +42,9 @@ class CloudFoundryUnshareServiceStagePreprocessorTest {
     Map<String, Object> context = new HashMap<>();
     context.put("cloudProvider", "my-cloud");
     context.put("manifest", Collections.singletonMap("type", "direct"));
-    StageExecution stage =
-        new StageExecution(new PipelineExecution(PIPELINE, "orca"), "unshareService", context);
+    StageExecutionImpl stage =
+        new StageExecutionImpl(
+            new PipelineExecutionImpl(PIPELINE, "orca"), "unshareService", context);
 
     TaskNode.Builder builder = new TaskNode.Builder(TaskNode.GraphType.FULL);
     preprocessor.addSteps(builder, stage);

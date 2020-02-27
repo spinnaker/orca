@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,7 +43,7 @@ class WaitForDestroyedServerGroupTask extends AbstractCloudProviderAwareTask imp
   ObjectMapper objectMapper
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
     String serverGroupRegion = (stage.context.regions as Collection)?.getAt(0) ?: stage.context.region

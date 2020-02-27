@@ -19,11 +19,13 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +46,7 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
   private final ManifestEvaluator manifestEvaluator;
 
   @Override
-  public List<Map> getOperations(StageExecution stage) {
+  public List<Map> getOperations(StageExecutionImpl stage) {
     Map<String, Object> context = stage.getContext();
 
     Artifact manifestArtifact = resolveArtifact(stage, context.get("manifest"));
@@ -60,7 +62,7 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
             .build();
     ManifestEvaluator.Result evaluatedManifest = manifestEvaluator.evaluate(stage, manifestContext);
 
-    final PipelineExecution execution = stage.getExecution();
+    final PipelineExecutionImpl execution = stage.getExecution();
     ImmutableMap.Builder<String, Object> operation =
         ImmutableMap.<String, Object>builder()
             .put("application", context.get("application"))
@@ -84,7 +86,7 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
         ImmutableMap.<String, Object>builder().put(OPERATION, operation.build()).build());
   }
 
-  private Artifact resolveArtifact(StageExecution stage, Object input) {
+  private Artifact resolveArtifact(StageExecutionImpl stage, Object input) {
     StageContextArtifactView stageContextArtifactView =
         mapper.convertValue(input, StageContextArtifactView.class);
     Artifact artifact =

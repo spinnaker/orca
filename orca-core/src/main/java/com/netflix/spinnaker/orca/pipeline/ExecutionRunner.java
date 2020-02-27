@@ -16,7 +16,8 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

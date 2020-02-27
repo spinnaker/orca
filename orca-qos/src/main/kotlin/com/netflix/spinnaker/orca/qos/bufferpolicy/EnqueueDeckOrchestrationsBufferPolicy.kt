@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.qos.bufferpolicy
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.qos.BufferAction.BUFFER
 import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class EnqueueDeckOrchestrationsBufferPolicy : BufferPolicy {
-  override fun apply(execution: PipelineExecution): BufferResult {
+  override fun apply(execution: PipelineExecutionImpl): BufferResult {
     if (execution.type == ORCHESTRATION && execution.origin == "deck") {
       return BufferResult(
         action = ENQUEUE,

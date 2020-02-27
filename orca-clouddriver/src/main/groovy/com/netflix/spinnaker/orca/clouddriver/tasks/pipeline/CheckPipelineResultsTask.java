@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class CheckPipelineResultsTask implements Task {
   }
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     final SavePipelineResultsData previousSavePipelineResults =
         stage.mapTo(SavePipelineResultsData.class);
     final SavePipelinesData savePipelinesData = stage.mapTo(SavePipelinesData.class);

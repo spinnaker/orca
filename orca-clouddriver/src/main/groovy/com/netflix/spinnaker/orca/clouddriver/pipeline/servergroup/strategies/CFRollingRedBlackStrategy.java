@@ -33,8 +33,8 @@ import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySupport;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import groovy.util.logging.Slf4j;
 import java.io.IOException;
@@ -78,25 +78,25 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
       ThreadLocal.withInitial(() -> new Yaml(new SafeConstructor()));
 
   @Override
-  public List<StageExecution> composeAfterStages(StageExecution parent) {
+  public List<StageExecutionImpl> composeAfterStages(StageExecutionImpl parent) {
     return composeFlow(parent).stream()
         .filter(s -> s.getSyntheticStageOwner() == SyntheticStageOwner.STAGE_AFTER)
         .collect(Collectors.toList());
   }
 
-  public List<StageExecution> composeBeforeStages(StageExecution parent) {
+  public List<StageExecutionImpl> composeBeforeStages(StageExecutionImpl parent) {
     return composeFlow(parent).stream()
         .filter(s -> s.getSyntheticStageOwner() == SyntheticStageOwner.STAGE_BEFORE)
         .collect(Collectors.toList());
   }
 
-  List<StageExecution> composeFlow(StageExecution stage) {
+  List<StageExecutionImpl> composeFlow(StageExecutionImpl stage) {
     if (!pipelineStage.isPresent()) {
       throw new IllegalStateException(
           "Rolling red/black cannot be run without front50 enabled. Please set 'front50.enabled: true' in your orca config.");
     }
 
-    List<StageExecution> stages = new ArrayList<>();
+    List<StageExecutionImpl> stages = new ArrayList<>();
     RollingRedBlackStageData stageData = stage.mapTo(RollingRedBlackStageData.class);
     AbstractDeployStrategyStage.CleanupConfig cleanupConfig =
         AbstractDeployStrategyStage.CleanupConfig.fromStage(stage);
@@ -174,7 +174,7 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
     // Start off with deploying one instance of the new version
     ((Map<String, Object>) manifest.get("direct")).put("instances", 1);
 
-    PipelineExecution execution = stage.getExecution();
+    PipelineExecutionImpl execution = stage.getExecution();
     String executionId = execution.getId();
     List<Integer> targetPercentages = stageData.getTargetPercentages();
     if (targetPercentages.isEmpty() || targetPercentages.get(targetPercentages.size() - 1) != 100) {
@@ -185,8 +185,8 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
     findContext.put("target", TargetServerGroup.Params.Target.current_asg_dynamic);
     findContext.put("targetLocation", cleanupConfig.getLocation());
 
-    StageExecution dtsgStage =
-        new StageExecution(
+    StageExecutionImpl dtsgStage =
+        new StageExecutionImpl(
             execution,
             DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE,
             "Determine Deployed Server Group",
@@ -225,8 +225,8 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
           "Adding `Grow target to {}% of desired size` stage with context {} [executionId={}]",
           percentage, scaleUpContext, executionId);
 
-      StageExecution resizeStage =
-          new StageExecution(
+      StageExecutionImpl resizeStage =
+          new StageExecutionImpl(
               execution,
               ResizeServerGroupStage.TYPE,
               "Grow target to " + percentage + "% of desired size",
@@ -252,8 +252,8 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
             "Adding `Shrink source to {}% of initial size` stage with context {} [executionId={}]",
             100 - percentage, scaleDownContext, executionId);
 
-        StageExecution scaleDownStage =
-            new StageExecution(
+        StageExecutionImpl scaleDownStage =
+            new StageExecutionImpl(
                 execution,
                 ResizeServerGroupStage.TYPE,
                 "Shrink source to " + (100 - percentage) + "% of initial size",
@@ -270,8 +270,8 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
       shrinkClusterContext.put("allowDeleteActive", false);
       shrinkClusterContext.put("shrinkToSize", stage.getContext().get("maxRemainingAsgs"));
       shrinkClusterContext.put("retainLargerOverNewer", false);
-      StageExecution shrinkClusterStage =
-          new StageExecution(
+      StageExecutionImpl shrinkClusterStage =
+          new StageExecutionImpl(
               execution, ShrinkClusterStage.STAGE_TYPE, "shrinkCluster", shrinkClusterContext);
       shrinkClusterStage.setParentStageId(stage.getId());
       shrinkClusterStage.setSyntheticStageOwner(SyntheticStageOwner.STAGE_AFTER);
@@ -283,8 +283,8 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
           baseContext,
           executionId);
       Map<String, Object> disableContext = new HashMap<>(baseContext);
-      StageExecution disableStage =
-          new StageExecution(
+      StageExecutionImpl disableStage =
+          new StageExecutionImpl(
               execution, DisableClusterStage.STAGE_TYPE, "Disable cluster", disableContext);
       disableStage.setParentStageId(stage.getId());
       disableStage.setSyntheticStageOwner(SyntheticStageOwner.STAGE_AFTER);
@@ -302,8 +302,8 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
       log.info(
           "Adding `Grow source to 100% of original size` stage with context {} [executionId={}]",
           scaleSourceContext, executionId);
-      StageExecution scaleSourceStage =
-          new StageExecution(
+      StageExecutionImpl scaleSourceStage =
+          new StageExecutionImpl(
               execution,
               ResizeServerGroupStage.TYPE,
               "Reset source to original size",
@@ -315,8 +315,8 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
       if (stageData.getDelayBeforeScaleDown() > 0L) {
         Map<String, Object> waitContext =
             Collections.singletonMap("waitTime", stageData.getDelayBeforeScaleDown());
-        StageExecution delayStage =
-            new StageExecution(
+        StageExecutionImpl delayStage =
+            new StageExecutionImpl(
                 execution, WaitStage.STAGE_TYPE, "Wait Before Scale Down", waitContext);
         delayStage.setParentStageId(stage.getId());
         delayStage.setSyntheticStageOwner(SyntheticStageOwner.STAGE_AFTER);
@@ -327,15 +327,16 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
     return stages;
   }
 
-  private List<StageExecution> getBeforeCleanupStages(
-      StageExecution parentStage, RollingRedBlackStageData stageData) {
-    List<StageExecution> stages = new ArrayList<>();
+  private List<StageExecutionImpl> getBeforeCleanupStages(
+      StageExecutionImpl parentStage, RollingRedBlackStageData stageData) {
+    List<StageExecutionImpl> stages = new ArrayList<>();
 
     if (stageData.getDelayBeforeCleanup() != 0) {
       Map<String, Object> waitContext =
           Collections.singletonMap("waitTime", stageData.getDelayBeforeCleanup());
-      StageExecution stage =
-          new StageExecution(parentStage.getExecution(), WaitStage.STAGE_TYPE, "wait", waitContext);
+      StageExecutionImpl stage =
+          new StageExecutionImpl(
+              parentStage.getExecution(), WaitStage.STAGE_TYPE, "wait", waitContext);
       stage.setParentStageId(parentStage.getId());
       stage.setSyntheticStageOwner(SyntheticStageOwner.STAGE_AFTER);
       stages.add(stage);
@@ -345,7 +346,7 @@ public class CFRollingRedBlackStrategy implements Strategy, ApplicationContextAw
   }
 
   private Map<String, Object> getScalingContext(
-      StageExecution stage,
+      StageExecutionImpl stage,
       AbstractDeployStrategyStage.CleanupConfig cleanupConfig,
       Map<String, Object> baseContext,
       ResizeStrategy.Capacity savedCapacity,

@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.persistence
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
@@ -596,7 +596,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
     expect:
     with(repository.retrieve(PIPELINE, execution.id)) {
-      trigger.parentExecution instanceof PipelineExecution
+      trigger.parentExecution instanceof PipelineExecutionImpl
     }
   }
 

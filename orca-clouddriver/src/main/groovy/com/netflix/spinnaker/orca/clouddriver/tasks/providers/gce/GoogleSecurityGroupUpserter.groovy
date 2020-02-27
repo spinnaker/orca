@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupUpserter
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -39,7 +39,7 @@ class GoogleSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
   ObjectMapper objectMapper
 
   @Override
-  SecurityGroupUpserter.OperationContext getOperationContext(StageExecution stage) {
+  SecurityGroupUpserter.OperationContext getOperationContext(StageExecutionImpl stage) {
     def ops = [[(SecurityGroupUpserter.OPERATION): stage.context]]
 
     def targets = [
@@ -51,7 +51,7 @@ class GoogleSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
     return new SecurityGroupUpserter.OperationContext(ops, [targets: targets])
   }
 
-  boolean isSecurityGroupUpserted(MortService.SecurityGroup upsertedSecurityGroup, StageExecution stage) {
+  boolean isSecurityGroupUpserted(MortService.SecurityGroup upsertedSecurityGroup, StageExecutionImpl stage) {
     try {
       MortService.SecurityGroup existingSecurityGroup = mortService.getSecurityGroup(upsertedSecurityGroup.accountName,
                                                                                      cloudProvider,

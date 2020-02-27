@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -62,7 +62,7 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage);
 
     Map<String, Object> task = new HashMap<>(stage.getContext());

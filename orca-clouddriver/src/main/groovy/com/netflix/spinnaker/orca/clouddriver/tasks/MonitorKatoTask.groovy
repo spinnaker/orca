@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.SystemNotification
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
@@ -73,7 +73,7 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
   long getTimeout() { 3600000L }
 
   @Override
-  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  long getDynamicBackoffPeriod(StageExecutionImpl stage, Duration taskDuration) {
     if ((stage.context."kato.task.lastStatus" as ExecutionStatus) == ExecutionStatus.TERMINAL) {
       return Math.max(backoffPeriod, TimeUnit.MINUTES.toMillis(2))
     }
@@ -81,7 +81,7 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
   }
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     TaskId taskId = stage.context."kato.last.task.id" as TaskId
     if (!taskId) {
       return TaskResult.ofStatus(ExecutionStatus.SUCCEEDED)

@@ -20,7 +20,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Provides an enhanced version of {@link StageExecution#ancestors()} that returns tuples of the
+ * Provides an enhanced version of {@link StageExecutionImpl#ancestors()} that returns tuples of the
  * ancestor stages and their {@link StageDefinitionBuilder}s.
  */
 @Component
@@ -47,22 +47,22 @@ public class StageNavigator {
    * As per `Stage.ancestors` except this method returns tuples of the stages and their
    * `StageDefinitionBuilder`.
    */
-  public List<Result> ancestors(StageExecution startingStage) {
+  public List<Result> ancestors(StageExecutionImpl startingStage) {
     return startingStage.ancestors().stream()
         .map(it -> new Result(it, stageDefinitionBuilders.get(it.getType())))
         .collect(toList());
   }
 
   public static class Result {
-    private final StageExecution stage;
+    private final StageExecutionImpl stage;
     private final StageDefinitionBuilder stageBuilder;
 
-    Result(StageExecution stage, StageDefinitionBuilder stageBuilder) {
+    Result(StageExecutionImpl stage, StageDefinitionBuilder stageBuilder) {
       this.stage = stage;
       this.stageBuilder = stageBuilder;
     }
 
-    public StageExecution getStage() {
+    public StageExecutionImpl getStage() {
       return stage;
     }
 

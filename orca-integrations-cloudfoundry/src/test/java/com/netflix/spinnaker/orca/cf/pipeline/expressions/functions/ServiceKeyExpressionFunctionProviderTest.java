@@ -25,8 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider.FunctionDefinition;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +45,7 @@ class ServiceKeyExpressionFunctionProviderTest {
             functionDefinition -> {
               assertThat(functionDefinition.getName()).isEqualTo("cfServiceKey");
               assertThat(functionDefinition.getParameters().get(0).getType())
-                  .isEqualTo(PipelineExecution.class);
+                  .isEqualTo(PipelineExecutionImpl.class);
               assertThat(functionDefinition.getParameters().get(1).getType())
                   .isEqualTo(String.class);
             });
@@ -66,36 +66,36 @@ class ServiceKeyExpressionFunctionProviderTest {
         createKatoTaskMap(SUCCEEDED, singletonList(singletonMap("serviceKey", serviceKey)));
     Map<String, Object> katoTaskMapWithoutResults = createKatoTaskMap(SUCCEEDED, emptyList());
     Map<String, Object> katoTaskMapRunning = createKatoTaskMap(RUNNING, emptyList());
-    PipelineExecution execution =
-        new PipelineExecution(PIPELINE, "stage-name-1", "application-name");
+    PipelineExecutionImpl execution =
+        new PipelineExecutionImpl(PIPELINE, "stage-name-1", "application-name");
     Map<String, Object> contextWithServiceKey = createContextMap(katoTaskMapWithResults);
     Map<String, Object> contextWithoutServiceKey = createContextMap(katoTaskMapWithoutResults);
     Map<String, Object> contextWithRunningTask = createContextMap(katoTaskMapRunning);
 
-    StageExecution stage1 =
-        new StageExecution(
-            new PipelineExecution(PIPELINE, "orca"),
+    StageExecutionImpl stage1 =
+        new StageExecutionImpl(
+            new PipelineExecutionImpl(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-1",
             contextWithServiceKey);
     stage1.setStatus(SUCCEEDED);
-    StageExecution stage2 =
-        new StageExecution(
-            new PipelineExecution(PIPELINE, "orca"),
+    StageExecutionImpl stage2 =
+        new StageExecutionImpl(
+            new PipelineExecutionImpl(PIPELINE, "orca"),
             "deployService",
             "stage-name-2",
             contextWithoutServiceKey);
     stage2.setStatus(SUCCEEDED);
-    StageExecution stage3 =
-        new StageExecution(
-            new PipelineExecution(PIPELINE, "orca"),
+    StageExecutionImpl stage3 =
+        new StageExecutionImpl(
+            new PipelineExecutionImpl(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-3",
             contextWithoutServiceKey);
     stage3.setStatus(SUCCEEDED);
-    StageExecution stage4 =
-        new StageExecution(
-            new PipelineExecution(PIPELINE, "orca"),
+    StageExecutionImpl stage4 =
+        new StageExecutionImpl(
+            new PipelineExecutionImpl(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-4",
             contextWithRunningTask);
@@ -128,13 +128,13 @@ class ServiceKeyExpressionFunctionProviderTest {
             .put("history", emptyList())
             .put("resultObjects", emptyList())
             .build();
-    PipelineExecution execution =
-        new PipelineExecution(PIPELINE, "stage-name-1", "application-name");
+    PipelineExecutionImpl execution =
+        new PipelineExecutionImpl(PIPELINE, "stage-name-1", "application-name");
     Map<String, Object> contextWithoutServiceKey = createContextMap(katoTaskMapWithoutResults);
 
-    StageExecution stage =
-        new StageExecution(
-            new PipelineExecution(PIPELINE, "orca"),
+    StageExecutionImpl stage =
+        new StageExecutionImpl(
+            new PipelineExecutionImpl(PIPELINE, "orca"),
             "createServiceKey",
             "stage-name-3",
             contextWithoutServiceKey);

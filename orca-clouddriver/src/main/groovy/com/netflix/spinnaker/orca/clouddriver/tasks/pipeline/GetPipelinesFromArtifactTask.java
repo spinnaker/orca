@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.io.*;
 import java.util.*;
@@ -76,7 +76,7 @@ public class GetPipelinesFromArtifactTask implements Task {
 
   @SuppressWarnings("unchecked")
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     final PipelinesArtifactData pipelinesArtifact = stage.mapTo(PipelinesArtifactData.class);
     Artifact resolvedArtifact =
         artifactUtils.getBoundArtifactForStage(

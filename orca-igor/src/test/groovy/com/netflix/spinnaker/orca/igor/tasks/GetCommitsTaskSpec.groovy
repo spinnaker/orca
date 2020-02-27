@@ -23,9 +23,9 @@ import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.igor.ScmService
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
 import retrofit.RetrofitError
 import retrofit.client.Response
@@ -186,8 +186,8 @@ class GetCommitsTaskSpec extends Specification {
     jobState = 'SUCCESS'
   }
 
-  StageExecution setupGetCommits(Map contextMap, String account, String app, String sourceImage, String targetImage, String region, String cluster, String serverGroup, int serverGroupCalls = 1, int oortCalls = 1, PipelineExecution pipeline = this.pipeline) {
-    def stage = new StageExecution(pipeline, "stash", contextMap)
+  StageExecutionImpl setupGetCommits(Map contextMap, String account, String app, String sourceImage, String targetImage, String region, String cluster, String serverGroup, int serverGroupCalls = 1, int oortCalls = 1, PipelineExecutionImpl pipeline = this.pipeline) {
+    def stage = new StageExecutionImpl(pipeline, "stash", contextMap)
 
     task.scmService = Stub(ScmService) {
       compareCommits("stash", "projectKey", "repositorySlug", ['to': '186605b', 'from': 'a86305d', 'limit': 100]) >> [[message: "my commit", displayId: "abcdab", id: "abcdabcdabcdabcd", authorDisplayName: "Joe Coder", timestamp: 1432081865000, commitUrl: "http://stash.com/abcdabcdabcdabcd"],
@@ -234,8 +234,8 @@ class GetCommitsTaskSpec extends Specification {
       "{\"ancestorServerGroupNameByRegion\": { \"${region}\":\"${serverGroup}\"}}," +
       "{\"messages\" : [ ], \"serverGroupNameByRegion\": {\"${region}\": \"${targetServerGroup}\"},\"serverGroupNames\": [\"${region}:${targetServerGroup}\"]}],\"status\": {\"completed\": true,\"failed\": false}}]"
     def katoMap = getObjectMapper().readValue(katoTasks, List)
-    def stage = new StageExecution(pipeline, "stash", [application: app, account: account,
-                                                       source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [imageId: targetImage, ami: targetImageName, region: region]], "kato.tasks": katoMap])
+    def stage = new StageExecutionImpl(pipeline, "stash", [application: app, account: account,
+                                                           source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [imageId: targetImage, ami: targetImageName, region: region]], "kato.tasks": katoMap])
 
     and:
     task.front50Service = front50Service
@@ -283,7 +283,7 @@ class GetCommitsTaskSpec extends Specification {
   @Unroll
   def "returns success if there are no repo details provided"() {
     given:
-    def stage = new StageExecution(pipeline, "stash", [application: app, account: account, source: [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [imageId: targetImage, ami: targetImageName, region: region]]])
+    def stage = new StageExecutionImpl(pipeline, "stash", [application: app, account: account, source: [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [imageId: targetImage, ami: targetImageName, region: region]]])
 
     and:
     task.scmService = scmService
@@ -335,8 +335,8 @@ class GetCommitsTaskSpec extends Specification {
       "{\"ancestorServerGroupNameByRegion\": { \"${region}\":\"${serverGroup}\"}}," +
       "{\"messages\" : [ ], \"serverGroupNameByRegion\": {\"${region}\": \"${targetServerGroup}\"},\"serverGroupNames\": [\"${region}:${targetServerGroup}\"]}],\"status\": {\"completed\": true,\"failed\": false}}]"
     def katoMap = getObjectMapper().readValue(katoTasks, List)
-    def stage = new StageExecution(pipeline, "stash", [application: app, account: account,
-                                                       source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [ami: targetImageName, imageId: targetImage, region: region]], "kato.tasks": katoMap])
+    def stage = new StageExecutionImpl(pipeline, "stash", [application: app, account: account,
+                                                           source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [ami: targetImageName, imageId: targetImage, region: region]], "kato.tasks": katoMap])
 
     and:
     task.scmService = Stub(ScmService) {
@@ -384,8 +384,8 @@ class GetCommitsTaskSpec extends Specification {
       "{\"ancestorServerGroupNameByRegion\": { \"${region}\":\"${serverGroup}\"}}," +
       "{\"messages\" : [ ], \"serverGroupNameByRegion\": {\"${region}\": \"${targetServerGroup}\"},\"serverGroupNames\": [\"${region}:${targetServerGroup}\"]}],\"status\": {\"completed\": true,\"failed\": false}}]"
     def katoMap = getObjectMapper().readValue(katoTasks, List)
-    def stage = new StageExecution(pipeline, "stash", [application: app, account: account,
-                                                       source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [ami: targetImageName, imageId: targetImage, region: region]], "kato.tasks": katoMap])
+    def stage = new StageExecutionImpl(pipeline, "stash", [application: app, account: account,
+                                                           source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [ami: targetImageName, imageId: targetImage, region: region]], "kato.tasks": katoMap])
 
     and:
     task.scmService = Stub(ScmService) {
@@ -452,8 +452,8 @@ class GetCommitsTaskSpec extends Specification {
       "{\"ancestorServerGroupNameByRegion\": { \"${region}\":\"${serverGroup}\"}}," +
       "{\"messages\" : [ ], \"serverGroupNameByRegion\": {\"${region}\": \"${targetServerGroup}\"},\"serverGroupNames\": [\"${region}:${targetServerGroup}\"]}],\"status\": {\"completed\": true,\"failed\": false}}]"
     def katoMap = getObjectMapper().readValue(katoTasks, List)
-    def stage = new StageExecution(pipeline, "stash", [application: app, account: account,
-                                                       source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [ami: targetImageName, imageId: targetImage, region: region]], "kato.tasks": katoMap])
+    def stage = new StageExecutionImpl(pipeline, "stash", [application: app, account: account,
+                                                           source     : [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], deploymentDetails: [[ami: "ami-foo", region: "us-east-1"], [ami: targetImageName, imageId: targetImage, region: region]], "kato.tasks": katoMap])
 
     and:
     task.scmService = Stub(ScmService) {
@@ -500,7 +500,7 @@ class GetCommitsTaskSpec extends Specification {
 
   def "return success if retries limit hit"() {
     given:
-    def stage = new StageExecution(pipeline, "stash", [getCommitsRemainingRetries: 0])
+    def stage = new StageExecutionImpl(pipeline, "stash", [getCommitsRemainingRetries: 0])
 
     when:
     def result = task.execute(stage)
@@ -625,7 +625,7 @@ class GetCommitsTaskSpec extends Specification {
     }
     def parentStage = setupGetCommits(contextMap, account, app, sourceImage, targetImage, region, cluster, serverGroup, 1, 1, parentPipeline)
     parentStage.outputs = [deploymentDetails: [[imageId: "ami-foo", ami: "amiFooName", region: "us-east-1"], [imageId: targetImage, ami: targetImageName, region: region]]]
-    def childStage = new StageExecution(childPipeline, "stash", [application: app, account: account, source: [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], "kato.tasks": katoMap])
+    def childStage = new StageExecutionImpl(childPipeline, "stash", [application: app, account: account, source: [asgName: serverGroup, region: region, account: account], "deploy.server.groups": ["us-west-1": [targetServerGroup]], "kato.tasks": katoMap])
 
     parentPipeline.stages << parentStage
 

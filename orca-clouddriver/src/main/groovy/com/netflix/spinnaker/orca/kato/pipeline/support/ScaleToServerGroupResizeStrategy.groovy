@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -40,7 +40,7 @@ class ScaleToServerGroupResizeStrategy implements ResizeStrategy {
   }
 
   @Override
-  ResizeStrategy.CapacitySet capacityForOperation(StageExecution stage,
+  ResizeStrategy.CapacitySet capacityForOperation(StageExecutionImpl stage,
                                                   String account,
                                                   String serverGroupName,
                                                   String cloudProvider,

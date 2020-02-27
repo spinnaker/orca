@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 public interface ImageFinder {
   Collection<ImageDetails> byTags(
-      StageExecution stage, String packageName, Map<String, String> tags);
+      StageExecutionImpl stage, String packageName, Map<String, String> tags);
 
   String getCloudProvider();
 

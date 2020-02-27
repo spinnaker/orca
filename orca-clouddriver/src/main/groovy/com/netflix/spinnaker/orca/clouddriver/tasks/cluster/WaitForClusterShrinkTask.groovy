@@ -19,23 +19,23 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWideClouddriverOperationStage.ClusterSelection
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
 class WaitForClusterShrinkTask extends AbstractWaitForClusterWideClouddriverTask {
   @Override
-  protected TaskResult missingClusterResult(StageExecution stage, ClusterSelection clusterSelection) {
+  protected TaskResult missingClusterResult(StageExecutionImpl stage, ClusterSelection clusterSelection) {
     TaskResult.SUCCEEDED
   }
 
   @Override
-  protected TaskResult emptyClusterResult(StageExecution stage, ClusterSelection clusterSelection, Map cluster) {
+  protected TaskResult emptyClusterResult(StageExecutionImpl stage, ClusterSelection clusterSelection, Map cluster) {
     TaskResult.SUCCEEDED
   }
 
   @Override
-  boolean isServerGroupOperationInProgress(StageExecution stage, List<Map> interestingHealthProviderNames, Optional<TargetServerGroup> currentServerGroup) {
+  boolean isServerGroupOperationInProgress(StageExecutionImpl stage, List<Map> interestingHealthProviderNames, Optional<TargetServerGroup> currentServerGroup) {
     currentServerGroup.isPresent()
   }
 }

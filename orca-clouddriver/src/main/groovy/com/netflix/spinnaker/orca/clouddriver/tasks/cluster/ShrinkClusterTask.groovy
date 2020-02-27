@@ -20,14 +20,14 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWideClouddriverOperationStage.ClusterSelection
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.Canonical
 import org.springframework.stereotype.Component
 
 @Component
 class ShrinkClusterTask extends AbstractClusterWideClouddriverTask {
   @Override
-  protected TaskResult missingClusterResult(StageExecution stage, ClusterSelection clusterSelection) {
+  protected TaskResult missingClusterResult(StageExecutionImpl stage, ClusterSelection clusterSelection) {
     def shrinkConfig = stage.mapTo(ShrinkConfig)
     if (shrinkConfig.shrinkToSize == 0) {
       return TaskResult.SUCCEEDED
@@ -36,7 +36,7 @@ class ShrinkClusterTask extends AbstractClusterWideClouddriverTask {
   }
 
   @Override
-  protected TaskResult emptyClusterResult(StageExecution stage, ClusterSelection clusterSelection, Map cluster) {
+  protected TaskResult emptyClusterResult(StageExecutionImpl stage, ClusterSelection clusterSelection, Map cluster) {
     def shrinkConfig = stage.mapTo(ShrinkConfig)
     if (shrinkConfig.shrinkToSize == 0) {
       return TaskResult.SUCCEEDED
@@ -57,7 +57,7 @@ class ShrinkClusterTask extends AbstractClusterWideClouddriverTask {
   }
 
   @Override
-  List<TargetServerGroup> filterServerGroups(StageExecution stage, String account, Location location, List<TargetServerGroup> serverGroups) {
+  List<TargetServerGroup> filterServerGroups(StageExecutionImpl stage, String account, Location location, List<TargetServerGroup> serverGroups) {
     List<Map> filteredGroups = super.filterServerGroups(stage, account, location, serverGroups)
     if (!filteredGroups) {
       return []

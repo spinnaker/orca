@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.igor.tasks
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.igor.model.RetryableStageDefinition
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import retrofit.client.Response
 import spock.lang.Specification
@@ -27,7 +27,7 @@ import spock.lang.Subject
 
 class RetryableIgorTaskSpec extends Specification {
   RetryableStageDefinition jobRequest = Stub(RetryableStageDefinition)
-  StageExecution stage = Mock(StageExecution)
+  StageExecutionImpl stage = Mock(StageExecutionImpl)
 
   @Subject
   RetryableIgorTask task = Spy(RetryableIgorTask) {

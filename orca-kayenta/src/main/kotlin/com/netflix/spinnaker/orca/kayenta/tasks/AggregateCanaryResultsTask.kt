@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.model.KayentaCanaryContext
 import com.netflix.spinnaker.orca.kayenta.pipeline.RunCanaryPipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -32,7 +32,7 @@ class AggregateCanaryResultsTask : Task {
 
   private val log = LoggerFactory.getLogger(javaClass)
 
-  override fun execute(stage: StageExecution): TaskResult {
+  override fun execute(stage: StageExecutionImpl): TaskResult {
     val canaryConfig = stage.mapTo<KayentaCanaryContext>("/canaryConfig")
     val intervalStageId = stage.context["intervalStageId"] as String
     val runCanaryStages = stage

@@ -17,8 +17,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline
 
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -34,7 +34,7 @@ class CheckForRemainingPipelinesTaskSpec extends Specification {
         [ name: "pipeline1" ]
       ]
     ]
-    def result = task.execute(new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context))
 
     then:
     result.status == ExecutionStatus.REDIRECT
@@ -46,7 +46,7 @@ class CheckForRemainingPipelinesTaskSpec extends Specification {
       pipelinesToSave: [
       ]
     ]
-    def result = task.execute(new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context))
 
     then:
     result.status == ExecutionStatus.SUCCEEDED

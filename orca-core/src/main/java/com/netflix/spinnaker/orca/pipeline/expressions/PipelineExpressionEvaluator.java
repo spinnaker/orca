@@ -114,8 +114,8 @@ public class PipelineExpressionEvaluator {
   private static Class[] extraAllowedReturnTypes =
       new Class[] {
         Artifact.class,
-        PipelineExecution.class,
-        StageExecution.class,
+        PipelineExecutionImpl.class,
+        StageExecutionImpl.class,
         Trigger.class,
         BuildInfo.class,
         JenkinsArtifact.class,
@@ -123,8 +123,8 @@ public class PipelineExpressionEvaluator {
         ConcourseBuildInfo.class,
         SourceControl.class,
         ExecutionStatus.class,
-        PipelineExecution.AuthenticationDetails.class,
-        PipelineExecution.PausedDetails.class
+        PipelineExecutionImpl.AuthenticationDetails.class,
+        PipelineExecutionImpl.PausedDetails.class
       };
 
   private final ExpressionParser parser = new SpelExpressionParser();
@@ -183,7 +183,7 @@ public class PipelineExpressionEvaluator {
               .forEach(
                   f -> {
                     if (!f.getParameters().isEmpty()
-                        && f.getParameters().get(0).getType() == PipelineExecution.class) {
+                        && f.getParameters().get(0).getType() == PipelineExecutionImpl.class) {
                       this.executionAwareFunctions.add(f.getName());
                     }
                   });

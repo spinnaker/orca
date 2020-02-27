@@ -10,7 +10,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.gremlin.AttackParameters;
 import com.netflix.spinnaker.orca.gremlin.GremlinService;
 import com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -25,7 +25,7 @@ public class LaunchGremlinAttackTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     final Map<String, Object> ctx = stage.getContext();
 
     final String apiKey = GremlinStage.getApiKey(ctx);

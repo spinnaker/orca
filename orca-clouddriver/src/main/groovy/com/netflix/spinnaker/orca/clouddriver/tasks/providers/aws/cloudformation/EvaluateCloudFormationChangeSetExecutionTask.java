@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ public class EvaluateCloudFormationChangeSetExecutionTask
     implements OverridableTimeoutRetryableTask {
 
   @Override
-  public @Nonnull TaskResult execute(StageExecution stage) {
+  public @Nonnull TaskResult execute(StageExecutionImpl stage) {
     String actionOnReplacement =
         (String) Optional.ofNullable(stage.getContext().get("actionOnReplacement")).orElse("ask");
 
@@ -76,15 +76,15 @@ public class EvaluateCloudFormationChangeSetExecutionTask
     return TimeUnit.DAYS.toMillis(3);
   }
 
-  private Optional getChangeSetExecutionChoice(StageExecution stage) {
+  private Optional getChangeSetExecutionChoice(StageExecutionImpl stage) {
     return Optional.ofNullable(stage.getContext().get("changeSetExecutionChoice"));
   }
 
-  private Optional getChangeSetIsReplacement(StageExecution stage) {
+  private Optional getChangeSetIsReplacement(StageExecutionImpl stage) {
     return Optional.ofNullable(stage.getContext().get("changeSetContainsReplacement"));
   }
 
-  private Optional<Map> getCurrentChangeSet(StageExecution stage) {
+  private Optional<Map> getCurrentChangeSet(StageExecutionImpl stage) {
     String changeSetName = (String) stage.getContext().get("changeSetName");
 
     Map outputs = stage.getOutputs();

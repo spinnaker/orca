@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -63,7 +63,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
   }
 
   @Override
-  void afterExecution(Persister persister, PipelineExecution execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
+  void afterExecution(Persister persister, PipelineExecutionImpl execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
     if (!execution || !(execution.type == PIPELINE)) {
       return
     }
@@ -123,7 +123,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
     }
   }
 
-  private static String convertStatus(PipelineExecution execution) {
+  private static String convertStatus(PipelineExecutionImpl execution) {
     switch (execution.status) {
       case ExecutionStatus.CANCELED:
         return 'canceled'

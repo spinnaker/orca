@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class SavePipelinesCompleteTask implements Task {
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     final SavePipelineResultsData savePipelineResults = stage.mapTo(SavePipelineResultsData.class);
     logResults(savePipelineResults.getPipelinesFailedToSave(), "Failed to save pipelines: ");
     logResults(savePipelineResults.getPipelinesCreated(), "Created pipelines: ");

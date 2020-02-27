@@ -6,7 +6,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -20,7 +20,7 @@ public class StopAwsCodeBuildTask implements Task {
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     AwsCodeBuildStageDefinition stageDefinition = stage.mapTo(AwsCodeBuildStageDefinition.class);
     AwsCodeBuildExecution execution = stageDefinition.getBuildInfo();
     if (execution != null) {

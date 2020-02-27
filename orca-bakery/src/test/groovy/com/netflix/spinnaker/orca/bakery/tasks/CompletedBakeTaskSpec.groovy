@@ -23,8 +23,8 @@ import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.Bake
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import retrofit.client.Response
 import rx.Observable
@@ -38,7 +38,7 @@ class CompletedBakeTaskSpec extends Specification {
 
   @Subject task = new CompletedBakeTask()
 
-  @Shared PipelineExecution pipeline = pipeline()
+  @Shared PipelineExecutionImpl pipeline = pipeline()
 
   @Shared notFoundError = RetrofitError.httpError(
     null,
@@ -64,7 +64,7 @@ class CompletedBakeTaskSpec extends Specification {
     }
 
     and:
-    def stage = new StageExecution(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
+    def stage = new StageExecutionImpl(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
 
     when:
     def result = task.execute(stage)
@@ -99,7 +99,7 @@ class CompletedBakeTaskSpec extends Specification {
     }
 
     and:
-    def stage = new StageExecution(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
+    def stage = new StageExecutionImpl(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
 
     when:
     task.execute(stage)

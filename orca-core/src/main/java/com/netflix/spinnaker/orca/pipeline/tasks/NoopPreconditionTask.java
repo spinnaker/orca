@@ -19,14 +19,14 @@ package com.netflix.spinnaker.orca.pipeline.tasks;
 import static com.netflix.spinnaker.orca.api.TaskResult.SUCCEEDED;
 
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
 public class NoopPreconditionTask implements PreconditionTask {
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     return SUCCEEDED;
   }
 

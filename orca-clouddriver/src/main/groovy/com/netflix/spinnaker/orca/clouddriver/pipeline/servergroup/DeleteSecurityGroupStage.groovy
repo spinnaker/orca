@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.DeleteSecurity
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.DeleteSecurityGroupTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component
 @CompileStatic
 class DeleteSecurityGroupStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
       .withTask("deleteSecurityGroup", DeleteSecurityGroupTask)
       .withTask("monitorDelete", MonitorKatoTask)

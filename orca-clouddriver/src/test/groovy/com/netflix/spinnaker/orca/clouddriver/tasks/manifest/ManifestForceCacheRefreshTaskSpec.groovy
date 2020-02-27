@@ -21,8 +21,8 @@ import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
@@ -626,8 +626,8 @@ class ManifestForceCacheRefreshTaskSpec extends Specification {
     return new Response("", status, "", [], null)
   }
 
-  private StageExecution mockStage(Map context) {
-    StageExecution stage = new StageExecution(new PipelineExecution(PIPELINE, "test"), "whatever", context)
+  private StageExecutionImpl mockStage(Map context) {
+    StageExecutionImpl stage = new StageExecutionImpl(new PipelineExecutionImpl(PIPELINE, "test"), "whatever", context)
     stage.setStartTime(now.toEpochMilli())
     return stage
   }

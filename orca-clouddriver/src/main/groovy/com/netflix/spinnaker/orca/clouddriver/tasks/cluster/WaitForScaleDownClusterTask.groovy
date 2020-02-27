@@ -17,13 +17,13 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
 class WaitForScaleDownClusterTask extends AbstractWaitForClusterWideClouddriverTask {
   @Override
-  boolean isServerGroupOperationInProgress(StageExecution stage,
+  boolean isServerGroupOperationInProgress(StageExecutionImpl stage,
                                            List<Map> interestingHealthProviderNames,
                                            Optional<TargetServerGroup> currentServerGroup) {
     !currentServerGroup.map({ it.instances ?: []}).orElse([]).isEmpty()

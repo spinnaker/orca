@@ -20,7 +20,7 @@ import static java.lang.String.format;
 
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.PipelineValidator;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.Trigger;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ public class EnabledPipelineValidator implements PipelineValidator {
   }
 
   @Override
-  public void checkRunnable(PipelineExecution pipeline) {
+  public void checkRunnable(PipelineExecutionImpl pipeline) {
     if (front50Service == null) {
       throw new UnsupportedOperationException(
           "Front50 not enabled, no way to validate pipeline. Fix this by setting front50.enabled: true");
@@ -97,7 +97,7 @@ public class EnabledPipelineValidator implements PipelineValidator {
             });
   }
 
-  private boolean isStrategy(PipelineExecution pipeline) {
+  private boolean isStrategy(PipelineExecutionImpl pipeline) {
     Trigger trigger = pipeline.getTrigger();
     return "pipeline".equals(trigger.getType()) && trigger.isStrategy();
   }

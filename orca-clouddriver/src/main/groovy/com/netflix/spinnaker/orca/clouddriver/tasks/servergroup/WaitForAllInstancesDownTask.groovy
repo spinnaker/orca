@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.AbstractWaitingForInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component
 @Deprecated
 class WaitForAllInstancesDownTask extends AbstractWaitingForInstancesTask {
   @Override
-  protected boolean hasSucceeded(StageExecution stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
+  protected boolean hasSucceeded(StageExecutionImpl stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
     if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {
       return true
     }

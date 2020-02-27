@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.*
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -37,7 +37,7 @@ class DestroyServerGroupStage extends TargetServerGroupLinearStageSupport {
   }
 
   @Override
-  protected void taskGraphInternal(StageExecution stage, TaskNode.Builder builder) {
+  protected void taskGraphInternal(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
       .withTask("disableServerGroup", DisableServerGroupTask)
       .withTask("monitorServerGroup", MonitorKatoTask)

@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -142,7 +142,7 @@ class StartStageHandler(
     }
   }
 
-  private fun trackResult(stage: StageExecution) {
+  private fun trackResult(stage: StageExecutionImpl) {
     // We only want to record invocations of parent-level stages; not synthetics
     if (stage.parentStageId != null) {
       return
@@ -162,19 +162,19 @@ class StartStageHandler(
 
   override val messageType = StartStage::class.java
 
-  private fun StageExecution.plan() {
+  private fun StageExecutionImpl.plan() {
     builder().let { builder ->
       // if we have a top level stage, ensure that context expressions are processed
       val mergedStage = if (this.parentStageId == null) this.withMergedContext() else this
       builder.addContextFlags(mergedStage)
       builder.buildTasks(mergedStage)
-      builder.buildBeforeStages(mergedStage) { it: StageExecution ->
+      builder.buildBeforeStages(mergedStage) { it: StageExecutionImpl ->
         repository.addStage(it.withMergedContext())
       }
     }
   }
 
-  private fun StageExecution.start() {
+  private fun StageExecutionImpl.start() {
     val beforeStages = firstBeforeStages()
     if (beforeStages.isEmpty()) {
       val task = firstTask()
@@ -198,13 +198,13 @@ class StartStageHandler(
     }
   }
 
-  private fun StageExecution.shouldSkip(): Boolean {
+  private fun StageExecutionImpl.shouldSkip(): Boolean {
     if (this.execution.type != PIPELINE) {
       return false
     }
 
     val clonedContext: MutableMap<String, Any> = this.context.toMutableMap()
-    val clonedStage = StageExecution(this.execution, this.type, clonedContext).also {
+    val clonedStage = StageExecutionImpl(this.execution, this.type, clonedContext).also {
       it.refId = refId
       it.requisiteStageRefIds = requisiteStageRefIds
       it.syntheticStageOwner = syntheticStageOwner
@@ -217,6 +217,6 @@ class StartStageHandler(
     return OptionalStageSupport.isOptional(clonedStage.withMergedContext(), contextParameterProcessor)
   }
 
-  private fun StageExecution.isAfterStartTimeExpiry(): Boolean =
+  private fun StageExecutionImpl.isAfterStartTimeExpiry(): Boolean =
     startTimeExpiry?.let { Instant.ofEpochMilli(it) }?.isBefore(clock.instant()) ?: false
 }

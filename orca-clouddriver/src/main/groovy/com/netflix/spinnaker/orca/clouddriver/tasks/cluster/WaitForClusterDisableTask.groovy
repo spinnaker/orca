@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreat
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForRequiredInstancesDownTask
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Value
@@ -49,7 +49,7 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
   }
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     def taskResult = super.execute(stage)
 
     def duration = System.currentTimeMillis() - stage.startTime
@@ -62,7 +62,7 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
   }
 
   @Override
-  boolean isServerGroupOperationInProgress(StageExecution stage,
+  boolean isServerGroupOperationInProgress(StageExecutionImpl stage,
                                            List<Map> interestingHealthProviderNames,
                                            Optional<TargetServerGroup> serverGroup) {
     // null vs empty interestingHealthProviderNames do mean very different things to Spinnaker
@@ -88,7 +88,7 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
     return !(platformHealthType && interestingHealthProviderNames == [platformHealthType])
   }
 
-  private String getPlatformHealthType(StageExecution stage, TargetServerGroup targetServerGroup) {
+  private String getPlatformHealthType(StageExecutionImpl stage, TargetServerGroup targetServerGroup) {
     def platformHealthType = targetServerGroup.instances.collect { instance ->
       HealthHelper.findPlatformHealth(instance.health)
     }?.find {

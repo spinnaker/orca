@@ -21,8 +21,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -44,7 +44,7 @@ class GetPipelinesFromArtifactTaskSpec extends Specification {
     def context = [
       pipelinesArtifactId: '123'
     ]
-    def result = task.execute(new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context))
 
     then:
     1 * artifactUtils.getBoundArtifactForStage(_, '123', _) >> Artifact.builder().type('http/file')
@@ -63,7 +63,7 @@ class GetPipelinesFromArtifactTaskSpec extends Specification {
     def context = [
       pipelinesArtifactId: '123'
     ]
-    def result = task.execute(new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context))
 
     then:
     1 * artifactUtils.getBoundArtifactForStage(_, '123', _) >> Artifact.builder().type('http/file')
@@ -86,7 +86,7 @@ class GetPipelinesFromArtifactTaskSpec extends Specification {
     def context = [
       pipelinesArtifactId: '123'
     ]
-    def result = task.execute(new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context))
+    def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context))
 
     then:
     1 * artifactUtils.getBoundArtifactForStage(_, '123', _) >> null

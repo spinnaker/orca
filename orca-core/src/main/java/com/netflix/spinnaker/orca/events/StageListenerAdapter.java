@@ -20,8 +20,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.listeners.DefaultPersister;
 import com.netflix.spinnaker.orca.listeners.Persister;
 import com.netflix.spinnaker.orca.listeners.StageListener;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,8 +58,8 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
   }
 
   private void onStageStarted(StageStarted event) {
-    PipelineExecution execution = retrieve(event);
-    List<StageExecution> stages = execution.getStages();
+    PipelineExecutionImpl execution = retrieve(event);
+    List<StageExecutionImpl> stages = execution.getStages();
     stages.stream()
         .filter(it -> it.getId().equals(event.getStageId()))
         .findFirst()
@@ -67,8 +67,8 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
   }
 
   private void onStageComplete(StageComplete event) {
-    PipelineExecution execution = retrieve(event);
-    List<StageExecution> stages = execution.getStages();
+    PipelineExecutionImpl execution = retrieve(event);
+    List<StageExecutionImpl> stages = execution.getStages();
     stages.stream()
         .filter(it -> it.getId().equals(event.getStageId()))
         .findFirst()
@@ -76,8 +76,8 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
   }
 
   private void onTaskStarted(TaskStarted event) {
-    PipelineExecution execution = retrieve(event);
-    List<StageExecution> stages = execution.getStages();
+    PipelineExecutionImpl execution = retrieve(event);
+    List<StageExecutionImpl> stages = execution.getStages();
     stages.stream()
         .filter(it -> it.getId().equals(event.getStageId()))
         .findFirst()
@@ -93,8 +93,8 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
   }
 
   private void onTaskComplete(TaskComplete event) {
-    PipelineExecution execution = retrieve(event);
-    List<StageExecution> stages = execution.getStages();
+    PipelineExecutionImpl execution = retrieve(event);
+    List<StageExecutionImpl> stages = execution.getStages();
     ExecutionStatus status = event.getStatus();
     stages.stream()
         .filter(it -> it.getId().equals(event.getStageId()))
@@ -113,7 +113,7 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
                     status.isSuccessful()));
   }
 
-  private PipelineExecution retrieve(ExecutionEvent event) {
+  private PipelineExecutionImpl retrieve(ExecutionEvent event) {
     return repository.retrieve(event.getExecutionType(), event.getExecutionId());
   }
 }

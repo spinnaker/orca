@@ -24,36 +24,36 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 
 /**
  * @return the stage's first before stage or `null` if there are none.
  */
-fun StageExecution.firstBeforeStages(): List<StageExecution> =
+fun StageExecutionImpl.firstBeforeStages(): List<StageExecutionImpl> =
   beforeStages().filter { it.isInitial() }
 
 /**
  * @return the stage's first after stage or `null` if there are none.
  */
-fun StageExecution.firstAfterStages(): List<StageExecution> =
+fun StageExecutionImpl.firstAfterStages(): List<StageExecutionImpl> =
   afterStages().filter { it.isInitial() }
 
-fun StageExecution.isInitial(): Boolean =
+fun StageExecutionImpl.isInitial(): Boolean =
   requisiteStageRefIds.isEmpty()
 
 /**
  * @return the stage's first task or `null` if there are none.
  */
-fun StageExecution.firstTask(): TaskExecution? = tasks.firstOrNull()
+fun StageExecutionImpl.firstTask(): TaskExecutionImpl? = tasks.firstOrNull()
 
 /**
  * @return the stage's parent stage.
  * @throws IllegalStateException if the stage is not synthetic.
  */
-fun StageExecution.parent(): StageExecution =
+fun StageExecutionImpl.parent(): StageExecutionImpl =
   execution
     .stages
     .find { it.id == parentStageId }
@@ -63,7 +63,7 @@ fun StageExecution.parent(): StageExecution =
  * @return the task that follows [task] or `null` if [task] is the end of the
  * stage.
  */
-fun StageExecution.nextTask(task: TaskExecution): TaskExecution? =
+fun StageExecutionImpl.nextTask(task: TaskExecutionImpl): TaskExecutionImpl? =
   if (task.isStageEnd) {
     null
   } else {
@@ -74,67 +74,67 @@ fun StageExecution.nextTask(task: TaskExecution): TaskExecution? =
 /**
  * @return all stages directly upstream of this stage.
  */
-fun StageExecution.upstreamStages(): List<StageExecution> =
+fun StageExecutionImpl.upstreamStages(): List<StageExecutionImpl> =
   execution.stages.filter { it.refId in requisiteStageRefIds }
 
 /**
  * @return `true` if all upstream stages of this stage were run successfully.
  */
-fun StageExecution.allUpstreamStagesComplete(): Boolean =
+fun StageExecutionImpl.allUpstreamStagesComplete(): Boolean =
   upstreamStages().all { it.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED) }
 
-fun StageExecution.anyUpstreamStagesFailed(): Boolean =
+fun StageExecutionImpl.anyUpstreamStagesFailed(): Boolean =
   upstreamStages().any { it.status in listOf(TERMINAL, STOPPED, CANCELED) || it.status == NOT_STARTED && it.anyUpstreamStagesFailed() }
 
-fun StageExecution.syntheticStages(): List<StageExecution> =
+fun StageExecutionImpl.syntheticStages(): List<StageExecutionImpl> =
   execution.stages.filter { it.parentStageId == id }
 
-fun StageExecution.recursiveSyntheticStages(): List<StageExecution> =
+fun StageExecutionImpl.recursiveSyntheticStages(): List<StageExecutionImpl> =
   syntheticStages() + syntheticStages().flatMap {
     it.recursiveSyntheticStages()
   }
 
-fun StageExecution.beforeStages(): List<StageExecution> =
+fun StageExecutionImpl.beforeStages(): List<StageExecutionImpl> =
   syntheticStages().filter { it.syntheticStageOwner == STAGE_BEFORE }
 
-fun StageExecution.afterStages(): List<StageExecution> =
+fun StageExecutionImpl.afterStages(): List<StageExecutionImpl> =
   syntheticStages().filter { it.syntheticStageOwner == STAGE_AFTER }
 
-fun StageExecution.allBeforeStagesSuccessful(): Boolean =
+fun StageExecutionImpl.allBeforeStagesSuccessful(): Boolean =
   beforeStages().all { it.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED) }
 
-fun StageExecution.allAfterStagesSuccessful(): Boolean =
+fun StageExecutionImpl.allAfterStagesSuccessful(): Boolean =
   afterStages().all { it.status in listOf(SUCCEEDED, FAILED_CONTINUE, SKIPPED) }
 
-fun StageExecution.anyBeforeStagesFailed(): Boolean =
+fun StageExecutionImpl.anyBeforeStagesFailed(): Boolean =
   beforeStages().any { it.status in listOf(TERMINAL, STOPPED, CANCELED) }
 
-fun StageExecution.anyAfterStagesFailed(): Boolean =
+fun StageExecutionImpl.anyAfterStagesFailed(): Boolean =
   afterStages().any { it.status in listOf(TERMINAL, STOPPED, CANCELED) }
 
-fun StageExecution.allAfterStagesComplete(): Boolean =
+fun StageExecutionImpl.allAfterStagesComplete(): Boolean =
   afterStages().all { it.status.isComplete }
 
-fun StageExecution.hasTasks(): Boolean =
+fun StageExecutionImpl.hasTasks(): Boolean =
   tasks.isNotEmpty()
 
-fun StageExecution.hasAfterStages(): Boolean =
+fun StageExecutionImpl.hasAfterStages(): Boolean =
   firstAfterStages().isNotEmpty()
 
-inline fun <reified O> StageExecution.mapTo(pointer: String): O = mapTo(pointer, O::class.java)
+inline fun <reified O> StageExecutionImpl.mapTo(pointer: String): O = mapTo(pointer, O::class.java)
 
-inline fun <reified O> StageExecution.mapTo(): O = mapTo(O::class.java)
+inline fun <reified O> StageExecutionImpl.mapTo(): O = mapTo(O::class.java)
 
-fun StageExecution.shouldFailPipeline(): Boolean =
+fun StageExecutionImpl.shouldFailPipeline(): Boolean =
   context["failPipeline"] in listOf(null, true)
 
-fun StageExecution.failureStatus(default: ExecutionStatus = TERMINAL) =
+fun StageExecutionImpl.failureStatus(default: ExecutionStatus = TERMINAL) =
   when {
     continuePipelineOnFailure -> FAILED_CONTINUE
     shouldFailPipeline() -> default
     else -> STOPPED
   }
 
-fun StageExecution.isManuallySkipped(): Boolean {
+fun StageExecutionImpl.isManuallySkipped(): Boolean {
   return context["manualSkip"] == true || parent?.isManuallySkipped() == true
 }

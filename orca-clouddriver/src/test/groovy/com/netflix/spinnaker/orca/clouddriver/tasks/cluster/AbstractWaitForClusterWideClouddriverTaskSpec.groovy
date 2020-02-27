@@ -20,8 +20,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractWaitForClusterWideClouddriverTask.DeployServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -34,7 +34,7 @@ class AbstractWaitForClusterWideClouddriverTaskSpec extends Specification {
 
   static class TestTask extends AbstractWaitForClusterWideClouddriverTask {
     @Override
-    boolean isServerGroupOperationInProgress(StageExecution stage,
+    boolean isServerGroupOperationInProgress(StageExecutionImpl stage,
                                              List<Map> interestingHealthProviderNames,
                                              Optional<TargetServerGroup> serverGroup) {
       return serverGroup.isPresent()
@@ -117,13 +117,13 @@ class AbstractWaitForClusterWideClouddriverTaskSpec extends Specification {
     new DeployServerGroup(r, name)
   }
 
-  StageExecution stage(Map context) {
+  StageExecutionImpl stage(Map context) {
     def base = [
       cluster: cluster,
       credentials: credentials,
       cloudProvider: cloudProvider,
       regions: [region]
     ]
-    new StageExecution(PipelineExecution.newPipeline("orca"), 'shrinkCluster', base + context)
+    new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), 'shrinkCluster', base + context)
   }
 }

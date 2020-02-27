@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ScaleManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.WaitForManifestStableTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,7 +32,7 @@ public class ScaleManifestStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "scaleManifest";
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
         .withTask(ResolveTargetManifestTask.TASK_NAME, ResolveTargetManifestTask.class)
         .withTask(ScaleManifestTask.TASK_NAME, ScaleManifestTask.class)

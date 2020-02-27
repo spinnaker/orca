@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -51,7 +51,7 @@ class UpsertLoadBalancersTask extends AbstractCloudProviderAwareTask implements 
   ObjectMapper mapper
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage)
 
     def operations = new ArrayList()

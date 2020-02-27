@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.orca.api.ExecutionType;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
@@ -39,8 +39,8 @@ final class PipelineExecutionRepositoryTest {
 
   @Test
   void nullSortsFirst() {
-    PipelineExecution a = withStartTimeAndId(null, EARLIER_ULID);
-    PipelineExecution b = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
+    PipelineExecutionImpl a = withStartTimeAndId(null, EARLIER_ULID);
+    PipelineExecutionImpl b = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
 
     assertThat(START_TIME_OR_ID.compare(a, a)).isEqualTo(0);
     assertThat(START_TIME_OR_ID.compare(a, b)).isLessThan(0);
@@ -49,8 +49,8 @@ final class PipelineExecutionRepositoryTest {
 
   @Test
   void nullStartTimesSortById() {
-    PipelineExecution a = withStartTimeAndId(null, LATER_ULID_1);
-    PipelineExecution b = withStartTimeAndId(null, EARLIER_ULID);
+    PipelineExecutionImpl a = withStartTimeAndId(null, LATER_ULID_1);
+    PipelineExecutionImpl b = withStartTimeAndId(null, EARLIER_ULID);
 
     assertThat(START_TIME_OR_ID.compare(a, a)).isEqualTo(0);
     assertThat(START_TIME_OR_ID.compare(a, b)).isLessThan(0);
@@ -59,8 +59,8 @@ final class PipelineExecutionRepositoryTest {
 
   @Test
   void laterStartTimeSortsFirst() {
-    PipelineExecution a = withStartTimeAndId(LATER_TIME, EARLIER_ULID);
-    PipelineExecution b = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
+    PipelineExecutionImpl a = withStartTimeAndId(LATER_TIME, EARLIER_ULID);
+    PipelineExecutionImpl b = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
 
     assertThat(START_TIME_OR_ID.compare(a, a)).isEqualTo(0);
     assertThat(START_TIME_OR_ID.compare(a, b)).isLessThan(0);
@@ -69,8 +69,8 @@ final class PipelineExecutionRepositoryTest {
 
   @Test
   void laterIdSortsFirst() {
-    PipelineExecution a = withStartTimeAndId(LATER_TIME, LATER_ULID_2);
-    PipelineExecution b = withStartTimeAndId(LATER_TIME, LATER_ULID_1);
+    PipelineExecutionImpl a = withStartTimeAndId(LATER_TIME, LATER_ULID_2);
+    PipelineExecutionImpl b = withStartTimeAndId(LATER_TIME, LATER_ULID_1);
 
     assertThat(START_TIME_OR_ID.compare(a, a)).isEqualTo(0);
     assertThat(START_TIME_OR_ID.compare(a, b)).isLessThan(0);
@@ -79,13 +79,13 @@ final class PipelineExecutionRepositoryTest {
 
   @Test
   void fullSort() {
-    PipelineExecution nullStartTime = withStartTimeAndId(null, EARLIER_ULID);
-    PipelineExecution earlierStartTime = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
-    PipelineExecution laterStartTimeEarlierId = withStartTimeAndId(LATER_TIME, LATER_ULID_1);
-    PipelineExecution laterStartTimeLaterId = withStartTimeAndId(LATER_TIME, LATER_ULID_2);
+    PipelineExecutionImpl nullStartTime = withStartTimeAndId(null, EARLIER_ULID);
+    PipelineExecutionImpl earlierStartTime = withStartTimeAndId(EARLIER_TIME, EARLIER_ULID);
+    PipelineExecutionImpl laterStartTimeEarlierId = withStartTimeAndId(LATER_TIME, LATER_ULID_1);
+    PipelineExecutionImpl laterStartTimeLaterId = withStartTimeAndId(LATER_TIME, LATER_ULID_2);
 
     // The order of this list is not significant, only that it is some random non-sorted order
-    ImmutableList<PipelineExecution> executions =
+    ImmutableList<PipelineExecutionImpl> executions =
         ImmutableList.of(
             laterStartTimeEarlierId, earlierStartTime, laterStartTimeLaterId, nullStartTime);
 
@@ -94,8 +94,9 @@ final class PipelineExecutionRepositoryTest {
             nullStartTime, laterStartTimeLaterId, laterStartTimeEarlierId, earlierStartTime);
   }
 
-  private PipelineExecution withStartTimeAndId(Long startTime, String id) {
-    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, id, APPLICATION);
+  private PipelineExecutionImpl withStartTimeAndId(Long startTime, String id) {
+    PipelineExecutionImpl execution =
+        new PipelineExecutionImpl(ExecutionType.PIPELINE, id, APPLICATION);
     execution.setStartTime(startTime);
     return execution;
   }

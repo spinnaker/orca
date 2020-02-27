@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceLinearSta
 import com.netflix.spinnaker.orca.kato.tasks.scalingprocess.ResumeScalingProcessTask
 import com.netflix.spinnaker.orca.kato.tasks.scalingprocess.SuspendScalingProcessTask
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -42,7 +42,7 @@ class ModifyScalingProcessStage extends TargetReferenceLinearStageSupport {
   }
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     def data = stage.mapTo(StageData)
     switch (data.action) {
       case StageAction.suspend:

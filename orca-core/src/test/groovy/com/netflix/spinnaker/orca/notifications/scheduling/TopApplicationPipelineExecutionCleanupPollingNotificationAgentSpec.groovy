@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.notifications.scheduling
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -107,9 +107,9 @@ class TopApplicationPipelineExecutionCleanupPollingNotificationAgentSpec extends
     1 * executionRepository.delete(ORCHESTRATION, orchestrations[0].id)
   }
 
-  private static Collection<PipelineExecution> buildExecutions(AtomicInteger stageStartTime,
-                                                               int count,
-                                                               String configId = null) {
+  private static Collection<PipelineExecutionImpl> buildExecutions(AtomicInteger stageStartTime,
+                                                                   int count,
+                                                                   String configId = null) {
     (1..count).collect {
       def time = stageStartTime.incrementAndGet()
       pipeline {
@@ -117,7 +117,7 @@ class TopApplicationPipelineExecutionCleanupPollingNotificationAgentSpec extends
         stage {
           startTime = time
           status = ExecutionStatus.SUCCEEDED
-          tasks = [new TaskExecution()]
+          tasks = [new TaskExecutionImpl()]
         }
         pipelineConfigId = configId
         status = ExecutionStatus.SUCCEEDED

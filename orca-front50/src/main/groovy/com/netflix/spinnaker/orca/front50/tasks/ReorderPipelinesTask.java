@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ public class ReorderPipelinesTask implements Task {
 
   @SuppressWarnings("unchecked")
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     validateTask(stage);
 
     Map<String, Integer> idsToIndices;
@@ -87,7 +87,7 @@ public class ReorderPipelinesTask implements Task {
         .build();
   }
 
-  private void validateTask(StageExecution stage) {
+  private void validateTask(StageExecutionImpl stage) {
     if (front50Service == null) {
       throw new UnsupportedOperationException(
           "Front50 is not enabled, no way to reorder pipeline. Fix this by setting front50.enabled: true");

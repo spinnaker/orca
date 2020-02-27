@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +41,7 @@ public class PreparePipelineToSaveTask implements Task {
   }
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     final SavePipelinesData input = stage.mapTo(SavePipelinesData.class);
     if (input.getPipelinesToSave() == null || input.getPipelinesToSave().isEmpty()) {
       log.info("There are no pipelines to save.");

@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -60,12 +60,12 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
    *
    * @return A map of region --> list of serverGroup names.
    */
-  abstract protected Map<String, List<String>> getServerGroups(StageExecution stage)
+  abstract protected Map<String, List<String>> getServerGroups(StageExecutionImpl stage)
 
   abstract
-  protected boolean hasSucceeded(StageExecution stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames)
+  protected boolean hasSucceeded(StageExecutionImpl stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames)
 
-  protected Map getAdditionalRunningStageContext(StageExecution stage, Map serverGroup) {
+  protected Map getAdditionalRunningStageContext(StageExecutionImpl stage, Map serverGroup) {
     [:]
   }
 
@@ -77,7 +77,7 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
   }
 
   @Override
-  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  long getDynamicBackoffPeriod(StageExecutionImpl stage, Duration taskDuration) {
     if (taskDuration.toMillis() > TimeUnit.MINUTES.toMillis(60)) {
       // task has been running > 60min, drop retry interval to every 2 minutes
       return Math.max(backoffPeriod, TimeUnit.SECONDS.toMillis(120))
@@ -90,7 +90,7 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
   }
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     String account = getCredentials(stage)
     Map<String, List<String>> serverGroupsByRegion = getServerGroups(stage)
 
@@ -189,7 +189,7 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
    *
    * Will raise an exception in the event that a server group is being modified and is destroyed by an external process.
    */
-  void verifyServerGroupsExist(StageExecution stage) {
+  void verifyServerGroupsExist(StageExecutionImpl stage) {
     def forceCacheRefreshResult = serverGroupCacheForceRefreshTask.execute(stage)
 
     Map<String, List<String>> serverGroups = getServerGroups(stage)

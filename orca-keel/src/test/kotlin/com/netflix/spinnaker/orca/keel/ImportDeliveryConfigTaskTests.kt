@@ -26,9 +26,9 @@ import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
@@ -96,8 +96,8 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
 
     fun execute(context: Map<String, Any?>) =
       subject.execute(
-        StageExecution(
-          PipelineExecution(ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
+        StageExecutionImpl(
+          PipelineExecutionImpl(ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
           ExecutionType.PIPELINE.toString(),
           context
         )

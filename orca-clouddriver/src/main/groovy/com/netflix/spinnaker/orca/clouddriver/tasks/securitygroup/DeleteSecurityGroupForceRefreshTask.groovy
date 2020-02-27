@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -33,7 +33,7 @@ class DeleteSecurityGroupForceRefreshTask extends AbstractCloudProviderAwareTask
   CloudDriverCacheService cacheService
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
 

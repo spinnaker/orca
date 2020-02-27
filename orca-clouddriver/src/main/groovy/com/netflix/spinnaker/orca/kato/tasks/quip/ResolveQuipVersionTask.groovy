@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.OperatingSystem
 import com.netflix.spinnaker.orca.pipeline.util.PackageInfo
 import com.netflix.spinnaker.orca.pipeline.util.PackageType
@@ -50,7 +50,7 @@ class ResolveQuipVersionTask implements RetryableTask {
   ObjectMapper objectMapper
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     PackageType packageType
     if (!bakeryService) {
       throw new UnsupportedOperationException("You have not enabled baking for this orca instance. Set bakery.enabled: true")

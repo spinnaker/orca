@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -28,7 +28,7 @@ public class KubernetesInterestingHealthProviderNamesSupplier
 
   private static final List<String> SUPPORTED_STAGES = Arrays.asList("disablecluster");
 
-  public boolean supports(String cloudProvider, StageExecution stage) {
+  public boolean supports(String cloudProvider, StageExecutionImpl stage) {
     if (!cloudProvider.equals(KUBERNETES)) {
       return false;
     }
@@ -36,7 +36,7 @@ public class KubernetesInterestingHealthProviderNamesSupplier
     return SUPPORTED_STAGES.contains(stage.getType().toLowerCase());
   }
 
-  public List<String> process(String cloudProvider, StageExecution stage) {
+  public List<String> process(String cloudProvider, StageExecutionImpl stage) {
     return Arrays.asList("KubernetesService");
   }
 }

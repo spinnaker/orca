@@ -23,7 +23,7 @@ import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.HashMap;
@@ -43,7 +43,7 @@ public class FindArtifactFromExecutionTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     FindArtifactFromExecutionContext context = stage.mapTo(FindArtifactFromExecutionContext.class);
     Map<String, Object> outputs = new HashMap<>();
     String pipeline = context.getPipeline();

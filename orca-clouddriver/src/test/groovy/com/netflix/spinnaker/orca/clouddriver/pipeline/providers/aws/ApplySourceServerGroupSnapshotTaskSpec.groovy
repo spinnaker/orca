@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
@@ -94,7 +94,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
   @Unroll
   void "should support ancestor deploy stages w/ a #strategy strategy"() {
     given:
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
       strategy                         : strategy,
       sourceServerGroupCapacitySnapshot: [
         min    : 0,
@@ -131,7 +131,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
 
     task = new ApplySourceServerGroupCapacityTask() {
       @Override
-      ApplySourceServerGroupCapacityTask.TargetServerGroupContext getTargetServerGroupContext(StageExecution stage) {
+      ApplySourceServerGroupCapacityTask.TargetServerGroupContext getTargetServerGroupContext(StageExecutionImpl stage) {
         return new ApplySourceServerGroupCapacityTask.TargetServerGroupContext(
           context: context,
           sourceServerGroupCapacitySnapshot: sourceServerGroupCapacitySnapshot
@@ -180,8 +180,8 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
 
   void "should get TargetServerGroupContext with explicitly provided coordinates"() {
     given:
-    StageExecution currentStage
-    StageExecution siblingStage
+    StageExecutionImpl currentStage
+    StageExecutionImpl siblingStage
     def pipeline = pipeline {
       stage {
         id = "parentStageId"
@@ -226,8 +226,8 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
 
   void "should get TargetServerGroupContext from coordinates from upstream deploy stage"() {
     given:
-    def pipeline = PipelineExecution.newPipeline("orca")
-    def deployStage = new StageExecution(pipeline, "", [
+    def pipeline = PipelineExecutionImpl.newPipeline("orca")
+    def deployStage = new StageExecutionImpl(pipeline, "", [
       refId                            : "1",
       "deploy.server.groups"           : ["us-west-2a": ["asg-v001"]],
       region                           : "us-west-2",
@@ -239,7 +239,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
     ])
 
 
-    def childStage = new StageExecution(pipeline, "", [
+    def childStage = new StageExecutionImpl(pipeline, "", [
       requisiteRefIds: ["1"],
       credentials    : "test"
     ])

@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.bakery.tasks.CreateBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import groovy.transform.CompileDynamic
@@ -60,7 +60,7 @@ class BakeStage implements StageDefinitionBuilder {
   Clock clock = systemUTC()
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     if (isTopLevelStage(stage)) {
       builder
         .withTask("completeParallel", CompleteParallelBakeTask)
@@ -74,22 +74,22 @@ class BakeStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
     if (isTopLevelStage(parent)) {
       parallelContexts(parent)
         .collect({ context ->
           newStage(parent.execution, type, "Bake in ${context.region}", context, parent, STAGE_BEFORE)
         })
-        .forEach({ StageExecution s -> graph.add(s) })
+        .forEach({ StageExecutionImpl s -> graph.add(s) })
     }
   }
 
-  private boolean isTopLevelStage(StageExecution stage) {
+  private boolean isTopLevelStage(StageExecutionImpl stage) {
     stage.parentStageId == null
   }
 
   @CompileDynamic
-  Collection<Map<String, Object>> parallelContexts(StageExecution stage) {
+  Collection<Map<String, Object>> parallelContexts(StageExecutionImpl stage) {
     Set<String> deployRegions = (stage.context.region ? [stage.context.region] : []) as Set<String>
     deployRegions.addAll(stage.context.regions as Set<String> ?: [])
 
@@ -136,7 +136,7 @@ class BakeStage implements StageDefinitionBuilder {
       this.dynamicConfigService = dynamicConfigService
     }
 
-    TaskResult execute(StageExecution stage) {
+    TaskResult execute(StageExecutionImpl stage) {
       def bakeInitializationStages = stage.execution.stages.findAll {
         it.parentStageId == stage.parentStageId && it.status == ExecutionStatus.RUNNING
       }
@@ -149,7 +149,7 @@ class BakeStage implements StageDefinitionBuilder {
       }
 
       def globalContext = [
-        deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { StageExecution bakeStage ->
+        deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { StageExecutionImpl bakeStage ->
           def deploymentDetails = [:]
           DEPLOYMENT_DETAILS_CONTEXT_FIELDS.each {
             if (bakeStage.context.containsKey(it)) {

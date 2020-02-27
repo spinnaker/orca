@@ -31,14 +31,14 @@ data class PipelineTrigger
   override var isRebake: Boolean = false,
   override var isDryRun: Boolean = false,
   override var isStrategy: Boolean = false,
-  val parentExecution: PipelineExecution,
+  val parentExecution: PipelineExecutionImpl,
   val parentPipelineStageId: String? = null
 ) : Trigger {
   override var other: Map<String, Any> = mutableMapOf()
   override var resolvedExpectedArtifacts: List<ExpectedArtifact> = mutableListOf()
 
   @JsonIgnore
-  val parentStage: StageExecution? =
+  val parentStage: StageExecutionImpl? =
     if (parentPipelineStageId != null) {
       parentExecution.stageById(parentPipelineStageId)
     } else {

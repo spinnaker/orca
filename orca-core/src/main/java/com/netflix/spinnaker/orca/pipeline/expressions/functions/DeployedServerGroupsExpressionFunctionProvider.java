@@ -20,8 +20,8 @@ import static java.util.Collections.emptyList;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -49,13 +49,15 @@ public class DeployedServerGroupsExpressionFunctionProvider implements Expressio
             "deployedServerGroups",
             "Returns the list of server groups that were deployed in the specified stages",
             new FunctionParameter(
-                PipelineExecution.class, "execution", "The execution to search for stages within"),
+                PipelineExecutionImpl.class,
+                "execution",
+                "The execution to search for stages within"),
             new FunctionParameter(
                 String[].class, "ids", "A list of stage name or stage IDs to search")));
   }
 
   public static List<Map<String, Object>> deployedServerGroups(
-      PipelineExecution execution, String... id) {
+      PipelineExecutionImpl execution, String... id) {
     List<Map<String, Object>> deployedServerGroups = new ArrayList<>();
     execution.getStages().stream()
         .filter(matchesDeployedStage(id))
@@ -123,7 +125,7 @@ public class DeployedServerGroupsExpressionFunctionProvider implements Expressio
     List<Map<String, Object>> deployments;
   }
 
-  private static Predicate<StageExecution> matchesDeployedStage(String... id) {
+  private static Predicate<StageExecutionImpl> matchesDeployedStage(String... id) {
     List<String> idsOrNames = Arrays.asList(id);
     if (!idsOrNames.isEmpty()) {
       return stage ->

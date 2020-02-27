@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,7 +43,7 @@ class MonitorBakeTask implements OverridableTimeoutRetryableTask {
   CreateBakeTask createBakeTask
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     if (!bakerySelector) {
       throw new UnsupportedOperationException(
         "You have not enabled baking for this orca instance. Set bakery.enabled: true")

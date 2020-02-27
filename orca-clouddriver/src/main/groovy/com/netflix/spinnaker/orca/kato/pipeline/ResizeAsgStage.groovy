@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.kato.tasks.ResizeAsgTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
@@ -56,7 +56,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
   DetermineTargetReferenceStage determineTargetReferenceStage
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     if (!stage.parentStageId || stage.execution.stages.find {
       it.id == stage.parentStageId
     }.type != stage.type) {
@@ -74,13 +74,13 @@ class ResizeAsgStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecution parentStage, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecutionImpl parentStage, @Nonnull StageGraphBuilder graph) {
     if (!parentStage.parentStageId || parentStage.execution.stages.find {
       it.id == parentStage.parentStageId
     }.type != parentStage.type) {
       // configure iff this stage has no parent or has a parent that is not a ResizeAsg stage
 
-      List<StageExecution> stages = new ArrayList<>()
+      List<StageExecutionImpl> stages = new ArrayList<>()
       def targetReferences = targetReferenceSupport.getTargetAsgReferences(parentStage)
 
       targetReferences.each { targetReference ->
@@ -122,12 +122,12 @@ class ResizeAsgStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void afterStages(@Nonnull StageExecution parentStage, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecutionImpl parentStage, @Nonnull StageGraphBuilder graph) {
     if (!parentStage.parentStageId || parentStage.execution.stages.find {
       it.id == parentStage.parentStageId
     }.type != parentStage.type) {
       // configure iff this stage has no parent or has a parent that is not a ResizeAsg stage
-      List<StageExecution> stages = new ArrayList<>()
+      List<StageExecutionImpl> stages = new ArrayList<>()
 
       def targetReferences = targetReferenceSupport.getTargetAsgReferences(parentStage)
       def descriptions = resizeSupport.createResizeStageDescriptors(parentStage, targetReferences)

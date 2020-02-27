@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.CompleteStage
@@ -229,7 +229,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
           it("resets the status of the loop tasks") {
             verify(repository).storeStage(check {
-              assertThat(it.tasks[1..3].map(TaskExecution::getStatus)).allMatch { it == NOT_STARTED }
+              assertThat(it.tasks[1..3].map(TaskExecutionImpl::getStatus)).allMatch { it == NOT_STARTED }
             })
           }
 
@@ -304,8 +304,8 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
   }
 
   describe("when a task should complete parent stage") {
-    val task = fun(isStageEnd: Boolean): TaskExecution {
-      val task = TaskExecution()
+    val task = fun(isStageEnd: Boolean): TaskExecutionImpl {
+      val task = TaskExecutionImpl()
       task.isStageEnd = isStageEnd
       return task
     }

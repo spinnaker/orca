@@ -21,7 +21,7 @@ import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import java.util.concurrent.TimeUnit;
 
 public class MetricsExecutionListener implements ExecutionListener {
@@ -32,7 +32,7 @@ public class MetricsExecutionListener implements ExecutionListener {
   }
 
   @Override
-  public void beforeExecution(Persister persister, PipelineExecution execution) {
+  public void beforeExecution(Persister persister, PipelineExecutionImpl execution) {
     if (execution.getApplication() == null) {
       return;
     }
@@ -49,7 +49,7 @@ public class MetricsExecutionListener implements ExecutionListener {
   @Override
   public void afterExecution(
       Persister persister,
-      PipelineExecution execution,
+      PipelineExecutionImpl execution,
       ExecutionStatus executionStatus,
       boolean wasSuccessful) {
     if (execution.getType() != ORCHESTRATION) {

@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +42,7 @@ public abstract class AbstractCloudFoundryServiceTask implements CloudProviderAw
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage);
     String account = getCredentials(stage);
     Map<String, Map> operation =

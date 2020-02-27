@@ -47,7 +47,7 @@ class OptionalStageSupportSpec extends Specification {
     }
 
     and:
-    def stage = new StageExecution(pipeline, "", [
+    def stage = new StageExecutionImpl(pipeline, "", [
       stageEnabled: optionalConfig
     ])
 

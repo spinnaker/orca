@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.graph
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -168,7 +168,7 @@ class StageGraphBuilderSpec extends Specification {
 
   def "prefixing a stage wires up refId relationships"() {
     given:
-    def stage0 = new StageExecution(name: "Z")
+    def stage0 = new StageExecutionImpl(name: "Z")
     def subject = beforeStages(parent, stage0)
 
     def stage1 = subject.add {

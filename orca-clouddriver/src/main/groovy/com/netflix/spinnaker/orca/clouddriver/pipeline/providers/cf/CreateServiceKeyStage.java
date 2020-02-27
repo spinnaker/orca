@@ -21,14 +21,14 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMon
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
 class CreateServiceKeyStage implements StageDefinitionBuilder, CloudProviderAware {
   @Override
-  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask("createServiceKey", CloudFoundryCreateServiceKeyTask.class)
         .withTask("monitorCreateServiceKey", CloudFoundryMonitorKatoServicesTask.class);

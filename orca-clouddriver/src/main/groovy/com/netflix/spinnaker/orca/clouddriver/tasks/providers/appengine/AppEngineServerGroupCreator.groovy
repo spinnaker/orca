@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -38,7 +38,7 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
   ArtifactUtils artifactUtils
 
   @Override
-  List<Map> getOperations(StageExecution stage) {
+  List<Map> getOperations(StageExecutionImpl stage) {
     def operation = [:]
 
     // If this stage was synthesized by a parallel deploy stage, the operation properties will be under 'cluster'.
@@ -59,8 +59,8 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
     return Optional.empty()
   }
 
-  void appendArtifactData(StageExecution stage, Map operation) {
-    PipelineExecution execution = stage.getExecution()
+  void appendArtifactData(StageExecutionImpl stage, Map operation) {
+    PipelineExecutionImpl execution = stage.getExecution()
     if (execution.type == PIPELINE) {
       String expectedId = operation.expectedArtifactId?.trim()
       Artifact expectedArtifact = operation.expectedArtifact

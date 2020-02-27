@@ -23,7 +23,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -57,7 +57,7 @@ public class PromoteManifestKatoOutputsTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     Map<String, Object> context = stage.getContext();
     Map<String, Object> outputs = new HashMap<>();
     List<Map> tasks = (List<Map>) context.get("kato.tasks");

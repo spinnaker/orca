@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.alicloud
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
@@ -26,7 +26,7 @@ class AliCloudServerGroupCreator implements ServerGroupCreator, DeploymentDetail
   final String cloudProvider = "alicloud";
 
   @Override
-  List<Map> getOperations(StageExecution stage) {
+  List<Map> getOperations(StageExecutionImpl stage) {
     def operation = [:]
 
     operation.putAll(stage.context)

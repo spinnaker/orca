@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.controllers
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
@@ -35,9 +35,9 @@ class ProjectController {
   Front50Service front50Service
 
   @RequestMapping(value = "/projects/{projectId}/pipelines", method = RequestMethod.GET)
-  List<PipelineExecution> list(@PathVariable String projectId,
-                               @RequestParam(value="limit", defaultValue="5") int limit,
-                               @RequestParam(value = "statuses", required = false) String statuses) {
+  List<PipelineExecutionImpl> list(@PathVariable String projectId,
+                                   @RequestParam(value="limit", defaultValue="5") int limit,
+                                   @RequestParam(value = "statuses", required = false) String statuses) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Front50 is not enabled, no way to retrieve projects. Fix this by setting front50.enabled: true")
     }

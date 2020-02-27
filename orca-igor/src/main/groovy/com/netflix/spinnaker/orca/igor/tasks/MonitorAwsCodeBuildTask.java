@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +54,7 @@ public class MonitorAwsCodeBuildTask extends RetryableIgorTask<AwsCodeBuildStage
 
   @Override
   @Nonnull
-  protected AwsCodeBuildStageDefinition mapStage(@Nonnull StageExecution stage) {
+  protected AwsCodeBuildStageDefinition mapStage(@Nonnull StageExecutionImpl stage) {
     return stage.mapTo(AwsCodeBuildStageDefinition.class);
   }
 

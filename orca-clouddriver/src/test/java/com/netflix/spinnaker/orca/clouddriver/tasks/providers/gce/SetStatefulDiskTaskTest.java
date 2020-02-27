@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,7 +57,7 @@ class SetStatefulDiskTaskTest {
     when(katoService.requestOperations(any(), any()))
         .thenReturn(Observable.just(new TaskId("10111")));
 
-    StageExecution stage = new StageExecution();
+    StageExecutionImpl stage = new StageExecutionImpl();
     stage.getContext().put("cloudProvider", "gce");
     stage.getContext().put("credentials", "spinnaker-test");
     stage.getContext().put("serverGroupName", "testapp-v000");

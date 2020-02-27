@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.front50.pipeline
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Specification
 import spock.lang.Subject
@@ -33,10 +33,10 @@ class PipelineStageSpec extends Specification {
   @Unroll
   def "should cancel child pipeline (if started and not already canceled)"() {
     given:
-    def childPipeline = PipelineExecution.newPipeline("childPipeline")
+    def childPipeline = PipelineExecutionImpl.newPipeline("childPipeline")
     childPipeline.canceled = childPipelineIsCanceled
 
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "pipeline", stageContext)
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "pipeline", stageContext)
 
     and:
     executionRepository.retrieve(PIPELINE, stageContext.executionId) >> childPipeline

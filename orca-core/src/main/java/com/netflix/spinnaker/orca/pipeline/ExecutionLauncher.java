@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.AuthenticationDetails;
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl.AuthenticationDetails;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -30,8 +30,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.Trigger;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -80,10 +80,10 @@ public class ExecutionLauncher {
     this.registry = registry;
   }
 
-  public PipelineExecution start(ExecutionType type, String configJson) throws Exception {
-    final PipelineExecution execution = parse(type, configJson);
+  public PipelineExecutionImpl start(ExecutionType type, String configJson) throws Exception {
+    final PipelineExecutionImpl execution = parse(type, configJson);
 
-    final PipelineExecution existingExecution = checkForCorrelatedExecution(execution);
+    final PipelineExecutionImpl existingExecution = checkForCorrelatedExecution(execution);
     if (existingExecution != null) {
       return existingExecution;
     }
@@ -107,9 +107,9 @@ public class ExecutionLauncher {
    *
    * @param e the exception that was thrown during pipeline validation
    */
-  public PipelineExecution fail(ExecutionType type, String configJson, Exception e)
+  public PipelineExecutionImpl fail(ExecutionType type, String configJson, Exception e)
       throws Exception {
-    final PipelineExecution execution = parse(type, configJson);
+    final PipelineExecutionImpl execution = parse(type, configJson);
 
     persistExecution(execution);
 
@@ -118,18 +118,18 @@ public class ExecutionLauncher {
     return execution;
   }
 
-  private void checkRunnable(PipelineExecution execution) {
+  private void checkRunnable(PipelineExecutionImpl execution) {
     if (execution.getType() == PIPELINE) {
       pipelineValidator.ifPresent(it -> it.checkRunnable(execution));
     }
   }
 
-  public PipelineExecution start(PipelineExecution execution) throws Exception {
+  public PipelineExecutionImpl start(PipelineExecutionImpl execution) throws Exception {
     executionRunner.start(execution);
     return execution;
   }
 
-  private PipelineExecution checkForCorrelatedExecution(PipelineExecution execution) {
+  private PipelineExecutionImpl checkForCorrelatedExecution(PipelineExecutionImpl execution) {
     if (execution.getTrigger().getCorrelationId() == null) {
       return null;
     }
@@ -137,7 +137,7 @@ public class ExecutionLauncher {
     Trigger trigger = execution.getTrigger();
 
     try {
-      PipelineExecution o =
+      PipelineExecutionImpl o =
           executionRepository.retrieveByCorrelationId(
               execution.getType(), trigger.getCorrelationId());
       log.info(
@@ -157,7 +157,8 @@ public class ExecutionLauncher {
   }
 
   @SuppressWarnings("unchecked")
-  private PipelineExecution handleStartupFailure(PipelineExecution execution, Throwable failure) {
+  private PipelineExecutionImpl handleStartupFailure(
+      PipelineExecutionImpl execution, Throwable failure) {
     final String canceledBy = "system";
     String reason = "Failed on startup: " + failure.getMessage();
     final ExecutionStatus status = ExecutionStatus.TERMINAL;
@@ -187,7 +188,7 @@ public class ExecutionLauncher {
     return executionRepository.retrieve(execution.getType(), execution.getId());
   }
 
-  private PipelineExecution parse(ExecutionType type, String configJson) throws IOException {
+  private PipelineExecutionImpl parse(ExecutionType type, String configJson) throws IOException {
     if (type == PIPELINE) {
       return parsePipeline(configJson);
     } else {
@@ -195,7 +196,7 @@ public class ExecutionLauncher {
     }
   }
 
-  private PipelineExecution parsePipeline(String configJson) throws IOException {
+  private PipelineExecutionImpl parsePipeline(String configJson) throws IOException {
     // TODO: can we not just annotate the class properly to avoid all this?
     Map<String, Serializable> config = objectMapper.readValue(configJson, Map.class);
     return new PipelineBuilder(getString(config, "application"))
@@ -214,17 +215,17 @@ public class ExecutionLauncher {
             (config.get("source") == null)
                 ? null
                 : objectMapper.convertValue(
-                    config.get("source"), PipelineExecution.PipelineSource.class))
+                    config.get("source"), PipelineExecutionImpl.PipelineSource.class))
         .withSpelEvaluator(getString(config, "spelEvaluator"))
         .withTemplateVariables((Map<String, Object>) config.get("templateVariables"))
         .build();
   }
 
-  private PipelineExecution parseOrchestration(String configJson) throws IOException {
+  private PipelineExecutionImpl parseOrchestration(String configJson) throws IOException {
     @SuppressWarnings("unchecked")
     Map<String, Serializable> config = objectMapper.readValue(configJson, Map.class);
-    PipelineExecution orchestration =
-        PipelineExecution.newOrchestration(getString(config, "application"));
+    PipelineExecutionImpl orchestration =
+        PipelineExecutionImpl.newOrchestration(getString(config, "application"));
     if (config.containsKey("name")) {
       orchestration.setDescription(getString(config, "name"));
     }
@@ -241,7 +242,7 @@ public class ExecutionLauncher {
       }
 
       // TODO: need to check it's valid?
-      StageExecution stage = new StageExecution(orchestration, type, context);
+      StageExecutionImpl stage = new StageExecutionImpl(orchestration, type, context);
       orchestration.getStages().add(stage);
     }
 
@@ -264,7 +265,7 @@ public class ExecutionLauncher {
   }
 
   /** Persist the initial execution configuration. */
-  private void persistExecution(PipelineExecution execution) {
+  private void persistExecution(PipelineExecutionImpl execution) {
     applicationEventPublisher.publishEvent(new BeforeInitialExecutionPersist(this, execution));
     executionRepository.store(execution);
   }

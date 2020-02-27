@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -65,10 +65,10 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
    * handled by the deployment strategy.
    */
   protected
-  abstract List<TaskNode.TaskDefinition> basicTasks(StageExecution stage)
+  abstract List<TaskNode.TaskDefinition> basicTasks(StageExecutionImpl stage)
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
       .withTask("determineSourceServerGroup", DetermineSourceServerGroupTask)
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
@@ -98,7 +98,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
     }
   }
 
-  private Strategy getStrategy(StageExecution stage) {
+  private Strategy getStrategy(StageExecutionImpl stage) {
     return (Strategy) strategies.findResult(noStrategy, {
       it.name.equalsIgnoreCase(stage.context.strategy as String) ? it : null
     })
@@ -106,12 +106,12 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
     correctContext(parent)
     Strategy strategy = getStrategy(parent)
     def preProcessors = deployStagePreProcessors.findAll { it.supports(parent) }
     def stageData = parent.mapTo(StageData)
-    List<StageExecution> stages = new ArrayList<>()
+    List<StageExecutionImpl> stages = new ArrayList<>()
     stages.addAll(strategy.composeBeforeStages(parent))
 
     preProcessors.each {
@@ -135,11 +135,11 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
     Strategy strategy = getStrategy(parent)
     def preProcessors = deployStagePreProcessors.findAll { it.supports(parent) }
     def stageData = parent.mapTo(StageData)
-    List<StageExecution> stages = new ArrayList<>()
+    List<StageExecutionImpl> stages = new ArrayList<>()
 
     stages.addAll(strategy.composeAfterStages(parent))
 
@@ -164,7 +164,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void onFailureStages(StageExecution stage, StageGraphBuilder graph) {
+  void onFailureStages(StageExecutionImpl stage, StageGraphBuilder graph) {
     Strategy strategy = getStrategy(stage)
     // Strategy shouldn't ever be null during regular execution, but that's not the case for unit tests
     // Either way, defensive programming
@@ -191,7 +191,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
    * functionality (and not break any contracts), this method is employed to move the nested data back to the context's
    * top-level
    */
-  private static void correctContext(StageExecution stage) {
+  private static void correctContext(StageExecutionImpl stage) {
     if (stage.context.containsKey("cluster")) {
       stage.context.putAll(stage.context.cluster as Map)
     }
@@ -214,7 +214,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
     String cloudProvider
     Location location
 
-    static CleanupConfig fromStage(StageExecution stage) {
+    static CleanupConfig fromStage(StageExecutionImpl stage) {
       return fromStage(stage.mapTo(StageData))
     }
 

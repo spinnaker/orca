@@ -23,8 +23,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
@@ -54,7 +54,7 @@ class MonitorKatoTaskSpec extends Specification {
     kato.lookupTask(taskId, false) >> new Task(taskId, new Task.Status(completed: completed, failed: failed), [], [])
 
     and:
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", [
       "kato.last.task.id": new TaskId(taskId)
     ])
 
@@ -77,7 +77,7 @@ class MonitorKatoTaskSpec extends Specification {
     kato.lookupTask(taskId, false) >> new Task(taskId, new Task.Status(completed: true), resultObjects, [])
 
     and:
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", [
         "kato.last.task.id": new TaskId(taskId),
         "kato.result.expected": katoResultExpected,
         "deploy.server.groups": [:]
@@ -101,7 +101,7 @@ class MonitorKatoTaskSpec extends Specification {
   @Unroll
   def "should automatically succeed if task id does not exist"() {
     given:
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context)
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context)
 
     when:
     def result = task.execute(stage)

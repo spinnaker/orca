@@ -21,7 +21,7 @@ import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryServerGroupsStage
 import com.netflix.spinnaker.orca.kayenta.pipeline.KayentaCanaryStage
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import java.time.Duration
 
 /**
@@ -104,29 +104,29 @@ internal val ServerGroupSpec.regions: Set<String>
 /**
  * Gets [Deployments] from the parent canary stage of this stage.
  */
-internal val StageExecution.deployments: Deployments
+internal val StageExecutionImpl.deployments: Deployments
   get() = canaryStage.mapTo("/deployments")
 
 /**
  * Gets the control server groups' untyped contexts.
  */
-internal val StageExecution.controlServerGroups: List<Any?>
+internal val StageExecutionImpl.controlServerGroups: List<Any?>
   get() = serverGroupPairContexts.map { it["control"] }
 
 /**
  * Gets the experiment server groups' untyped contexts.
  */
-internal val StageExecution.experimentServerGroups: List<Any?>
+internal val StageExecutionImpl.experimentServerGroups: List<Any?>
   get() = serverGroupPairContexts.map { it["experiment"] }
 
-private val StageExecution.serverGroupPairContexts: List<Map<String, Any?>>
+private val StageExecutionImpl.serverGroupPairContexts: List<Map<String, Any?>>
   get() = canaryStage.mapTo("/deployments/serverGroupPairs")
 
 /**
  * Gets the parent canary stage of this stage. Throws an exception if it's
  * missing or the wrong type.
  */
-internal val StageExecution.canaryStage: StageExecution
+internal val StageExecutionImpl.canaryStage: StageExecutionImpl
   get() = parent?.apply {
     if (type != KayentaCanaryStage.STAGE_TYPE) {
       throw IllegalStateException("${DeployCanaryServerGroupsStage.STAGE_TYPE} should be the child of a ${KayentaCanaryStage.STAGE_TYPE} stage")

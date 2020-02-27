@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand
 import com.netflix.spinnaker.orca.eureka.NoDiscoveryApplicationStatusPublisher
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired

@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.exception.PreconfiguredJobNotFound
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -40,7 +40,7 @@ class PreconfiguredJobStage extends RunJobStage {
   }
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     def preconfiguredJob = jobService.getPreconfiguredStages().find { stage.type == it.type }
 
     if (!preconfiguredJob) {

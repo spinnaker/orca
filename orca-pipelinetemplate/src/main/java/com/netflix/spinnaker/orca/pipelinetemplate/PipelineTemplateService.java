@@ -19,7 +19,7 @@ import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipelinetemplate.loader.TemplateLoader;
@@ -62,7 +62,7 @@ public class PipelineTemplateService {
     if (containsJinja(templateSource.getSource())
         && !(executionId == null && pipelineConfigId == null)) {
       try {
-        PipelineExecution pipeline =
+        PipelineExecutionImpl pipeline =
             retrievePipelineOrNewestExecution(executionId, pipelineConfigId);
         String renderedSource = render(templateSource.getSource(), pipeline);
         if (StringUtils.isNotBlank(renderedSource)) {
@@ -86,7 +86,7 @@ public class PipelineTemplateService {
    * @throws IllegalArgumentException if neither executionId or pipelineConfigId are provided
    * @throws ExecutionNotFoundException if no execution could be found
    */
-  public PipelineExecution retrievePipelineOrNewestExecution(
+  public PipelineExecutionImpl retrievePipelineOrNewestExecution(
       @Nullable String executionId, @Nullable String pipelineConfigId)
       throws ExecutionNotFoundException {
     if (executionId != null) {
@@ -114,7 +114,7 @@ public class PipelineTemplateService {
     }
   }
 
-  private String render(String templateString, PipelineExecution pipeline) {
+  private String render(String templateString, PipelineExecutionImpl pipeline) {
     DefaultRenderContext rc =
         new DefaultRenderContext(
             pipeline.getApplication(), null, mapper.convertValue(pipeline.getTrigger(), Map.class));

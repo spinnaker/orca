@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +38,7 @@ public final class ResolvePatchSourceManifestTask implements Task {
   }
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     PatchManifestContext context = stage.mapTo(PatchManifestContext.class);
     ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, context);
     ImmutableMap<String, Object> outputs = getOutputs(result);

@@ -35,9 +35,9 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -558,7 +558,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("injects a 'wait for execution window' stage before any other synthetic stages") {
-          argumentCaptor<StageExecution>().apply {
+          argumentCaptor<StageExecutionImpl>().apply {
             verify(repository, times(3)).addStage(capture())
             assertSoftly {
               assertThat(firstValue.type).isEqualTo(RestrictExecutionDuringTimeWindow.TYPE)
@@ -599,7 +599,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("injects a 'wait for execution window' stage before any other synthetic stages") {
-          argumentCaptor<StageExecution>().apply {
+          argumentCaptor<StageExecutionImpl>().apply {
             verify(repository, times(4)).addStage(capture())
             assertSoftly {
               assertThat(firstValue.type)
@@ -861,7 +861,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("builds tasks for the main branch") {
         val stage = pipeline.stageById(message.stageId)
-        assertThat(stage.tasks.map(TaskExecution::getName)).isEqualTo(listOf("post-branch"))
+        assertThat(stage.tasks.map(TaskExecutionImpl::getName)).isEqualTo(listOf("post-branch"))
       }
 
       it("builds synthetic stages for each parallel branch") {
@@ -914,12 +914,12 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       it("builds tasks for the branch") {
         val stage = pipeline.stageById(message.stageId)
         assertThat(stage.tasks).isNotEmpty
-        assertThat(stage.tasks.map(TaskExecution::getName)).isEqualTo(listOf("dummy"))
+        assertThat(stage.tasks.map(TaskExecutionImpl::getName)).isEqualTo(listOf("dummy"))
       }
 
       it("does not build more synthetic stages") {
         val stage = pipeline.stageById(message.stageId)
-        assertThat(pipeline.stages.mapNotNull(StageExecution::getParentStageId))
+        assertThat(pipeline.stages.mapNotNull(StageExecutionImpl::getParentStageId))
           .doesNotContain(stage.id)
       }
     }

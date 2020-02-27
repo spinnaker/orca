@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public abstract class AbstractBulkServerGroupTask extends AbstractCloudProviderA
   }
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     ServerGroupRequest request = (ServerGroupRequest) stage.mapTo(ServerGroupRequest.class);
     if (request.getServerGroupNames() == null || request.getServerGroupNames().isEmpty()) {
       throw new IllegalArgumentException("Server group names must be provided");

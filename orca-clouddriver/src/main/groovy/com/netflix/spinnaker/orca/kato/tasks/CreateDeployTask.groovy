@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
 import groovy.util.logging.Slf4j
@@ -52,7 +52,7 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task, D
   List<String> defaultSecurityGroups = DEFAULT_SECURITY_GROUPS
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage)
     Map deployOperations = deployOperationFromContext(cloudProvider, stage)
     TaskId taskId = deploy(cloudProvider, deployOperations)
@@ -72,7 +72,7 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task, D
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build()
   }
 
-  private Map deployOperationFromContext(String cloudProvider, StageExecution stage) {
+  private Map deployOperationFromContext(String cloudProvider, StageExecutionImpl stage) {
     def operation = [:]
     def context = stage.context
 

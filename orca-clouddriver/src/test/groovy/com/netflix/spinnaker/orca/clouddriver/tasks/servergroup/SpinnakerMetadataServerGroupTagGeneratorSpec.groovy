@@ -18,13 +18,13 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import retrofit.client.Response
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.AuthenticationDetails
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl.AuthenticationDetails
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND
 
@@ -108,7 +108,7 @@ class SpinnakerMetadataServerGroupTagGeneratorSpec extends Specification {
       authentication = authenticatedUser ? new AuthenticationDetails(authenticatedUser) : null
       description = "this is my orchestration"
 
-      stages << new StageExecution(delegate, "wait")
+      stages << new StageExecutionImpl(delegate, "wait")
     }
 
     when:

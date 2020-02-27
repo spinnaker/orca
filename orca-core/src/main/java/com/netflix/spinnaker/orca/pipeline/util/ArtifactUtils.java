@@ -27,9 +27,9 @@ import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageContext;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.io.IOException;
@@ -65,7 +65,7 @@ public class ArtifactUtils {
     this.contextParameterProcessor = contextParameterProcessor;
   }
 
-  public List<Artifact> getArtifacts(StageExecution stage) {
+  public List<Artifact> getArtifacts(StageExecutionImpl stage) {
     if (!(stage.getContext() instanceof StageContext)) {
       log.warn(
           "Unable to read artifacts from unknown context type: {} ({})",
@@ -83,17 +83,17 @@ public class ArtifactUtils {
         .collect(Collectors.toList());
   }
 
-  public List<Artifact> getAllArtifacts(PipelineExecution execution) {
+  public List<Artifact> getAllArtifacts(PipelineExecutionImpl execution) {
     return getAllArtifacts(execution, s -> true);
   }
 
   private List<Artifact> getAllArtifacts(
-      PipelineExecution execution, Predicate<StageExecution> stageFilter) {
+      PipelineExecutionImpl execution, Predicate<StageExecutionImpl> stageFilter) {
     // Get all artifacts emitted by the execution's stages; we'll sort the stages topologically,
     // then reverse the result so that artifacts from later stages will appear
     // earlier in the results.
     List<Artifact> emittedArtifacts =
-        StageExecution.topologicalSort(execution.getStages())
+        StageExecutionImpl.topologicalSort(execution.getStages())
             .filter(stageFilter)
             .filter(s -> s.getOutputs().containsKey("artifacts"))
             .flatMap(s -> ((List<?>) s.getOutputs().get("artifacts")).stream())
@@ -120,7 +120,7 @@ public class ArtifactUtils {
    * @return A bound artifact with expressions evaluated.
    */
   public @Nullable Artifact getBoundArtifactForStage(
-      StageExecution stage, @Nullable String id, @Nullable Artifact artifact) {
+      StageExecutionImpl stage, @Nullable String id, @Nullable Artifact artifact) {
     Artifact boundArtifact = id != null ? getBoundArtifactForId(stage, id) : artifact;
     Map<String, Object> boundArtifactMap =
         objectMapper.convertValue(boundArtifact, new TypeReference<Map<String, Object>>() {});
@@ -132,7 +132,7 @@ public class ArtifactUtils {
     return objectMapper.convertValue(evaluatedBoundArtifactMap, Artifact.class);
   }
 
-  public @Nullable Artifact getBoundArtifactForId(StageExecution stage, @Nullable String id) {
+  public @Nullable Artifact getBoundArtifactForId(StageExecutionImpl stage, @Nullable String id) {
     if (StringUtils.isEmpty(id)) {
       return null;
     }
@@ -250,7 +250,7 @@ public class ArtifactUtils {
     return getArtifactsForPipelineId((String) pipeline.get("id"), criteria);
   }
 
-  private Optional<PipelineExecution> getExecutionForPipelineId(
+  private Optional<PipelineExecutionImpl> getExecutionForPipelineId(
       String pipelineId, ExecutionCriteria criteria) {
     return executionRepository.retrievePipelinesForPipelineConfigId(pipelineId, criteria)
         .subscribeOn(Schedulers.io()).toList().toBlocking().single().stream()
@@ -268,8 +268,8 @@ public class ArtifactUtils {
   // time first, followed by executions in order of recency (by start time then by id). We don't
   // want executions with a null start time showing up first here as then a single execution with
   // a null start time would always get selected by getExecutionForPipelineId.
-  private static Comparator<PipelineExecution> startTimeOrId =
+  private static Comparator<PipelineExecutionImpl> startTimeOrId =
       Comparator.comparing(
-              PipelineExecution::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
-          .thenComparing(PipelineExecution::getId, Comparator.reverseOrder());
+              PipelineExecutionImpl::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
+          .thenComparing(PipelineExecutionImpl::getId, Comparator.reverseOrder());
 }

@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +45,7 @@ public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implem
   private Long findImageFromTagsTimeoutMillis;
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     String cloudProvider = getCloudProvider(stage);
 
     ImageFinder imageFinder =

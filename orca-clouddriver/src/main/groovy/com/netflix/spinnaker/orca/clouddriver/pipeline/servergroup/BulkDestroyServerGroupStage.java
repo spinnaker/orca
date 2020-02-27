@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.*;
 import com.netflix.spinnaker.orca.kato.pipeline.Nameable;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +38,7 @@ public class BulkDestroyServerGroupStage implements StageDefinitionBuilder, Name
   }
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     // TODO(cfieber): how to do locking here...
     // inject an acquire lock stage per distinct cluster in the operation?
     // break into several parallel bulk ops based on cluster and lock/unlock around those?

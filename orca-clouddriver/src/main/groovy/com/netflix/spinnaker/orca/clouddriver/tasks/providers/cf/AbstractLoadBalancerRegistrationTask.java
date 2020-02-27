@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.AbstractInstanceLoadBalancerRegistrationTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -33,7 +33,7 @@ abstract class AbstractLoadBalancerRegistrationTask
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     List<TargetServerGroup> tsgList = tsgResolver.resolve(stage);
     if (!tsgList.isEmpty()) {
       Optional.ofNullable(tsgList.get(0))

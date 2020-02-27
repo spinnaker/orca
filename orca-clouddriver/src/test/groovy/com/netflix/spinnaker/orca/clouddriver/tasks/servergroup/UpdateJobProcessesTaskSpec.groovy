@@ -19,8 +19,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.UpdateJobProcessesTask
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 
 class UpdateJobProcessesTaskSpec extends Specification {
@@ -39,7 +39,7 @@ class UpdateJobProcessesTaskSpec extends Specification {
       ]
     ]
 
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "updateJobProcesses", context)
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "updateJobProcesses", context)
     and:
     List<Map> operations = []
     def katoService = Mock(KatoService) {

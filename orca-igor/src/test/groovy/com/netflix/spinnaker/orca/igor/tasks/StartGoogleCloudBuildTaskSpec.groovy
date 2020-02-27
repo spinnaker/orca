@@ -22,8 +22,8 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import retrofit.client.Response
@@ -57,7 +57,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
   ]
   def objectMapper = new ObjectMapper()
 
-  PipelineExecution execution = Mock(PipelineExecution)
+  PipelineExecutionImpl execution = Mock(PipelineExecutionImpl)
   IgorService igorService = Mock(IgorService)
   OortService oortService = Mock(OortService)
   ArtifactUtils artifactUtils = Mock(ArtifactUtils)
@@ -71,7 +71,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
     def igorResponse = GoogleCloudBuild.builder()
       .id("98edf783-162c-4047-9721-beca8bd2c275")
       .build()
-    def stage = new StageExecution(execution, "googleCloudBuild", [account: ACCOUNT, buildDefinition: BUILD])
+    def stage = new StageExecutionImpl(execution, "googleCloudBuild", [account: ACCOUNT, buildDefinition: BUILD])
 
     when:
     TaskResult result = task.execute(stage)
@@ -86,7 +86,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
     def igorResponse = GoogleCloudBuild.builder()
       .id("98edf783-162c-4047-9721-beca8bd2c275")
       .build()
-    def stage = new StageExecution(execution, "googleCloudBuild", [
+    def stage = new StageExecutionImpl(execution, "googleCloudBuild", [
       account: ACCOUNT,
       buildDefinitionSource: "trigger",
       triggerId: "myTriggerId",
@@ -115,7 +115,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
       .uuid("b4541a86-fa45-4a1f-8c55-45cb5cc9d537")
       .artifactAccount("my-account")
       .build()
-    def stage = new StageExecution(execution, "googleCloudBuild", [
+    def stage = new StageExecutionImpl(execution, "googleCloudBuild", [
       account: ACCOUNT,
       buildDefinitionSource: "artifact",
       buildDefinitionArtifact: [

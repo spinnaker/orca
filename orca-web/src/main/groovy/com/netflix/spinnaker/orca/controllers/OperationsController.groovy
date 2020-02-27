@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -283,7 +283,7 @@ class OperationsController {
     }
 
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
-      PipelineExecution parentExecution
+      PipelineExecutionImpl parentExecution
       try {
         parentExecution = executionRepository.retrieve(PIPELINE, pipeline.trigger.parentPipelineId)
       } catch (ExecutionNotFoundException e) {

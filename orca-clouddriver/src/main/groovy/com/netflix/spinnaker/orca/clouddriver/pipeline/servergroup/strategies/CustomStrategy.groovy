@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
@@ -29,12 +29,12 @@ class CustomStrategy implements Strategy {
   final String name = "custom"
 
   @Override
-  List<StageExecution> composeBeforeStages(StageExecution parent) {
+  List<StageExecutionImpl> composeBeforeStages(StageExecutionImpl parent) {
     return Collections.emptyList()
   }
 
   @Override
-  List<StageExecution> composeAfterStages(StageExecution stage) {
+  List<StageExecutionImpl> composeAfterStages(StageExecutionImpl stage) {
     def cleanupConfig = AbstractDeployStrategyStage.CleanupConfig.fromStage(stage)
 
     Map parameters = [

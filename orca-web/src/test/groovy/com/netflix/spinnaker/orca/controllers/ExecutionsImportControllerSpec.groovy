@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.model.ExecutionImportResponse
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import de.huxhorn.sulky.ulid.ULID
@@ -47,7 +47,7 @@ class ExecutionsImportControllerSpec extends Specification {
   def 'should throw error while saving execution with status: #invalidStatus '() {
     given:
     String executionId =  new ULID().nextULID()
-    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, executionId, 'testapp')
+    PipelineExecutionImpl execution = new PipelineExecutionImpl(ExecutionType.PIPELINE, executionId, 'testapp')
 
     when:
     execution.status = invalidStatus
@@ -67,7 +67,7 @@ class ExecutionsImportControllerSpec extends Specification {
   def 'should succeed while saving execution with status: #validStatus '() {
     given:
     String executionId = new ULID().nextULID()
-    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, executionId, 'testapp')
+    PipelineExecutionImpl execution = new PipelineExecutionImpl(ExecutionType.PIPELINE, executionId, 'testapp')
 
     when:
     execution.status = validStatus
@@ -89,7 +89,7 @@ class ExecutionsImportControllerSpec extends Specification {
   def 'should succeed to import if unable to retrieve app from front50'() {
     given:
     String executionId = new ULID().nextULID()
-    PipelineExecution execution = new PipelineExecution(ExecutionType.PIPELINE, executionId, 'testapp')
+    PipelineExecutionImpl execution = new PipelineExecutionImpl(ExecutionType.PIPELINE, executionId, 'testapp')
     execution.status = ExecutionStatus.SUCCEEDED
 
     when:

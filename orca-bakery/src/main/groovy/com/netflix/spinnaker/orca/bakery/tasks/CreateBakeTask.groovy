@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.OperatingSystem
 import com.netflix.spinnaker.orca.pipeline.util.PackageInfo
@@ -66,7 +66,7 @@ class CreateBakeTask implements RetryableTask {
   private final Logger log = LoggerFactory.getLogger(getClass())
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     if (!bakerySelector) {
       throw new UnsupportedOperationException("You have not enabled baking for this orca instance. Set bakery.enabled: true")
     }
@@ -137,7 +137,7 @@ class CreateBakeTask implements RetryableTask {
     }
   }
 
-  private static boolean shouldRebake(StageExecution stage) {
+  private static boolean shouldRebake(StageExecutionImpl stage) {
     if (stage.context.rebake == true) {
       return true
     }
@@ -145,7 +145,7 @@ class CreateBakeTask implements RetryableTask {
   }
 
   @CompileDynamic
-  private BakeRequest bakeFromContext(StageExecution stage, SelectedService<BakeryService> bakery) {
+  private BakeRequest bakeFromContext(StageExecutionImpl stage, SelectedService<BakeryService> bakery) {
     PackageType packageType
     if (bakery.config.roscoApisEnabled) {
       def baseImage = bakery.service.getBaseImage(stage.context.cloudProviderType as String,

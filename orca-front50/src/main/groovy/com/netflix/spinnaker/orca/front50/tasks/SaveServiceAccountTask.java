@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,7 +74,7 @@ public class SaveServiceAccountTask implements RetryableTask {
   @Nonnull
   @SuppressWarnings("unchecked")
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     if (!fiatStatus.isEnabled()) {
       throw new UnsupportedOperationException("Fiat is not enabled, cannot save roles.");
     }

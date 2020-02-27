@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.ArtifactoryTrigger
 import com.netflix.spinnaker.orca.pipeline.model.ConcourseTrigger
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.NexusTrigger
@@ -97,7 +97,7 @@ class TriggerDeserializer :
           get("rebake")?.booleanValue() == true,
           get("dryRun")?.booleanValue() == true,
           get("strategy")?.booleanValue() == true,
-          get("parentExecution").parseValue<PipelineExecution>(parser),
+          get("parentExecution").parseValue<PipelineExecutionImpl>(parser),
           get("parentPipelineStageId")?.textValue()
         )
         looksLikeArtifactory() -> ArtifactoryTrigger(

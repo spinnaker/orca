@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -40,7 +40,7 @@ class PipelineSpec extends Specification {
   void setup() {
     pipeline.stages.findAll { it.tasks.isEmpty() }.each {
       // ensure each stage has at least one task (otherwise it will get skipped when calculating pipeline status)
-      it.tasks << new TaskExecution()
+      it.tasks << new TaskExecutionImpl()
     }
   }
 

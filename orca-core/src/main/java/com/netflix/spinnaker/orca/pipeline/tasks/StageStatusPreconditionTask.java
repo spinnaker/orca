@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.pipeline.tasks;
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
@@ -32,7 +32,7 @@ public class StageStatusPreconditionTask implements PreconditionTask {
   }
 
   @Override
-  public @Nonnull TaskResult execute(@Nonnull StageExecution stage) {
+  public @Nonnull TaskResult execute(@Nonnull StageExecutionImpl stage) {
     StageStatusPreconditionContext context =
         stage.mapTo("/context", StageStatusPreconditionContext.class);
     String stageName = context.getStageName();
@@ -47,7 +47,7 @@ public class StageStatusPreconditionTask implements PreconditionTask {
           String.format(
               "Stage status is required for preconditions of type %s.", getPreconditionType()));
     }
-    StageExecution foundStage =
+    StageExecutionImpl foundStage =
         stage.getExecution().getStages().stream()
             .filter(s -> s.getName().equals(stageName))
             .findFirst()

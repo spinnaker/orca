@@ -15,15 +15,15 @@
  */
 package com.netflix.spinnaker.orca.qos
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import org.springframework.core.Ordered
 
 /**
- * A policy responsible for determining whether an [PipelineExecution] should be buffered.
+ * A policy responsible for determining whether an [PipelineExecutionImpl] should be buffered.
  */
 interface BufferPolicy : Ordered {
 
-  fun apply(execution: PipelineExecution): BufferResult
+  fun apply(execution: PipelineExecutionImpl): BufferResult
 
   override fun getOrder() = 0
 }

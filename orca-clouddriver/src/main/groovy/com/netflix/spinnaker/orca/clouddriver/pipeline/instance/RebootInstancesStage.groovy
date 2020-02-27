@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.instance.*
 import com.netflix.spinnaker.orca.commands.InstanceUptimeCommand
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -34,7 +34,7 @@ class RebootInstancesStage implements StageDefinitionBuilder {
   InstanceUptimeCommand instanceUptimeCommand
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
 

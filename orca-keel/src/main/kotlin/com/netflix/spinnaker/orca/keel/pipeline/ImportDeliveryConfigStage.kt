@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.Aliases
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
 
@@ -32,7 +32,7 @@ import kotlin.reflect.KClass
 @Component
 @Aliases("publishDeliveryConfig")
 class ImportDeliveryConfigStage : StageDefinitionBuilder {
-  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecutionImpl, builder: TaskNode.Builder) {
     builder.withTask("importDeliveryConfig", ImportDeliveryConfigTask::class)
   }
 

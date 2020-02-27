@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -34,7 +34,7 @@ class CompletedBakeTask implements Task {
   BakerySelector bakerySelector
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     def bakery = bakerySelector.select(stage)
     def bakeStatus = stage.context.status as BakeStatus
     def bake = bakery.service.lookupBake(stage.context.region as String, bakeStatus.resourceId).toBlocking().first()

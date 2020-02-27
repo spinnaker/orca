@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.instance.RegisterInstancesWi
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstanceHealthTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -35,7 +35,7 @@ class RegisterInstancesWithLoadBalancerStage implements StageDefinitionBuilder {
   OortService oortService
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
       .withTask("registerInstances", RegisterInstancesWithLoadBalancerTask)
       .withTask("monitorInstances", MonitorKatoTask)

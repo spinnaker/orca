@@ -10,7 +10,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.oracle
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
@@ -20,7 +20,7 @@ class OracleServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
   final String cloudProvider = "oracle"
 
   @Override
-  List<Map> getOperations(StageExecution stage) {
+  List<Map> getOperations(StageExecutionImpl stage) {
     def operation = [:]
 
     operation.putAll(stage.context)

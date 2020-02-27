@@ -6,7 +6,7 @@ import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +32,7 @@ public class ClouddriverClearAltTablespaceTask implements Task {
 
   @NotNull
   @Override
-  public TaskResult execute(@NotNull StageExecution stage) {
+  public TaskResult execute(@NotNull StageExecutionImpl stage) {
     String namespace = ((String) stage.getContext().get("namespace"));
     if (namespace == null) {
       throw new IllegalArgumentException("Missing namespace");

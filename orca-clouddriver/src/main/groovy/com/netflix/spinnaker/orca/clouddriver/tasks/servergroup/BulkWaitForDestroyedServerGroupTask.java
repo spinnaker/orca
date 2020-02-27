@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler;
 import java.io.IOException;
 import java.util.*;
@@ -48,7 +48,7 @@ public class BulkWaitForDestroyedServerGroupTask extends AbstractCloudProviderAw
   @Autowired private MonikerHelper monikerHelper;
 
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     String region = (String) stage.getContext().get("region");
     Map<String, List<String>> regionToServerGroups =
         (Map<String, List<String>>) stage.getContext().get("deploy.server.groups");
@@ -88,7 +88,7 @@ public class BulkWaitForDestroyedServerGroupTask extends AbstractCloudProviderAw
     }
   }
 
-  private TaskResult handleRetrofitError(StageExecution stage, RetrofitError e) {
+  private TaskResult handleRetrofitError(StageExecutionImpl stage, RetrofitError e) {
     if (e.getResponse() == null) {
       throw e;
     }

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca;
 
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,11 +42,12 @@ public interface TaskExecutionInterceptor {
     return TimeUnit.MINUTES.toMillis(2);
   }
 
-  default StageExecution beforeTaskExecution(Task task, StageExecution stage) {
+  default StageExecutionImpl beforeTaskExecution(Task task, StageExecutionImpl stage) {
     return stage;
   }
 
-  default TaskResult afterTaskExecution(Task task, StageExecution stage, TaskResult taskResult) {
+  default TaskResult afterTaskExecution(
+      Task task, StageExecutionImpl stage, TaskResult taskResult) {
     return taskResult;
   }
 }

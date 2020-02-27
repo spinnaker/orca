@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import de.huxhorn.sulky.ulid.ULID;
@@ -38,18 +39,17 @@ import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class PipelineExecution
-    implements com.netflix.spinnaker.orca.api.PipelineExecution, Serializable {
+public class PipelineExecutionImpl implements PipelineExecution, Serializable {
 
   public static final DefaultTrigger NO_TRIGGER = new DefaultTrigger("none");
   private static final ULID ID_GENERATOR = new ULID();
 
-  public PipelineExecution(ExecutionType type, String application) {
+  public PipelineExecutionImpl(ExecutionType type, String application) {
     this(type, ID_GENERATOR.nextULID(), application);
   }
 
   @JsonCreator
-  public PipelineExecution(
+  public PipelineExecutionImpl(
       @JsonProperty("type") ExecutionType type,
       @JsonProperty("id") String id,
       @JsonProperty("application") String application) {
@@ -156,21 +156,21 @@ public class PipelineExecution
 
   @JsonIgnore
   public @Nonnull Map<String, Object> getContext() {
-    return StageExecution.topologicalSort(stages)
-        .map(StageExecution::getOutputs)
+    return StageExecutionImpl.topologicalSort(stages)
+        .map(StageExecutionImpl::getOutputs)
         .map(Map::entrySet)
         .flatMap(Collection::stream)
         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (o, o2) -> o2));
   }
 
-  private final List<StageExecution> stages = new ArrayList<>();
+  private final List<StageExecutionImpl> stages = new ArrayList<>();
 
   /**
    * Gets the stages of this execution. Does not serialize the child Execution object from stages.
    * The child Execution object in Stage is a @JsonBackReference.
    */
   @JsonIgnoreProperties(value = "execution")
-  public @Nonnull List<StageExecution> getStages() {
+  public @Nonnull List<StageExecutionImpl> getStages() {
     return stages;
   }
 
@@ -341,12 +341,12 @@ public class PipelineExecution
   }
 
   @Nullable
-  public StageExecution namedStage(String type) {
+  public StageExecutionImpl namedStage(String type) {
     return stages.stream().filter(it -> it.getType().equals(type)).findFirst().orElse(null);
   }
 
   @Nonnull
-  public StageExecution stageById(String stageId) {
+  public StageExecutionImpl stageById(String stageId) {
     return stages.stream()
         .filter(it -> it.getId().equals(stageId))
         .findFirst()
@@ -356,7 +356,7 @@ public class PipelineExecution
   }
 
   @Nonnull
-  public StageExecution stageByRef(String refId) {
+  public StageExecutionImpl stageByRef(String refId) {
     return stages.stream()
         .filter(it -> refId.equals(it.getRefId()))
         .findFirst()
@@ -370,7 +370,7 @@ public class PipelineExecution
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    PipelineExecution execution = (PipelineExecution) o;
+    PipelineExecutionImpl execution = (PipelineExecutionImpl) o;
     return Objects.equals(id, execution.id);
   }
 
@@ -380,13 +380,13 @@ public class PipelineExecution
   }
 
   @Deprecated
-  public static PipelineExecution newOrchestration(String application) {
-    return new PipelineExecution(ORCHESTRATION, application);
+  public static PipelineExecutionImpl newOrchestration(String application) {
+    return new PipelineExecutionImpl(ORCHESTRATION, application);
   }
 
   @Deprecated
-  public static PipelineExecution newPipeline(String application) {
-    return new PipelineExecution(PIPELINE, application);
+  public static PipelineExecutionImpl newPipeline(String application) {
+    return new PipelineExecutionImpl(PIPELINE, application);
   }
 
   public static class AuthenticationDetails implements Serializable {

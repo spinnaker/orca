@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +43,7 @@ public class CreateV2PipelineTemplateTask implements RetryableTask, SaveV2Pipeli
 
   @SuppressWarnings("unchecked")
   @Override
-  public TaskResult execute(StageExecution stage) {
+  public TaskResult execute(StageExecutionImpl stage) {
     if (front50Service == null) {
       throw new UnsupportedOperationException(
           "Front50 is not enabled, no way to save pipeline templates. Fix this by setting front50.enabled: true");

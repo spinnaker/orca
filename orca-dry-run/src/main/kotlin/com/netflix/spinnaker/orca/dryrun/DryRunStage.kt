@@ -20,21 +20,21 @@ import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 
 class DryRunStage(private val delegate: StageDefinitionBuilder) : StageDefinitionBuilder {
 
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecutionImpl, builder: Builder) {
     builder.withTask<DryRunTask>("dry run")
   }
 
-  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) =
+  override fun beforeStages(parent: StageExecutionImpl, graph: StageGraphBuilder) =
     delegate.beforeStages(parent, graph)
 
-  override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) =
+  override fun afterStages(parent: StageExecutionImpl, graph: StageGraphBuilder) =
     delegate.afterStages(parent, graph)
 
-  override fun onFailureStages(stage: StageExecution, graph: StageGraphBuilder) =
+  override fun onFailureStages(stage: StageExecutionImpl, graph: StageGraphBuilder) =
     delegate.onFailureStages(stage, graph)
 
   override fun getType() = delegate.type

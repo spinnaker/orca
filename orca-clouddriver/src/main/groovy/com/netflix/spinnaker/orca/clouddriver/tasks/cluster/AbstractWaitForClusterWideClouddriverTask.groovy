@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWi
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.Canonical
 import groovy.transform.ToString
 import org.slf4j.Logger
@@ -48,18 +48,18 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
   @Autowired
   OortHelper oortHelper
 
-  protected TaskResult missingClusterResult(StageExecution stage,
+  protected TaskResult missingClusterResult(StageExecutionImpl stage,
                                             ClusterSelection clusterSelection) {
     throw new IllegalStateException("no cluster details found for $clusterSelection")
   }
 
-  protected TaskResult emptyClusterResult(StageExecution stage,
+  protected TaskResult emptyClusterResult(StageExecutionImpl stage,
                                           ClusterSelection clusterSelection,
                                           Map cluster) {
     throw new IllegalStateException("no server groups found in cluster $clusterSelection")
   }
 
-  boolean isServerGroupOperationInProgress(StageExecution stage,
+  boolean isServerGroupOperationInProgress(StageExecutionImpl stage,
                                            List<TargetServerGroup> currentServerGroups,
                                            List<Map> interestingHealthProviderNames,
                                            DeployServerGroup deployServerGroup) {
@@ -75,7 +75,7 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
     isServerGroupOperationInProgress(stage, interestingHealthProviderNames, matchingServerGroups)
   }
 
-  abstract boolean isServerGroupOperationInProgress(StageExecution stage,
+  abstract boolean isServerGroupOperationInProgress(StageExecutionImpl stage,
                                                     List<Map> interestingHealthProviderNames,
                                                     Optional<TargetServerGroup> serverGroup)
 
@@ -96,7 +96,7 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
   }
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     def clusterSelection = stage.mapTo(ClusterSelection)
 
     List<DeployServerGroup> remainingDeployServerGroups = stage.mapTo(RemainingDeployServerGroups).remainingDeployServerGroups

@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.beans.Introspector;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -59,20 +59,22 @@ public abstract class AbstractClusterWideClouddriverOperationStage
   }
 
   @Override
-  public final void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
+  public final void beforeStages(
+      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
     addAdditionalBeforeStages(parent, graph);
   }
 
   @Override
-  public final void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
+  public final void afterStages(
+      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
     addAdditionalAfterStages(parent, graph);
   }
 
   protected void addAdditionalBeforeStages(
-      @Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
+      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {}
 
   protected void addAdditionalAfterStages(
-      @Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
+      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {}
 
   public static class ClusterSelection {
     private final String cluster;
@@ -161,7 +163,7 @@ public abstract class AbstractClusterWideClouddriverOperationStage
   }
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     stage.resolveStrategyParams();
     Class<? extends AbstractClusterWideClouddriverTask> operationTask = getClusterOperationTask();
     String name = getStepName(operationTask.getSimpleName());

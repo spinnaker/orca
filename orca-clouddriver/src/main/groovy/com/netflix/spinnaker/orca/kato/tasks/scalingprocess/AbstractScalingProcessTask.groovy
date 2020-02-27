@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 
 @Deprecated
@@ -43,7 +43,7 @@ abstract class AbstractScalingProcessTask implements Task {
   abstract List<String> filterProcesses(TargetReference targetReference, List<String> processes)
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     def targetReference
     if (targetReferenceSupport.isDynamicallyBound(stage)) {
       targetReference = targetReferenceSupport.getDynamicallyBoundTargetAsgReference(stage)

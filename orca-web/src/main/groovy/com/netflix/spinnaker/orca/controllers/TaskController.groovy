@@ -28,9 +28,9 @@ import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -151,7 +151,7 @@ class TaskController {
     convert executionRepository.retrieve(ORCHESTRATION, id)
   }
 
-  PipelineExecution getOrchestration(String id) {
+  PipelineExecutionImpl getOrchestration(String id) {
     executionRepository.retrieve(ORCHESTRATION, id)
   }
 
@@ -201,7 +201,7 @@ class TaskController {
  */
   @PostFilter("hasPermission(filterObject.application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/pipelines", method = RequestMethod.GET)
-  List<PipelineExecution> listSubsetOfPipelines(
+  List<PipelineExecutionImpl> listSubsetOfPipelines(
     @RequestParam(value = "pipelineConfigIds", required = false) String pipelineConfigIds,
     @RequestParam(value = "executionIds", required = false) String executionIds,
     @RequestParam(value = "limit", required = false) Integer limit,
@@ -225,7 +225,7 @@ class TaskController {
     if (executionIds) {
       List<String> ids = executionIds.split(',')
 
-      List<PipelineExecution> executions = rx.Observable.from(ids.collect {
+      List<PipelineExecutionImpl> executions = rx.Observable.from(ids.collect {
         try {
           executionRepository.retrieve(PIPELINE, it)
         } catch (ExecutionNotFoundException e) {
@@ -241,7 +241,7 @@ class TaskController {
     }
     List<String> ids = pipelineConfigIds.split(',')
 
-    List<PipelineExecution> allPipelines = rx.Observable.merge(ids.collect {
+    List<PipelineExecutionImpl> allPipelines = rx.Observable.merge(ids.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
     }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
 
@@ -302,7 +302,7 @@ class TaskController {
    */
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/applications/{application}/pipelines/search", method = RequestMethod.GET)
-  List<PipelineExecution> searchForPipelinesByTrigger(
+  List<PipelineExecutionImpl> searchForPipelinesByTrigger(
     @PathVariable(value = "application") String application,
     @RequestParam(value = "triggerTypes", required = false) String triggerTypes,
     @RequestParam(value = "pipelineName", required = false) String pipelineName,
@@ -353,14 +353,14 @@ class TaskController {
       executionCriteria.setStatuses(statuses.split(",").toList())
     }
 
-    List<PipelineExecution> allExecutions = executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+    List<PipelineExecutionImpl> allExecutions = executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
       pipelineConfigIds,
       triggerTimeStartBoundary,
       triggerTimeEndBoundary,
       executionCriteria
     )
 
-    List<PipelineExecution> matchingExecutions = allExecutions
+    List<PipelineExecutionImpl> matchingExecutions = allExecutions
       .stream()
       .filter({
         // Filter by trigger type
@@ -376,7 +376,7 @@ class TaskController {
       })
       .collect(Collectors.toList())
 
-    List<PipelineExecution> rval
+    List<PipelineExecutionImpl> rval
     if (startIndex >= matchingExecutions.size()) {
       rval = []
     } else {
@@ -404,7 +404,7 @@ class TaskController {
 
   @PostAuthorize("hasPermission(returnObject.application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/pipelines/{id}", method = RequestMethod.GET)
-  PipelineExecution getPipeline(@PathVariable String id) {
+  PipelineExecutionImpl getPipeline(@PathVariable String id) {
     executionRepository.retrieve(PIPELINE, id)
   }
 
@@ -462,7 +462,7 @@ class TaskController {
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}", method = RequestMethod.PATCH)
-  PipelineExecution updatePipelineStage(
+  PipelineExecutionImpl updatePipelineStage(
     @PathVariable String id,
     @PathVariable String stageId, @RequestBody Map context) {
     def pipeline = executionRepository.retrieve(PIPELINE, id)
@@ -471,7 +471,7 @@ class TaskController {
       stage.context.putAll(context)
       validateStageUpdate(stage)
 
-      stage.lastModified = new StageExecution.LastModifiedDetails(
+      stage.lastModified = new StageExecutionImpl.LastModifiedDetails(
         user: AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
         allowedAccounts: AuthenticatedRequest.getSpinnakerAccounts().orElse(null)?.split(",") ?: [],
         lastModifiedTime: System.currentTimeMillis()
@@ -488,7 +488,7 @@ class TaskController {
   }
 
   // If other execution mutations need validation, factor this out.
-  void validateStageUpdate(StageExecution stage) {
+  void validateStageUpdate(StageExecutionImpl stage) {
     if (stage.context.manualSkip
       && !stageDefinitionBuilderFactory.builderFor(stage)?.canManuallySkip()) {
       throw new CannotUpdateExecutionStage("Cannot manually skip stage.")
@@ -497,7 +497,7 @@ class TaskController {
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}/restart", method = RequestMethod.PUT)
-  PipelineExecution retryPipelineStage(
+  PipelineExecutionImpl retryPipelineStage(
     @PathVariable String id, @PathVariable String stageId) {
     def pipeline = executionRepository.retrieve(PIPELINE, id)
     executionRunner.restart(pipeline, stageId)
@@ -561,7 +561,7 @@ class TaskController {
  * Adds trigger and execution to stage context so that expression evaluation can be tested.
  * This is not great, because it's brittle, but it's very useful to be able to test expressions.
  */
-  private Map<String, Object> augmentContext(StageExecution stage) {
+  private Map<String, Object> augmentContext(StageExecutionImpl stage) {
     Map<String, Object> augmentedContext = stage.context
     augmentedContext.put("trigger", stage.execution.trigger)
     augmentedContext.put("execution", stage.execution)
@@ -570,23 +570,23 @@ class TaskController {
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/v2/applications/{application}/pipelines", method = RequestMethod.GET)
-  List<PipelineExecution> getApplicationPipelines(@PathVariable String application,
-                                                  @RequestParam(value = "limit", defaultValue = "5")
+  List<PipelineExecutionImpl> getApplicationPipelines(@PathVariable String application,
+                                                      @RequestParam(value = "limit", defaultValue = "5")
                                             int limit,
-                                                  @RequestParam(value = "statuses", required = false)
+                                                      @RequestParam(value = "statuses", required = false)
                                             String statuses,
-                                                  @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
+                                                      @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
     return getPipelinesForApplication(application, limit, statuses, expand)
   }
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/applications/{application}/pipelines", method = RequestMethod.GET)
-  List<PipelineExecution> getPipelinesForApplication(@PathVariable String application,
-                                                     @RequestParam(value = "limit", defaultValue = "5")
+  List<PipelineExecutionImpl> getPipelinesForApplication(@PathVariable String application,
+                                                         @RequestParam(value = "limit", defaultValue = "5")
                                                int limit,
-                                                     @RequestParam(value = "statuses", required = false)
+                                                         @RequestParam(value = "statuses", required = false)
                                                String statuses,
-                                                     @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
+                                                         @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Cannot lookup pipelines, front50 has not been enabled. Fix this by setting front50.enabled: true")
     }
@@ -660,14 +660,14 @@ class TaskController {
     }
   }
 
-  private List<PipelineExecution> filterPipelinesByHistoryCutoff(List<PipelineExecution> pipelines, int limit) {
+  private List<PipelineExecutionImpl> filterPipelinesByHistoryCutoff(List<PipelineExecutionImpl> pipelines, int limit) {
     // TODO-AJ The eventual goal is to return `allPipelines` without the need to group + filter below (WIP)
     def cutoffTime = clock.instant().minus(daysOfExecutionHistory, DAYS).toEpochMilli()
 
     def pipelinesSatisfyingCutoff = []
     pipelines.groupBy {
       it.pipelineConfigId
-    }.values().each { List<PipelineExecution> pipelinesGroup ->
+    }.values().each { List<PipelineExecutionImpl> pipelinesGroup ->
       def sortedPipelinesGroup = pipelinesGroup.sort(startTimeOrId).reverse()
       def recentPipelines = sortedPipelinesGroup.findAll {
         !it.startTime || it.startTime > cutoffTime
@@ -685,7 +685,7 @@ class TaskController {
   }
   // TODO(joonlim): Consider adding expand flag to RedisExecutionRepository's buildExecution method so that
   // these fields are never added in the first place.
-  private static unexpandPipelineExecutions(List<PipelineExecution> pipelineExecutions) {
+  private static unexpandPipelineExecutions(List<PipelineExecutionImpl> pipelineExecutions) {
     pipelineExecutions.each { pipelineExecution ->
       clearTriggerStages(pipelineExecution.trigger.other) // remove from the "other" field - that is what Jackson works against
       pipelineExecution.getStages().each { stage ->
@@ -715,7 +715,7 @@ class TaskController {
     return isNullOrEmpty(variables[entry.key]) || !isNullOrEmpty(entry.value)
   }
 
-  private OrchestrationViewModel convert(PipelineExecution orchestration) {
+  private OrchestrationViewModel convert(PipelineExecutionImpl orchestration) {
     def variables = [:]
     for (stage in orchestration.stages) {
       for (entry in stage.context.entrySet()) {

@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.igor.tasks.StartScriptTask
 import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +38,7 @@ class ScriptStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired StopJenkinsJobTask stopJenkinsJobTask
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
     builder
       .withTask("startScript", StartScriptTask)
       .withTask("waitForScriptStart", MonitorQueuedJenkinsJobTask)
@@ -50,7 +50,7 @@ class ScriptStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  void prepareStageForRestart(StageExecution stage) {
+  void prepareStageForRestart(StageExecutionImpl stage) {
     if (stage.context.buildInfo) {
       if (!stage.context.restartDetails) stage.context.restartDetails = [:]
       stage.context.restartDetails["previousBuildInfo"] = stage.context.buildInfo
@@ -60,7 +60,7 @@ class ScriptStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  Result cancel(StageExecution stage) {
+  Result cancel(StageExecutionImpl stage) {
     log.info("Cancelling stage (stageId: ${stage.id}, executionId: ${stage.execution.id}, context: ${stage.context as Map})")
 
     try {

@@ -19,12 +19,12 @@ package com.netflix.spinnaker.orca.q
 import com.fasterxml.jackson.annotation.JsonTypeName
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.q.Attribute
 import com.netflix.spinnaker.q.Message
@@ -64,10 +64,10 @@ data class StartTask(
   constructor(source: StageLevel, taskId: String) :
     this(source, source.stageId, taskId)
 
-  constructor(source: StageExecution, taskId: String) :
+  constructor(source: StageExecutionImpl, taskId: String) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, taskId)
 
-  constructor(source: StageExecution, task: TaskExecution) :
+  constructor(source: StageExecutionImpl, task: TaskExecutionImpl) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, task.id)
 }
 
@@ -154,7 +154,7 @@ data class StartStage(
   constructor(source: StageLevel) :
     this(source, source.stageId)
 
-  constructor(source: StageExecution) :
+  constructor(source: StageExecutionImpl) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -172,7 +172,7 @@ data class ContinueParentStage(
   constructor(source: StageLevel, phase: SyntheticStageOwner) :
     this(source.executionType, source.executionId, source.application, source.stageId, phase)
 
-  constructor(source: StageExecution, phase: SyntheticStageOwner) :
+  constructor(source: StageExecutionImpl, phase: SyntheticStageOwner) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id, phase)
 }
 
@@ -189,7 +189,7 @@ data class CompleteStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(source: StageExecution) :
+  constructor(source: StageExecutionImpl) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -203,7 +203,7 @@ data class SkipStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(source: StageExecution) :
+  constructor(source: StageExecutionImpl) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -217,7 +217,7 @@ data class AbortStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(source: StageExecution) :
+  constructor(source: StageExecutionImpl) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -243,10 +243,10 @@ data class RestartStage(
   override val stageId: String,
   val user: String?
 ) : Message(), StageLevel {
-  constructor(source: PipelineExecution, stageId: String, user: String?) :
+  constructor(source: PipelineExecutionImpl, stageId: String, user: String?) :
     this(source.type, source.id, source.application, stageId, user)
 
-  constructor(stage: StageExecution, user: String?) :
+  constructor(stage: StageExecutionImpl, user: String?) :
     this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id, user)
 }
 
@@ -260,7 +260,7 @@ data class ResumeStage(
   constructor(source: ExecutionLevel, stageId: String) :
     this(source.executionType, source.executionId, source.application, stageId)
 
-  constructor(source: StageExecution) :
+  constructor(source: StageExecutionImpl) :
     this(source.execution.type, source.execution.id, source.execution.application, source.id)
 }
 
@@ -274,7 +274,7 @@ data class CancelStage(
   constructor(source: StageLevel) :
     this(source.executionType, source.executionId, source.application, source.stageId)
 
-  constructor(stage: StageExecution) :
+  constructor(stage: StageExecutionImpl) :
     this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id)
 }
 
@@ -284,7 +284,7 @@ data class StartExecution(
   override val executionId: String,
   override val application: String
 ) : Message(), ExecutionLevel {
-  constructor(source: PipelineExecution) :
+  constructor(source: PipelineExecutionImpl) :
     this(source.type, source.id, source.application)
 }
 
@@ -294,7 +294,7 @@ data class RescheduleExecution(
   override val executionId: String,
   override val application: String
 ) : Message(), ExecutionLevel {
-  constructor(source: PipelineExecution) :
+  constructor(source: PipelineExecutionImpl) :
     this(source.type, source.id, source.application)
 }
 
@@ -307,7 +307,7 @@ data class CompleteExecution(
   constructor(source: ExecutionLevel) :
     this(source.executionType, source.executionId, source.application)
 
-  constructor(source: PipelineExecution) :
+  constructor(source: PipelineExecutionImpl) :
     this(source.type, source.id, source.application)
 }
 
@@ -317,7 +317,7 @@ data class ResumeExecution(
   override val executionId: String,
   override val application: String
 ) : Message(), ExecutionLevel {
-  constructor(source: PipelineExecution) :
+  constructor(source: PipelineExecutionImpl) :
     this(source.type, source.id, source.application)
 }
 
@@ -329,10 +329,10 @@ data class CancelExecution(
   val user: String?,
   val reason: String?
 ) : Message(), ExecutionLevel {
-  constructor(source: PipelineExecution, user: String?, reason: String?) :
+  constructor(source: PipelineExecutionImpl, user: String?, reason: String?) :
     this(source.type, source.id, source.application, user, reason)
 
-  constructor(source: PipelineExecution) :
+  constructor(source: PipelineExecutionImpl) :
     this(source.type, source.id, source.application, null, null)
 
   constructor(source: ExecutionLevel) :

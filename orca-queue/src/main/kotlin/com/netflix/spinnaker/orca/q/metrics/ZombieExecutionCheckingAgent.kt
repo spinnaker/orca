@@ -22,7 +22,7 @@ import com.netflix.spectator.api.Tag
 import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -117,11 +117,11 @@ class ZombieExecutionCheckingAgent
     }
   }
 
-  private fun hasBeenAroundAWhile(execution: PipelineExecution): Boolean =
+  private fun hasBeenAroundAWhile(execution: PipelineExecutionImpl): Boolean =
     Instant.ofEpochMilli(execution.buildTime!!)
       .isBefore(clock.instant().minus(zombieCheckCutoffMinutes, MINUTES))
 
-  private fun queueHasNoMessages(execution: PipelineExecution): Boolean =
+  private fun queueHasNoMessages(execution: PipelineExecutionImpl): Boolean =
     !queue.containsMessage { message ->
       message is ExecutionLevel && message.executionId == execution.id
     }

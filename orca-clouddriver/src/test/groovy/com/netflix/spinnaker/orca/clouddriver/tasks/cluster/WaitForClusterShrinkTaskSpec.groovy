@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 import spock.lang.Specification
@@ -39,7 +39,7 @@ class WaitForClusterShrinkTaskSpec extends Specification {
 
   def "does not complete if previous ASG is still there"() {
     given:
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "test", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "test", [
       cluster               : clusterName,
       credentials           : account,
       "deploy.server.groups": [
@@ -90,7 +90,7 @@ class WaitForClusterShrinkTaskSpec extends Specification {
 
   def "completes if previous ASG is gone"() {
     given:
-    def stage = new StageExecution(PipelineExecution.newPipeline("orca"), "test", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "test", [
       cluster               : clusterName,
       credentials           : account,
       "deploy.server.groups": [
@@ -126,7 +126,7 @@ class WaitForClusterShrinkTaskSpec extends Specification {
 
   def "completes if the cluster is now totally gone"() {
     given:
-    def stage = new StageExecution(context: [
+    def stage = new StageExecutionImpl(context: [
       cluster               : clusterName,
       credentials           : account,
       "deploy.server.groups": [

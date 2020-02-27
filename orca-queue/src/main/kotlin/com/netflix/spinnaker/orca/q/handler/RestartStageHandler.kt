@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.RestartStage
 import com.netflix.spinnaker.orca.q.StartStage
@@ -67,7 +67,7 @@ class RestartStageHandler(
     }
   }
 
-  private fun restartParentPipelineIfNeeded(message: RestartStage, topStage: StageExecution) {
+  private fun restartParentPipelineIfNeeded(message: RestartStage, topStage: StageExecutionImpl) {
     if (topStage.execution.trigger !is PipelineTrigger) {
       return
     }
@@ -91,11 +91,11 @@ class RestartStageHandler(
   /**
    * Inform the parent stage when it restarts that the child is already running
    */
-  private fun StageExecution.addSkipRestart() {
+  private fun StageExecutionImpl.addSkipRestart() {
     context["_skipPipelineRestart"] = true
   }
 
-  private fun StageExecution.addRestartDetails(user: String?) {
+  private fun StageExecutionImpl.addRestartDetails(user: String?) {
     context["restartDetails"] = mapOf(
       "restartedBy" to (user ?: "anonymous"),
       "restartTime" to clock.millis(),
@@ -103,7 +103,7 @@ class RestartStageHandler(
     )
   }
 
-  private fun StageExecution.reset() {
+  private fun StageExecutionImpl.reset() {
     if (status.isComplete) {
       status = NOT_STARTED
       startTime = null
@@ -118,7 +118,7 @@ class RestartStageHandler(
     downstreamStages().forEach { it.reset() }
   }
 
-  private fun StageExecution.removeSynthetics() {
+  private fun StageExecutionImpl.removeSynthetics() {
     execution
       .stages
       .filter { it.parentStageId == id }

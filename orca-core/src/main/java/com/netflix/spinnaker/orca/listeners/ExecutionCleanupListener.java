@@ -16,20 +16,20 @@
 package com.netflix.spinnaker.orca.listeners;
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.List;
 
 public class ExecutionCleanupListener implements ExecutionListener {
   @Override
-  public void beforeExecution(Persister persister, PipelineExecution execution) {
+  public void beforeExecution(Persister persister, PipelineExecutionImpl execution) {
     // do nothing
   }
 
   @Override
   public void afterExecution(
       Persister persister,
-      PipelineExecution execution,
+      PipelineExecutionImpl execution,
       ExecutionStatus executionStatus,
       boolean wasSuccessful) {
     if (!execution.getStatus().isSuccessful()) {
@@ -37,7 +37,7 @@ public class ExecutionCleanupListener implements ExecutionListener {
       return;
     }
 
-    List<StageExecution> stages = execution.getStages();
+    List<StageExecutionImpl> stages = execution.getStages();
     stages.forEach(
         it -> {
           if (it.getContext().containsKey("targetReferences")) {

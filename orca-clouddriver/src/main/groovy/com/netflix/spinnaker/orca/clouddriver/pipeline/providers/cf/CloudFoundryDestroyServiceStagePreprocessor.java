@@ -22,19 +22,19 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMon
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryWaitForDestroyServiceTask;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CloudFoundryDestroyServiceStagePreprocessor
     implements DestroyServiceStagePreprocessor {
   @Override
-  public boolean supports(StageExecution stage) {
+  public boolean supports(StageExecutionImpl stage) {
     return "cloudfoundry".equals(stage.mapTo(StageData.class).getCloudProvider());
   }
 
   @Override
-  public void addSteps(TaskNode.Builder builder, StageExecution stage) {
+  public void addSteps(TaskNode.Builder builder, StageExecutionImpl stage) {
     builder
         .withTask("destroyService", CloudFoundryDestroyServiceTask.class)
         .withTask("monitorDestroyService", CloudFoundryMonitorKatoServicesTask.class)

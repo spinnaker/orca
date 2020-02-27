@@ -19,11 +19,12 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import static com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED;
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.TaskExecution;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** A "task" is a component piece of a stage */
-public class TaskExecution implements com.netflix.spinnaker.orca.api.TaskExecution {
+public class TaskExecutionImpl implements TaskExecution {
   private String id;
 
   public @Nonnull String getId() {

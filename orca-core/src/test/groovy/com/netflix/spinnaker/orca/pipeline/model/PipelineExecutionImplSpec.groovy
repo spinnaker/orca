@@ -23,7 +23,7 @@ import spock.lang.Specification
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
-class PipelineExecutionSpec extends Specification {
+class PipelineExecutionImplSpec extends Specification {
   void setupSpec() {
     if (MDC.getMDCAdapter() instanceof NOPMDCAdapter) {
       throw new IllegalStateException("ExecutionSpec.AuthenticationDetails tests cannot function " +
@@ -41,7 +41,7 @@ class PipelineExecutionSpec extends Specification {
 
   def "should return Optional.empty if no authenticated details available"() {
     expect:
-    !PipelineExecution.AuthenticationDetails.build().present
+    !PipelineExecutionImpl.AuthenticationDetails.build().present
   }
 
   def "should build AuthenticationDetails containing authenticated details"() {
@@ -50,7 +50,7 @@ class PipelineExecutionSpec extends Specification {
     MDC.put(Header.ACCOUNTS.header, "Account1,Account2")
 
     when:
-    def authenticationDetails = PipelineExecution.AuthenticationDetails.build().get()
+    def authenticationDetails = PipelineExecutionImpl.AuthenticationDetails.build().get()
 
     then:
     authenticationDetails.user == "SpinnakerUser"

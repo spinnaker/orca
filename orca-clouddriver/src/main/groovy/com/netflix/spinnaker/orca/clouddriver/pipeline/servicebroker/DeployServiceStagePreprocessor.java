@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servicebroker;
 
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 
 /**
  * Supports generic modification of a Deploy Service stage.
@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
  * <p>Common use-cases: - injecting cloud-aware steps
  */
 public interface DeployServiceStagePreprocessor {
-  boolean supports(StageExecution stage);
+  boolean supports(StageExecutionImpl stage);
 
-  void addSteps(TaskNode.Builder builder, StageExecution stage);
+  void addSteps(TaskNode.Builder builder, StageExecutionImpl stage);
 }

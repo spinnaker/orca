@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.bakery.api.BaseImage
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfigurationProperties
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import retrofit.http.Body
 import retrofit.http.Path
 import retrofit.http.Query
@@ -82,7 +82,7 @@ class BakerySelectorSpec extends Specification {
     given:
     def bakePipeline = pipeline {
       application: "foo"
-      authentication = new PipelineExecution.AuthenticationDetails(user: user)
+      authentication = new PipelineExecutionImpl.AuthenticationDetails(user: user)
       stage {
         type = "bake"
         context = ctx as Map

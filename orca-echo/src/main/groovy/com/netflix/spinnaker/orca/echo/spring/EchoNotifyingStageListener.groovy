@@ -20,9 +20,9 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -53,20 +53,20 @@ class EchoNotifyingStageListener implements StageListener {
   }
 
   @Override
-  void beforeTask(Persister persister, StageExecution stage, TaskExecution task) {
+  void beforeTask(Persister persister, StageExecutionImpl stage, TaskExecutionImpl task) {
     recordEvent('task', 'starting', stage, task)
   }
 
   @Override
   @CompileDynamic
-  void beforeStage(Persister persister, StageExecution stage) {
+  void beforeStage(Persister persister, StageExecutionImpl stage) {
     recordEvent("stage", "starting", stage)
   }
 
   @Override
   void afterTask(Persister persister,
-                 StageExecution stage,
-                 TaskExecution task,
+                 StageExecutionImpl stage,
+                 TaskExecutionImpl task,
                  ExecutionStatus executionStatus,
                  boolean wasSuccessful) {
     if (executionStatus == RUNNING) {
@@ -78,7 +78,7 @@ class EchoNotifyingStageListener implements StageListener {
 
   @Override
   @CompileDynamic
-  void afterStage(Persister persister, StageExecution stage) {
+  void afterStage(Persister persister, StageExecutionImpl stage) {
     // STOPPED stages are "successful" because they allow the pipeline to
     // proceed but they are still failures in terms of the stage and should
     // send failure notifications
@@ -94,15 +94,15 @@ class EchoNotifyingStageListener implements StageListener {
     }
   }
 
-  private void recordEvent(String type, String phase, StageExecution stage, TaskExecution task) {
+  private void recordEvent(String type, String phase, StageExecutionImpl stage, TaskExecutionImpl task) {
     recordEvent(type, phase, stage, Optional.of(task))
   }
 
-  private void recordEvent(String type, String phase, StageExecution stage) {
+  private void recordEvent(String type, String phase, StageExecutionImpl stage) {
     recordEvent(type, phase, stage, Optional.empty())
   }
 
-  private void recordEvent(String type, String phase, StageExecution stage, Optional<TaskExecution> maybeTask) {
+  private void recordEvent(String type, String phase, StageExecutionImpl stage, Optional<TaskExecutionImpl> maybeTask) {
     try {
       def event = [
         details: [
@@ -122,7 +122,7 @@ class EchoNotifyingStageListener implements StageListener {
           name: stage.name
         ]
       ]
-      maybeTask.ifPresent { TaskExecution task ->
+      maybeTask.ifPresent { TaskExecutionImpl task ->
         event.content.taskName = "${stage.type}.${task.name}".toString()
       }
 
@@ -137,11 +137,11 @@ class EchoNotifyingStageListener implements StageListener {
         MDC.remove(Header.USER.header)
       }
     } catch (Exception e) {
-      log.error("Failed to send ${type} event ${phase} ${stage.execution.id} ${maybeTask.map { TaskExecution task -> task.name }}", e)
+      log.error("Failed to send ${type} event ${phase} ${stage.execution.id} ${maybeTask.map { TaskExecutionImpl task -> task.name }}", e)
     }
   }
 
-  private Map<String, Object> buildContext(PipelineExecution execution, Map context) {
+  private Map<String, Object> buildContext(PipelineExecutionImpl execution, Map context) {
     return contextParameterProcessor.process(
       context,
       [execution: execution] as Map<String, Object>,

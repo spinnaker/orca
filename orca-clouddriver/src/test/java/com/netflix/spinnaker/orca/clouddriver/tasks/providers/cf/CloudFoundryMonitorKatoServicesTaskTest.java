@@ -29,8 +29,8 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.Task;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
@@ -88,7 +88,8 @@ class CloudFoundryMonitorKatoServicesTaskTest {
 
     TaskResult result =
         task.execute(
-            new StageExecution(new PipelineExecution(PIPELINE, "orca"), "deployService", context));
+            new StageExecutionImpl(
+                new PipelineExecutionImpl(PIPELINE, "orca"), "deployService", context));
 
     assertThat(result).isEqualToComparingFieldByFieldRecursively(expected);
   }

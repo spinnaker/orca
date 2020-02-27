@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.io.IOException;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -47,7 +47,7 @@ public class ResolveTargetManifestTask extends AbstractCloudProviderAwareTask im
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecution stage) {
+  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
     String credentials = getCredentials(stage);
 
     StageData stageData = fromStage(stage);
@@ -80,7 +80,7 @@ public class ResolveTargetManifestTask extends AbstractCloudProviderAwareTask im
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).outputs(outputs).build();
   }
 
-  private StageData fromStage(StageExecution stage) {
+  private StageData fromStage(StageExecutionImpl stage) {
     try {
       return objectMapper.readValue(
           objectMapper.writeValueAsString(stage.getContext()), StageData.class);

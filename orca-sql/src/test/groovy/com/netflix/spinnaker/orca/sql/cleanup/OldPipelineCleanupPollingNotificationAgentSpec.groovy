@@ -27,8 +27,8 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository
 import spock.lang.AutoCleanup
@@ -93,14 +93,14 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     allExecutions*.name.sort() == ["#01", "#02", "#11", "#12", "#13", "#14", "#15"]
   }
 
-  PipelineExecution buildExecution(int daysOffset) {
-    PipelineExecution e = new PipelineExecution(PIPELINE, "app")
+  PipelineExecutionImpl buildExecution(int daysOffset) {
+    PipelineExecutionImpl e = new PipelineExecutionImpl(PIPELINE, "app")
     e.status = ExecutionStatus.SUCCEEDED
     e.pipelineConfigId = "pipeline-001"
     e.buildTime = Instant.now().minus(daysOffset, DAYS).toEpochMilli()
 
     e.name = "#${daysOffset.toString().padLeft(2, "0")}"
-    e.stages.add(new StageExecution(e, "wait", "wait stage", [waitTime: 10]))
+    e.stages.add(new StageExecutionImpl(e, "wait", "wait stage", [waitTime: 10]))
 
     return e
   }

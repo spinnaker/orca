@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.Task
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -32,13 +32,13 @@ class DetermineTargetServerGroupTask implements Task {
   TargetServerGroupResolver resolver
 
   @Override
-  TaskResult execute(StageExecution stage) {
+  TaskResult execute(StageExecutionImpl stage) {
     TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
       targetReferences: getTargetServerGroups(stage)
     ]).build()
   }
 
-  List<TargetServerGroup> getTargetServerGroups(StageExecution stage) {
+  List<TargetServerGroup> getTargetServerGroups(StageExecutionImpl stage) {
     resolver.resolve(stage)
   }
 }

@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.qos
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import org.springframework.core.Ordered
 
 /**
@@ -26,7 +26,7 @@ import org.springframework.core.Ordered
  */
 interface PromotionPolicy : Ordered {
 
-  fun apply(candidates: List<PipelineExecution>): PromotionResult
+  fun apply(candidates: List<PipelineExecutionImpl>): PromotionResult
 
   override fun getOrder() = 0
 }
@@ -38,7 +38,7 @@ interface PromotionPolicy : Ordered {
  * @param reason A human-friendly reason for the promotion result.
  */
 data class PromotionResult(
-  val candidates: List<PipelineExecution>,
+  val candidates: List<PipelineExecutionImpl>,
   val finalized: Boolean,
   val reason: String
 )

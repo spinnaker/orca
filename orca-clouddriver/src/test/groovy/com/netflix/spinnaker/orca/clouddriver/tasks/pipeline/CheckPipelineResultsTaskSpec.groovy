@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -37,12 +37,12 @@ class CheckPipelineResultsTaskSpec extends Specification {
       application: 'app1',
       'pipeline.name': 'pipeline1'
     ]
-    final TaskExecution savePipelineTask = new TaskExecution().with {
+    final TaskExecutionImpl savePipelineTask = new TaskExecutionImpl().with {
       setName('savePipeline')
       setStatus(ExecutionStatus.SUCCEEDED)
       return it
     }
-    final StageExecution stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context).with {
+    final StageExecutionImpl stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context).with {
       setTasks([savePipelineTask])
       return it
     }
@@ -62,12 +62,12 @@ class CheckPipelineResultsTaskSpec extends Specification {
       'pipeline.name': 'pipeline1',
       'isExistingPipeline': true
     ]
-    final TaskExecution savePipelineTask = new TaskExecution().with {
+    final TaskExecutionImpl savePipelineTask = new TaskExecutionImpl().with {
       setName('savePipeline')
       setStatus(ExecutionStatus.SUCCEEDED)
       return it
     }
-    final StageExecution stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context).with {
+    final StageExecutionImpl stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context).with {
       setTasks([savePipelineTask])
       return it
     }
@@ -86,12 +86,12 @@ class CheckPipelineResultsTaskSpec extends Specification {
       application: 'app1',
       'pipeline.name': 'pipeline1'
     ]
-    final TaskExecution savePipelineTask = new TaskExecution().with {
+    final TaskExecutionImpl savePipelineTask = new TaskExecutionImpl().with {
       setName('savePipeline')
       setStatus(ExecutionStatus.TERMINAL)
       return it
     }
-    final StageExecution stage = new StageExecution(PipelineExecution.newPipeline("orca"), "whatever", context).with {
+    final StageExecutionImpl stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", context).with {
       setTasks([savePipelineTask])
       return it
     }

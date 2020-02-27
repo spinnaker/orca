@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.AbstractInstancesCheckTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
@@ -27,19 +27,19 @@ import org.springframework.stereotype.Component
 class WaitForCapacityMatchTask extends AbstractInstancesCheckTask {
 
   @Override
-  protected Map<String, List<String>> getServerGroups(StageExecution stage) {
+  protected Map<String, List<String>> getServerGroups(StageExecutionImpl stage) {
     (Map<String, List<String>>) stage.context."deploy.server.groups"
   }
 
   @Override
-  Map getAdditionalRunningStageContext(StageExecution stage, Map serverGroup) {
+  Map getAdditionalRunningStageContext(StageExecutionImpl stage, Map serverGroup) {
     return serverGroup.disabled ?
       [:] :
       [ targetDesiredSize: WaitForUpInstancesTask.calculateTargetDesiredSize(stage, serverGroup) ]
   }
 
   @Override
-  protected boolean hasSucceeded(StageExecution stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
+  protected boolean hasSucceeded(StageExecutionImpl stage, Map serverGroup, List<Map> instances, Collection<String> interestingHealthProviderNames) {
     def splainer = new WaitForUpInstancesTask.Splainer()
       .add("Capacity match check for server group ${serverGroup?.name} [executionId=${stage.execution.id}, stagedId=${stage.execution.id}]")
 
