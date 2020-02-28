@@ -171,6 +171,7 @@ class PeeringAgentSpec extends Specification {
     PIPELINE      | 0                   | [key("ID1", 100)] | [key("ID1", 100), key("ID2", 200)] || ["ID2"]  | []
   }
 
+  @Unroll
   def "copies all running executions of #executionType"() {
     given:
     def peeringAgent = constructPeeringAgent()
@@ -197,6 +198,7 @@ class PeeringAgentSpec extends Specification {
     ORCHESTRATION | ["ID1", "ID4"]  | ["ID5"]       | 1
   }
 
+  @Unroll
   def "doesn't delete the world"() {
     given:
     def dynamicConfigService = Mock(DynamicConfigService)
@@ -218,8 +220,8 @@ class PeeringAgentSpec extends Specification {
     1 * src.getCompletedExecutionIds(executionType, null, 1) >> []
     1 * dest.getCompletedExecutionIds(executionType, "peeredId", 1) >> destKeys
 
-    deleteCallCount * dest.deleteExecutions(executionType, toDelete)
-    deleteCallCount * metrics.incrementNumDeleted(executionType, toDelete.size())
+    deleteCallCount * dest.deleteExecutions(executionType, _)
+    deleteCallCount * metrics.incrementNumDeleted(executionType, _)
     deleteFailureCount * metrics.incrementNumErrors(executionType)
 
     copyCallCount * copier.copyInParallel(executionType, toCopy, ExecutionState.COMPLETED) >>
