@@ -21,6 +21,7 @@ public enum Strategy {
   ROLLING_RED_BLACK("rollingredblack"),
   MONITORED("monitored"),
   CF_ROLLING_RED_BLACK("cfrollingredblack"),
+  YANDEX_ROLLING_UPDATE("rollingupdate"),
   HIGHLANDER("highlander"),
   ROLLING_PUSH("rollingpush"),
   CUSTOM("custom"),

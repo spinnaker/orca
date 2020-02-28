@@ -45,6 +45,8 @@ abstract class AbstractUpdateLaunchSettingsTask implements Task, DeploymentDetai
       // Since AWS is the only provider that needs to do anything here, it felt like overkill to do the
       // provider-specific rigmarole here.
       ops = getAwsOps(stage)
+    } else if (cloudProvider == "yandex") {
+      ops = getYandexOps(stage)
     } else {
       ops = [[(getOperation()): stage.context]]
     }
@@ -72,6 +74,35 @@ abstract class AbstractUpdateLaunchSettingsTask implements Task, DeploymentDetai
 
     ops << [(getOperation()): operation]
     ops
+  }
+
+
+  private getYandexOps(StageExecution stage) {
+    def operation = new HashMap(stage.context)
+    operation.name = operation.asgName ?: operation.serverGroupName
+
+    operation.instanceTemplate.bootDiskSpec.diskSpec.imageId = getYandexImageId(stage)
+    if (!operation.instanceTemplate.bootDiskSpec.diskSpec.imageId) {
+      throw new IllegalStateException("No image could be found in ${stage.context.region}.")
+    }
+
+    def ops = []
+    ops << [(getOperation()): operation]
+    ops
+  }
+
+  private String getYandexImageId(StageExecution stage) {
+    String imageId
+
+    withImageFromPrecedingStage(stage, null, "yandex") {
+      imageId = imageId ?: it.imageId
+    }
+
+    withImageFromDeploymentDetails(stage, null, "yandex") {
+      imageId = imageId ?: it.imageId
+    }
+
+    return imageId
   }
 
   private String getImage(StageExecution stage) {
