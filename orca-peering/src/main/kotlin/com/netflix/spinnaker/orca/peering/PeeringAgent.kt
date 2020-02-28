@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import org.slf4j.LoggerFactory
+import kotlin.math.max
 
 /**
  *
@@ -136,6 +137,8 @@ class PeeringAgent(
       Execution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
       Execution.ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
     }
+    var newLatestUpdateTime = updatedAfter
+
     log.debug("Starting completed $executionType copy for peering with $executionType updatedAfter=$updatedAfter")
 
     // Compute diff
@@ -168,23 +171,33 @@ class PeeringAgent(
         peeringMetrics.incrementNumErrors(executionType)
       }
 
-      destDB.deleteExecutions(executionType, pipelineIdsToDelete)
-      peeringMetrics.incrementNumDeleted(executionType, pipelineIdsToDelete.size)
+      if (pipelineIdsToDelete.any()) {
+        destDB.deleteExecutions(executionType, pipelineIdsToDelete)
+        peeringMetrics.incrementNumDeleted(executionType, pipelineIdsToDelete.size)
+      }
 
-      val migrationResult = executionCopier.copyInParallel(executionType, pipelineIdsToMigrate, ExecutionState.COMPLETED)
-      if (migrationResult.hadErrors) {
-        log.error("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with errors, see prior log statements")
-      } else {
-        log.debug("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with latest updatedAt=${migrationResult.latestUpdatedAt}")
-
-        if (executionType == Execution.ExecutionType.ORCHESTRATION) {
-          completedOrchestrationsMostRecentUpdatedTime = migrationResult.latestUpdatedAt - clockDriftMs
+      if (pipelineIdsToMigrate.any()) {
+        val migrationResult = executionCopier.copyInParallel(executionType, pipelineIdsToMigrate, ExecutionState.COMPLETED)
+        if (migrationResult.hadErrors) {
+          log.error("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with errors, see prior log statements")
         } else {
-          completedPipelinesMostRecentUpdatedTime = migrationResult.latestUpdatedAt - clockDriftMs
+          log.debug("Finished completed $executionType peering: copied ${migrationResult.count} of ${pipelineIdsToMigrate.size} with latest updatedAt=${migrationResult.latestUpdatedAt}")
+
+          newLatestUpdateTime = migrationResult.latestUpdatedAt - clockDriftMs
         }
+      } else {
+        newLatestUpdateTime = (completedPipelineKeys.map { it -> it.updated_at }.max() ?: 0) - clockDriftMs
       }
     } else {
+      newLatestUpdateTime = (completedPipelineKeys.map { it -> it.updated_at }.max() ?: 0) - clockDriftMs
+
       log.debug("No completed $executionType executions to copy for peering")
+    }
+
+    if (executionType == Execution.ExecutionType.ORCHESTRATION) {
+      completedOrchestrationsMostRecentUpdatedTime = max(0, newLatestUpdateTime)
+    } else {
+      completedPipelinesMostRecentUpdatedTime = max(0, newLatestUpdateTime)
     }
   }
 
