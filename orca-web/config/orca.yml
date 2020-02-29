@@ -29,10 +29,6 @@ igor:
 bakery:
   enabled: true
   baseUrl: ${services.rosco.baseUrl:http://localhost:8087}
-  # Rosco exposes more endpoints than Netflix's internal bakery. This disables
-  # the use of those endpoints.
-  roscoApisEnabled: true
-  allowMissingPackageInstallation: false
 kayenta:
   enabled: ${services.kayenta.enabled:false}
   baseUrl: ${services.kayenta.baseUrl:http://localhost:8090}

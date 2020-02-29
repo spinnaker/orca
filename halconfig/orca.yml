@@ -1,8 +1,4 @@
 # halconfig
 
-bakery:
-  extractBuildDetails: ${services.rosco.extractBuildDetails:true}
-  allowMissingPackageInstallation: ${services.rosco.allowMissingPackageInstallation:false}
-
 redis:
   connection: ${services.redis.baseUrl:redis://localhost:6379}
