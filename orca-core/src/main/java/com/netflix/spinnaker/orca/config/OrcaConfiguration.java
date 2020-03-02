@@ -36,9 +36,7 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.libdiffs.ComparableLooseVersion;
 import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion;
 import com.netflix.spinnaker.orca.listeners.*;
-import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
+import com.netflix.spinnaker.orca.pipeline.*;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.time.Clock;
@@ -76,9 +74,12 @@ import rx.schedulers.Schedulers;
   "com.netflix.spinnaker.orca.pipeline.util",
   "com.netflix.spinnaker.orca.preprocessors",
   "com.netflix.spinnaker.orca.telemetry",
-  "com.netflix.spinnaker.orca.notifications.scheduling"
+  "com.netflix.spinnaker.orca.notifications.scheduling",
 })
-@Import({PreprocessorConfiguration.class, PluginsAutoConfiguration.class})
+@Import({
+  PreprocessorConfiguration.class,
+  PluginsAutoConfiguration.class,
+})
 @EnableConfigurationProperties
 public class OrcaConfiguration {
   @Bean
@@ -222,5 +223,11 @@ public class OrcaConfiguration {
   public ForceExecutionCancellationCommand forceExecutionCancellationCommand(
       ExecutionRepository executionRepository, Clock clock) {
     return new ForceExecutionCancellationCommand(executionRepository, clock);
+  }
+
+  @Bean
+  public CompoundExecutionOperator compoundExecutionOperator(
+      ExecutionRepository repository, ExecutionRunner runner, RetrySupport retrySupport) {
+    return new CompoundExecutionOperator(repository, runner, retrySupport);
   }
 }

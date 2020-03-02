@@ -17,11 +17,11 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.config.ErrorConfiguration
+import com.netflix.spinnaker.config.InterlinkConfiguration
 import com.netflix.spinnaker.config.QosConfiguration
 import com.netflix.spinnaker.config.StackdriverConfig
 import com.netflix.spinnaker.config.TomcatConfiguration
 import com.netflix.spinnaker.kork.PlatformComponents
-import com.netflix.spinnaker.kork.plugins.spring.SpinnakerApplication
 import com.netflix.spinnaker.orca.applications.config.ApplicationConfig
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
@@ -83,12 +83,13 @@ import org.springframework.scheduling.annotation.EnableAsync
   KeelConfiguration,
   QosConfiguration,
   CloudFoundryConfiguration,
-  GremlinConfiguration
+  GremlinConfiguration,
+  InterlinkConfiguration
 ])
 @ComponentScan([
   "com.netflix.spinnaker.config", "com.netflix.spinnaker.plugin"
 ])
-class Main extends SpinnakerApplication {
+class Main extends SpringBootServletInitializer {
   static final Map<String, String> DEFAULT_PROPS = [
     'netflix.environment'              : 'test',
     'netflix.account'                  : '${netflix.environment}',
@@ -100,7 +101,7 @@ class Main extends SpinnakerApplication {
   ]
 
   static void main(String... args) {
-    SpinnakerApplication.initialize(DEFAULT_PROPS, Main, args)
+    new SpringApplicationBuilder().properties(DEFAULT_PROPS).sources(Main).run(args)
   }
 
   @Override
