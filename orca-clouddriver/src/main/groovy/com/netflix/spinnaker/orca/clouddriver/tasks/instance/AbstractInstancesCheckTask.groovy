@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 
 import java.time.Duration
@@ -90,7 +91,7 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
   }
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     String account = getCredentials(stage)
     Map<String, List<String>> serverGroupsByRegion = getServerGroups(stage)
 

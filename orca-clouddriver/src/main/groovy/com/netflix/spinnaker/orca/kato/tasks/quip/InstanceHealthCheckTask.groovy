@@ -19,9 +19,9 @@ package com.netflix.spinnaker.orca.kato.tasks.quip
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -41,7 +41,7 @@ class InstanceHealthCheckTask extends AbstractQuipTask implements RetryableTask 
   Client retrofitClient
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     Map stageOutputs = [:]
     def instances = stage.context?.instances
 

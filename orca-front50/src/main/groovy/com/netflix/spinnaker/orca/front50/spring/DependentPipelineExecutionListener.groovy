@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.front50.spring
 
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -63,7 +64,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
   }
 
   @Override
-  void afterExecution(Persister persister, PipelineExecutionImpl execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
+  void afterExecution(Persister persister, PipelineExecution execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
     if (!execution || !(execution.type == PIPELINE)) {
       return
     }

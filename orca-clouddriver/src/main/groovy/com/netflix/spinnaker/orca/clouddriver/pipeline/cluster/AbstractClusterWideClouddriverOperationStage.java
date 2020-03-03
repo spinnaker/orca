@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.moniker.Moniker;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location;
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
@@ -59,14 +60,12 @@ public abstract class AbstractClusterWideClouddriverOperationStage
   }
 
   @Override
-  public final void beforeStages(
-      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  public final void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     addAdditionalBeforeStages(parent, graph);
   }
 
   @Override
-  public final void afterStages(
-      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  public final void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     addAdditionalAfterStages(parent, graph);
   }
 
@@ -163,7 +162,7 @@ public abstract class AbstractClusterWideClouddriverOperationStage
   }
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     stage.resolveStrategyParams();
     Class<? extends AbstractClusterWideClouddriverTask> operationTask = getClusterOperationTask();
     String name = getStepName(operationTask.getSimpleName());

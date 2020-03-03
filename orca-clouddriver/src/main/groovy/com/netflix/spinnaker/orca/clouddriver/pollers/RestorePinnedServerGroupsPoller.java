@@ -27,11 +27,11 @@ import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
@@ -238,7 +238,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
 
   public boolean hasCompletedExecution(PinnedServerGroupTag pinnedServerGroupTag) {
     try {
-      PipelineExecutionImpl execution =
+      PipelineExecution execution =
           executionRepository.retrieve(
               pinnedServerGroupTag.executionType, pinnedServerGroupTag.executionId);
 

@@ -18,12 +18,14 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 public class SecurityGroupForceCacheRefreshTask extends AbstractCloudProviderAwareTask implements Task {
@@ -32,8 +34,9 @@ public class SecurityGroupForceCacheRefreshTask extends AbstractCloudProviderAwa
   @Autowired
   CloudDriverCacheService cacheService
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
 
     stage.context.targets.each { Map target ->

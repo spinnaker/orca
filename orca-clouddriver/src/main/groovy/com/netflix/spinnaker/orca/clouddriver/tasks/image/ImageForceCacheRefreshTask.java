@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.RetryableTask;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -36,7 +36,7 @@ public class ImageForceCacheRefreshTask extends AbstractCloudProviderAwareTask
   @Autowired ObjectMapper objectMapper;
 
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(StageExecution stage) {
     //    TODO-AJ Support force cache refresh for 'Image' (clouddriver-aws)
     //    TODO (duftler): Support force cache refresh for 'Image' (clouddriver-google)
     //    String cloudProvider = getCloudProvider(stage)

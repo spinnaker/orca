@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.igor.pipeline;
 
 import com.netflix.spinnaker.orca.CancellableStage;
 import com.netflix.spinnaker.orca.Task;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.igor.model.CIStageDefinition;
 import com.netflix.spinnaker.orca.igor.tasks.*;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
@@ -37,7 +38,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
   private final StopJenkinsJobTask stopJenkinsJobTask;
 
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     CIStageDefinition stageDefinition = stage.mapTo(CIStageDefinition.class);
     String jobType = StringUtils.capitalize(getType());
     builder
@@ -60,7 +61,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
 
   @Override
   @SuppressWarnings("unchecked")
-  public void prepareStageForRestart(@Nonnull StageExecutionImpl stage) {
+  public void prepareStageForRestart(@Nonnull StageExecution stage) {
     Object buildInfo = stage.getContext().get("buildInfo");
     if (buildInfo != null) {
       Map<String, Object> restartDetails =
@@ -94,7 +95,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
   }
 
   @Override
-  public void onFailureStages(@Nonnull StageExecutionImpl stage, @Nonnull StageGraphBuilder graph) {
+  public void onFailureStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     CIStageDefinition stageDefinition = stage.mapTo(CIStageDefinition.class);
     if (stageDefinition.getPropertyFile() != null
         && !stageDefinition.getPropertyFile().equals("")) {

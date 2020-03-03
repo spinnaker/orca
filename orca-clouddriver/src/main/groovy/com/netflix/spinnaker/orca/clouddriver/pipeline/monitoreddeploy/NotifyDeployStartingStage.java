@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.monitoreddeploy.NotifyDeployStartingTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +38,7 @@ public class NotifyDeployStartingStage implements StageDefinitionBuilder {
       StageDefinitionBuilder.getType(NotifyDeployStartingStage.class);
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("notifyDeployStarting", NotifyDeployStartingTask.class);
   }
 }

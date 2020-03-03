@@ -21,9 +21,9 @@ import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.LongTaskTimer;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -54,10 +54,10 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
   private final Logger log =
       LoggerFactory.getLogger(OldPipelineCleanupPollingNotificationAgent.class);
 
-  private Func1<PipelineExecutionImpl, Boolean> filter =
-      new Func1<PipelineExecutionImpl, Boolean>() {
+  private Func1<PipelineExecution, Boolean> filter =
+      new Func1<PipelineExecution, Boolean>() {
         @Override
-        public Boolean call(PipelineExecutionImpl execution) {
+        public Boolean call(PipelineExecution execution) {
           if (!COMPLETED_STATUSES.contains(execution.getStatus().toString())) {
             return false;
           }
@@ -72,7 +72,7 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
         }
       };
 
-  private Func1<PipelineExecutionImpl, PipelineExecutionDetails> mapper =
+  private Func1<? super PipelineExecution, PipelineExecutionDetails> mapper =
       execution ->
           new PipelineExecutionDetails(
               execution.getId(),
@@ -157,7 +157,7 @@ public class OldPipelineCleanupPollingNotificationAgent extends AbstractPollingN
     }
   }
 
-  private void cleanupApp(Observable<PipelineExecutionImpl> observable) {
+  private void cleanupApp(Observable<PipelineExecution> observable) {
     List<PipelineExecutionDetails> allPipelines =
         observable.filter(filter).map(mapper).toList().toBlocking().single();
 

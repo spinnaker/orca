@@ -17,11 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,7 @@ public class UpsertDisruptionBudgetTask extends AbstractCloudProviderAwareTask {
   }
 
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
 
     Map request = stage.mapTo(Map.class);
     List<Map<String, Map>> operations = new ArrayList<>();

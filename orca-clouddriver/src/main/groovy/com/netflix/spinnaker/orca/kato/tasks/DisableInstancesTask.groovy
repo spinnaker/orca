@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
@@ -25,9 +26,10 @@ import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class DisableInstancesTask implements CloudProviderAware, Task {
@@ -37,8 +39,9 @@ class DisableInstancesTask implements CloudProviderAware, Task {
   @Autowired
   TrafficGuard trafficGuard
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
 
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)

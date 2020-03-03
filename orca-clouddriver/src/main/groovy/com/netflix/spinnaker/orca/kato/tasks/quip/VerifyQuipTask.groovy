@@ -19,13 +19,15 @@ package com.netflix.spinnaker.orca.kato.tasks.quip
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 import retrofit.client.Client
+
+import javax.annotation.Nonnull
 
 @Component
 class VerifyQuipTask extends AbstractQuipTask implements Task {
@@ -39,8 +41,9 @@ class VerifyQuipTask extends AbstractQuipTask implements Task {
   @Autowired
   Client retrofitClient
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     String cluster = stage.context?.clusterName
     String region = stage.context?.region
     String account = stage.context?.account

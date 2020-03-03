@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.orca.api.StageExecution
 
 import java.time.Clock
 import java.util.concurrent.TimeUnit
@@ -28,7 +29,6 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -68,7 +68,7 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
   }
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
 
     if ((clock.millis() - stage.startTime) > autoSucceedAfterMs) {
       /*

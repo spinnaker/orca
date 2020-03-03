@@ -16,19 +16,19 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.appengine
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalancerForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer.UpsertLoadBalancerResultObjectExtrapolationTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine.UpsertAppEngineLoadBalancersTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
 class UpsertAppEngineLoadBalancersStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("upsertLoadBalancers", UpsertAppEngineLoadBalancersTask)
       .withTask("monitorUpsert", MonitorKatoTask)

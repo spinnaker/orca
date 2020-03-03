@@ -19,18 +19,20 @@ package com.netflix.spinnaker.orca.applications.pipelines
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class DeleteProjectStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("deleteProject", DeleteProjectTask)
   }
@@ -40,8 +42,9 @@ class DeleteProjectStage implements StageDefinitionBuilder {
     @Autowired(required = false)
     Front50Service front50Service
 
+    @Nonnull
     @Override
-    TaskResult execute(StageExecutionImpl stage) {
+    TaskResult execute(@Nonnull StageExecution stage) {
       if (!front50Service) {
         throw new UnsupportedOperationException("Unable to modify projects, front50 has not been enabled. Fix this by setting front50.enabled: true")
       }

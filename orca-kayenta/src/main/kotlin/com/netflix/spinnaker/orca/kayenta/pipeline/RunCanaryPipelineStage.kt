@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.kayenta.pipeline
 
 import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.kayenta.KayentaService
@@ -39,7 +40,7 @@ class RunCanaryPipelineStage(
 
   private val log = LoggerFactory.getLogger(javaClass)
 
-  override fun taskGraph(stage: StageExecutionImpl, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
       val context = stage.mapTo<RunCanaryContext>()
       if (context.canaryConfigId.isNullOrEmpty()) {
         if (context.canaryConfigName.isNullOrEmpty()) {

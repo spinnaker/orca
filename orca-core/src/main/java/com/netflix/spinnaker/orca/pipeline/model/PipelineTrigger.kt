@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.model
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.Trigger
 
 data class PipelineTrigger
@@ -85,7 +86,7 @@ data class PipelineTrigger
   }
 
   @JsonIgnore
-  val parentStage: StageExecutionImpl? =
+  val parentStage: StageExecution? =
     if (parentPipelineStageId != null) {
       parentExecution.stageById(parentPipelineStageId)
     } else {

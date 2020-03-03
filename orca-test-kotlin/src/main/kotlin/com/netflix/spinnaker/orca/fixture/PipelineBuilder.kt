@@ -42,7 +42,7 @@ fun pipeline(init: PipelineExecutionImpl.() -> Unit = {}): PipelineExecutionImpl
  */
 fun stage(init: StageExecutionImpl.() -> Unit): StageExecutionImpl {
   val stage = StageExecutionImpl()
-  stage.execution = pipeline()
+  stage.setExecution(pipeline())
   stage.type = "test"
   stage.refId = "1"
   stage.execution.stages.add(stage)
@@ -57,7 +57,7 @@ fun stage(init: StageExecutionImpl.() -> Unit): StageExecutionImpl {
  */
 fun PipelineExecutionImpl.stage(init: StageExecutionImpl.() -> Unit): StageExecutionImpl {
   val stage = StageExecutionImpl()
-  stage.execution = this
+  stage.setExecution(this)
   stage.type = "test"
   stage.refId = "1"
   stages.add(stage)
@@ -72,7 +72,7 @@ fun PipelineExecutionImpl.stage(init: StageExecutionImpl.() -> Unit): StageExecu
  */
 fun StageExecutionImpl.stage(init: StageExecutionImpl.() -> Unit): StageExecutionImpl {
   val stage = StageExecutionImpl()
-  stage.execution = execution
+  stage.setExecution(execution)
   stage.type = "test"
   stage.refId = "$refId<1"
   stage.parentStageId = id

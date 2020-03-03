@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation;
 
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +41,7 @@ public class CloudFormationForceCacheRefreshTask extends AbstractCloudProviderAw
   private final long timeout = TimeUnit.MINUTES.toMillis(5);
 
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage);
 
     Map<String, Object> data = new HashMap<>();

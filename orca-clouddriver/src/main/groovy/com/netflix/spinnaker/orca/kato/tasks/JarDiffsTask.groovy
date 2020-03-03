@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.tasks
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import java.util.regex.Matcher
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -28,7 +30,6 @@ import com.netflix.spinnaker.orca.libdiffs.ComparableLooseVersion
 import com.netflix.spinnaker.orca.libdiffs.Library
 import com.netflix.spinnaker.orca.libdiffs.LibraryDiffTool
 import com.netflix.spinnaker.orca.libdiffs.LibraryDiffs
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
 import com.squareup.okhttp.OkHttpClient
 import groovy.util.logging.Slf4j
@@ -67,7 +68,7 @@ class JarDiffsTask implements DiffTask {
   int platformPort = 8077
 
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(StageExecution stage) {
     def retriesRemaining = stage.context.jarDiffsRetriesRemaining != null ? stage.context.jarDiffsRetriesRemaining : MAX_RETRIES
     if (retriesRemaining <= 0) {
       log.info("retries exceeded")

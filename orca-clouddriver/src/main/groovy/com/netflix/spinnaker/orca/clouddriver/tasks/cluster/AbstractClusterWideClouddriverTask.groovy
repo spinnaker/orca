@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWideClouddriverOperationStage
@@ -72,7 +73,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
 
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     def clusterSelection = stage.mapTo(ClusterSelection)
     Optional<Map> cluster = oortHelper.getCluster(clusterSelection.getApplication(),
                                                   clusterSelection.credentials,

@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
@@ -51,7 +52,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
   }
 
   @Override
-  void beforeExecution(Persister persister, PipelineExecutionImpl execution) {
+  void beforeExecution(Persister persister, PipelineExecution execution) {
     try {
       if (execution.status != ExecutionStatus.SUSPENDED) {
         processSpelInNotifications(execution)
@@ -77,7 +78,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
 
   @Override
   void afterExecution(Persister persister,
-                      PipelineExecutionImpl execution,
+                      PipelineExecution execution,
                       ExecutionStatus executionStatus,
                       boolean wasSuccessful) {
     try {
@@ -120,7 +121,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
    * @param pipeline
    */
   private void addApplicationNotifications(PipelineExecutionImpl pipeline) {
-    def user = pipeline.getAuthentication()?.toKorkUser()
+    def user = PipelineExecutionImpl.AuthenticationHelper.toKorkUser(pipeline.getAuthentication())
     ApplicationNotifications notifications
     if (user?.isPresent()) {
       notifications = AuthenticatedRequest.propagate({

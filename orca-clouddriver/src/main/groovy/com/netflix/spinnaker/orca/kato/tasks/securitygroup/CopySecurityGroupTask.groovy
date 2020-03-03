@@ -18,12 +18,15 @@ package com.netflix.spinnaker.orca.kato.tasks.securitygroup
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.MortService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
+
 import static com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup.applyMappings
 import static com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup.filterForSecurityGroupIngress
 import static com.netflix.spinnaker.orca.clouddriver.MortService.VPC.findForRegionAndAccount
@@ -36,8 +39,9 @@ class CopySecurityGroupTask implements Task {
   @Autowired
   MortService mortService
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def operation = stage.mapTo(StageData)
     def currentSecurityGroup = mortService.getSecurityGroup(
       operation.credentials, operation.provider, operation.name, operation.region, operation.vpcId

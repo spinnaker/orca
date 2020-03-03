@@ -19,12 +19,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,8 +37,9 @@ public class CheckPipelineResultsTask implements Task {
     this.objectMapper = objectMapper;
   }
 
+  @Nonnull
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     final SavePipelineResultsData previousSavePipelineResults =
         stage.mapTo(SavePipelineResultsData.class);
     final SavePipelinesData savePipelinesData = stage.mapTo(SavePipelinesData.class);

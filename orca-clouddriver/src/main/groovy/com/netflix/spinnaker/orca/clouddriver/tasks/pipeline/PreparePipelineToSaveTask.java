@@ -20,11 +20,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,8 +41,9 @@ public class PreparePipelineToSaveTask implements Task {
     this.objectMapper = objectMapper;
   }
 
+  @Nonnull
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     final SavePipelinesData input = stage.mapTo(SavePipelinesData.class);
     if (input.getPipelinesToSave() == null || input.getPipelinesToSave().isEmpty()) {
       log.info("There are no pipelines to save.");

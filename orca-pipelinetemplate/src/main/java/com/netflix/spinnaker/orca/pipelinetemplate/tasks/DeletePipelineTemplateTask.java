@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.pipelinetemplate.tasks;
 
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,7 @@ public class DeletePipelineTemplateTask implements RetryableTask {
 
   @SuppressWarnings("unchecked")
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(StageExecution stage) {
     if (front50Service == null) {
       throw new UnsupportedOperationException(
           "Front50 is not enabled, no way to delete pipeline. Fix this by setting front50.enabled: true");

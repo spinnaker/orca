@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 
 interface StageBuilderAware {
 
   val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory
 
-  fun StageExecutionImpl.builder(): StageDefinitionBuilder =
+  fun StageExecution.builder(): StageDefinitionBuilder =
     stageDefinitionBuilderFactory.builderFor(this)
 }

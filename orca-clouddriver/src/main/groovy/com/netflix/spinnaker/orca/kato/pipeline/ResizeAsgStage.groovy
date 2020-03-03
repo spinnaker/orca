@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
@@ -56,7 +57,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
   DetermineTargetReferenceStage determineTargetReferenceStage
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     if (!stage.parentStageId || stage.execution.stages.find {
       it.id == stage.parentStageId
     }.type != stage.type) {
@@ -74,7 +75,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecutionImpl parentStage, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parentStage, @Nonnull StageGraphBuilder graph) {
     if (!parentStage.parentStageId || parentStage.execution.stages.find {
       it.id == parentStage.parentStageId
     }.type != parentStage.type) {
@@ -122,7 +123,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void afterStages(@Nonnull StageExecutionImpl parentStage, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecution parentStage, @Nonnull StageGraphBuilder graph) {
     if (!parentStage.parentStageId || parentStage.execution.stages.find {
       it.id == parentStage.parentStageId
     }.type != parentStage.type) {

@@ -21,6 +21,7 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.config.DeploymentMonitorDefinition;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.monitoreddeploy.NotifyDeployCompletedStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.MonitoredDeployStageData;
@@ -112,7 +113,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   @Override
-  public @Nullable TaskResult onTimeout(@Nonnull StageExecutionImpl stage) {
+  public @Nullable TaskResult onTimeout(@Nonnull StageExecution stage) {
     ExecutionStatus taskStatus;
     String message;
     DeploymentMonitorDefinition monitorDefinition = getDeploymentMonitorDefinition(stage);
@@ -131,7 +132,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   @Override
-  public @Nonnull TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public @Nonnull TaskResult execute(@Nonnull StageExecution stage) {
     MonitoredDeployStageData context = getStageContext(stage);
     DeploymentMonitorDefinition monitorDefinition = getDeploymentMonitorDefinition(stage);
 

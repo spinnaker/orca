@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +33,7 @@ public class FindImageFromClusterStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("findImage", FindImageFromClusterTask.class);
   }
 }

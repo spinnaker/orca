@@ -20,6 +20,7 @@ import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.RetryableTask;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
@@ -28,7 +29,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTa
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -55,7 +55,7 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
   @Autowired MonikerHelper monikerHelper;
 
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(StageExecution stage) {
     try {
       StageData.Source source = sourceResolver.getSource(stage);
       String serverGroupName =

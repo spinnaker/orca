@@ -20,6 +20,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.igor.IgorService;
@@ -51,7 +52,7 @@ public class StartGoogleCloudBuildTask implements Task {
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     GoogleCloudBuildStageDefinition stageDefinition =
         stage.mapTo(GoogleCloudBuildStageDefinition.class);
 

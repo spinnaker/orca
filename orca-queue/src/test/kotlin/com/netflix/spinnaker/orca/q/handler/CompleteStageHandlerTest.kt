@@ -42,6 +42,7 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
@@ -111,11 +112,11 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   val stageWithTaskAndAfterStages = object : StageDefinitionBuilder {
     override fun getType() = "stageWithTaskAndAfterStages"
 
-    override fun taskGraph(stage: StageExecutionImpl, builder: TaskNode.Builder) {
+    override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
       builder.withTask("dummy", DummyTask::class.java)
     }
 
-    override fun afterStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+    override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
       graph.add {
         it.type = singleTaskStage.type
         it.name = "After Stage"
@@ -127,11 +128,11 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   val stageThatBlowsUpPlanningAfterStages = object : StageDefinitionBuilder {
     override fun getType() = "stageThatBlowsUpPlanningAfterStages"
 
-    override fun taskGraph(stage: StageExecutionImpl, builder: TaskNode.Builder) {
+    override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
       builder.withTask("dummy", DummyTask::class.java)
     }
 
-    override fun afterStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+    override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
       throw RuntimeException("there is some problem actually")
     }
   }
@@ -139,7 +140,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   val stageWithNothingButAfterStages = object : StageDefinitionBuilder {
     override fun getType() = "stageWithNothingButAfterStages"
 
-    override fun afterStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+    override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
       graph.add {
         it.type = singleTaskStage.type
         it.name = "After Stage"

@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.kork.common.Header
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
@@ -53,19 +54,19 @@ class EchoNotifyingStageListener implements StageListener {
   }
 
   @Override
-  void beforeTask(Persister persister, StageExecutionImpl stage, TaskExecution task) {
+  void beforeTask(Persister persister, StageExecution stage, TaskExecution task) {
     recordEvent('task', 'starting', stage, task)
   }
 
   @Override
   @CompileDynamic
-  void beforeStage(Persister persister, StageExecutionImpl stage) {
+  void beforeStage(Persister persister, StageExecution stage) {
     recordEvent("stage", "starting", stage)
   }
 
   @Override
   void afterTask(Persister persister,
-                 StageExecutionImpl stage,
+                 StageExecution stage,
                  TaskExecution task,
                  ExecutionStatus executionStatus,
                  boolean wasSuccessful) {
@@ -78,7 +79,7 @@ class EchoNotifyingStageListener implements StageListener {
 
   @Override
   @CompileDynamic
-  void afterStage(Persister persister, StageExecutionImpl stage) {
+  void afterStage(Persister persister, StageExecution stage) {
     // STOPPED stages are "successful" because they allow the pipeline to
     // proceed but they are still failures in terms of the stage and should
     // send failure notifications

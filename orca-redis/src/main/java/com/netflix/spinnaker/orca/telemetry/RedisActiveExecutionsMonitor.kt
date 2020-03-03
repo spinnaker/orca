@@ -20,10 +20,10 @@ import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionStarted
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException
@@ -138,7 +138,7 @@ class RedisActiveExecutionsMonitor(
   fun cleanup() {
     val orphans = getActiveExecutions()
       .map {
-        val execution: PipelineExecutionImpl
+        val execution: PipelineExecution
         try {
           execution = executionRepository.retrieve(it.type, it.id)
         } catch (e: ExecutionNotFoundException) {
@@ -169,7 +169,7 @@ class RedisActiveExecutionsMonitor(
   }
 
   private fun startExecution(executionType: ExecutionType, executionId: String) {
-    val execution: PipelineExecutionImpl
+    val execution: PipelineExecution
     try {
       execution = executionRepository.retrieve(executionType, executionId)
     } catch (e: ExecutionNotFoundException) {

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
@@ -31,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -46,8 +48,9 @@ public final class PatchManifestTask extends AbstractCloudProviderAwareTask impl
     this.katoService = katoService;
   }
 
+  @Nonnull
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     ImmutableMap<String, Map> operation = getOperation(stage);
     TaskId taskId = executeOperation(stage, operation);
     ImmutableMap<String, Object> outputs = getOutputs(stage, taskId);

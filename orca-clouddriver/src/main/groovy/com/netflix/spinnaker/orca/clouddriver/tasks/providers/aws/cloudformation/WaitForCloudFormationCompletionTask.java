@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
@@ -54,7 +55,7 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     try {
       Map task = ((List<Map>) stage.getContext().get("kato.tasks")).iterator().next();
       Map result = ((List<Map>) task.get("resultObjects")).iterator().next();

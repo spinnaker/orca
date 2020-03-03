@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.mine.pipeline
 
 import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.mine.MineService
@@ -37,7 +38,7 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired CanaryStage canaryStage
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("registerCanary", RegisterCanaryTask)
       .withTask("monitorCanary", MonitorCanaryTask)

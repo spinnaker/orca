@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
@@ -27,6 +28,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 @Slf4j
@@ -40,8 +43,9 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
   @Value('${default.bake.account:default}')
   String defaultBakeAccount
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def ops
     def cloudProvider = getCloudProvider(stage)
     if (cloudProvider == "aws") {

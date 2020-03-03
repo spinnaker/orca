@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.kayenta.pipeline
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
 import com.fasterxml.jackson.module.kotlin.convertValue
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kayenta.CanaryScope
@@ -44,7 +45,7 @@ class RunCanaryIntervalsStage(private val clock: Clock) : StageDefinitionBuilder
     .newInstance()
     .disable(WRITE_DATES_AS_TIMESTAMPS) // we want Instant serialized as ISO string
 
-  override fun taskGraph(stage: StageExecutionImpl, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
   }
 
   private fun getDeployDetails(stage: StageExecutionImpl): DeployedServerGroupContext? {
@@ -59,7 +60,7 @@ class RunCanaryIntervalsStage(private val clock: Clock) : StageDefinitionBuilder
     return DeployedServerGroupContext.from(data)
   }
 
-  override fun beforeStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     val canaryConfig = parent.mapTo<KayentaCanaryContext>("/canaryConfig")
 
     val lifetime: Duration = if (canaryConfig.endTime != null) {

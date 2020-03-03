@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.igor.tasks;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.model.RetryableStageDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
@@ -47,7 +48,7 @@ public abstract class RetryableIgorTask<T extends RetryableStageDefinition>
   }
 
   @Override
-  public @Nonnull TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public @Nonnull TaskResult execute(@Nonnull StageExecution stage) {
     T stageDefinition = mapStage(stage);
     int errors = stageDefinition.getConsecutiveErrors();
     try {

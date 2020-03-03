@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
@@ -23,8 +25,6 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
@@ -32,13 +32,13 @@ import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 /**
  * Build and append the tasks for [stage].
  */
-fun StageDefinitionBuilder.buildTasks(stage: StageExecutionImpl) {
+fun StageDefinitionBuilder.buildTasks(stage: StageExecution) {
   buildTaskGraph(stage)
     .listIterator()
     .forEachWithMetadata { processTaskNode(stage, it) }
 }
 
-fun StageDefinitionBuilder.addContextFlags(stage: StageExecutionImpl) {
+fun StageDefinitionBuilder.addContextFlags(stage: StageExecution) {
   if (canManuallySkip()) {
     // Provides a flag for the UI to indicate that the stage can be skipped.
     stage.context["canManuallySkip"] = true
@@ -46,7 +46,7 @@ fun StageDefinitionBuilder.addContextFlags(stage: StageExecutionImpl) {
 }
 
 private fun processTaskNode(
-  stage: StageExecutionImpl,
+  stage: StageExecution,
   element: IteratorElement<TaskNode>,
   isSubGraph: Boolean = false
 ) {
@@ -81,8 +81,8 @@ private fun processTaskNode(
  * Build the synthetic stages for [stage] and inject them into the execution.
  */
 fun StageDefinitionBuilder.buildBeforeStages(
-  stage: StageExecutionImpl,
-  callback: (StageExecutionImpl) -> Unit = {}
+  stage: StageExecution,
+  callback: (StageExecution) -> Unit = {}
 ) {
   val executionWindow = stage.buildExecutionWindow()
 
@@ -100,8 +100,8 @@ fun StageDefinitionBuilder.buildBeforeStages(
 }
 
 fun StageDefinitionBuilder.buildAfterStages(
-  stage: StageExecutionImpl,
-  callback: (StageExecutionImpl) -> Unit = {}
+  stage: StageExecution,
+  callback: (StageExecution) -> Unit = {}
 ) {
   val graph = StageGraphBuilder.afterStages(stage)
   afterStages(stage, graph)
@@ -111,8 +111,8 @@ fun StageDefinitionBuilder.buildAfterStages(
 }
 
 fun StageDefinitionBuilder.buildFailureStages(
-  stage: StageExecutionImpl,
-  callback: (StageExecutionImpl) -> Unit = {}
+  stage: StageExecution,
+  callback: (StageExecution) -> Unit = {}
 ) {
   val graph = StageGraphBuilder.afterStages(stage)
   onFailureStages(stage, graph)
@@ -121,9 +121,9 @@ fun StageDefinitionBuilder.buildFailureStages(
   stage.appendAfterStages(afterStages, callback)
 }
 
-fun StageExecutionImpl.appendAfterStages(
-  afterStages: Iterable<StageExecutionImpl>,
-  callback: (StageExecutionImpl) -> Unit = {}
+fun StageExecution.appendAfterStages(
+  afterStages: Iterable<StageExecution>,
+  callback: (StageExecution) -> Unit = {}
 ) {
   val index = execution.stages.indexOf(this) + 1
   afterStages.reversed().forEach {
@@ -133,9 +133,9 @@ fun StageExecutionImpl.appendAfterStages(
   }
 }
 
-private typealias SyntheticStages = Map<SyntheticStageOwner, List<StageExecutionImpl>>
+private typealias SyntheticStages = Map<SyntheticStageOwner, List<StageExecution>>
 
-private fun StageExecutionImpl.buildExecutionWindow(): StageExecutionImpl? {
+private fun StageExecution.buildExecutionWindow(): StageExecution? {
   if (context.getOrDefault("restrictExecutionDuringTimeWindow", false) as Boolean) {
     val execution = execution
     val executionWindow = newStage(
@@ -154,11 +154,11 @@ private fun StageExecutionImpl.buildExecutionWindow(): StageExecutionImpl? {
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun PipelineExecutionImpl.injectStage(index: Int, stage: StageExecutionImpl) {
+private fun PipelineExecution.injectStage(index: Int, stage: StageExecution) {
   stages.add(index, stage)
 }
 
-private fun StageExecutionImpl.sanitizeContext() {
+private fun StageExecution.sanitizeContext() {
   if (type != RestrictExecutionDuringTimeWindow.TYPE) {
     context.apply {
       remove("restrictExecutionDuringTimeWindow")

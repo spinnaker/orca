@@ -20,6 +20,7 @@ import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.kork.expressions.ExpressionTransform
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.expressions.functions.UrlExpressionFunctionProvider
 import com.netflix.spinnaker.orca.pipeline.model.*
@@ -928,7 +929,7 @@ class ContextParameterProcessorSpec extends Specification {
       }
     }
 
-    pipe.setAuthentication(new PipelineExecutionImpl.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
+    pipe.setAuthentication(new PipelineExecution.AuthenticationDetails('joeyjoejoejuniorshabadoo@host.net'))
 
     def stage = pipe.stages.find { it.name == "Wait1" }
     def ctx = contextParameterProcessor.buildExecutionContext(stage)

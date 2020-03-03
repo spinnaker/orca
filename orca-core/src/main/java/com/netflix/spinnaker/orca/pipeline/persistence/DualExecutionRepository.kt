@@ -17,10 +17,10 @@ package com.netflix.spinnaker.orca.pipeline.persistence
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import org.slf4j.LoggerFactory
@@ -81,7 +81,7 @@ class DualExecutionRepository(
     previous = findExecutionRepository(previousName, previousClass)
   }
 
-  private fun select(execution: PipelineExecutionImpl): ExecutionRepository {
+  private fun select(execution: PipelineExecution): ExecutionRepository {
     return select(execution.type, execution.id)
   }
 
@@ -108,23 +108,23 @@ class DualExecutionRepository(
     }
   }
 
-  override fun store(execution: PipelineExecutionImpl) {
+  override fun store(execution: PipelineExecution) {
     select(execution).store(execution)
   }
 
-  override fun storeStage(stage: StageExecutionImpl) {
+  override fun storeStage(stage: StageExecution) {
     select(stage.execution).storeStage(stage)
   }
 
-  override fun updateStageContext(stage: StageExecutionImpl) {
+  override fun updateStageContext(stage: StageExecution) {
     select(stage.execution).updateStageContext(stage)
   }
 
-  override fun removeStage(execution: PipelineExecutionImpl, stageId: String) {
+  override fun removeStage(execution: PipelineExecution, stageId: String) {
     select(execution).removeStage(execution, stageId)
   }
 
-  override fun addStage(stage: StageExecutionImpl) {
+  override fun addStage(stage: StageExecution) {
     select(stage.execution).addStage(stage)
   }
 
@@ -156,7 +156,7 @@ class DualExecutionRepository(
     select(type, id).updateStatus(type, id, status)
   }
 
-  override fun retrieve(type: ExecutionType, id: String): PipelineExecutionImpl {
+  override fun retrieve(type: ExecutionType, id: String): PipelineExecution {
     return select(type, id).retrieve(type, id)
   }
 
@@ -164,21 +164,21 @@ class DualExecutionRepository(
     return select(type, id).delete(type, id)
   }
 
-  override fun retrieve(type: ExecutionType): Observable<PipelineExecutionImpl> {
+  override fun retrieve(type: ExecutionType): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrieve(type),
       previous.retrieve(type)
     ).distinct { it.id }
   }
 
-  override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<PipelineExecutionImpl> {
+  override fun retrieve(type: ExecutionType, criteria: ExecutionCriteria): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrieve(type, criteria),
       previous.retrieve(type, criteria)
     ).distinct { it.id }
   }
 
-  override fun retrievePipelinesForApplication(application: String): Observable<PipelineExecutionImpl> {
+  override fun retrievePipelinesForApplication(application: String): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrievePipelinesForApplication(application),
       previous.retrievePipelinesForApplication(application)
@@ -188,7 +188,7 @@ class DualExecutionRepository(
   override fun retrievePipelinesForPipelineConfigId(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
-  ): Observable<PipelineExecutionImpl> {
+  ): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria),
       previous.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria)
@@ -200,7 +200,7 @@ class DualExecutionRepository(
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria
-  ): List<PipelineExecutionImpl> {
+  ): List<PipelineExecution> {
     return primary
       .retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
@@ -221,7 +221,7 @@ class DualExecutionRepository(
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionCriteria
-  ): List<PipelineExecutionImpl> {
+  ): List<PipelineExecution> {
     return primary
       .retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
@@ -239,7 +239,7 @@ class DualExecutionRepository(
   override fun retrieveOrchestrationsForApplication(
     application: String,
     criteria: ExecutionCriteria
-  ): Observable<PipelineExecutionImpl> {
+  ): Observable<PipelineExecution> {
     return Observable.merge(
       primary.retrieveOrchestrationsForApplication(application, criteria),
       previous.retrieveOrchestrationsForApplication(application, criteria)
@@ -250,20 +250,20 @@ class DualExecutionRepository(
     application: String,
     criteria: ExecutionCriteria,
     sorter: ExecutionComparator?
-  ): MutableList<PipelineExecutionImpl> {
+  ): MutableList<PipelineExecution> {
     val result = Observable.merge(
       Observable.from(primary.retrieveOrchestrationsForApplication(application, criteria, sorter)),
       Observable.from(previous.retrieveOrchestrationsForApplication(application, criteria, sorter))
     ).toList().toBlocking().single().distinctBy { it.id }.toMutableList()
 
     return if (sorter != null) {
-      result.asSequence().sortedWith(sorter as Comparator<in PipelineExecutionImpl>).toMutableList()
+      result.asSequence().sortedWith(sorter as Comparator<in PipelineExecution>).toMutableList()
     } else {
       result
     }
   }
 
-  override fun retrieveByCorrelationId(executionType: ExecutionType, correlationId: String): PipelineExecutionImpl {
+  override fun retrieveByCorrelationId(executionType: ExecutionType, correlationId: String): PipelineExecution {
     return try {
       primary.retrieveByCorrelationId(executionType, correlationId)
     } catch (e: ExecutionNotFoundException) {
@@ -271,7 +271,7 @@ class DualExecutionRepository(
     }
   }
 
-  override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecutionImpl {
+  override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
     return try {
       primary.retrieveOrchestrationForCorrelationId(correlationId)
     } catch (e: ExecutionNotFoundException) {
@@ -279,7 +279,7 @@ class DualExecutionRepository(
     }
   }
 
-  override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecutionImpl {
+  override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
     return try {
       primary.retrievePipelineForCorrelationId(correlationId)
     } catch (e: ExecutionNotFoundException) {
@@ -287,7 +287,7 @@ class DualExecutionRepository(
     }
   }
 
-  override fun retrieveBufferedExecutions(): MutableList<PipelineExecutionImpl> {
+  override fun retrieveBufferedExecutions(): MutableList<PipelineExecution> {
     return Observable.merge(
       Observable.from(primary.retrieveBufferedExecutions()),
       Observable.from(previous.retrieveBufferedExecutions())

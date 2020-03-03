@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.util
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
@@ -33,7 +34,7 @@ class ExpressionUtilsSpec extends Specification {
     new ContextParameterProcessor(),
     new StageDefinitionBuilderFactory() {
       @Override
-      StageDefinitionBuilder builderFor(@Nonnull StageExecutionImpl stage) {
+      StageDefinitionBuilder builderFor(@Nonnull StageExecution stage) {
         return new EvaluateVariablesStage(new ObjectMapper())
       }
     });

@@ -22,10 +22,10 @@ import com.netflix.frigga.Names
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -53,19 +53,19 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
   static final String REFRESH_TYPE = "Job"
 
   @Override @Nullable
-  TaskResult onTimeout(@Nonnull StageExecutionImpl stage) {
+  TaskResult onTimeout(@Nonnull StageExecution stage) {
     jobUtils.cancelWait(stage)
 
     return null
   }
 
   @Override
-  void onCancel(@Nonnull StageExecutionImpl stage) {
+  void onCancel(@Nonnull StageExecution stage) {
     jobUtils.cancelWait(stage)
   }
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     String account = getCredentials(stage)
     Map<String, List<String>> jobs = stage.context."deploy.jobs"
 

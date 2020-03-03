@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformatio
 
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ public class EvaluateCloudFormationChangeSetExecutionTask
     implements OverridableTimeoutRetryableTask {
 
   @Override
-  public @Nonnull TaskResult execute(StageExecutionImpl stage) {
+  public @Nonnull TaskResult execute(StageExecution stage) {
     String actionOnReplacement =
         (String) Optional.ofNullable(stage.getContext().get("actionOnReplacement")).orElse("ask");
 

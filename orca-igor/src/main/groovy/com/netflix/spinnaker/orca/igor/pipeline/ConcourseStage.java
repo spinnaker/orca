@@ -16,18 +16,18 @@
 
 package com.netflix.spinnaker.orca.igor.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.igor.tasks.WaitForConcourseJobCompletionTask;
 import com.netflix.spinnaker.orca.igor.tasks.WaitForConcourseJobStartTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ConcourseStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask("waitForConcourseJobStartTask", WaitForConcourseJobStartTask.class)
         .withTask("waitForConcourseJobCompletionTask", WaitForConcourseJobCompletionTask.class);

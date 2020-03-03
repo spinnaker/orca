@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import org.springframework.stereotype.Component;
 
 @Component
 public class NoopStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {}
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {}
 }

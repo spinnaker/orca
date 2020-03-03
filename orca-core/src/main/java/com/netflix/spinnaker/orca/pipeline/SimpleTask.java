@@ -20,13 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.plugins.proxy.ExtensionClassProvider;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -47,7 +47,7 @@ public class SimpleTask implements Task {
     this.simpleStage = simpleStage;
   }
 
-  private SimpleStageInput getStageInput(StageExecutionImpl stage, ObjectMapper objectMapper) {
+  private SimpleStageInput getStageInput(StageExecution stage, ObjectMapper objectMapper) {
     try {
       Class<?> extensionClass = ExtensionClassProvider.getExtensionClass(simpleStage);
       List<Class<?>> cArg = Arrays.asList(SimpleStageInput.class);
@@ -64,7 +64,7 @@ public class SimpleTask implements Task {
   }
 
   @Nonnull
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
     SimpleStageInput simpleStageInput = getStageInput(stage, objectMapper);
     SimpleStageOutput output = simpleStage.execute(simpleStageInput);

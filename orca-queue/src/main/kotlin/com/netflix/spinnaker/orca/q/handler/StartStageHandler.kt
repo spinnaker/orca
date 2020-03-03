@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.ext.firstTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -142,7 +143,7 @@ class StartStageHandler(
     }
   }
 
-  private fun trackResult(stage: StageExecutionImpl) {
+  private fun trackResult(stage: StageExecution) {
     // We only want to record invocations of parent-level stages; not synthetics
     if (stage.parentStageId != null) {
       return
@@ -162,19 +163,19 @@ class StartStageHandler(
 
   override val messageType = StartStage::class.java
 
-  private fun StageExecutionImpl.plan() {
+  private fun StageExecution.plan() {
     builder().let { builder ->
       // if we have a top level stage, ensure that context expressions are processed
       val mergedStage = if (this.parentStageId == null) this.withMergedContext() else this
       builder.addContextFlags(mergedStage)
       builder.buildTasks(mergedStage)
-      builder.buildBeforeStages(mergedStage) { it: StageExecutionImpl ->
+      builder.buildBeforeStages(mergedStage) {
         repository.addStage(it.withMergedContext())
       }
     }
   }
 
-  private fun StageExecutionImpl.start() {
+  private fun StageExecution.start() {
     val beforeStages = firstBeforeStages()
     if (beforeStages.isEmpty()) {
       val task = firstTask()
@@ -198,7 +199,7 @@ class StartStageHandler(
     }
   }
 
-  private fun StageExecutionImpl.shouldSkip(): Boolean {
+  private fun StageExecution.shouldSkip(): Boolean {
     if (this.execution.type != PIPELINE) {
       return false
     }
@@ -217,6 +218,6 @@ class StartStageHandler(
     return OptionalStageSupport.isOptional(clonedStage.withMergedContext(), contextParameterProcessor)
   }
 
-  private fun StageExecutionImpl.isAfterStartTimeExpiry(): Boolean =
+  private fun StageExecution.isAfterStartTimeExpiry(): Boolean =
     startTimeExpiry?.let { Instant.ofEpochMilli(it) }?.isBefore(clock.instant()) ?: false
 }

@@ -18,12 +18,12 @@ package com.netflix.spinnaker.orca.front50.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -31,6 +31,8 @@ import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 @Slf4j
@@ -52,8 +54,9 @@ class StartPipelineTask implements Task {
     this.executionPreprocessors = executionPreprocessors.orElse(Collections.emptyList())
   }
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Cannot start a stored pipeline, front50 is not enabled. Fix this by setting front50.enabled: true")
     }
@@ -129,7 +132,7 @@ class StartPipelineTask implements Task {
     }
 
     if (parentPipeline.authentication?.user) {
-      return parentPipeline.authentication.toKorkUser().get()
+      return PipelineExecutionImpl.AuthenticationHelper.toKorkUser(parentPipeline.authentication).get()
     }
 
     return null

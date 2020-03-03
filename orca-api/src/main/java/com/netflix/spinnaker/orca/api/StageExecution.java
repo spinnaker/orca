@@ -15,19 +15,197 @@
  */
 package com.netflix.spinnaker.orca.api;
 
+import static java.util.Collections.emptySet;
+
+import com.google.common.collect.ImmutableSet;
+import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public interface StageExecution {
 
   @Nonnull
   String getId();
 
-  /**
-   * TODO(rz): Would be nice to not represent this as a {@code Map<S, O>}. I quickly tried to change
-   * this to a StageExecutionContext interface that extended Map, but it cascaded a lot of changes
-   * in core that I wasn't comfortable with changing. Maybe later.
-   */
+  void setId(@Nonnull String id);
+
+  @Nullable
+  String getRefId();
+
+  void setRefId(@Nullable String refId);
+
+  @Nonnull
+  String getType();
+
+  void setType(@Nonnull String type);
+
+  @Nonnull
+  String getName();
+
+  void setName(@Nonnull String name);
+
+  /** TODO(rz): Rename to getPipelineExecution */
+  @Nonnull
+  PipelineExecution getExecution();
+
+  void setExecution(@Nonnull PipelineExecution execution);
+
+  /** TODO(rz): Convert to Instant */
+  @Nullable
+  Long getStartTime();
+
+  void setStartTime(@Nullable Long startTime);
+
+  /** TODO(rz): Convert to Instant */
+  @Nullable
+  Long getEndTime();
+
+  void setEndTime(@Nullable Long endTime);
+
+  /** TODO(rz): Convert to Instant */
+  @Nullable
+  Long getStartTimeExpiry();
+
+  void setStartTimeExpiry(@Nullable Long startTimeExpiry);
+
+  @Nonnull
+  ExecutionStatus getStatus();
+
+  void setStatus(@Nonnull ExecutionStatus status);
+
+  /** TODO(rz): Try to use StageContext instead? */
   @Nonnull
   Map<String, Object> getContext();
+
+  void setContext(@Nonnull Map<String, Object> context);
+
+  /** TODO(rz): getOutputs(Class)? */
+  @Nonnull
+  Map<String, Object> getOutputs();
+
+  void setOutputs(@Nonnull Map<String, Object> outputs);
+
+  @Nonnull
+  List<TaskExecution> getTasks();
+
+  void setTasks(@Nonnull List<TaskExecution> tasks);
+
+  @Nullable
+  SyntheticStageOwner getSyntheticStageOwner();
+
+  void setSyntheticStageOwner(@Nullable SyntheticStageOwner syntheticStageOwner);
+
+  @Nullable
+  String getParentStageId();
+
+  void setParentStageId(@Nullable String parentStageId);
+
+  @Nonnull
+  Collection<String> getRequisiteStageRefIds();
+
+  void setRequisiteStageRefIds(@Nonnull Collection<String> requisiteStageRefIds);
+
+  /** TODO(rz): Convert to Instant */
+  @Nullable
+  Long getScheduledTime();
+
+  void setScheduledTime(@Nullable Long scheduledTime);
+
+  @Nullable
+  LastModifiedDetails getLastModified();
+
+  void setLastModified(@Nullable LastModifiedDetails lastModified);
+
+  // ------------- InternalStageExecution?
+  // A lot of these methods are used in a single place somewhere in Orca. I don't know why we
+  // decided to put a bunch
+  // of these methods on the class...?
+
+  TaskExecution taskById(@Nonnull String taskId);
+
+  @Nonnull
+  List<StageExecution> ancestors();
+
+  @Nonnull
+  List<StageExecution> directAncestors();
+
+  @Nullable
+  StageExecution findAncestor(@Nonnull Predicate<StageExecution> predicate);
+
+  @Nonnull
+  List<StageExecution> allDownstreamStages();
+
+  @Nonnull
+  List<StageExecution> directChildren();
+
+  @Nonnull
+  <O> O mapTo(@Nonnull Class<O> type);
+
+  @Nonnull
+  <O> O mapTo(@Nullable String pointer, @Nonnull Class<O> type);
+
+  @Nonnull
+  <O> O decodeBase64(@Nullable String pointer, @Nonnull Class<O> type);
+
+  void resolveStrategyParams();
+
+  @Nullable
+  StageExecution getParent();
+
+  @Nonnull
+  StageExecution getTopLevelStage();
+
+  @Nonnull
+  Optional<StageExecution> getParentWithTimeout();
+
+  @Nonnull
+  Optional<Long> getTimeout();
+
+  boolean getAllowSiblingStagesToContinueOnFailure();
+
+  boolean getContinuePipelineOnFailure();
+
+  boolean isJoin();
+
+  @Nonnull
+  List<StageExecution> downstreamStages();
+
+  class LastModifiedDetails implements Serializable {
+
+    private String user;
+    private Collection<String> allowedAccounts = emptySet();
+
+    /** TODO(rz): Convert to Instant */
+    private Long lastModifiedTime;
+
+    public @Nonnull String getUser() {
+      return user;
+    }
+
+    public void setUser(@Nonnull String user) {
+      this.user = user;
+    }
+
+    public @Nonnull Collection<String> getAllowedAccounts() {
+      return ImmutableSet.copyOf(allowedAccounts);
+    }
+
+    public void setAllowedAccounts(@Nonnull Collection<String> allowedAccounts) {
+      this.allowedAccounts = ImmutableSet.copyOf(allowedAccounts);
+    }
+
+    public @Nonnull Long getLastModifiedTime() {
+      return lastModifiedTime;
+    }
+
+    public void setLastModifiedTime(@Nonnull Long lastModifiedTime) {
+      this.lastModifiedTime = lastModifiedTime;
+    }
+  }
 }

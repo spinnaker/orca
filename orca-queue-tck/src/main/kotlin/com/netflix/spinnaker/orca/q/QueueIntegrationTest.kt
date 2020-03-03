@@ -48,7 +48,7 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -532,7 +532,7 @@ abstract class QueueIntegrationTest {
     }
   }
 
-  private fun StageExecutionImpl.wasShorterThan(lengthMs: Long): Boolean {
+  private fun StageExecution.wasShorterThan(lengthMs: Long): Boolean {
     val start = startTime
     val end = endTime
     return if (start == null || end == null) {
@@ -733,7 +733,7 @@ abstract class QueueIntegrationTest {
 
     whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doAnswer {
-      val stage = it.arguments.first() as StageExecutionImpl
+      val stage = it.arguments.first() as StageExecution
       if (stage.refId == "1") {
         TaskResult.builder(SUCCEEDED).outputs(mapOf("foo" to false)).build()
       } else {
@@ -790,7 +790,7 @@ abstract class QueueIntegrationTest {
 
     whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doAnswer {
-      val stage = it.arguments.first() as StageExecutionImpl
+      val stage = it.arguments.first() as StageExecution
       if (stage.refId == "1") {
         TaskResult.builder(SUCCEEDED).outputs(mapOf("foo" to false)).build()
       } else {
@@ -827,7 +827,7 @@ abstract class QueueIntegrationTest {
 
     whenever(dummyTask.getDynamicTimeout(any())) doReturn 2000L
     whenever(dummyTask.execute(any())) doAnswer {
-      val stage = it.arguments.first() as StageExecutionImpl
+      val stage = it.arguments.first() as StageExecution
       if (stage.refId == "1") {
         TaskResult.ofStatus(TERMINAL)
       } else {
@@ -873,7 +873,7 @@ class TestConfig {
 
   @Bean
   fun dummyStage() = object : StageDefinitionBuilder {
-    override fun taskGraph(stage: StageExecutionImpl, builder: Builder) {
+    override fun taskGraph(stage: StageExecution, builder: Builder) {
       builder.withTask<DummyTask>("dummy")
     }
 
@@ -882,7 +882,7 @@ class TestConfig {
 
   @Bean
   fun parallelStage() = object : StageDefinitionBuilder {
-    override fun beforeStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+    override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
       listOf("us-east-1", "us-west-2", "eu-west-1")
         .map { region ->
           newStage(parent.execution, "dummy", "dummy $region", parent.context + mapOf("region" to region), parent, STAGE_BEFORE)
@@ -897,11 +897,11 @@ class TestConfig {
   fun syntheticFailureStage() = object : StageDefinitionBuilder {
     override fun getType() = "syntheticFailure"
 
-    override fun taskGraph(stage: StageExecutionImpl, builder: Builder) {
+    override fun taskGraph(stage: StageExecution, builder: Builder) {
       builder.withTask<DummyTask>("dummy")
     }
 
-    override fun onFailureStages(stage: StageExecutionImpl, graph: StageGraphBuilder) {
+    override fun onFailureStages(stage: StageExecution, graph: StageGraphBuilder) {
       graph.add {
         it.type = "dummy"
         it.name = "onFailure1"
@@ -919,13 +919,13 @@ class TestConfig {
   @Bean
   fun pipelineStage(@Autowired repository: ExecutionRepository): StageDefinitionBuilder =
     object : CancellableStage, StageDefinitionBuilder {
-      override fun taskGraph(stage: StageExecutionImpl, builder: Builder) {
+      override fun taskGraph(stage: StageExecution, builder: Builder) {
         builder.withTask<DummyTask>("dummy")
       }
 
       override fun getType() = "pipeline"
 
-      override fun cancel(stage: StageExecutionImpl?): CancellableStage.Result {
+      override fun cancel(stage: StageExecution?): CancellableStage.Result {
         repository.cancel(PIPELINE, stage!!.context["executionId"] as String)
         return CancellableStage.Result(stage, mapOf("foo" to "bar"))
       }

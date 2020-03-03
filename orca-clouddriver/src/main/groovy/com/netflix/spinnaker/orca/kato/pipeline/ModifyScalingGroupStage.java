@@ -15,10 +15,10 @@
  */
 package com.netflix.spinnaker.orca.kato.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.kato.tasks.ModifyScalingGroupTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import groovy.transform.CompileStatic;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 public class ModifyScalingGroupStage implements StageDefinitionBuilder {
 
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull Builder builder) {
     builder.withTask("modifyScalingGroup", ModifyScalingGroupTask.class);
   }
 }

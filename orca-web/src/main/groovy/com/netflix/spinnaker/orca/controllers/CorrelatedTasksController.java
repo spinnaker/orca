@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toList;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
@@ -38,7 +39,7 @@ public class CorrelatedTasksController {
         .collect(toList());
   }
 
-  private PipelineExecutionImpl getCorrelated(ExecutionType executionType, String correlationId) {
+  private PipelineExecution getCorrelated(ExecutionType executionType, String correlationId) {
     try {
       return executionRepository.retrieveByCorrelationId(executionType, correlationId);
     } catch (ExecutionNotFoundException ignored) {

@@ -20,6 +20,7 @@ import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
@@ -65,7 +66,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     return [:]
   }
 
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
     def operation = convert(stage)

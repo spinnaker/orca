@@ -20,8 +20,8 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.PercentileTimer
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.DelegatingExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -60,31 +60,31 @@ class RedisInstrumentedExecutionRepository(
 
   override fun getDelegate() = executionRepository
 
-  override fun store(execution: PipelineExecutionImpl) {
+  override fun store(execution: PipelineExecution) {
     withMetrics("store") {
       executionRepository.store(execution)
     }
   }
 
-  override fun storeStage(stage: StageExecutionImpl) {
+  override fun storeStage(stage: StageExecution) {
     withMetrics("storeStage") {
       executionRepository.storeStage(stage)
     }
   }
 
-  override fun updateStageContext(stage: StageExecutionImpl) {
+  override fun updateStageContext(stage: StageExecution) {
     withMetrics("updateStageContext") {
       executionRepository.updateStageContext(stage)
     }
   }
 
-  override fun removeStage(execution: PipelineExecutionImpl, stageId: String) {
+  override fun removeStage(execution: PipelineExecution, stageId: String) {
     withMetrics("removeStage") {
       executionRepository.removeStage(execution, stageId)
     }
   }
 
-  override fun addStage(stage: StageExecutionImpl) {
+  override fun addStage(stage: StageExecution) {
     withMetrics("addStage") {
       executionRepository.addStage(stage)
     }
@@ -138,25 +138,25 @@ class RedisInstrumentedExecutionRepository(
     }
   }
 
-  override fun retrieve(type: ExecutionType, id: String): PipelineExecutionImpl {
+  override fun retrieve(type: ExecutionType, id: String): PipelineExecution {
     return withMetrics("retrieve2") {
       executionRepository.retrieve(type, id)
     }
   }
 
-  override fun retrieve(type: ExecutionType): Observable<PipelineExecutionImpl> {
+  override fun retrieve(type: ExecutionType): Observable<PipelineExecution> {
     return withMetrics("retrieve1") {
       executionRepository.retrieve(type)
     }
   }
 
-  override fun retrieve(type: ExecutionType, criteria: ExecutionRepository.ExecutionCriteria): Observable<PipelineExecutionImpl> {
+  override fun retrieve(type: ExecutionType, criteria: ExecutionRepository.ExecutionCriteria): Observable<PipelineExecution> {
     return withMetrics("retrieve3") {
       executionRepository.retrieve(type, criteria)
     }
   }
 
-  override fun retrieveBufferedExecutions(): MutableList<PipelineExecutionImpl> {
+  override fun retrieveBufferedExecutions(): MutableList<PipelineExecution> {
     return withMetrics("retrieveBufferedExecutions") {
       executionRepository.retrieveBufferedExecutions()
     }
@@ -165,7 +165,7 @@ class RedisInstrumentedExecutionRepository(
   override fun retrieveOrchestrationsForApplication(
     application: String,
     criteria: ExecutionRepository.ExecutionCriteria
-  ): Observable<PipelineExecutionImpl> {
+  ): Observable<PipelineExecution> {
     return withMetrics("retrieveOrchestrationsForApplication") {
       executionRepository.retrieveOrchestrationsForApplication(application, criteria)
     }
@@ -175,13 +175,13 @@ class RedisInstrumentedExecutionRepository(
     application: String,
     criteria: ExecutionRepository.ExecutionCriteria,
     sorter: ExecutionComparator?
-  ): MutableList<PipelineExecutionImpl> {
+  ): MutableList<PipelineExecution> {
     return withMetrics("retrieveOrchestrationsForApplication3") {
       executionRepository.retrieveOrchestrationsForApplication(application, criteria, sorter)
     }
   }
 
-  override fun retrievePipelinesForApplication(application: String): Observable<PipelineExecutionImpl> {
+  override fun retrievePipelinesForApplication(application: String): Observable<PipelineExecution> {
     return withMetrics("retrievePipelinesForApplication") {
       executionRepository.retrievePipelinesForApplication(application)
     }
@@ -190,25 +190,25 @@ class RedisInstrumentedExecutionRepository(
   override fun retrievePipelinesForPipelineConfigId(
     pipelineConfigId: String,
     criteria: ExecutionRepository.ExecutionCriteria
-  ): Observable<PipelineExecutionImpl> {
+  ): Observable<PipelineExecution> {
     return withMetrics("retrievePipelinesForPipelineConfigId") {
       executionRepository.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria)
     }
   }
 
-  override fun retrieveByCorrelationId(executionType: ExecutionType, correlationId: String): PipelineExecutionImpl {
+  override fun retrieveByCorrelationId(executionType: ExecutionType, correlationId: String): PipelineExecution {
     return withMetrics("retrieveByCorrelationId") {
       executionRepository.retrieveByCorrelationId(executionType, correlationId)
     }
   }
 
-  override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecutionImpl {
+  override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
     return withMetrics("retrieveOrchestrationForCorrelationId") {
       executionRepository.retrieveOrchestrationForCorrelationId(correlationId)
     }
   }
 
-  override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecutionImpl {
+  override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
     return withMetrics("retrievePipelineForCorrelationId") {
       executionRepository.retrievePipelineForCorrelationId(correlationId)
     }
@@ -231,7 +231,7 @@ class RedisInstrumentedExecutionRepository(
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionRepository.ExecutionCriteria
-  ): List<PipelineExecutionImpl> {
+  ): List<PipelineExecution> {
     return withMetrics("retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary") {
       executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,
@@ -246,7 +246,7 @@ class RedisInstrumentedExecutionRepository(
     buildTimeStartBoundary: Long,
     buildTimeEndBoundary: Long,
     executionCriteria: ExecutionRepository.ExecutionCriteria
-  ): List<PipelineExecutionImpl> {
+  ): List<PipelineExecution> {
     return withMetrics("retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary") {
       executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
         pipelineConfigIds,

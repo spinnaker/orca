@@ -21,6 +21,7 @@ import com.netflix.frigga.ami.AppVersion
 import com.netflix.spinnaker.orca.CancellableStage
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
@@ -40,6 +41,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
+
 import static java.util.Collections.emptyList
 
 @Component
@@ -64,7 +68,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
   }
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("completeDeployCanary", CompleteDeployCanaryTask)
   }
 
@@ -149,8 +153,9 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
       this.mortService = mortService
     }
 
+    @Nonnull
     @CompileDynamic
-    TaskResult execute(StageExecutionImpl stage) {
+    TaskResult execute(@Nonnull StageExecution stage) {
       def context = stage.context
       def allStages = stage.execution.stages
       def deployStages = allStages.findAll {

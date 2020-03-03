@@ -42,10 +42,10 @@ import com.netflix.spinnaker.orca.ext.failureStatus
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -181,7 +181,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun trackResult(stage: StageExecutionImpl, thisInvocationStartTimeMs: Long, taskModel: TaskExecution, status: ExecutionStatus) {
+  private fun trackResult(stage: StageExecution, thisInvocationStartTimeMs: Long, taskModel: TaskExecution, status: ExecutionStatus) {
     val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
     val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
 
@@ -198,7 +198,7 @@ class RunTaskHandler(
 
   override val messageType = RunTask::class.java
 
-  private fun RunTask.withTask(block: (StageExecutionImpl, TaskExecution, Task) -> Unit) =
+  private fun RunTask.withTask(block: (StageExecution, TaskExecution, Task) -> Unit) =
     withTask { stage, taskModel ->
       tasks
         .find { taskType.isAssignableFrom(it.javaClass) }
@@ -211,7 +211,7 @@ class RunTaskHandler(
         }
     }
 
-  private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecutionImpl): TemporalAmount =
+  private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecution): TemporalAmount =
     when (this) {
       is RetryableTask -> Duration.ofMillis(
         retryableBackOffPeriod(taskModel, stage).coerceAtMost(taskExecutionInterceptors.maxBackoff())
@@ -228,7 +228,7 @@ class RunTaskHandler(
    */
   private fun RetryableTask.retryableBackOffPeriod(
     taskModel: TaskExecution,
-    stage: StageExecutionImpl
+    stage: StageExecution
   ): Long {
     val dynamicBackOffPeriod = getDynamicBackoffPeriod(
       stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime ?: 0))
@@ -272,7 +272,7 @@ class RunTaskHandler(
     return DurationFormatUtils.formatDurationWords(timeout, true, true)
   }
 
-  private fun Task.checkForTimeout(stage: StageExecutionImpl, taskModel: TaskExecution, message: Message) {
+  private fun Task.checkForTimeout(stage: StageExecution, taskModel: TaskExecution, message: Message) {
     if (stage.type == RestrictExecutionDuringTimeWindow.TYPE) {
       return
     } else {
@@ -281,7 +281,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun Task.checkForTaskTimeout(taskModel: TaskExecution, stage: StageExecutionImpl, message: Message) {
+  private fun Task.checkForTaskTimeout(taskModel: TaskExecution, stage: StageExecution, message: Message) {
     if (this is RetryableTask) {
       val startTime = taskModel.startTime.toInstant()
       if (startTime != null) {
@@ -307,7 +307,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun checkForStageTimeout(stage: StageExecutionImpl) {
+  private fun checkForStageTimeout(stage: StageExecution) {
     stage.parentWithTimeout.ifPresent {
       val startTime = it.startTime.toInstant()
       if (startTime != null) {
@@ -322,11 +322,11 @@ class RunTaskHandler(
     }
   }
 
-  private val StageExecutionImpl.executionWindow: StageExecutionImpl?
+  private val StageExecution.executionWindow: StageExecution?
     get() = beforeStages()
       .firstOrNull { it.type == RestrictExecutionDuringTimeWindow.TYPE }
 
-  private val StageExecutionImpl.duration: Duration
+  private val StageExecution.duration: Duration
     get() = run {
       if (startTime == null || endTime == null) {
         throw IllegalStateException("Only valid on completed stages")
@@ -350,7 +350,7 @@ class RunTaskHandler(
         ))
     )
 
-  private fun PipelineExecutionImpl.pausedDurationRelativeTo(instant: Instant?): Duration {
+  private fun PipelineExecution.pausedDurationRelativeTo(instant: Instant?): Duration {
     val pausedDetails = paused
     return if (pausedDetails != null) {
       if (pausedDetails.pauseTime.toInstant()?.isAfter(instant) == true) {
@@ -359,7 +359,7 @@ class RunTaskHandler(
     } else ZERO
   }
 
-  private fun StageExecutionImpl.processTaskOutput(result: TaskResult) {
+  private fun StageExecution.processTaskOutput(result: TaskResult) {
     val filteredOutputs = result.outputs.filterKeys { it != "stageTimeoutMs" }
     if (result.context.isNotEmpty() || filteredOutputs.isNotEmpty()) {
       context.putAll(result.context)
@@ -368,7 +368,7 @@ class RunTaskHandler(
     }
   }
 
-  private fun StageExecutionImpl.withLoggingContext(taskModel: TaskExecution, block: () -> Unit) {
+  private fun StageExecution.withLoggingContext(taskModel: TaskExecution, block: () -> Unit) {
     try {
       MDC.put("stageType", type)
       MDC.put("taskType", taskModel.implementingClass)

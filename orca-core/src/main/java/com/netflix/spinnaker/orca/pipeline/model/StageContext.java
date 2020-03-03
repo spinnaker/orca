@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.collect.ForwardingMap;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.Trigger;
 import java.util.HashMap;
 import java.util.List;
@@ -27,10 +28,10 @@ import javax.annotation.Nullable;
 
 public class StageContext extends ForwardingMap<String, Object> implements Map<String, Object> {
 
-  private final StageExecutionImpl stage;
+  private final StageExecution stage;
   private final Map<String, Object> delegate;
 
-  public StageContext(StageExecutionImpl stage) {
+  public StageContext(StageExecution stage) {
     this(stage, new HashMap<>());
   }
 
@@ -38,7 +39,7 @@ public class StageContext extends ForwardingMap<String, Object> implements Map<S
     this(stageContext.stage, new HashMap<>(stageContext.delegate));
   }
 
-  public StageContext(StageExecutionImpl stage, Map<String, Object> delegate) {
+  public StageContext(StageExecution stage, Map<String, Object> delegate) {
     this.stage = stage;
     this.delegate = delegate;
   }

@@ -23,12 +23,12 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.FAILED_CONTINUE
 import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.REDIRECT
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.events.TaskComplete
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.ext.nextTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.CompleteStage
@@ -104,7 +104,7 @@ class CompleteTaskHandler(
 
   override val messageType = CompleteTask::class.java
 
-  private fun StageExecutionImpl.handleRedirect() {
+  private fun StageExecution.handleRedirect() {
     tasks.let { tasks ->
       val start = tasks.indexOfFirst { it.isLoopStart }
       val end = tasks.indexOfLast { it.isLoopEnd }
@@ -117,7 +117,7 @@ class CompleteTaskHandler(
     }
   }
 
-  private fun trackResult(stage: StageExecutionImpl, taskModel: TaskExecution, status: ExecutionStatus) {
+  private fun trackResult(stage: StageExecution, taskModel: TaskExecution, status: ExecutionStatus) {
     val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
     val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
 

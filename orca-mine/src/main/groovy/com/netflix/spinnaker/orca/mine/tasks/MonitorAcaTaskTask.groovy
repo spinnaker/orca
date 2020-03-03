@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.mine.tasks
 
 import com.netflix.spinnaker.security.AuthenticatedRequest
+import com.netflix.spinnaker.orca.api.StageExecution
 
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
@@ -24,7 +25,6 @@ import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.mine.MineService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -40,7 +40,7 @@ class MonitorAcaTaskTask extends AbstractCloudProviderAwareTask implements Overr
   MineService mineService
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     Map context = stage.context
     Map outputs = [
       canary : context.canary

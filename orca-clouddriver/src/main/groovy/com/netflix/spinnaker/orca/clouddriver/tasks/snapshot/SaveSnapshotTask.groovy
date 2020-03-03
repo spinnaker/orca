@@ -18,12 +18,14 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.snapshot
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class SaveSnapshotTask extends AbstractCloudProviderAwareTask implements Task {
@@ -31,8 +33,9 @@ class SaveSnapshotTask extends AbstractCloudProviderAwareTask implements Task {
   @Autowired
   KatoService kato
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
     def taskId = kato.requestOperations(cloudProvider, [[saveSnapshot: stage.context]])

@@ -18,11 +18,12 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.parent
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -55,7 +56,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
     return exceptionHandler?.handle(taskName ?: "unspecified", ex)
   }
 
-  fun TaskLevel.withTask(block: (StageExecutionImpl, TaskExecution) -> Unit) =
+  fun TaskLevel.withTask(block: (StageExecution, TaskExecution) -> Unit) =
     withStage { stage ->
       stage
         .taskById(taskId)
@@ -69,7 +70,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
         }
     }
 
-  fun StageLevel.withStage(block: (StageExecutionImpl) -> Unit) =
+  fun StageLevel.withStage(block: (StageExecution) -> Unit) =
     withExecution { execution ->
       try {
         execution
@@ -88,7 +89,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
       }
     }
 
-  fun ExecutionLevel.withExecution(block: (PipelineExecutionImpl) -> Unit) =
+  fun ExecutionLevel.withExecution(block: (PipelineExecution) -> Unit) =
     try {
       val execution = repository.retrieve(executionType, executionId)
       block.invoke(execution)
@@ -96,7 +97,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
       queue.push(InvalidExecutionId(this))
     }
 
-  fun StageExecutionImpl.startNext() {
+  fun StageExecution.startNext() {
     execution.let { execution ->
       val downstreamStages = downstreamStages()
       val phase = syntheticStageOwner
@@ -112,7 +113,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
     }
   }
 
-  fun PipelineExecutionImpl.shouldQueue(): Boolean {
+  fun PipelineExecution.shouldQueue(): Boolean {
     val configId = pipelineConfigId
     return when {
       !isLimitConcurrent -> false

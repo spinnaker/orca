@@ -17,13 +17,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestForceCacheRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.UndoRolloutManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.WaitForManifestStableTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,7 +31,7 @@ public class UndoRolloutManifestStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "undoRolloutManifest";
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
         .withTask(UndoRolloutManifestTask.TASK_NAME, UndoRolloutManifestTask.class)
         .withTask("monitorUndoRollout", MonitorKatoTask.class)

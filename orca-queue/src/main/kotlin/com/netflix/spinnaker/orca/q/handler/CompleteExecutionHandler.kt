@@ -26,10 +26,10 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelStage
 import com.netflix.spinnaker.orca.q.CompleteExecution
@@ -86,7 +86,7 @@ class CompleteExecutionHandler(
   }
 
   private fun CompleteExecution.determineFinalStatus(
-    execution: PipelineExecutionImpl,
+    execution: PipelineExecution,
     block: (ExecutionStatus) -> Unit
   ) {
     execution.topLevelStages.let { stages ->
@@ -106,15 +106,15 @@ class CompleteExecutionHandler(
     }
   }
 
-  private val PipelineExecutionImpl.topLevelStages
-    get(): List<StageExecutionImpl> = stages.filter { it.parentStageId == null }
+  private val PipelineExecution.topLevelStages
+    get(): List<StageExecution> = stages.filter { it.parentStageId == null }
 
-  private fun PipelineExecutionImpl.shouldOverrideSuccess(): Boolean =
+  private fun PipelineExecution.shouldOverrideSuccess(): Boolean =
     stages
       .filter { it.status == STOPPED }
       .any { it.context["completeOtherBranchesThenFail"] == true }
 
-  private fun List<StageExecutionImpl>.otherBranchesIncomplete() =
+  private fun List<StageExecution>.otherBranchesIncomplete() =
     any { it.status == RUNNING } ||
       any { it.status == NOT_STARTED && it.allUpstreamStagesComplete() }
 

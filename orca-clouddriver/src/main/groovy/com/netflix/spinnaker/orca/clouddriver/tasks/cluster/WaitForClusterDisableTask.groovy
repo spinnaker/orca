@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
@@ -49,7 +50,7 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
   }
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     def taskResult = super.execute(stage)
 
     def duration = System.currentTimeMillis() - stage.startTime

@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
-import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl.AuthenticationDetails;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -28,6 +27,7 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.Trigger;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineBuilder;
@@ -80,10 +80,10 @@ public class ExecutionLauncher {
     this.registry = registry;
   }
 
-  public PipelineExecutionImpl start(ExecutionType type, String configJson) throws Exception {
+  public PipelineExecution start(ExecutionType type, String configJson) throws Exception {
     final PipelineExecutionImpl execution = parse(type, configJson);
 
-    final PipelineExecutionImpl existingExecution = checkForCorrelatedExecution(execution);
+    final PipelineExecution existingExecution = checkForCorrelatedExecution(execution);
     if (existingExecution != null) {
       return existingExecution;
     }
@@ -129,7 +129,7 @@ public class ExecutionLauncher {
     return execution;
   }
 
-  private PipelineExecutionImpl checkForCorrelatedExecution(PipelineExecutionImpl execution) {
+  private PipelineExecution checkForCorrelatedExecution(PipelineExecutionImpl execution) {
     if (execution.getTrigger().getCorrelationId() == null) {
       return null;
     }
@@ -137,7 +137,7 @@ public class ExecutionLauncher {
     Trigger trigger = execution.getTrigger();
 
     try {
-      PipelineExecutionImpl o =
+      PipelineExecution o =
           executionRepository.retrieveByCorrelationId(
               execution.getType(), trigger.getCorrelationId());
       log.info(
@@ -157,7 +157,7 @@ public class ExecutionLauncher {
   }
 
   @SuppressWarnings("unchecked")
-  private PipelineExecutionImpl handleStartupFailure(
+  private PipelineExecution handleStartupFailure(
       PipelineExecutionImpl execution, Throwable failure) {
     final String canceledBy = "system";
     String reason = "Failed on startup: " + failure.getMessage();
@@ -256,7 +256,8 @@ public class ExecutionLauncher {
 
     orchestration.setBuildTime(clock.millis());
     orchestration.setAuthentication(
-        AuthenticationDetails.build().orElse(new AuthenticationDetails()));
+        PipelineExecutionImpl.AuthenticationHelper.build()
+            .orElse(new PipelineExecution.AuthenticationDetails()));
     orchestration.setOrigin((String) config.getOrDefault("origin", "unknown"));
     orchestration.setStartTimeExpiry((Long) config.get("startTimeExpiry"));
     orchestration.setSpelEvaluator(getString(config, "spelEvaluator"));

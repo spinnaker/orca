@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
@@ -43,7 +44,7 @@ public class CloudFoundryDeployServiceTask extends AbstractCloudProviderAwareTas
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage);
     String account = getCredentials(stage);
     Map<String, Object> context = bindArtifactIfNecessary(stage);

@@ -41,7 +41,7 @@ class PipelineExecutionImplSpec extends Specification {
 
   def "should return Optional.empty if no authenticated details available"() {
     expect:
-    !PipelineExecutionImpl.AuthenticationDetails.build().present
+    !PipelineExecutionImpl.AuthenticationHelper.build().present
   }
 
   def "should build AuthenticationDetails containing authenticated details"() {
@@ -50,7 +50,7 @@ class PipelineExecutionImplSpec extends Specification {
     MDC.put(Header.ACCOUNTS.header, "Account1,Account2")
 
     when:
-    def authenticationDetails = PipelineExecutionImpl.AuthenticationDetails.build().get()
+    def authenticationDetails = PipelineExecutionImpl.AuthenticationHelper.build().get()
 
     then:
     authenticationDetails.user == "SpinnakerUser"

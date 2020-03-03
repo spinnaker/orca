@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-
 import com.netflix.spinnaker.orca.api.PipelineExecution;
 
 import javax.annotation.Nonnull;

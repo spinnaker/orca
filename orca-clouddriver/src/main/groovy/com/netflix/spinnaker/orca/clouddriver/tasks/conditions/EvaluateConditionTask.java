@@ -20,6 +20,7 @@ import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.Condition;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.ConditionConfigurationProperties;
@@ -77,7 +78,7 @@ public class EvaluateConditionTask implements RetryableTask {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     final WaitForConditionContext ctx = stage.mapTo(WaitForConditionContext.class);
     if (conditionsConfigurationProperties.isSkipWait()) {
       log.debug(

@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca.igor.pipeline;
 
 import com.netflix.spinnaker.orca.CancellableStage;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.tasks.GetAwsCodeBuildArtifactsTask;
 import com.netflix.spinnaker.orca.igor.tasks.MonitorAwsCodeBuildTask;
@@ -39,7 +40,7 @@ public class AwsCodeBuildStage implements StageDefinitionBuilder, CancellableSta
   private final StopAwsCodeBuildTask stopAwsCodeBuildTask;
 
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask("startAwsCodeBuildTask", StartAwsCodeBuildTask.class)
         .withTask("monitorAwsCodeBuildTask", MonitorAwsCodeBuildTask.class)

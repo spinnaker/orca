@@ -20,17 +20,18 @@ import static com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce.Wait
 
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -46,8 +47,9 @@ public class UpsertGceAutoscalingPolicyTask extends AbstractCloudProviderAwareTa
     return "upsertScalingPolicy";
   }
 
+  @Nonnull
   @Override
-  public TaskResult execute(StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
     TargetServerGroup targetServerGroup;
     if (TargetServerGroup.isDynamicallyBound(stage)) {

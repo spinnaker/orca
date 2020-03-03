@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.bakery.pipeline
 import com.google.common.base.Joiner
 import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import java.time.Clock
@@ -60,7 +61,7 @@ class BakeStage implements StageDefinitionBuilder {
   Clock clock = systemUTC()
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     if (isTopLevelStage(stage)) {
       builder
         .withTask("completeParallel", CompleteParallelBakeTask)
@@ -74,7 +75,7 @@ class BakeStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     if (isTopLevelStage(parent)) {
       parallelContexts(parent)
         .collect({ context ->
@@ -136,7 +137,8 @@ class BakeStage implements StageDefinitionBuilder {
       this.dynamicConfigService = dynamicConfigService
     }
 
-    TaskResult execute(StageExecutionImpl stage) {
+    @Nonnull
+    TaskResult execute(@Nonnull StageExecution stage) {
       def bakeInitializationStages = stage.execution.stages.findAll {
         it.parentStageId == stage.parentStageId && it.status == ExecutionStatus.RUNNING
       }

@@ -22,8 +22,8 @@ import com.jayway.jsonpath.PathNotFoundException;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -75,7 +75,7 @@ public class ManifestLabelValueExpressionFunctionProvider implements ExpressionF
       throw new IllegalArgumentException("A labelKey is required for this function");
     }
 
-    Optional<StageExecutionImpl> stage =
+    Optional<StageExecution> stage =
         execution.getStages().stream()
             .filter(
                 s ->

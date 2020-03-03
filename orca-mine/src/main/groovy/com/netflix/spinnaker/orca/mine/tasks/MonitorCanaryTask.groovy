@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.mine.tasks
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
@@ -43,7 +45,7 @@ class MonitorCanaryTask extends AbstractCloudProviderAwareTask implements Overri
   KatoService katoService
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     Map context = stage.context
     // add a 15-minute buffer to accommodate backoffs, etc.
     Integer canaryDuration = Integer.parseInt((stage.context.canary.canaryConfig?.lifetimeHours ?: "2").toString())

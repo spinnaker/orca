@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.api.StageExecution
 
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.kork.core.RetrySupport
@@ -61,7 +62,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
   DynamicConfigService dynamicConfigService
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("restoreMinCapacity", ApplySourceServerGroupCapacityTask)
       .withTask("waitForCapacityMatch", MonitorKatoTask)
@@ -72,7 +73,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void afterStages(@Nonnull StageExecutionImpl stage, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     try {
       def taggingEnabled = featuresService.areEntityTagsAvailable()
       if (!taggingEnabled) {

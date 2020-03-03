@@ -16,18 +16,14 @@
 
 package com.netflix.spinnaker.orca.kayenta.pipeline
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.FindImageFromClusterStage
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
-import com.netflix.spinnaker.orca.kayenta.model.controlServerGroups
-import com.netflix.spinnaker.orca.kayenta.model.deployments
-import com.netflix.spinnaker.orca.kayenta.model.experimentServerGroups
-import com.netflix.spinnaker.orca.kayenta.model.regions
 import com.netflix.spinnaker.orca.kayenta.tasks.PropagateDeployedServerGroupScopes
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
@@ -40,7 +36,7 @@ class DeployCanaryServerGroupsStage : StageDefinitionBuilder {
     const val DEPLOY_EXPERIMENT_SERVER_GROUPS = "Deploy experiment server groups"
   }
 
-  override fun beforeStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     parent.deployments.also { deployments ->
       // find image stage for the control server groups
       graph.add {
@@ -74,7 +70,7 @@ class DeployCanaryServerGroupsStage : StageDefinitionBuilder {
     }
   }
 
-  override fun taskGraph(stage: StageExecutionImpl, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<PropagateDeployedServerGroupScopes>("propagateDeployedServerGroupScopes")
   }
 }

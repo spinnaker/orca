@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import javax.annotation.Nonnull;
 
 @FunctionalInterface
 public interface StageDefinitionBuilderFactory {
   @Nonnull
-  StageDefinitionBuilder builderFor(@Nonnull StageExecutionImpl stage);
+  StageDefinitionBuilder builderFor(@Nonnull StageExecution stage);
 }

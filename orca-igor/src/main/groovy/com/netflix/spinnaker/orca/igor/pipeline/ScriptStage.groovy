@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.igor.pipeline
 
 import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.igor.tasks.GetBuildPropertiesTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
@@ -38,7 +39,7 @@ class ScriptStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired StopJenkinsJobTask stopJenkinsJobTask
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("startScript", StartScriptTask)
       .withTask("waitForScriptStart", MonitorQueuedJenkinsJobTask)
@@ -50,7 +51,7 @@ class ScriptStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  void prepareStageForRestart(StageExecutionImpl stage) {
+  void prepareStageForRestart(StageExecution stage) {
     if (stage.context.buildInfo) {
       if (!stage.context.restartDetails) stage.context.restartDetails = [:]
       stage.context.restartDetails["previousBuildInfo"] = stage.context.buildInfo

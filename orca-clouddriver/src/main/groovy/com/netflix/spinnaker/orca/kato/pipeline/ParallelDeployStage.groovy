@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
@@ -49,12 +50,12 @@ class ParallelDeployStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("completeParallelDeploy", CompleteParallelDeployTask)
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     parallelContexts(parent)
       .collect({ context ->
         def type = isClone(parent) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
@@ -167,7 +168,8 @@ class ParallelDeployStage implements StageDefinitionBuilder {
   @Slf4j
   @CompileStatic
   static class CompleteParallelDeployTask implements Task {
-    TaskResult execute(StageExecutionImpl stage) {
+    @Nonnull
+    TaskResult execute(@Nonnull StageExecution stage) {
       log.info("Completed Parallel Deploy")
       TaskResult.SUCCEEDED
     }

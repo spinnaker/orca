@@ -21,6 +21,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.ext.afterStages
 import com.netflix.spinnaker.orca.ext.allAfterStagesSuccessful
@@ -28,8 +30,6 @@ import com.netflix.spinnaker.orca.ext.allBeforeStagesSuccessful
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.isInitial
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CompleteExecution
@@ -64,7 +64,7 @@ class HydrateQueueCommand(
   private val log = LoggerFactory.getLogger(javaClass)
 
   override fun invoke(p1: HydrateQueueInput): HydrateQueueOutput {
-    val pInTimeWindow = { execution: PipelineExecutionImpl -> inTimeWindow(p1, execution) }
+    val pInTimeWindow = { execution: PipelineExecution -> inTimeWindow(p1, execution) }
 
     val targets = if (p1.executionId == null) {
       executionRepository
@@ -110,7 +110,7 @@ class HydrateQueueCommand(
     return output
   }
 
-  internal fun processExecution(execution: PipelineExecutionImpl): ProcessedExecution {
+  internal fun processExecution(execution: PipelineExecution): ProcessedExecution {
     val actions = mutableListOf<Action>()
 
     execution.stages
@@ -132,7 +132,7 @@ class HydrateQueueCommand(
     )
   }
 
-  private fun processStage(stage: StageExecutionImpl): List<Action> {
+  private fun processStage(stage: StageExecution): List<Action> {
     if (stage.status == NOT_STARTED) {
       if (stage.allUpstreamStagesComplete()) {
         return listOf(Action(
@@ -178,7 +178,7 @@ class HydrateQueueCommand(
     return listOf()
   }
 
-  private fun processTask(stage: StageExecutionImpl, task: TaskExecution): Action {
+  private fun processTask(stage: StageExecution, task: TaskExecution): Action {
     return if (task.status == RUNNING) {
       if (task.isRetryable()) {
         Action(
@@ -229,19 +229,19 @@ class HydrateQueueCommand(
     }
   }
 
-  private fun inTimeWindow(input: HydrateQueueInput, execution: PipelineExecutionImpl): Boolean =
+  private fun inTimeWindow(input: HydrateQueueInput, execution: PipelineExecution): Boolean =
     execution.startTime
       ?.let { Instant.ofEpochMilli(it) }
       ?.let { !(input.start?.isBefore(it) == true || input.end?.isAfter(it) == true) }
       ?: true
 
-  private fun ExecutionRepository.retrieveRunning(): Observable<PipelineExecutionImpl> =
+  private fun ExecutionRepository.retrieveRunning(): Observable<PipelineExecution> =
     rx.Observable.merge(
       retrieve(ExecutionType.ORCHESTRATION, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING)),
       retrieve(ExecutionType.PIPELINE, ExecutionRepository.ExecutionCriteria().setStatuses(RUNNING))
     )
 
-  private fun ExecutionRepository.retrieveSingleRunning(executionId: String): Observable<PipelineExecutionImpl> {
+  private fun ExecutionRepository.retrieveSingleRunning(executionId: String): Observable<PipelineExecution> {
     // TODO rz - Ugh. So dumb.
     val execution = try {
       retrieve(ExecutionType.ORCHESTRATION, executionId)
@@ -253,7 +253,7 @@ class HydrateQueueCommand(
       }
     }
     return if (execution == null || execution.status != RUNNING) {
-      rx.Observable.empty<PipelineExecutionImpl>()
+      rx.Observable.empty<PipelineExecution>()
     } else {
       rx.Observable.just(execution)
     }
@@ -266,13 +266,13 @@ class HydrateQueueCommand(
   private fun TaskExecution.isRetryable(): Boolean =
     RetryableTask::class.java.isAssignableFrom(type)
 
-  private fun StageExecutionImpl.toActionContext() = ActionContext(
+  private fun StageExecution.toActionContext() = ActionContext(
     stageId = id,
     stageType = type,
     stageStartTime = startTime
   )
 
-  private fun TaskExecution.toActionContext(stage: StageExecutionImpl) = stage.toActionContext().copy(
+  private fun TaskExecution.toActionContext(stage: StageExecution) = stage.toActionContext().copy(
     taskId = id,
     taskType = name,
     taskStartTime = startTime

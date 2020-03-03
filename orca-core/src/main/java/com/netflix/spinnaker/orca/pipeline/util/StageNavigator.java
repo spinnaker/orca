@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.util;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collection;
@@ -47,22 +48,22 @@ public class StageNavigator {
    * As per `Stage.ancestors` except this method returns tuples of the stages and their
    * `StageDefinitionBuilder`.
    */
-  public List<Result> ancestors(StageExecutionImpl startingStage) {
+  public List<Result> ancestors(StageExecution startingStage) {
     return startingStage.ancestors().stream()
         .map(it -> new Result(it, stageDefinitionBuilders.get(it.getType())))
         .collect(toList());
   }
 
   public static class Result {
-    private final StageExecutionImpl stage;
+    private final StageExecution stage;
     private final StageDefinitionBuilder stageBuilder;
 
-    Result(StageExecutionImpl stage, StageDefinitionBuilder stageBuilder) {
+    Result(StageExecution stage, StageDefinitionBuilder stageBuilder) {
       this.stage = stage;
       this.stageBuilder = stageBuilder;
     }
 
-    public StageExecutionImpl getStage() {
+    public StageExecution getStage() {
       return stage;
     }
 

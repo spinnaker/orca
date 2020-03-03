@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca;
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import java.time.Duration;
 
 /**
@@ -27,7 +27,7 @@ public interface RetryableTask extends Task {
 
   long getTimeout();
 
-  default long getDynamicTimeout(StageExecutionImpl stage) {
+  default long getDynamicTimeout(StageExecution stage) {
     return getTimeout();
   }
 
@@ -35,7 +35,7 @@ public interface RetryableTask extends Task {
     return getBackoffPeriod();
   }
 
-  default long getDynamicBackoffPeriod(StageExecutionImpl stage, Duration taskDuration) {
+  default long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     return getDynamicBackoffPeriod(taskDuration);
   }
 }

@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.orca.api.ExecutionStatus
@@ -42,7 +44,7 @@ class AddServerGroupEntityTagsTask extends AbstractCloudProviderAwareTask implem
   Collection<ServerGroupEntityTagGenerator> tagGenerators
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     try {
       List<Map> tagOperations = buildTagOperations(stage)
       if (!tagOperations) {

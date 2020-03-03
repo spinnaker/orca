@@ -17,13 +17,13 @@
 
 package com.netflix.spinnaker.orca.echo.tasks
 
+import com.netflix.spinnaker.orca.api.StageExecution
 
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.RetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,7 +44,7 @@ class PageApplicationOwnerTask implements RetryableTask {
   Front50Service front50Service
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Front50 is not enabled, no way to fetch pager duty. Fix this by setting front50.enabled: true");
     }

@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
@@ -39,7 +41,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
   long timeout = TimeUnit.HOURS.toMillis(12)
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     String pipelineId = stage.context.executionId
     PipelineExecutionImpl childPipeline = executionRepository.retrieve(PIPELINE, pipelineId)
 

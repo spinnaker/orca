@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.kayenta.pipeline
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.kayenta.model.KayentaCanaryContext
@@ -23,7 +24,6 @@ import com.netflix.spinnaker.orca.kayenta.tasks.AggregateCanaryResultsTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
@@ -32,11 +32,11 @@ import java.time.Instant
 @Component
 class KayentaCanaryStage(private val clock: Clock) : StageDefinitionBuilder {
 
-  override fun taskGraph(stage: StageExecutionImpl, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<AggregateCanaryResultsTask>("aggregateCanaryResults")
   }
 
-  override fun beforeStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+  override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     if (parent.context["deployments"] != null) {
       graph.add {
         it.type = DeployCanaryServerGroupsStage.STAGE_TYPE
@@ -65,7 +65,7 @@ class KayentaCanaryStage(private val clock: Clock) : StageDefinitionBuilder {
     parent.context["intervalStageId"] = runStage.id
   }
 
-  override fun afterStages(parent: StageExecutionImpl, graph: StageGraphBuilder) {
+  override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
     if (parent.context["deployments"] != null) {
       graph.add {
         it.type = CleanupCanaryClustersStage.STAGE_TYPE
@@ -74,7 +74,7 @@ class KayentaCanaryStage(private val clock: Clock) : StageDefinitionBuilder {
     }
   }
 
-  override fun onFailureStages(stage: StageExecutionImpl, graph: StageGraphBuilder) {
+  override fun onFailureStages(stage: StageExecution, graph: StageGraphBuilder) {
     afterStages(stage, graph)
   }
 

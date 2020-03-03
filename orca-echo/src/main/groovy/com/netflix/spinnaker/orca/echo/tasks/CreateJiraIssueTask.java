@@ -19,11 +19,11 @@ package com.netflix.spinnaker.orca.echo.tasks;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.echo.JiraService;
 import com.netflix.spinnaker.orca.echo.JiraService.CreateJiraIssueResponse;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
@@ -51,7 +51,7 @@ public class CreateJiraIssueTask implements RetryableTask {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     JiraService.CreateIssueRequest createIssueRequest =
         stage.mapTo(JiraService.CreateIssueRequest.class);
     Optional.ofNullable(stage.getExecution().getAuthentication())

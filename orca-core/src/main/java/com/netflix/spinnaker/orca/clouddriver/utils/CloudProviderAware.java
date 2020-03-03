@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.utils;
 
 import com.google.common.collect.ImmutableList;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +35,7 @@ public interface CloudProviderAware {
   }
 
   @Nullable
-  default String getCloudProvider(StageExecutionImpl stage) {
+  default String getCloudProvider(StageExecution stage) {
     return getCloudProvider(stage.getContext());
   }
 
@@ -45,7 +45,7 @@ public interface CloudProviderAware {
   }
 
   @Nullable
-  default String getCredentials(StageExecutionImpl stage) {
+  default String getCredentials(StageExecution stage) {
     return getCredentials(stage.getContext());
   }
 
@@ -79,15 +79,15 @@ public interface CloudProviderAware {
     }
   }
 
-  default List<String> getRegions(StageExecutionImpl stage) {
+  default List<String> getRegions(StageExecution stage) {
     return getRegions(stage.getContext());
   }
 
-  default boolean hasCloudProvider(@Nonnull StageExecutionImpl stage) {
+  default boolean hasCloudProvider(@Nonnull StageExecution stage) {
     return getCloudProvider(stage) != null;
   }
 
-  default boolean hasCredentials(@Nonnull StageExecutionImpl stage) {
+  default boolean hasCredentials(@Nonnull StageExecution stage) {
     return getCredentials(stage) != null;
   }
 }

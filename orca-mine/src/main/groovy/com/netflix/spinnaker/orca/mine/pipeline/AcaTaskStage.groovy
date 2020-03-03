@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.mine.pipeline
 
 import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorAcaTaskTask
@@ -38,7 +39,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   MineService mineService
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("registerGenericCanary", RegisterAcaTaskTask)
       .withTask("monitorGenericCanary", MonitorAcaTaskTask)
@@ -46,7 +47,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  void prepareStageForRestart(StageExecutionImpl stage) {
+  void prepareStageForRestart(StageExecution stage) {
     if (stage.context.canary) {
       def previousCanary = stage.context.canary.clone()
       if (!stage.context.restartDetails) stage.context.restartDetails = [:]

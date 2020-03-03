@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.ext
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.api.PipelineExecution
 
 /**
  * @return the initial stages of the execution.
  */
-fun PipelineExecutionImpl.initialStages() =
+fun PipelineExecution.initialStages() =
   stages
     .filter { it.isInitial() }

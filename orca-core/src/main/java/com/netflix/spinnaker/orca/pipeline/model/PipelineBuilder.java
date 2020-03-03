@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import com.google.common.base.Strings;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.Trigger;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -95,8 +96,8 @@ public class PipelineBuilder {
   public PipelineExecutionImpl build() {
     pipeline.setBuildTime(System.currentTimeMillis());
     pipeline.setAuthentication(
-        PipelineExecutionImpl.AuthenticationDetails.build()
-            .orElse(new PipelineExecutionImpl.AuthenticationDetails()));
+        PipelineExecutionImpl.AuthenticationHelper.build()
+            .orElse(new PipelineExecution.AuthenticationDetails()));
 
     return pipeline;
   }

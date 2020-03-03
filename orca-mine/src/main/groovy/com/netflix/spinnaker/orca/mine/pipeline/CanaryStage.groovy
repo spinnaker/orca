@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import javax.annotation.Nonnull
 import com.netflix.frigga.autoscaling.AutoScalingGroupNameBuilder
@@ -44,7 +46,7 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
   @Autowired RetrySupport retrySupport
 
   @Override
-  void afterStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     Map canaryStageId = [
       canaryStageId   : parent.id,
       failPipeline    : parent.context.failPipeline,

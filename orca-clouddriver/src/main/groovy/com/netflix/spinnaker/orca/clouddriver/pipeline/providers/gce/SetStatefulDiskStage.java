@@ -17,11 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.SetStatefulDiskTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,7 +37,7 @@ public class SetStatefulDiskStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("setStatefulDisk", SetStatefulDiskTask.class);
 
     if (isForceCacheRefreshEnabled(dynamicConfigService)) {

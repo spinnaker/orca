@@ -19,15 +19,17 @@ package com.netflix.spinnaker.orca.applications.tasks
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.front50.model.Application
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
+
+import javax.annotation.Nonnull
 
 @Component
 @Slf4j
@@ -41,8 +43,9 @@ class VerifyApplicationHasNoDependenciesTask implements Task {
   @Autowired
   ObjectMapper objectMapper
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def application = objectMapper.convertValue(stage.context.application, Application)
 
     def existingDependencyTypes = []

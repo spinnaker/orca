@@ -15,16 +15,16 @@
  */
 package com.netflix.spinnaker.orca.front50.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.front50.tasks.ReorderPipelinesTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ReorderPipelinesStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("reorderPipelines", ReorderPipelinesTask.class);
   }
 }

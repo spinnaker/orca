@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.CancellableStage;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.ConsumeArtifactTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.MonitorJobTask;
@@ -50,7 +51,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("runJob", RunJobTask.class).withTask("monitorDeploy", MonitorJobTask.class);
 
     // TODO(ethanfrogers): abstract this out into a provider specific job runner
@@ -128,7 +129,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public void prepareStageForRestart(StageExecutionImpl stage) {
+  public void prepareStageForRestart(StageExecution stage) {
     Map<String, Object> context = stage.getContext();
 
     // preserve previous job details

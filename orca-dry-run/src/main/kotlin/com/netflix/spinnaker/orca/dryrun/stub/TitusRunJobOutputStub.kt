@@ -16,17 +16,17 @@
 
 package com.netflix.spinnaker.orca.dryrun.stub
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 import org.springframework.stereotype.Component
 import java.util.UUID
 
 @Component
 class TitusRunJobOutputStub : OutputStub {
 
-  override fun supports(stage: StageExecutionImpl) =
+  override fun supports(stage: StageExecution) =
     stage.type == "runJob" && stage.context["cloudProvider"] == "titus"
 
-  override fun outputs(stage: StageExecutionImpl): Map<String, Any> {
+  override fun outputs(stage: StageExecution): Map<String, Any> {
     val app = stage.execution.application
     val account = stage.context["credentials"]
     val cluster = stage.context["cluster"] as Map<String, Any>

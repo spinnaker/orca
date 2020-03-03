@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.kato.tasks.DetermineTargetReferenceTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 
@@ -31,7 +31,7 @@ class DetermineTargetReferenceStage implements StageDefinitionBuilder {
   final String PIPELINE_CONFIG_TYPE = getType(DetermineTargetReferenceStage)
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("determineTargetReference", DetermineTargetReferenceTask)
   }

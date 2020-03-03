@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
-
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 
 import javax.annotation.Nonnull
@@ -92,7 +92,7 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
   }
 
   @Override
-  final void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  final void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     if (!isTopLevel(stage)) {
       // Tasks are only run by individual target stages
       taskGraphInternal(stage, builder)
@@ -101,8 +101,8 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
 
   @Override
   final void beforeStages(
-    @Nonnull StageExecutionImpl parent,
-    @Nonnull StageGraphBuilder graph
+      @Nonnull StageExecution parent,
+      @Nonnull StageGraphBuilder graph
   ) {
     if (isTopLevel(parent)) {
       // the top level stage should resolve targets and create synthetic stages to
@@ -121,8 +121,8 @@ abstract class TargetServerGroupLinearStageSupport implements StageDefinitionBui
 
   @Override
   final void afterStages(
-    @Nonnull StageExecutionImpl parent,
-    @Nonnull StageGraphBuilder graph
+      @Nonnull StageExecution parent,
+      @Nonnull StageGraphBuilder graph
   ) {
     if (isTopLevel(parent)) {
       // the top level stage has no after stages

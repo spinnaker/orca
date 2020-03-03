@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
@@ -47,7 +48,7 @@ public class ResolveTargetManifestTask extends AbstractCloudProviderAwareTask im
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     String credentials = getCredentials(stage);
 
     StageData stageData = fromStage(stage);

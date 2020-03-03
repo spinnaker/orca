@@ -28,6 +28,8 @@ import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.Trigger;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
@@ -147,9 +149,9 @@ public class ContextParameterProcessor {
    * @param stage Stage to build context for
    * @return StageContext (really a map) for the merged context
    */
-  public StageContext buildExecutionContext(StageExecutionImpl stage) {
+  public StageContext buildExecutionContext(StageExecution stage) {
     Map<String, Object> augmentedContext = new HashMap<>(stage.getContext());
-    PipelineExecutionImpl execution = stage.getExecution();
+    PipelineExecution execution = stage.getExecution();
 
     if (execution.getType() == PIPELINE) {
       augmentedContext.putAll(buildExecutionContext(execution));
@@ -181,7 +183,7 @@ public class ContextParameterProcessor {
    * @param execution Execution to build context for
    * @return Map of the merged context
    */
-  public Map<String, Object> buildExecutionContext(PipelineExecutionImpl execution) {
+  public Map<String, Object> buildExecutionContext(PipelineExecution execution) {
     Map<String, Object> executionContext = new HashMap<>();
 
     executionContext.put("execution", execution);

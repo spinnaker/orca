@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.mine.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
@@ -25,6 +26,9 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.client.Response
+
+import javax.annotation.Nonnull
+
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MINUTES
 
@@ -35,8 +39,9 @@ class RegisterAcaTaskTask implements Task {
   @Autowired
   MineService mineService
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     String app = stage.context.application ?: stage.execution.application
 
     Map c = buildCanary(app, stage)

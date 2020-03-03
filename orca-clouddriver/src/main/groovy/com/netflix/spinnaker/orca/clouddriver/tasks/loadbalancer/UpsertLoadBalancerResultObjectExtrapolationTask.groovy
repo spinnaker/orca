@@ -18,16 +18,19 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class UpsertLoadBalancerResultObjectExtrapolationTask implements Task {
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     TaskId lastTaskId = stage.context."kato.last.task.id" as TaskId
     def katoTasks = stage.context."kato.tasks" as List<Map>
     def lastKatoTask = katoTasks.find { it.id.toString() == lastTaskId.id }

@@ -18,11 +18,11 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstance
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstanceSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -38,7 +38,7 @@ class WaitForTerminatedInstancesTask extends AbstractCloudProviderAwareTask impl
   TerminatingInstanceSupport instanceSupport
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     List<TerminatingInstance> remainingInstances = instanceSupport.remainingInstances(stage)
     return remainingInstances ?
         TaskResult.builder(ExecutionStatus.RUNNING).context([(TerminatingInstanceSupport.TERMINATE_REMAINING_INSTANCES): remainingInstances]).build() :

@@ -20,12 +20,12 @@ import static java.util.stream.Collectors.toList;
 
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.launchconfigurations.DeleteLaunchConfigurationStage.DeleteLaunchConfigurationRequest;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +46,7 @@ public class DeleteLaunchConfigurationTask extends AbstractCloudProviderAwareTas
   }
 
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     final DeleteLaunchConfigurationRequest request =
         stage.mapTo(DeleteLaunchConfigurationRequest.class);
     final String region = request.getRegion();

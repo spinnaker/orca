@@ -24,8 +24,8 @@ import static java.util.Collections.singletonList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.orca.RetryableTask;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -51,7 +51,7 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
   public static final String TYPE = "restrictExecutionDuringTimeWindow";
 
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask(
         "suspendExecutionDuringTimeWindow", SuspendExecutionDuringTimeWindowTask.class);
 
@@ -140,7 +140,7 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
     String timeZoneId;
 
     @Override
-    public @Nonnull TaskResult execute(@Nonnull StageExecutionImpl stage) {
+    public @Nonnull TaskResult execute(@Nonnull StageExecution stage) {
       Instant now = Instant.now();
       Instant scheduledTime;
       try {
@@ -254,7 +254,7 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
      * @return
      */
     @VisibleForTesting
-    private Instant getTimeInWindow(StageExecutionImpl stage, Instant scheduledTime) {
+    private Instant getTimeInWindow(StageExecution stage, Instant scheduledTime) {
       // Passing in the current date to allow unit testing
       try {
         RestrictedExecutionWindowConfig config = stage.mapTo(RestrictedExecutionWindowConfig.class);

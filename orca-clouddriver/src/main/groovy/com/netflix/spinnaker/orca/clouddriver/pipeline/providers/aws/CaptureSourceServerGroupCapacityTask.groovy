@@ -20,12 +20,14 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class CaptureSourceServerGroupCapacityTask implements Task {
@@ -35,8 +37,9 @@ class CaptureSourceServerGroupCapacityTask implements Task {
   @Autowired
   ObjectMapper objectMapper
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def stageOutputs = [:]
     StageData stageData = stage.mapTo(StageData)
     if (stageData.useSourceCapacity) {

@@ -15,19 +15,19 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.*;
 import com.netflix.spinnaker.orca.front50.tasks.MonitorFront50Task;
 import com.netflix.spinnaker.orca.front50.tasks.SavePipelineTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SavePipelinesFromArtifactStage implements StageDefinitionBuilder {
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, Builder builder) {
+  public void taskGraph(StageExecution stage, Builder builder) {
 
     builder
         .withTask("getPipelinesFromArtifact", GetPipelinesFromArtifactTask.class)

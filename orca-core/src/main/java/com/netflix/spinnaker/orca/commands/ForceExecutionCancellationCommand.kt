@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.commands
 import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.LoggerFactory
@@ -45,7 +46,7 @@ class ForceExecutionCancellationCommand(
     }
   }
 
-  private fun forceCancel(execution: PipelineExecutionImpl, canceledBy: String): Boolean {
+  private fun forceCancel(execution: PipelineExecution, canceledBy: String): Boolean {
     val now = clock.instant().toEpochMilli()
 
     var changes = false

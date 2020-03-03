@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.moniker.Moniker
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwareStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
@@ -68,7 +69,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   abstract List<TaskNode.TaskDefinition> basicTasks(StageExecutionImpl stage)
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("determineSourceServerGroup", DetermineSourceServerGroupTask)
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
@@ -106,7 +107,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     correctContext(parent)
     Strategy strategy = getStrategy(parent)
     def preProcessors = deployStagePreProcessors.findAll { it.supports(parent) }
@@ -135,7 +136,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void afterStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     Strategy strategy = getStrategy(parent)
     def preProcessors = deployStagePreProcessors.findAll { it.supports(parent) }
     def stageData = parent.mapTo(StageData)
@@ -164,7 +165,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void onFailureStages(StageExecutionImpl stage, StageGraphBuilder graph) {
+  void onFailureStages(StageExecution stage, StageGraphBuilder graph) {
     Strategy strategy = getStrategy(stage)
     // Strategy shouldn't ever be null during regular execution, but that's not the case for unit tests
     // Either way, defensive programming

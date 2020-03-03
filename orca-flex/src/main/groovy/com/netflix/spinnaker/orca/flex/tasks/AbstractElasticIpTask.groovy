@@ -20,13 +20,15 @@ import com.netflix.frigga.Names
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.flex.FlexService
 import com.netflix.spinnaker.orca.flex.model.ElasticIpRequest
 import com.netflix.spinnaker.orca.flex.model.ElasticIpResult
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
+
+import javax.annotation.Nonnull
 
 @CompileStatic
 abstract class AbstractElasticIpTask implements Task {
@@ -37,8 +39,9 @@ abstract class AbstractElasticIpTask implements Task {
 
   abstract String getNotificationType()
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def outputs = [
       "notification.type"    : getNotificationType(),
       "elastic.ip.assignment": performRequest(stage.mapTo(StageData))

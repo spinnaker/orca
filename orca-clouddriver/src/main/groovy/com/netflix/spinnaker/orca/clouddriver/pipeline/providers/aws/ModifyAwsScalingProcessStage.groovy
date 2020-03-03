@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
@@ -90,7 +91,7 @@ class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
     OortHelper oortHelper
 
     @Override
-    TaskResult execute(StageExecutionImpl stage) {
+    TaskResult execute(StageExecution stage) {
       def stageData = stage.mapTo(StageData)
       def targetServerGroup = oortHelper.getTargetServerGroup(
         stageData.credentials, stageData.serverGroupName, stageData.region, 'aws'

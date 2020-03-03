@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.image;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.DeleteImageTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Set;
 import javax.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DeleteImageStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(@NotNull StageExecutionImpl stage, @NotNull TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, @NotNull TaskNode.Builder builder) {
     builder.withTask("deleteImage", DeleteImageTask.class);
   }
 

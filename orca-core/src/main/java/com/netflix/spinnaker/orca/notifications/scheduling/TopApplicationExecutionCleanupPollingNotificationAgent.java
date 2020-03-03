@@ -25,9 +25,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.LongTaskTimer;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria;
 import java.time.Instant;
@@ -56,13 +56,13 @@ public class TopApplicationExecutionCleanupPollingNotificationAgent
 
   private Scheduler scheduler = Schedulers.io();
 
-  private Func1<PipelineExecutionImpl, Boolean> filter =
-      (PipelineExecutionImpl execution) ->
+  private Func1<? super PipelineExecution, Boolean> filter =
+      (PipelineExecution execution) ->
           execution.getStatus().isComplete()
               || Instant.ofEpochMilli(execution.getBuildTime())
                   .isBefore(Instant.now().minus(31, DAYS));
-  private Func1<PipelineExecutionImpl, Map> mapper =
-      (PipelineExecutionImpl execution) -> {
+  private Func1<? super PipelineExecution, ? extends Map> mapper =
+      (PipelineExecution execution) -> {
         Map<String, Object> builder = new HashMap<>();
         builder.put("id", execution.getId());
         builder.put("startTime", execution.getStartTime());
@@ -138,8 +138,7 @@ public class TopApplicationExecutionCleanupPollingNotificationAgent
     }
   }
 
-  private void cleanup(
-      Observable<PipelineExecutionImpl> observable, String application, String type) {
+  private void cleanup(Observable<PipelineExecution> observable, String application, String type) {
     List<Map> executions = observable.filter(filter).map(mapper).toList().toBlocking().single();
     executions.sort(comparing(a -> (Long) Optional.ofNullable(a.get("startTime")).orElse(0L)));
     if (executions.size() > threshold) {

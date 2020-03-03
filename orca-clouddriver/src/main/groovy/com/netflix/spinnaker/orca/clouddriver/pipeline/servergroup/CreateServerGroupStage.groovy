@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
 
 import javax.annotation.Nonnull
@@ -89,7 +90,7 @@ class CreateServerGroupStage extends AbstractDeployStrategyStage {
   }
 
   @Override
-  void onFailureStages(@Nonnull StageExecutionImpl stage, StageGraphBuilder graph) {
+  void onFailureStages(@Nonnull StageExecution stage, StageGraphBuilder graph) {
     def stageData = stage.mapTo(StageData)
     if (!stageData.rollback?.onFailure) {
       super.onFailureStages(stage, graph)

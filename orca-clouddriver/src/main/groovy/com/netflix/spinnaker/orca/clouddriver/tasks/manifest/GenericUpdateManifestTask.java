@@ -20,11 +20,11 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -40,7 +40,7 @@ public abstract class GenericUpdateManifestTask extends AbstractCloudProviderAwa
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     String credentials = getCredentials(stage);
     String cloudProvider = getCloudProvider(stage);
     Map<String, Map> operation =

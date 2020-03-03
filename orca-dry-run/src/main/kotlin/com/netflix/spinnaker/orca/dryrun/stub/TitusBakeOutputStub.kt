@@ -16,16 +16,16 @@
 
 package com.netflix.spinnaker.orca.dryrun.stub
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 import org.springframework.stereotype.Component
 
 @Component
 class TitusBakeOutputStub : OutputStub {
 
-  override fun supports(stage: StageExecutionImpl) =
+  override fun supports(stage: StageExecution) =
     stage.type == "bake" && stage.context["cloudProviderType"] == "titus"
 
-  override fun outputs(stage: StageExecutionImpl) =
+  override fun outputs(stage: StageExecution) =
     if (stage.parent?.type == "bake") {
       emptyMap()
     } else {

@@ -29,6 +29,7 @@ import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.Task;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService;
@@ -92,7 +93,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull StageExecutionImpl stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     Long startTime = stage.getStartTime();
     if (startTime == null) {
       throw new IllegalStateException("Stage has no start time, cannot be executing.");

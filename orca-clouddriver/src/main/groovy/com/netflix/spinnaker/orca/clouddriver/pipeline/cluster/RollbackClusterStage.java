@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.DetermineRollbackCandidatesTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
@@ -36,12 +37,12 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "rollbackCluster";
 
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("determineRollbackCandidates", DetermineRollbackCandidatesTask.class);
   }
 
   @Override
-  public void afterStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  public void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     StageData stageData = parent.mapTo(StageData.class);
 
     Map<String, Object> parentOutputs = parent.getOutputs();

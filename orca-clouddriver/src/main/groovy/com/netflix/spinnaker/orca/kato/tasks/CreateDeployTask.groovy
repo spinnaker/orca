@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.kato.tasks
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
@@ -31,6 +32,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Slf4j
 @Component
@@ -51,8 +54,9 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task, D
   @Value('${default.security-groups:#{T(com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask).DEFAULT_SECURITY_GROUPS}}')
   List<String> defaultSecurityGroups = DEFAULT_SECURITY_GROUPS
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     Map deployOperations = deployOperationFromContext(cloudProvider, stage)
     TaskId taskId = deploy(cloudProvider, deployOperations)

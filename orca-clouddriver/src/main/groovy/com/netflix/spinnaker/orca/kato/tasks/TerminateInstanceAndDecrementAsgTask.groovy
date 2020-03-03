@@ -18,11 +18,13 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 @Deprecated
@@ -30,8 +32,9 @@ class TerminateInstanceAndDecrementAsgTask implements Task {
   @Autowired
   KatoService kato
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def taskId = kato.requestOperations([[terminateInstanceAndDecrementAsgDescription: stage.context]])
       .toBlocking()
       .first()

@@ -22,8 +22,8 @@ import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.PathNotFoundException
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import groovy.util.logging.Slf4j
@@ -45,7 +45,7 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
   WebhookService webhookService
 
   @Override
-  long getDynamicBackoffPeriod(StageExecutionImpl stage, Duration taskDuration) {
+  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     if (taskDuration.toMillis() > TimeUnit.MINUTES.toMillis(1)) {
       // task has been running > 1min, drop retry interval to every 15 sec
       return Math.max(backoffPeriod, TimeUnit.SECONDS.toMillis(15))
@@ -60,7 +60,7 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
   }
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     WebhookStage.StageData stageData = stage.mapTo(WebhookStage.StageData)
 
     if (Strings.isNullOrEmpty(stageData.statusEndpoint) || Strings.isNullOrEmpty(stageData.statusJsonPath)) {
@@ -167,7 +167,7 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
     return TaskResult.builder(ExecutionStatus.RUNNING).context(response ? responsePayload : originalResponse).build()
   }
 
-  @Override void onCancel(@Nonnull StageExecutionImpl stage) {
+  @Override void onCancel(@Nonnull StageExecution stage) {
     WebhookStage.StageData stageData = stage.mapTo(WebhookStage.StageData)
 
     // Only do cancellation if we made the initial webhook request and the user specified a cancellation endpoint

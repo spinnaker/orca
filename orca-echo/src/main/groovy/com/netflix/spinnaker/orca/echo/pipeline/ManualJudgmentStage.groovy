@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.echo.pipeline
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 
 import java.util.concurrent.TimeUnit
@@ -35,13 +36,13 @@ import org.springframework.stereotype.Component
 class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage {
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder
       .withTask("waitForJudgment", WaitForManualJudgmentTask.class)
   }
 
   @Override
-  void prepareStageForRestart(StageExecutionImpl stage) {
+  void prepareStageForRestart(StageExecution stage) {
     stage.context.remove("judgmentStatus")
     stage.context.remove("lastModifiedBy")
   }
@@ -71,7 +72,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     EchoService echoService
 
     @Override
-    TaskResult execute(StageExecutionImpl stage) {
+    TaskResult execute(StageExecution stage) {
       StageData stageData = stage.mapTo(StageData)
       String notificationState
       ExecutionStatus executionStatus

@@ -18,16 +18,19 @@ package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstanceSupport
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class DetermineTerminationPhaseInstancesTask implements Task {
 
+  @Nonnull
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     List<String> terms = stage.context.terminationInstanceIds as List<String>
     int concurrentRelaunches = (stage.context.termination?.concurrentRelaunches as Integer) ?: 1
 

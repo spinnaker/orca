@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
@@ -40,7 +41,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
   DetermineTargetReferenceStage determineTargetReferenceStage
 
   @Override
-  void beforeStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     List<StageExecutionImpl> stages = composeTargets(parent)
 
     stages
@@ -49,7 +50,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
   }
 
   @Override
-  void afterStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     List<StageExecutionImpl> stages = composeTargets(parent)
 
     stages

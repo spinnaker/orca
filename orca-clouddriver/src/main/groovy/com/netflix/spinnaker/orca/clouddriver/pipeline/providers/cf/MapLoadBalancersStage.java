@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.MapLoadBalancersTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import groovy.transform.CompileStatic;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @CompileStatic
 class MapLoadBalancersStage implements StageDefinitionBuilder, CloudProviderAware {
   @Override
-  public void taskGraph(@Nonnull StageExecutionImpl stage, @Nonnull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask("mapLoadBalancers", MapLoadBalancersTask.class)
         .withTask("monitorTask", MonitorKatoTask.class)

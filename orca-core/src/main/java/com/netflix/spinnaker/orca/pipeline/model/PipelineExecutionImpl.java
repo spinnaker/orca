@@ -19,19 +19,13 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import static com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED;
 import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.ExecutionType;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.Trigger;
+import com.netflix.spinnaker.orca.api.*;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import de.huxhorn.sulky.ulid.ULID;
@@ -158,20 +152,20 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
   @JsonIgnore
   public @Nonnull Map<String, Object> getContext() {
     return StageExecutionImpl.topologicalSort(stages)
-        .map(StageExecutionImpl::getOutputs)
+        .map(StageExecution::getOutputs)
         .map(Map::entrySet)
         .flatMap(Collection::stream)
         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (o, o2) -> o2));
   }
 
-  private final List<StageExecutionImpl> stages = new ArrayList<>();
+  private final List<StageExecution> stages = new ArrayList<>();
 
   /**
    * Gets the stages of this execution. Does not serialize the child Execution object from stages.
    * The child Execution object in Stage is a @JsonBackReference.
    */
   @JsonIgnoreProperties(value = "execution")
-  public @Nonnull List<StageExecutionImpl> getStages() {
+  public @Nonnull List<StageExecution> getStages() {
     return stages;
   }
 
@@ -342,12 +336,12 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
   }
 
   @Nullable
-  public StageExecutionImpl namedStage(String type) {
+  public StageExecution namedStage(String type) {
     return stages.stream().filter(it -> it.getType().equals(type)).findFirst().orElse(null);
   }
 
   @Nonnull
-  public StageExecutionImpl stageById(String stageId) {
+  public StageExecution stageById(String stageId) {
     return stages.stream()
         .filter(it -> it.getId().equals(stageId))
         .findFirst()
@@ -357,7 +351,7 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
   }
 
   @Nonnull
-  public StageExecutionImpl stageByRef(String refId) {
+  public StageExecution stageByRef(String refId) {
     return stages.stream()
         .filter(it -> refId.equals(it.getRefId()))
         .findFirst()
@@ -390,35 +384,7 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
     return new PipelineExecutionImpl(PIPELINE, application);
   }
 
-  public static class AuthenticationDetails implements Serializable {
-
-    private String user;
-
-    public @Nullable String getUser() {
-      return user;
-    }
-
-    public void setUser(@Nullable String user) {
-      this.user = user;
-    }
-
-    private Collection<String> allowedAccounts = emptySet();
-
-    public Collection<String> getAllowedAccounts() {
-      return ImmutableSet.copyOf(allowedAccounts);
-    }
-
-    public void setAllowedAccounts(Collection<String> allowedAccounts) {
-      this.allowedAccounts = ImmutableSet.copyOf(allowedAccounts);
-    }
-
-    public AuthenticationDetails() {}
-
-    public AuthenticationDetails(String user, String... allowedAccounts) {
-      this.user = user;
-      this.allowedAccounts = asList(allowedAccounts);
-    }
-
+  public static class AuthenticationHelper {
     public static Optional<AuthenticationDetails> build() {
       Optional<String> spinnakerUserOptional = AuthenticatedRequest.getSpinnakerUser();
       Optional<String> spinnakerAccountsOptional = AuthenticatedRequest.getSpinnakerAccounts();
@@ -432,99 +398,16 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
       return Optional.empty();
     }
 
-    public Optional<User> toKorkUser() {
-      return Optional.ofNullable(user)
+    public static Optional<User> toKorkUser(AuthenticationDetails authentication) {
+      return Optional.ofNullable(authentication)
+          .map(AuthenticationDetails::getUser)
           .map(
               it -> {
                 User user = new User();
                 user.setEmail(it);
-                user.setAllowedAccounts(allowedAccounts);
+                user.setAllowedAccounts(authentication.getAllowedAccounts());
                 return user;
               });
-    }
-  }
-
-  public static class PausedDetails implements Serializable {
-    String pausedBy;
-
-    public @Nullable String getPausedBy() {
-      return pausedBy;
-    }
-
-    public void setPausedBy(@Nullable String pausedBy) {
-      this.pausedBy = pausedBy;
-    }
-
-    String resumedBy;
-
-    public @Nullable String getResumedBy() {
-      return resumedBy;
-    }
-
-    public void setResumedBy(@Nullable String resumedBy) {
-      this.resumedBy = resumedBy;
-    }
-
-    Long pauseTime;
-
-    public @Nullable Long getPauseTime() {
-      return pauseTime;
-    }
-
-    public void setPauseTime(@Nullable Long pauseTime) {
-      this.pauseTime = pauseTime;
-    }
-
-    Long resumeTime;
-
-    public @Nullable Long getResumeTime() {
-      return resumeTime;
-    }
-
-    public void setResumeTime(@Nullable Long resumeTime) {
-      this.resumeTime = resumeTime;
-    }
-
-    @JsonIgnore
-    public boolean isPaused() {
-      return pauseTime != null && resumeTime == null;
-    }
-
-    @JsonIgnore
-    public long getPausedMs() {
-      return (pauseTime != null && resumeTime != null) ? resumeTime - pauseTime : 0;
-    }
-  }
-
-  public static class PipelineSource implements Serializable {
-    private String id;
-
-    public @Nonnull String getId() {
-      return id;
-    }
-
-    public void setId(@Nonnull String id) {
-      this.id = id;
-    }
-
-    private String type;
-
-    public @Nonnull String getType() {
-      return type;
-    }
-
-    public void setType(@Nonnull String type) {
-      this.type = type;
-    }
-
-    private String version;
-
-    public @Nonnull String getVersion() {
-      return version;
-    }
-
-    public void setVersion(@Nonnull String version) {
-      this.version = version;
     }
   }
 }

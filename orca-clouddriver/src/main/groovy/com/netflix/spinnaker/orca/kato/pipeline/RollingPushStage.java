@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.pipeline;
 import static java.lang.String.format;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
@@ -33,6 +34,7 @@ import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +50,7 @@ public class RollingPushStage implements StageDefinitionBuilder {
   @Autowired private DynamicConfigService dynamicConfigService;
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     boolean taggingEnabled = featuresService.areEntityTagsAvailable();
     builder
         .withTask(
@@ -102,8 +104,9 @@ public class RollingPushStage implements StageDefinitionBuilder {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    @Nonnull
     @Override
-    public TaskResult execute(StageExecutionImpl stage) {
+    public TaskResult execute(@Nonnull StageExecution stage) {
       log.info(
           format(
               "Rolling Push completed for %s in %s / %s",

@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.pipelinetemplate.pipeline;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.pipeline.UpdatePipelineStage;
@@ -44,7 +45,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
   private UpdatePipelineStage updatePipelineStage;
 
   @Override
-  public void taskGraph(StageExecutionImpl stage, Builder builder) {
+  public void taskGraph(StageExecution stage, Builder builder) {
     if (!Boolean.valueOf(
         stage.getContext().getOrDefault("skipPlanDependents", "false").toString())) {
       builder.withTask("planDependentPipelines", PlanTemplateDependentsTask.class);
@@ -54,7 +55,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
   }
 
   @Override
-  public void afterStages(@Nonnull StageExecutionImpl stage, @Nonnull StageGraphBuilder graph) {
+  public void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     if (front50Service == null) {
       return;
     }
@@ -80,7 +81,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
         .forEach(graph::append);
   }
 
-  private StageExecutionImpl configureSavePipelineStage(
+  private StageExecution configureSavePipelineStage(
       StageExecutionImpl stage, Map<String, Object> pipeline) {
     Map<String, Object> context = new HashMap<>();
 

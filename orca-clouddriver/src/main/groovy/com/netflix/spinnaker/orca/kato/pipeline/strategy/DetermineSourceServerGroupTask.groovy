@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline.strategy
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.RetryableTask
@@ -47,7 +49,7 @@ class DetermineSourceServerGroupTask implements RetryableTask {
   SourceResolver sourceResolver
 
   @Override
-  TaskResult execute(StageExecutionImpl stage) {
+  TaskResult execute(StageExecution stage) {
     def stageData = stage.mapTo(StageData)
     Boolean isNotFound = false
     if (!stageData.source && !stageData.region && !stageData.availabilityZones) {

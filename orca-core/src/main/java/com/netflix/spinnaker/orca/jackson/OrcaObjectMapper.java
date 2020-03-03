@@ -32,6 +32,8 @@ import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskExecution;
 import com.netflix.spinnaker.orca.api.Trigger;
+import com.netflix.spinnaker.orca.jackson.mixin.PipelineExecutionMixin;
+import com.netflix.spinnaker.orca.jackson.mixin.StageExecutionMixin;
 import com.netflix.spinnaker.orca.jackson.mixin.TriggerMixin;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
@@ -54,14 +56,15 @@ public class OrcaObjectMapper {
     instance.setSerializationInclusion(NON_NULL);
 
     // Jackson cannot deserialize an interface. For interfaces defined by orca-api, we need to tell
-    // Jackson the
-    // singular class that implement these interfaces.
+    // Jackson the singular class that implement these interfaces.
     SimpleModule module = new SimpleModule("apiTypes", Version.unknownVersion());
     SimpleAbstractTypeResolver resolver = new SimpleAbstractTypeResolver();
     resolver.addMapping(TaskExecution.class, TaskExecutionImpl.class);
     resolver.addMapping(StageExecution.class, StageExecutionImpl.class);
     resolver.addMapping(PipelineExecution.class, PipelineExecutionImpl.class);
     module.setMixInAnnotation(Trigger.class, TriggerMixin.class);
+    module.setMixInAnnotation(StageExecution.class, StageExecutionMixin.class);
+    module.setMixInAnnotation(PipelineExecution.class, PipelineExecutionMixin.class);
     module.setAbstractTypes(resolver);
 
     instance.registerModule(module);

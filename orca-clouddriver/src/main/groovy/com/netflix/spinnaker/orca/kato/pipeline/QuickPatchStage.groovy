@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import javax.annotation.Nonnull
@@ -57,18 +58,18 @@ class QuickPatchStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "quickPatch"
 
   @Override
-  void taskGraph(StageExecutionImpl stage, TaskNode.Builder builder) {
+  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
     builder.withTask("resolveQuipVersion", ResolveQuipVersionTask)
   }
 
   @Override
-  void beforeStages(@Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     // mark as SUCCEEDED otherwise a stage w/o child tasks will remain in NOT_STARTED
     parent.status = ExecutionStatus.SUCCEEDED
   }
 
   @Override
-  void afterStages(@Nonnull StageExecutionImpl stage, @Nonnull StageGraphBuilder graph) {
+  void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     List<StageExecutionImpl> stages = new ArrayList<>()
     Map<String, Object> nextStageContext = new HashMap<>()
 
