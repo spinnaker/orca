@@ -21,7 +21,7 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.KeelService
-import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.RetryableTask
 import com.netflix.spinnaker.orca.api.SourceCodeTrigger
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult

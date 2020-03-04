@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.RetryableTask;
+import com.netflix.spinnaker.orca.api.RetryableTask;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;

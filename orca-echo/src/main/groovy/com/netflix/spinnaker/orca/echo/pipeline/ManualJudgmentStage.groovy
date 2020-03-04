@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.echo.pipeline
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 

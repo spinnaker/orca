@@ -15,7 +15,7 @@
  */
 
 package com.netflix.spinnaker.orca.kato.tasks
-import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.RetryableTask
 
 /**
  * Marker interface for tasks that perform source/target diffs

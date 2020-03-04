@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.api.StageExecution
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.RetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId

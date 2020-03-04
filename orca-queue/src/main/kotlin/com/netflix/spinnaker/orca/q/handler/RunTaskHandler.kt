@@ -29,8 +29,8 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.RetryableTask
+import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.RetryableTask
 import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.api.TaskResult
