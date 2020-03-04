@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.RetryableTask
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
@@ -36,7 +37,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport {
+class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport implements ForceCacheRefreshAware {
 
   public static final String TYPE = getType(ModifyAwsScalingProcessStage)
 

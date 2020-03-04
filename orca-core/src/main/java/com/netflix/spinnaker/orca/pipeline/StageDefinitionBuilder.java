@@ -19,16 +19,12 @@ package com.netflix.spinnaker.orca.pipeline;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL;
 
-import com.google.common.base.CaseFormat;
-import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
-import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
-import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -74,18 +70,6 @@ public interface StageDefinitionBuilder {
   }
 
   /**
-   * Allows the stage to process SpEL expression in its own context in a custom way
-   *
-   * @return true to continue processing, false to stop generic processing of expressions
-   */
-  default boolean processExpressions(
-      @Nonnull StageExecution stage,
-      @Nonnull ContextParameterProcessor contextParameterProcessor,
-      @Nonnull ExpressionEvaluationSummary summary) {
-    return true;
-  }
-
-  /**
    * Implementations can override this if they need any special cleanup on restart.
    *
    * @param stage
@@ -120,22 +104,6 @@ public interface StageDefinitionBuilder {
   /** Return true if the stage can be manually skipped from the API. */
   default boolean canManuallySkip() {
     return false;
-  }
-
-  default boolean isForceCacheRefreshEnabled(DynamicConfigService dynamicConfigService) {
-    String className = getClass().getSimpleName();
-
-    try {
-      return dynamicConfigService.isEnabled(
-          String.format(
-              "stages.%s.force-cache-refresh",
-              CaseFormat.LOWER_CAMEL.to(
-                  CaseFormat.LOWER_HYPHEN,
-                  Character.toLowerCase(className.charAt(0)) + className.substring(1))),
-          true);
-    } catch (Exception e) {
-      return true;
-    }
   }
 
   default Collection<String> aliases() {

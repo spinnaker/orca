@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.TerminateInstancesTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForDownInstanceHealthTask;
@@ -41,7 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RollingPushStage implements StageDefinitionBuilder {
+public class RollingPushStage implements StageDefinitionBuilder, ForceCacheRefreshAware {
 
   public static final String PIPELINE_CONFIG_TYPE = "rollingPush";
 

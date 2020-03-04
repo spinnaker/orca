@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluat
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator.SUMMARY
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.pipeline.ExpressionAwareStageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.StageContext
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import org.slf4j.Logger
@@ -138,7 +139,9 @@ interface ExpressionAware {
     if (SpelEvaluatorVersion.V4 == spelVersion) {
       // Let the stage process its expressions first if it wants (e.g. see EvaluateVariables stage)
       val stageBuilder = stageDefinitionBuilderFactory.builderFor(stage)
-      shouldContinueProcessing = stageBuilder.processExpressions(stage, contextParameterProcessor, summary)
+      if (stageBuilder is ExpressionAwareStageDefinitionBuilder) {
+        shouldContinueProcessing = stageBuilder.processExpressions(stage, contextParameterProcessor, summary)
+      }
     }
 
     if (shouldContinueProcessing) {

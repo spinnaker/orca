@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.pipeline;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.UpdateInstancesTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.UpdateLaunchConfigTask;
@@ -29,7 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-class UpdateSecurityGroupsForServerGroupStage implements StageDefinitionBuilder {
+class UpdateSecurityGroupsForServerGroupStage
+    implements StageDefinitionBuilder, ForceCacheRefreshAware {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 

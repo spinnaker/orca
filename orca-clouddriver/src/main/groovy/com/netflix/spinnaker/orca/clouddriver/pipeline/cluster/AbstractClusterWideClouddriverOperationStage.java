@@ -22,6 +22,7 @@ import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location;
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 public abstract class AbstractClusterWideClouddriverOperationStage
-    implements StageDefinitionBuilder {
+    implements StageDefinitionBuilder, ForceCacheRefreshAware {
 
   private final DynamicConfigService dynamicConfigService;
 

@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.*;
 import com.netflix.spinnaker.orca.kato.pipeline.Nameable;
@@ -27,7 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BulkDestroyServerGroupStage implements StageDefinitionBuilder, Nameable {
+public class BulkDestroyServerGroupStage
+    implements StageDefinitionBuilder, Nameable, ForceCacheRefreshAware {
   private static final String PIPELINE_CONFIG_TYPE = "bulkDestroyServerGroup";
 
   private final DynamicConfigService dynamicConfigService;

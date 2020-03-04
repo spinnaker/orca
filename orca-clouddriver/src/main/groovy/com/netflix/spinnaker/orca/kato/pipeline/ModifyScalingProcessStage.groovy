@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ModifyAwsScalingProcessStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
@@ -32,7 +33,7 @@ import org.springframework.stereotype.Component
 @Component
 @CompileStatic
 @Deprecated
-class ModifyScalingProcessStage extends TargetReferenceLinearStageSupport {
+class ModifyScalingProcessStage extends TargetReferenceLinearStageSupport implements ForceCacheRefreshAware {
 
   private final DynamicConfigService dynamicConfigService
 

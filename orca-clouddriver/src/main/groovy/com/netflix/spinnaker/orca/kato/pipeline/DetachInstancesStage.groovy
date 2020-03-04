@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForTerminatedInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
@@ -30,7 +31,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @CompileStatic
-class DetachInstancesStage implements StageDefinitionBuilder {
+class DetachInstancesStage implements StageDefinitionBuilder, ForceCacheRefreshAware {
   private final DynamicConfigService dynamicConfigService
 
   DetachInstancesStage(DynamicConfigService dynamicConfigService) {

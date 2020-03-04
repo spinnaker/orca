@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.StatefullyUpdateBootImageTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
@@ -28,7 +29,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class StatefullyUpdateBootImageStage implements StageDefinitionBuilder {
+public final class StatefullyUpdateBootImageStage
+    implements StageDefinitionBuilder, ForceCacheRefreshAware {
 
   private final DynamicConfigService dynamicConfigService;
 

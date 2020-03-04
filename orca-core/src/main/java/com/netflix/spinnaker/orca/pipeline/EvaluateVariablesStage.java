@@ -33,7 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EvaluateVariablesStage implements StageDefinitionBuilder {
+public class EvaluateVariablesStage implements ExpressionAwareStageDefinitionBuilder {
   public static String STAGE_TYPE = "evaluateVariables";
 
   private ObjectMapper mapper;

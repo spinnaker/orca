@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
 
 import javax.annotation.Nonnull
@@ -43,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MINUTES
 
 @Slf4j
 @Component
-class CreateServerGroupStage extends AbstractDeployStrategyStage {
+class CreateServerGroupStage extends AbstractDeployStrategyStage implements ForceCacheRefreshAware {
   public static final String PIPELINE_CONFIG_TYPE = "createServerGroup"
 
   @Autowired

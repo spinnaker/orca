@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.kork.core.RetrySupport
@@ -44,7 +45,7 @@ import static com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.PinnedSer
  */
 @Slf4j
 @Component
-class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
+class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder, ForceCacheRefreshAware {
   @Autowired
   private FeaturesService featuresService
 
