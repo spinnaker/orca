@@ -22,8 +22,8 @@ import com.jayway.jsonpath.PathNotFoundException;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,9 +45,7 @@ public class ManifestLabelValueExpressionFunctionProvider implements ExpressionF
             "manifestLabelValue",
             "Returns the value of a label with given key and kind from a Kubernetes Deployment or ReplicaSet manifest deployed by a stage with a given name",
             new FunctionParameter(
-                PipelineExecutionImpl.class,
-                "execution",
-                "The execution to search for stages within"),
+                PipelineExecution.class, "execution", "The execution to search for stages within"),
             new FunctionParameter(
                 String.class, "stageName", "Name of a deployManifest stage to find"),
             new FunctionParameter(String.class, "kind", "The kind of manifest to find"),
@@ -64,7 +62,7 @@ public class ManifestLabelValueExpressionFunctionProvider implements ExpressionF
    * @return the label value
    */
   public static String manifestLabelValue(
-      PipelineExecutionImpl execution, String stageName, String kind, String labelKey) {
+      PipelineExecution execution, String stageName, String kind, String labelKey) {
     List<String> validKinds = Arrays.asList("Deployment", "ReplicaSet");
     if (!validKinds.contains(kind)) {
       throw new IllegalArgumentException(

@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.kayenta.model
+package com.netflix.spinnaker.orca.kayenta
 
-import com.netflix.spinnaker.orca.kayenta.CanaryScopes
-import com.netflix.spinnaker.orca.kayenta.Thresholds
 import java.util.Collections.emptyMap
 
 internal data class RunCanaryContext(

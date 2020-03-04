@@ -19,13 +19,13 @@ package com.netflix.spinnaker.orca.kayenta.tasks
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
+import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryServerGroupsStage.Companion.DEPLOY_CONTROL_SERVER_GROUPS
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryServerGroupsStage.Companion.DEPLOY_EXPERIMENT_SERVER_GROUPS
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 
 @Component
@@ -66,7 +66,7 @@ class PropagateDeployedServerGroupScopes(
   }
 }
 
-private fun StageExecutionImpl.childrenOf(name: String): List<StageExecutionImpl> {
+private fun StageExecution.childrenOf(name: String): List<StageExecution> {
   val stage = execution.stages.find {
     it.name == name &&
       it.topLevelStage == topLevelStage

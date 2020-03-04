@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.mine.pipeline
 
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 
 import java.util.concurrent.TimeUnit
 import javax.annotation.Nonnull
@@ -28,7 +29,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGro
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -69,7 +69,7 @@ class CanaryStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  Result cancel(StageExecutionImpl stage) {
+  Result cancel(StageExecution stage) {
     Collection<Map<String, Object>> disableContexts = []
     Collection<Map<String, Object>> destroyContexts = []
 

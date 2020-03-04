@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 import org.springframework.stereotype.Component
 
 @Component
@@ -25,12 +25,12 @@ class NoStrategy implements Strategy {
   final String name = "none"
 
   @Override
-  List<StageExecutionImpl> composeBeforeStages(StageExecutionImpl parent) {
+  List<StageExecution> composeBeforeStages(StageExecution parent) {
     return []
   }
 
   @Override
-  List<StageExecutionImpl> composeAfterStages(StageExecutionImpl parent) {
+  List<StageExecution> composeAfterStages(StageExecution parent) {
     return []
   }
 }

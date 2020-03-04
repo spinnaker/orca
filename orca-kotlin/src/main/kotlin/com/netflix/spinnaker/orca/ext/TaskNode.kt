@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.ext
 
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 
 inline fun <reified T : Task> TaskNode.Builder.withTask(name: String) =

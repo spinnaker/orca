@@ -15,12 +15,12 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.dcos
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 
 class DcosContainerFinder {
-  static void populateFromStage(Map operation, StageExecutionImpl stage) {
+  static void populateFromStage(Map operation, StageExecution stage) {
     // If this is a stage in a pipeline, look in the context for the baked image.
     def deploymentDetails = (stage.context.deploymentDetails ?: []) as List<Map>
 

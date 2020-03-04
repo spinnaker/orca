@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.tasks.quip.ResolveQuipVersionTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -70,7 +69,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
 
   @Override
   void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
-    List<StageExecutionImpl> stages = new ArrayList<>()
+    List<StageExecution> stages = new ArrayList<>()
     Map<String, Object> nextStageContext = new HashMap<>()
 
     def instances = getInstancesForCluster(stage)
@@ -113,7 +112,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
     stages.forEach({ graph.append(it) })
   }
 
-  Map getInstancesForCluster(StageExecutionImpl stage) {
+  Map getInstancesForCluster(StageExecution stage) {
     ConcurrentHashMap instances = new ConcurrentHashMap(oortHelper.getInstancesForCluster(stage.context, null, true, false))
     return instances
   }

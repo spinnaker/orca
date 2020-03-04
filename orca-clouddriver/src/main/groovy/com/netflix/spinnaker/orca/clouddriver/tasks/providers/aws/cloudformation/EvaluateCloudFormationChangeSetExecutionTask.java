@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -77,15 +76,15 @@ public class EvaluateCloudFormationChangeSetExecutionTask
     return TimeUnit.DAYS.toMillis(3);
   }
 
-  private Optional getChangeSetExecutionChoice(StageExecutionImpl stage) {
+  private Optional getChangeSetExecutionChoice(StageExecution stage) {
     return Optional.ofNullable(stage.getContext().get("changeSetExecutionChoice"));
   }
 
-  private Optional getChangeSetIsReplacement(StageExecutionImpl stage) {
+  private Optional getChangeSetIsReplacement(StageExecution stage) {
     return Optional.ofNullable(stage.getContext().get("changeSetContainsReplacement"));
   }
 
-  private Optional<Map> getCurrentChangeSet(StageExecutionImpl stage) {
+  private Optional<Map> getCurrentChangeSet(StageExecution stage) {
     String changeSetName = (String) stage.getContext().get("changeSetName");
 
     Map outputs = stage.getOutputs();

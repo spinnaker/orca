@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,8 +79,9 @@ public class UpdateV2PipelineTemplateTask implements RetryableTask, SaveV2Pipeli
     }
 
     V2PipelineTemplate pipelineTemplate =
-        stage.decodeBase64(
-            "/pipelineTemplate", V2PipelineTemplate.class, pipelineTemplateObjectMapper);
+        ((StageExecutionImpl) stage)
+            .decodeBase64(
+                "/pipelineTemplate", V2PipelineTemplate.class, pipelineTemplateObjectMapper);
 
     validate(pipelineTemplate);
 
@@ -89,7 +91,8 @@ public class UpdateV2PipelineTemplateTask implements RetryableTask, SaveV2Pipeli
             (String) stage.getContext().get("id"),
             tag,
             (Map<String, Object>)
-                stage.decodeBase64("/pipelineTemplate", Map.class, pipelineTemplateObjectMapper));
+                ((StageExecutionImpl) stage)
+                    .decodeBase64("/pipelineTemplate", Map.class, pipelineTemplateObjectMapper));
 
     // TODO(jacobkiefer): Reduce duplicated code.
     String templateId =

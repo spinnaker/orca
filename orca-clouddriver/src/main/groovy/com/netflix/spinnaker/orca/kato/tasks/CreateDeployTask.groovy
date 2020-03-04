@@ -18,14 +18,13 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
 import groovy.util.logging.Slf4j
@@ -76,7 +75,7 @@ class CreateDeployTask extends AbstractCloudProviderAwareTask implements Task, D
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build()
   }
 
-  private Map deployOperationFromContext(String cloudProvider, StageExecutionImpl stage) {
+  private Map deployOperationFromContext(String cloudProvider, StageExecution stage) {
     def operation = [:]
     def context = stage.context
 

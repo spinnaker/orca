@@ -17,12 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.support
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -42,7 +41,7 @@ class DetermineTargetServerGroupTask implements Task {
     ]).build()
   }
 
-  List<TargetServerGroup> getTargetServerGroups(StageExecutionImpl stage) {
+  List<TargetServerGroup> getTargetServerGroups(StageExecution stage) {
     resolver.resolve(stage)
   }
 }

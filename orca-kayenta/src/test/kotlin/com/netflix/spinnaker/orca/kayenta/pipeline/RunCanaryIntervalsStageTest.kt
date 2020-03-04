@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.kayenta.CanaryScope
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.spek.values
 import com.netflix.spinnaker.spek.where
@@ -440,14 +440,14 @@ data class CanaryRanges(
 /**
  * Get [scopeName] control scope from all [RunCanaryPipelineStage]s.
  */
-fun Iterable<StageExecutionImpl>.controlScopes(scopeName: String = "default"): List<CanaryScope> =
+fun Iterable<StageExecution>.controlScopes(scopeName: String = "default"): List<CanaryScope> =
   filter { it.type == RunCanaryPipelineStage.STAGE_TYPE }
     .map { it.mapTo<CanaryScope>("/scopes/$scopeName/controlScope") }
 
 /**
  * Get wait time from any [WaitStage]s.
  */
-fun List<StageExecutionImpl>.waitTimes(): List<Long> =
+fun List<StageExecution>.waitTimes(): List<Long> =
   filter { it.type == "wait" }
     .map { it.mapTo<Long>("/waitTime") }
 

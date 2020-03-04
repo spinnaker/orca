@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.mine.tasks.MonitorAcaTaskTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterAcaTaskTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -64,14 +63,14 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  CancellableStage.Result cancel(StageExecutionImpl stage) {
+  CancellableStage.Result cancel(StageExecution stage) {
     log.info("Cancelling stage (stageId: ${stage.id}, executionId: ${stage.execution.id}, context: ${stage.context as Map})")
     def cancelCanaryResults = cancelCanary(stage, "Pipeline execution (${stage.execution?.id}) canceled");
     log.info("Canceled AcaTaskStage for pipeline: ${stage.execution?.id} with results: ${cancelCanaryResults}")
     return new CancellableStage.Result(stage, ["canary": cancelCanaryResults])
   }
 
-  Map cancelCanary(StageExecutionImpl stage, String reason)  {
+  Map cancelCanary(StageExecution stage, String reason)  {
     if(stage?.context?.canary?.id) {
       try {
         def cancelCanaryResults = mineService.cancelCanary(stage.context.canary.id as String, reason)

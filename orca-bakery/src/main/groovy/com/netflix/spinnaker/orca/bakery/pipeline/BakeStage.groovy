@@ -25,14 +25,13 @@ import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import java.time.Clock
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.bakery.tasks.CompletedBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.CreateBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import groovy.transform.CompileDynamic
@@ -81,16 +80,16 @@ class BakeStage implements StageDefinitionBuilder {
         .collect({ context ->
           newStage(parent.execution, type, "Bake in ${context.region}", context, parent, STAGE_BEFORE)
         })
-        .forEach({ StageExecutionImpl s -> graph.add(s) })
+        .forEach({ StageExecution s -> graph.add(s) })
     }
   }
 
-  private boolean isTopLevelStage(StageExecutionImpl stage) {
+  private boolean isTopLevelStage(StageExecution stage) {
     stage.parentStageId == null
   }
 
   @CompileDynamic
-  Collection<Map<String, Object>> parallelContexts(StageExecutionImpl stage) {
+  Collection<Map<String, Object>> parallelContexts(StageExecution stage) {
     Set<String> deployRegions = (stage.context.region ? [stage.context.region] : []) as Set<String>
     deployRegions.addAll(stage.context.regions as Set<String> ?: [])
 
@@ -151,7 +150,7 @@ class BakeStage implements StageDefinitionBuilder {
       }
 
       def globalContext = [
-        deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { StageExecutionImpl bakeStage ->
+        deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { StageExecution bakeStage ->
           def deploymentDetails = [:]
           DEPLOYMENT_DETAILS_CONTEXT_FIELDS.each {
             if (bakeStage.context.containsKey(it)) {

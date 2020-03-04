@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.job
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 
 /**
  * Deployments of server groups vary wildly across cloud providers. A JobRunner
@@ -29,12 +29,12 @@ interface JobRunner {
    * @return a list of operation descriptors. Each operation should be a single entry map keyed by the operation name,
    * with the operation map as the value.
    */
-  List<Map> getOperations(StageExecutionImpl stage)
+  List<Map> getOperations(StageExecution stage)
 
   /**
    * @return any additional values that should be included in task outputs
    */
-  Map<String, Object> getAdditionalOutputs(StageExecutionImpl stage, List<Map> operations)
+  Map<String, Object> getAdditionalOutputs(StageExecution stage, List<Map> operations)
 
   /**
    * @return true if the resulting value from the Kato call should be used.

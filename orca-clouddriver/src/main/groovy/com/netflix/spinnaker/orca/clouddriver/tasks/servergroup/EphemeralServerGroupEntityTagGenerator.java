@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -32,7 +32,7 @@ public class EphemeralServerGroupEntityTagGenerator implements ServerGroupEntity
 
   @Override
   public Collection<Map<String, Object>> generateTags(
-      StageExecutionImpl stage,
+      StageExecution stage,
       String serverGroup,
       String account,
       String location,

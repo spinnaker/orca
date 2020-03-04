@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -90,7 +89,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
   }
 
   @Override
-  long getDynamicBackoffPeriod(StageExecutionImpl stage, Duration taskDuration) {
+  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     LBUpsertContext context = stage.mapTo(LBUpsertContext.class)
     if (context.refreshState.seenPendingCacheUpdates) {
       return getBackoffPeriod()
@@ -101,7 +100,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
     }
   }
 
-  private TaskResult requestCacheUpdates(StageExecutionImpl stage, LBUpsertContext context) {
+  private TaskResult requestCacheUpdates(StageExecution stage, LBUpsertContext context) {
     String cloudProvider = getCloudProvider(stage)
 
     List<Boolean> requestStatuses = new ArrayList<>()
@@ -147,7 +146,7 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
     }
   }
 
-  private void checkPending(StageExecutionImpl stage, LBUpsertContext context) {
+  private void checkPending(StageExecution stage, LBUpsertContext context) {
     String cloudProvider = getCloudProvider(stage)
 
     Collection<Map> pendingCacheUpdates = retrySupport.retry({

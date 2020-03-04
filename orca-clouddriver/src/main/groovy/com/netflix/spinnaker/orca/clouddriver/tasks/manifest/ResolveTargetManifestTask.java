@@ -20,14 +20,13 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.io.IOException;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -81,7 +80,7 @@ public class ResolveTargetManifestTask extends AbstractCloudProviderAwareTask im
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).outputs(outputs).build();
   }
 
-  private StageData fromStage(StageExecutionImpl stage) {
+  private StageData fromStage(StageExecution stage) {
     try {
       return objectMapper.readValue(
           objectMapper.writeValueAsString(stage.getContext()), StageData.class);

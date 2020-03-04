@@ -21,13 +21,12 @@ import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.kayenta.KayentaService
-import com.netflix.spinnaker.orca.kayenta.model.RunCanaryContext
+import com.netflix.spinnaker.orca.kayenta.RunCanaryContext
 import com.netflix.spinnaker.orca.kayenta.tasks.MonitorKayentaCanaryTask
 import com.netflix.spinnaker.orca.kayenta.tasks.RunKayentaCanaryTask
 import com.netflix.spinnaker.orca.kayenta.tasks.ResolveKayentaConfigIdTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.lang.String.format
@@ -57,7 +56,7 @@ class RunCanaryPipelineStage(
     return STAGE_TYPE
   }
 
-  override fun cancel(stage: StageExecutionImpl): CancellableStage.Result {
+  override fun cancel(stage: StageExecution): CancellableStage.Result {
     val context = stage.context
     val canaryPipelineExecutionId = context["canaryPipelineExecutionId"] as String?
 

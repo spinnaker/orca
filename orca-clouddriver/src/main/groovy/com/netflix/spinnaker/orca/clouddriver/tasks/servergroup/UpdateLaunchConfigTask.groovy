@@ -17,13 +17,12 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -68,7 +67,7 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
     ]).build()
   }
 
-  private getAwsOps(StageExecutionImpl stage) {
+  private getAwsOps(StageExecution stage) {
     def operation = new HashMap(stage.context)
     operation.amiName = getImage(stage)
     operation.asgName = operation.asgName ?: operation.serverGroupName
@@ -86,7 +85,7 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
     ops
   }
 
-  private String getImage(StageExecutionImpl stage) {
+  private String getImage(StageExecution stage) {
     String amiName = stage.context.amiName
     String targetRegion = stage.context.region
     withImageFromPrecedingStage(stage, targetRegion, "aws") {

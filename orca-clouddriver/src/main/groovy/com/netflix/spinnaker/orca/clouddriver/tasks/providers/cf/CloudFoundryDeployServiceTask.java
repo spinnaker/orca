@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -65,7 +64,7 @@ public class CloudFoundryDeployServiceTask extends AbstractCloudProviderAwareTas
   }
 
   @NotNull
-  private Map<String, Object> bindArtifactIfNecessary(@Nonnull StageExecutionImpl stage) {
+  private Map<String, Object> bindArtifactIfNecessary(@Nonnull StageExecution stage) {
     Map<String, Object> context = stage.getContext();
     ServiceManifest manifest = mapper.convertValue(context.get("manifest"), ServiceManifest.class);
     CloudFoundryManifestContext manifestContext =

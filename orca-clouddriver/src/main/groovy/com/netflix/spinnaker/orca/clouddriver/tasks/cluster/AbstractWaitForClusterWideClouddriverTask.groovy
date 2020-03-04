@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWi
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.Canonical
 import groovy.transform.ToString
 import org.slf4j.Logger
@@ -49,18 +48,18 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
   @Autowired
   OortHelper oortHelper
 
-  protected TaskResult missingClusterResult(StageExecutionImpl stage,
+  protected TaskResult missingClusterResult(StageExecution stage,
                                             ClusterSelection clusterSelection) {
     throw new IllegalStateException("no cluster details found for $clusterSelection")
   }
 
-  protected TaskResult emptyClusterResult(StageExecutionImpl stage,
+  protected TaskResult emptyClusterResult(StageExecution stage,
                                           ClusterSelection clusterSelection,
                                           Map cluster) {
     throw new IllegalStateException("no server groups found in cluster $clusterSelection")
   }
 
-  boolean isServerGroupOperationInProgress(StageExecutionImpl stage,
+  boolean isServerGroupOperationInProgress(StageExecution stage,
                                            List<TargetServerGroup> currentServerGroups,
                                            List<Map> interestingHealthProviderNames,
                                            DeployServerGroup deployServerGroup) {
@@ -76,7 +75,7 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
     isServerGroupOperationInProgress(stage, interestingHealthProviderNames, matchingServerGroups)
   }
 
-  abstract boolean isServerGroupOperationInProgress(StageExecutionImpl stage,
+  abstract boolean isServerGroupOperationInProgress(StageExecution stage,
                                                     List<Map> interestingHealthProviderNames,
                                                     Optional<TargetServerGroup> serverGroup)
 

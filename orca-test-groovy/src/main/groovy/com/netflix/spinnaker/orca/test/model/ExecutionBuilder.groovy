@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.test.model
 
+import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
@@ -33,8 +35,8 @@ class ExecutionBuilder {
    * @param builder used for customizing the pipeline.
    * @return a pipeline.
    */
-  static PipelineExecutionImpl pipeline(
-    @DelegatesTo(value = PipelineExecutionImpl, strategy = DELEGATE_FIRST)
+  static PipelineExecution pipeline(
+    @DelegatesTo(value = PipelineExecution, strategy = DELEGATE_FIRST)
       Closure builder = {}) {
     def pipeline = PipelineExecutionImpl.newPipeline("covfefe")
     pipeline.trigger = new DefaultTrigger("manual", null, "user@example.com")
@@ -53,8 +55,8 @@ class ExecutionBuilder {
    * @param builder used for customizing the orchestration.
    * @return an orchestration.
    */
-  static PipelineExecutionImpl orchestration(
-    @DelegatesTo(value = PipelineExecutionImpl, strategy = DELEGATE_FIRST)
+  static PipelineExecution orchestration(
+    @DelegatesTo(value = PipelineExecution, strategy = DELEGATE_FIRST)
       Closure builder = {}) {
     def orchestration = PipelineExecutionImpl.newOrchestration("covfefe")
     orchestration.buildTime = currentTimeMillis()
@@ -73,8 +75,8 @@ class ExecutionBuilder {
    * @param builder used for customizing the stage.
    * @return a stage.
    */
-  static StageExecutionImpl stage(
-    @DelegatesTo(value = StageExecutionImpl, strategy = DELEGATE_FIRST)
+  static StageExecution stage(
+    @DelegatesTo(value = StageExecution, strategy = DELEGATE_FIRST)
       Closure builder = {}) {
     def stage = new StageExecutionImpl()
     stage.type = "test"
@@ -98,7 +100,7 @@ class ExecutionBuilder {
     return stage
   }
 
-  private static PipelineExecutionImpl findExecution(Closure closure) {
+  private static PipelineExecution findExecution(Closure closure) {
     if (closure.owner instanceof Closure) {
       def enclosingClosure = (closure.owner as Closure)
       if (enclosingClosure.delegate instanceof PipelineExecutionImpl) {
@@ -111,11 +113,11 @@ class ExecutionBuilder {
     }
   }
 
-  private static StageExecutionImpl findParentStage(Closure closure) {
+  private static StageExecution findParentStage(Closure closure) {
     if (closure.owner instanceof Closure) {
       def enclosingClosure = (closure.owner as Closure)
-      if (enclosingClosure.delegate instanceof StageExecutionImpl) {
-        return enclosingClosure.delegate as StageExecutionImpl
+      if (enclosingClosure.delegate instanceof StageExecution) {
+        return enclosingClosure.delegate as StageExecution
       } else {
         return findParentStage(enclosingClosure)
       }

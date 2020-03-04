@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -92,7 +91,7 @@ public class RollbackClusterStage implements StageDefinitionBuilder {
     }
   }
 
-  private static Map<String, Object> propagateParentStageContext(StageExecutionImpl parent) {
+  private static Map<String, Object> propagateParentStageContext(StageExecution parent) {
     Map<String, Object> contextToPropagate = new HashMap<>();
 
     if (parent == null) {

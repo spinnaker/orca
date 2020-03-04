@@ -38,8 +38,6 @@ import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution.PausedDetails
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -166,7 +164,7 @@ class SqlExecutionRepository(
 
   fun doForeignAware(
     event: InterlinkEvent,
-    block: (execution: PipelineExecutionImpl, dslContext: DSLContext) -> Unit
+    block: (execution: PipelineExecution, dslContext: DSLContext) -> Unit
   ) {
     withPool(poolName) {
       jooq.transactional { dslContext ->
@@ -185,7 +183,7 @@ class SqlExecutionRepository(
 
   override fun cancel(type: ExecutionType, id: String, user: String?, reason: String?) {
     doForeignAware(CancelInterlinkEvent(type, id, user, reason)) {
-      execution: PipelineExecutionImpl, dslContext: DSLContext ->
+      execution: PipelineExecution, dslContext: DSLContext ->
       execution.isCanceled = true
       if (user != null) {
         execution.canceledBy = user
@@ -209,7 +207,7 @@ class SqlExecutionRepository(
           "(executionId: ${execution.id}, currentStatus: ${execution.status})")
       }
       execution.status = PAUSED
-      execution.paused = PausedDetails().apply {
+      execution.paused = PipelineExecution.PausedDetails().apply {
         pausedBy = user
         pauseTime = currentTimeMillis()
       }
@@ -756,7 +754,7 @@ class SqlExecutionRepository(
     }
   }
 
-  private fun storeStageInternal(ctx: DSLContext, stage: StageExecutionImpl, executionId: String? = null) {
+  private fun storeStageInternal(ctx: DSLContext, stage: StageExecution, executionId: String? = null) {
     val stageTable = stage.execution.type.stagesTableName
     val table = stage.execution.type.tableName
     val body = mapper.writeValueAsString(stage)

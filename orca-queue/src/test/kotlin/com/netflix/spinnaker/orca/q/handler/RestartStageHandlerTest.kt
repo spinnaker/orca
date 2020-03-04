@@ -30,6 +30,7 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.RestartStage
@@ -220,7 +221,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
         pipeline
           .stages
           .filter { it.parentStageId == message.stageId }
-          .map(StageExecutionImpl::getId)
+          .map(StageExecution::getId)
           .forEach {
             verify(repository).removeStage(pipeline, it)
           }
@@ -229,14 +230,14 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
       val nestedSyntheticStageIds = pipeline
         .stages
         .filter { it.parentStageId == message.stageId }
-        .map(StageExecutionImpl::getId)
+        .map(StageExecution::getId)
 
       it("removes the nested synthetic stages") {
         assertThat(nestedSyntheticStageIds).isNotEmpty
         pipeline
           .stages
           .filter { it.parentStageId in nestedSyntheticStageIds }
-          .map(StageExecutionImpl::getId)
+          .map(StageExecution::getId)
           .forEach {
             verify(repository).removeStage(pipeline, it)
           }
@@ -448,7 +449,7 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
   }
 })
 
-fun StageDefinitionBuilder.plan(stage: StageExecutionImpl) {
+fun StageDefinitionBuilder.plan(stage: StageExecution) {
   stage.type = type
   buildTasks(stage)
   buildBeforeStages(stage)

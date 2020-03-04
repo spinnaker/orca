@@ -20,10 +20,10 @@ import static java.lang.String.format;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTagger;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +48,7 @@ public class GoogleImageTagger extends ImageTagger implements CloudProviderAware
   }
 
   @Override
-  public ImageTagger.OperationContext getOperationContext(StageExecutionImpl stage) {
+  public ImageTagger.OperationContext getOperationContext(StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
 
     Collection<MatchedImage> matchedImages =
@@ -105,7 +105,7 @@ public class GoogleImageTagger extends ImageTagger implements CloudProviderAware
   public boolean areImagesTagged(
       Collection<Image> targetImages,
       Collection<String> consideredStageRefIds,
-      StageExecutionImpl stage) {
+      StageExecution stage) {
     Collection<MatchedImage> matchedImages =
         findImages(
             targetImages.stream()

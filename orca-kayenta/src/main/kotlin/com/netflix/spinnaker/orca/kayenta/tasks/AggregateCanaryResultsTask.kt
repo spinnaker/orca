@@ -18,11 +18,11 @@ package com.netflix.spinnaker.orca.kayenta.tasks
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
-import com.netflix.spinnaker.orca.kayenta.model.KayentaCanaryContext
+import com.netflix.spinnaker.orca.kayenta.KayentaCanaryContext
 import com.netflix.spinnaker.orca.kayenta.pipeline.RunCanaryPipelineStage
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component

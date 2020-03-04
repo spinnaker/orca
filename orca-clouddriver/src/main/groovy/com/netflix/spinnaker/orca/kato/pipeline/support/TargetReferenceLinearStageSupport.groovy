@@ -21,7 +21,6 @@ import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -42,7 +41,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
 
   @Override
   void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
-    List<StageExecutionImpl> stages = composeTargets(parent)
+    List<StageExecution> stages = composeTargets(parent)
 
     stages
       .findAll({ it.getSyntheticStageOwner() == SyntheticStageOwner.STAGE_BEFORE })
@@ -51,14 +50,14 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
 
   @Override
   void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
-    List<StageExecutionImpl> stages = composeTargets(parent)
+    List<StageExecution> stages = composeTargets(parent)
 
     stages
       .findAll({ it.getSyntheticStageOwner() == SyntheticStageOwner.STAGE_AFTER })
       .forEach({ graph.append(it) })
   }
 
-  List<StageExecutionImpl> composeTargets(StageExecutionImpl stage) {
+  List<StageExecution> composeTargets(StageExecution stage) {
     stage.resolveStrategyParams()
     if (targetReferenceSupport.isDynamicallyBound(stage)) {
       return composeDynamicTargets(stage)
@@ -67,7 +66,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
     return composeStaticTargets(stage)
   }
 
-  private List<StageExecutionImpl> composeStaticTargets(StageExecutionImpl stage) {
+  private List<StageExecution> composeStaticTargets(StageExecution stage) {
     def descriptionList = buildStaticTargetDescriptions(stage)
     if (descriptionList.empty) {
       throw new TargetReferenceNotFoundException("Could not find any server groups for specified target")
@@ -83,7 +82,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
     return []
   }
 
-  private List<Map<String, Object>> buildStaticTargetDescriptions(StageExecutionImpl stage) {
+  private List<Map<String, Object>> buildStaticTargetDescriptions(StageExecution stage) {
     List<TargetReference> targets = targetReferenceSupport.getTargetAsgReferences(stage)
 
     return targets.collect { TargetReference target ->
@@ -100,7 +99,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
     }
   }
 
-  private List<StageExecutionImpl> composeDynamicTargets(StageExecutionImpl stage) {
+  private List<StageExecution> composeDynamicTargets(StageExecution stage) {
     def stages = []
 
     // We only want to determine the target ASGs once per stage, so only inject if this is the root stage, i.e.

@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.pipeline.WaitStage
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.util.logging.Slf4j
@@ -88,7 +87,7 @@ class ExplicitRollback implements Rollback {
 
   @JsonIgnore
   @Override
-  List<StageExecution> buildStages(StageExecutionImpl parentStage) {
+  List<StageExecution> buildStages(StageExecution parentStage) {
     Map disableServerGroupContext = new HashMap(parentStage.context)
     disableServerGroupContext.serverGroupName = rollbackServerGroupName
     def disableServerGroupStage = newStage(
@@ -149,7 +148,7 @@ class ExplicitRollback implements Rollback {
     return stages
   }
 
-  @Nullable TargetServerGroup lookupServerGroup(StageExecutionImpl parentStage, String serverGroupName) {
+  @Nullable TargetServerGroup lookupServerGroup(StageExecution parentStage, String serverGroupName) {
     def fromContext = parentStage.mapTo(ResizeStrategy.Source)
 
     try {
@@ -173,7 +172,7 @@ class ExplicitRollback implements Rollback {
     }
   }
 
-  @Nullable StageExecutionImpl buildResizeStage(StageExecutionImpl parentStage) {
+  @Nullable StageExecution buildResizeStage(StageExecution parentStage) {
     TargetServerGroup rollbackServerGroup = lookupServerGroup(parentStage, rollbackServerGroupName)
     if (!rollbackServerGroup) {
       return null
@@ -217,7 +216,7 @@ class ExplicitRollback implements Rollback {
       resizeServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER)
   }
 
-  StageExecutionImpl buildCaptureSourceServerGroupCapacityStage(StageExecutionImpl parentStage,
+  StageExecution buildCaptureSourceServerGroupCapacityStage(StageExecution parentStage,
                                                                 ResizeStrategy.Source source) {
     Map captureSourceServerGroupCapacityContext = [
       useSourceCapacity: true,
@@ -239,7 +238,7 @@ class ExplicitRollback implements Rollback {
     )
   }
 
-  StageExecutionImpl buildApplySourceServerGroupCapacityStage(StageExecutionImpl parentStage,
+  StageExecution buildApplySourceServerGroupCapacityStage(StageExecution parentStage,
                                                               ResizeStrategy.Source source) {
     Map applySourceServerGroupCapacityContext = [
       credentials  : source.credentials,

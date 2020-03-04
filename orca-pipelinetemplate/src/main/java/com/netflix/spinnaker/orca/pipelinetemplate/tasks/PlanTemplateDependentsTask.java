@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,8 +63,9 @@ public class PlanTemplateDependentsTask implements RetryableTask {
 
     PipelineTemplate pipelineTemplate =
         (PipelineTemplate)
-            stage.decodeBase64(
-                "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
+            ((StageExecutionImpl) stage)
+                .decodeBase64(
+                    "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
 
     List<Map<String, Object>> dependentPipelines =
         front50Service.getPipelineTemplateDependents(pipelineTemplate.getId(), false);

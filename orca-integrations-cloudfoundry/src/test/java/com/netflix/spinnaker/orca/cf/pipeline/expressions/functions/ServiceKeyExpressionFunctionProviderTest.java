@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider.FunctionDefinition;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
@@ -45,7 +46,7 @@ class ServiceKeyExpressionFunctionProviderTest {
             functionDefinition -> {
               assertThat(functionDefinition.getName()).isEqualTo("cfServiceKey");
               assertThat(functionDefinition.getParameters().get(0).getType())
-                  .isEqualTo(PipelineExecutionImpl.class);
+                  .isEqualTo(PipelineExecution.class);
               assertThat(functionDefinition.getParameters().get(1).getType())
                   .isEqualTo(String.class);
             });

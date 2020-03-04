@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +137,7 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
         .orElse(CloudFormationStates.NOT_YET_READY.toString());
   }
 
-  private boolean isEmptyChangeSet(StageExecutionImpl stage, Map<String, ?> stack) {
+  private boolean isEmptyChangeSet(StageExecution stage, Map<String, ?> stack) {
     if ((boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false)) {
       String status = getChangeSetInfo(stack, stage.getContext(), "status");
       String statusReason = getChangeSetInfo(stack, stage.getContext(), "statusReason");

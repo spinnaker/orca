@@ -19,6 +19,7 @@ import static java.lang.String.format;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
@@ -31,7 +32,6 @@ import com.netflix.spinnaker.orca.kato.tasks.DisableInstancesTask;
 import com.netflix.spinnaker.orca.kato.tasks.rollingpush.*;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -94,13 +94,13 @@ public class RollingPushStage implements StageDefinitionBuilder {
     builder.withTask("pushComplete", PushCompleteTask.class);
   }
 
-  private boolean shouldWaitForTermination(StageExecutionImpl stage) {
+  private boolean shouldWaitForTermination(StageExecution stage) {
     Map termination = (Map) stage.getContext().get("termination");
     return termination != null && termination.containsKey("waitTime");
   }
 
   @Component
-  public static class PushCompleteTask implements com.netflix.spinnaker.orca.Task {
+  public static class PushCompleteTask implements Task {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 

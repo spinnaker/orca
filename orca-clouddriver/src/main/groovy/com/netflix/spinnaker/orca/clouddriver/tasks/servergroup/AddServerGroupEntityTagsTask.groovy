@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -63,7 +62,7 @@ class AddServerGroupEntityTagsTask extends AbstractCloudProviderAwareTask implem
     }
   }
 
-  private List<Map> buildTagOperations(StageExecutionImpl stage) {
+  private List<Map> buildTagOperations(StageExecution stage) {
     def operations = []
     ((StageData) stage.mapTo(StageData)).deployServerGroups.each { String region, Set<String> serverGroups ->
       serverGroups.each { String serverGroup ->

@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.controllers;
 
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.Application;
 import com.netflix.spinnaker.orca.model.ExecutionImportResponse;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.util.Collections;
@@ -63,7 +63,7 @@ public class ExecutionsImportController {
 
   @PostMapping(value = "")
   @ResponseStatus(HttpStatus.CREATED)
-  ExecutionImportResponse createExecution(@RequestBody PipelineExecutionImpl execution) {
+  ExecutionImportResponse createExecution(@RequestBody PipelineExecution execution) {
 
     // Check if app exists before importing execution.
     Application application = null;

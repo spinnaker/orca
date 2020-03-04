@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.deploymentmonitor.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -41,7 +41,7 @@ public class DeploymentCompletedRequest extends RequestBase {
   /** Status of the rollback operation */
   private DeploymentStatus rollback;
 
-  public DeploymentCompletedRequest(StageExecutionImpl stage) {
+  public DeploymentCompletedRequest(StageExecution stage) {
     super(stage);
   }
 }

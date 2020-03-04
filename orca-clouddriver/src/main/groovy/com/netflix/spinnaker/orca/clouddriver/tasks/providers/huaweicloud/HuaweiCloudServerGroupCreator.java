@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.huaweicloud;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +44,7 @@ public class HuaweiCloudServerGroupCreator implements ServerGroupCreator {
   }
 
   @Override
-  public List<Map> getOperations(StageExecutionImpl stage) {
+  public List<Map> getOperations(StageExecution stage) {
     Map<String, Object> operation = new HashMap();
 
     if (stage.getContext().containsKey("cluster")) {

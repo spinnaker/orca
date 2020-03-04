@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.echo.pipeline
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
@@ -156,7 +157,7 @@ class ManualJudgmentStageSpec extends Specification {
       judgmentStatus                : judgmentStatus,
       propagateAuthenticationContext: propagateAuthenticationContext
     ])
-    stage.lastModified = new StageExecutionImpl.LastModifiedDetails(user: "modifiedUser", allowedAccounts: ["group1"])
+    stage.lastModified = new StageExecution.LastModifiedDetails(user: "modifiedUser", allowedAccounts: ["group1"])
 
     when:
     def authenticatedUser = new ManualJudgmentStage().authenticatedUser(stage)

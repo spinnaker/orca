@@ -32,7 +32,6 @@ import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.beans.Introspector;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -70,10 +69,10 @@ public abstract class AbstractClusterWideClouddriverOperationStage
   }
 
   protected void addAdditionalBeforeStages(
-      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {}
+      @Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
 
   protected void addAdditionalAfterStages(
-      @Nonnull StageExecutionImpl parent, @Nonnull StageGraphBuilder graph) {}
+      @Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
 
   public static class ClusterSelection {
     private final String cluster;

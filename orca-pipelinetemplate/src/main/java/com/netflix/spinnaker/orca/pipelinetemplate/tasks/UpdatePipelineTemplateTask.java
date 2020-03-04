@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,8 +73,9 @@ public class UpdatePipelineTemplateTask implements RetryableTask, SavePipelineTe
 
     PipelineTemplate pipelineTemplate =
         (PipelineTemplate)
-            stage.decodeBase64(
-                "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
+            ((StageExecutionImpl) stage)
+                .decodeBase64(
+                    "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
 
     validate(pipelineTemplate);
 

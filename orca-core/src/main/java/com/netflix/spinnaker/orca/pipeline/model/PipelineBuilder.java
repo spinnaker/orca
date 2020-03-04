@@ -53,9 +53,9 @@ public class PipelineBuilder {
   }
 
   public PipelineBuilder withInitialConfig(Map<String, Object> initialConfig) {
-    pipeline.getInitialConfig().clear();
+    ((PipelineExecutionImpl) pipeline).getInitialConfig().clear();
     if (initialConfig != null) {
-      pipeline.getInitialConfig().putAll(initialConfig);
+      ((PipelineExecutionImpl) pipeline).getInitialConfig().putAll(initialConfig);
     }
 
     return this;
@@ -93,7 +93,7 @@ public class PipelineBuilder {
     return this;
   }
 
-  public PipelineExecutionImpl build() {
+  public PipelineExecution build() {
     pipeline.setBuildTime(System.currentTimeMillis());
     pipeline.setAuthentication(
         PipelineExecutionImpl.AuthenticationHelper.build()
@@ -122,7 +122,7 @@ public class PipelineBuilder {
     return this;
   }
 
-  public PipelineBuilder withSource(PipelineExecutionImpl.PipelineSource source) {
+  public PipelineBuilder withSource(PipelineExecution.PipelineSource source) {
     pipeline.setSource(source);
     return this;
   }
@@ -146,5 +146,5 @@ public class PipelineBuilder {
     return this;
   }
 
-  private final PipelineExecutionImpl pipeline;
+  private final PipelineExecution pipeline;
 }

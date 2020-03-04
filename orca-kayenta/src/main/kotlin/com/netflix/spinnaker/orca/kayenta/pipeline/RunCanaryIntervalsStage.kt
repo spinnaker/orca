@@ -24,13 +24,12 @@ import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kayenta.CanaryScope
 import com.netflix.spinnaker.orca.kayenta.CanaryScopes
-import com.netflix.spinnaker.orca.kayenta.model.KayentaCanaryContext
-import com.netflix.spinnaker.orca.kayenta.model.RunCanaryContext
+import com.netflix.spinnaker.orca.kayenta.KayentaCanaryContext
+import com.netflix.spinnaker.orca.kayenta.RunCanaryContext
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
@@ -48,7 +47,7 @@ class RunCanaryIntervalsStage(private val clock: Clock) : StageDefinitionBuilder
   override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
   }
 
-  private fun getDeployDetails(stage: StageExecutionImpl): DeployedServerGroupContext? {
+  private fun getDeployDetails(stage: StageExecution): DeployedServerGroupContext? {
     val deployedServerGroupsStage = stage.parent?.execution?.stages?.find {
       it.type == DeployCanaryServerGroupsStage.STAGE_TYPE && it.parentStageId == stage.parentStageId
     }

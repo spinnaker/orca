@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
@@ -131,7 +132,7 @@ class ApplySourceServerGroupSnapshotTaskSpec extends Specification {
 
     task = new ApplySourceServerGroupCapacityTask() {
       @Override
-      ApplySourceServerGroupCapacityTask.TargetServerGroupContext getTargetServerGroupContext(StageExecutionImpl stage) {
+      ApplySourceServerGroupCapacityTask.TargetServerGroupContext getTargetServerGroupContext(StageExecution stage) {
         return new ApplySourceServerGroupCapacityTask.TargetServerGroupContext(
           context: context,
           sourceServerGroupCapacitySnapshot: sourceServerGroupCapacitySnapshot

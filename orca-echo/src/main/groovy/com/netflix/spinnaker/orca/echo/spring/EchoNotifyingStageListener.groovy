@@ -17,13 +17,12 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.kork.common.Header
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -95,15 +94,15 @@ class EchoNotifyingStageListener implements StageListener {
     }
   }
 
-  private void recordEvent(String type, String phase, StageExecutionImpl stage, TaskExecution task) {
+  private void recordEvent(String type, String phase, StageExecution stage, TaskExecution task) {
     recordEvent(type, phase, stage, Optional.of(task))
   }
 
-  private void recordEvent(String type, String phase, StageExecutionImpl stage) {
+  private void recordEvent(String type, String phase, StageExecution stage) {
     recordEvent(type, phase, stage, Optional.empty())
   }
 
-  private void recordEvent(String type, String phase, StageExecutionImpl stage, Optional<TaskExecution> maybeTask) {
+  private void recordEvent(String type, String phase, StageExecution stage, Optional<TaskExecution> maybeTask) {
     try {
       def event = [
         details: [
@@ -142,7 +141,7 @@ class EchoNotifyingStageListener implements StageListener {
     }
   }
 
-  private Map<String, Object> buildContext(PipelineExecutionImpl execution, Map context) {
+  private Map<String, Object> buildContext(PipelineExecution execution, Map context) {
     return contextParameterProcessor.process(
       context,
       [execution: execution] as Map<String, Object>,

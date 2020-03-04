@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.utils
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 
 class HealthHelper {
   /**
@@ -25,7 +25,7 @@ class HealthHelper {
    * in, while still allowing for defaults to be defined. Explicitly-empty lists are preserved and are not ignored in
    * favor of defaults.
    */
-  static List<String> getInterestingHealthProviderNames(StageExecutionImpl stage, List<String> providersIfNotExplicitlySpecified) {
+  static List<String> getInterestingHealthProviderNames(StageExecution stage, List<String> providersIfNotExplicitlySpecified) {
     stage.context.interestingHealthProviderNames != null ?
       stage.context.interestingHealthProviderNames : providersIfNotExplicitlySpecified
   }

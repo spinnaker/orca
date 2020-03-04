@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.keel.pipeline
 
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder

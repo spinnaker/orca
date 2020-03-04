@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.pipeline;
 import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.LOOP;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.Task;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -52,15 +52,11 @@ public interface TaskNode {
     return build(type, builder -> {});
   }
 
-  static TaskGraph singleton(
-      GraphType type,
-      String name,
-      Class<? extends com.netflix.spinnaker.orca.Task> implementingClass) {
+  static TaskGraph singleton(GraphType type, String name, Class<? extends Task> implementingClass) {
     return build(type, builder -> builder.withTask(name, implementingClass));
   }
 
-  static TaskDefinition task(
-      String name, Class<? extends com.netflix.spinnaker.orca.Task> implementingClass) {
+  static TaskDefinition task(String name, Class<? extends Task> implementingClass) {
     return new TaskDefinition(name, implementingClass);
   }
 
@@ -83,8 +79,7 @@ public interface TaskNode {
      * @param implementingClass the class that implements the task.
      * @return this builder with the new task appended.
      */
-    public Builder withTask(
-        String name, Class<? extends com.netflix.spinnaker.orca.Task> implementingClass) {
+    public Builder withTask(String name, Class<? extends Task> implementingClass) {
       graph.add(new TaskDefinition(name, implementingClass));
       return this;
     }
@@ -145,7 +140,7 @@ public interface TaskNode {
   /** An individual task. */
   class TaskDefinition implements TaskNode {
     private final String name;
-    private final Class<? extends com.netflix.spinnaker.orca.Task> implementingClass;
+    private final Class<? extends Task> implementingClass;
 
     public TaskDefinition(@Nonnull String name, @Nonnull Class<? extends Task> implementingClass) {
       this.name = name;

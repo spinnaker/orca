@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.ConditionConfi
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.ConditionSupplier;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage.WaitForConditionContext;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage.WaitForConditionContext.Status;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -157,7 +156,7 @@ public class EvaluateConditionTask implements RetryableTask {
         .increment();
   }
 
-  private Instant getStartTime(StageExecutionImpl stage) {
+  private Instant getStartTime(StageExecution stage) {
     return Instant.ofEpochMilli(Optional.ofNullable(stage.getStartTime()).orElse(clock.millis()));
   }
 }

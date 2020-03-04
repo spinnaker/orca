@@ -19,13 +19,12 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.ExecutionType
 import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.LoggerFactory
 import java.time.Clock
 
 /**
- * When an [PipelineExecutionImpl] is zombied and cannot be rehydrated back onto the queue, this
+ * When an [PipelineExecution] is zombied and cannot be rehydrated back onto the queue, this
  * command can be used to cleanup.
  *
  * TODO(rz): Fix zombies.

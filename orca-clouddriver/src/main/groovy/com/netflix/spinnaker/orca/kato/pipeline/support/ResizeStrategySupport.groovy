@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.RollingRedBlackStageData
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
@@ -126,7 +127,7 @@ public class ResizeStrategySupport {
   }
 
   ResizeStrategy.Capacity performScalingAndPinning(Capacity sourceCapacity,
-                                                   StageExecutionImpl stage,
+                                                   StageExecution stage,
                                                    ResizeStrategy.OptionalConfiguration resizeConfig) {
     ResizeStrategy.StageData stageData = stage.mapTo(ResizeStrategy.StageData)
 

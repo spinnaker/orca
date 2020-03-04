@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.api.StageExecution
 
 abstract class AbstractWaitingForInstancesTask extends AbstractInstancesCheckTask {
   @Override
-  protected Map<String, List<String>> getServerGroups(StageExecutionImpl stage) {
+  protected Map<String, List<String>> getServerGroups(StageExecution stage) {
     Map<String, List<String>> serverGroups = [:]
 
     def keys = ["disableAsg", "enableAsg", "enableServerGroup", "disableServerGroup"]

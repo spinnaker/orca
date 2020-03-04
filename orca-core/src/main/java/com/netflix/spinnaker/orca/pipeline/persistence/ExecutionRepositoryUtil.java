@@ -17,8 +17,8 @@ package com.netflix.spinnaker.orca.pipeline.persistence;
 
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER;
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -34,23 +34,23 @@ public class ExecutionRepositoryUtil {
    * execution.
    */
   public static void sortStagesByReference(
-      @Nonnull PipelineExecutionImpl execution, @Nonnull List<StageExecutionImpl> stages) {
+      @Nonnull PipelineExecution execution, @Nonnull List<StageExecution> stages) {
     if (!execution.getStages().isEmpty()) {
       throw new StagesAlreadySorted();
     }
 
-    if (stages.stream().map(StageExecutionImpl::getRefId).allMatch(Objects::nonNull)) {
+    if (stages.stream().map(StageExecution::getRefId).allMatch(Objects::nonNull)) {
       execution
           .getStages()
           .addAll(
               stages.stream()
                   .filter(s -> s.getParentStageId() == null)
-                  .sorted(Comparator.comparing(StageExecutionImpl::getRefId))
+                  .sorted(Comparator.comparing(StageExecution::getRefId))
                   .collect(Collectors.toList()));
 
       stages.stream()
           .filter(s -> s.getParentStageId() != null)
-          .sorted(Comparator.comparing(StageExecutionImpl::getRefId))
+          .sorted(Comparator.comparing(StageExecution::getRefId))
           .forEach(
               s -> {
                 Integer index = execution.getStages().indexOf(s.getParent());

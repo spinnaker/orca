@@ -70,8 +70,9 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
     }
 
     PipelineTemplate pipelineTemplate =
-        stage.decodeBase64(
-            "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
+        ((StageExecutionImpl) stage)
+            .decodeBase64(
+                "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
 
     List<Map<String, Object>> dependentPipelines =
         front50Service.getPipelineTemplateDependents(pipelineTemplate.getId(), true);
@@ -82,7 +83,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
   }
 
   private StageExecution configureSavePipelineStage(
-      StageExecutionImpl stage, Map<String, Object> pipeline) {
+      StageExecution stage, Map<String, Object> pipeline) {
     Map<String, Object> context = new HashMap<>();
 
     try {

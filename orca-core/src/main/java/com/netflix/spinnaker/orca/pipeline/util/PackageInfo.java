@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -44,7 +43,7 @@ import java.util.regex.Pattern;
 public class PackageInfo {
 
   private final ObjectMapper mapper;
-  private final StageExecutionImpl stage;
+  private final StageExecution stage;
   private final List<Artifact> artifacts;
   private final String versionDelimiter;
   private final String packageType;
@@ -54,7 +53,7 @@ public class PackageInfo {
   private final List<Pattern> packageFilePatterns = new ArrayList<>();
 
   public PackageInfo(
-      StageExecutionImpl stage,
+      StageExecution stage,
       List<Artifact> artifacts,
       String packageType,
       String versionDelimiter,
@@ -385,7 +384,7 @@ public class PackageInfo {
   }
 
   private static Map<String, Object> findBuildInfoInUpstreamStage(
-      StageExecutionImpl currentStage, List<Pattern> packageFilePatterns) {
+      StageExecution currentStage, List<Pattern> packageFilePatterns) {
 
     StageExecution upstreamStage =
         currentStage.findAncestor(

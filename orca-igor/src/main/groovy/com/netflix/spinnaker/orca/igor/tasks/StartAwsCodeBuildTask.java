@@ -17,16 +17,15 @@
 package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition.AwsCodeBuildSource;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition.AwsCodeBuildSourceArtifact;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,7 +87,7 @@ public class StartAwsCodeBuildTask implements Task {
   }
 
   private void appendSource(
-      Map<String, Object> requestInput, StageExecutionImpl stage, AwsCodeBuildSource source) {
+      Map<String, Object> requestInput, StageExecution stage, AwsCodeBuildSource source) {
     if (source != null) {
       Artifact matchArtifact = Artifact.builder().build();
       if (source.isSourceOverride() && source.getSourceArtifact() != null) {
@@ -114,9 +113,7 @@ public class StartAwsCodeBuildTask implements Task {
   }
 
   private void appendSecondarySources(
-      Map<String, Object> requestInput,
-      StageExecutionImpl stage,
-      List<AwsCodeBuildSource> sources) {
+      Map<String, Object> requestInput, StageExecution stage, List<AwsCodeBuildSource> sources) {
     if (sources != null) {
       List<Map<String, String>> secondarySources = new ArrayList<>();
       List<Map<String, String>> secondarySourcesVersion = new ArrayList<>();
@@ -184,7 +181,7 @@ public class StartAwsCodeBuildTask implements Task {
   }
 
   private Artifact getSourceArtifact(
-      @Nonnull StageExecutionImpl stage, AwsCodeBuildSourceArtifact artifact) {
+      @Nonnull StageExecution stage, AwsCodeBuildSourceArtifact artifact) {
     Artifact matchArtifact =
         artifactUtils.getBoundArtifactForStage(
             stage, artifact.getArtifactId(), artifact.getArtifact());

@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.model
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.Trigger
 
@@ -33,7 +34,7 @@ data class PipelineTrigger
   private var isRebake: Boolean = false,
   private var isDryRun: Boolean = false,
   private var isStrategy: Boolean = false,
-  val parentExecution: PipelineExecutionImpl,
+  val parentExecution: PipelineExecution,
   val parentPipelineStageId: String? = null
 ) : Trigger {
   private var other: MutableMap<String, Any> = mutableMapOf()

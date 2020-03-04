@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -106,7 +105,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
     }
   }
 
-  private static List<Map> fetchEntityTags(OortService oortService, RetrySupport retrySupport, StageExecutionImpl stage) {
+  private static List<Map> fetchEntityTags(OortService oortService, RetrySupport retrySupport, StageExecution stage) {
     def serverGroupName = stage.context.serverGroupName
     def credentials = stage.context.credentials
     def region = getRegion(stage)
@@ -132,7 +131,7 @@ class ApplySourceServerGroupCapacityStage implements StageDefinitionBuilder {
     }, 5, 2000, false)
   }
 
-  private static String getRegion(StageExecutionImpl stage) {
+  private static String getRegion(StageExecution stage) {
     return ((Map<String, Object>) stage.context."deploy.server.groups")?.keySet()?.getAt(0)
   }
 }

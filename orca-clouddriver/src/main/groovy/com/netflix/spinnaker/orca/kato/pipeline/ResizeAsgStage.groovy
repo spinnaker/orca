@@ -28,7 +28,6 @@ import com.netflix.spinnaker.orca.kato.tasks.ResizeAsgTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
@@ -81,7 +80,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
     }.type != parentStage.type) {
       // configure iff this stage has no parent or has a parent that is not a ResizeAsg stage
 
-      List<StageExecutionImpl> stages = new ArrayList<>()
+      List<StageExecution> stages = new ArrayList<>()
       def targetReferences = targetReferenceSupport.getTargetAsgReferences(parentStage)
 
       targetReferences.each { targetReference ->
@@ -128,7 +127,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
       it.id == parentStage.parentStageId
     }.type != parentStage.type) {
       // configure iff this stage has no parent or has a parent that is not a ResizeAsg stage
-      List<StageExecutionImpl> stages = new ArrayList<>()
+      List<StageExecution> stages = new ArrayList<>()
 
       def targetReferences = targetReferenceSupport.getTargetAsgReferences(parentStage)
       def descriptions = resizeSupport.createResizeStageDescriptors(parentStage, targetReferences)

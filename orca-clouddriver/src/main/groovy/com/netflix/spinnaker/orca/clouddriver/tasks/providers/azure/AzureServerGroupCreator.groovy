@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.azure
 
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
@@ -30,7 +30,7 @@ class AzureServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAw
   String cloudProvider = "azure"
 
   @Override
-  List<Map> getOperations(StageExecutionImpl stage) {
+  List<Map> getOperations(StageExecution stage) {
     def operation = [:]
 
     operation.putAll(stage.context)

@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 
 abstract class AbstractWaitForInstanceHealthChangeTask implements OverridableTimeoutRetryableTask {
@@ -58,7 +57,7 @@ abstract class AbstractWaitForInstanceHealthChangeTask implements OverridableTim
     return TaskResult.ofStatus(stillRunning ? ExecutionStatus.RUNNING : ExecutionStatus.SUCCEEDED)
   }
 
-  protected List<String> getInstanceIds(StageExecutionImpl stage) {
+  protected List<String> getInstanceIds(StageExecution stage) {
     return (List<String>) stage.context.instanceIds
   }
 

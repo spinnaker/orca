@@ -19,9 +19,10 @@ package com.netflix.spinnaker.orca.kayenta.pipeline
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage
-import com.netflix.spinnaker.orca.kayenta.model.ServerGroupSpec
-import com.netflix.spinnaker.orca.kayenta.model.cluster
-import com.netflix.spinnaker.orca.kayenta.model.regions
+import com.netflix.spinnaker.orca.kayenta.ServerGroupSpec
+import com.netflix.spinnaker.orca.kayenta.cluster
+import com.netflix.spinnaker.orca.kayenta.deployments
+import com.netflix.spinnaker.orca.kayenta.regions
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder

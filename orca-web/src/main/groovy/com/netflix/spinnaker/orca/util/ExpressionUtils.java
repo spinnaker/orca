@@ -18,10 +18,11 @@ package com.netflix.spinnaker.orca.util;
 
 import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.exceptions.UserException;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import com.netflix.spinnaker.orca.q.handler.ExpressionAware;
@@ -49,7 +50,7 @@ public class ExpressionUtils implements ExpressionAware {
   }
 
   public Map<String, Object> evaluateVariables(
-      @Nonnull PipelineExecutionImpl execution,
+      @Nonnull PipelineExecution execution,
       @Nonnull List<String> requisiteStageRefIds,
       @Nullable String spelVersionOverride,
       @Nonnull List<Map<String, String>> expressions) {
@@ -70,7 +71,7 @@ public class ExpressionUtils implements ExpressionAware {
       execution.setSpelEvaluator(spelVersionOverride);
     }
 
-    StageExecutionImpl evalVarsStage =
+    StageExecution evalVarsStage =
         new StageExecutionImpl(execution, EvaluateVariablesStage.STAGE_TYPE, stageContext);
 
     evalVarsStage = ExpressionAware.DefaultImpls.withMergedContext(this, evalVarsStage);
@@ -96,7 +97,7 @@ public class ExpressionUtils implements ExpressionAware {
   }
 
   @Override
-  public boolean shouldFailOnFailedExpressionEvaluation(@NotNull StageExecutionImpl stage) {
+  public boolean shouldFailOnFailedExpressionEvaluation(@NotNull StageExecution stage) {
     return false;
   }
 
@@ -108,18 +109,18 @@ public class ExpressionUtils implements ExpressionAware {
   // problems)
   // Hence, the following methods just defer to the "DefaultImpls"
   @Override
-  public void includeExpressionEvaluationSummary(@NotNull StageExecutionImpl stage) {
+  public void includeExpressionEvaluationSummary(@NotNull StageExecution stage) {
     DefaultImpls.includeExpressionEvaluationSummary(this, stage);
   }
 
   @Override
-  public boolean hasFailedExpressions(@NotNull StageExecutionImpl stage) {
+  public boolean hasFailedExpressions(@NotNull StageExecution stage) {
     return DefaultImpls.hasFailedExpressions(this, stage);
   }
 
   @Override
   @Nonnull
-  public StageExecutionImpl withMergedContext(@NotNull StageExecutionImpl stage) {
+  public StageExecution withMergedContext(@NotNull StageExecution stage) {
     return DefaultImpls.withMergedContext(this, stage);
   }
 

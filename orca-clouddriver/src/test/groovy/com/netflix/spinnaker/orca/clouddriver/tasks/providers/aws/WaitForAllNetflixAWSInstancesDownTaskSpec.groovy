@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
@@ -32,7 +34,7 @@ import spock.lang.Unroll
 class WaitForAllNetflixAWSInstancesDownTaskSpec extends Specification {
   @Subject task = new WaitForAllNetflixAWSInstancesDownTask() {
     @Override
-    void verifyServerGroupsExist(StageExecutionImpl stage) {
+    void verifyServerGroupsExist(StageExecution stage) {
       // do nothing
     }
   }

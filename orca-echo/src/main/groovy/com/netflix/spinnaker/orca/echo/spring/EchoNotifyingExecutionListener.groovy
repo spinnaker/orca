@@ -104,7 +104,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
     }
   }
 
-  private void processSpelInNotifications(PipelineExecutionImpl execution) {
+  private void processSpelInNotifications(PipelineExecution execution) {
     List<Map<String, Object>> spelProcessedNotifications = execution.notifications.collect({
       contextParameterProcessor.process(it, contextParameterProcessor.buildExecutionContext(execution), true)
     })
@@ -120,7 +120,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
    *
    * @param pipeline
    */
-  private void addApplicationNotifications(PipelineExecutionImpl pipeline) {
+  private void addApplicationNotifications(PipelineExecution pipeline) {
     def user = PipelineExecutionImpl.AuthenticationHelper.toKorkUser(pipeline.getAuthentication())
     ApplicationNotifications notifications
     if (user?.isPresent()) {
@@ -158,7 +158,7 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
     }
   }
 
-  private Map<String, Object> buildContent(PipelineExecutionImpl execution) {
+  private Map<String, Object> buildContent(PipelineExecution execution) {
     return contextParameterProcessor.process(
       [
         execution: execution,

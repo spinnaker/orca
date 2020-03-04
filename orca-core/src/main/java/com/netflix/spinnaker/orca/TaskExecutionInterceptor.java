@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca;
 
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import java.util.concurrent.TimeUnit;
 

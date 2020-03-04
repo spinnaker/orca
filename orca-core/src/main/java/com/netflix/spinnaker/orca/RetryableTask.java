@@ -16,6 +16,7 @@
 package com.netflix.spinnaker.orca;
 
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import java.time.Duration;
 
 /**

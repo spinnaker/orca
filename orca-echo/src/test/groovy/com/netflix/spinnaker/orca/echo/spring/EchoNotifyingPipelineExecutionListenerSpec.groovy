@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.echo.spring
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.common.Header
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
@@ -214,7 +215,7 @@ class EchoNotifyingPipelineExecutionListenerSpec extends Specification {
   def "propagates authentication details to front50"() {
     given:
     def pipeline = new PipelineExecutionImpl(PIPELINE, "myapp")
-    pipeline.setAuthentication(new PipelineExecutionImpl.AuthenticationDetails("user@schibsted.com", "someAccount", "anotherAccount"))
+    pipeline.setAuthentication(new PipelineExecution.AuthenticationDetails("user@schibsted.com", "someAccount", "anotherAccount"))
 
     when:
     echoListener.beforeExecution(null, pipeline)

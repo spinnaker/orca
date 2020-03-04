@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,21 +29,21 @@ import java.util.Map;
  * be added prior to the deploy stage steps)
  */
 public interface DeployStagePreProcessor {
-  boolean supports(StageExecutionImpl stage);
+  boolean supports(StageExecution stage);
 
-  default List<StepDefinition> additionalSteps(StageExecutionImpl stage) {
+  default List<StepDefinition> additionalSteps(StageExecution stage) {
     return Collections.emptyList();
   }
 
-  default List<StageDefinition> beforeStageDefinitions(StageExecutionImpl stage) {
+  default List<StageDefinition> beforeStageDefinitions(StageExecution stage) {
     return Collections.emptyList();
   }
 
-  default List<StageDefinition> afterStageDefinitions(StageExecutionImpl stage) {
+  default List<StageDefinition> afterStageDefinitions(StageExecution stage) {
     return Collections.emptyList();
   }
 
-  default List<StageDefinition> onFailureStageDefinitions(StageExecutionImpl stage) {
+  default List<StageDefinition> onFailureStageDefinitions(StageExecution stage) {
     return Collections.emptyList();
   }
 

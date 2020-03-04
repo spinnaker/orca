@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kayenta.pipeline
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.ext.withTask
-import com.netflix.spinnaker.orca.kayenta.model.KayentaCanaryContext
+import com.netflix.spinnaker.orca.kayenta.KayentaCanaryContext
 import com.netflix.spinnaker.orca.kayenta.tasks.AggregateCanaryResultsTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode

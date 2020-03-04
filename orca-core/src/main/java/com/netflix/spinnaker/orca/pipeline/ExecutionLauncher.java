@@ -81,7 +81,7 @@ public class ExecutionLauncher {
   }
 
   public PipelineExecution start(ExecutionType type, String configJson) throws Exception {
-    final PipelineExecutionImpl execution = parse(type, configJson);
+    final PipelineExecution execution = parse(type, configJson);
 
     final PipelineExecution existingExecution = checkForCorrelatedExecution(execution);
     if (existingExecution != null) {
@@ -107,9 +107,9 @@ public class ExecutionLauncher {
    *
    * @param e the exception that was thrown during pipeline validation
    */
-  public PipelineExecutionImpl fail(ExecutionType type, String configJson, Exception e)
+  public PipelineExecution fail(ExecutionType type, String configJson, Exception e)
       throws Exception {
-    final PipelineExecutionImpl execution = parse(type, configJson);
+    final PipelineExecution execution = parse(type, configJson);
 
     persistExecution(execution);
 
@@ -118,18 +118,18 @@ public class ExecutionLauncher {
     return execution;
   }
 
-  private void checkRunnable(PipelineExecutionImpl execution) {
+  private void checkRunnable(PipelineExecution execution) {
     if (execution.getType() == PIPELINE) {
       pipelineValidator.ifPresent(it -> it.checkRunnable(execution));
     }
   }
 
-  public PipelineExecutionImpl start(PipelineExecutionImpl execution) throws Exception {
+  public PipelineExecution start(PipelineExecution execution) throws Exception {
     executionRunner.start(execution);
     return execution;
   }
 
-  private PipelineExecution checkForCorrelatedExecution(PipelineExecutionImpl execution) {
+  private PipelineExecution checkForCorrelatedExecution(PipelineExecution execution) {
     if (execution.getTrigger().getCorrelationId() == null) {
       return null;
     }
@@ -157,8 +157,7 @@ public class ExecutionLauncher {
   }
 
   @SuppressWarnings("unchecked")
-  private PipelineExecution handleStartupFailure(
-      PipelineExecutionImpl execution, Throwable failure) {
+  private PipelineExecution handleStartupFailure(PipelineExecution execution, Throwable failure) {
     final String canceledBy = "system";
     String reason = "Failed on startup: " + failure.getMessage();
     final ExecutionStatus status = ExecutionStatus.TERMINAL;
@@ -188,7 +187,7 @@ public class ExecutionLauncher {
     return executionRepository.retrieve(execution.getType(), execution.getId());
   }
 
-  private PipelineExecutionImpl parse(ExecutionType type, String configJson) throws IOException {
+  private PipelineExecution parse(ExecutionType type, String configJson) throws IOException {
     if (type == PIPELINE) {
       return parsePipeline(configJson);
     } else {
@@ -196,7 +195,7 @@ public class ExecutionLauncher {
     }
   }
 
-  private PipelineExecutionImpl parsePipeline(String configJson) throws IOException {
+  private PipelineExecution parsePipeline(String configJson) throws IOException {
     // TODO: can we not just annotate the class properly to avoid all this?
     Map<String, Serializable> config = objectMapper.readValue(configJson, Map.class);
     return new PipelineBuilder(getString(config, "application"))
@@ -215,16 +214,16 @@ public class ExecutionLauncher {
             (config.get("source") == null)
                 ? null
                 : objectMapper.convertValue(
-                    config.get("source"), PipelineExecutionImpl.PipelineSource.class))
+                    config.get("source"), PipelineExecution.PipelineSource.class))
         .withSpelEvaluator(getString(config, "spelEvaluator"))
         .withTemplateVariables((Map<String, Object>) config.get("templateVariables"))
         .build();
   }
 
-  private PipelineExecutionImpl parseOrchestration(String configJson) throws IOException {
+  private PipelineExecution parseOrchestration(String configJson) throws IOException {
     @SuppressWarnings("unchecked")
     Map<String, Serializable> config = objectMapper.readValue(configJson, Map.class);
-    PipelineExecutionImpl orchestration =
+    PipelineExecution orchestration =
         PipelineExecutionImpl.newOrchestration(getString(config, "application"));
     if (config.containsKey("name")) {
       orchestration.setDescription(getString(config, "name"));
@@ -266,7 +265,7 @@ public class ExecutionLauncher {
   }
 
   /** Persist the initial execution configuration. */
-  private void persistExecution(PipelineExecutionImpl execution) {
+  private void persistExecution(PipelineExecution execution) {
     applicationEventPublisher.publishEvent(new BeforeInitialExecutionPersist(this, execution));
     executionRepository.store(execution);
   }

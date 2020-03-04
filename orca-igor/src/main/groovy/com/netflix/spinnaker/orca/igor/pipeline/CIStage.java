@@ -16,14 +16,13 @@
 package com.netflix.spinnaker.orca.igor.pipeline;
 
 import com.netflix.spinnaker.orca.CancellableStage;
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.igor.model.CIStageDefinition;
 import com.netflix.spinnaker.orca.igor.tasks.*;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,7 +75,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
   }
 
   @Override
-  public Result cancel(final StageExecutionImpl stage) {
+  public Result cancel(final StageExecution stage) {
     log.info(
         String.format(
             "Cancelling stage (stageId: %s, executionId: %s context: %s)",
@@ -104,7 +103,7 @@ public abstract class CIStage implements StageDefinitionBuilder, CancellableStag
           stage.getId(),
           stage.getExecution().getId());
       graph.add(
-          (StageExecutionImpl s) -> {
+          (StageExecution s) -> {
             s.setType(new GetPropertiesStage().getType());
             s.setName("Try to get properties file");
             Map<String, Object> context = new HashMap<>();

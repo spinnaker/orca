@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
@@ -39,7 +40,7 @@ class WaitForCapacityMatchTaskSpec extends Specification {
     }
 
     @Override
-    void verifyServerGroupsExist(StageExecutionImpl stage) {
+    void verifyServerGroupsExist(StageExecution stage) {
       // do nothing
     }
   }

@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import com.google.common.collect.ForwardingMap;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -30,18 +31,18 @@ public class AlertOnAccessMap extends ForwardingMap<String, Object> {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
-  private final PipelineExecutionImpl execution;
+  private final PipelineExecution execution;
   private final Map<String, Object> delegate;
   private final Registry registry;
 
   public AlertOnAccessMap(
-      PipelineExecutionImpl execution, Registry registry, Map<String, Object> delegate) {
+      PipelineExecution execution, Registry registry, Map<String, Object> delegate) {
     this.execution = execution;
     this.registry = registry;
     this.delegate = delegate;
   }
 
-  public AlertOnAccessMap(PipelineExecutionImpl execution, Registry registry) {
+  public AlertOnAccessMap(PipelineExecution execution, Registry registry) {
     this(execution, registry, new HashMap<>());
   }
 

@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class GetGoogleCloudBuildArtifactsTask
   }
 
   @Override
-  public @Nonnull GoogleCloudBuildStageDefinition mapStage(@Nonnull StageExecutionImpl stage) {
+  public @Nonnull GoogleCloudBuildStageDefinition mapStage(@Nonnull StageExecution stage) {
     return stage.mapTo(GoogleCloudBuildStageDefinition.class);
   }
 }

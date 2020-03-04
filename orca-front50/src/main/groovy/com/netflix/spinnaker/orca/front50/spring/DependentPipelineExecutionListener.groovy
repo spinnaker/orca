@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -124,7 +123,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
     }
   }
 
-  private static String convertStatus(PipelineExecutionImpl execution) {
+  private static String convertStatus(PipelineExecution execution) {
     switch (execution.status) {
       case ExecutionStatus.CANCELED:
         return 'canceled'

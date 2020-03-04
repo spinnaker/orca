@@ -43,7 +43,6 @@ import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluat
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -1268,7 +1267,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   }
 
   describe("surfacing expression evaluation errors") {
-    fun exceptionErrors(stages: List<StageExecutionImpl>): List<*> =
+    fun exceptionErrors(stages: List<StageExecution>): List<*> =
       stages.flatMap {
         ((it.context["exception"] as Map<*, *>)["details"] as Map<*, *>)["errors"] as List<*>
       }

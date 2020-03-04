@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.StageExecution;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,7 @@ public class ContextBasedServerGroupEntityTagGenerator implements ServerGroupEnt
 
   @Override
   public List<Map<String, Object>> generateTags(
-      StageExecutionImpl stage,
+      StageExecution stage,
       String serverGroup,
       String account,
       String location,

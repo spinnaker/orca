@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.beans.factory.annotation.Autowired
 
 abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -58,11 +57,11 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
 
   abstract String getServerGroupAction()
 
-  Map<String, Object> getAdditionalContext(StageExecutionImpl stage, Map operation) {
+  Map<String, Object> getAdditionalContext(StageExecution stage, Map operation) {
     return [:]
   }
 
-  Map<String, Object> getAdditionalOutputs(StageExecutionImpl stage, Map operation) {
+  Map<String, Object> getAdditionalOutputs(StageExecution stage, Map operation) {
     return [:]
   }
 
@@ -101,7 +100,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     TaskResult.builder(ExecutionStatus.SUCCEEDED).context(stageOutputs + getAdditionalContext(stage, operation)).outputs(getAdditionalOutputs(stage, operation)).build()
   }
 
-  Map convert(StageExecutionImpl stage) {
+  Map convert(StageExecution stage) {
     def operation = new HashMap(stage.context)
     operation.serverGroupName = (operation.serverGroupName ?: operation.asgName) as String
 
@@ -121,7 +120,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
     operation
   }
 
-  Moniker convertMoniker(StageExecutionImpl stage) {
+  Moniker convertMoniker(StageExecution stage) {
     if (TargetServerGroup.isDynamicallyBound(stage)) {
       TargetServerGroup tsg = TargetServerGroupResolver.fromPreviousStage(stage)
       return tsg.getMoniker()?.getCluster() == null ? MonikerHelper.friggaToMoniker(tsg.getName()) : tsg.getMoniker()

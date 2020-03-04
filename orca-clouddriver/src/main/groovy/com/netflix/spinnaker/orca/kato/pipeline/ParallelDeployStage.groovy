@@ -21,14 +21,13 @@ import com.netflix.spinnaker.orca.api.Trigger
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
 
 import javax.annotation.Nonnull
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -61,17 +60,17 @@ class ParallelDeployStage implements StageDefinitionBuilder {
         def type = isClone(parent) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
         newStage(parent.execution, type, context.name as String, context, parent, STAGE_BEFORE)
       })
-      .forEach({ StageExecutionImpl s -> graph.add(s) })
+      .forEach({ StageExecution s -> graph.add(s) })
   }
 
   @CompileDynamic
-  protected Collection<Map<String, Object>> parallelContexts(StageExecutionImpl stage) {
+  protected Collection<Map<String, Object>> parallelContexts(StageExecution stage) {
     def defaultStageContext = new HashMap(stage.context)
     if (stage.execution.type == PIPELINE) {
       Trigger trigger = stage.execution.trigger
       if (trigger.strategy && trigger instanceof PipelineTrigger) {
         // NOTE: this is NOT the actual parent stage, it's the grandparent which is the top level deploy stage
-        StageExecutionImpl parentDeployStage = trigger.parentExecution.stageById(trigger.parameters.parentStageId)
+        StageExecution parentDeployStage = trigger.parentExecution.stageById(trigger.parameters.parentStageId)
         Map cluster = new HashMap(parentDeployStage.context as Map)
         cluster.strategy = 'none'
         if (!cluster.amiName && trigger.parameters.amiName) {
@@ -133,7 +132,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
   }
 
   @CompileDynamic
-  protected Map<String, Object> clusterContext(StageExecutionImpl stage, Map defaultStageContext, Map cluster) {
+  protected Map<String, Object> clusterContext(StageExecution stage, Map defaultStageContext, Map cluster) {
     def type = isClone(stage) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
 
     if (cluster.providerType && !(cluster.providerType in ['aws', 'titus'])) {
@@ -152,7 +151,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
   }
 
   @CompileDynamic
-  private boolean isClone(StageExecutionImpl stage) {
+  private boolean isClone(StageExecution stage) {
     if (stage.execution.type == PIPELINE) {
       Trigger trigger = stage.execution.trigger
 

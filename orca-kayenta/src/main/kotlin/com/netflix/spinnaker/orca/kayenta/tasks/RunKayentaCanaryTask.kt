@@ -18,13 +18,13 @@ package com.netflix.spinnaker.orca.kayenta.tasks
 
 import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.CanaryExecutionRequest
 import com.netflix.spinnaker.orca.kayenta.KayentaService
-import com.netflix.spinnaker.orca.kayenta.model.RunCanaryContext
+import com.netflix.spinnaker.orca.kayenta.RunCanaryContext
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 

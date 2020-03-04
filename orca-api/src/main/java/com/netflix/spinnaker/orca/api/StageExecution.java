@@ -169,7 +169,11 @@ public interface StageExecution {
 
   boolean getAllowSiblingStagesToContinueOnFailure();
 
+  void setAllowSiblingStagesToContinueOnFailure(boolean allowSiblingStagesToContinueOnFailure);
+
   boolean getContinuePipelineOnFailure();
+
+  void setContinuePipelineOnFailure(boolean continuePipelineOnFailure);
 
   boolean isJoin();
 

@@ -21,8 +21,8 @@ import static java.lang.String.format;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.ExecutionContext;
+import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,8 +40,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
   @Override
   public Functions getFunctions() {
     FunctionParameter[] stageParameters = {
-      new FunctionParameter(
-          PipelineExecutionImpl.class, "execution", "The execution for the stage"),
+      new FunctionParameter(PipelineExecution.class, "execution", "The execution for the stage"),
       new FunctionParameter(String.class, "idOrName", "The name or id of the stage to find")
     };
 
@@ -50,14 +49,14 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
             "currentStage",
             "Returns the current stage object",
             new FunctionParameter(
-                PipelineExecutionImpl.class,
+                PipelineExecution.class,
                 "execution",
                 "The execution containing the currently executing stage")),
         new FunctionDefinition(
             "stageByRefId",
             "Locates and returns a stage with the given refId",
             new FunctionParameter(
-                PipelineExecutionImpl.class,
+                PipelineExecution.class,
                 "execution",
                 "The execution containing the currently executing stage"),
             new FunctionParameter(String.class, "refId", "A valid stage reference identifier")),
@@ -91,7 +90,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param execution the current execution
    * @return the currently executing stage
    */
-  public static StageExecution currentStage(PipelineExecutionImpl execution) {
+  public static StageExecution currentStage(PipelineExecution execution) {
     ExecutionContext executionContext = ExecutionContext.get();
     if (executionContext == null) {
       throw new SpelHelperFunctionException("An execution context is required for this function");
@@ -114,7 +113,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param refId the stage reference ID
    * @return a stage specified by refId
    */
-  public static StageExecution stageByRefId(PipelineExecutionImpl execution, String refId) {
+  public static StageExecution stageByRefId(PipelineExecution execution, String refId) {
     if (refId == null) {
       throw new SpelHelperFunctionException(
           format(
@@ -138,7 +137,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param id the name or id of the stage to find
    * @return a stage specified by id
    */
-  public static StageExecution stage(PipelineExecutionImpl execution, String id) {
+  public static StageExecution stage(PipelineExecution execution, String id) {
     return execution.getStages().stream()
         .filter(i -> id != null && (id.equals(i.getName()) || id.equals(i.getId())))
         .findFirst()
@@ -157,7 +156,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param id the name or id of the stage to check existence
    * @return W
    */
-  public static boolean stageExists(PipelineExecutionImpl execution, String id) {
+  public static boolean stageExists(PipelineExecution execution, String id) {
     return execution.getStages().stream()
         .anyMatch(i -> id != null && (id.equals(i.getName()) || id.equals(i.getId())));
   }
@@ -169,7 +168,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
    * @param id the name of the stage to find
    * @return the judgment input text
    */
-  public static String judgment(PipelineExecutionImpl execution, String id) {
+  public static String judgment(PipelineExecution execution, String id) {
     StageExecution stageWithJudgmentInput =
         execution.getStages().stream()
             .filter(isManualStageWithManualInput(id))
@@ -186,7 +185,7 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
   }
 
   /** Alias to judgment */
-  public static String judgement(PipelineExecutionImpl execution, String id) {
+  public static String judgement(PipelineExecution execution, String id) {
     return judgment(execution, id);
   }
 

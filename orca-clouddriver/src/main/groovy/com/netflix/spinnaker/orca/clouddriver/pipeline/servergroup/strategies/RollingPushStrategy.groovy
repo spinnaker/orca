@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.kork.exceptions.UserException
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.ModifyAsgLaunchConfigurationStage
 import com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.transform.Immutable
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,7 +43,7 @@ class RollingPushStrategy implements Strategy {
   SourceResolver sourceResolver
 
   @Override
-  List<StageExecutionImpl> composeBeforeStages(StageExecutionImpl parent) {
+  List<StageExecution> composeBeforeStages(StageExecution parent) {
     def source = sourceResolver.getSource(parent)
 
     if (!source) {
@@ -54,7 +54,7 @@ class RollingPushStrategy implements Strategy {
   }
 
   @Override
-  List<StageExecutionImpl> composeAfterStages(StageExecutionImpl stage) {
+  List<StageExecution> composeAfterStages(StageExecution stage) {
     def stages = []
     def source = sourceResolver.getSource(stage)
 

@@ -19,8 +19,8 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.annotations.Sync
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.qos.BufferAction.BUFFER
 import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
@@ -87,7 +87,7 @@ class ExecutionBufferActuator(
     }
   }
 
-  fun withActionDecision(execution: PipelineExecutionImpl, fn: (BufferResult) -> Unit) {
+  fun withActionDecision(execution: PipelineExecution, fn: (BufferResult) -> Unit) {
     registry.timer(elapsedTimeId).record {
       orderedPolicies
         .map { it.apply(execution) }

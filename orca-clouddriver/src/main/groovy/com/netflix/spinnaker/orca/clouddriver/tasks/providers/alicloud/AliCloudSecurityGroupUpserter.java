@@ -15,11 +15,11 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.alicloud;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.MortService;
 import com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup;
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupUpserter;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +35,7 @@ public class AliCloudSecurityGroupUpserter implements SecurityGroupUpserter, Clo
   @Autowired MortService mortService;
 
   @Override
-  public OperationContext getOperationContext(StageExecutionImpl stage) {
+  public OperationContext getOperationContext(StageExecution stage) {
     SecurityGroupUpserter.OperationContext operationContext =
         new SecurityGroupUpserter.OperationContext();
     Map<String, Object> context = stage.getContext();
@@ -76,7 +76,7 @@ public class AliCloudSecurityGroupUpserter implements SecurityGroupUpserter, Clo
 
   @Override
   public boolean isSecurityGroupUpserted(
-      SecurityGroup upsertedSecurityGroup, StageExecutionImpl stage) {
+      SecurityGroup upsertedSecurityGroup, StageExecution stage) {
     if (upsertedSecurityGroup == null) {
       return false;
     }

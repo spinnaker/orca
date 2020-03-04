@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.moniker.Moniker
+import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
@@ -42,14 +43,14 @@ class AbstractInstancesCheckTaskSpec extends Specification {
     boolean waitForUpServerGroup = false
 
     @Override
-    protected Map<String, List<String>> getServerGroups(StageExecutionImpl stage) {
+    protected Map<String, List<String>> getServerGroups(StageExecution stage) {
       return [
         'us-west-1': ['front50-v000']
       ]
     }
 
     @Override
-    protected boolean hasSucceeded(StageExecutionImpl stage, Map asg, List<Map> instances, Collection<String> interestingHealthProviderNames) {
+    protected boolean hasSucceeded(StageExecution stage, Map asg, List<Map> instances, Collection<String> interestingHealthProviderNames) {
       hasSucceededSpy.hasSucceeded(asg, instances, interestingHealthProviderNames)
     }
 

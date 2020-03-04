@@ -18,15 +18,14 @@ package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.io.IOException;
@@ -83,7 +82,7 @@ public class StartGoogleCloudBuildTask implements Task {
   }
 
   private Map<String, Object> getBuildDefinitionFromArtifact(
-      @Nonnull StageExecutionImpl stage, GoogleCloudBuildStageDefinition stageDefinition) {
+      @Nonnull StageExecution stage, GoogleCloudBuildStageDefinition stageDefinition) {
     Artifact buildDefinitionArtifact =
         artifactUtils.getBoundArtifactForStage(
             stage,

@@ -21,7 +21,6 @@ import static java.util.stream.Collectors.toMap;
 
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Provides an enhanced version of {@link StageExecutionImpl#ancestors()} that returns tuples of the
+ * Provides an enhanced version of {@link StageExecution#ancestors()} that returns tuples of the
  * ancestor stages and their {@link StageDefinitionBuilder}s.
  */
 @Component

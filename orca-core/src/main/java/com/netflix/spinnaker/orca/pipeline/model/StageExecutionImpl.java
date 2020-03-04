@@ -472,7 +472,7 @@ public class StageExecutionImpl implements StageExecution, Serializable {
         && (execution.getTrigger() instanceof PipelineTrigger)) {
       PipelineTrigger parentTrigger = (PipelineTrigger) execution.getTrigger();
 
-      PipelineExecutionImpl parentPipelineExecution = parentTrigger.getParentExecution();
+      PipelineExecution parentPipelineExecution = parentTrigger.getParentExecution();
       String parentPipelineStageId = parentTrigger.getParentPipelineStageId();
 
       Optional<StageExecution> parentPipelineStage =

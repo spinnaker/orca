@@ -1,7 +1,7 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.kayenta.model
+package com.netflix.spinnaker.orca.kayenta
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.netflix.spinnaker.orca.kayenta.Thresholds
 import java.time.Duration
 import java.time.Instant
 

@@ -18,9 +18,9 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;

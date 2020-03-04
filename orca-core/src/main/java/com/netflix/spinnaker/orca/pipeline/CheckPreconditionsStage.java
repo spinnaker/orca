@@ -21,10 +21,9 @@ import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStag
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.PreconditionTask;
 import java.util.Collection;
 import java.util.HashMap;
@@ -73,7 +72,7 @@ public class CheckPreconditionsStage implements StageDefinitionBuilder {
           .map(
               context ->
                   newStage(
-                      (PipelineExecutionImpl) parent.getExecution(),
+                      parent.getExecution(),
                       getType(),
                       format("Check precondition (%s)", context.get("preconditionType")),
                       context,

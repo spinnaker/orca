@@ -20,14 +20,13 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
-import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.Task;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -56,7 +55,7 @@ public final class DeployManifestTask extends AbstractCloudProviderAwareTask imp
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).build();
   }
 
-  private ImmutableMap<String, Map> getOperation(StageExecutionImpl stage) {
+  private ImmutableMap<String, Map> getOperation(StageExecution stage) {
     DeployManifestContext context = stage.mapTo(DeployManifestContext.class);
 
     Map<String, Object> task = new HashMap<>(stage.getContext());
@@ -76,14 +75,14 @@ public final class DeployManifestTask extends AbstractCloudProviderAwareTask imp
     return ImmutableMap.of(TASK_NAME, task);
   }
 
-  private TaskId executeOperation(StageExecutionImpl stage, ImmutableMap<String, Map> operation) {
+  private TaskId executeOperation(StageExecution stage, ImmutableMap<String, Map> operation) {
     return katoService
         .requestOperations(getCloudProvider(stage), ImmutableList.of(operation))
         .toBlocking()
         .first();
   }
 
-  private ImmutableMap<String, Object> getOutputs(StageExecutionImpl stage, TaskId taskId) {
+  private ImmutableMap<String, Object> getOutputs(StageExecution stage, TaskId taskId) {
     return new ImmutableMap.Builder<String, Object>()
         .put("kato.result.expected", true)
         .put("kato.last.task.id", taskId)

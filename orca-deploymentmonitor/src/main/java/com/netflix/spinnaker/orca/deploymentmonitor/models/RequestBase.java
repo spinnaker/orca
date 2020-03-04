@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.deploymentmonitor.models;
 
+import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorService;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Map;
 import lombok.Data;
 
@@ -73,11 +73,11 @@ public class RequestBase {
 
   public RequestBase() {}
 
-  public RequestBase(StageExecutionImpl stage) {
+  public RequestBase(StageExecution stage) {
     fromStage(stage);
   }
 
-  protected void fromStage(StageExecutionImpl stage) {
+  protected void fromStage(StageExecution stage) {
     application = stage.getExecution().getApplication();
     executionId = stage.getExecution().getId();
     stageId = stage.getId();

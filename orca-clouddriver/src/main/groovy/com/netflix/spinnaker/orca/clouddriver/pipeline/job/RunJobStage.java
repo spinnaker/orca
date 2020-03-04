@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PromoteManifestKato
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,7 +77,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
     }
   }
 
-  private void injectManifestForceCacheRefresh(StageExecutionImpl stage, TaskNode.Builder builder) {
+  private void injectManifestForceCacheRefresh(StageExecution stage, TaskNode.Builder builder) {
     Map<String, Object> context = stage.getContext();
     String cloudProvider = (String) context.getOrDefault("cloudProvider", "");
     boolean manifestBasedRunJob =
@@ -92,7 +91,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public Result cancel(StageExecutionImpl stage) {
+  public Result cancel(StageExecution stage) {
     log.info(
         "Canceling run job stage {} for executionId {}",
         stage.getId(),

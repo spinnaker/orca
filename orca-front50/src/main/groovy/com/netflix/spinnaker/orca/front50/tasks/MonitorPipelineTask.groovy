@@ -16,14 +16,13 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
+import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.api.StageExecution
 
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.TaskResult
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,7 +42,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
   @Override
   TaskResult execute(StageExecution stage) {
     String pipelineId = stage.context.executionId
-    PipelineExecutionImpl childPipeline = executionRepository.retrieve(PIPELINE, pipelineId)
+    PipelineExecution childPipeline = executionRepository.retrieve(PIPELINE, pipelineId)
 
     if (childPipeline.status == ExecutionStatus.SUCCEEDED) {
       return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([status: childPipeline.status]).outputs(childPipeline.getContext()).build()
@@ -97,7 +96,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
     return TaskResult.builder(ExecutionStatus.RUNNING).context([status: childPipeline.status]).build()
   }
 
-  private static String buildExceptionMessage(String pipelineName, String message, StageExecutionImpl stage) {
+  private static String buildExceptionMessage(String pipelineName, String message, StageExecution stage) {
     "Exception in child pipeline stage (${pipelineName}: ${stage.name ?: stage.type}): ${message}"
   }
 }

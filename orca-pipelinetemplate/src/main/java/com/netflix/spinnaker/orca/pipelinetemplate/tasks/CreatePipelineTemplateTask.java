@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,15 +57,17 @@ public class CreatePipelineTemplateTask implements RetryableTask, SavePipelineTe
     }
 
     PipelineTemplate pipelineTemplate =
-        stage.decodeBase64(
-            "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
+        ((StageExecutionImpl) stage)
+            .decodeBase64(
+                "/pipelineTemplate", PipelineTemplate.class, pipelineTemplateObjectMapper);
 
     validate(pipelineTemplate);
 
     Response response =
         front50Service.savePipelineTemplate(
             (Map<String, Object>)
-                stage.decodeBase64("/pipelineTemplate", Map.class, pipelineTemplateObjectMapper));
+                ((StageExecutionImpl) stage)
+                    .decodeBase64("/pipelineTemplate", Map.class, pipelineTemplateObjectMapper));
 
     // TODO rz - app & account context?
     Map<String, Object> outputs = new HashMap<>();

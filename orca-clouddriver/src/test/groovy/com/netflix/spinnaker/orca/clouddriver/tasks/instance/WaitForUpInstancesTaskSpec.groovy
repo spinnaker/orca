@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
+import com.netflix.spinnaker.orca.api.StageExecution
+
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
@@ -34,7 +36,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
 
   @Subject task = new WaitForUpInstancesTask() {
     @Override
-    void verifyServerGroupsExist(StageExecutionImpl stage) {
+    void verifyServerGroupsExist(StageExecution stage) {
       // do nothing
     }
   }
