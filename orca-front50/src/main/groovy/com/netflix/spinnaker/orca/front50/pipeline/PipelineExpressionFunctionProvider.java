@@ -22,7 +22,7 @@ import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import java.util.Map;
 import java.util.Optional;

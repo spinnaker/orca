@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.AbstractInstancesCheckTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
 import groovy.util.logging.Slf4j

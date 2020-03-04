@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWideClouddriverOperationStage.ClusterSelection
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage

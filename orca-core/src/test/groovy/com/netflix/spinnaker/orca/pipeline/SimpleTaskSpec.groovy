@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput

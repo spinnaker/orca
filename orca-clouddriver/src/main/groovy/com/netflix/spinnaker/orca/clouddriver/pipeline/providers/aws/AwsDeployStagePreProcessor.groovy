@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData

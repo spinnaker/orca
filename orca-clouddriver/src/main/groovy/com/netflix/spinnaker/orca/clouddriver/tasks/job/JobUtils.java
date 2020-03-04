@@ -20,7 +20,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.job;
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.moniker.Moniker;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import java.util.HashMap;

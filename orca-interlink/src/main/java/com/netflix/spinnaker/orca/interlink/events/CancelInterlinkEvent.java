@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.interlink.events;
 
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.CANCEL;
 
-import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
 import javax.annotation.Nullable;
 

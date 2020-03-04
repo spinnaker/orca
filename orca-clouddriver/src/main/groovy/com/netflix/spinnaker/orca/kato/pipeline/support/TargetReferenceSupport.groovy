@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import groovy.util.logging.Slf4j

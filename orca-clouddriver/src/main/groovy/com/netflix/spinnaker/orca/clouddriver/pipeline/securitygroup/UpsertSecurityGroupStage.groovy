@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.securitygroup
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupForceCacheRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.UpsertSecurityGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.WaitForUpsertedSecurityGroupTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import org.springframework.stereotype.Component
 
 import javax.annotation.Nonnull

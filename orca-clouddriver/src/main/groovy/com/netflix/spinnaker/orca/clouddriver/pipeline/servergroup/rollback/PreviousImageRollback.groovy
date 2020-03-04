@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage

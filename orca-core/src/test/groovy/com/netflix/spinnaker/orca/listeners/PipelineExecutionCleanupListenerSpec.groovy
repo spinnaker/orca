@@ -22,8 +22,8 @@ import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 
 class PipelineExecutionCleanupListenerSpec extends Specification {
   @Subject

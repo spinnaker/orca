@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca;
 
 import static java.lang.String.format;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage;
 import com.netflix.spinnaker.orca.pipeline.SimpleStageDefinitionBuilder;
 import java.util.Collection;

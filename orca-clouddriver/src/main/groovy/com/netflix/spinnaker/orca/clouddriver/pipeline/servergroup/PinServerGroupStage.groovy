@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ResizeServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 

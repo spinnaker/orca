@@ -15,11 +15,11 @@
  */
 package com.netflix.spinnaker.orca.igor.pipeline;
 
-import com.netflix.spinnaker.orca.api.CancellableStage;
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.tasks.GetAwsCodeBuildArtifactsTask;
 import com.netflix.spinnaker.orca.igor.tasks.MonitorAwsCodeBuildTask;
 import com.netflix.spinnaker.orca.igor.tasks.StartAwsCodeBuildTask;

@@ -17,17 +17,12 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import retrofit.client.Response
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
-import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*
+
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND
 
 /**

@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionStarted
 import com.netflix.spinnaker.orca.ext.initialStages

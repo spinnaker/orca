@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ApplySourceServerGroupCapacityStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.CaptureSourceServerGroupCapacityStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.DisableServerGroupStage

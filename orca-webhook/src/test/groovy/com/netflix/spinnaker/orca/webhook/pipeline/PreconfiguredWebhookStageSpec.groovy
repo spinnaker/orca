@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.webhook.pipeline
 
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties

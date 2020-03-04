@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.clouddriver.utils;
 
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.moniker.Moniker;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import org.springframework.stereotype.Component;
 
 /**

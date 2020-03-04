@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.webhook.tasks
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.webhook.service.WebhookService

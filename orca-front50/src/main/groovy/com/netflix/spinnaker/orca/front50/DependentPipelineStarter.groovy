@@ -21,8 +21,8 @@ import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component
 
 import java.util.concurrent.Callable
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 @Component
 @Slf4j

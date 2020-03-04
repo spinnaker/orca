@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import org.slf4j.LoggerFactory

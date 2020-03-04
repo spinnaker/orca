@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.api.CancellableStage;
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.ConsumeArtifactTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.MonitorJobTask;

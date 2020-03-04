@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.orchestration
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 

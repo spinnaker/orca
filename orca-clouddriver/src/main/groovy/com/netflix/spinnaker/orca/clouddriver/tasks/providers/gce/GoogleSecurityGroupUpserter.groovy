@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupUpserter
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware

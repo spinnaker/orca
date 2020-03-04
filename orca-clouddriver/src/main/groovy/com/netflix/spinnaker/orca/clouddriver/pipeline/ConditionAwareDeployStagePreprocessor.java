@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline;
 
-import com.netflix.spinnaker.orca.api.ExecutionType;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.Condition;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.ConditionSupplier;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.WaitForConditionStage;

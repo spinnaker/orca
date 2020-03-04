@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.kato.tasks
 
-import com.netflix.spinnaker.orca.api.Task
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.loadbalancer.UpsertLoadBalancerStage
 import com.netflix.spinnaker.orca.kato.pipeline.UpsertAmazonLoadBalancerStage
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component
 
 import javax.annotation.Nonnull
 
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 
 @Component
 @CompileStatic

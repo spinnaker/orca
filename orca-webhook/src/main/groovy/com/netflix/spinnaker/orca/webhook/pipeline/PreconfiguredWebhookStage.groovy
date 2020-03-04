@@ -18,8 +18,8 @@
 package com.netflix.spinnaker.orca.webhook.pipeline
 
 import com.netflix.spinnaker.fiat.shared.FiatService
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties.PreconfiguredWebhook
 import com.netflix.spinnaker.orca.webhook.exception.PreconfiguredWebhookNotFoundException
 import com.netflix.spinnaker.orca.webhook.exception.PreconfiguredWebhookUnauthorizedException

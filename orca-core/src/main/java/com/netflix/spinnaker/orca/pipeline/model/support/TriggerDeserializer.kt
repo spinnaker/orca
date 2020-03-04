@@ -20,8 +20,8 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.pipeline.model.ArtifactoryTrigger
 import com.netflix.spinnaker.orca.pipeline.model.ConcourseTrigger
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger

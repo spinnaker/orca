@@ -15,10 +15,10 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline;
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Task;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 

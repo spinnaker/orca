@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.commands.InstanceUptimeCommand
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl

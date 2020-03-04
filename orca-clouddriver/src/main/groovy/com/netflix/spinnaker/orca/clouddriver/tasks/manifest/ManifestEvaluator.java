@@ -28,7 +28,7 @@ import com.google.common.collect.Streams;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.BindArtifact;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;

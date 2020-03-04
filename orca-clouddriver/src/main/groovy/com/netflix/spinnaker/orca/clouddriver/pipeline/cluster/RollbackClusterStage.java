@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.StageGraphBuilder;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.DetermineRollbackCandidatesTask;
 import com.netflix.spinnaker.orca.pipeline.WaitStage;

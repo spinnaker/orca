@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.qos
 
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import org.springframework.core.Ordered
 
 /**

@@ -1,6 +1,6 @@
 package com.netflix.spinnaker.orca.pipeline.util;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import java.util.*;
 import org.jetbrains.annotations.NotNull;

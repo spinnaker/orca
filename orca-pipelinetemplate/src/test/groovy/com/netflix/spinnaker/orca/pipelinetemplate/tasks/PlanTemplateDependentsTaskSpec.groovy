@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.pipelinetemplate.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl

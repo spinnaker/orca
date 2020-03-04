@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline.models;
 
 import static java.util.Collections.emptySet;
 
 import com.google.common.collect.ImmutableSet;
+import com.netflix.spinnaker.kork.annotations.Beta;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import java.io.Serializable;
 import java.util.Collection;
@@ -28,6 +29,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+@Beta
 public interface StageExecution {
 
   @Nonnull

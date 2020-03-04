@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
 import org.springframework.context.ApplicationEventPublisher
 
@@ -30,7 +30,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 class PipelineExecutionLauncherSpec extends Specification {
 

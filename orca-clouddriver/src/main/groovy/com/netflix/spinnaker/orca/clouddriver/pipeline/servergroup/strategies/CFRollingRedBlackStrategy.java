@@ -20,9 +20,9 @@ import static com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategySup
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage;

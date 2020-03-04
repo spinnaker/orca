@@ -18,11 +18,10 @@ package com.netflix.spinnaker.orca.interlink.events;
 
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.RESUME;
 
-import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
 import javax.annotation.Nullable;
 
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecution;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -15,10 +15,10 @@
  */
 package com.netflix.spinnaker.orca.commands
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.LoggerFactory
 import java.time.Clock

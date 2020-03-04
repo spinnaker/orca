@@ -17,8 +17,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard

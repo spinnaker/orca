@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.StageResolver
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
@@ -28,9 +28,9 @@ import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.RestartStage

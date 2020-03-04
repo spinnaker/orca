@@ -17,12 +17,11 @@
 package com.netflix.spinnaker.orca.mine.tasks
 
 import com.netflix.spinnaker.security.AuthenticatedRequest
-import com.netflix.spinnaker.orca.api.StageExecution
-
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import java.util.concurrent.TimeUnit
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.mine.MineService
 import groovy.util.logging.Slf4j

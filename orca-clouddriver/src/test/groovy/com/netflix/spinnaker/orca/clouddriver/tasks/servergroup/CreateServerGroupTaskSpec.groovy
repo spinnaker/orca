@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId

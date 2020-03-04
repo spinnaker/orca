@@ -15,8 +15,8 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification

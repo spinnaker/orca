@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline;
 
+import com.netflix.spinnaker.kork.annotations.Beta;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Map;
 
+@Beta
 public interface CancellableStage {
   Result cancel(StageExecution stage);
 

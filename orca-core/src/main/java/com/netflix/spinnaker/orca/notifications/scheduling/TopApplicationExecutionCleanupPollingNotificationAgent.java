@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.notifications.scheduling;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION;
 import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Comparator.comparing;
@@ -25,7 +25,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.LongTaskTimer;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;

@@ -19,9 +19,9 @@ import static java.util.Collections.emptyList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;

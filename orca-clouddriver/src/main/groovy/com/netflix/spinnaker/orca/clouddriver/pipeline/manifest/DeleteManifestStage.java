@@ -17,9 +17,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeleteManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestForceCacheRefreshTask;

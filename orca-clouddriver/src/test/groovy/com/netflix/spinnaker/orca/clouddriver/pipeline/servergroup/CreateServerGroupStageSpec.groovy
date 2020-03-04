@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import org.springframework.mock.env.MockEnvironment
 

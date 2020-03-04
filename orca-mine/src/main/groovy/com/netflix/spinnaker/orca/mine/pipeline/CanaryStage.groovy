@@ -16,19 +16,19 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 
 import java.util.concurrent.TimeUnit
 import javax.annotation.Nonnull
 import com.netflix.frigga.autoscaling.AutoScalingGroupNameBuilder
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.api.CancellableStage
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

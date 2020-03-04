@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.deploymentmonitor.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

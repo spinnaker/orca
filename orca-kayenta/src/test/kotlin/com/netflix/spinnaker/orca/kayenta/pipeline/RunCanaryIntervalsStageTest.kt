@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.kayenta.CanaryScope
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.spek.values
 import com.netflix.spinnaker.spek.where

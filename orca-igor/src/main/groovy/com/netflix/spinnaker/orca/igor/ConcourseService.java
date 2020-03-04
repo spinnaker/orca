@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.igor;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.model.ConcourseStageExecution;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;

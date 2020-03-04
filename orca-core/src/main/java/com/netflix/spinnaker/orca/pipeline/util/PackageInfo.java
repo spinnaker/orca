@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -26,7 +26,7 @@ import static java.util.stream.Collectors.toList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.*;
 import java.util.regex.Pattern;
 

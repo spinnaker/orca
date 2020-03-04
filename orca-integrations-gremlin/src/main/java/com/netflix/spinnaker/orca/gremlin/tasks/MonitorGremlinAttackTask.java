@@ -2,11 +2,11 @@ package com.netflix.spinnaker.orca.gremlin.tasks;
 
 import static com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage.TERMINAL_KEY;
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Task;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.gremlin.AttackStatus;
 import com.netflix.spinnaker.orca.gremlin.GremlinService;
 import com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage;

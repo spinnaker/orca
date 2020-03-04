@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.notifications.scheduling
 
 import com.netflix.spectator.api.NoopRegistry
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
@@ -27,7 +27,7 @@ import spock.lang.Unroll
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 

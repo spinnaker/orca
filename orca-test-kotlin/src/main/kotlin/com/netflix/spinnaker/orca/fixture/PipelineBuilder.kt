@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.fixture
 
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl

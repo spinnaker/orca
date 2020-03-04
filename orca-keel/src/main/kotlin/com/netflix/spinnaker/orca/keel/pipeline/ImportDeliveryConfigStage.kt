@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.keel.pipeline
 
-import com.netflix.spinnaker.orca.api.Task
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder.Aliases
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder.Aliases
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
 

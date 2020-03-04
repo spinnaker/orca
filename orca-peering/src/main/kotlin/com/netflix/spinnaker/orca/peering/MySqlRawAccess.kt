@@ -2,7 +2,7 @@ package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.kork.sql.routing.withPool
-import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL

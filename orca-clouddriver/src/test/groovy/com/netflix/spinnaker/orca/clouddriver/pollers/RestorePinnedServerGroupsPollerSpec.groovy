@@ -21,7 +21,7 @@ import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher

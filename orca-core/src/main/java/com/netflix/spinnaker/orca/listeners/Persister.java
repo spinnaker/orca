@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.listeners;
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.ExecutionType;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 
 public interface Persister {
   void save(StageExecution stage);

@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.listeners;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION;
 
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import java.util.concurrent.TimeUnit;
 
 public class MetricsExecutionListener implements ExecutionListener {

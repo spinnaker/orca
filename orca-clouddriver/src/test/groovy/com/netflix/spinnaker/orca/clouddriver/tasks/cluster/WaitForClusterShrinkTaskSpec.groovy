@@ -25,8 +25,8 @@ import retrofit.client.Response
 import retrofit.mime.TypedByteArray
 import spock.lang.Specification
 import spock.lang.Subject
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import static retrofit.RetrofitError.httpError
 
 class WaitForClusterShrinkTaskSpec extends Specification {

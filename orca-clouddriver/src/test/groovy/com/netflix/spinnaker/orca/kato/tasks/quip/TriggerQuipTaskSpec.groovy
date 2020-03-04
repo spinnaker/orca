@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.kato.tasks.quip
 
 import java.nio.charset.Charset
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.InstanceService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl

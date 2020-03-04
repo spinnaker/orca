@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.events.StageStarted
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
@@ -29,8 +29,8 @@ import com.netflix.spinnaker.orca.ext.firstBeforeStages
 import com.netflix.spinnaker.orca.ext.firstTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.OptionalStageSupport
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository

@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.clone
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component

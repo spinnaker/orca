@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage

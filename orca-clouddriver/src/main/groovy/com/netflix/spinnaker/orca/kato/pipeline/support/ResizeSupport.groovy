@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.Capacity
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.OptionalConfiguration
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy.ResizeAction

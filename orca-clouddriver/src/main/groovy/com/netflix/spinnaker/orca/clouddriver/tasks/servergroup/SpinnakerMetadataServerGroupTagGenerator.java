@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import java.util.Collection;
 import java.util.Collections;

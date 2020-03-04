@@ -22,7 +22,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

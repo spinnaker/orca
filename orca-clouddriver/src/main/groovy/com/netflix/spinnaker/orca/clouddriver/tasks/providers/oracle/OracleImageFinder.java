@@ -11,7 +11,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.oracle;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageFinder;
 import java.util.Collection;

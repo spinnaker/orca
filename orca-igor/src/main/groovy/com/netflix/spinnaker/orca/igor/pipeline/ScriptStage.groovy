@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.igor.pipeline
 
-import com.netflix.spinnaker.orca.api.CancellableStage
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.igor.tasks.GetBuildPropertiesTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.MonitorQueuedJenkinsJobTask
 import com.netflix.spinnaker.orca.igor.tasks.StartScriptTask
 import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired

@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.clouddriver.tasks;
 
 import com.netflix.frigga.Names;
 import com.netflix.spinnaker.moniker.Moniker;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.RetryableTask;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.InterestingHealthProviderNamesSupplier;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;

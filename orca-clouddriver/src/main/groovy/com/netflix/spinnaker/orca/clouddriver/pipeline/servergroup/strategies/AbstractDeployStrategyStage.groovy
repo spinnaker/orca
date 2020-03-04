@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.moniker.Moniker
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwareStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
@@ -27,7 +27,7 @@ import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGr
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired

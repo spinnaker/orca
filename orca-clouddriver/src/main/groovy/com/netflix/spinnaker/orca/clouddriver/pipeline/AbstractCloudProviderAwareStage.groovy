@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline
 
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import groovy.util.logging.Slf4j
 
 import javax.annotation.Nonnull

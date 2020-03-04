@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstanceHealthTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.InstanceHealthCheckTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.MonitorQuipTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.TriggerQuipTask
 import com.netflix.spinnaker.orca.kato.tasks.quip.VerifyQuipTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component

@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.alicloud;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.MortService;
 import com.netflix.spinnaker.orca.clouddriver.MortService.SecurityGroup;
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupUpserter;

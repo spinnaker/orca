@@ -18,8 +18,12 @@ package com.netflix.spinnaker.orca.pipeline.tasks;
 
 import static java.lang.String.format;
 
-import com.netflix.spinnaker.orca.api.*;
-import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import java.util.concurrent.TimeUnit;

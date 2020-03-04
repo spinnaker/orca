@@ -17,9 +17,9 @@
 package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
 import java.util.Collections;

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.FindArtifactFromExecutionTask;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;

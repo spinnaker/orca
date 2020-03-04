@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 
 import javax.annotation.Nonnull
@@ -28,8 +28,8 @@ import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.entitytags.DeleteEntityTagsStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

@@ -20,18 +20,18 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.model.OrchestrationViewModel
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -55,8 +55,8 @@ import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.*
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria

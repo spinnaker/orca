@@ -18,11 +18,11 @@ package com.netflix.spinnaker.orca.keel
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.KeelService
-import com.netflix.spinnaker.orca.api.TaskResult
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE

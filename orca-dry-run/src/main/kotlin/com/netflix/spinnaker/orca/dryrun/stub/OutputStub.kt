@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.dryrun.stub
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 /**
  * Certain stages may benefit from outputting dummy data in order that they

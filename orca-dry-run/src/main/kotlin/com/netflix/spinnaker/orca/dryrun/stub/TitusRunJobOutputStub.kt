@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.dryrun.stub
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import org.springframework.stereotype.Component
 import java.util.UUID
 

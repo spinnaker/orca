@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.kayenta.tasks
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.FAILED_CONTINUE
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.FAILED_CONTINUE
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.CanaryResults
 import com.netflix.spinnaker.orca.kayenta.KayentaService

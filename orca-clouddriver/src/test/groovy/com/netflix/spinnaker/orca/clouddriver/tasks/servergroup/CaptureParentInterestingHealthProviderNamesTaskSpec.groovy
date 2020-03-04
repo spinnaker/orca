@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.AuthenticatedStage
 import com.netflix.spinnaker.orca.ExecutionContext
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import com.netflix.spinnaker.security.User

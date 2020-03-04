@@ -20,13 +20,13 @@ import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor

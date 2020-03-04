@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.events;
 
-import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import java.time.Instant;
 import javax.annotation.Nonnull;
 import org.springframework.context.ApplicationEvent;

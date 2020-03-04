@@ -16,8 +16,8 @@
 package com.netflix.spinnaker.orca.echo.spring
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
@@ -29,7 +29,7 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 @Slf4j
 @CompileStatic

@@ -15,9 +15,9 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.dcos
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 class DcosContainerFinder {
   static void populateFromStage(Map operation, StageExecution stage) {

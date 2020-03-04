@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
 import com.netflix.spinnaker.moniker.Moniker
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import groovy.transform.InheritConstructors
 import groovy.transform.ToString

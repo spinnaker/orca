@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.security.User;
 import java.util.Optional;
 

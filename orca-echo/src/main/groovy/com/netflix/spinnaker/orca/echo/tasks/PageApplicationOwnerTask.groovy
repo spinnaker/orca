@@ -17,18 +17,18 @@
 
 package com.netflix.spinnaker.orca.echo.tasks
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 import java.util.concurrent.TimeUnit
-import com.netflix.spinnaker.orca.api.RetryableTask
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 
 @Slf4j
 @Component

@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.conditions;
 
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.RetryableTask;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.Condition;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.ConditionConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.conditions.ConditionSupplier;

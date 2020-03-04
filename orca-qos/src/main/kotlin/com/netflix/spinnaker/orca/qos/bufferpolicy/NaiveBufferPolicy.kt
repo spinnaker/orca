@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.qos.bufferpolicy
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.qos.BufferAction
 import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
 import com.netflix.spinnaker.orca.qos.BufferPolicy

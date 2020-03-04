@@ -1,7 +1,7 @@
 package com.netflix.spinnaker.orca.controllers;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder;

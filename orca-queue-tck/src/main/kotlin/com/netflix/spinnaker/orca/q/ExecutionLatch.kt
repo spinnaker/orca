@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.events.ExecutionComplete
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.context.ApplicationListener
 import org.springframework.context.ConfigurableApplicationContext

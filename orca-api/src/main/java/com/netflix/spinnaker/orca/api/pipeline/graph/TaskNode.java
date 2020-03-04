@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline.graph;
 
-import static com.netflix.spinnaker.orca.api.TaskNode.GraphType.LOOP;
+import static com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.GraphType.LOOP;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.netflix.spinnaker.kork.annotations.Beta;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,6 +30,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 /** A node in a {@link TaskGraph} which can be either an individual task or a sub-graph. */
+@Beta
 public interface TaskNode {
 
   enum GraphType {

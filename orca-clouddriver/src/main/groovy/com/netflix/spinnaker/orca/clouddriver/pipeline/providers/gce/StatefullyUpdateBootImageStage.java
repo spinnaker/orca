@@ -17,9 +17,9 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.StatefullyUpdateBootImageTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;

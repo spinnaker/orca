@@ -12,17 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline;
 
+import com.netflix.spinnaker.kork.annotations.Beta;
 import com.netflix.spinnaker.orca.api.annotations.Immutable;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.Singular;
 
+@Beta
 @Data
 @Builder
 public final class TaskResult {

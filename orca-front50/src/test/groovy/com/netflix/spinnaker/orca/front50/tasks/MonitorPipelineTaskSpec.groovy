@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository

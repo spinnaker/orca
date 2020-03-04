@@ -16,14 +16,18 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.*;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.*;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Calendar.*;
 import static java.util.Collections.singletonList;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.netflix.spinnaker.orca.api.*;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import java.time.Instant;
 import java.time.LocalTime;

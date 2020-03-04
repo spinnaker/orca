@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.pipeline.model.support
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 
 /**
  * Provides a [predicate] & [deserializer] pair for custom trigger types.

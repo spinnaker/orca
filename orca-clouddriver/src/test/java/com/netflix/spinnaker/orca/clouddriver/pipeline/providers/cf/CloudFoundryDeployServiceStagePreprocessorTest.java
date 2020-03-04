@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryDeployServiceTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMonitorKatoServicesTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryWaitForDeployServiceTask;

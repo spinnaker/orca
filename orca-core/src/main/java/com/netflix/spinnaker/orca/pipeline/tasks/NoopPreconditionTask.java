@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks;
 
-import static com.netflix.spinnaker.orca.api.TaskResult.SUCCEEDED;
+import static com.netflix.spinnaker.orca.api.pipeline.TaskResult.SUCCEEDED;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import org.springframework.stereotype.Component;
 
 @Component

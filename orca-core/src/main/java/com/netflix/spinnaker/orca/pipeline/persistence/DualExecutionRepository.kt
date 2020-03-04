@@ -15,12 +15,12 @@
  */
 package com.netflix.spinnaker.orca.pipeline.persistence
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import org.slf4j.LoggerFactory

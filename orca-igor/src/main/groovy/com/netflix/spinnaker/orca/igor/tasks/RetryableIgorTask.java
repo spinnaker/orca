@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.RetryableTask;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.model.RetryableStageDefinition;
 import java.util.Collections;
 import java.util.Map;

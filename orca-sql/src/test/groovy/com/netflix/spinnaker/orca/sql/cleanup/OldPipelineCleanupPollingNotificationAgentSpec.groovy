@@ -24,7 +24,7 @@ import java.time.Instant
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spectator.api.NoopRegistry
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
@@ -34,7 +34,7 @@ import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepositor
 import spock.lang.AutoCleanup
 import spock.lang.Shared
 import spock.lang.Specification
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initTcMysqlDatabase
 import static java.time.temporal.ChronoUnit.DAYS
 

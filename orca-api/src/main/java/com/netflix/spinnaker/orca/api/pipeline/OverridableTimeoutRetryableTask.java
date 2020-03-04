@@ -13,24 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline;
 
-import javax.annotation.Nonnull;
+import com.netflix.spinnaker.kork.annotations.Alpha;
 
-public interface SourceCodeTrigger extends Trigger {
-
-  @Nonnull
-  String getSource();
-
-  @Nonnull
-  String getProject();
-
-  @Nonnull
-  String getBranch();
-
-  @Nonnull
-  String getSlug();
-
-  @Nonnull
-  String getHash();
-}
+/**
+ * A retryable task whose timeout is taken from the top level stage if that value has been
+ * overridden.
+ *
+ * <p>These are typically wait/monitor stages
+ *
+ * <p>TODO(rz): What even is the point of this interface?
+ */
+@Alpha
+public interface OverridableTimeoutRetryableTask extends RetryableTask {}

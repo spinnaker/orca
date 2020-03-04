@@ -16,14 +16,14 @@
 package com.netflix.spinnaker.orca.q.admin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.api.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.TaskResolver
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.ext.afterStages
 import com.netflix.spinnaker.orca.ext.allAfterStagesSuccessful
 import com.netflix.spinnaker.orca.ext.allBeforeStagesSuccessful

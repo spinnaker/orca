@@ -17,8 +17,8 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import java.sql.ResultSet

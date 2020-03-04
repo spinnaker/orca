@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.tasks.image
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.MonitorDeleteImageTask
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl

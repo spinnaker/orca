@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.appengine
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine.StartAppEngineServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine.WaitForAppEngineServerGroupStartTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
 

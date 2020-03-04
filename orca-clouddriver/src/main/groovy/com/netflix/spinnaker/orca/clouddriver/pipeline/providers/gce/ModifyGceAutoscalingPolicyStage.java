@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.autoscaling.UpsertGceAutoscalingPolicyTask;

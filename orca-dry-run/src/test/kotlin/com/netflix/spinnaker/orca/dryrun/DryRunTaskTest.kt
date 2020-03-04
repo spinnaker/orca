@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.dryrun
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.dryrun.stub.OutputStub
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage

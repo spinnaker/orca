@@ -17,12 +17,12 @@
 package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 /**
  * Tasks may implement this trait to get convention-based access to deployment details that should come from in order of preference:

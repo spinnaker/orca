@@ -15,8 +15,8 @@
  */
 package com.netflix.spinnaker.orca.qos.bufferpolicy
 
-import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.qos.BufferAction.BUFFER
 import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
 import com.netflix.spinnaker.orca.qos.BufferPolicy

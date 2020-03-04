@@ -18,19 +18,19 @@ package com.netflix.spinnaker.orca.mine.pipeline
 
 import com.netflix.frigga.NameBuilder
 import com.netflix.frigga.ami.AppVersion
-import com.netflix.spinnaker.orca.api.CancellableStage
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.Task
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.FindImageFromClusterTask
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
 import com.netflix.spinnaker.orca.mine.MineService
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import groovy.transform.CompileDynamic

@@ -16,18 +16,18 @@
 
 package com.netflix.spinnaker.orca.echo.pipeline
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 
 import javax.annotation.Nonnull
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.*
 import com.netflix.spinnaker.orca.echo.EchoService
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired

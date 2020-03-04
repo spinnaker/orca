@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.front50.pipeline;
 
 import static java.lang.String.format;
 
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.Trigger;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.PipelineValidator;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;

@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.orca.front50.spring
 
 import com.netflix.spinnaker.fiat.shared.FiatStatus
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -34,7 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Component
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 @Slf4j
 @CompileDynamic

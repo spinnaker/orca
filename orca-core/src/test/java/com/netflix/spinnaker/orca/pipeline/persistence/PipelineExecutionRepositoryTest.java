@@ -20,7 +20,7 @@ import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepositor
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.netflix.spinnaker.orca.api.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;

@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.plugins.proxy.ExtensionClassProvider;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Task;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput;
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput;

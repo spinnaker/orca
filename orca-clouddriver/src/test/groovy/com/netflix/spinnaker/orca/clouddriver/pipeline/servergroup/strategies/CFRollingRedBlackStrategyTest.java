@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static java.util.Collections.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.dynamicconfig.SpringDynamicConfigService;
 import com.netflix.spinnaker.moniker.Moniker;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.DisableClusterStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStage;

@@ -17,8 +17,8 @@ package com.netflix.spinnaker.orca.pipeline.persistence;
 
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER;
 
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;

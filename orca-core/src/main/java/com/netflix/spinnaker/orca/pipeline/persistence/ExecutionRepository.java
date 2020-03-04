@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.pipeline.persistence;
 import static java.util.stream.Collectors.toList;
 
 import com.netflix.spinnaker.kork.telemetry.Instrumented;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.ExecutionType;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.time.Instant;
 import java.util.*;
 import javax.annotation.Nonnull;

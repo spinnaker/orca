@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import com.netflix.spinnaker.orca.api.CancellableStage
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorAcaTaskTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterAcaTaskTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

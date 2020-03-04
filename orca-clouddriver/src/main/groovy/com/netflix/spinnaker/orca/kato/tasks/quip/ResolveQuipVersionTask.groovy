@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.quip
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.RetryableTask
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.pipeline.util.OperatingSystem
 import com.netflix.spinnaker.orca.pipeline.util.PackageInfo

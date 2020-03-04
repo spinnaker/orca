@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servicebroker.DestroyServiceStagePreprocessor;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryDestroyServiceTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMonitorKatoServicesTask;

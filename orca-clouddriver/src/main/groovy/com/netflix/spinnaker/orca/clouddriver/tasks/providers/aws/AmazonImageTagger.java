@@ -20,7 +20,7 @@ import static java.lang.String.format;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageTagger;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;

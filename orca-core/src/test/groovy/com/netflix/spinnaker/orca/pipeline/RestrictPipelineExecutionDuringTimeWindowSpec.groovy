@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 
 import java.time.Instant
 import java.time.LocalTime

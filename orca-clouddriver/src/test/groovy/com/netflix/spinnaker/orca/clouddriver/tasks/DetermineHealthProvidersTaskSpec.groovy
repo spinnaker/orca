@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.AmazonServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.dcos.DcosServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.GoogleServerGroupCreator

@@ -15,9 +15,9 @@
  */
 package com.netflix.spinnaker.orca.igor.pipeline;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
 import com.netflix.spinnaker.orca.igor.tasks.GetGoogleCloudBuildArtifactsTask;
 import com.netflix.spinnaker.orca.igor.tasks.MonitorGoogleCloudBuildTask;

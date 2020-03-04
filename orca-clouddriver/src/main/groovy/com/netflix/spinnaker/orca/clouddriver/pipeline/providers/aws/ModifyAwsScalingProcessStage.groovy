@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.RetryableTask
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.scalingprocess
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.scalingprocess.SuspendAwsScalingProcessTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired

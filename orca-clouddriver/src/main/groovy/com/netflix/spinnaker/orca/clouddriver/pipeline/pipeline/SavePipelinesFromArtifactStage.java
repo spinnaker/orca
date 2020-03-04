@@ -15,9 +15,9 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.pipeline;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode.Builder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.pipeline.*;
 import com.netflix.spinnaker.orca.front50.tasks.MonitorFront50Task;
 import com.netflix.spinnaker.orca.front50.tasks.SavePipelineTask;

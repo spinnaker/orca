@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline;
 
+import com.netflix.spinnaker.kork.annotations.Beta;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -25,6 +27,7 @@ import java.util.Collections;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+@Beta
 public interface Task {
   @Nonnull
   TaskResult execute(@Nonnull StageExecution stage);

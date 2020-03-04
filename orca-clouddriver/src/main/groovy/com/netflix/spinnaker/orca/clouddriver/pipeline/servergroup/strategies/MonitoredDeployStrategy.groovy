@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ScaleDownClusterStage

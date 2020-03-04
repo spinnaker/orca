@@ -15,13 +15,13 @@
  */
 package com.netflix.spinnaker.orca.notifications.scheduling;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.LongTaskTimer;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;

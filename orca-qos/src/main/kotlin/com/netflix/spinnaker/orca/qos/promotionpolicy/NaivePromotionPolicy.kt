@@ -16,7 +16,7 @@
 package com.netflix.spinnaker.orca.qos.promotionpolicy
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.qos.PromotionPolicy
 import com.netflix.spinnaker.orca.qos.PromotionResult
 import org.springframework.stereotype.Component

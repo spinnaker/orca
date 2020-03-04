@@ -21,7 +21,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.Map;
 import java.util.regex.Matcher;

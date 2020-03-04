@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.echo.spring
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.common.Header
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
@@ -31,7 +31,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 class EchoNotifyingPipelineExecutionListenerSpec extends Specification {
 

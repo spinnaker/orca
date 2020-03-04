@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.clone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryManifestContext;

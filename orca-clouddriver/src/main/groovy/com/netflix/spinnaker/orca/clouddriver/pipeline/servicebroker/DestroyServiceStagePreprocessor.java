@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servicebroker;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 
 /**
  * Supports generic modification of a Deploy Service stage.

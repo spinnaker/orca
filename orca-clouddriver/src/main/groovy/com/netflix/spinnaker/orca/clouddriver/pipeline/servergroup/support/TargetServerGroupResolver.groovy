@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired

@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.capabilities.models;
 
 import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;

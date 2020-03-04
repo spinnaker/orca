@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline.models;
 
 import java.util.Arrays;
 import java.util.Collection;

@@ -19,8 +19,8 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.collect.ImmutableList;
-import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

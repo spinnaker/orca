@@ -18,22 +18,22 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 import java.time.Clock
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.RetryableTask
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 
 @Component
 @Slf4j

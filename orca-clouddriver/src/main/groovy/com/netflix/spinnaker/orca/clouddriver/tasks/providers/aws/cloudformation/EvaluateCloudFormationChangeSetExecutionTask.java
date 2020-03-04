@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation;
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

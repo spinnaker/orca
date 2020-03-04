@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.pipeline
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper

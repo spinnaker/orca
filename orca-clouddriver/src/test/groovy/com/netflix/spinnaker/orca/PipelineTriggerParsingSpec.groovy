@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import spock.lang.Specification
 

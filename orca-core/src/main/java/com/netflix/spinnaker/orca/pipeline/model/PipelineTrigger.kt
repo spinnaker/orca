@@ -19,9 +19,9 @@ package com.netflix.spinnaker.orca.pipeline.model
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 
 data class PipelineTrigger
 @JvmOverloads constructor(

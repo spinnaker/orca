@@ -20,8 +20,8 @@ import static com.netflix.spinnaker.orca.bakery.BakerySelector.ConfigFields.*;
 
 import com.netflix.spinnaker.kork.web.selector.v2.SelectableService;
 import com.netflix.spinnaker.kork.web.selector.v2.SelectableService.Parameter;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfigurationProperties;
 import java.util.*;

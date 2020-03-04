@@ -21,11 +21,10 @@ import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineExecutionRepositoryTck
 import redis.clients.jedis.Jedis
@@ -36,10 +35,10 @@ import spock.lang.Unroll
 
 import java.util.concurrent.CountDownLatch
 
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.*

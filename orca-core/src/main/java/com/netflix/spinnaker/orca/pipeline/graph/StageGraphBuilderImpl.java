@@ -22,9 +22,9 @@ import static java.lang.String.format;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.StageGraphBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashSet;
 import java.util.Optional;

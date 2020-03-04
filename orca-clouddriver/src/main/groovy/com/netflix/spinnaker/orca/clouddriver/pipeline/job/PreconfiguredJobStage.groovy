@@ -17,12 +17,12 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.job
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties
 import com.netflix.spinnaker.orca.clouddriver.exception.PreconfiguredJobNotFoundException
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 

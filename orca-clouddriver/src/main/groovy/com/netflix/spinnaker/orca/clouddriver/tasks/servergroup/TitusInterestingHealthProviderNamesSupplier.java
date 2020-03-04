@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;

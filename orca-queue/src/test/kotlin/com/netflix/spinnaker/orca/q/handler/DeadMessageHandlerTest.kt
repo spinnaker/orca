@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.q.AbortStage
 import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.CompleteTask

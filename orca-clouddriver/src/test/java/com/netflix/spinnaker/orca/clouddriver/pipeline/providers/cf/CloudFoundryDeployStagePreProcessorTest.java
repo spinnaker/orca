@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ServerGroupForceCacheRefreshStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;

@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.controllers
 
 import com.netflix.spinnaker.kork.exceptions.HasAdditionalAttributes
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
-import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand
 import com.netflix.spinnaker.orca.eureka.NoDiscoveryApplicationStatusPublisher
 import com.netflix.spinnaker.orca.front50.Front50Service

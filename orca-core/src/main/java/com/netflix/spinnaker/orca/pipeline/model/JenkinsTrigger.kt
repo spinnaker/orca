@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
-import com.netflix.spinnaker.orca.api.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 
 data class JenkinsTrigger
 @JvmOverloads constructor(

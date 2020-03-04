@@ -18,10 +18,10 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.RetryableTask;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;

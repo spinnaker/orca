@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.kayenta.pipeline
 
-import com.netflix.spinnaker.orca.api.CancellableStage
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.kayenta.KayentaService
@@ -25,8 +25,8 @@ import com.netflix.spinnaker.orca.kayenta.RunCanaryContext
 import com.netflix.spinnaker.orca.kayenta.tasks.MonitorKayentaCanaryTask
 import com.netflix.spinnaker.orca.kayenta.tasks.RunKayentaCanaryTask
 import com.netflix.spinnaker.orca.kayenta.tasks.ResolveKayentaConfigIdTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.lang.String.format

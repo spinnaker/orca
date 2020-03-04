@@ -17,11 +17,11 @@ package com.netflix.spinnaker.orca.pipelinetemplate.pipeline;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.StageGraphBuilder;
-import com.netflix.spinnaker.orca.api.TaskNode.Builder;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.pipeline.UpdatePipelineStage;
 import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory;

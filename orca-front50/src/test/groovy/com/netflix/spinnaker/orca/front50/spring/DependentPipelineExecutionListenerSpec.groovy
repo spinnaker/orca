@@ -17,12 +17,11 @@
 package com.netflix.spinnaker.orca.front50.spring
 
 import com.netflix.spinnaker.fiat.shared.FiatStatus
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
-import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.User

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.utils;
 
 import com.google.common.collect.ImmutableList;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

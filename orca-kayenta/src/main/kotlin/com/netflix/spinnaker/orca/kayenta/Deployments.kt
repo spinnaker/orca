@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.kayenta
 
 import com.netflix.frigga.autoscaling.AutoScalingGroupNameBuilder
 import com.netflix.spinnaker.moniker.Moniker
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.pipeline.DeployCanaryServerGroupsStage
 import com.netflix.spinnaker.orca.kayenta.pipeline.KayentaCanaryStage

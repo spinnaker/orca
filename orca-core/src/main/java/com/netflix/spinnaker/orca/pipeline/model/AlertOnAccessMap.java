@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import com.google.common.collect.ForwardingMap;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;

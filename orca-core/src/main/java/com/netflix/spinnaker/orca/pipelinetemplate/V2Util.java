@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.pipelinetemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;

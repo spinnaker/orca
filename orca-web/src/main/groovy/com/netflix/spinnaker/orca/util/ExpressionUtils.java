@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.util;
 
 import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.exceptions.UserException;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;

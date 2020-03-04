@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.ModifyAwsScalingProcessStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCache
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceLinearStageSupport
 import com.netflix.spinnaker.orca.kato.tasks.scalingprocess.ResumeScalingProcessTask
 import com.netflix.spinnaker.orca.kato.tasks.scalingprocess.SuspendScalingProcessTask
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

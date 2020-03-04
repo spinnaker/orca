@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.ext
 
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 
 /**
  * @return the initial stages of the execution.

@@ -19,20 +19,20 @@ package com.netflix.spinnaker.orca.bakery.pipeline
 import com.google.common.base.Joiner
 import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 
 import java.time.Clock
 import javax.annotation.Nonnull
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.Task
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.bakery.tasks.CompletedBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.CreateBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import groovy.transform.CompileDynamic

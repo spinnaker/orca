@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.pipeline.model;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.collect.ForwardingMap;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Trigger;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -1,6 +1,6 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForRequiredInstancesDownTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
@@ -11,8 +11,8 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class WaitForClusterDisableTaskSpec extends Specification {

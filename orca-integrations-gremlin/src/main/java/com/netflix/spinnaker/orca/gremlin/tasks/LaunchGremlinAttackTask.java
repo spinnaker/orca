@@ -4,10 +4,10 @@ import static com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage.COMMAND_T
 import static com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage.GUID_KEY;
 import static com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage.TARGET_TEMPLATE_ID_KEY;
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Task;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.gremlin.AttackParameters;
 import com.netflix.spinnaker.orca.gremlin.GremlinService;
 import com.netflix.spinnaker.orca.gremlin.pipeline.GremlinStage;

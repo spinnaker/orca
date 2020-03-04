@@ -15,12 +15,12 @@
  */
 package com.netflix.spinnaker.orca.pipeline.persistence.migration
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.DualExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.LoggerFactory

@@ -20,9 +20,9 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.FindImageFromClus
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.jetbrains.spek.api.Spek

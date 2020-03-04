@@ -17,13 +17,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.ExplicitRollback
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollback
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.Rollback
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.TestRollback
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
 import org.springframework.stereotype.Component

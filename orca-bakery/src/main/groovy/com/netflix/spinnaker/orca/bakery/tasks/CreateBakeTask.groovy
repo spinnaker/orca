@@ -19,10 +19,10 @@ package com.netflix.spinnaker.orca.bakery.tasks
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.RetryableTask
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.BakeRequest
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus

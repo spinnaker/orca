@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.TaskNode
-import com.netflix.spinnaker.orca.api.TaskNode.TaskDefinition
-import com.netflix.spinnaker.orca.api.TaskNode.TaskGraph
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.TaskDefinition
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.TaskGraph
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE

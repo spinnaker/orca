@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.StageResolver
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.DummyTask

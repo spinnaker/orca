@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.List;
 
 public interface Rollback {

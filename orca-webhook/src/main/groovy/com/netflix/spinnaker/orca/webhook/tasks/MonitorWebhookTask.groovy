@@ -20,10 +20,10 @@ package com.netflix.spinnaker.orca.webhook.tasks
 import com.google.common.base.Strings
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.PathNotFoundException
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import groovy.util.logging.Slf4j

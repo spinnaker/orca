@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.parent
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper

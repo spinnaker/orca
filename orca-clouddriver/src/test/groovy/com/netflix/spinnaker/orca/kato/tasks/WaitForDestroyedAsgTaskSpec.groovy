@@ -28,8 +28,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 
 class WaitForDestroyedAsgTaskSpec extends Specification {
   @Subject

@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.utils
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 class HealthHelper {
   /**

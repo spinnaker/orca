@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.pipeline.persistence
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
@@ -32,9 +32,9 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.NATURAL_ASC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.START_TIME_OR_ID
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.*

@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -25,10 +25,10 @@ import static java.util.Collections.emptyMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.ExecutionType;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.Trigger;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;

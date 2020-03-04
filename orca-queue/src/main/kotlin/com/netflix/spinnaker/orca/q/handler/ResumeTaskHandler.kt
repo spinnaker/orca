@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.PAUSED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.PAUSED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.TaskResolver
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.ResumeTask
 import com.netflix.spinnaker.orca.q.RunTask

@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.stereotype.Component;

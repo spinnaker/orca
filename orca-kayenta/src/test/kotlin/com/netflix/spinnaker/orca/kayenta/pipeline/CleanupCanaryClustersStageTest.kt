@@ -21,7 +21,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStag
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.pipeline.WaitStage
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek

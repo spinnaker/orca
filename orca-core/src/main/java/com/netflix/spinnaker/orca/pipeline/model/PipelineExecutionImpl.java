@@ -16,16 +16,16 @@
 
 package com.netflix.spinnaker.orca.pipeline.model;
 
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED;
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION;
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.netflix.spinnaker.orca.api.*;
+import com.netflix.spinnaker.orca.api.pipeline.models.*;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import de.huxhorn.sulky.ulid.ULID;

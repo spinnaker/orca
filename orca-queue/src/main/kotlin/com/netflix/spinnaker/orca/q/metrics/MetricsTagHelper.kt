@@ -17,9 +17,9 @@
 package com.netflix.spinnaker.orca.q.metrics
 
 import com.netflix.spectator.api.BasicTag
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 
 class MetricsTagHelper : CloudProviderAware {

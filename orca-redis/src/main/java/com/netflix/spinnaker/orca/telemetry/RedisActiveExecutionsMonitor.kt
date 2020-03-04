@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
-import com.netflix.spinnaker.orca.api.ExecutionType
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.events.ExecutionComplete
 import com.netflix.spinnaker.orca.events.ExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionStarted

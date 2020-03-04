@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;

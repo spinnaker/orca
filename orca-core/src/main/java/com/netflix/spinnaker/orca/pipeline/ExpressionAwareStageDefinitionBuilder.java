@@ -16,8 +16,8 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import javax.annotation.Nonnull;
 

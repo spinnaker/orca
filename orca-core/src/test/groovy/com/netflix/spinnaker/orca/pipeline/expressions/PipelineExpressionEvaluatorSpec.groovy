@@ -18,8 +18,8 @@ package com.netflix.spinnaker.orca.pipeline.expressions
 
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import org.pf4j.PluginManager
 import spock.lang.Specification
 

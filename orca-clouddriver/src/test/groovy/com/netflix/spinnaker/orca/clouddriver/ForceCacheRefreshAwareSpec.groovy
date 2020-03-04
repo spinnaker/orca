@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import spock.lang.Subject
 import spock.lang.Unroll
 

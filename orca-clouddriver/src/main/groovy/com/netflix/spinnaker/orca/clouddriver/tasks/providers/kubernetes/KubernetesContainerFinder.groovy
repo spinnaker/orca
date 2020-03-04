@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 class KubernetesContainerFinder {
   static Map parseContainerPartsFrom(String containerName) {

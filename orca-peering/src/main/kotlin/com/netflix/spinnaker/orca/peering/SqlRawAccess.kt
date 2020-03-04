@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.orca.peering
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import org.jooq.Record
 import org.jooq.Result
 import org.slf4j.Logger

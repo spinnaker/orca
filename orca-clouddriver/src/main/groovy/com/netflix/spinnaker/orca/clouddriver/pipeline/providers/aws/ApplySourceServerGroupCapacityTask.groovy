@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.moniker.Moniker
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.AbstractServerGroupTask
@@ -31,8 +31,8 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.api.StageDefinitionBuilder.getType
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder.getType
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 @Slf4j
 @Component

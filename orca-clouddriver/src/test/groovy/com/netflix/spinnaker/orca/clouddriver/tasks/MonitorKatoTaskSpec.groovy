@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId

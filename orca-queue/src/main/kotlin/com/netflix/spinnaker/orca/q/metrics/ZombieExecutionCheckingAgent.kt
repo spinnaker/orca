@@ -19,12 +19,12 @@ package com.netflix.spinnaker.orca.q.metrics
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.Tag
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.ExecutionLevel
 import com.netflix.spinnaker.q.metrics.MonitorableQueue

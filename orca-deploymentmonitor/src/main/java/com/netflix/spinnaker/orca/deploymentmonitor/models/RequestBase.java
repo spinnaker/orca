@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.deploymentmonitor.models;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorService;
 import java.util.Map;
 import lombok.Data;

@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.kork.exceptions.UserException
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.ModifyAsgLaunchConfigurationStage
 import com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver

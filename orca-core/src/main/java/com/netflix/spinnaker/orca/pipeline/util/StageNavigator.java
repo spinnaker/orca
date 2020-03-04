@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.pipeline.util;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

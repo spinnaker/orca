@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Task;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.AbstractInstanceLoadBalancerRegistrationTask;

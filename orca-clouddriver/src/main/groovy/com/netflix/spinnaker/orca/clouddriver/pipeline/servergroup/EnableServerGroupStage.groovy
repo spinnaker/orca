@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
@@ -25,7 +25,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.EnableServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
-import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 

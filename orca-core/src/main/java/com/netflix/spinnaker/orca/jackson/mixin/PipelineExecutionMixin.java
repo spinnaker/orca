@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.jackson.mixin;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.List;
 import java.util.Map;
 

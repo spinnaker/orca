@@ -21,7 +21,7 @@ import com.netflix.spinnaker.fiat.model.resources.Account
 import com.netflix.spinnaker.fiat.model.resources.Role
 import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
-import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
 
 import javax.servlet.http.HttpServletResponse
@@ -50,9 +50,9 @@ import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static java.lang.String.format
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post

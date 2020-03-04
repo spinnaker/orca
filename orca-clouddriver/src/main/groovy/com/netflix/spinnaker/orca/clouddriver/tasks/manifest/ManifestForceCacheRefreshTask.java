@@ -17,8 +17,8 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING;
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -27,10 +27,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.orca.api.RetryableTask;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Task;
-import com.netflix.spinnaker.orca.api.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;

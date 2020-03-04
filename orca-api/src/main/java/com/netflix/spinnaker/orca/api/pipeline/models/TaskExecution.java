@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline.models;
 
+import com.netflix.spinnaker.kork.annotations.Beta;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+@Beta
 public interface TaskExecution {
 
   @Nonnull

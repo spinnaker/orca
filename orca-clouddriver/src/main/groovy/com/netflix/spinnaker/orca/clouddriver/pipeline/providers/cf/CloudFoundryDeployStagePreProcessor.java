@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.RollbackClusterStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ServerGroupForceCacheRefreshStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor;

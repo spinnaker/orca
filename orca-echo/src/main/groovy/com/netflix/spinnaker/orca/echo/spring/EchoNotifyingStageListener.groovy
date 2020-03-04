@@ -16,10 +16,10 @@
 package com.netflix.spinnaker.orca.echo.spring
 
 import com.netflix.spinnaker.kork.common.Header
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.listeners.Persister
 import com.netflix.spinnaker.orca.listeners.StageListener
@@ -31,8 +31,8 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
-import static com.netflix.spinnaker.orca.api.ExecutionStatus.*
-import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
 
 /**
  * Converts execution events to Echo events.

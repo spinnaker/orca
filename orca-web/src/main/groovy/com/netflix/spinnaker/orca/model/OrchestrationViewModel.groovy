@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.model
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
-import com.netflix.spinnaker.orca.api.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import groovy.transform.Immutable
 
 @Immutable(knownImmutables = ['status', 'variables', 'steps', 'execution'])

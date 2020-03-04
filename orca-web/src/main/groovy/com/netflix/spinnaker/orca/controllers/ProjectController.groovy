@@ -17,8 +17,8 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.springframework.beans.factory.annotation.Autowired

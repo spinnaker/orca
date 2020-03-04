@@ -15,9 +15,9 @@
  */
 package com.netflix.spinnaker.orca.pipeline;
 
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Map;
 import javax.annotation.Nonnull;

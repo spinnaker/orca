@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.orca.api.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 
 open class PeeringMetrics(
   peeredId: String,

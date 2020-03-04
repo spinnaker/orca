@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import com.netflix.spinnaker.orca.api.CancellableStage.Result
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage.Result
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGroupTask

@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine
 
-import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 import java.util.regex.Pattern
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 class AppEngineBranchFinder {
   static String findInStage(Map operation, StageExecution stage) {

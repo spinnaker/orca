@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
-import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractClusterWideClouddriverTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.AbstractWaitForClusterWideClouddriverTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.cluster.ScaleDownClusterTask;

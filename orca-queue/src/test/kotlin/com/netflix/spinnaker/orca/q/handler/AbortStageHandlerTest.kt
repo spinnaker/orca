@@ -16,13 +16,13 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.api.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.events.StageComplete
 import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
-import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.AbortStage

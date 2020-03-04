@@ -16,9 +16,9 @@
 
 package com.netflix.spinnaker.orca.events;
 
-import com.netflix.spinnaker.orca.api.ExecutionType;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.TaskExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution;
 import javax.annotation.Nonnull;
 
 public class TaskStarted extends ExecutionEvent {

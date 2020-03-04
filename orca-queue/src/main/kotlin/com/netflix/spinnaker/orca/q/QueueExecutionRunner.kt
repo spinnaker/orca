@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.q
 
-import com.netflix.spinnaker.orca.api.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.security.AuthenticatedRequest

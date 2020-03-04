@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.netflix.spinnaker.orca.api.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference

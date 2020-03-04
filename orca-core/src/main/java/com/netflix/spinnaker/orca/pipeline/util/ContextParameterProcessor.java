@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
-import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -28,9 +28,9 @@ import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Trigger;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.api;
+package com.netflix.spinnaker.orca.api.pipeline.graph;
 
-import static com.netflix.spinnaker.orca.api.TaskNode.Builder;
-import static com.netflix.spinnaker.orca.api.TaskNode.GraphType.FULL;
+import static com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder;
+import static com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.GraphType.FULL;
 
-import com.netflix.spinnaker.orca.api.TaskNode.TaskGraph;
+import com.netflix.spinnaker.kork.annotations.Beta;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.TaskGraph;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.Nonnull;
 
+@Beta
 public interface StageDefinitionBuilder {
 
   default @Nonnull TaskGraph buildTaskGraph(@Nonnull StageExecution stage) {
