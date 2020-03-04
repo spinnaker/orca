@@ -58,6 +58,14 @@ public abstract class PreconfiguredJobStageProperties {
 
   private String propertyFile;
 
+  public enum PreconfiguredJobUI {
+    BASIC,
+    CUSTOM
+  };
+
+  /** "BASIC" to auto-generate a UI. "CUSTOM" if a custom UI is provided for Deck */
+  private PreconfiguredJobUI ui = PreconfiguredJobUI.BASIC;
+
   /** Indicates whether this job produces any artifacts. */
   private boolean producesArtifacts = false;
 
