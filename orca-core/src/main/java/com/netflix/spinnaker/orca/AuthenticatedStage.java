@@ -22,6 +22,10 @@ import java.util.Optional;
 /**
  * This interface allows an implementing StageDefinitionBuilder to override the default pipeline
  * authentication context.
+ *
+ * <p>TODO(rz): Move to orca-api. Need to rearrange kork, however, since it would require a
+ * dependency on kork-security, which includes a bunch of extra dependencies. Perhaps a new kork-api
+ * module for just the User class?
  */
 public interface AuthenticatedStage {
   Optional<User> authenticatedUser(StageExecution stage);
