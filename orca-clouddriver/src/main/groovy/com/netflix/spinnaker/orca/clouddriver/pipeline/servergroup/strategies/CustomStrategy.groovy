@@ -20,8 +20,8 @@ import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Component
 class CustomStrategy implements Strategy {
@@ -62,7 +62,7 @@ class CustomStrategy implements Strategy {
     ]
 
     return [
-      newStage(
+        StageExecutionFactory.newStage(
         stage.execution,
         PipelineStage.PIPELINE_CONFIG_TYPE,
         "pipeline",

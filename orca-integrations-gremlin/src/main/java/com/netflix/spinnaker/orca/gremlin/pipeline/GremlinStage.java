@@ -1,12 +1,12 @@
 package com.netflix.spinnaker.orca.gremlin.pipeline;
 
 import com.netflix.spinnaker.orca.api.CancellableStage;
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.gremlin.GremlinService;
 import com.netflix.spinnaker.orca.gremlin.tasks.LaunchGremlinAttackTask;
 import com.netflix.spinnaker.orca.gremlin.tasks.MonitorGremlinAttackTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;

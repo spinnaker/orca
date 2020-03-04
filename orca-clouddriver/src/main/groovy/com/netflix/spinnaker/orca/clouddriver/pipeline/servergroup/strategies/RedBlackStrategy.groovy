@@ -23,13 +23,13 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.ShrinkClusterStag
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Component
 class RedBlackStrategy implements Strategy, ApplicationContextAware {
@@ -86,7 +86,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
         allowDeleteActive    : stageData.allowDeleteActive ?: false,
         retainLargerOverNewer: false
       ]
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         shrinkClusterStage.type,
         "shrinkCluster",
@@ -98,7 +98,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
 
     if(stageData?.getDelayBeforeCleanup()) {
       def waitContext = [waitTime: stageData?.getDelayBeforeCleanup()]
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         waitStage.type,
         "Wait Before Disable",
@@ -112,7 +112,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
       remainingEnabledServerGroups: 1,
       preferLargerOverNewer       : false
     ]
-    stages << newStage(
+    stages << StageExecutionFactory.newStage(
       stage.execution,
       disableClusterStage.type,
       "disableCluster",
@@ -124,7 +124,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
     if (stageData.scaleDown) {
       if(stageData?.getDelayBeforeScaleDown()) {
         def waitContext = [waitTime: stageData?.getDelayBeforeScaleDown()]
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           stage.execution,
           waitStage.type,
           "Wait Before Scale Down",
@@ -139,7 +139,7 @@ class RedBlackStrategy implements Strategy, ApplicationContextAware {
         remainingFullSizeServerGroups: 1,
         preferLargerOverNewer        : false
       ]
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         scaleDownClusterStage.type,
         "scaleDown",

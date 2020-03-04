@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.instance.WaitForUpInstancesT
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CloneServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.AddServerGroupEntityTagsTask
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.TaskNode
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

@@ -36,7 +36,7 @@ import com.netflix.spinnaker.orca.ext.failureStatus
 import com.netflix.spinnaker.orca.ext.firstAfterStages
 import com.netflix.spinnaker.orca.ext.syntheticStages
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -217,7 +217,7 @@ class CompleteStageHandler(
     // Avoid planning failure stages if _any_ with the same name are already complete
     val previouslyPlannedAfterStageNames = afterStages().filter { it.status.isComplete }.map { it.name }
 
-    val graph = StageGraphBuilder.afterStages(this)
+    val graph = StageGraphBuilderImpl.afterStages(this)
     builder().onFailureStages(this, graph)
 
     val onFailureStages = graph.build().toList()

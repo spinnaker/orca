@@ -18,15 +18,14 @@ package com.netflix.spinnaker.orca.kato.pipeline.support
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import org.springframework.beans.factory.annotation.Autowired
 
 import javax.annotation.Nonnull
-
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Deprecated
 abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuilder {
@@ -76,7 +75,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
 
     if (descriptionList.size()) {
       return descriptionList.collect {
-        newStage(stage.execution, this.type, this.type, it, stage, SyntheticStageOwner.STAGE_AFTER)
+        StageExecutionFactory.newStage(stage.execution, this.type, this.type, it, stage, SyntheticStageOwner.STAGE_AFTER)
       }
     }
     return []
@@ -110,7 +109,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
       def configuredRegions = stage.context.regions
       Map injectedContext = new HashMap(stage.context)
       injectedContext.regions = new ArrayList(configuredRegions)
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         determineTargetReferenceStage.type,
         "determineTargetReferences",
@@ -124,7 +123,7 @@ abstract class TargetReferenceLinearStageSupport implements StageDefinitionBuild
         for (region in configuredRegions) {
           def description = new HashMap(stage.context)
           description.region = region
-          stages << newStage(
+          stages << StageExecutionFactory.newStage(
             stage.execution, this.type, this.type, description, stage, SyntheticStageOwner.STAGE_AFTER
           )
         }

@@ -1,7 +1,7 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline;
+package com.netflix.spinnaker.orca.api;
 
-import static com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
-import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.FULL;
+import static com.netflix.spinnaker.orca.api.TaskNode.Builder;
+import static com.netflix.spinnaker.orca.api.TaskNode.GraphType.FULL;
 
-import com.netflix.spinnaker.orca.api.PipelineExecution;
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
-import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph;
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.api.TaskNode.TaskGraph;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -32,9 +27,7 @@ import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public interface StageDefinitionBuilder {
 
@@ -83,22 +76,6 @@ public interface StageDefinitionBuilder {
             .substring(1)
             .replaceFirst("StageDefinitionBuilder$", "")
             .replaceFirst("Stage$", "");
-  }
-
-  @Deprecated
-  static @Nonnull StageExecution newStage(
-      @Nonnull PipelineExecution execution,
-      @Nonnull String type,
-      @Nullable String name,
-      @Nonnull Map<String, Object> context,
-      @Nullable StageExecution parent,
-      @Nullable SyntheticStageOwner stageOwner) {
-    StageExecution stage = new StageExecutionImpl(execution, type, name, context);
-    if (parent != null) {
-      stage.setParentStageId(parent.getId());
-    }
-    stage.setSyntheticStageOwner(stageOwner);
-    return stage;
   }
 
   /** Return true if the stage can be manually skipped from the API. */

@@ -17,16 +17,17 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.StageGraphBuilder;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.CleanupArtifactsTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.*;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeployManifestContext.TrafficManagement;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ResolveDeploySourceManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,16 +79,16 @@ public class DeployManifestStage implements StageDefinitionBuilder {
     }
   }
 
-  private void disableOldManifests(Map parentContext, StageGraphBuilder graph) {
+  private void disableOldManifests(Map parentContext, StageGraphBuilderImpl graph) {
     addStagesForOldManifests(parentContext, graph, DisableManifestStage.PIPELINE_CONFIG_TYPE);
   }
 
-  private void deleteOldManifests(Map parentContext, StageGraphBuilder graph) {
+  private void deleteOldManifests(Map parentContext, StageGraphBuilderImpl graph) {
     addStagesForOldManifests(parentContext, graph, DeleteManifestStage.PIPELINE_CONFIG_TYPE);
   }
 
   private void addStagesForOldManifests(
-      Map parentContext, StageGraphBuilder graph, String stageType) {
+      Map parentContext, StageGraphBuilderImpl graph, String stageType) {
     List<Map<String, ?>> deployedManifests = getNewManifests(parentContext);
     String account = (String) parentContext.get("account");
     Map manifestMoniker = (Map) parentContext.get("moniker");

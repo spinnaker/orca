@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.kayenta.pipeline
 
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.FindImageFromClusterStage
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.kato.pipeline.ParallelDeployStage
@@ -25,9 +26,8 @@ import com.netflix.spinnaker.orca.kayenta.deployments
 import com.netflix.spinnaker.orca.kayenta.experimentServerGroups
 import com.netflix.spinnaker.orca.kayenta.regions
 import com.netflix.spinnaker.orca.kayenta.tasks.PropagateDeployedServerGroupScopes
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import org.springframework.stereotype.Component
 
 @Component

@@ -17,11 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.gce;
 
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.autoscaling.UpsertGceAutoscalingPolicyTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

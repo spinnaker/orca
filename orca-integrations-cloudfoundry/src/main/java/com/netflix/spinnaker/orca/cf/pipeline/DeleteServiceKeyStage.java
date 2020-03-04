@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.cf.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.cf.tasks.CloudFoundryDeleteServiceKeyTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMonitorKatoServicesTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 

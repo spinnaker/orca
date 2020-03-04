@@ -23,8 +23,8 @@ import static java.lang.String.format;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.StageGraphBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.HashSet;
 import java.util.Optional;
@@ -33,7 +33,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class StageGraphBuilder {
+public class StageGraphBuilderImpl implements StageGraphBuilder {
 
   private final StageExecution parent;
   private final SyntheticStageOwner type;
@@ -42,7 +42,7 @@ public class StageGraphBuilder {
   private final Optional<StageExecution> requiredPrefix;
   private @Nullable StageExecution lastAdded = null;
 
-  private StageGraphBuilder(
+  private StageGraphBuilderImpl(
       StageExecution parent, SyntheticStageOwner type, Optional<StageExecution> requiredPrefix) {
     this.parent = parent;
     this.type = type;
@@ -55,8 +55,8 @@ public class StageGraphBuilder {
    *
    * @param parent
    */
-  public static @Nonnull StageGraphBuilder beforeStages(@Nonnull StageExecution parent) {
-    return new StageGraphBuilder(parent, STAGE_BEFORE, Optional.empty());
+  public static @Nonnull StageGraphBuilderImpl beforeStages(@Nonnull StageExecution parent) {
+    return new StageGraphBuilderImpl(parent, STAGE_BEFORE, Optional.empty());
   }
 
   /**
@@ -65,9 +65,9 @@ public class StageGraphBuilder {
    * @param parent
    * @param requiredPrefix
    */
-  public static @Nonnull StageGraphBuilder beforeStages(
+  public static @Nonnull StageGraphBuilderImpl beforeStages(
       @Nonnull StageExecution parent, @Nullable StageExecution requiredPrefix) {
-    return new StageGraphBuilder(parent, STAGE_BEFORE, Optional.ofNullable(requiredPrefix));
+    return new StageGraphBuilderImpl(parent, STAGE_BEFORE, Optional.ofNullable(requiredPrefix));
   }
 
   /**
@@ -75,32 +75,18 @@ public class StageGraphBuilder {
    *
    * @param parent
    */
-  public static @Nonnull StageGraphBuilder afterStages(@Nonnull StageExecution parent) {
-    return new StageGraphBuilder(parent, STAGE_AFTER, Optional.empty());
+  public static @Nonnull StageGraphBuilderImpl afterStages(@Nonnull StageExecution parent) {
+    return new StageGraphBuilderImpl(parent, STAGE_AFTER, Optional.empty());
   }
 
-  /**
-   * Adds a new stage to the graph. By default the new stage is not dependent on any others. Use
-   * {@link #connect(StageExecution, StageExecution)} to make it depend on other stages or have
-   * other stages depend on it.
-   *
-   * @param init builder for setting up the stage. You do not need to configure {@link
-   *     StageExecution#execution}, {@link StageExecution#parentStageId}, {@link
-   *     StageExecution#syntheticStageOwner} or {@link StageExecution#refId} as this method will do
-   *     that automatically.
-   * @return the newly created stage.
-   */
+  @Override
   public @Nonnull StageExecution add(@Nonnull Consumer<StageExecution> init) {
     StageExecution stage = newStage(init);
     add(stage);
     return stage;
   }
 
-  /**
-   * Adds a new stage to the graph. By default the new stage is not dependent on any others. Use
-   * {@link #connect(StageExecution, StageExecution)} to make it depend on other stages or have
-   * other stages depend on it.
-   */
+  @Override
   public void add(@Nonnull StageExecution stage) {
     stage.setExecution(parent.getExecution());
     stage.setParentStageId(parent.getId());
@@ -111,15 +97,7 @@ public class StageGraphBuilder {
     lastAdded = stage;
   }
 
-  /**
-   * Adds a new stage to the graph and makes it depend on {@code previous} via its {@link
-   * StageExecution#requisiteStageRefIds}.
-   *
-   * @param previous The stage the new stage will depend on. If {@code previous} does not already
-   *     exist in the graph, this method will add it.
-   * @param init See {@link #add(Consumer)}
-   * @return the newly created stage.
-   */
+  @Override
   public @Nonnull StageExecution connect(
       @Nonnull StageExecution previous, @Nonnull Consumer<StageExecution> init) {
     StageExecution stage = add(init);
@@ -127,11 +105,7 @@ public class StageGraphBuilder {
     return stage;
   }
 
-  /**
-   * Makes {@code next} depend on {@code previous} via its {@link
-   * StageExecution#requisiteStageRefIds}. If either {@code next} or {@code previous} are not yet
-   * present in the graph this method will add them.
-   */
+  @Override
   public void connect(@Nonnull StageExecution previous, @Nonnull StageExecution next) {
     add(previous);
     add(next);
@@ -141,16 +115,7 @@ public class StageGraphBuilder {
     graph.putEdge(previous, next);
   }
 
-  /**
-   * Adds a new stage to the graph and makes it depend on the last stage that was added if any. This
-   * is convenient for straightforward stage graphs to avoid having to pass around references to
-   * stages in order to use {@link #connect(StageExecution, Consumer)}.
-   *
-   * <p>If no stages have been added so far, this is synonymous with calling {@link #add(Consumer)}.
-   *
-   * @param init See {@link #add(Consumer)}
-   * @return the newly created stage.
-   */
+  @Override
   public @Nonnull StageExecution append(@Nonnull Consumer<StageExecution> init) {
     if (lastAdded == null) {
       return add(init);
@@ -159,6 +124,7 @@ public class StageGraphBuilder {
     }
   }
 
+  @Override
   public void append(@Nonnull StageExecution stage) {
     if (lastAdded == null) {
       add(stage);
@@ -167,10 +133,7 @@ public class StageGraphBuilder {
     }
   }
 
-  /**
-   * Builds and returns the stages represented in the graph. This method is not typically useful to
-   * implementors of {@link StageDefinitionBuilder}, it's used internally and by tests.
-   */
+  @Override
   public @Nonnull Iterable<StageExecution> build() {
     requiredPrefix.ifPresent(
         prefix ->

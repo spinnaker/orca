@@ -22,10 +22,10 @@ import com.netflix.spinnaker.orca.kato.pipeline.ModifyAsgLaunchConfigurationStag
 import com.netflix.spinnaker.orca.kato.pipeline.RollingPushStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import groovy.transform.Immutable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Component
 @Deprecated
@@ -77,7 +77,7 @@ class RollingPushStrategy implements Strategy {
         ]
     ]
 
-    stages << newStage(
+    stages << StageExecutionFactory.newStage(
       stage.execution,
       modifyAsgLaunchConfigurationStage.type,
       "modifyLaunchConfiguration",
@@ -88,7 +88,7 @@ class RollingPushStrategy implements Strategy {
 
     def terminationConfig = stage.mapTo("/termination", TerminationConfig)
     if (terminationConfig.relaunchAllInstances || terminationConfig.totalRelaunches > 0) {
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         rollingPushStage.type,
         "rollingPush",

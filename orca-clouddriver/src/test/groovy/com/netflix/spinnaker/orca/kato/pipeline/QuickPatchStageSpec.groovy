@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.kato.pipeline
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
@@ -37,8 +37,8 @@ class QuickPatchStageSpec extends Specification {
   def "no-ops if there are no instances"() {
     given:
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "quickPatch", context)
-    def graphBefore = StageGraphBuilder.beforeStages(stage)
-    def graphAfter = StageGraphBuilder.afterStages(stage)
+    def graphBefore = StageGraphBuilderImpl.beforeStages(stage)
+    def graphAfter = StageGraphBuilderImpl.afterStages(stage)
 
     oortHelper.getInstancesForCluster(_, null, true, false) >> [:]
 
@@ -65,8 +65,8 @@ class QuickPatchStageSpec extends Specification {
       baseOs     : "ubuntu"
     ]
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "quickPatch", config)
-    def graphBefore = StageGraphBuilder.beforeStages(stage)
-    def graphAfter = StageGraphBuilder.afterStages(stage)
+    def graphBefore = StageGraphBuilderImpl.beforeStages(stage)
+    def graphAfter = StageGraphBuilderImpl.afterStages(stage)
 
     oortHelper.getInstancesForCluster(config, null, true, false) >> {
       throw new RuntimeException("too many asgs!")
@@ -94,8 +94,8 @@ class QuickPatchStageSpec extends Specification {
     ]
     oortHelper.getInstancesForCluster(config, null, true, false) >> expectedInstances
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "quickPatch", config)
-    def graphBefore = StageGraphBuilder.beforeStages(stage)
-    def graphAfter = StageGraphBuilder.afterStages(stage)
+    def graphBefore = StageGraphBuilderImpl.beforeStages(stage)
+    def graphAfter = StageGraphBuilderImpl.afterStages(stage)
     def syntheticStages = []
 
     when:
@@ -133,7 +133,7 @@ class QuickPatchStageSpec extends Specification {
   def "configures rolling quickpatch"() {
     given:
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "quickPatch", config)
-    def graphAfter = StageGraphBuilder.afterStages(stage)
+    def graphAfter = StageGraphBuilderImpl.afterStages(stage)
     def syntheticStages = []
 
     when:

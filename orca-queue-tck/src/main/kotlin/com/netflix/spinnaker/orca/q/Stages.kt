@@ -17,13 +17,13 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.ext.withTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
-import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode.Builder
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import java.lang.RuntimeException
 
 val singleTaskStage = object : StageDefinitionBuilder {
@@ -54,8 +54,8 @@ val stageWithSyntheticBefore = object : StageDefinitionBuilder {
   }
 
   override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
-    graph.append(newStage(parent.execution, singleTaskStage.type, "pre1", parent.context, parent, STAGE_BEFORE))
-    graph.append(newStage(parent.execution, singleTaskStage.type, "pre2", parent.context, parent, STAGE_BEFORE))
+    graph.append(StageExecutionFactory.newStage(parent.execution, singleTaskStage.type, "pre1", parent.context, parent, STAGE_BEFORE))
+    graph.append(StageExecutionFactory.newStage(parent.execution, singleTaskStage.type, "pre2", parent.context, parent, STAGE_BEFORE))
   }
 }
 
@@ -83,7 +83,7 @@ val stageWithSyntheticBeforeAndNoTasks = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticBeforeAndNoTasks"
 
   override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
-    graph.append(newStage(parent.execution, singleTaskStage.type, "pre", parent.context, parent, STAGE_BEFORE))
+    graph.append(StageExecutionFactory.newStage(parent.execution, singleTaskStage.type, "pre", parent.context, parent, STAGE_BEFORE))
   }
 }
 
@@ -91,11 +91,11 @@ val stageWithSyntheticBeforeAndAfterAndNoTasks = object : StageDefinitionBuilder
   override fun getType() = "stageWithSyntheticBeforeAndAfterAndNoTasks"
 
   override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
-    graph.append(newStage(parent.execution, singleTaskStage.type, "pre", parent.context, parent, STAGE_BEFORE))
+    graph.append(StageExecutionFactory.newStage(parent.execution, singleTaskStage.type, "pre", parent.context, parent, STAGE_BEFORE))
   }
 
   override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
-    graph.append(newStage(parent.execution, singleTaskStage.type, "post", parent.context, parent, STAGE_AFTER))
+    graph.append(StageExecutionFactory.newStage(parent.execution, singleTaskStage.type, "post", parent.context, parent, STAGE_AFTER))
   }
 }
 
@@ -143,7 +143,7 @@ val stageWithSyntheticAfterAndNoTasks = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticAfterAndNoTasks"
 
   override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
-    graph.append(newStage(parent.execution, singleTaskStage.type, "post", parent.context, parent, STAGE_AFTER))
+    graph.append(StageExecutionFactory.newStage(parent.execution, singleTaskStage.type, "post", parent.context, parent, STAGE_AFTER))
   }
 }
 
@@ -151,7 +151,7 @@ val stageWithNestedSynthetics = object : StageDefinitionBuilder {
   override fun getType() = "stageWithNestedSynthetics"
 
   override fun afterStages(parent: StageExecution, graph: StageGraphBuilder) {
-    graph.append(newStage(parent.execution, stageWithSyntheticBefore.type, "post", parent.context, parent, STAGE_AFTER))
+    graph.append(StageExecutionFactory.newStage(parent.execution, stageWithSyntheticBefore.type, "post", parent.context, parent, STAGE_AFTER))
   }
 }
 
@@ -159,7 +159,7 @@ val stageWithParallelBranches = object : StageDefinitionBuilder {
   override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
     listOf("us-east-1", "us-west-2", "eu-west-1")
       .map { region ->
-        newStage(parent.execution, singleTaskStage.type, "run in $region", parent.context + mapOf("region" to region), parent, STAGE_BEFORE)
+        StageExecutionFactory.newStage(parent.execution, singleTaskStage.type, "run in $region", parent.context + mapOf("region" to region), parent, STAGE_BEFORE)
       }
       .forEach { stage ->
         graph.add(stage) }

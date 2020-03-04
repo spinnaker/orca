@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.cluster
 
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.springframework.mock.env.MockEnvironment
 import spock.lang.Specification
@@ -85,7 +85,7 @@ class RollbackClusterStageSpec extends Specification {
   }
 
   private Iterable<StageExecutionImpl> buildAfterStages(StageExecutionImpl stage) {
-    def graph = StageGraphBuilder.afterStages(stage)
+    def graph = StageGraphBuilderImpl.afterStages(stage)
     stageBuilder.afterStages(stage, graph)
     return graph.build()
   }

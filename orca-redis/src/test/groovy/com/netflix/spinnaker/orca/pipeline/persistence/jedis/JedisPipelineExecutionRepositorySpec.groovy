@@ -22,6 +22,7 @@ import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
@@ -37,7 +38,6 @@ import java.util.concurrent.CountDownLatch
 
 import static com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import static com.netflix.spinnaker.orca.api.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
@@ -570,7 +570,7 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
     repository.retrieve(pipeline.type, pipeline.id).stages.size() == 3
 
     when:
-    def stage = newStage(pipeline, "whatever", "two-whatever", [:], pipeline.namedStage("two"), position)
+    def stage = StageExecutionFactory.newStage(pipeline, "whatever", "two-whatever", [:], pipeline.namedStage("two"), position)
     stage.setRefId(newRefId)
     repository.addStage(stage)
 
@@ -611,11 +611,11 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
     repository.retrieve(pipeline.type, pipeline.id).stages.size() == 3
 
     when:
-    def stage1 = newStage(pipeline, "whatever", "one-whatever", [:], pipeline.namedStage("one"), STAGE_BEFORE)
+    def stage1 = StageExecutionFactory.newStage(pipeline, "whatever", "one-whatever", [:], pipeline.namedStage("one"), STAGE_BEFORE)
     stage1.setRefId("1<1")
-    def stage2 = newStage(pipeline, "whatever", "two-whatever", [:], pipeline.namedStage("two"), STAGE_BEFORE)
+    def stage2 = StageExecutionFactory.newStage(pipeline, "whatever", "two-whatever", [:], pipeline.namedStage("two"), STAGE_BEFORE)
     stage2.setRefId("2<1")
-    def stage3 = newStage(pipeline, "whatever", "three-whatever", [:], pipeline.namedStage("three"), STAGE_BEFORE)
+    def stage3 = StageExecutionFactory.newStage(pipeline, "whatever", "three-whatever", [:], pipeline.namedStage("three"), STAGE_BEFORE)
     stage3.setRefId("3<1")
     def startLatch = new CountDownLatch(1)
     def doneLatch = new CountDownLatch(3)
@@ -648,7 +648,7 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
 
     repository.store(pipeline)
 
-    def stage = newStage(pipeline, "whatever", "one-whatever", [:], pipeline.namedStage("one"), STAGE_BEFORE)
+    def stage = StageExecutionFactory.newStage(pipeline, "whatever", "one-whatever", [:], pipeline.namedStage("one"), STAGE_BEFORE)
     stage.lastModified = new StageExecution.LastModifiedDetails(user: "rfletcher@netflix.com", allowedAccounts: ["whatever"], lastModifiedTime: System.currentTimeMillis())
     stage.startTime = System.currentTimeMillis()
     stage.endTime = System.currentTimeMillis()

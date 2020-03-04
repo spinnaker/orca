@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.dryrun
 
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.ext.withTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode.Builder
 
 class DryRunStage(private val delegate: StageDefinitionBuilder) : StageDefinitionBuilder {
 

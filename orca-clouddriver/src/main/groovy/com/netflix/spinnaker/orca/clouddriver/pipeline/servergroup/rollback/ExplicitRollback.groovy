@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.ResizeServerG
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -38,8 +39,6 @@ import javax.annotation.Nullable
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
-
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Slf4j
 class ExplicitRollback implements Rollback {
@@ -90,7 +89,7 @@ class ExplicitRollback implements Rollback {
   List<StageExecution> buildStages(StageExecution parentStage) {
     Map disableServerGroupContext = new HashMap(parentStage.context)
     disableServerGroupContext.serverGroupName = rollbackServerGroupName
-    def disableServerGroupStage = newStage(
+    def disableServerGroupStage = StageExecutionFactory.newStage(
       parentStage.execution, disableServerGroupStage.type, "Disable ${disableServerGroupContext.serverGroupName} due to rollback", disableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
     )
 
@@ -104,7 +103,7 @@ class ExplicitRollback implements Rollback {
     Map enableServerGroupContext = new HashMap(parentStage.context)
     enableServerGroupContext.targetHealthyDeployPercentage = targetHealthyRollbackPercentage
     enableServerGroupContext.serverGroupName = restoreServerGroupName
-    def enableServerGroupStage = newStage(
+    def enableServerGroupStage = StageExecutionFactory.newStage(
       parentStage.execution, enableServerGroupStage.type, "Enable ${enableServerGroupContext.serverGroupName} due to rollback", enableServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
     )
 
@@ -133,7 +132,7 @@ class ExplicitRollback implements Rollback {
     }
 
     if (delayBeforeDisableSeconds != null && delayBeforeDisableSeconds > 0) {
-      def waitStage = newStage(
+      def waitStage = StageExecutionFactory.newStage(
         parentStage.execution, waitStage.type, "waitBeforeDisable", [waitTime: delayBeforeDisableSeconds], parentStage, SyntheticStageOwner.STAGE_AFTER
       )
       stages << waitStage
@@ -211,7 +210,7 @@ class ExplicitRollback implements Rollback {
       targetHealthyDeployPercentage: targetHealthyRollbackPercentage
     ]
 
-    return newStage(parentStage.execution, resizeServerGroupStage.type,
+    return StageExecutionFactory.newStage(parentStage.execution, resizeServerGroupStage.type,
       "Resize Server Group: ${restoreServerGroupName} to (min: ${newRestoreCapacity.min}, max: ${newRestoreCapacity.max}, desired: ${newRestoreCapacity.desired})",
       resizeServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER)
   }
@@ -228,7 +227,7 @@ class ExplicitRollback implements Rollback {
         cloudProvider  : source.cloudProvider
       ]
     ]
-    return newStage(
+    return StageExecutionFactory.newStage(
       parentStage.execution,
       captureSourceServerGroupCapacityStage.type,
       "Snapshot Source Server Group",
@@ -251,7 +250,7 @@ class ExplicitRollback implements Rollback {
         cloudProvider  : source.cloudProvider
       ]
     ]
-    return newStage(
+    return StageExecutionFactory.newStage(
       parentStage.execution,
       applySourceServerGroupCapacityStage.type,
       "Restore Min Capacity From Snapshot due to rollback",

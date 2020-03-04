@@ -17,13 +17,14 @@ package com.netflix.spinnaker.orca.pipelinetemplate.pipeline;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.StageGraphBuilder;
+import com.netflix.spinnaker.orca.api.TaskNode.Builder;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.pipeline.UpdatePipelineStage;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.tasks.PlanTemplateDependentsTask;
 import com.netflix.spinnaker.orca.pipelinetemplate.tasks.UpdatePipelineTemplateTask;
@@ -45,7 +46,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
   private UpdatePipelineStage updatePipelineStage;
 
   @Override
-  public void taskGraph(StageExecution stage, Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull Builder builder) {
     if (!Boolean.valueOf(
         stage.getContext().getOrDefault("skipPlanDependents", "false").toString())) {
       builder.withTask("planDependentPipelines", PlanTemplateDependentsTask.class);
@@ -96,7 +97,7 @@ public class UpdatePipelineTemplateStage implements StageDefinitionBuilder {
           String.format("Failed converting pipeline to JSON: %s", pipeline.get("id")), e);
     }
 
-    return StageDefinitionBuilder.newStage(
+    return StageExecutionFactory.newStage(
         stage.getExecution(),
         updatePipelineStage.getType(),
         "updateDependentPipeline",

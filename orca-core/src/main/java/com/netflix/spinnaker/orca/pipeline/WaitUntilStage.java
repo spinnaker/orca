@@ -18,7 +18,9 @@ package com.netflix.spinnaker.orca.pipeline;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitUntilTask;
 import java.time.Instant;
 import javax.annotation.Nonnull;
@@ -31,7 +33,7 @@ public class WaitUntilStage implements StageDefinitionBuilder {
   public static String STAGE_TYPE = "waitUntil";
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("waitUntil", WaitUntilTask.class);
   }
 

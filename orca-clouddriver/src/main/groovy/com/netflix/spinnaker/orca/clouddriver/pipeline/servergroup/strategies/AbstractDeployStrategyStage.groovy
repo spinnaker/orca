@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies
 
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.clouddriver.pipeline.AbstractCloudProviderAwareStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
@@ -25,9 +26,8 @@ import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.kato.pipeline.strategy.DetermineSourceServerGroupTask
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
 import com.netflix.spinnaker.orca.kato.tasks.DiffTask
-
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
+import com.netflix.spinnaker.orca.api.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -36,7 +36,6 @@ import javax.annotation.Nonnull
 
 import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.DeployStagePreProcessor.StageDefinition
 import static com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup.Support.locationFromStageData
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Slf4j
 abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareStage {
@@ -68,7 +67,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   abstract List<TaskNode.TaskDefinition> basicTasks(StageExecution stage)
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("determineSourceServerGroup", DetermineSourceServerGroupTask)
       .withTask("determineHealthProviders", DetermineHealthProvidersTask)
@@ -120,7 +119,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
         cloudProvider: stageData.cloudProvider
       ]
       it.beforeStageDefinitions(parent).each {
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           parent.execution,
           it.stageDefinitionBuilder.type,
           it.name,
@@ -149,7 +148,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
         cloudProvider: stageData.cloudProvider
       ]
       it.afterStageDefinitions(parent).each {
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           parent.execution,
           it.stageDefinitionBuilder.type,
           it.name,
@@ -164,7 +163,7 @@ abstract class AbstractDeployStrategyStage extends AbstractCloudProviderAwareSta
   }
 
   @Override
-  void onFailureStages(StageExecution stage, StageGraphBuilder graph) {
+  void onFailureStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     Strategy strategy = getStrategy(stage)
     // Strategy shouldn't ever be null during regular execution, but that's not the case for unit tests
     // Either way, defensive programming

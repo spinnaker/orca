@@ -15,11 +15,12 @@
  */
 package com.netflix.spinnaker.orca.front50.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode.Builder;
 import com.netflix.spinnaker.orca.front50.tasks.SavePipelineTask;
 import com.netflix.spinnaker.orca.front50.tasks.SaveServiceAccountTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
+import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +30,7 @@ public class UpdatePipelineStage implements StageDefinitionBuilder {
   boolean useManagedServiceAccounts;
 
   @Override
-  public void taskGraph(StageExecution stage, Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull Builder builder) {
     if (useManagedServiceAccounts) {
       builder.withTask("updatePipelinePermissions", SaveServiceAccountTask.class);
     }

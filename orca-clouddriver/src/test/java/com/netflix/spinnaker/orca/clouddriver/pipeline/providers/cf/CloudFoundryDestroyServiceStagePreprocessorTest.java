@@ -19,8 +19,8 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.*;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;

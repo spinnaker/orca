@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.webhook.pipeline
 
 import com.netflix.spinnaker.kork.exceptions.UserException
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
@@ -72,7 +72,7 @@ class WebhookStageSpec extends Specification {
 
   def "Should throw on invalid input"() {
     given:
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         Execution.newPipeline("orca"),
         "webhook",
         [

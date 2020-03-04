@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
 import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import spock.lang.Specification
 import spock.lang.Subject

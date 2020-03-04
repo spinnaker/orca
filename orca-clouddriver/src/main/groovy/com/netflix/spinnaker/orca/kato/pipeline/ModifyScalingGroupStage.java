@@ -15,10 +15,10 @@
  */
 package com.netflix.spinnaker.orca.kato.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode.Builder;
 import com.netflix.spinnaker.orca.kato.tasks.ModifyScalingGroupTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder;
 import groovy.transform.CompileStatic;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;

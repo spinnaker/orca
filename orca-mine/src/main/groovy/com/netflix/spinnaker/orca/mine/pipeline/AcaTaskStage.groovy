@@ -22,12 +22,15 @@ import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.CompleteCanaryTask
 import com.netflix.spinnaker.orca.mine.tasks.MonitorAcaTaskTask
 import com.netflix.spinnaker.orca.mine.tasks.RegisterAcaTaskTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
+
+import javax.annotation.Nonnull
+
 import static org.springframework.http.HttpStatus.CONFLICT
 import static retrofit.RetrofitError.Kind.HTTP
 
@@ -38,7 +41,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   MineService mineService
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("registerGenericCanary", RegisterAcaTaskTask)
       .withTask("monitorGenericCanary", MonitorAcaTaskTask)
@@ -46,7 +49,7 @@ class AcaTaskStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  void prepareStageForRestart(StageExecution stage) {
+  void prepareStageForRestart(@Nonnull StageExecution stage) {
     if (stage.context.canary) {
       def previousCanary = stage.context.canary.clone()
       if (!stage.context.restartDetails) stage.context.restartDetails = [:]

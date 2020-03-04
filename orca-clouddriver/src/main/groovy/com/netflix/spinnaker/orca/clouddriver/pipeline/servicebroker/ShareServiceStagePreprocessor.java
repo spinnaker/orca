@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servicebroker;
 
 import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
+import com.netflix.spinnaker.orca.api.TaskNode;
 
 /**
  * Supports generic modification of a Share Service stage.

@@ -43,12 +43,11 @@ import com.netflix.spinnaker.orca.fixture.pipeline
 import com.netflix.spinnaker.orca.fixture.stage
 import com.netflix.spinnaker.orca.listeners.DelegatingApplicationEventMulticaster
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
-import com.netflix.spinnaker.orca.pipeline.TaskNode.Builder
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode.Builder
 import com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -885,7 +884,7 @@ class TestConfig {
     override fun beforeStages(parent: StageExecution, graph: StageGraphBuilder) {
       listOf("us-east-1", "us-west-2", "eu-west-1")
         .map { region ->
-          newStage(parent.execution, "dummy", "dummy $region", parent.context + mapOf("region" to region), parent, STAGE_BEFORE)
+          StageExecutionFactory.newStage(parent.execution, "dummy", "dummy $region", parent.context + mapOf("region" to region), parent, STAGE_BEFORE)
         }
         .forEach { graph.add(it) }
     }

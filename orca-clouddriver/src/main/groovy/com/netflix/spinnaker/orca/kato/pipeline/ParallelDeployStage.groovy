@@ -17,16 +17,17 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.api.Trigger
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 
 import javax.annotation.Nonnull
 import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
@@ -43,13 +44,14 @@ class ParallelDeployStage implements StageDefinitionBuilder {
   @Deprecated
   public static final String PIPELINE_CONFIG_TYPE = "deploy"
 
+  @Nonnull
   @Override
   String getType() {
     return PIPELINE_CONFIG_TYPE
   }
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("completeParallelDeploy", CompleteParallelDeployTask)
   }
 
@@ -58,7 +60,7 @@ class ParallelDeployStage implements StageDefinitionBuilder {
     parallelContexts(parent)
       .collect({ context ->
         def type = isClone(parent) ? CloneServerGroupStage.PIPELINE_CONFIG_TYPE : CreateServerGroupStage.PIPELINE_CONFIG_TYPE
-        newStage(parent.execution, type, context.name as String, context, parent, STAGE_BEFORE)
+        StageExecutionFactory.newStage(parent.execution, type, context.name as String, context, parent, STAGE_BEFORE)
       })
       .forEach({ StageExecution s -> graph.add(s) })
   }

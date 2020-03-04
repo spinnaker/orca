@@ -17,14 +17,16 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws
 
 import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class CaptureSourceServerGroupCapacityStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("snapshotSourceServerGroup", CaptureSourceServerGroupCapacityTask)
   }

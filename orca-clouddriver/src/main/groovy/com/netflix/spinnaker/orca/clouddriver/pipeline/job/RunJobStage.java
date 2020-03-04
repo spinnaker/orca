@@ -18,7 +18,9 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.CancellableStage;
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.ConsumeArtifactTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.MonitorJobTask;
@@ -27,11 +29,10 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.job.WaitOnJobCompletion;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestForceCacheRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PromoteManifestKatoOutputsTask;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("runJob", RunJobTask.class).withTask("monitorDeploy", MonitorJobTask.class);
 
     // TODO(ethanfrogers): abstract this out into a provider specific job runner
@@ -128,7 +129,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public void prepareStageForRestart(StageExecution stage) {
+  public void prepareStageForRestart(@Nonnull StageExecution stage) {
     Map<String, Object> context = stage.getContext();
 
     // preserve previous job details

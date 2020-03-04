@@ -20,7 +20,8 @@ import com.google.common.base.Joiner
 import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 
 import java.time.Clock
 import javax.annotation.Nonnull
@@ -30,8 +31,8 @@ import com.netflix.spinnaker.orca.api.TaskResult
 import com.netflix.spinnaker.orca.bakery.tasks.CompletedBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.CreateBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import groovy.transform.CompileDynamic
@@ -60,7 +61,7 @@ class BakeStage implements StageDefinitionBuilder {
   Clock clock = systemUTC()
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     if (isTopLevelStage(stage)) {
       builder
         .withTask("completeParallel", CompleteParallelBakeTask)
@@ -78,7 +79,7 @@ class BakeStage implements StageDefinitionBuilder {
     if (isTopLevelStage(parent)) {
       parallelContexts(parent)
         .collect({ context ->
-          newStage(parent.execution, type, "Bake in ${context.region}", context, parent, STAGE_BEFORE)
+          StageExecutionFactory.newStage(parent.execution, type, "Bake in ${context.region}", context, parent, STAGE_BEFORE)
         })
         .forEach({ StageExecution s -> graph.add(s) })
     }

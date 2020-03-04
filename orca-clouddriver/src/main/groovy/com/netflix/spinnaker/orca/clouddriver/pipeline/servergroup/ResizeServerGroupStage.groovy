@@ -24,8 +24,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ResizeServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForCapacityMatchTask
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Component
 
@@ -50,7 +50,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
   }
 
   @Override
-  protected void preStatic(Map<String, Object> descriptor, StageGraphBuilder graph) {
+  protected void preStatic(Map<String, Object> descriptor, StageGraphBuilderImpl graph) {
     if (descriptor.cloudProvider == "aws") {
       graph.add {
         it.name = "resumeScalingProcesses"
@@ -68,7 +68,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
   }
 
   @Override
-  protected void postStatic(Map<String, Object> descriptor, StageGraphBuilder graph) {
+  protected void postStatic(Map<String, Object> descriptor, StageGraphBuilderImpl graph) {
     if (descriptor.cloudProvider == "aws") {
       graph.add {
         it.name = "suspendScalingProcesses"
@@ -85,7 +85,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
   }
 
   @Override
-  protected void preDynamic(Map<String, Object> context, StageGraphBuilder graph) {
+  protected void preDynamic(Map<String, Object> context, StageGraphBuilderImpl graph) {
     if (context.cloudProvider == "aws") {
       context = removeServerGroupName(context)
       graph.add {
@@ -99,7 +99,7 @@ class ResizeServerGroupStage extends TargetServerGroupLinearStageSupport {
   }
 
   @Override
-  protected void postDynamic(Map<String, Object> context, StageGraphBuilder graph) {
+  protected void postDynamic(Map<String, Object> context, StageGraphBuilderImpl graph) {
     if (context.cloudProvider == "aws") {
       context = removeServerGroupName(context)
       graph.add {

@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.StageResolver
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.CheckPreconditionsStage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
 
 class DryRunStageDefinitionBuilderFactory(
   stageResolver: StageResolver

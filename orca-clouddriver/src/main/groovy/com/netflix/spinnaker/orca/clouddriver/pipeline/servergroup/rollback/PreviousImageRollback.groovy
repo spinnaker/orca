@@ -25,8 +25,8 @@ import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import org.springframework.beans.factory.annotation.Autowired
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 class PreviousImageRollback implements Rollback {
   String rollbackServerGroupName
@@ -115,7 +115,7 @@ class PreviousImageRollback implements Rollback {
       cloneServerGroupContext.interestingHealthProviderNames = parentStageContext.interestingHealthProviderNames
     }
 
-    stages << newStage(
+    stages << StageExecutionFactory.newStage(
       parentStage.execution, cloneServerGroupStage.type, "clone", cloneServerGroupContext, parentStage, SyntheticStageOwner.STAGE_AFTER
     )
 

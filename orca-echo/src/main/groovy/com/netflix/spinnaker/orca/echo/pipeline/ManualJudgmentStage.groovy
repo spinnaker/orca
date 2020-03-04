@@ -21,12 +21,13 @@ import com.netflix.spinnaker.orca.api.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.api.TaskResult
 
+import javax.annotation.Nonnull
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.*
 import com.netflix.spinnaker.orca.echo.EchoService
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -36,13 +37,13 @@ import org.springframework.stereotype.Component
 class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage {
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("waitForJudgment", WaitForManualJudgmentTask.class)
   }
 
   @Override
-  void prepareStageForRestart(StageExecution stage) {
+  void prepareStageForRestart(@Nonnull StageExecution stage) {
     stage.context.remove("judgmentStatus")
     stage.context.remove("lastModifiedBy")
   }

@@ -24,7 +24,7 @@ import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.pipeline.TaskNode.task
+import static com.netflix.spinnaker.orca.api.TaskNode.task
 
 @Unroll
 class AbstractDeployStrategyStageSpec extends Specification {

@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestForceCacheRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PatchManifestTask;
@@ -24,9 +26,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PromoteManifestKato
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ResolvePatchSourceManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ResolveTargetManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.WaitForManifestStableTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
+import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,7 +35,7 @@ public class PatchManifestStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "patchManifest";
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
         .withTask(ResolveTargetManifestTask.TASK_NAME, ResolveTargetManifestTask.class)
         .withTask(ResolvePatchSourceManifestTask.TASK_NAME, ResolvePatchSourceManifestTask.class)

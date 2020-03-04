@@ -19,14 +19,14 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spinnaker.orca.api.PipelineExecution
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskDefinition
-import com.netflix.spinnaker.orca.pipeline.TaskNode.TaskGraph
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
+import com.netflix.spinnaker.orca.api.TaskNode.TaskDefinition
+import com.netflix.spinnaker.orca.api.TaskNode.TaskGraph
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 
 /**
@@ -86,7 +86,7 @@ fun StageDefinitionBuilder.buildBeforeStages(
 ) {
   val executionWindow = stage.buildExecutionWindow()
 
-  val graph = StageGraphBuilder.beforeStages(stage, executionWindow)
+  val graph = StageGraphBuilderImpl.beforeStages(stage, executionWindow)
   beforeStages(stage, graph)
   val beforeStages = graph.build().toList()
 
@@ -103,7 +103,7 @@ fun StageDefinitionBuilder.buildAfterStages(
   stage: StageExecution,
   callback: (StageExecution) -> Unit = {}
 ) {
-  val graph = StageGraphBuilder.afterStages(stage)
+  val graph = StageGraphBuilderImpl.afterStages(stage)
   afterStages(stage, graph)
   val afterStages = graph.build().toList()
 
@@ -114,7 +114,7 @@ fun StageDefinitionBuilder.buildFailureStages(
   stage: StageExecution,
   callback: (StageExecution) -> Unit = {}
 ) {
-  val graph = StageGraphBuilder.afterStages(stage)
+  val graph = StageGraphBuilderImpl.afterStages(stage)
   onFailureStages(stage, graph)
   val afterStages = graph.build().toList()
 
@@ -138,7 +138,7 @@ private typealias SyntheticStages = Map<SyntheticStageOwner, List<StageExecution
 private fun StageExecution.buildExecutionWindow(): StageExecution? {
   if (context.getOrDefault("restrictExecutionDuringTimeWindow", false) as Boolean) {
     val execution = execution
-    val executionWindow = newStage(
+    val executionWindow = StageExecutionFactory.newStage(
       execution,
       RestrictExecutionDuringTimeWindow.TYPE,
       RestrictExecutionDuringTimeWindow.TYPE,

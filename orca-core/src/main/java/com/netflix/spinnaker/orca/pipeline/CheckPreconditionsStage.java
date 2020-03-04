@@ -17,13 +17,10 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE;
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
-import com.netflix.spinnaker.orca.api.StageExecution;
-import com.netflix.spinnaker.orca.api.Task;
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder;
+import com.netflix.spinnaker.orca.api.*;
 import com.netflix.spinnaker.orca.pipeline.tasks.PreconditionTask;
 import java.util.Collection;
 import java.util.HashMap;
@@ -71,7 +68,7 @@ public class CheckPreconditionsStage implements StageDefinitionBuilder {
       parallelContexts(parent).stream()
           .map(
               context ->
-                  newStage(
+                  StageExecutionFactory.newStage(
                       parent.getExecution(),
                       getType(),
                       format("Check precondition (%s)", context.get("preconditionType")),

@@ -16,19 +16,20 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.snapshot;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.snapshot.DeleteSnapshotTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import java.util.Set;
+import javax.annotation.Nonnull;
 import javax.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DeleteSnapshotStage implements StageDefinitionBuilder {
   @Override
-  public void taskGraph(StageExecution stage, @NotNull TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull @NotNull TaskNode.Builder builder) {
     builder
         .withTask("deleteSnapshot", DeleteSnapshotTask.class)
         .withTask("monitorDeleteSnapshot", MonitorKatoTask.class);

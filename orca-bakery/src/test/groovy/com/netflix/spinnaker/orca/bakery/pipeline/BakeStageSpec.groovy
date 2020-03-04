@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 
 import java.time.Clock
 import com.netflix.spinnaker.orca.api.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import spock.lang.Specification
@@ -102,7 +102,7 @@ class BakeStageSpec extends Specification {
     }
 
     def bakeStage = pipeline.stageById("1")
-    def graph = StageGraphBuilder.beforeStages(bakeStage)
+    def graph = StageGraphBuilderImpl.beforeStages(bakeStage)
     new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
     def parallelStages = graph.build()
 
@@ -135,7 +135,7 @@ class BakeStageSpec extends Specification {
     }
 
     def bakeStage = pipeline.stageById("1")
-    def graph = StageGraphBuilder.beforeStages(bakeStage)
+    def graph = StageGraphBuilderImpl.beforeStages(bakeStage)
     new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
     def parallelStages = graph.build()
 
@@ -180,7 +180,7 @@ class BakeStageSpec extends Specification {
 
     for (stageId in ["1", "2"]) {
       def bakeStage = pipeline.stageById(stageId)
-      def graph = StageGraphBuilder.beforeStages(bakeStage)
+      def graph = StageGraphBuilderImpl.beforeStages(bakeStage)
       new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
       def childBakeStages = graph.build()
       childBakeStages.eachWithIndex { it, idx ->

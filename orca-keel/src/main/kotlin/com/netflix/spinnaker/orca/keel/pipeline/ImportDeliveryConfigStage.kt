@@ -19,9 +19,9 @@ package com.netflix.spinnaker.orca.keel.pipeline
 import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.Aliases
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder.Aliases
+import com.netflix.spinnaker.orca.api.TaskNode
 import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
 

@@ -1,7 +1,7 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline;
+package com.netflix.spinnaker.orca.api;
 
-import static com.netflix.spinnaker.orca.pipeline.TaskNode.GraphType.LOOP;
+import static com.netflix.spinnaker.orca.api.TaskNode.GraphType.LOOP;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.netflix.spinnaker.orca.api.ExecutionStatus;
-import com.netflix.spinnaker.orca.api.Task;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

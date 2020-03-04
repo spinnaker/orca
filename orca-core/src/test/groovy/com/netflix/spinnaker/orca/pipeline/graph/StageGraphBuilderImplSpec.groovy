@@ -20,13 +20,13 @@ import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder.afterStages
-import static com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder.beforeStages
+import static StageGraphBuilderImpl.afterStages
+import static StageGraphBuilderImpl.beforeStages
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
-class StageGraphBuilderSpec extends Specification {
+class StageGraphBuilderImplSpec extends Specification {
 
   @Shared def parent = stage {
     refId = "1"

@@ -17,22 +17,22 @@
 package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.api.StageExecution
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 
 import javax.annotation.Nonnull
 import java.util.concurrent.ConcurrentHashMap
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.kato.tasks.quip.ResolveQuipVersionTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.client.Client
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 /**
  * Wrapper stage over BuilkQuickPatchStage.  We do this so we can reuse the same steps whether or not we are doing
@@ -57,7 +57,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "quickPatch"
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder.withTask("resolveQuipVersion", ResolveQuipVersionTask)
   }
 
@@ -84,7 +84,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
         nextStageContext.put("instances", instance)
         nextStageContext.put("instanceIds", [key]) // for WaitForDown/UpInstancesTask
 
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           stage.execution,
           bulkQuickPatchStage.type,
           "bulkQuickPatchStage",
@@ -99,7 +99,7 @@ class QuickPatchStage implements StageDefinitionBuilder {
       nextStageContext.put("instanceIds", instances.collect { key, value -> key })
       // for WaitForDown/UpInstancesTask
 
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         bulkQuickPatchStage.type,
         "bulkQuickPatchStage",

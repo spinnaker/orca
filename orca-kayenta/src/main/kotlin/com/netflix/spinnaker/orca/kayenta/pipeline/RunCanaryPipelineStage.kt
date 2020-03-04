@@ -25,8 +25,8 @@ import com.netflix.spinnaker.orca.kayenta.RunCanaryContext
 import com.netflix.spinnaker.orca.kayenta.tasks.MonitorKayentaCanaryTask
 import com.netflix.spinnaker.orca.kayenta.tasks.RunKayentaCanaryTask
 import com.netflix.spinnaker.orca.kayenta.tasks.ResolveKayentaConfigIdTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.lang.String.format

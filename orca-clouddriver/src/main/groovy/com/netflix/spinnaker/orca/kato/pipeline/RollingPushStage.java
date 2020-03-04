@@ -18,8 +18,10 @@ package com.netflix.spinnaker.orca.kato.pipeline;
 import static java.lang.String.format;
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.api.Task;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.api.TaskResult;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware;
@@ -31,8 +33,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.CaptureParentInt
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask;
 import com.netflix.spinnaker.orca.kato.tasks.DisableInstancesTask;
 import com.netflix.spinnaker.orca.kato.tasks.rollingpush.*;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -51,7 +51,7 @@ public class RollingPushStage implements StageDefinitionBuilder, ForceCacheRefre
   @Autowired private DynamicConfigService dynamicConfigService;
 
   @Override
-  public void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     boolean taggingEnabled = featuresService.areEntityTagsAvailable();
     builder
         .withTask(

@@ -17,10 +17,10 @@
  */
 package com.netflix.spinnaker.orca.igor.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.igor.tasks.GetBuildPropertiesTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 

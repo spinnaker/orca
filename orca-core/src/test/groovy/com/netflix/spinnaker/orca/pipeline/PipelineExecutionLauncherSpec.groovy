@@ -16,9 +16,11 @@
 
 package com.netflix.spinnaker.orca.pipeline
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
 import org.springframework.context.ApplicationEventPublisher
 
+import javax.annotation.Nonnull
 import java.time.Clock
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
@@ -61,6 +63,7 @@ class PipelineExecutionLauncherSpec extends Specification {
         registerSingleton("executionRepository", executionRepository)
         registerSingleton("executionRunner", executionRunner)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
+          @Nonnull
           @Override
           String getType() {
             return "whatever"
@@ -86,6 +89,7 @@ class PipelineExecutionLauncherSpec extends Specification {
         registerSingleton("executionRepository", executionRepository)
         registerSingleton("executionRunner", executionRunner)
         registerSingleton("whateverStageDefBuilder", new StageDefinitionBuilder() {
+          @Nonnull
           @Override
           String getType() {
             return "whatever"

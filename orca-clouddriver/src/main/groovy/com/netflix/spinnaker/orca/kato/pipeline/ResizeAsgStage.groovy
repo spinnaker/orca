@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.pipeline
 
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.StageExecution
+import com.netflix.spinnaker.orca.api.StageGraphBuilder
 import com.netflix.spinnaker.orca.clouddriver.tasks.DetermineHealthProvidersTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
@@ -25,17 +26,15 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForCapacityM
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
 import com.netflix.spinnaker.orca.kato.tasks.ResizeAsgTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
+import com.netflix.spinnaker.orca.api.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 import javax.annotation.Nonnull
-
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 
 @Component
 @CompileStatic
@@ -56,7 +55,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
   DetermineTargetReferenceStage determineTargetReferenceStage
 
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     if (!stage.parentStageId || stage.execution.stages.find {
       it.id == stage.parentStageId
     }.type != stage.type) {
@@ -96,7 +95,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
           context.asgName = targetReference.asg.name
         }
 
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           parentStage.execution,
           modifyScalingProcessStage.getType(),
           "resumeScalingProcesses",
@@ -107,7 +106,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
       }
 
       if (targetReferenceSupport.isDynamicallyBound(parentStage)) {
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           parentStage.execution,
           determineTargetReferenceStage.type,
           "determineTargetReferences",
@@ -134,7 +133,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
 
       if (descriptions.size()) {
         for (description in descriptions) {
-          stages << newStage(
+          stages << StageExecutionFactory.newStage(
             parentStage.execution,
             this.getType(),
             "resizeAsg",
@@ -156,7 +155,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
           resizeContext.regions = [targetReference.region]
           context.remove("asgName")
           context.target = parentStage.context.target
-          stages << newStage(
+          stages << StageExecutionFactory.newStage(
             parentStage.execution,
             this.getType(),
             "resizeAsg",
@@ -170,7 +169,7 @@ class ResizeAsgStage implements StageDefinitionBuilder {
 
         context.put("action", "suspend")
 
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           parentStage.execution,
           modifyScalingProcessStage.getType(),
           "suspendScalingProcesses",

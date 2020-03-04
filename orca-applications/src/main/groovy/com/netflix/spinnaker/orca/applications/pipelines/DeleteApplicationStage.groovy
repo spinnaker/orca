@@ -19,16 +19,18 @@ package com.netflix.spinnaker.orca.applications.pipelines
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.applications.tasks.DeleteApplicationTask
 import com.netflix.spinnaker.orca.applications.tasks.VerifyApplicationHasNoDependenciesTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.TaskNode
 import groovy.transform.CompileStatic
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 @CompileStatic
 class DeleteApplicationStage implements StageDefinitionBuilder {
   @Override
-  void taskGraph(StageExecution stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("verifyNoDependencies", VerifyApplicationHasNoDependenciesTask)
       .withTask("deleteApplication", DeleteApplicationTask)

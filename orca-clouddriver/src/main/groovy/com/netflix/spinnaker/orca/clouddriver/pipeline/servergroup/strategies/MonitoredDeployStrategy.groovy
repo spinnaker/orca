@@ -35,6 +35,7 @@ import com.netflix.spinnaker.orca.deploymentmonitor.models.DeploymentMonitorStag
 import com.netflix.spinnaker.orca.deploymentmonitor.models.MonitoredDeployInternalStageData
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeStrategy
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import groovy.util.logging.Slf4j
@@ -44,7 +45,6 @@ import org.springframework.stereotype.Component
 
 import java.util.concurrent.TimeUnit
 
-import static com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.newStage
 import static com.netflix.spinnaker.orca.kato.pipeline.strategy.Strategy.MONITORED
 import static java.util.concurrent.TimeUnit.MINUTES
 
@@ -140,7 +140,7 @@ class MonitoredDeployStrategy implements Strategy {
       targetLocation : cleanupConfig.location,
     ]
 
-    stages << newStage(
+    stages << StageExecutionFactory.newStage(
       stage.execution,
       DetermineTargetServerGroupStage.PIPELINE_CONFIG_TYPE,
       "Determine Deployed Server Group",
@@ -161,7 +161,7 @@ class MonitoredDeployStrategy implements Strategy {
         pinMinimumCapacity: true
       ])
 
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         PinServerGroupStage.TYPE,
         "Pin ${resizeContext.serverGroupName}",
@@ -172,7 +172,7 @@ class MonitoredDeployStrategy implements Strategy {
     }
 
     if (stageData.deploymentMonitor?.id) {
-      def notifyDeployStartingStage = newStage(
+      def notifyDeployStartingStage = StageExecutionFactory.newStage(
         stage.execution,
         NotifyDeployStartingStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy starting",
@@ -213,7 +213,7 @@ class MonitoredDeployStrategy implements Strategy {
 
       log.info("Adding `Grow ${internalStageData.newServerGroup} to $p% of Desired Size` stage with context $resizeContext [executionId=${stage.execution.id}]")
 
-      def resizeStage = newStage(
+      def resizeStage = StageExecutionFactory.newStage(
         stage.execution,
         ResizeServerGroupStage.TYPE,
         "Grow ${internalStageData.newServerGroup} to $p% of Desired Size",
@@ -233,7 +233,7 @@ class MonitoredDeployStrategy implements Strategy {
 
         log.info("Adding `Disable $p% of Traffic on ${source.serverGroupName}` stage with context $disableContext [executionId=${stage.execution.id}]")
 
-        def disablePortionStage = newStage(
+        def disablePortionStage = StageExecutionFactory.newStage(
           stage.execution,
           DisableServerGroupStage.PIPELINE_CONFIG_TYPE,
           "Disable $p% of Traffic on ${source.serverGroupName}",
@@ -247,7 +247,7 @@ class MonitoredDeployStrategy implements Strategy {
       if (stageData.deploymentMonitor?.id) {
         evalContext.currentProgress = p
 
-        StageExecution evaluateHealthStage = newStage(
+        StageExecution evaluateHealthStage = StageExecutionFactory.newStage(
           stage.execution,
           EvaluateDeploymentHealthStage.PIPELINE_CONFIG_TYPE,
           "Evaluate health of deployed instances",
@@ -265,7 +265,7 @@ class MonitoredDeployStrategy implements Strategy {
     if (source && stageData.scaleDown) {
       if (stageData?.getDelayBeforeScaleDown()) {
         def waitContext = [waitTime: stageData?.getDelayBeforeScaleDown()]
-        stages << newStage(
+        stages << StageExecutionFactory.newStage(
           stage.execution,
           WaitStage.STAGE_TYPE,
           "Wait Before Scale Down",
@@ -281,7 +281,7 @@ class MonitoredDeployStrategy implements Strategy {
         preferLargerOverNewer        : false,
 
       ]
-      StageExecution scaleDownStage = newStage(
+      StageExecution scaleDownStage = StageExecutionFactory.newStage(
         stage.execution,
         ScaleDownClusterStage.PIPELINE_CONFIG_TYPE,
         "scaleDown",
@@ -306,7 +306,7 @@ class MonitoredDeployStrategy implements Strategy {
         unpinMinimumCapacity: true
       ])
 
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         stage.execution,
         PinServerGroupStage.TYPE,
         "Unpin ${resizeContext.serverGroupName}",
@@ -322,7 +322,7 @@ class MonitoredDeployStrategy implements Strategy {
         allowDeleteActive    : false,
         retainLargerOverNewer: false
       ]
-      StageExecution shrinkClusterStage = newStage(
+      StageExecution shrinkClusterStage = StageExecutionFactory.newStage(
         stage.execution,
         ShrinkClusterStage.STAGE_TYPE,
         "shrinkCluster",
@@ -337,7 +337,7 @@ class MonitoredDeployStrategy implements Strategy {
     }
 
     if (stageData.deploymentMonitor?.id) {
-      StageExecution notifyDeployCompletedStage = newStage(
+      StageExecution notifyDeployCompletedStage = StageExecutionFactory.newStage(
         stage.execution,
         NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy complete",
@@ -393,7 +393,7 @@ class MonitoredDeployStrategy implements Strategy {
       stageTimeoutMs      : TimeUnit.MINUTES.toMillis(20)
     ])
 
-    stages << newStage(
+    stages << StageExecutionFactory.newStage(
       parent.execution,
       PinServerGroupStage.TYPE,
       "Unpin ${resizeContext.serverGroupName}",
@@ -415,7 +415,7 @@ class MonitoredDeployStrategy implements Strategy {
       internalStageData.hasDeploymentFailed = true;
 
       Map evalContext = internalStageData.toContextMap()
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         parent.execution,
         NotifyDeployCompletedStage.PIPELINE_CONFIG_TYPE,
         "Notify monitored deploy complete",
@@ -448,7 +448,7 @@ class MonitoredDeployStrategy implements Strategy {
 
     List<StageExecution> stages = new ArrayList<>()
 
-    stages << newStage(
+    stages << StageExecutionFactory.newStage(
       parent.execution,
       RollbackClusterStage.PIPELINE_CONFIG_TYPE,
       "Rollback ${stageData.cluster}",
@@ -471,7 +471,7 @@ class MonitoredDeployStrategy implements Strategy {
     )
 
     if (monitoredDeployStageData.failureActions.destroyInstances) {
-      stages << newStage(
+      stages << StageExecutionFactory.newStage(
         parent.execution,
         DestroyServerGroupStage.PIPELINE_CONFIG_TYPE,
         "Destroy ${stageData.serverGroup} due to rollback",

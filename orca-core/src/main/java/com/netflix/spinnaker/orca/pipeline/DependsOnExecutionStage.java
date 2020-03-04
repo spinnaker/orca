@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
+import com.netflix.spinnaker.orca.api.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.StageExecution;
+import com.netflix.spinnaker.orca.api.TaskNode;
 import com.netflix.spinnaker.orca.pipeline.tasks.DependsOnExecutionTask;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
