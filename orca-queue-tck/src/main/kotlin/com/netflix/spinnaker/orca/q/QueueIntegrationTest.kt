@@ -26,7 +26,7 @@ import com.netflix.spinnaker.assertj.assertSoftly
 import com.netflix.spinnaker.config.OrcaQueueConfiguration
 import com.netflix.spinnaker.config.QueueConfiguration
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
-import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.CancellableStage
 import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.FAILED_CONTINUE
 import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED

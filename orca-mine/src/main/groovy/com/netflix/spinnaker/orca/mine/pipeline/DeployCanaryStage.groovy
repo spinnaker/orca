@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.mine.pipeline
 
 import com.netflix.frigga.NameBuilder
 import com.netflix.frigga.ami.AppVersion
-import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.CancellableStage
 import com.netflix.spinnaker.orca.api.ExecutionStatus
 import com.netflix.spinnaker.orca.api.Task
 import com.netflix.spinnaker.orca.api.StageExecution

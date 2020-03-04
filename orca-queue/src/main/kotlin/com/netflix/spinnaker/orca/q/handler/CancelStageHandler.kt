@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.CancellableStage
 import com.netflix.spinnaker.orca.api.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory

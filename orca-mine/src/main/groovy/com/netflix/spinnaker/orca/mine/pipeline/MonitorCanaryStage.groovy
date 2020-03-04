@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.CancellableStage
 import com.netflix.spinnaker.orca.api.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask

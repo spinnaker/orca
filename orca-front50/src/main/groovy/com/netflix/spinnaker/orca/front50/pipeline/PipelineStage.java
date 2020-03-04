@@ -19,7 +19,7 @@ import static com.netflix.spinnaker.orca.api.ExecutionType.PIPELINE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 
-import com.netflix.spinnaker.orca.CancellableStage;
+import com.netflix.spinnaker.orca.api.CancellableStage;
 import com.netflix.spinnaker.orca.api.PipelineExecution;
 import com.netflix.spinnaker.orca.api.StageExecution;
 import com.netflix.spinnaker.orca.front50.tasks.MonitorPipelineTask;

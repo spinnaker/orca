@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import javax.annotation.Nonnull
 import com.netflix.frigga.autoscaling.AutoScalingGroupNameBuilder
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.CancellableStage
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGroupTask
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper

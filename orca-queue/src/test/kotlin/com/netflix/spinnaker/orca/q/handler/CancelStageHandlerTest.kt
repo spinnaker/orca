@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.google.common.util.concurrent.MoreExecutors
-import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.CancellableStage
 import com.netflix.spinnaker.orca.api.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.ExecutionStatus.SUCCEEDED
