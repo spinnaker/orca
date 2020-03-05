@@ -99,7 +99,7 @@ public class CompoundExecutionOperator {
             if (repository.handlesPartition(execution.getPartition())) {
               runnerAction.accept(execution);
             } else {
-              log.warn(
+              log.info(
                   "Not pushing queue message action='{}' for execution with foreign partition='{}'",
                   action,
                   execution.getPartition());
