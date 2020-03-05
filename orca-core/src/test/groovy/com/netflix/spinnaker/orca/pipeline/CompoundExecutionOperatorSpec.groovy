@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import org.slf4j.MDC
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -28,6 +29,10 @@ class CompoundExecutionOperatorSpec extends Specification {
   ExecutionRepository repository = Mock(ExecutionRepository)
   ExecutionRunner runner = Mock(ExecutionRunner)
   def execution = Mock(Execution)
+
+  def setupSpec() {
+    MDC.clear()
+  }
 
   @Subject
   CompoundExecutionOperator operator = new CompoundExecutionOperator(repository, runner, new RetrySupport())
