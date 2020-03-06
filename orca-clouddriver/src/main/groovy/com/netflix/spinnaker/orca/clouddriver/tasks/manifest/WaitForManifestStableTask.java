@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
 
@@ -45,6 +46,9 @@ public class WaitForManifestStableTask
 
   private final OortService oortService;
 
+  @Value("${kubenetes.manifest.timeout-minutes:30}")
+  private int manifestTimeout;
+
   @Override
   public long getBackoffPeriod() {
     return TimeUnit.SECONDS.toMillis(5);
@@ -52,7 +56,7 @@ public class WaitForManifestStableTask
 
   @Override
   public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(30);
+    return TimeUnit.MINUTES.toMillis(manifestTimeout);
   }
 
   @Nonnull
