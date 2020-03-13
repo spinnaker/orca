@@ -288,10 +288,11 @@ public class TrafficGuard {
         && serverGroupsGoingAway.stream()
             .allMatch(sg -> sg.getCapacity().getDesired() == someDesiredSize)) {
       log.debug(
-          "Bypassing traffic guard check for '{}' in {}/{} with pinned server groups. Context: {}",
+          "Bypassing traffic guard check for '{}' in {}/{} with pinned server groups of size {}. Context: {}",
           cluster,
           account,
           location.getValue(),
+          someDesiredSize,
           generateContext(currentServerGroups));
       return;
     }

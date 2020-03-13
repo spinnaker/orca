@@ -71,7 +71,7 @@ class TargetServerGroup {
         toInt(serverGroup.capacity.desired))
   }
 
-  private int toInt(Object field) {
+  private static int toInt(Object field) {
     Integer.parseInt(field.toString())
   }
 
