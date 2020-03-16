@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Execution Status enumerations used for executions and stages Note: we implement CharSequence to
- * allow simple SpEL expressions such as: {#stage('s1').status == 'SUCCEEDED'}
+ * Execution Status enumerations used for executions and stages.
+ *
+ * <p>Note: we implement CharSequence to allow simple SpEL expressions such as: {#stage('s1').status
+ * == 'SUCCEEDED'}
  */
 public enum ExecutionStatus implements CharSequence {
   /** The task has yet to start. */

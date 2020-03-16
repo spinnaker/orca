@@ -31,6 +31,14 @@ import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.Nonnull;
 
+/**
+ * Provides a low-level API for building stages.
+ *
+ * <p>A stage in its simplest form will consist of a series of Tasks that are executed serially.
+ * However, a stage can also configure other stages to be run before it, or after it, and or on
+ * failure only. This can enable you to build stages which compose and abstract the details of other
+ * stages.
+ */
 @Beta
 public interface StageDefinitionBuilder {
 
@@ -40,23 +48,40 @@ public interface StageDefinitionBuilder {
     return graphBuilder.build();
   }
 
+  /**
+   * Implement this method to define any tasks that should run as part of this stage's workflow.
+   *
+   * @param stage The execution runtime of the stage
+   * @param builder The task graph builder
+   */
   default void taskGraph(@Nonnull StageExecution stage, @Nonnull Builder builder) {}
 
   /**
    * Implement this method to define any stages that should run before any tasks in this stage as
    * part of a composed workflow.
+   *
+   * @param parent The execution runtime of the stage (which is the parent of any stages created
+   *     herein)
+   * @param graph The stage graph builder
    */
   default void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
 
   /**
    * Implement this method to define any stages that should run after any tasks in this stage as
    * part of a composed workflow.
+   *
+   * @param parent The execution runtime of the stage (which is the parent of any stages created
+   *     herein)
+   * @param graph The stage graph builder
    */
   default void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {}
 
   /**
    * Implement this method to define any stages that should run in response to a failure in tasks,
    * before or after stages.
+   *
+   * @param stage The execution runtime of the stage
+   * @param graph The stage graph builder
    */
   default void onFailureStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {}
 
@@ -68,10 +93,18 @@ public interface StageDefinitionBuilder {
   /**
    * Implementations can override this if they need any special cleanup on restart.
    *
-   * @param stage
+   * @param stage The execution runtime of the stage
    */
   default void prepareStageForRestart(@Nonnull StageExecution stage) {}
 
+  /**
+   * Get the pipeline configuration-friendly type name for this stage.
+   *
+   * <p>If a stage class is {@code MyFancyStage}, the resulting type would be {@code myFancy}.
+   *
+   * @param clazz The stage definition builder class
+   * @return
+   */
   static String getType(Class<? extends StageDefinitionBuilder> clazz) {
     String className = clazz.getSimpleName();
     return className.substring(0, 1).toLowerCase()
@@ -86,6 +119,7 @@ public interface StageDefinitionBuilder {
     return false;
   }
 
+  /** A collection of known aliases. */
   default Collection<String> aliases() {
     if (getClass().isAnnotationPresent(Aliases.class)) {
       return Arrays.asList(getClass().getAnnotation(Aliases.class).value());
@@ -94,6 +128,7 @@ public interface StageDefinitionBuilder {
     return Collections.emptyList();
   }
 
+  /** Allows backwards compatibility of a stage's "type", even through class renames / refactors. */
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.TYPE)
   @interface Aliases {

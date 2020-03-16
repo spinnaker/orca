@@ -27,17 +27,42 @@ import java.util.Collections;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/** A discrete unit of work in a pipeline execution that does one thing and one thing only. */
 @Beta
 public interface Task {
+  /**
+   * Execute the business logic of the task, using the provided stage execution state.
+   *
+   * @param stage The running stage execution stage
+   * @return The result of this Task's execution
+   */
   @Nonnull
   TaskResult execute(@Nonnull StageExecution stage);
 
+  /**
+   * Behavior to be called on Task timeout.
+   *
+   * <p>This method should be used if you need to perform any cleanup operations in response to the
+   * task being aborted after taking too long to complete.
+   *
+   * @param stage The running state execution state
+   * @return
+   */
   default @Nullable TaskResult onTimeout(@Nonnull StageExecution stage) {
     return null;
   }
 
+  /**
+   * Behavior to be called on Task cancellation.
+   *
+   * <p>This method should be used if you need to perform cleanup in response to the task being
+   * cancelled before it was able to complete.
+   *
+   * @param stage The running state execution state
+   */
   default void onCancel(@Nonnull StageExecution stage) {}
 
+  /** A collection of known aliases. */
   default Collection<String> aliases() {
     if (getClass().isAnnotationPresent(Aliases.class)) {
       return Arrays.asList(getClass().getAnnotation(Aliases.class).value());
@@ -46,6 +71,7 @@ public interface Task {
     return Collections.emptyList();
   }
 
+  /** Allows backwards compatibility of a task's "type", even through class renames / refactors. */
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.TYPE)
   @interface Aliases {

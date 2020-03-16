@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.api.pipeline.models;
 import com.netflix.spinnaker.kork.annotations.Beta;
 import javax.annotation.Nonnull;
 
+/** A trigger type that carries source code-related metadata. */
 @Beta
 public interface SourceCodeTrigger extends Trigger {
 

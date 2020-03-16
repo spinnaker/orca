@@ -19,12 +19,14 @@ import com.netflix.spinnaker.kork.annotations.Beta;
 import com.netflix.spinnaker.orca.api.annotations.Immutable;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.Singular;
 
+/** Represents the state of a {@link TaskExecution}. */
 @Beta
 @Data
 @Builder
@@ -32,8 +34,10 @@ public final class TaskResult {
   /** A useful constant for a success result with no outputs. */
   public static final TaskResult SUCCEEDED = TaskResult.ofStatus(ExecutionStatus.SUCCEEDED);
 
+  /** A useful constant for a running task with no outputs. */
   public static final TaskResult RUNNING = TaskResult.ofStatus(ExecutionStatus.RUNNING);
 
+  /** The execution status of the task. */
   @NonNull private final ExecutionStatus status;
 
   /**
@@ -56,10 +60,22 @@ public final class TaskResult {
   @Singular("output")
   private final Map<String, ?> outputs;
 
+  /**
+   * Creates a new TaskResult with the provided {@link ExecutionStatus}.
+   *
+   * @param status The ExecutionStatus
+   * @return
+   */
   public static TaskResult ofStatus(ExecutionStatus status) {
     return TaskResult.builder(status).build();
   }
 
+  /**
+   * Creates a builder for the TaskResult
+   *
+   * @param status The ExecutionStatus of the TaskResult
+   * @return
+   */
   public static TaskResultBuilder builder(ExecutionStatus status) {
     return new TaskResultBuilder().status(status);
   }

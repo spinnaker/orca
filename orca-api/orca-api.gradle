@@ -18,12 +18,6 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/dokka.gradle"
 apply from: "$rootDir/gradle/spock.gradle"
 
-test {
-  useJUnitPlatform {
-    includeEngines "junit-vintage", "junit-jupiter"
-  }
-}
-
 dependencies {
   api("com.netflix.spinnaker.kork:kork-plugins-api")
   api("com.netflix.spinnaker.kork:kork-artifacts")
@@ -33,4 +27,16 @@ dependencies {
 
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-api")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+}
+
+test {
+  useJUnitPlatform {
+    includeEngines "junit-vintage", "junit-jupiter"
+  }
+}
+
+dokka {
+  configuration {
+    includes = ["api.md"]
+  }
 }

@@ -27,6 +27,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/** The runtime execution state of a Pipeline. */
 @Beta
 public interface PipelineExecution {
 

@@ -20,7 +20,7 @@ import com.netflix.spinnaker.kork.annotations.Beta;
 import org.pf4j.ExtensionPoint;
 
 /**
- * This should be used by plugin developers to create plugin stages.
+ * Allows the creation of the most simple stage possible: One with a single task.
  *
  * @param <T> is a class plugin developers will create to have a concrete class that has all of the
  *     fields that are required for the stage to run.

@@ -15,8 +15,16 @@
  */
 package com.netflix.spinnaker.orca.api.pipeline.models;
 
+/**
+ * Defines a category of a {@link PipelineExecution}, used primarily for organization within the UI.
+ *
+ * <p>TODO(rz): Deprecate in favor of a labels concept?
+ */
 public enum ExecutionType {
+  /** Executions will show under the "Pipelines" tab of Deck. */
   PIPELINE,
+
+  /** Executions will show under the "Tasks" tab of Deck. */
   ORCHESTRATION;
 
   @Override

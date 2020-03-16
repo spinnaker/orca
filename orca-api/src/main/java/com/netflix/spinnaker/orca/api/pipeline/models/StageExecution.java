@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/** The runtime execution state of a stage. */
 @Beta
 public interface StageExecution {
 

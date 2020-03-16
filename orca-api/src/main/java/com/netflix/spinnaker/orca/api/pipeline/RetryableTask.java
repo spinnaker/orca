@@ -25,8 +25,10 @@ import java.time.Duration;
  */
 @Beta
 public interface RetryableTask extends Task {
+  /** TODO(rz): Use Duration. */
   long getBackoffPeriod();
 
+  /** TODO(rz): Use Duration. */
   long getTimeout();
 
   default long getDynamicTimeout(StageExecution stage) {

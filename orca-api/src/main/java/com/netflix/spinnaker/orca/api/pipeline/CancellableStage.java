@@ -19,6 +19,7 @@ import com.netflix.spinnaker.kork.annotations.Beta;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Map;
 
+/** A stage that is capable of being cancelled. */
 @Beta
 public interface CancellableStage {
   Result cancel(StageExecution stage);

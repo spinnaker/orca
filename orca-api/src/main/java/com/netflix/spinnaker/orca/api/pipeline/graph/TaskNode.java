@@ -33,6 +33,7 @@ import javax.annotation.Nonnull;
 @Beta
 public interface TaskNode {
 
+  /** The type of graph, dictating how a {@link TaskGraph} will be evaluated. */
   enum GraphType {
     /** A graph representing an entire stage. */
     FULL,
@@ -44,20 +45,42 @@ public interface TaskNode {
     TAIL
   }
 
+  /**
+   * Build a new {@link TaskGraph}.
+   *
+   * @param type The type of graph
+   * @param closure A configuration block
+   * @return
+   */
   static TaskGraph build(GraphType type, Consumer<Builder> closure) {
     Builder builder = new Builder(type);
     closure.accept(builder);
     return builder.build();
   }
 
+  /** Creates an empty {@link TaskGraph}. */
   static TaskGraph emptyGraph(GraphType type) {
     return build(type, builder -> {});
   }
 
+  /**
+   * Creates a {@link TaskGraph} with a single {@link Task}.
+   *
+   * @param name The human-friendly name of the task.
+   * @param implementingClass The {@link Task} class
+   * @return
+   */
   static TaskGraph singleton(GraphType type, String name, Class<? extends Task> implementingClass) {
     return build(type, builder -> builder.withTask(name, implementingClass));
   }
 
+  /**
+   * Creates a {@link TaskDefinition} for the provided {@link Task} class.
+   *
+   * @param name The human-friendly name of the task.
+   * @param implementingClass
+   * @return
+   */
   static TaskDefinition task(String name, Class<? extends Task> implementingClass) {
     return new TaskDefinition(name, implementingClass);
   }

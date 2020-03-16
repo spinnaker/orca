@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/** The originating cause of a pipeline's execution, including associated metadata. */
 @Beta
 public interface Trigger {
 
@@ -65,10 +66,13 @@ public interface Trigger {
 
   void setResolvedExpectedArtifacts(@Nonnull List<ExpectedArtifact> resolvedExpectedArtifacts);
 
+  /** Internal. Used for serialization/deserialization. */
   @Nonnull
   Map<String, Object> getOther();
 
+  /** Internal. Used for serialization/deserialization. */
   void setOther(@Nonnull Map<String, Object> other);
 
+  /** Internal. Used for serialization/deserialization. */
   void setOther(@Nonnull String key, @Nonnull Object value);
 }

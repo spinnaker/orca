@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
+/** Provides a low-level API for manipulating a stage DAG. */
 @Beta
 public interface StageGraphBuilder {
 
@@ -29,9 +30,9 @@ public interface StageGraphBuilder {
    * other stages depend on it.
    *
    * @param init builder for setting up the stage. You do not need to configure {@link
-   *     StageExecution#execution}, {@link StageExecution#parentStageId}, {@link
-   *     StageExecution#syntheticStageOwner} or {@link StageExecution#refId} as this method will do
-   *     that automatically.
+   *     StageExecution#getExecution()}, {@link StageExecution#getParentStageId()}, {@link
+   *     StageExecution#getSyntheticStageOwner()} or {@link StageExecution#getRefId()} as this
+   *     method will do that automatically.
    * @return the newly created stage.
    */
   @Nonnull
@@ -46,7 +47,7 @@ public interface StageGraphBuilder {
 
   /**
    * Adds a new stage to the graph and makes it depend on {@code previous} via its {@link
-   * StageExecution#requisiteStageRefIds}.
+   * StageExecution#getRequisiteStageRefIds()}.
    *
    * @param previous The stage the new stage will depend on. If {@code previous} does not already
    *     exist in the graph, this method will add it.
@@ -58,15 +59,16 @@ public interface StageGraphBuilder {
 
   /**
    * Makes {@code next} depend on {@code previous} via its {@link
-   * StageExecution#requisiteStageRefIds}. If either {@code next} or {@code previous} are not yet
-   * present in the graph this method will add them.
+   * StageExecution#getRequisiteStageRefIds()}. If either {@code next} or {@code previous} are not
+   * yet present in the graph this method will add them.
    */
   void connect(@Nonnull StageExecution previous, @Nonnull StageExecution next);
 
   /**
-   * Adds a new stage to the graph and makes it depend on the last stage that was added if any. This
-   * is convenient for straightforward stage graphs to avoid having to pass around references to
-   * stages in order to use {@link #connect(StageExecution, Consumer)}.
+   * Adds a new stage to the graph and makes it depend on the last stage that was added if any.
+   *
+   * <p>This is convenient for straightforward stage graphs to avoid having to pass around
+   * references to stages in order to use {@link #connect(StageExecution, Consumer)}.
    *
    * <p>If no stages have been added so far, this is synonymous with calling {@link #add(Consumer)}.
    *

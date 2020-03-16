@@ -19,6 +19,7 @@ import com.netflix.spinnaker.kork.annotations.Beta;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/** The runtime execution state of a task. */
 @Beta
 public interface TaskExecution {
 
