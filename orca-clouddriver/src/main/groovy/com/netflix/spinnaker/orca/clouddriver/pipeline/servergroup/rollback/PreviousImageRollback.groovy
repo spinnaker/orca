@@ -96,6 +96,8 @@ class PreviousImageRollback implements Rollback {
       credentials                  : parentStageContext.credentials,
       cloudProvider                : parentStageContext.cloudProvider,
       delayBeforeDisableSec        : delayBeforeDisableSeconds ?: 0,
+      targetGroups                 : parentStageContext.targetGroups,
+      securityGroups               : parentStageContext.securityGroups,
       source                       : [
         asgName          : rollbackServerGroupName,
         serverGroupName  : rollbackServerGroupName,
