@@ -35,7 +35,8 @@ public interface ExecutionRunner {
     throw new UnsupportedOperationException();
   }
 
-  default void cancel(@Nonnull PipelineExecution execution, @Nonnull String user, @Nullable String reason) {
+  default void cancel(
+      @Nonnull PipelineExecution execution, @Nonnull String user, @Nullable String reason) {
     throw new UnsupportedOperationException();
   }
 }

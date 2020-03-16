@@ -73,7 +73,7 @@ class WebhookStageSpec extends Specification {
   def "Should throw on invalid input"() {
     given:
     def stage = new StageExecutionImpl(
-        Execution.newPipeline("orca"),
+        PipelineExecutionImpl.newPipeline("orca"),
         "webhook",
         [
             waitForCompletion: false,
