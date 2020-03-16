@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.Nonnull;
+import org.pf4j.ExtensionPoint;
 
 /**
  * Provides a low-level API for building stages.
@@ -40,7 +41,7 @@ import javax.annotation.Nonnull;
  * stages.
  */
 @Beta
-public interface StageDefinitionBuilder {
+public interface StageDefinitionBuilder extends ExtensionPoint {
 
   default @Nonnull TaskGraph buildTaskGraph(@Nonnull StageExecution stage) {
     Builder graphBuilder = Builder(FULL);
