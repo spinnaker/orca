@@ -21,6 +21,7 @@ import com.netflix.frigga.ami.AppVersion
 import com.netflix.spinnaker.orca.api.pipeline.CancellableStage
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.MortService
@@ -43,6 +44,7 @@ import org.springframework.stereotype.Component
 
 import javax.annotation.Nonnull
 
+import static com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl.newOrchestration
 import static java.util.Collections.emptyList
 
 @Component
@@ -114,7 +116,7 @@ class DeployCanaryStage extends ParallelDeployStage implements CloudProviderAwar
     }.flatten()
 
     def findImageCtx = [application: stage.execution.application, account: stage.context.baseline.account, cluster: stage.context.baseline.cluster, regions: regions, cloudProvider: stage.context.baseline.cloudProvider ?: 'aws']
-    StageExecution s = new StageExecutionImpl(PipelineExecution.newOrchestration(stage.execution.application), "findImage", findImageCtx)
+    StageExecution s = new StageExecutionImpl(newOrchestration(stage.execution.application), "findImage", findImageCtx)
     try {
       TaskResult result = findImage.execute(s)
       return result.context.amiDetails
