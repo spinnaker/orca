@@ -60,7 +60,7 @@ public class WaitForManifestStableTask
   @Override
   public long getDynamicTimeout(StageExecution stage) {
     ManifestTimeout timeout = stage.mapTo(ManifestTimeout.class);
-    if (timeout.timeoutMinutes != null && timeout.timeoutMinutes.isPresent()) {
+    if (timeout.timeoutMinutes.isPresent()) {
       return TimeUnit.MINUTES.toMillis(timeout.timeoutMinutes.get());
     }
 
@@ -68,7 +68,11 @@ public class WaitForManifestStableTask
   }
 
   private static class ManifestTimeout {
-    @JsonProperty Optional<Long> timeoutMinutes;
+    @Nonnull private final Optional<Long> timeoutMinutes;
+
+    ManifestTimeout(@JsonProperty("timeoutMinutes") Optional<Long> timeoutMinutes) {
+      this.timeoutMinutes = timeoutMinutes;
+    }
   }
 
   @Nonnull
