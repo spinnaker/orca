@@ -21,7 +21,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
+import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -107,6 +107,8 @@ class PreviousImageRollbackSpec extends Specification {
       credentials                  : "test",
       cloudProvider                : "aws",
       delayBeforeDisableSec : expectedDelay,
+      securityGroups: null,
+      targetGroups: null,
       source                       : [
         asgName          : "application-v002",
         serverGroupName  : "application-v002",
