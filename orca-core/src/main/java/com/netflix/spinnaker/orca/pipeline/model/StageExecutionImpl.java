@@ -20,10 +20,7 @@ import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPEL
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -47,17 +44,7 @@ import com.netflix.spinnaker.orca.pipeline.model.support.RequisiteStageRefIdDese
 import de.huxhorn.sulky.ulid.ULID;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -335,7 +322,9 @@ public class StageExecutionImpl implements StageExecution, Serializable {
 
   private LastModifiedDetails lastModified;
 
-  public @Nullable LastModifiedDetails getLastModified() {
+  @Nullable
+  @Override
+  public StageExecution.LastModifiedDetails getLastModified() {
     return lastModified;
   }
 

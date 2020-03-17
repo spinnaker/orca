@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.EqualsAndHashCode;
 
 /** The runtime execution state of a stage. */
 @Beta
@@ -183,6 +184,7 @@ public interface StageExecution {
   @Nonnull
   List<StageExecution> downstreamStages();
 
+  @EqualsAndHashCode
   class LastModifiedDetails implements Serializable {
 
     private String user;
