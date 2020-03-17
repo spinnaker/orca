@@ -276,6 +276,26 @@ final class WaitForManifestStableTaskTest {
         .containsExactly(failedMessage(MANIFEST_1), waitingToStabilizeMessage(MANIFEST_2));
   }
 
+  @Test
+  void manifestTimeoutOneMinute() {
+    OortService oortService = mock(OortService.class);
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
+
+    StageExecutionImpl myStage = createStageWithContext(ImmutableMap.of("timeoutMinutes", 1));
+
+    assertThat(task.getDynamicTimeout(myStage)).isEqualTo(60000);
+  }
+
+  @Test
+  void manifestTimeoutMissingTimeoutShouldBe30Minutes() {
+    OortService oortService = mock(OortService.class);
+    WaitForManifestStableTask task = new WaitForManifestStableTask(oortService);
+
+    StageExecutionImpl myStage = createStageWithContext(ImmutableMap.of("isee", "nothing"));
+
+    assertThat(task.getDynamicTimeout(myStage)).isEqualTo(1800000);
+  }
+
   private static String waitingToStabilizeMessage(String manifest) {
     return String.format(
         "'%s' in '%s' for account %s: waiting for manifest to stabilize",
