@@ -17,6 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
@@ -29,11 +30,11 @@ import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
 
@@ -46,9 +47,6 @@ public class WaitForManifestStableTask
 
   private final OortService oortService;
 
-  @Value("${kubenetes.manifest.timeout-minutes:30}")
-  private int manifestTimeout;
-
   @Override
   public long getBackoffPeriod() {
     return TimeUnit.SECONDS.toMillis(5);
@@ -56,7 +54,21 @@ public class WaitForManifestStableTask
 
   @Override
   public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(manifestTimeout);
+    return TimeUnit.MINUTES.toMillis(30);
+  }
+
+  @Override
+  public long getDynamicTimeout(StageExecution stage) {
+    ManifestTimeout timeout = stage.mapTo(ManifestTimeout.class);
+    if (timeout.timeoutInMinutes != null) {
+      return TimeUnit.MINUTES.toMillis(timeout.timeoutInMinutes.get());
+    }
+
+    return getTimeout();
+  }
+
+  static class ManifestTimeout {
+    @JsonProperty Optional<Long> timeoutInMinutes;
   }
 
   @Nonnull

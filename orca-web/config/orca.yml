@@ -68,9 +68,6 @@ integrations:
     enabled: false
     baseUrl: https://api.gremlin.com/v1
 
-# Use this to configure the timeout for waiting for a kuberenetes manifest to stabilize
-kubenetes.manifest.timeout-minutes: 30
-
 # This configuration lets you configure Webhook stages that will appear as native stages in the Deck UI.
 # Properties that are set here will not be displayed in the GUI
 #webhook:
