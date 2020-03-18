@@ -109,7 +109,7 @@ class InterlinkSpec extends Specification {
 
     then:
     _ * repository.retrieve(event.executionType, event.executionId) >> execution
-    1 * execution.getStages() >> [stage]
+    1 * execution.stageById('stageId') >> stage
     1 * repository.storeStage(stage)
 
     // we apply values from the event's context map on top of the stage's context map
@@ -124,9 +124,7 @@ class InterlinkSpec extends Specification {
     stageLastModified          | eventLastModified                       || expectedLastModified
     null                       | null                                    || null
     lastModified('user')       | null                                    || stageLastModified
-
-    // the lastModified details from the event get persisted if they are newer than the ones from the retrieved stage
-    lastModified('new')        | lastModified('old', 5)                  || stageLastModified
+    lastModified('new')        | lastModified('old', 5)                  || eventLastModified // should warn about timestamp but still override
     null                       | lastModified('user')                    || eventLastModified
     lastModified('old', 5)     | lastModified('new', 2)                  || eventLastModified
     lastModified('old', 5, []) | lastModified('new', 2, ['someaccount']) || eventLastModified

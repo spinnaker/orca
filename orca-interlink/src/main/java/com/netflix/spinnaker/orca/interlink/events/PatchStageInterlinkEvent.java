@@ -69,29 +69,20 @@ public class PatchStageInterlinkEvent implements InterlinkEvent {
           executionType,
           executionId,
           stageId,
-          stage -> {
-            stage.getContext().putAll(stageFromMessage.getContext());
+          stageFromRepo -> {
+            stageFromRepo.getContext().putAll(stageFromMessage.getContext());
 
             if (stageFromMessage.getLastModified() != null) {
-              if (isMoreRecent(stageFromMessage.getLastModified(), stage.getLastModified())) {
-                stage.setLastModified(stageFromMessage.getLastModified());
-              } else {
-                log.warn(
-                    "Not propagating patch stage interlink event's lastModified details as they are older than "
-                        + "the ones in the stage: event.lastModified={}, stage.lastModified={}",
-                    stageFromMessage.getLastModified(),
-                    stage.getLastModified());
-              }
+              stageFromRepo.setLastModified(stageFromMessage.getLastModified());
+            } else {
+              log.warn(
+                  "Unexpected state: stageFromMessage.getLastModified() is null, stageFromMessage={}",
+                  stageFromMessage);
             }
           });
     } catch (JsonProcessingException e) {
       log.error("failed to parse stageBody {}", stageBody, e);
     }
-  }
-
-  private boolean isMoreRecent(
-      StageExecution.LastModifiedDetails lhs, StageExecution.LastModifiedDetails rhs) {
-    return rhs == null || lhs.getLastModifiedTime() > rhs.getLastModifiedTime();
   }
 
   @Override

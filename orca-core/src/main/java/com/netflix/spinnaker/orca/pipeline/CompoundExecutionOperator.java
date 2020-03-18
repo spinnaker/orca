@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
@@ -95,18 +94,7 @@ public class CompoundExecutionOperator {
         runner::reschedule,
         () -> {
           PipelineExecution execution = repository.retrieve(executionType, executionId);
-
-          StageExecution stage =
-              execution.getStages().stream()
-                  .filter(s -> s.getId().equals(stageId))
-                  .findFirst()
-                  .orElseThrow(
-                      () ->
-                          new NotFoundException(
-                              "Could not find stage with id "
-                                  + stageId
-                                  + " in execution "
-                                  + executionId));
+          StageExecution stage = execution.stageById(stageId);
 
           // mutates stage in place
           stageUpdater.accept(stage);

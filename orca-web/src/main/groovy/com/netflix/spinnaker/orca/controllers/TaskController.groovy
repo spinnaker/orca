@@ -471,7 +471,7 @@ class TaskController {
           )
 
           // `lastModifiedBy` is deprecated (pending a update to deck)
-          stage.context["lastModifiedBy"] = AuthenticatedRequest.getSpinnakerUser().orElse("anonymous")
+          stage.context["lastModifiedBy"] = stage.lastModified.user
         })
   }
 

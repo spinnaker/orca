@@ -28,7 +28,9 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import lombok.EqualsAndHashCode;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 /** The runtime execution state of a stage. */
 @Beta
@@ -184,22 +186,15 @@ public interface StageExecution {
   @Nonnull
   List<StageExecution> downstreamStages();
 
-  @EqualsAndHashCode
+  @Data
+  @NoArgsConstructor
   class LastModifiedDetails implements Serializable {
+    @NonNull private String user;
 
-    private String user;
-    private Collection<String> allowedAccounts = emptySet();
+    @NonNull private Collection<String> allowedAccounts = emptySet();
 
     /** TODO(rz): Convert to Instant */
-    private Long lastModifiedTime;
-
-    public @Nonnull String getUser() {
-      return user;
-    }
-
-    public void setUser(@Nonnull String user) {
-      this.user = user;
-    }
+    @NonNull private Long lastModifiedTime;
 
     public @Nonnull Collection<String> getAllowedAccounts() {
       return ImmutableSet.copyOf(allowedAccounts);
@@ -207,14 +202,6 @@ public interface StageExecution {
 
     public void setAllowedAccounts(@Nonnull Collection<String> allowedAccounts) {
       this.allowedAccounts = ImmutableSet.copyOf(allowedAccounts);
-    }
-
-    public @Nonnull Long getLastModifiedTime() {
-      return lastModifiedTime;
-    }
-
-    public void setLastModifiedTime(@Nonnull Long lastModifiedTime) {
-      this.lastModifiedTime = lastModifiedTime;
     }
   }
 }

@@ -49,7 +49,7 @@ class CompoundExecutionOperatorSpec extends Specification {
 
     then: 'we never call runner.$method(), only repository.$method()'
     _ * execution.getPartition() >> "foreign"
-    _ * execution.getStages() >> [stage]
+    _ * execution.stageById('stageId') >> stage
     _ * stage.getId() >> "stageId"
 
     _ * repository.retrieve(PIPELINE, "id") >> execution
@@ -94,7 +94,7 @@ class CompoundExecutionOperatorSpec extends Specification {
 
     then:
     _ * repository.retrieve(PIPELINE, 'id') >> execution
-    1 * execution.getStages() >> [stage]
+    1 * execution.stageById('stageId') >> stage
     1 * repository.storeStage(stage)
     stage.getLastModified().getUser() == 'user'
   }

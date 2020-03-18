@@ -49,7 +49,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class StageExecutionImpl implements StageExecution, Serializable {
 
@@ -329,6 +331,15 @@ public class StageExecutionImpl implements StageExecution, Serializable {
   }
 
   public void setLastModified(@Nullable LastModifiedDetails lastModified) {
+    if (lastModified != null
+        && this.lastModified != null
+        && lastModified.getLastModifiedTime() < this.lastModified.getLastModifiedTime()) {
+      log.warn(
+          "Setting lastModified to a value with an older timestamp, current={}, new={}",
+          this.lastModified,
+          lastModified);
+    }
+
     this.lastModified = lastModified;
   }
 
