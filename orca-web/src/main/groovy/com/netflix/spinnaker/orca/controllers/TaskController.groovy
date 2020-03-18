@@ -460,7 +460,7 @@ class TaskController {
   PipelineExecution updatePipelineStage(
     @PathVariable String id,
     @PathVariable String stageId, @RequestBody Map context) {
-    executionOperator.updateStage(PIPELINE, id, stageId,
+    return executionOperator.updateStage(PIPELINE, id, stageId,
         { stage ->
           stage.context.putAll(context)
           validateStageUpdate(stage)

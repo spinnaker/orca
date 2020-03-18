@@ -26,8 +26,9 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import java.util.function.Consumer
 
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 class CompoundExecutionOperatorSpec extends Specification {
   ExecutionRepository repository = Mock(ExecutionRepository)
@@ -63,6 +64,29 @@ class CompoundExecutionOperatorSpec extends Specification {
     'pause'       | 'pause'      | [PIPELINE, "id", "user"]
     'resume'      | 'resume'     | [PIPELINE, "id", "user", false]
     'updateStage' | 'storeStage' | [PIPELINE, "id", "stageId", {} ]
+  }
+
+  @Unroll
+  def 'should not push messages on the queue if the repository action fails'() {
+    given:
+    def runnerAction = Mock(Consumer)
+
+    when:
+    def returnedExecution = operator.doInternal(
+        runnerAction,
+        { throw new RuntimeException("repository action is failing") },
+        "faily action",
+        PIPELINE,
+        "id"
+    )
+
+    then: 'we never call the runner action'
+    _ * repository.retrieve(PIPELINE, "id") >> execution
+    _ * execution.getPartition() >> "local"
+    _ * repository.handlesPartition("local") >> true
+
+    returnedExecution == null
+    0 * runnerAction.accept(execution)
   }
 
   @Unroll

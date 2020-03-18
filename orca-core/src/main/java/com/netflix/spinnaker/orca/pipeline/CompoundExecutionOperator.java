@@ -114,6 +114,8 @@ public class CompoundExecutionOperator {
       String executionId) {
     PipelineExecution toReturn = null;
     try {
+      runWithRetries(repositoryAction);
+
       toReturn =
           runWithRetries(
               () -> {
@@ -128,7 +130,6 @@ public class CompoundExecutionOperator {
                 }
                 return execution;
               });
-      runWithRetries(repositoryAction);
     } catch (Exception e) {
       log.error(
           "Failed to {} execution with executionType={} and executionId={}",
