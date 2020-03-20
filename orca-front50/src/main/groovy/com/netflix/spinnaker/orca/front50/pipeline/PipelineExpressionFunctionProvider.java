@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.orca.front50.pipeline;
 
-import static java.lang.String.format;
-
 import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
@@ -95,10 +93,7 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
               true);
 
       if (pipeline == null) {
-        throw new SpelHelperFunctionException(
-            format(
-                "Pipeline with name '%s' could not be found on application %s",
-                pipelineName, currentApplication));
+        return null;
       }
 
       return (String) pipeline.get("id");
