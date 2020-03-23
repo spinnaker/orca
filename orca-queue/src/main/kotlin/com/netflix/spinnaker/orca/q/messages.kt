@@ -342,7 +342,8 @@ data class CancelExecution(
 @JsonTypeName("startWaitingExecutions")
 data class StartWaitingExecutions(
   val pipelineConfigId: String,
-  val purgeQueue: Boolean = false
+  val purgeQueue: Boolean = false,
+  val allowRebroadcast: Boolean = true
 ) : Message()
 
 /**

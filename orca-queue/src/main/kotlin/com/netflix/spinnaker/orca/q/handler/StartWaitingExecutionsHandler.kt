@@ -67,18 +67,22 @@ class StartWaitingExecutionsHandler(
     }
 
     if (pendingMessage != null) {
-
       // spoiler, it always is!
       if (pendingMessage is ExecutionLevel) {
         log.info("Starting queued pipeline {} {} {}", pendingMessage.application, pendingMessage.executionId)
       }
+
       queue.push(pendingMessage)
     } else {
-      interlink?.publish(
-        StartPendingInterlinkEvent(
-          ExecutionType.PIPELINE,
-          message.pipelineConfigId,
-          message.purgeQueue))
+      // If this message itself came from interlink and there are no pending executions we will rebroadcast it indefinitely
+      // So all pending kicks as a result of interlink messages are not rebroadcast on the interlink
+      if (message.allowRebroadcast) {
+        interlink?.publish(
+          StartPendingInterlinkEvent(
+            ExecutionType.PIPELINE,
+            message.pipelineConfigId,
+            message.purgeQueue))
+      }
     }
   }
 }

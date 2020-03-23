@@ -107,8 +107,9 @@ public class CompoundExecutionOperator {
         executionId);
   }
 
-  public void startPending(@Nonnull String pipelineConfigId, boolean purgeQueue) {
-    runner.startPending(pipelineConfigId, purgeQueue);
+  public void startPending(
+      @Nonnull String pipelineConfigId, boolean purgeQueue, boolean allowRebroadcast) {
+    runner.startPending(pipelineConfigId, purgeQueue, allowRebroadcast);
   }
 
   private PipelineExecution doInternal(

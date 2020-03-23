@@ -40,7 +40,8 @@ public interface ExecutionRunner {
     throw new UnsupportedOperationException();
   }
 
-  default void startPending(@Nonnull String pipelineConfigId, boolean purgeQueue) {
+  default void startPending(
+      @Nonnull String pipelineConfigId, boolean purgeQueue, boolean allowRebroadcast) {
     throw new UnsupportedOperationException();
   }
 }

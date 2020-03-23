@@ -46,7 +46,7 @@ class QueueExecutionRunner(
     queue.push(CancelExecution(execution, user, reason))
   }
 
-  override fun startPending(pipelineConfigId: String, purge: Boolean) {
-    queue.push(StartWaitingExecutions(pipelineConfigId, purge))
+  override fun startPending(pipelineConfigId: String, purge: Boolean, allowRebroadcast: Boolean) {
+    queue.push(StartWaitingExecutions(pipelineConfigId, purge, allowRebroadcast))
   }
 }
