@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.RunJobManifestContext;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
@@ -55,19 +54,18 @@ public class KubernetesJobRunner implements JobRunner {
     }
 
     RunJobManifestContext runJobManifestContext = stage.mapTo(RunJobManifestContext.class);
-    if (runJobManifestContext.getSource().equals(ManifestContext.Source.Artifact)) {
-      ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, runJobManifestContext);
 
-      List<Map<Object, Object>> manifests = result.getManifests();
-      if (manifests.size() != 1) {
-        throw new IllegalArgumentException("Run Job only supports manifests with a single Job.");
-      }
+    ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, runJobManifestContext);
 
-      operation.put("source", "text");
-      operation.put("manifest", manifests.get(0));
-      operation.put("requiredArtifacts", result.getRequiredArtifacts());
-      operation.put("optionalArtifacts", result.getOptionalArtifacts());
+    List<Map<Object, Object>> manifests = result.getManifests();
+    if (manifests.size() != 1) {
+      throw new IllegalArgumentException("Run Job only supports manifests with a single Job.");
     }
+
+    operation.put("source", "text");
+    operation.put("manifest", manifests.get(0));
+    operation.put("requiredArtifacts", result.getRequiredArtifacts());
+    operation.put("optionalArtifacts", result.getOptionalArtifacts());
 
     KubernetesContainerFinder.populateFromStage(operation, stage, artifactUtils);
 
