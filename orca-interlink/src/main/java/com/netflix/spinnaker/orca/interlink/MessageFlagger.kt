@@ -59,7 +59,7 @@ class MessageFlagger(val clock: Clock, val props: FlaggerProperties) {
   }
 
   fun process(event: InterlinkEvent) {
-    if (!props.enabled) {
+    if (!props.enabled || !event.isFlaggable) {
       return
     }
 

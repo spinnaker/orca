@@ -72,6 +72,16 @@ public interface InterlinkEvent {
     return this;
   }
 
+  /**
+   * Should this event be subject to MessageFlagger validation
+   *
+   * @return true by default
+   */
+  @JsonIgnore
+  default boolean isFlaggable() {
+    return true;
+  }
+
   void applyTo(CompoundExecutionOperator executionOperator);
 
   @JsonIgnore

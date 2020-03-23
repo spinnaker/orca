@@ -18,11 +18,9 @@ package com.netflix.spinnaker.orca.interlink.events;
 
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.START_PENDING;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
 import javax.annotation.Nullable;
-import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -66,10 +64,8 @@ public class StartPendingInterlinkEvent implements InterlinkEvent {
     executionOperator.startPending(pipelineConfigId, purgeQueue);
   }
 
-  @JsonIgnore
-  @NotNull
   @Override
-  public String getFingerprint() {
-    return getEventType() + ":" + getExecutionType() + ":" + pipelineConfigId;
+  public boolean isFlaggable() {
+    return false;
   }
 }
