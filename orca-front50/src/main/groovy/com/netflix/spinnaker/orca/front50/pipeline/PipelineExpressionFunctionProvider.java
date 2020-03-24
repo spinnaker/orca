@@ -61,7 +61,7 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
                 String.class, "pipelineName", "A valid stage reference identifier")),
         new FunctionDefinition(
             "pipelineIdOrNull",
-            "Lookup pipeline ID given the name of the pipeline in the current application",
+            "Lookup pipeline ID (or null if not found) given the name of the pipeline in the current application",
             new FunctionParameter(
                 PipelineExecution.class,
                 "execution",
