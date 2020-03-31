@@ -25,9 +25,9 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-class StageResolverSpec extends Specification {
+class DefaultStageResolverSpec extends Specification {
   @Subject
-  def stageResolver = new StageResolver([
+  def stageResolver = new DefaultStageResolver([
     new WaitStage(),
     new AliasedStageDefinitionBuilder()
   ],
@@ -49,7 +49,7 @@ class StageResolverSpec extends Specification {
 
   def "should raise exception on duplicate alias"() {
     when:
-    new StageResolver([
+    new DefaultStageResolver([
       new AliasedStageDefinitionBuilder(),
       new AliasedStageDefinitionBuilder()
     ],
@@ -58,7 +58,7 @@ class StageResolverSpec extends Specification {
       ])
 
     then:
-    thrown(StageResolver.DuplicateStageAliasException)
+    thrown(DefaultStageResolver.DuplicateStageAliasException)
   }
 
   def "should raise exception when stage not found"() {
@@ -66,7 +66,7 @@ class StageResolverSpec extends Specification {
     stageResolver.getStageDefinitionBuilder("DoesNotExist", null)
 
     then:
-    thrown(StageResolver.NoSuchStageDefinitionBuilderException)
+    thrown(DefaultStageResolver.NoSuchStageDefinitionBuilderException)
   }
 
   @StageDefinitionBuilder.Aliases("notAliased")
