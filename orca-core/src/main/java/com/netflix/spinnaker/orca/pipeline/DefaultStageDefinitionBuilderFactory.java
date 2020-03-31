@@ -16,15 +16,15 @@
 
 package com.netflix.spinnaker.orca.pipeline;
 
-import com.netflix.spinnaker.orca.StageResolver;
+import com.netflix.spinnaker.orca.DefaultStageResolver;
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import javax.annotation.Nonnull;
 
 public class DefaultStageDefinitionBuilderFactory implements StageDefinitionBuilderFactory {
-  private final StageResolver stageResolver;
+  private final DefaultStageResolver stageResolver;
 
-  public DefaultStageDefinitionBuilderFactory(StageResolver stageResolver) {
+  public DefaultStageDefinitionBuilderFactory(DefaultStageResolver stageResolver) {
     this.stageResolver = stageResolver;
   }
 
