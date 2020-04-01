@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.dryrun
 
-import com.netflix.spinnaker.orca.DefaultStageResolver
+import com.netflix.spinnaker.orca.StageResolver
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.CheckPreconditionsStage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 
 class DryRunStageDefinitionBuilderFactory(
-  stageResolver: DefaultStageResolver
+  stageResolver: StageResolver
 ) : DefaultStageDefinitionBuilderFactory(stageResolver) {
 
   override fun builderFor(stage: StageExecution): StageDefinitionBuilder =

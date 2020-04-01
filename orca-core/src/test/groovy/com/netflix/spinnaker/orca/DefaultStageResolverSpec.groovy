@@ -58,7 +58,7 @@ class DefaultStageResolverSpec extends Specification {
       ])
 
     then:
-    thrown(DefaultStageResolver.DuplicateStageAliasException)
+    thrown(StageResolver.DuplicateStageAliasException)
   }
 
   def "should raise exception when stage not found"() {
@@ -66,7 +66,7 @@ class DefaultStageResolverSpec extends Specification {
     stageResolver.getStageDefinitionBuilder("DoesNotExist", null)
 
     then:
-    thrown(DefaultStageResolver.NoSuchStageDefinitionBuilderException)
+    thrown(StageResolver.NoSuchStageDefinitionBuilderException)
   }
 
   @StageDefinitionBuilder.Aliases("notAliased")
@@ -75,12 +75,12 @@ class DefaultStageResolverSpec extends Specification {
 
   class TestSimpleStage implements SimpleStage {
     @Override
-    public SimpleStageOutput execute(SimpleStageInput input) {
+    SimpleStageOutput execute(SimpleStageInput input) {
       return new SimpleStageOutput();
     }
 
     @Override
-    public String getName() {
+    String getName() {
       return "simpleApiStage";
     }
   }

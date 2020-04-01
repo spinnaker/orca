@@ -25,6 +25,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.orca.DefaultStageResolver;
+import com.netflix.spinnaker.orca.DynamicStageResolver;
 import com.netflix.spinnaker.orca.StageResolver;
 import com.netflix.spinnaker.orca.TaskResolver;
 import com.netflix.spinnaker.orca.api.pipeline.Task;
@@ -159,8 +160,7 @@ public class OrcaConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(StageDefinitionBuilderFactory.class)
-  public StageDefinitionBuilderFactory stageDefinitionBuilderFactory(
-      DefaultStageResolver stageResolver) {
+  public StageDefinitionBuilderFactory stageDefinitionBuilderFactory(StageResolver stageResolver) {
     return new DefaultStageDefinitionBuilderFactory(stageResolver);
   }
 
@@ -210,6 +210,16 @@ public class OrcaConfiguration {
   @Bean
   public TaskResolver taskResolver(Collection<Task> tasks) {
     return new TaskResolver(tasks, true);
+  }
+
+  @Bean
+  @ConditionalOnProperty("dynamic-stage-resolver.enabled")
+  public DynamicStageResolver dynamicStageResolver(
+      DynamicConfigService dynamicConfigService,
+      Collection<StageDefinitionBuilder> stageDefinitionBuilders,
+      Optional<List<SimpleStage<?>>> simpleStages) {
+    return new DynamicStageResolver(
+        dynamicConfigService, stageDefinitionBuilders, simpleStages.orElse(null));
   }
 
   @Bean
