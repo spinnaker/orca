@@ -26,6 +26,20 @@ import javax.annotation.Nonnull;
  * {@code StageResolver} allows for {@code StageDefinitionBuilder} retrieval via bean name or alias.
  */
 public interface StageResolver {
+
+  /**
+   * Fetch a {@code StageDefinitionBuilder} by {@code type}.
+   *
+   * @param type StageDefinitionBuilder type
+   * @return the StageDefinitionBuilder matching {@code type} or {@code typeAlias}
+   * @throws DefaultStageResolver.NoSuchStageDefinitionBuilderException if StageDefinitionBuilder
+   *     does not exist
+   */
+  @Nonnull
+  default StageDefinitionBuilder getStageDefinitionBuilder(@Nonnull String type) {
+    return getStageDefinitionBuilder(type, null);
+  }
+
   /**
    * Fetch a {@code StageDefinitionBuilder} by {@code type} or {@code typeAlias}.
    *
