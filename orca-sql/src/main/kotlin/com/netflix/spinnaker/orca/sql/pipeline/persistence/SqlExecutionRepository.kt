@@ -287,7 +287,11 @@ class SqlExecutionRepository(
   }
 
   private fun deleteInternal(dslContext: DSLContext, type: ExecutionType, idsToDelete: List<String>) {
-    val correlationField = if (type == PIPELINE) "pipeline_id" else "orchestration_id"
+    val correlationField = when (type) {
+      PIPELINE -> "pipeline_id"
+      ORCHESTRATION -> "orchestration_id"
+      else -> throw IllegalStateException("Unexpected field $type")
+    }
 
     dslContext
       .delete(table("correlation_ids"))
@@ -318,7 +322,7 @@ class SqlExecutionRepository(
 
     dslContext
       .deleteFrom(table("deleted_executions"))
-      .where(field("deleted_at").lt(timestampSub(now(), 2, DatePart.DAY)))
+      .where(field("deleted_at").lt(timestampSub(now(), 1, DatePart.DAY)))
       .execute()
   }
 
