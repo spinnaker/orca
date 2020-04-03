@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Armory, Inc.
+ * Copyright 2020 Armory, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,20 +20,31 @@ import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.DefinedTask;
 import javax.annotation.Nonnull;
 
+/**
+ * Provides a TaskDefinition for a SimpleStage which will be wrapped in a SimpleTask. SimpleTask
+ * alone is not enough information to disambiguate the implementing class.
+ */
 public class SimpleTaskDefinition implements TaskNode, DefinedTask {
   private final String name;
   private final Class<? extends SimpleStage> implementingClass;
 
+  /**
+   * @param name The name of the SimpleStage that gets executed
+   * @param implementingClass The SimpleStage class type that will be referenced by the task
+   *     resolver
+   */
   public SimpleTaskDefinition(
       @Nonnull String name, @Nonnull Class<? extends SimpleStage> implementingClass) {
     this.name = name;
     this.implementingClass = implementingClass;
   }
 
+  @Override
   public @Nonnull String getName() {
     return name;
   }
 
+  /** @return the SimpleStage class that will be executed by the task */
   public @Nonnull Class<? extends SimpleStage> getImplementingClass() {
     return implementingClass;
   }
