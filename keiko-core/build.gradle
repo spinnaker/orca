@@ -6,6 +6,7 @@ dependencies {
   api "org.springframework:spring-context"
 
   implementation "com.netflix.spectator:spectator-api"
+  implementation "javax.annotation:javax.annotation-api"
 
   testImplementation project(":keiko-test-common")
 }

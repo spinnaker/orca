@@ -29,15 +29,15 @@ import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
+import java.io.Closeable
+import java.time.Clock
+import java.time.Duration
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
-import java.io.Closeable
-import java.time.Clock
-import java.time.Duration
 
 /**
  * An compatibility test for implementations of [MonitorableQueue].
@@ -205,7 +205,9 @@ abstract class MonitorableQueueTest<out Q : MonitorableQueue>(
           .let { event ->
             if (event is MessageProcessing) {
               assertThat(event.payload).isEqualTo(TestMessage("a"))
-              assertThat(event.lag).isEqualTo(Duration.ofSeconds(1))
+              // Redis queues only store millisecond precision (in AbstractRedisQueue#score)
+              // In Java 9+, we should instead use event.lag.truncatedTo(MILLIS)
+              assertThat(event.lag.toMillis()).isEqualTo(Duration.ofSeconds(1).toMillis())
             }
           }
       }

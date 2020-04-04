@@ -48,15 +48,6 @@ subprojects {
     implementation("org.slf4j:slf4j-api")
     testRuntimeOnly("org.slf4j:slf4j-nop")
   }
-
-  sourceCompatibility = 1.8
-  targetCompatibility = 1.8
-
-//  license {
-//    mapping {
-//      kt = "SLASHSTAR_STYLE"
-//    }
-//  }
 }
 
 apply(from: "$rootDir/gradle/ktlint-root.gradle")
