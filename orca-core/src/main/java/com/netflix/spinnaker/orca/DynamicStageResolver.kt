@@ -70,7 +70,6 @@ class DynamicStageResolver(
   override fun getStageDefinitionBuilder(type: String, typeAlias: String?): StageDefinitionBuilder {
     var builder: StageDefinitionBuilder? = null
 
-    // match with type supplied
     val builderForType = stageDefinitionBuildersByAlias[type]
     if (builderForType != null) {
       builder = builderForType.resolveByPreference(type)
