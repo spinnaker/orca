@@ -70,6 +70,7 @@ class DynamicStageResolver(
   override fun getStageDefinitionBuilder(type: String, typeAlias: String?): StageDefinitionBuilder {
     var builder: StageDefinitionBuilder? = null
 
+    // match with type supplied
     val builderForType = stageDefinitionBuildersByAlias[type]
     if (builderForType != null) {
       builder = builderForType.resolveByPreference(type)
@@ -80,7 +81,7 @@ class DynamicStageResolver(
     }
 
     if (builder == null) {
-      throw StageResolver.NoSuchStageDefinitionBuilderException(type, stageDefinitionBuildersByAlias.keys)
+      throw StageResolver.NoSuchStageDefinitionBuilderException(type, typeAlias, stageDefinitionBuildersByAlias.keys)
     }
 
     return builder
