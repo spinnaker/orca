@@ -31,10 +31,6 @@ import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.QueueState
 import com.netflix.spinnaker.q.metrics.RetryPolled
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory.getLogger
-import org.springframework.scheduling.annotation.Scheduled
-import org.threeten.extra.Temporals.chronoUnit
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -46,6 +42,10 @@ import java.util.concurrent.Delayed
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.NANOSECONDS
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory.getLogger
+import org.springframework.scheduling.annotation.Scheduled
+import org.threeten.extra.Temporals.chronoUnit
 
 class InMemoryQueue(
   private val clock: Clock,

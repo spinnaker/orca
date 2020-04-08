@@ -20,9 +20,9 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import java.time.Clock
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.util.Pool
-import java.time.Clock
 
 /**
  * A dead message handler that writes messages to a sorted set with a score

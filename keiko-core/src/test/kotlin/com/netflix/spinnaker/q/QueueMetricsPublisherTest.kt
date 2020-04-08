@@ -29,14 +29,14 @@ import com.netflix.spinnaker.q.metrics.QueueMetricsPublisher
 import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.RetryPolled
 import com.netflix.spinnaker.time.fixedClock
+import java.time.Duration
+import java.time.Instant.now
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
-import java.time.Duration
-import java.time.Instant.now
 
 object QueueMetricsPublisherTest : SubjectSpek<QueueMetricsPublisher>({
   val clock = fixedClock(instant = now().minus(Duration.ofHours(1)))

@@ -8,17 +8,17 @@ import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.migration.SerializationMigrator
-import org.slf4j.Logger
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.Transaction
-import redis.clients.jedis.commands.JedisClusterCommands
-import redis.clients.jedis.commands.JedisCommands
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.temporal.TemporalAmount
 import java.util.Optional
+import org.slf4j.Logger
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.Transaction
+import redis.clients.jedis.commands.JedisClusterCommands
+import redis.clients.jedis.commands.JedisCommands
 
 abstract class AbstractRedisQueue(
   private val clock: Clock,

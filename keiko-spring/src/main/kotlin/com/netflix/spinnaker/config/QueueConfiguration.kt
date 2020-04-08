@@ -29,6 +29,8 @@ import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.metrics.NoopEventPublisher
 import com.netflix.spinnaker.q.metrics.QueueMetricsPublisher
 import com.netflix.spinnaker.q.metrics.QueueMonitor
+import java.time.Clock
+import java.time.Duration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -37,8 +39,6 @@ import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import java.time.Clock
-import java.time.Duration
 
 @Configuration
 @EnableConfigurationProperties(QueueProperties::class, ObjectMapperSubtypeProperties::class)

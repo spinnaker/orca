@@ -21,8 +21,8 @@ import com.netflix.spinnaker.q.QueueTest
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
 import com.netflix.spinnaker.q.metrics.QueueEvent
-import org.funktionale.partials.invoke
 import java.time.Clock
+import org.funktionale.partials.invoke
 
 object InMemoryQueueTest : QueueTest<InMemoryQueue>(createQueue(p3 = null))
 

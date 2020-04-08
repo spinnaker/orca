@@ -18,9 +18,9 @@ package com.netflix.spinnaker.q.metrics
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.patterns.PolledMeter
-import org.springframework.scheduling.annotation.Scheduled
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicReference
+import org.springframework.scheduling.annotation.Scheduled
 
 /**
  * publishes gauges based on regular polling of the queue state

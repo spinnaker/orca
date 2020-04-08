@@ -11,15 +11,15 @@ import de.huxhorn.sulky.ulid.ULID
 import io.github.resilience4j.retry.Retry
 import io.github.resilience4j.retry.RetryConfig
 import io.vavr.control.Try
+import java.lang.Exception
+import java.nio.charset.StandardCharsets
+import java.time.Clock
+import java.time.Duration
 import org.jooq.DSLContext
 import org.jooq.exception.SQLDialectNotSupportedException
 import org.jooq.impl.DSL
 import org.jooq.util.mysql.MySQLDSL
 import org.slf4j.LoggerFactory
-import java.lang.Exception
-import java.nio.charset.StandardCharsets
-import java.time.Clock
-import java.time.Duration
 
 class SqlDeadMessageHandler(
   deadLetterQueueName: String,

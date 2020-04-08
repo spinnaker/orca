@@ -5,8 +5,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import redis.clients.jedis.JedisCluster
 import java.time.Clock
+import redis.clients.jedis.JedisCluster
 
 class RedisClusterDeadMessageHandler(
   deadLetterQueueName: String,

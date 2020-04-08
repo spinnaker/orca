@@ -19,9 +19,9 @@ package com.netflix.spinnaker.config
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.memory.InMemoryQueue
 import com.netflix.spinnaker.q.metrics.EventPublisher
+import java.time.Clock
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.time.Clock
 
 @Configuration
 class MemQueueConfiguration {

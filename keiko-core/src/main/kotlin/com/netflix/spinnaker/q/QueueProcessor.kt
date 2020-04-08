@@ -21,13 +21,13 @@ import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.HandlerThrewError
 import com.netflix.spinnaker.q.metrics.MessageDead
 import com.netflix.spinnaker.q.metrics.NoHandlerCapacity
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory.getLogger
-import org.springframework.scheduling.annotation.Scheduled
 import java.time.Duration
 import java.util.Random
 import java.util.concurrent.RejectedExecutionException
 import javax.annotation.PostConstruct
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory.getLogger
+import org.springframework.scheduling.annotation.Scheduled
 
 /**
  * The processor that fetches messages from the [Queue] and hands them off to

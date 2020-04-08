@@ -28,9 +28,9 @@ import com.netflix.spinnaker.q.TestMessage
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueueTest
 import com.netflix.spinnaker.q.metrics.QueueEvent
-import org.funktionale.partials.invoke
 import java.time.Clock
 import java.util.Optional
+import org.funktionale.partials.invoke
 
 object RedisQueueTest : QueueTest<RedisQueue>(createQueue(p3 = null), ::shutdownCallback)
 

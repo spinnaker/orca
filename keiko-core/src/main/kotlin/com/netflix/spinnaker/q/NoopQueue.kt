@@ -20,9 +20,9 @@ import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.metrics.NoopEventPublisher
 import com.netflix.spinnaker.q.metrics.QueueState
-import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.temporal.TemporalAmount
+import org.slf4j.LoggerFactory
 
 /**
  * A Noop queue to be used when no Queue bean is found (e.g. when Queue is disabled)

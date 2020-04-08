@@ -5,14 +5,14 @@ import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.migration.SerializationMigrator
 import com.netflix.spinnaker.q.sql.SqlDeadMessageHandler
 import com.netflix.spinnaker.q.sql.SqlQueue
+import java.time.Clock
+import java.util.Optional
 import org.jooq.DSLContext
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.time.Clock
-import java.util.Optional
 
 @Configuration
 @EnableConfigurationProperties(SqlQueueProperties::class)

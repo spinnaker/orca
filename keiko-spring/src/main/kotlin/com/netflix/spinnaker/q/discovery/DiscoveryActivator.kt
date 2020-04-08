@@ -19,10 +19,10 @@ package com.netflix.spinnaker.q.discovery
 import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
 import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
 import com.netflix.spinnaker.q.Activator
+import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * An [Activator] implementation that responds to status change events from Eureka.

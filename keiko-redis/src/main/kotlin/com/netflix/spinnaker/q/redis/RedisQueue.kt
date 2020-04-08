@@ -39,6 +39,13 @@ import com.netflix.spinnaker.q.metrics.QueuePolled
 import com.netflix.spinnaker.q.metrics.QueueState
 import com.netflix.spinnaker.q.metrics.RetryPolled
 import com.netflix.spinnaker.q.migration.SerializationMigrator
+import java.io.IOException
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.TemporalAmount
+import java.util.Locale
+import java.util.Optional
 import org.funktionale.partials.partially1
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -48,13 +55,6 @@ import redis.clients.jedis.commands.ScriptingCommands
 import redis.clients.jedis.exceptions.JedisDataException
 import redis.clients.jedis.params.ZAddParams.zAddParams
 import redis.clients.jedis.util.Pool
-import java.io.IOException
-import java.time.Clock
-import java.time.Duration
-import java.time.Instant
-import java.time.temporal.TemporalAmount
-import java.util.Locale
-import java.util.Optional
 
 @KotlinOpen
 class RedisQueue(

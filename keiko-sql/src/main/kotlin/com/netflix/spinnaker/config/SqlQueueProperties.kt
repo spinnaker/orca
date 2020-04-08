@@ -2,11 +2,11 @@ package com.netflix.spinnaker.config
 
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.config.SqlRetryProperties
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.validation.annotation.Validated
 import java.time.Duration
 import javax.validation.constraints.Pattern
 import javax.validation.constraints.Positive
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.validation.annotation.Validated
 
 @ConfigurationProperties("keiko.queue.sql")
 @Validated

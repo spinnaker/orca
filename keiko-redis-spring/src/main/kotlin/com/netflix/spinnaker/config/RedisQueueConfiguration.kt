@@ -25,6 +25,10 @@ import com.netflix.spinnaker.q.redis.RedisClusterDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisClusterQueue
 import com.netflix.spinnaker.q.redis.RedisDeadMessageHandler
 import com.netflix.spinnaker.q.redis.RedisQueue
+import java.net.URI
+import java.time.Clock
+import java.time.Duration
+import java.util.Optional
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -39,10 +43,6 @@ import redis.clients.jedis.JedisCluster
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Protocol
 import redis.clients.jedis.util.Pool
-import java.net.URI
-import java.time.Clock
-import java.time.Duration
-import java.util.Optional
 
 @Configuration
 @EnableConfigurationProperties(RedisQueueProperties::class)

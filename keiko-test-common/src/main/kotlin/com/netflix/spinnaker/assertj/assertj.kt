@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.assertj
 
+import java.lang.reflect.Field
+import kotlin.reflect.KProperty1
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assert
 import org.assertj.core.api.Assertions.assertThat
@@ -23,8 +25,6 @@ import org.assertj.core.api.IntegerAssert
 import org.assertj.core.api.IterableAssert
 import org.assertj.core.api.MapAssert
 import org.assertj.core.api.SoftAssertions
-import java.lang.reflect.Field
-import kotlin.reflect.KProperty1
 
 private val actualField: Field = AbstractAssert::class.java
   .getDeclaredField("actual")

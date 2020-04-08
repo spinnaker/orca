@@ -26,16 +26,16 @@ import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.verifyZeroInteractions
+import java.io.Closeable
+import java.time.Clock
+import java.time.Duration
+import java.time.Duration.ZERO
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.mockito.internal.verification.Times
-import java.io.Closeable
-import java.time.Clock
-import java.time.Duration
-import java.time.Duration.ZERO
 
 abstract class QueueTest<out Q : Queue>(
   createQueue: (Clock, DeadMessageCallback) -> Q,

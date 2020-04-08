@@ -31,19 +31,6 @@ import de.huxhorn.sulky.ulid.ULID
 import io.github.resilience4j.retry.Retry
 import io.github.resilience4j.retry.RetryConfig
 import io.vavr.control.Try
-import org.funktionale.partials.partially1
-import org.jooq.DSLContext
-import org.jooq.SortOrder
-import org.jooq.exception.SQLDialectNotSupportedException
-import org.jooq.impl.DSL
-import org.jooq.impl.DSL.count
-import org.jooq.impl.DSL.field
-import org.jooq.impl.DSL.select
-import org.jooq.impl.DSL.sql
-import org.jooq.impl.DSL.table
-import org.jooq.util.mysql.MySQLDSL
-import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Scheduled
 import java.net.InetAddress
 import java.nio.charset.StandardCharsets
 import java.sql.ResultSet
@@ -57,6 +44,19 @@ import kotlin.Exception
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random.Default.nextLong
+import org.funktionale.partials.partially1
+import org.jooq.DSLContext
+import org.jooq.SortOrder
+import org.jooq.exception.SQLDialectNotSupportedException
+import org.jooq.impl.DSL
+import org.jooq.impl.DSL.count
+import org.jooq.impl.DSL.field
+import org.jooq.impl.DSL.select
+import org.jooq.impl.DSL.sql
+import org.jooq.impl.DSL.table
+import org.jooq.util.mysql.MySQLDSL
+import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Scheduled
 
 @KotlinOpen
 class SqlQueue(
