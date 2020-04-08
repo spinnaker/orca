@@ -18,11 +18,11 @@
 package com.netflix.spinnaker.orca.webhook.pipeline
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import com.netflix.spinnaker.orca.CancellableStage
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.kork.exceptions.UserException
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
@@ -49,10 +49,16 @@ class WebhookStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     StageData stageData = stage.mapTo(StageData)
 
-    builder.withTask("createWebhook", CreateWebhookTask)
+    if (stageData.monitorOnly && !stageData.waitForCompletion) {
+      throw new UserException("Can't specify monitorOnly = true and waitForCompletion = false at the same time")
+    }
+
+    if (!stageData.monitorOnly) {
+      builder.withTask("createWebhook", CreateWebhookTask)
+    }
     if (stageData.waitForCompletion) {
       if (stageData.waitBeforeMonitor > 0) {
         stage.context.putIfAbsent("waitTime", stageData.waitBeforeMonitor)
@@ -67,7 +73,7 @@ class WebhookStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void onFailureStages(@Nonnull Stage stage, @Nonnull StageGraphBuilder graph) {
+  void onFailureStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     new MonitorWebhookTask(webhookService).onCancel(stage)
   }
 
@@ -80,6 +86,7 @@ class WebhookStage implements StageDefinitionBuilder {
     public Boolean waitForCompletion
     public WebhookProperties.StatusUrlResolution statusUrlResolution
     public String statusUrlJsonPath
+    public Boolean monitorOnly
 
     @JsonFormat(with = [JsonFormat.Feature.ACCEPT_CASE_INSENSITIVE_PROPERTIES])
     public HttpMethod method = HttpMethod.POST

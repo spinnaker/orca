@@ -17,11 +17,12 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.Source;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.RunJobManifestContext;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.*;
 import lombok.Data;
@@ -45,7 +46,7 @@ public class KubernetesJobRunner implements JobRunner {
     this.manifestEvaluator = manifestEvaluator;
   }
 
-  public List<Map> getOperations(Stage stage) {
+  public List<Map> getOperations(StageExecution stage) {
     Map<String, Object> operation = new HashMap<>();
 
     if (stage.getContext().containsKey("cluster")) {
@@ -54,20 +55,7 @@ public class KubernetesJobRunner implements JobRunner {
       operation.putAll(stage.getContext());
     }
 
-    RunJobManifestContext runJobManifestContext = stage.mapTo(RunJobManifestContext.class);
-    if (runJobManifestContext.getSource().equals(ManifestContext.Source.Artifact)) {
-      ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, runJobManifestContext);
-
-      List<Map<Object, Object>> manifests = result.getManifests();
-      if (manifests.size() != 1) {
-        throw new IllegalArgumentException("Run Job only supports manifests with a single Job.");
-      }
-
-      operation.put("source", "text");
-      operation.put("manifest", manifests.get(0));
-      operation.put("requiredArtifacts", result.getRequiredArtifacts());
-      operation.put("optionalArtifacts", result.getOptionalArtifacts());
-    }
+    operation.putAll(getManifestFields(stage));
 
     KubernetesContainerFinder.populateFromStage(operation, stage, artifactUtils);
 
@@ -76,7 +64,35 @@ public class KubernetesJobRunner implements JobRunner {
     return Collections.singletonList(task);
   }
 
-  public Map<String, Object> getAdditionalOutputs(Stage stage, List<Map> operations) {
+  // Gets the fields relevant to manifests that should be added to the operation
+  private ImmutableMap<String, Object> getManifestFields(StageExecution stage) {
+    RunJobManifestContext runJobManifestContext = stage.mapTo(RunJobManifestContext.class);
+
+    // This short-circuit exists to handle jobs from the Kubernetes V1 provider; these have the
+    // source set to Text (because it's the default and they don't set a source), but also have no
+    // manifests. This will fail if we try to call manifestEvaluator.evaluate() so short-circuit
+    // as the additional fields are not relevant. This workaround can be removed once the V1
+    // provider is removed (currently scheduled for the 1.21 release).
+    if (runJobManifestContext.getSource() == Source.Text
+        && runJobManifestContext.getManifests() == null) {
+      return ImmutableMap.of();
+    }
+
+    ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, runJobManifestContext);
+
+    List<Map<Object, Object>> manifests = result.getManifests();
+    if (manifests.size() != 1) {
+      throw new IllegalArgumentException("Run Job only supports manifests with a single Job.");
+    }
+
+    return ImmutableMap.of(
+        "source", "text",
+        "manifest", manifests.get(0),
+        "requiredArtifacts", result.getRequiredArtifacts(),
+        "optionalArtifacts", result.getOptionalArtifacts());
+  }
+
+  public Map<String, Object> getAdditionalOutputs(StageExecution stage, List<Map> operations) {
     Map<String, Object> outputs = new HashMap<>();
     Map<String, Object> execution = new HashMap<>();
 

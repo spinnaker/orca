@@ -17,12 +17,12 @@
 package com.netflix.spinnaker.orca.igor.tasks
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import spock.lang.Specification
 import spock.lang.Subject
@@ -32,9 +32,10 @@ class StartAwsCodeBuildTaskSpec extends Specification {
   def ACCOUNT = "codebuild-account"
   def PROJECT_NAME = "test"
   def ARTIFACT_ID = "edceed55-29a5-45d3-9ed8-45871e3f026a"
+  def ANOTHER_ARTIFACT_ID = "c7715bbf-5c12-44d6-87ef-8149473e02f7"
   def ARN = "arn:aws:codebuild:us-west-2:123456789012:build/test:c7715bbf-5c12-44d6-87ef-8149473e02f7"
 
-  Execution execution = Mock(Execution)
+  PipelineExecutionImpl execution = Mock(PipelineExecutionImpl)
   IgorService igorService = Mock(IgorService)
   ArtifactUtils artifactUtils = Mock(ArtifactUtils)
 
@@ -44,7 +45,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
 
   def "should start a build"() {
     given:
-    def stage = new Stage(execution, "awsCodeBuild", [account: ACCOUNT, projectName: PROJECT_NAME])
+    def stage = new StageExecutionImpl(execution, "awsCodeBuild", [account: ACCOUNT, projectName: PROJECT_NAME])
 
     when:
     TaskResult result = task.execute(stage)
@@ -57,7 +58,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
 
   def "should not override source if sourceOverride is false"() {
     given:
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         getDefaultContext(false)
@@ -81,7 +82,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .reference(artifactReference)
         .version("master")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -113,7 +114,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("https://github.com/codebuild/repo.git")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         context
@@ -138,7 +139,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("http://enterprise.com/repo.git")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         context
@@ -161,7 +162,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("unknown")
         .reference("location")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -182,7 +183,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .type("git/repo")
         .reference("location")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -204,7 +205,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
         .reference("location")
         .artifactAccount("my-codebuild-account")
         .metadata([subPath: "path"]).build()
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         getDefaultContext()
@@ -222,13 +223,13 @@ class StartAwsCodeBuildTaskSpec extends Specification {
   def "should use sourceVersion if presents"() {
     given:
     def context = getDefaultContext()
-    context.put("sourceVersion", "not-master")
+    context.source.put("sourceVersion", "not-master")
     def artifact = Artifact.builder()
         .type("git/repo")
         .reference("https://github.com/codebuild/repo.git")
         .version("master")
         .artifactAccount("my-codebuild-account").build()
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         context
@@ -246,7 +247,7 @@ class StartAwsCodeBuildTaskSpec extends Specification {
 
   def "should correctly append image, buildspec and env vars"() {
     given:
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         getDefaultContext(false)
@@ -272,9 +273,9 @@ class StartAwsCodeBuildTaskSpec extends Specification {
   def "should not append buildspec or image when it's empty string"() {
     given:
     def context = getDefaultContext(false)
-    context.buildspec = ""
+    context.source.buildspec = ""
     context.image = ""
-    def stage = new Stage(
+    def stage = new StageExecutionImpl(
         execution,
         "awsCodeBuild",
         context
@@ -290,19 +291,157 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     }) >> igorResponse
   }
 
+  def "should override secondary sources along with versions"() {
+    given:
+    def context = getDefaultContext(false)
+    context.put("secondarySources", [
+        [
+            sourceArtifact: [
+                artifactId: ARTIFACT_ID,
+            ],
+        ],
+        [
+            sourceArtifact: [
+                artifactId: ARTIFACT_ID,
+            ],
+            sourceVersion: "master",
+        ],
+        [
+            sourceArtifact: [
+                artifactId: ANOTHER_ARTIFACT_ID,
+            ],
+            sourceVersion: "master",
+        ],
+    ] as Serializable)
+    def artifact = Artifact.builder()
+        .type("git/repo")
+        .reference("https://github.com/codebuild/repo.git")
+        .version("artifact-version")
+        .artifactAccount("my-codebuild-account").build()
+    def artifactWithoutVersion = Artifact.builder()
+        .type("git/repo")
+        .reference("https://github.com/codebuild/another-repo.git")
+        .artifactAccount("my-codebuild-account").build()
+    def stage = new StageExecutionImpl(
+        execution,
+        "awsCodeBuild",
+        context
+    )
+
+    when:
+    task.execute(stage)
+
+    then:
+    2 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
+    1 * artifactUtils.getBoundArtifactForStage(stage, ANOTHER_ARTIFACT_ID, null) >> artifactWithoutVersion
+    1 * igorService.startAwsCodeBuild(ACCOUNT, {
+      it.get("secondarySourcesOverride") == [
+          [
+              type: "GITHUB",
+              location: "https://github.com/codebuild/repo.git",
+              sourceIdentifier: "0",
+          ],
+          [
+              type: "GITHUB",
+              location: "https://github.com/codebuild/repo.git",
+              sourceIdentifier: "1",
+          ],
+          [
+              type: "GITHUB",
+              location: "https://github.com/codebuild/another-repo.git",
+              sourceIdentifier: "2",
+          ],
+      ]
+      it.get("secondarySourcesVersionOverride") == [
+          [
+              sourceIdentifier: "0",
+              sourceVersion: "artifact-version",
+          ],
+          [
+              sourceIdentifier: "1",
+              sourceVersion: "master",
+          ],
+          [
+              sourceIdentifier: "2",
+              sourceVersion: "master",
+          ],
+      ]
+    }) >> igorResponse
+  }
+
+  def "should not override secondary source version if not given"() {
+    given:
+    def context = getDefaultContext(false)
+    context.put("secondarySources", [
+        [
+            sourceArtifact: [
+                artifactId: ARTIFACT_ID,
+            ],
+        ],
+        [
+            sourceArtifact: [
+                artifactId: ANOTHER_ARTIFACT_ID,
+            ],
+            sourceVersion: "master",
+        ],
+    ] as Serializable)
+    def artifact = Artifact.builder()
+        .type("git/repo")
+        .reference("https://github.com/codebuild/repo.git")
+        .artifactAccount("my-codebuild-account").build()
+    def anotherArtifact = Artifact.builder()
+        .type("git/repo")
+        .reference("https://github.com/codebuild/another-repo.git")
+        .artifactAccount("my-codebuild-account").build()
+    def stage = new StageExecutionImpl(
+        execution,
+        "awsCodeBuild",
+        context
+    )
+
+    when:
+    task.execute(stage)
+
+    then:
+    1 * artifactUtils.getBoundArtifactForStage(stage, ARTIFACT_ID, null) >> artifact
+    1 * artifactUtils.getBoundArtifactForStage(stage, ANOTHER_ARTIFACT_ID, null) >> anotherArtifact
+    1 * igorService.startAwsCodeBuild(ACCOUNT, {
+      it.get("secondarySourcesOverride") == [
+          [
+              type: "GITHUB",
+              location: "https://github.com/codebuild/repo.git",
+              sourceIdentifier: "0",
+          ],
+          [
+              type: "GITHUB",
+              location: "https://github.com/codebuild/another-repo.git",
+              sourceIdentifier: "1",
+          ],
+      ]
+      it.get("secondarySourcesVersionOverride") == [
+          [
+              sourceIdentifier: "1",
+              sourceVersion: "master",
+          ],
+      ]
+    }) >> igorResponse
+  }
+
   def getDefaultContext(Boolean sourceOverride = true) {
     [
         account       : ACCOUNT,
         projectName   : PROJECT_NAME,
-        sourceOverride: sourceOverride,
         source        : [
-            artifactId: ARTIFACT_ID
+            sourceOverride: sourceOverride,
+            sourceArtifact: [
+                artifactId: ARTIFACT_ID,
+            ],
+            buildspec: "ls",
         ],
         environmentVariables: [
             "foo": "bar",
         ],
         image: "alpine",
-        buildspec: "ls",
     ]
   }
 }

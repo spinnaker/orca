@@ -17,16 +17,17 @@
 
 package com.netflix.spinnaker.orca.bakery.tasks.manifests;
 
+import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
 import com.netflix.spinnaker.orca.bakery.api.manifests.helm.HelmBakeManifestRequest;
 import com.netflix.spinnaker.orca.bakery.api.manifests.kustomize.KustomizeBakeManifestRequest;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.Collections;
@@ -73,7 +74,7 @@ public class CreateBakeManifestTask implements RetryableTask {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     if (bakery == null) {
       throw new IllegalStateException(
           "A BakeryService must be configured in order to run a Bake Manifest task.");
@@ -98,7 +99,9 @@ public class CreateBakeManifestTask implements RetryableTask {
                             "Input artifact (id: %s, account: %s) could not be found in execution (id: %s).",
                             p.getId(), p.getAccount(), stage.getExecution().getId()));
                   }
-                  a.setArtifactAccount(p.getAccount());
+                  if (!Strings.isNullOrEmpty(p.getAccount())) {
+                    a.setArtifactAccount(p.getAccount());
+                  }
                   return a;
                 })
             .collect(Collectors.toList());
@@ -107,7 +110,8 @@ public class CreateBakeManifestTask implements RetryableTask {
 
     if (expectedArtifacts.size() != 1) {
       throw new IllegalArgumentException(
-          "Exactly one expected artifact must be supplied. Please ensure that your Bake stage config's `expectedArtifacts` list contains exactly one artifact.");
+          "Exactly one expected artifact must be supplied. Please ensure that your Bake stage"
+              + " config's `expectedArtifacts` list contains exactly one artifact.");
     }
 
     String outputArtifactName = expectedArtifacts.get(0).getMatchArtifact().getName();
@@ -124,6 +128,7 @@ public class CreateBakeManifestTask implements RetryableTask {
 
     BakeManifestRequest request;
     switch (context.getTemplateRenderer().toUpperCase()) {
+      case "HELM3":
       case "HELM2":
         request =
             new HelmBakeManifestRequest(

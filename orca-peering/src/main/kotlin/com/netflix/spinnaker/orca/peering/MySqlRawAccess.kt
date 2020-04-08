@@ -2,7 +2,7 @@ package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.kork.sql.routing.withPool
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
@@ -34,40 +34,62 @@ open class MySqlRawAccess(
     maxPacketSize -= 8192
   }
 
-  override fun getCompletedExecutionIds(executionType: Execution.ExecutionType, partitionName: String, updatedAfter: Long): List<ExecutionDiffKey> {
+  override fun getCompletedExecutionIds(executionType: ExecutionType, partitionName: String?, updatedAfter: Long): List<ExecutionDiffKey> {
+    val partitionConstraint = if (partitionName == null) {
+      field("`partition`").isNull
+    } else {
+      field("`partition`").eq(partitionName)
+    }
+
     return withPool(poolName) {
       jooq
         .select(field("id"), field("updated_at"))
         .from(getExecutionTable(executionType))
         .where(field("status").`in`(*completedStatuses.toTypedArray())
           .and(field("updated_at").gt(updatedAfter))
-          .and(field("`partition`").eq(partitionName).or(field("`partition`").isNull)))
+          .and(partitionConstraint))
         .fetchInto(ExecutionDiffKey::class.java)
     }
   }
 
-  override fun getActiveExecutionIds(executionType: Execution.ExecutionType, partitionName: String): List<String> {
+  override fun getActiveExecutionIds(executionType: ExecutionType, partitionName: String?): List<String> {
+    val partitionConstraint = if (partitionName == null) {
+      field("`partition`").isNull
+    } else {
+      field("`partition`").eq(partitionName)
+    }
+
     return withPool(poolName) {
       jooq
         .select(field("id"))
         .from(getExecutionTable(executionType))
-        .where(field("status").notIn(*completedStatuses.toTypedArray())
-          .and(field("`partition`").eq(partitionName).or(field("`partition`").isNull)))
+        .where(field("status").`in`(*activeStatuses.toTypedArray())
+          .and(partitionConstraint))
         .fetch(field("id"), String::class.java)
     }
   }
 
-  override fun getStageIdsForExecutions(executionType: Execution.ExecutionType, executionIds: List<String>): List<String> {
+  override fun getDeletedExecutions(sinceCursor: Int): List<DeletedExecution> {
     return withPool(poolName) {
       jooq
-        .select(field("id"))
-        .from(getStagesTable(executionType))
-        .where(field("execution_id").`in`(*executionIds.toTypedArray()))
-        .fetch(field("id"), String::class.java)
+        .select(field("id"), field("execution_id"), field("execution_type"))
+        .from(table("deleted_executions"))
+        .where(field("id").gt(sinceCursor))
+        .fetchInto(DeletedExecution::class.java)
     }
   }
 
-  override fun getExecutions(executionType: Execution.ExecutionType, ids: List<String>): org.jooq.Result<Record> {
+  override fun getStageIdsForExecutions(executionType: ExecutionType, executionIds: List<String>): List<ExecutionDiffKey> {
+    return withPool(poolName) {
+      jooq
+        .select(field("id"), field("updated_at"))
+        .from(getStagesTable(executionType))
+        .where(field("execution_id").`in`(*executionIds.toTypedArray()))
+        .fetchInto(ExecutionDiffKey::class.java)
+    }
+  }
+
+  override fun getExecutions(executionType: ExecutionType, ids: List<String>): org.jooq.Result<Record> {
     return withPool(poolName) {
       jooq.select(DSL.asterisk())
         .from(getExecutionTable(executionType))
@@ -76,7 +98,7 @@ open class MySqlRawAccess(
     }
   }
 
-  override fun getStages(executionType: Execution.ExecutionType, stageIds: List<String>): org.jooq.Result<Record> {
+  override fun getStages(executionType: ExecutionType, stageIds: List<String>): org.jooq.Result<Record> {
     return withPool(poolName) {
       jooq.select(DSL.asterisk())
         .from(getStagesTable(executionType))
@@ -85,7 +107,7 @@ open class MySqlRawAccess(
     }
   }
 
-  override fun deleteStages(executionType: Execution.ExecutionType, stageIdsToDelete: List<String>) {
+  override fun deleteStages(executionType: ExecutionType, stageIdsToDelete: List<String>) {
     withPool(poolName) {
       for (chunk in stageIdsToDelete.chunked(chunkSize)) {
         jooq
@@ -96,7 +118,13 @@ open class MySqlRawAccess(
     }
   }
 
-  override fun deleteExecutions(executionType: Execution.ExecutionType, pipelineIdsToDelete: List<String>) {
+  override fun deleteExecutions(executionType: ExecutionType, pipelineIdsToDelete: List<String>): Int {
+    var countDeleted = 0
+
+    if (pipelineIdsToDelete.isEmpty()) {
+      return countDeleted
+    }
+
     withPool(poolName) {
       for (chunk in pipelineIdsToDelete.chunked(chunkSize)) {
         jooq
@@ -104,12 +132,14 @@ open class MySqlRawAccess(
           .where(field("execution_id").`in`(*chunk.toTypedArray()))
           .execute()
 
-        jooq
+        countDeleted += jooq
           .deleteFrom(getExecutionTable(executionType))
           .where(field("id").`in`(*chunk.toTypedArray()))
           .execute()
       }
     }
+
+    return countDeleted
   }
 
   override fun loadRecords(tableName: String, records: org.jooq.Result<Record>): Int {

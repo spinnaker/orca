@@ -21,6 +21,7 @@ import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.sql.config.DefaultSqlConfiguration
 import com.netflix.spinnaker.kork.sql.config.SqlProperties
 import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy
+import com.netflix.spinnaker.orca.interlink.Interlink
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.notifications.SqlNotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -40,6 +41,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import java.time.Clock
+import java.util.Optional
 
 @Configuration
 @ConditionalOnProperty("sql.enabled")
@@ -53,12 +55,14 @@ class SqlConfiguration {
     SpringLiquibaseProxy(properties)
 
   @ConditionalOnProperty("execution-repository.sql.enabled")
-  @Bean fun sqlExecutionRepository(
+  @Bean
+  fun sqlExecutionRepository(
     dsl: DSLContext,
     mapper: ObjectMapper,
     registry: Registry,
     properties: SqlProperties,
-    orcaSqlProperties: OrcaSqlProperties
+    orcaSqlProperties: OrcaSqlProperties,
+    interlink: Optional<Interlink>
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -66,13 +70,15 @@ class SqlConfiguration {
       mapper,
       properties.retries.transactions,
       orcaSqlProperties.batchReadSize,
-      orcaSqlProperties.stageReadSize
+      orcaSqlProperties.stageReadSize,
+      interlink = interlink.orElse(null)
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "primary"))) as ExecutionRepository
     }
 
   @ConditionalOnProperty("execution-repository.sql.enabled", "execution-repository.sql.secondary.enabled")
-  @Bean fun secondarySqlExecutionRepository(
+  @Bean
+  fun secondarySqlExecutionRepository(
     dsl: DSLContext,
     mapper: ObjectMapper,
     registry: Registry,
@@ -92,10 +98,12 @@ class SqlConfiguration {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "secondary"))) as ExecutionRepository
     }
 
-  @Bean fun sqlHealthcheckActivator(dsl: DSLContext, registry: Registry) =
+  @Bean
+  fun sqlHealthcheckActivator(dsl: DSLContext, registry: Registry) =
     SqlHealthcheckActivator(dsl, registry)
 
-  @Bean("dbHealthIndicator") fun dbHealthIndicator(
+  @Bean("dbHealthIndicator")
+  fun dbHealthIndicator(
     sqlHealthcheckActivator: SqlHealthcheckActivator,
     sqlProperties: SqlProperties,
     dynamicConfigService: DynamicConfigService

@@ -15,7 +15,25 @@
  */
 
 apply from: "$rootDir/gradle/kotlin.gradle"
+apply from: "$rootDir/gradle/dokka.gradle"
 apply from: "$rootDir/gradle/spock.gradle"
+
+sourceSets {
+  sample
+}
+
+dependencies {
+  api("com.netflix.spinnaker.kork:kork-plugins-api")
+  api("com.netflix.spinnaker.kork:kork-artifacts")
+
+  compileOnly("org.projectlombok:lombok")
+  annotationProcessor("org.projectlombok:lombok")
+
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-api")
+  testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+
+  sampleImplementation(sourceSets.main.runtimeClasspath)
+}
 
 test {
   useJUnitPlatform {
@@ -23,9 +41,8 @@ test {
   }
 }
 
-dependencies {
-  api "com.netflix.spinnaker.kork:kork-plugins-api"
-
-  compileOnly("org.projectlombok:lombok")
-  annotationProcessor("org.projectlombok:lombok")
+dokka {
+  configuration {
+    includes = ["api.md"]
+  }
 }

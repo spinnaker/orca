@@ -17,18 +17,20 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest.Status;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
@@ -55,9 +57,27 @@ public class WaitForManifestStableTask
     return TimeUnit.MINUTES.toMillis(30);
   }
 
+  @Override
+  public long getDynamicTimeout(StageExecution stage) {
+    ManifestTimeout timeout = stage.mapTo(ManifestTimeout.class);
+    if (timeout.timeoutMinutes.isPresent()) {
+      return TimeUnit.MINUTES.toMillis(timeout.timeoutMinutes.get());
+    }
+
+    return getTimeout();
+  }
+
+  private static class ManifestTimeout {
+    @Nonnull private final Optional<Long> timeoutMinutes;
+
+    ManifestTimeout(@JsonProperty("timeoutMinutes") Optional<Long> timeoutMinutes) {
+      this.timeoutMinutes = timeoutMinutes;
+    }
+  }
+
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     String account = getCredentials(stage);
     Map<String, List<String>> deployedManifests = manifestNamesByNamespace(stage);
 
