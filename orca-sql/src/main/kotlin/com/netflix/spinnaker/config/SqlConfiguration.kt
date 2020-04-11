@@ -29,6 +29,8 @@ import com.netflix.spinnaker.orca.sql.SpringLiquibaseProxy
 import com.netflix.spinnaker.orca.sql.SqlHealthIndicator
 import com.netflix.spinnaker.orca.sql.SqlHealthcheckActivator
 import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository
+import java.time.Clock
+import java.util.Optional
 import liquibase.integration.spring.SpringLiquibase
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Value
@@ -40,8 +42,6 @@ import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
-import java.time.Clock
-import java.util.Optional
 
 @Configuration
 @ConditionalOnProperty("sql.enabled")
@@ -55,7 +55,8 @@ class SqlConfiguration {
     SpringLiquibaseProxy(properties)
 
   @ConditionalOnProperty("execution-repository.sql.enabled")
-  @Bean fun sqlExecutionRepository(
+  @Bean
+  fun sqlExecutionRepository(
     dsl: DSLContext,
     mapper: ObjectMapper,
     registry: Registry,
@@ -76,7 +77,8 @@ class SqlConfiguration {
     }
 
   @ConditionalOnProperty("execution-repository.sql.enabled", "execution-repository.sql.secondary.enabled")
-  @Bean fun secondarySqlExecutionRepository(
+  @Bean
+  fun secondarySqlExecutionRepository(
     dsl: DSLContext,
     mapper: ObjectMapper,
     registry: Registry,
@@ -96,10 +98,12 @@ class SqlConfiguration {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "secondary"))) as ExecutionRepository
     }
 
-  @Bean fun sqlHealthcheckActivator(dsl: DSLContext, registry: Registry) =
+  @Bean
+  fun sqlHealthcheckActivator(dsl: DSLContext, registry: Registry) =
     SqlHealthcheckActivator(dsl, registry)
 
-  @Bean("dbHealthIndicator") fun dbHealthIndicator(
+  @Bean("dbHealthIndicator")
+  fun dbHealthIndicator(
     sqlHealthcheckActivator: SqlHealthcheckActivator,
     sqlProperties: SqlProperties,
     dynamicConfigService: DynamicConfigService

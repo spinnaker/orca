@@ -26,8 +26,8 @@ import com.netflix.spinnaker.orca.pipeline.persistence.DelegatingExecutionReposi
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.RedisExecutionRepository
-import rx.Observable
 import java.util.concurrent.TimeUnit
+import rx.Observable
 
 class RedisInstrumentedExecutionRepository(
   private val executionRepository: RedisExecutionRepository,
@@ -135,6 +135,12 @@ class RedisInstrumentedExecutionRepository(
   override fun delete(type: ExecutionType, id: String) {
     withMetrics("delete") {
       executionRepository.delete(type, id)
+    }
+  }
+
+  override fun delete(type: ExecutionType, idsToDelete: List<String>) {
+    withMetrics("delete") {
+      executionRepository.delete(type, idsToDelete)
     }
   }
 

@@ -19,6 +19,12 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.TaskExecutionInterceptor
+import com.netflix.spinnaker.orca.TaskResolver
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.FAILED_CONTINUE
@@ -29,11 +35,10 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
-import com.netflix.spinnaker.orca.api.pipeline.Task
-import com.netflix.spinnaker.orca.TaskExecutionInterceptor
-import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.exceptions.TimeoutException
@@ -42,10 +47,6 @@ import com.netflix.spinnaker.orca.ext.failureStatus
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
-import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
-import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
@@ -58,9 +59,6 @@ import com.netflix.spinnaker.orca.time.toDuration
 import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
-import org.apache.commons.lang3.time.DurationFormatUtils
-import org.slf4j.MDC
-import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
@@ -68,6 +66,9 @@ import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.TimeUnit
 import kotlin.collections.set
+import org.apache.commons.lang3.time.DurationFormatUtils
+import org.slf4j.MDC
+import org.springframework.stereotype.Component
 
 @Component
 class RunTaskHandler(
@@ -76,7 +77,7 @@ class RunTaskHandler(
   override val stageNavigator: StageNavigator,
   override val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory,
   override val contextParameterProcessor: ContextParameterProcessor,
-  private val tasks: Collection<Task>,
+  private val taskResolver: TaskResolver,
   private val clock: Clock,
   private val exceptionHandlers: List<ExceptionHandler>,
   private val taskExecutionInterceptors: List<TaskExecutionInterceptor>,
@@ -200,15 +201,18 @@ class RunTaskHandler(
 
   private fun RunTask.withTask(block: (StageExecution, TaskExecution, Task) -> Unit) =
     withTask { stage, taskModel ->
-      tasks
-        .find { taskType.isAssignableFrom(it.javaClass) }
-        .let { task ->
-          if (task == null) {
-            queue.push(InvalidTaskType(this, taskType.name))
-          } else {
-            block.invoke(stage, taskModel, task)
-          }
+      try {
+        taskResolver.getTask(taskModel.implementingClass)
+      } catch (e: TaskResolver.NoSuchTaskException) {
+        try {
+          taskResolver.getTask(taskType)
+        } catch (e: TaskResolver.NoSuchTaskException) {
+          queue.push(InvalidTaskType(this, taskType.name))
+          null
         }
+      }?.let {
+        block.invoke(stage, taskModel, it)
+      }
     }
 
   private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecution): TemporalAmount =

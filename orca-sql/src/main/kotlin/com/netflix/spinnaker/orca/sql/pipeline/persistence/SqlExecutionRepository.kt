@@ -23,22 +23,21 @@ import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.routing.withPool
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.BUFFERED
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.PAUSED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.interlink.Interlink
-import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.CancelInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.DeleteInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
-import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
+import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
+import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -49,7 +48,10 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.Execu
 import com.netflix.spinnaker.orca.pipeline.persistence.UnpausablePipelineException
 import com.netflix.spinnaker.orca.pipeline.persistence.UnresumablePipelineException
 import de.huxhorn.sulky.ulid.SpinULID
+import java.lang.System.currentTimeMillis
+import java.security.SecureRandom
 import org.jooq.DSLContext
+import org.jooq.DatePart
 import org.jooq.Field
 import org.jooq.Record
 import org.jooq.SelectConditionStep
@@ -59,17 +61,17 @@ import org.jooq.SelectJoinStep
 import org.jooq.SelectWhereStep
 import org.jooq.Table
 import org.jooq.exception.SQLDialectNotSupportedException
+import org.jooq.exception.TooManyRowsException
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.count
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.name
+import org.jooq.impl.DSL.now
 import org.jooq.impl.DSL.table
+import org.jooq.impl.DSL.timestampSub
 import org.jooq.impl.DSL.value
 import org.slf4j.LoggerFactory
 import rx.Observable
-import java.lang.System.currentTimeMillis
-import java.security.SecureRandom
-import org.jooq.exception.TooManyRowsException
 
 /**
  * A generic SQL [ExecutionRepository].
@@ -267,28 +269,61 @@ class SqlExecutionRepository(
 
   override fun delete(type: ExecutionType, id: String) {
     doForeignAware(DeleteInterlinkEvent(type, id)) {
-      execution, dslContext ->
-      val correlationField = if (type == PIPELINE) "pipeline_id" else "orchestration_id"
-      val (ulid, _) = mapLegacyId(jooq, type.tableName, id)
+      _, dslContext ->
+      val (ulid, _) = mapLegacyId(dslContext, type.tableName, id)
 
-      val correlationId = jooq.select(field("id")).from("correlation_ids")
-        .where(field(correlationField).eq(ulid))
-        .limit(1)
-        .fetchOne()
-        ?.into(String::class.java)
-      val stageIds = jooq.select(field("id")).from(type.stagesTableName)
-        .where(field("execution_id").eq(ulid))
-        .fetch()
-        ?.into(String::class.java)?.toTypedArray()
-
-      if (correlationId != null) {
-        dslContext.delete(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
-      }
-      if (stageIds != null) {
-        dslContext.delete(type.stagesTableName).where(field("id").`in`(*stageIds)).execute()
-      }
-      dslContext.delete(type.tableName).where(field("id").eq(ulid)).execute()
+      deleteInternal(dslContext, type, listOf(ulid))
     }
+  }
+
+  /**
+   * Deletes given executions
+   * NOTE: this method explicitly does not check if the execution is foreign or not.
+   */
+  override fun delete(type: ExecutionType, idsToDelete: List<String>) {
+    jooq.transactional { tx ->
+      deleteInternal(tx, type, idsToDelete)
+    }
+  }
+
+  private fun deleteInternal(dslContext: DSLContext, type: ExecutionType, idsToDelete: List<String>) {
+    val correlationField = when (type) {
+      PIPELINE -> "pipeline_id"
+      ORCHESTRATION -> "orchestration_id"
+      else -> throw IllegalStateException("Unexpected field $type")
+    }
+
+    dslContext
+      .delete(table("correlation_ids"))
+      .where(field(correlationField).`in`(*idsToDelete.toTypedArray()))
+      .execute()
+
+    dslContext
+      .delete(type.stagesTableName)
+      .where(field("execution_id").`in`(*idsToDelete.toTypedArray()))
+      .execute()
+
+    dslContext
+      .delete(type.tableName)
+      .where(field("id").`in`(*idsToDelete.toTypedArray()))
+      .execute()
+
+    var insertQueryBuilder = dslContext
+      .insertInto(table("deleted_executions"))
+      .columns(field("execution_id"), field("execution_type"), field("deleted_at"))
+
+    idsToDelete.forEach { id ->
+      insertQueryBuilder = insertQueryBuilder
+        .values(id, type.toString(), now())
+    }
+
+    insertQueryBuilder
+      .execute()
+
+    dslContext
+      .deleteFrom(table("deleted_executions"))
+      .where(field("deleted_at").lt(timestampSub(now(), 1, DatePart.DAY)))
+      .execute()
   }
 
   // TODO rz - Refactor to not use exceptions. So weird.
@@ -970,7 +1005,7 @@ class SqlExecutionRepository(
 
     return try {
       val execution = retrieve(executionType, id)
-      isForeign(execution)
+      isForeign(execution, shouldThrow)
     } catch (_: ExecutionNotFoundException) {
       // Execution not found, we can proceed since the rest is likely a noop anyway
       false
