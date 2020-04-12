@@ -35,6 +35,10 @@ dependencies {
 }
 
 test {
+  filter {
+    includeTestsMatching "com.netflix.spinnaker.orca.plugins.test.OrcaPluginsTest"
+  }
+
   useJUnitPlatform {
     includeEngines("junit-jupiter", "junit-vintage")
   }
