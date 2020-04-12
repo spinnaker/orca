@@ -37,6 +37,9 @@ import com.netflix.spinnaker.orca.plugins.TaskExtension2
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.memory.InMemoryQueue
 import com.netflix.spinnaker.q.metrics.EventPublisher
+import java.io.File
+import java.time.Clock
+import java.time.Duration
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
@@ -45,9 +48,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
-import java.io.File
-import java.time.Clock
-import java.time.Duration
 
 class OrcaPluginsFixture : PluginsTckFixture, OrcaTestService() {
   val objectMapper: ObjectMapper = ObjectMapper(YAMLFactory())
