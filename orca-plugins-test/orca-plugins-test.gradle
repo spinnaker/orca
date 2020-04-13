@@ -35,6 +35,9 @@ dependencies {
 }
 
 test {
+  // Without filtering down to a specific test, the test task fails.
+  // It fails because the Orca Main class package does not have an Implementation-Version set.
+  //TODO(jonsie): Determine why and how we can remove this.
   filter {
     includeTestsMatching "com.netflix.spinnaker.orca.plugins.test.OrcaPluginsTest"
   }
