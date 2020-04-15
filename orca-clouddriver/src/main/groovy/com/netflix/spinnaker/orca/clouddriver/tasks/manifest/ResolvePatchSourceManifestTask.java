@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.orca.ExecutionStatus;
@@ -49,7 +50,12 @@ public final class ResolvePatchSourceManifestTask implements Task {
     return new ImmutableMap.Builder<String, Object>()
         .put("manifests", result.getManifests())
         .put("requiredArtifacts", result.getRequiredArtifacts())
-        .put("allArtifacts", result.getOptionalArtifacts())
+        .put(
+            "allArtifacts",
+            ImmutableList.builder()
+                .addAll(result.getRequiredArtifacts())
+                .addAll(result.getOptionalArtifacts())
+                .build())
         .build();
   }
 }
