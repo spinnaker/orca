@@ -1,7 +1,3 @@
-repositories {
-  maven { url "https://dl.bintray.com/jetbrains/spek" }
-}
-
 dependencies {
   api "org.jetbrains.spek:spek-api"
   api "org.jetbrains.spek:spek-subject-extension"
