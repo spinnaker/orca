@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.bakery.pipeline
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
+import com.sun.xml.internal.fastinfoset.algorithm.BooleanEncodingAlgorithm
 
 import java.time.Clock
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -63,28 +64,31 @@ class BakeStageSpec extends Specification {
     parallelContexts == expectedParallelContexts
 
     where:
-    bakeStageContext                                                        | deployAvailabilityZones                                                            || expectedParallelContexts
-    [cloudProviderType: "aws"]                                              | deployAz("aws", "cluster", "us-west-1") + deployAz("aws", "cluster", "us-west-2")  || expectedContexts("aws", "19700101011512", "us-west-1", "us-west-2")
-    [cloudProviderType: "aws", region: "us-east-1"]                         | deployAz("aws", "cluster", "us-west-1")                                            || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
-    [cloudProviderType: "aws"]                                              | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "us-west-1")
-    [cloudProviderType: "aws", region: "us-east-1"]                         | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
-    [cloudProviderType: "aws", region: "us-east-1"]                         | []                                                                                 || expectedContexts("aws", "19700101011512", "us-east-1")
-    [cloudProviderType: "aws", region: "us-east-1"]                         | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
-    [cloudProviderType: "aws", region: "us-east-1"]                         | deployAz("aws", "clusters", "us-east-1")                                           || expectedContexts("aws", "19700101011512", "us-east-1")
-    [cloudProviderType: "aws", region: "us-east-1", amiSuffix: ""]          | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
-    [cloudProviderType: "aws", region: "us-east-1", amiSuffix: "--"]        | null                                                                               || expectedContexts("aws", "--", "us-east-1")
-    [cloudProviderType: "aws", region: "global"]                            | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "global")
-    [cloudProviderType: "aws", region: "us-east-1", regions: ["us-west-1"]] | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
-    [cloudProviderType: "aws", region: "us-east-1", regions: []]            | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
-    [cloudProviderType: "aws", regions: ["us-east-1", "us-west-1"]]         | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
-    [cloudProviderType: "aws", region: "us-east-1", regions: null]          | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
-    [cloudProviderType: "aws", regions: ["us-east-1", "us-west-1"]]         | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
-    [cloudProviderType: "aws"]                                              | deployAz("aws", "cluster", "us-west-1") + deployAz("gce", "cluster", "us-west1")   || expectedContexts("aws", "19700101011512", "us-west-1")
-    [cloudProviderType: "gce", region: "global"]                            | deployAz("aws", "cluster", "us-west-1")                                            || expectedContexts("gce", "19700101011512", "global")
-    [cloudProviderType: "gce", region: "global"]                            | deployAz("gce", "cluster", "us-west1")                                             || expectedContexts("gce", "19700101011512", "global")
-    [cloudProviderType: "aws"]                                              | deployAz("aws", "clusters", "us-west-1") + deployAz("gce", "clusters", "us-west1") || expectedContexts("aws", "19700101011512", "us-west-1")
-    [cloudProviderType: "gce", region: "global"]                            | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("gce", "19700101011512", "global")
-    [cloudProviderType: "gce", region: "global"]                            | deployAz("gce", "clusters", "us-west1")                                            || expectedContexts("gce", "19700101011512", "global")
+    bakeStageContext                                                                                      | deployAvailabilityZones                                                            || expectedParallelContexts
+    [cloudProviderType: "aws"]                                                                            | deployAz("aws", "cluster", "us-west-1") + deployAz("aws", "cluster", "us-west-2")  || expectedContexts("aws", "19700101011512", "us-west-1", "us-west-2")
+    [cloudProviderType: "aws", region: "us-east-1"]                                                       | deployAz("aws", "cluster", "us-west-1")                                            || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
+    [cloudProviderType: "aws"]                                                                            | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "us-west-1")
+    [cloudProviderType: "aws", region: "us-east-1"]                                                       | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
+    [cloudProviderType: "aws", region: "us-east-1"]                                                       | []                                                                                 || expectedContexts("aws", "19700101011512", "us-east-1")
+    [cloudProviderType: "aws", region: "us-east-1"]                                                       | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
+    [cloudProviderType: "aws", region: "us-east-1"]                                                       | deployAz("aws", "clusters", "us-east-1")                                           || expectedContexts("aws", "19700101011512", "us-east-1")
+    [cloudProviderType: "aws", region: "us-east-1", amiSuffix: ""]                                        | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
+    [cloudProviderType: "aws", region: "us-east-1", amiSuffix: "--"]                                      | null                                                                               || expectedContexts("aws", "--", "us-east-1")
+    [cloudProviderType: "aws", region: "global"]                                                          | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "global")
+    [cloudProviderType: "aws", region: "us-east-1", regions: ["us-west-1"]]                               | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
+    [cloudProviderType: "aws", region: "us-east-1", regions: []]                                          | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
+    [cloudProviderType: "aws", regions: ["us-east-1", "us-west-1"]]                                       | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
+    [cloudProviderType: "aws", region: "us-east-1", regions: null]                                        | null                                                                               || expectedContexts("aws", "19700101011512", "us-east-1")
+    [cloudProviderType: "aws", regions: ["us-east-1", "us-west-1"]]                                       | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
+    [cloudProviderType: "aws"]                                                                            | deployAz("aws", "cluster", "us-west-1") + deployAz("gce", "cluster", "us-west1")   || expectedContexts("aws", "19700101011512", "us-west-1")
+    [cloudProviderType: "gce", region: "global"]                                                          | deployAz("aws", "cluster", "us-west-1")                                            || expectedContexts("gce", "19700101011512", "global")
+    [cloudProviderType: "gce", region: "global"]                                                          | deployAz("gce", "cluster", "us-west1")                                             || expectedContexts("gce", "19700101011512", "global")
+    [cloudProviderType: "aws"]                                                                            | deployAz("aws", "clusters", "us-west-1") + deployAz("gce", "clusters", "us-west1") || expectedContexts("aws", "19700101011512", "us-west-1")
+    [cloudProviderType: "gce", region: "global"]                                                          | deployAz("aws", "clusters", "us-west-1")                                           || expectedContexts("gce", "19700101011512", "global")
+    [cloudProviderType: "gce", region: "global"]                                                          | deployAz("gce", "clusters", "us-west1")                                            || expectedContexts("gce", "19700101011512", "global")
+    [cloudProviderType: "gce", region: "global", autoDetectRegions: false]                                | deployAz("gce", "clusters", "us-west1")                                            || expectedContexts("gce", "19700101011512", "global")
+    [cloudProviderType: "aws", region: "us-west-2", autoDetectRegions: false]                             | deployAz("aws", "cluster", "us-west-1") + deployAz("aws", "cluster", "us-west-2")  || expectedContexts("aws", "19700101011512", "us-west-2")
+    [cloudProviderType: "aws", regions: ["us-east-1", "us-west-1"], autoDetectRegions: false]             | deployAz("aws", "clusters", "eu-central-1")                                        || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
   }
 
   def "should include per-region stage contexts as global deployment details"() {
@@ -216,7 +220,7 @@ class BakeStageSpec extends Specification {
   }
 
   private
-  static List<Map> expectedContexts(String cloudProvider, String amiSuffix, String... regions) {
+  static List<Map> expectedContexts(String cloudProvider, String amiSuffix, String ... regions) {
     return regions.collect {
       [cloudProviderType: cloudProvider, amiSuffix: amiSuffix, type: BakeStage.PIPELINE_CONFIG_TYPE, "region": it, name: "Bake in ${it}"]
     }
