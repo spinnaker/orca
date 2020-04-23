@@ -42,7 +42,7 @@ class OracleImageFinderSpec extends Specification {
 
     when:
     Collection<ImageFinder.ImageDetails> imageDetails = oracleImageFinder.byTags(
-      stage, "imageName*", ["version": "latest"], [])
+      stage, "imageName*", ["version": "latest"], []) 
 
     then:
     1 * oortService.findImage("oracle", "imageName*", null, null, ["tag:version": "latest"]) >> {
