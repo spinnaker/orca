@@ -38,6 +38,7 @@ class PipelineMigrationAgent(
 
   override fun tick() {
     val previouslyMigratedPipelineIds = dualExecutionRepository.primary.retrieveAllExecutionIds(PIPELINE)
+    log.info("Found ${previouslyMigratedPipelineIds.size} previously migrated pipelines.")
 
     val executionCriteria = ExecutionRepository.ExecutionCriteria().apply {
       pageSize = 50
@@ -57,10 +58,15 @@ class PipelineMigrationAgent(
         .toBlocking()
         .single()
 
+      log.info("Found ${unmigratedPipelines.size} unmigrated pipelines")
+
       if (unmigratedPipelines.isNotEmpty()) {
         log.info("${unmigratedPipelines.size} pipelines to migrate ($pipelineConfigId) [$index/${allPipelineConfigIds.size}]")
 
         unmigratedPipelines.forEach {
+          if (log.isDebugEnabled) {
+            log.debug("Migrating executions for pipelineConfigId ${it.pipelineConfigId}")
+          }
           dualExecutionRepository.primary.store(it)
         }
 

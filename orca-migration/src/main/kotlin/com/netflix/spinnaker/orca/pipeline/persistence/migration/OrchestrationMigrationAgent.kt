@@ -39,6 +39,7 @@ class OrchestrationMigrationAgent(
 
   override fun tick() {
     val previouslyMigratedOrchestrationIds = dualExecutionRepository.primary.retrieveAllExecutionIds(ORCHESTRATION)
+    log.info("Found ${previouslyMigratedOrchestrationIds.size} previously migrated orchestrations.")
 
     val executionCriteria = ExecutionRepository.ExecutionCriteria().apply {
       pageSize = 3500
@@ -49,6 +50,7 @@ class OrchestrationMigrationAgent(
     log.info("Found ${allApplications.size} applications")
 
     allApplications.forEachIndexed { index, application ->
+      log.info("Migrating $application...")
       val applicationName = application.name.toLowerCase()
       val unmigratedOrchestrations = dualExecutionRepository.previous
         .retrieveOrchestrationsForApplication(applicationName, executionCriteria)
@@ -65,10 +67,15 @@ class OrchestrationMigrationAgent(
         .toBlocking()
         .single()
 
+      log.info("Found ${unmigratedOrchestrations.size} pipelines to migrate")
+
       if (unmigratedOrchestrations.isNotEmpty()) {
         log.info("${unmigratedOrchestrations.size} orchestrations to migrate ($applicationName) [$index/${allApplications.size}]")
 
         unmigratedOrchestrations.forEach {
+          if (log.isDebugEnabled) {
+            log.debug("Migrating pipeline ${it.pipelineConfigId}")
+          }
           dualExecutionRepository.primary.store(it)
         }
 
