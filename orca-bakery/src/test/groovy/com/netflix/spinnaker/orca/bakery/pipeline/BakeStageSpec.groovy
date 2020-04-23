@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.bakery.pipeline
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
-import com.sun.xml.internal.fastinfoset.algorithm.BooleanEncodingAlgorithm
 
 import java.time.Clock
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -222,7 +221,7 @@ class BakeStageSpec extends Specification {
   }
 
   private
-  static List<Map> expectedContexts(String cloudProvider, String amiSuffix, String ... regions) {
+  static List<Map> expectedContexts(String cloudProvider, String amiSuffix, String... regions) {
     return regions.collect {
       [cloudProviderType: cloudProvider, amiSuffix: amiSuffix, type: BakeStage.PIPELINE_CONFIG_TYPE, "region": it, name: "Bake in ${it}"]
     }
