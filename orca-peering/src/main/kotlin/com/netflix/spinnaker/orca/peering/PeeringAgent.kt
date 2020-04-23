@@ -16,14 +16,16 @@
 package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.time.Instant
 import kotlin.math.max
+import org.slf4j.LoggerFactory
 
 /**
- *
+ * The orca agent that performs peering of executions across different orca DBs
  */
 class PeeringAgent(
   /**
@@ -69,28 +71,25 @@ class PeeringAgent(
   private val log = LoggerFactory.getLogger(javaClass)
   private var completedPipelinesMostRecentUpdatedTime = 0L
   private var completedOrchestrationsMostRecentUpdatedTime = 0L
-  private var runCount = 0
+  private var deletedExecutionCursor = 0
 
   override fun tick() {
-    // Temporary "hack" to replicate deletes, for now we run a full diff (very expensive) every 10 ticks of the agent
-    // Better solution forth coming
-    if (runCount++ > 10) {
-      completedOrchestrationsMostRecentUpdatedTime = 0L
-      completedPipelinesMostRecentUpdatedTime = 0L
-      runCount = 0
-    }
-
     if (dynamicConfigService.isEnabled("pollers.peering", true) &&
       dynamicConfigService.isEnabled("pollers.peering.$peeredId", true)) {
-      peerExecutions(Execution.ExecutionType.PIPELINE)
-      peerExecutions(Execution.ExecutionType.ORCHESTRATION)
+      peeringMetrics.recordOverallLag() {
+        peerExecutions(ExecutionType.PIPELINE)
+        peerExecutions(ExecutionType.ORCHESTRATION)
+        peerDeletedExecutions()
+      }
     }
   }
 
-  private fun peerExecutions(executionType: Execution.ExecutionType) {
+  private fun peerExecutions(executionType: ExecutionType) {
+    val start = Instant.now()
+
     val mostRecentUpdatedTime = when (executionType) {
-      Execution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
-      Execution.ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
+      ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
+      ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
     }
     val isFirstRun = mostRecentUpdatedTime == 0L
 
@@ -99,17 +98,17 @@ class PeeringAgent(
     if (isFirstRun) {
       peerCompletedExecutions(executionType)
     } else {
-      peeringMetrics.recordLag(executionType) {
-        peerCompletedExecutions(executionType)
-        peerActiveExecutions(executionType)
-      }
+      peerCompletedExecutions(executionType)
+      peerActiveExecutions(executionType)
     }
+
+    peeringMetrics.recordLag(executionType, Duration.between(start, Instant.now()))
   }
 
   /**
    * Migrate running/active executions of given type
    */
-  private fun peerActiveExecutions(executionType: Execution.ExecutionType) {
+  private fun peerActiveExecutions(executionType: ExecutionType) {
     log.debug("Starting active $executionType copy for peering")
 
     val activePipelineIds = srcDB.getActiveExecutionIds(executionType, peeredId)
@@ -132,24 +131,72 @@ class PeeringAgent(
   /**
    * Migrate completed executions of given type
    */
-  private fun peerCompletedExecutions(executionType: Execution.ExecutionType) {
+  private fun peerCompletedExecutions(executionType: ExecutionType) {
     val updatedAfter = when (executionType) {
-      Execution.ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
-      Execution.ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
+      ExecutionType.ORCHESTRATION -> completedOrchestrationsMostRecentUpdatedTime
+      ExecutionType.PIPELINE -> completedPipelinesMostRecentUpdatedTime
     }
 
     log.debug("Starting completed $executionType copy for peering with $executionType updatedAfter=$updatedAfter")
 
     val newLatestUpdateTime = doMigrate(executionType, updatedAfter) - clockDriftMs
 
-    if (executionType == Execution.ExecutionType.ORCHESTRATION) {
+    if (executionType == ExecutionType.ORCHESTRATION) {
       completedOrchestrationsMostRecentUpdatedTime = max(0, newLatestUpdateTime)
     } else {
       completedPipelinesMostRecentUpdatedTime = max(0, newLatestUpdateTime)
     }
   }
 
-  private fun doMigrate(executionType: Execution.ExecutionType, updatedAfter: Long): Long {
+  /**
+   * Propagate deletes
+   * NOTE: ids of executions (both orchestrations and pipelines) that have been deleted are stored in the deleted_executions table
+   * the "id/primarykey" on that table is an auto-incrementing int, so we use that as a "cursor" to know what we've deleted and
+   * what still needs to be deleted.
+   * There is no harm (just some wasted RDS CPU) to "deleting" an execution that doesn't exist
+   */
+  private fun peerDeletedExecutions() {
+    val deletedExecutionIds = srcDB.getDeletedExecutions(deletedExecutionCursor)
+    val orchestrationIdsToDelete = deletedExecutionIds.filter { it.execution_type == ExecutionType.ORCHESTRATION.toString() }.map { it.execution_id }
+    val pipelineIdsToDelete = deletedExecutionIds.filter { it.execution_type == ExecutionType.PIPELINE.toString() }.map { it.execution_id }
+
+    log.debug("Found ${deletedExecutionIds.size} (orchestrations: ${orchestrationIdsToDelete.size} pipelines: ${pipelineIdsToDelete.size} deleted candidates after cursor: $deletedExecutionCursor")
+    var hadFailures = false
+    var orchestrationsDeleted = 0
+    var pipelinesDeleted = 0
+
+    try {
+      orchestrationsDeleted = destDB.deleteExecutions(ExecutionType.ORCHESTRATION, orchestrationIdsToDelete)
+      peeringMetrics.incrementNumDeleted(ExecutionType.ORCHESTRATION, orchestrationsDeleted)
+    } catch (e: Exception) {
+      log.error("Failed to delete some orchestrations", e)
+      peeringMetrics.incrementNumErrors(ExecutionType.ORCHESTRATION)
+      hadFailures = true
+    }
+
+    try {
+      pipelinesDeleted = destDB.deleteExecutions(ExecutionType.PIPELINE, pipelineIdsToDelete)
+      peeringMetrics.incrementNumDeleted(ExecutionType.PIPELINE, pipelinesDeleted)
+    } catch (e: Exception) {
+      log.error("Failed to delete some pipelines", e)
+      peeringMetrics.incrementNumErrors(ExecutionType.PIPELINE)
+      hadFailures = true
+    }
+
+    if (!hadFailures) {
+      deletedExecutionCursor = (deletedExecutionIds.maxBy { it.id })
+        ?.id
+        ?: deletedExecutionCursor
+
+      // It is likely that some executions were deleted during "general" peering (e.g. in doMigrate), but most will be
+      // deleted here so it's OK for the actual delete counts to not match the "requested" count
+      log.debug("Deleted orchestrations: $orchestrationsDeleted (of ${orchestrationIdsToDelete.size} requested), pipelines: $pipelinesDeleted (of ${pipelineIdsToDelete.size} requested), new cursor: $deletedExecutionCursor")
+    } else {
+      log.error("Failed to delete some executions, not updating the cursor location to retry next time")
+    }
+  }
+
+  private fun doMigrate(executionType: ExecutionType, updatedAfter: Long): Long {
     // Compute diff
     val completedPipelineKeys = srcDB.getCompletedExecutionIds(executionType, peeredId, updatedAfter)
       .plus(srcDB.getCompletedExecutionIds(executionType, null, updatedAfter))
@@ -165,15 +212,13 @@ class PeeringAgent(
     val pipelineIdsToMigrate = completedPipelineKeys
       .filter { key -> migratedPipelineKeysMap[key.id]?.updated_at ?: 0 < key.updated_at }
       .map { it.id }
-      .toList()
 
     val pipelineIdsToDelete = migratedPipelineKeys
       .filter { key -> !completedPipelineKeysMap.containsKey(key.id) }
       .map { it.id }
-      .toList()
 
     fun getLatestCompletedUpdatedTime() =
-      (completedPipelineKeys.map { it.updated_at }.max() ?: 0)
+      (completedPipelineKeys.map { it.updated_at }.max() ?: updatedAfter)
 
     if (pipelineIdsToDelete.isEmpty() && pipelineIdsToMigrate.isEmpty()) {
       log.debug("No completed $executionType executions to copy for peering")
@@ -183,15 +228,14 @@ class PeeringAgent(
     log.debug("Found ${completedPipelineKeys.size} completed $executionType candidates with ${migratedPipelineKeys.size} already copied for peering, ${pipelineIdsToMigrate.size} still need copying and ${pipelineIdsToDelete.size} need to be deleted")
 
     val maxDeleteCount = dynamicConfigService.getConfig(Integer::class.java, "pollers.peering.max-allowed-delete-count", Integer(100))
-    var actualDeleted = pipelineIdsToDelete.size
+    var actualDeleted = 0
 
     if (pipelineIdsToDelete.size > maxDeleteCount.toInt()) {
       log.error("Number of pipelines to delete (${pipelineIdsToDelete.size}) > threshold ($maxDeleteCount) - not performing deletes - if this is expected you can set the pollers.peering.max-allowed-delete-count property to a larger number")
       peeringMetrics.incrementNumErrors(executionType)
-      actualDeleted = 0
     } else if (pipelineIdsToDelete.any()) {
-      destDB.deleteExecutions(executionType, pipelineIdsToDelete)
-      peeringMetrics.incrementNumDeleted(executionType, pipelineIdsToDelete.size)
+      actualDeleted = destDB.deleteExecutions(executionType, pipelineIdsToDelete)
+      peeringMetrics.incrementNumDeleted(executionType, actualDeleted)
     }
 
     if (!pipelineIdsToMigrate.any()) {

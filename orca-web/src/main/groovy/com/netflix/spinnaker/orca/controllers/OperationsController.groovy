@@ -24,6 +24,7 @@ import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.exceptions.OperationFailedException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
@@ -31,8 +32,7 @@ import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
@@ -54,8 +54,8 @@ import retrofit.http.Query
 import javax.servlet.http.HttpServletResponse
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.ORCHESTRATION
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static net.logstash.logback.argument.StructuredArguments.value
 
 @RestController
@@ -283,7 +283,7 @@ class OperationsController {
     }
 
     if (pipeline.trigger.parentPipelineId && !pipeline.trigger.parentExecution) {
-      Execution parentExecution
+      PipelineExecution parentExecution
       try {
         parentExecution = executionRepository.retrieve(PIPELINE, pipeline.trigger.parentPipelineId)
       } catch (ExecutionNotFoundException e) {
@@ -412,15 +412,17 @@ class OperationsController {
     if (!jobService) {
       return []
     }
-    return jobService?.getPreconfiguredStages().collect{
-      [ label: it.label,
-        description: it.description,
-        type: it.type,
-        waitForCompletion: it.waitForCompletion,
-        noUserConfigurableFields: true,
-        parameters: it.parameters,
-        producesArtifacts: it.producesArtifacts,
-      ]
+    // Only allow enabled jobs for configuration in pipelines.
+    return jobService.getPreconfiguredStages().findAll { it.enabled } .collect {
+        [label                   : it.label,
+         description             : it.description,
+         type                    : it.type,
+         waitForCompletion       : it.waitForCompletion,
+         noUserConfigurableFields: true,
+         parameters              : it.parameters,
+         producesArtifacts       : it.producesArtifacts,
+         uiType                  : it.uiType
+        ]
     }
   }
 

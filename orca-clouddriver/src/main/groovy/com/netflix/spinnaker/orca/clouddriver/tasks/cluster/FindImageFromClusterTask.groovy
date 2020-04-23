@@ -21,13 +21,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.moniker.Moniker
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.RetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import groovy.transform.Canonical
 import groovy.util.logging.Slf4j
@@ -109,7 +109,7 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
   }
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
     FindImageConfiguration config = stage.mapTo(FindImageConfiguration)
@@ -294,11 +294,15 @@ class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements
       return artifact
     }.flatten()
 
-    return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
-      amiDetails: deploymentDetails,
-      artifacts: artifacts
-    ]).outputs([
-      deploymentDetails: deploymentDetails
+    Map<String, Object> context = [amiDetails: deploymentDetails, artifacts: artifacts]
+    if (cloudProvider == "aws" && config.regions) {
+      context.put("regions", config.regions + inferredRegions)
+    }
+    return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(
+      context
+    ).outputs([
+      deploymentDetails: deploymentDetails,
+      inferredRegions: inferredRegions
     ]).build()
   }
 

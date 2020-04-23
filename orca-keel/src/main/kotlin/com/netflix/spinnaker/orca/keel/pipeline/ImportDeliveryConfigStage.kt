@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.keel.pipeline
 
-import com.netflix.spinnaker.orca.Task
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder.Aliases
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder.Aliases
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
+import org.springframework.stereotype.Component
 
 /**
  * Pipeline stage that retrieves a Managed Delivery config manifest from source control via igor, then publishes it to keel.
@@ -32,7 +32,7 @@ import kotlin.reflect.KClass
 @Component
 @Aliases("publishDeliveryConfig")
 class ImportDeliveryConfigStage : StageDefinitionBuilder {
-  override fun taskGraph(stage: Stage, builder: TaskNode.Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask("importDeliveryConfig", ImportDeliveryConfigTask::class)
   }
 

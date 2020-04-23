@@ -18,25 +18,32 @@ package com.netflix.spinnaker.orca.interlink.events;
 
 import static com.netflix.spinnaker.orca.interlink.events.InterlinkEvent.EventType.DELETE;
 
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
+/**
+ * This event is published on the interlink as a result of a user DELETING an execution on an orca
+ * instance that can't handle the partition for the given execution.
+ *
+ * <p>The event is then handled by an orca instance (listening on interlink) whose partition matches
+ * that of the execution. The resulting repository mutations of this event will then be peered by
+ * the PeeringAgent
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class DeleteInterlinkEvent implements InterlinkEvent {
   final EventType eventType = DELETE;
   @Nullable String partition;
-  @NonNull Execution.ExecutionType executionType;
+  @NonNull ExecutionType executionType;
   @NonNull String executionId;
 
-  public DeleteInterlinkEvent(
-      @NonNull Execution.ExecutionType executionType, @NonNull String executionId) {
+  public DeleteInterlinkEvent(@NonNull ExecutionType executionType, @NonNull String executionId) {
     this.executionType = executionType;
     this.executionId = executionId;
   }

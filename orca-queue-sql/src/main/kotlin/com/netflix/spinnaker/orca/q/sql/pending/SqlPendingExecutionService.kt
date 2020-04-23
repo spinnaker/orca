@@ -5,8 +5,8 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spectator.api.histogram.PercentileTimer
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.StartExecution
@@ -15,16 +15,16 @@ import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
 import de.huxhorn.sulky.ulid.ULID
+import java.lang.Exception
+import java.time.Clock
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 import org.jooq.DSLContext
 import org.jooq.SortField
 import org.jooq.SortOrder
 import org.jooq.impl.DSL
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Exception
-import java.time.Clock
-import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 class SqlPendingExecutionService(
   private val shard: String?,
@@ -184,6 +184,17 @@ class SqlPendingExecutionService(
         )
         .fetchOne(0, Int::class.java)
     }
+
+  override fun pendingIds(): List<String> {
+    return jooq
+      .select(configField)
+      .from(pendingTable)
+      .where(
+        shardCondition
+      )
+      .fetch(configField, String::class.java)
+      .distinct()
+  }
 
   private data class MessageContainer(
     val id: String,

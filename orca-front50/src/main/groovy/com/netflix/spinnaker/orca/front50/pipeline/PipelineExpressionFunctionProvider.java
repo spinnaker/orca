@@ -22,8 +22,8 @@ import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
@@ -54,7 +54,16 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
             "pipelineId",
             "Lookup pipeline ID given the name of the pipeline in the current application",
             new FunctionParameter(
-                Execution.class,
+                PipelineExecution.class,
+                "execution",
+                "The execution containing the currently executing stage"),
+            new FunctionParameter(
+                String.class, "pipelineName", "A valid stage reference identifier")),
+        new FunctionDefinition(
+            "pipelineIdOrNull",
+            "Lookup pipeline ID (or null if not found) given the name of the pipeline in the current application",
+            new FunctionParameter(
+                PipelineExecution.class,
                 "execution",
                 "The execution containing the currently executing stage"),
             new FunctionParameter(
@@ -66,9 +75,9 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
    *
    * @param execution the current execution
    * @param pipelineName name of the pipeline to lookup
-   * @return the id of the pipeline or null if pipeline not found
+   * @return the id of the pipeline or exception if pipeline not found
    */
-  public static String pipelineId(Execution execution, String pipelineName) {
+  public static String pipelineId(PipelineExecution execution, String pipelineName) {
     if (Strings.isNullOrEmpty(pipelineName)) {
       throw new SpelHelperFunctionException(
           "pipelineName must be specified for function #pipelineId");
@@ -106,6 +115,25 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
       throw e;
     } catch (Exception e) {
       throw new SpelHelperFunctionException("Failed to evaluate #pipelineId function", e);
+    }
+  }
+
+  /**
+   * Function to convert pipeline name to pipeline ID (within current application), will return Null
+   * if pipeline ID not found
+   *
+   * @param execution the current execution
+   * @param pipelineName name of the pipeline to lookup
+   * @return the id of the pipeline or null if pipeline not found
+   */
+  public static String pipelineIdOrNull(PipelineExecution execution, String pipelineName) {
+    try {
+      return pipelineId(execution, pipelineName);
+    } catch (SpelHelperFunctionException e) {
+      if (e.getMessage().startsWith("Pipeline with name ")) {
+        return null;
+      }
+      throw e;
     }
   }
 }

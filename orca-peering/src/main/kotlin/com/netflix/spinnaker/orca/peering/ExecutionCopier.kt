@@ -16,9 +16,7 @@
 
 package com.netflix.spinnaker.orca.peering
 
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import org.jooq.impl.DSL
-import org.slf4j.LoggerFactory
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Callable
@@ -28,6 +26,8 @@ import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
+import org.jooq.impl.DSL
+import org.slf4j.LoggerFactory
 
 open class ExecutionCopier(
   /**
@@ -73,7 +73,7 @@ open class ExecutionCopier(
    * Run copy in parallel
    * Chunks the specified IDs and uses the specified action to perform migrations on separate threads
    */
-  open fun copyInParallel(executionType: Execution.ExecutionType, idsToMigrate: List<String>, state: ExecutionState): MigrationChunkResult {
+  open fun copyInParallel(executionType: ExecutionType, idsToMigrate: List<String>, state: ExecutionState): MigrationChunkResult {
     val queue = ConcurrentLinkedQueue(idsToMigrate.chunked(chunkSize))
 
     val startTime = Instant.now()
@@ -122,7 +122,7 @@ open class ExecutionCopier(
   /**
    * Copies executions (orchestrations or pipelines) and its stages given IDs of the executions
    */
-  private fun copyExecutionChunk(executionType: Execution.ExecutionType, idsToMigrate: List<String>, state: ExecutionState): MigrationChunkResult {
+  private fun copyExecutionChunk(executionType: ExecutionType, idsToMigrate: List<String>, state: ExecutionState): MigrationChunkResult {
     var latestUpdatedAt = 0L
     try {
       // Step 0: Capture the source data for executions and their stages
@@ -131,7 +131,8 @@ open class ExecutionCopier(
       // We can't have the execution update in the time we capture its stages and the time we capture the execution it self
       // It's totally fine for the stages to be "newer" than the execution since that will be fixed up in the next agent run
       val executionRows = srcDB.getExecutions(executionType, idsToMigrate)
-      val stagesToMigrate = srcDB.getStageIdsForExecutions(executionType, idsToMigrate)
+      val stagesInSource = srcDB.getStageIdsForExecutions(executionType, idsToMigrate)
+      val stagesInSourceHash = stagesInSource.map { it.id }.toHashSet()
 
       // Step 1: Copy over stages before the executions themselves -
       // if we saved executions first the user could request an execution but it wouldn't have any stages yet
@@ -139,21 +140,27 @@ open class ExecutionCopier(
       // It is possible that the source stage list has mutated. Normally, this is only possible when an execution
       // is restarted (e.g. restarting a deploy stage will delete all its synthetic stages and start over).
       // We delete all stages that are no longer in our peer first, then we update/copy all other stages
-      val stagesPresent = destDB.getStageIdsForExecutions(executionType, idsToMigrate)
-      val stagesToMigrateHash = stagesToMigrate.toHashSet()
-      val stagesToDelete = stagesPresent.filter { !stagesToMigrateHash.contains(it) }
-      if (stagesToDelete.any()) {
-        destDB.deleteStages(executionType, stagesToDelete)
-        peeringMetrics.incrementNumStagesDeleted(executionType, stagesToDelete.size)
+      val stagesInDest = destDB.getStageIdsForExecutions(executionType, idsToMigrate)
+      val stagesInDestMap = stagesInDest.map { it.id to it }.toMap()
+
+      val stageIdsToDelete = stagesInDest.filter { !stagesInSourceHash.contains(it.id) }.map { it.id }
+      if (stageIdsToDelete.any()) {
+        destDB.deleteStages(executionType, stageIdsToDelete)
+        peeringMetrics.incrementNumStagesDeleted(executionType, stageIdsToDelete.size)
       }
 
-      for (chunk in stagesToMigrate.chunked(chunkSize)) {
+      val stageIdsToMigrate = stagesInSource
+        .filter { key -> stagesInDestMap[key.id]?.updated_at ?: 0 < key.updated_at }
+        .map { it.id }
+
+      for (chunk in stageIdsToMigrate.chunked(chunkSize)) {
         val stageRows = srcDB.getStages(executionType, chunk)
         destDB.loadRecords(getStagesTable(executionType).name, stageRows)
       }
 
       // Step 2: Copy all executions
-      executionRows.forEach { r -> r.set(DSL.field("partition"), peeredId)
+      executionRows.forEach { r ->
+        r.set(DSL.field("partition"), peeredId)
         latestUpdatedAt = max(latestUpdatedAt, r.get("updated_at", Long::class.java))
       }
       destDB.loadRecords(getExecutionTable(executionType).name, executionRows)

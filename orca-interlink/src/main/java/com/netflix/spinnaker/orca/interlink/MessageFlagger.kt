@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * To avoid pathological cases where 2 orca clusters end up endlessly bouncing the same message back and forth across the
@@ -50,6 +51,7 @@ class MessageFlagger(val clock: Clock, val props: FlaggerProperties) {
   private val queue: EvictingQueue<TimestampedHash> = EvictingQueue.create(props.maxSize)
   private val hasher = Hashing.goodFastHash(64)
   private val lookback = Duration.ofSeconds(props.lookbackSeconds)
+  private val mutex = ReentrantLock()
 
   init {
     Preconditions.checkArgument(props.maxSize >= props.threshold, "maxSize (%s) has to be larger than threshold (%s)", props.maxSize, props.threshold)
@@ -61,16 +63,22 @@ class MessageFlagger(val clock: Clock, val props: FlaggerProperties) {
       return
     }
 
-    val hash = hasher.hashString(event.getFingerprint(), Charsets.UTF_8)
+    val hash = hasher.hashString(event.fingerprint, Charsets.UTF_8)
     val now = clock.instant()
     val timeCutoff = now.minus(lookback)
-    val matches = queue.filter { it.timestamp.isAfter(timeCutoff) && it.hash == hash }.toList()
-    if (matches.count() >= props.threshold) {
-      throw MessageFlaggedException("Event '$event' with fingerprint '${event.fingerprint}' has been encountered " +
-        "${matches.count()} times in the last ${props.lookbackSeconds}s")
-    }
 
-    queue.add(TimestampedHash(now, hash))
+    try {
+      mutex.lock()
+      val matches = queue.filter { it.timestamp.isAfter(timeCutoff) && it.hash == hash }
+      if (matches.count() >= props.threshold) {
+        throw MessageFlaggedException("Event '$event' with fingerprint '${event.fingerprint}' has been encountered " +
+          "${matches.count()} times in the last ${props.lookbackSeconds}s")
+      }
+
+      queue.add(TimestampedHash(now, hash))
+    } finally {
+        mutex.unlock()
+    }
   }
 
   private data class TimestampedHash(val timestamp: Instant, val hash: HashCode)

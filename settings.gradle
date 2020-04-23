@@ -15,6 +15,7 @@
  */
 
 include "orca-api",
+  "orca-api-tck",
   "orca-applications",
   "orca-bakery",
   "orca-bom",
@@ -38,6 +39,7 @@ include "orca-api",
   "orca-mine",
   "orca-peering",
   "orca-pipelinetemplate",
+  "orca-plugins-test",
   "orca-qos",
   "orca-queue-redis",
   "orca-queue-sql",

@@ -16,12 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,8 +39,9 @@ public final class ResolvePatchSourceManifestTask implements Task {
     this.manifestEvaluator = manifestEvaluator;
   }
 
+  @Nonnull
   @Override
-  public TaskResult execute(Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     PatchManifestContext context = stage.mapTo(PatchManifestContext.class);
     ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, context);
     ImmutableMap<String, Object> outputs = getOutputs(result);
@@ -49,7 +52,12 @@ public final class ResolvePatchSourceManifestTask implements Task {
     return new ImmutableMap.Builder<String, Object>()
         .put("manifests", result.getManifests())
         .put("requiredArtifacts", result.getRequiredArtifacts())
-        .put("allArtifacts", result.getOptionalArtifacts())
+        .put(
+            "allArtifacts",
+            ImmutableList.builder()
+                .addAll(result.getRequiredArtifacts())
+                .addAll(result.getOptionalArtifacts())
+                .build())
         .build();
   }
 }

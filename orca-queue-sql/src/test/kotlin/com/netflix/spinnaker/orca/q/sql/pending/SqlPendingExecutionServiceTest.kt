@@ -5,8 +5,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
 import com.netflix.spinnaker.kork.sql.test.SqlTestUtil
-import com.netflix.spinnaker.orca.fixture.pipeline
-import com.netflix.spinnaker.orca.fixture.stage
+import com.netflix.spinnaker.orca.api.test.pipeline
+import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.PendingExecutionServiceTest
 import com.netflix.spinnaker.orca.q.RestartStage
@@ -20,6 +20,7 @@ import com.nhaarman.mockito_kotlin.spy
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.whenever
+import java.util.UUID
 import org.assertj.core.api.Assertions
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -27,7 +28,6 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.subject.SubjectSpek
 import org.jetbrains.spek.subject.itBehavesLike
-import java.util.UUID
 
 internal object SqlPendingExecutionServiceTest : SubjectSpek<SqlPendingExecutionService>({
 

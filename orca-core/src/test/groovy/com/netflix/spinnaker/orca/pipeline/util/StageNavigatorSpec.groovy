@@ -17,12 +17,15 @@
 
 package com.netflix.spinnaker.orca.pipeline.util
 
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.DefaultStageResolver
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
+
+import javax.annotation.Nonnull
 
 class StageNavigatorSpec extends Specification {
 
@@ -35,9 +38,9 @@ class StageNavigatorSpec extends Specification {
   ]
 
   @Subject
-  def stageNavigator = new StageNavigator(stageBuilders)
+  def stageNavigator = new StageNavigator(new DefaultStageResolver(stageBuilders, []))
 
-  def execution = Execution.newPipeline("orca")
+  def execution = PipelineExecutionImpl.newPipeline("orca")
 
   def "traverses up the synthetic stage hierarchy"() {
     given:
@@ -156,8 +159,8 @@ class StageNavigatorSpec extends Specification {
     }
   }
 
-  private Stage buildStage(String type) {
-    def pipelineStage = new Stage(execution, type)
+  private StageExecutionImpl buildStage(String type) {
+    def pipelineStage = new StageExecutionImpl(execution, type)
 
     execution.stages << pipelineStage
 
@@ -171,6 +174,7 @@ class StageNavigatorSpec extends Specification {
       this.type = type
     }
 
+    @Nonnull
     @Override
     String getType() {
       return type
