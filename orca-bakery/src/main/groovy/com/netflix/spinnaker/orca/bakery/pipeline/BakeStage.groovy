@@ -94,8 +94,9 @@ class BakeStage implements StageDefinitionBuilder {
     Set<String> deployRegions = (stage.context.region ? [stage.context.region] : []) as Set<String>
     deployRegions.addAll(stage.context.regions as Set<String> ?: [])
 
-    Boolean autoDetectRegions = Boolean.FALSE != stage.context.autoDetectRegions
-    if (!deployRegions.contains("global") && autoDetectRegions) {
+
+    Boolean skipRegionDetection = Boolean.TRUE == stage.context.skipRegionDetection
+    if (!deployRegions.contains("global") && !skipRegionDetection) {
       deployRegions.addAll(regionCollector.getRegionsFromChildStages(stage))
       // TODO(duftler): Also filter added canary regions once canary supports multiple platforms.
     }
@@ -105,7 +106,7 @@ class BakeStage implements StageDefinitionBuilder {
       stage.context.amiSuffix = clock.instant().atZone(UTC).format("yyyyMMddHHmmss")
     }
     return deployRegions.collect {
-      stage.context - ["regions": stage.context.regions, "autoDetectRegions": autoDetectRegions] + ([
+      stage.context - ["regions": stage.context.regions, "skipRegionDetection": skipRegionDetection] + ([
         type  : PIPELINE_CONFIG_TYPE,
         region: it,
         name  : "Bake in ${it}" as String
