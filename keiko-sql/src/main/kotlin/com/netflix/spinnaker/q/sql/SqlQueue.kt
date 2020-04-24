@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.hash.Hashing
 import com.netflix.spinnaker.KotlinOpen
 import com.netflix.spinnaker.kork.sql.config.SqlRetryProperties
+import com.netflix.spinnaker.kork.sql.routing.withPool
 import com.netflix.spinnaker.q.AckAttemptsAttribute
 import com.netflix.spinnaker.q.AttemptsAttribute
 import com.netflix.spinnaker.q.DeadMessageCallback
@@ -72,7 +73,8 @@ class SqlQueue(
   override val canPollMany: Boolean = true,
   override val publisher: EventPublisher,
   private val sqlRetryProperties: SqlRetryProperties,
-  private val ULID: ULID = ULID()
+  private val ULID: ULID = ULID(),
+  private val poolName: String = "default"
 ) : MonitorableQueue {
 
   companion object {
@@ -128,6 +130,12 @@ class SqlQueue(
   }
 
   override fun readState(): QueueState {
+    withPool(poolName) {
+      return doReadState()
+    }
+  }
+
+  private fun doReadState(): QueueState {
     /**
      * Reading counts across all tables in a single query for consistency
      */
@@ -166,6 +174,12 @@ class SqlQueue(
   }
 
   override fun containsMessage(predicate: (Message) -> Boolean): Boolean {
+    withPool(poolName) {
+      return doContainsMessage(predicate)
+    }
+  }
+
+  private fun doContainsMessage(predicate: (Message) -> Boolean): Boolean {
     val batchSize = 100
     var found = false
     var lastId = "0"
@@ -198,10 +212,16 @@ class SqlQueue(
     poll(1, callback)
   }
 
+  override fun poll(maxMessages: Int, callback: (Message, () -> Unit) -> Unit) {
+    withPool(poolName) {
+      doPoll(maxMessages, callback)
+    }
+  }
+
   /**
    * TODO: Emit metrics: histogram of poll runtime, count of messages grabbed per poll, count of passes
    */
-  override fun poll(maxMessages: Int, callback: (Message, () -> Unit) -> Unit) {
+  private fun doPoll(maxMessages: Int, callback: (Message, () -> Unit) -> Unit) {
     val now = clock.instant().toEpochMilli()
     var changed = 0
 
@@ -405,6 +425,12 @@ class SqlQueue(
   }
 
   override fun push(message: Message, delay: TemporalAmount) {
+    withPool(poolName) {
+      doPush(message, delay)
+    }
+  }
+
+  private fun doPush(message: Message, delay: TemporalAmount) {
     val fingerprint = message.hashV2()
     val ulid = ULID.nextValue()
     val deliveryTime = atTime(delay)
@@ -442,6 +468,12 @@ class SqlQueue(
   }
 
   override fun reschedule(message: Message, delay: TemporalAmount) {
+    withPool(poolName) {
+      return doReschedule(message, delay)
+    }
+  }
+
+  private fun doReschedule(message: Message, delay: TemporalAmount) {
     val fingerprint = message.hashV2()
 
     withRetry(WRITE) {
@@ -462,6 +494,12 @@ class SqlQueue(
   }
 
   override fun ensure(message: Message, delay: TemporalAmount) {
+    withPool(poolName) {
+      return doEnsure(message, delay)
+    }
+  }
+
+  private fun doEnsure(message: Message, delay: TemporalAmount) {
     val fingerprint = message.hashV2()
     var missing = false
 
@@ -566,6 +604,12 @@ class SqlQueue(
    */
   @Scheduled(fixedDelayString = "\${queue.retry.frequency.ms:10000}")
   override fun retry() {
+    withPool(poolName) {
+      return doRetry()
+    }
+  }
+
+  private fun doRetry() {
     expireStaleLocks()
 
     val unackBaseTime = clock.instant().toEpochMilli()
@@ -660,6 +704,12 @@ class SqlQueue(
 
   @Scheduled(fixedDelayString = "\${queue.cleanup.frequency.ms:2000}")
   fun cleanupMessages() {
+    withPool(poolName) {
+      doCleanupMessages()
+    }
+  }
+
+  private fun doCleanupMessages() {
     val start = clock.millis()
     val cleanBefore = start - ackTimeout.multipliedBy(2).toMillis()
 
@@ -721,17 +771,19 @@ class SqlQueue(
   }
 
   private fun ackMessage(fingerprint: String) {
-    withRetry(WRITE) {
-      jooq.deleteFrom(unackedTable)
-        .where(fingerprintField.eq(fingerprint))
-        .execute()
-    }
+    withPool("poolName") {
+      withRetry(WRITE) {
+        jooq.deleteFrom(unackedTable)
+          .where(fingerprintField.eq(fingerprint))
+          .execute()
+      }
 
-    withRetry(WRITE) {
-      jooq.update(messagesTable)
-        .set(updatedAtField, clock.millis())
-        .where(fingerprintField.eq(fingerprint))
-        .execute()
+      withRetry(WRITE) {
+        jooq.update(messagesTable)
+          .set(updatedAtField, clock.millis())
+          .where(fingerprintField.eq(fingerprint))
+          .execute()
+      }
     }
 
     fire(MessageAcknowledged)
@@ -754,10 +806,12 @@ class SqlQueue(
   }
 
   private fun initTables() {
-    withRetry(WRITE) {
-      jooq.execute("CREATE TABLE IF NOT EXISTS $queueTableName LIKE ${queueBase}_template")
-      jooq.execute("CREATE TABLE IF NOT EXISTS $unackedTableName LIKE ${unackedBase}_template")
-      jooq.execute("CREATE TABLE IF NOT EXISTS $messagesTableName LIKE ${messagesBase}_template")
+    withPool(poolName) {
+      withRetry(WRITE) {
+        jooq.execute("CREATE TABLE IF NOT EXISTS $queueTableName LIKE ${queueBase}_template")
+        jooq.execute("CREATE TABLE IF NOT EXISTS $unackedTableName LIKE ${unackedBase}_template")
+        jooq.execute("CREATE TABLE IF NOT EXISTS $messagesTableName LIKE ${messagesBase}_template")
+      }
     }
   }
 
