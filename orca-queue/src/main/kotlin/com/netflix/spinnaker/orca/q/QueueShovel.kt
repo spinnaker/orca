@@ -16,9 +16,13 @@
 package com.netflix.spinnaker.orca.q
 
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.q.Activator
 import com.netflix.spinnaker.q.Queue
+import java.time.Duration
+import java.time.Instant
 import javax.annotation.PostConstruct
+import kotlin.concurrent.thread
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 
@@ -34,7 +38,8 @@ class QueueShovel(
   private val queue: Queue,
   private val previousQueue: Queue,
   private val registry: Registry,
-  private val activator: Activator
+  private val activator: Activator,
+  private val config: DynamicConfigService
 ) {
   private val log = LoggerFactory.getLogger(javaClass)
 
@@ -42,7 +47,25 @@ class QueueShovel(
   private val shoveledMessageId = registry.createId("orca.nu.shovel.pushedMessageRate")
   private val shovelErrorId = registry.createId("orca.nu.shovel.pushedMessageErrorRate")
 
-  @Scheduled(fixedDelayString = "\${queue.shovel.poll-frequency.ms:50}")
+  @Scheduled(fixedDelay = 5_000)
+  fun pollStatus() {
+    if (isActive()) {
+      thread(name = "queue-shovel") {
+        migrateSome(Duration.ofMillis(4_900))
+      }
+    }
+  }
+
+  private fun isActive() = config.getConfig(Boolean::class.java, "queue.shovel.active", false)
+
+  fun migrateSome(duration: Duration) {
+    val start = Instant.now()
+    while (Duration.between(start, Instant.now()) < duration) {
+      migrateOne()
+      Thread.sleep(50)
+    }
+  }
+
   fun migrateOne() {
     activator.ifEnabled {
       registry.counter(pollOpsRateId).increment()
