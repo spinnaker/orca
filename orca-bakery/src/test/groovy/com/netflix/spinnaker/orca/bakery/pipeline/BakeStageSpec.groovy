@@ -89,7 +89,7 @@ class BakeStageSpec extends Specification {
     [cloudProviderType: "aws", region: "us-west-2", autoDetectRegions: false]                             | deployAz("aws", "cluster", "us-west-1") + deployAz("aws", "cluster", "us-west-2")  || expectedContexts("aws", "19700101011512", "us-west-2")
     [cloudProviderType: "aws", regions: ["us-east-1", "us-west-1"], autoDetectRegions: false]             | deployAz("aws", "clusters", "eu-central-1")                                        || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1")
     [cloudProviderType: "aws", regions: ["us-east-1", "us-west-1"], autoDetectRegions: true]              | deployAz("aws", "cluster", "us-west-1") + deployAz("aws", "cluster", "us-west-2")  || expectedContexts("aws", "19700101011512", "us-east-1", "us-west-1", "us-west-2")
-    [cloudProviderType: "aws", region: "us-west-2", autoDetectRegions: true]                              | deployAz("aws", "cluster", "us-west-2")                                            || expectedContexts("aws", "19700101011512", "us-west-2")
+    [cloudProviderType: "aws", region: "us-west-2", autoDetectRegions: true]                              | deployAz("aws", "cluster", "us-west-2") + deployAz("aws", "clusters", "us-east-1") || expectedContexts("aws", "19700101011512", "us-west-2", "us-east-1")
   }
 
   def "should include per-region stage contexts as global deployment details"() {
