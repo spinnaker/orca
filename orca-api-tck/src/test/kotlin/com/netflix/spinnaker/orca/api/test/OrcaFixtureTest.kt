@@ -16,16 +16,11 @@
 package com.netflix.spinnaker.orca.api.test
 
 import com.netflix.spinnaker.orca.notifications.AlwaysUnlockedNotificationClusterLock
-import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.InMemoryExecutionRepository
 import com.netflix.spinnaker.orca.q.pending.InMemoryPendingExecutionService
-import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
-import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.memory.InMemoryQueue
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
-import org.springframework.beans.factory.annotation.Autowired
 import strikt.api.expect
 import strikt.assertions.isA
 
@@ -48,18 +43,5 @@ class OrcaFixtureTest : JUnit5Minutests {
     }
   }
 
-  private inner class Fixture : OrcaFixture() {
-
-    @Autowired
-    lateinit var executionRepository: ExecutionRepository
-
-    @Autowired
-    lateinit var queue: Queue
-
-    @Autowired
-    lateinit var notificationClusterLock: NotificationClusterLock
-
-    @Autowired
-    lateinit var pendingExecutionService: PendingExecutionService
-  }
+  internal class Fixture : OrcaFixture()
 }

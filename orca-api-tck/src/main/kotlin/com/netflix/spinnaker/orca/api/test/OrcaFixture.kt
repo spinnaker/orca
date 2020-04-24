@@ -15,9 +15,15 @@
  */
 package com.netflix.spinnaker.orca.api.test
 
+import com.netflix.spinnaker.kork.plugins.SpinnakerPluginManager
 import com.netflix.spinnaker.orca.Main
+import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
+import com.netflix.spinnaker.q.Queue
 import dev.minutest.TestContextBuilder
 import dev.minutest.TestDescriptor
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestContextManager
@@ -29,7 +35,22 @@ import org.springframework.test.context.TestPropertySource
 @SpringBootTest(classes = [Main::class])
 @ContextConfiguration(classes = [TestKitConfiguration::class])
 @TestPropertySource(properties = ["spring.config.location=classpath:orca-test-app.yml"])
-abstract class OrcaFixture
+abstract class OrcaFixture {
+  @Autowired
+  lateinit var spinnakerPluginManager: SpinnakerPluginManager
+
+  @Autowired
+  lateinit var executionRepository: ExecutionRepository
+
+  @Autowired
+  lateinit var queue: Queue
+
+  @Autowired
+  lateinit var notificationClusterLock: NotificationClusterLock
+
+  @Autowired
+  lateinit var pendingExecutionService: PendingExecutionService
+}
 
 /**
  * DSL for constructing an OrcaFixture within a Minutest suite.

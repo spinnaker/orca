@@ -22,34 +22,26 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.netflix.spinnaker.kork.plugins.SpinnakerPluginManager
 import com.netflix.spinnaker.kork.plugins.internal.PluginJar
 import com.netflix.spinnaker.kork.plugins.tck.PluginsTckFixture
-import com.netflix.spinnaker.orca.Main
 import com.netflix.spinnaker.orca.StageResolver
 import com.netflix.spinnaker.orca.TaskResolver
+import com.netflix.spinnaker.orca.api.test.OrcaFixture
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
-import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
-import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.plugins.OrcaPlugin
 import com.netflix.spinnaker.orca.plugins.PreconfiguredJobConfigurationProviderExtension
 import com.netflix.spinnaker.orca.plugins.SimpleStageExtension
 import com.netflix.spinnaker.orca.plugins.StageDefinitionBuilderExtension
 import com.netflix.spinnaker.orca.plugins.TaskExtension1
 import com.netflix.spinnaker.orca.plugins.TaskExtension2
-import com.netflix.spinnaker.q.Queue
-import com.netflix.spinnaker.q.memory.InMemoryQueue
-import com.netflix.spinnaker.q.metrics.EventPublisher
 import java.io.File
-import java.time.Clock
-import java.time.Duration
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Primary
-import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 
-class OrcaPluginsFixture : PluginsTckFixture, OrcaTestService() {
+@TestPropertySource(properties = [
+  "spinnaker.extensibility.plugins.com.netflix.orca.enabled.plugin.enabled=true",
+  "spinnaker.extensibility.plugins.com.netflix.orca.disabled.plugin.enabled=false",
+  "spinnaker.extensibility.plugins.com.netflix.orca.version.not.supported.plugin.enabled=true"
+])
+class OrcaPluginsFixture : PluginsTckFixture, OrcaFixture() {
   val objectMapper: ObjectMapper = ObjectMapper(YAMLFactory())
     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
@@ -88,33 +80,11 @@ class OrcaPluginsFixture : PluginsTckFixture, OrcaTestService() {
   @Autowired
   lateinit var jobService: JobService
 
-  @MockBean
-  var executionRepository: ExecutionRepository? = null
-
-  @MockBean
-  var notificationClusterLock: NotificationClusterLock? = null
-
   init {
     plugins.delete()
     plugins.mkdir()
     enabledPlugin = buildPlugin("com.netflix.orca.enabled.plugin", ">=1.0.0")
     disabledPlugin = buildPlugin("com.netflix.orca.disabled.plugin", ">=1.0.0")
     versionNotSupportedPlugin = buildPlugin("com.netflix.orca.version.not.supported.plugin", ">=2.0.0")
-  }
-}
-
-@SpringBootTest(classes = [Main::class])
-@ContextConfiguration(classes = [PluginTestConfiguration::class])
-@TestPropertySource(properties = ["spring.config.location=classpath:orca-plugins-test.yml"])
-abstract class OrcaTestService
-
-@TestConfiguration
-internal class PluginTestConfiguration {
-
-  @Bean
-  @Primary
-  fun queue(clock: Clock?, publisher: EventPublisher?): Queue {
-    return InMemoryQueue(
-      clock!!, Duration.ofMinutes(1), emptyList(), false, publisher!!)
   }
 }

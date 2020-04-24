@@ -29,3 +29,7 @@ redis:
 spring:
   application:
     name: orca
+
+spinnaker:
+  extensibility:
+    plugins-root-path: build/plugins
