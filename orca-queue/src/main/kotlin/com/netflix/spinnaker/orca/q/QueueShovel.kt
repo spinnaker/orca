@@ -75,7 +75,7 @@ class QueueShovel(
         ack.invoke()
         registry.counter(shoveledMessageId).increment()
       } catch (e: Throwable) {
-        log.error("Failed shoveling message from previous queue to active (message: {})", message, e)
+        log.error("Failed shoveling message from previous queue to active (message: $message)", e)
         registry.counter(shovelErrorId).increment()
       }
     }
