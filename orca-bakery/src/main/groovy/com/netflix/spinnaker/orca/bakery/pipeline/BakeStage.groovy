@@ -106,7 +106,7 @@ class BakeStage implements StageDefinitionBuilder {
       stage.context.amiSuffix = clock.instant().atZone(UTC).format("yyyyMMddHHmmss")
     }
     return deployRegions.collect {
-      stage.context - ["regions": stage.context.regions, "skipRegionDetection": skipRegionDetection] + ([
+      stage.context - ["regions": stage.context.regions, "skipRegionDetection": stage.context.skipRegionDetection] + ([
         type  : PIPELINE_CONFIG_TYPE,
         region: it,
         name  : "Bake in ${it}" as String
