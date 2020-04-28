@@ -108,9 +108,9 @@ class HealthHelper {
     List<Map> healths = filterHealths(instance, interestingHealthProviderNames)
 
     boolean someAreUp = healths.any { HealthState.fromString(it.state) == Up }
-    boolean noneAreDownOrStarting = !healths.any { HealthState.fromString(it.state) in [Down, Starting] }
+    boolean noneAreDown = !healths.any { HealthState.fromString(it.state) in [Down, OutOfService, Starting] }
 
-    return areSomeUpConsideringPlatformHealth(healths, interestingHealthProviderNames, someAreUp) && noneAreDownOrStarting
+    return areSomeUpConsideringPlatformHealth(healths, interestingHealthProviderNames, someAreUp) && noneAreDown
   }
 
   static class HealthCountSnapshot {

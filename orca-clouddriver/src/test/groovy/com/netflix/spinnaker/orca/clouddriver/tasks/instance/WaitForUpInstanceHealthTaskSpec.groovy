@@ -30,21 +30,26 @@ class WaitForUpInstanceHealthTaskSpec extends Specification {
 
     where:
     interestingHealthProviderNames || instance || shouldBeUp
-    []                             || [health: []]                                         || false
-    []                             || [health: null]                                       || false
-    ["Amazon"]                     || [health: [Amazon(Unknown)]]                          || true
-    ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(Down)]]         || false
-    ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(OutOfService)]] || true
-    ["Discovery"]                  || [health: [Discovery(Down)]]                          || false
-    ["Discovery"]                  || [health: [Discovery(OutOfService)]]                  || false
-    ["Discovery", "Other"]         || [health: [Other(Down)]]                              || false
-    ["Amazon"]                     || [health: []]                                         || false
-    ["Amazon"]                     || [health: [Amazon(Up)]]                               || true
-    ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(Up)]]           || true
-    ["Discovery"]                  || [health: [Discovery(Up)]]                            || true
-    ["Discovery"]                  || [health: [Other(Up)]]                                || false
-    ["Discovery", "Other"]         || [health: [Other(Up)]]                                || true
-    ["Discovery"]                  || [health: [Other(Down)]]                              || false
+    []                             || [health: []]                                                            || false
+    []                             || [health: null]                                                          || false
+    ["Amazon"]                     || [health: [Amazon(Unknown)]]                                             || true
+    null                           || [health: [Amazon(Unknown)]]                                             || true
+    ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(Down)]]                            || false
+    ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(OutOfService)]]                    || false
+    null                           || [health: [Amazon(Unknown), Discovery(OutOfService), LoadBalancer(Up)]]  || false
+    null                           || [health: [Amazon(Unknown), Discovery(Up), LoadBalancer(Down)]]          || false
+    null                           || [health: [Amazon(Unknown), Discovery(Up), LoadBalancer(Up)]]            || true
+    null                           || [health: [Amazon(Unknown), Discovery(Up), LoadBalancer(Unknown)]]       || true
+    ["Discovery"]                  || [health: [Discovery(Down)]]                                             || false
+    ["Discovery"]                  || [health: [Discovery(OutOfService)]]                                     || false
+    ["Discovery", "Other"]         || [health: [Other(Down)]]                                                 || false
+    ["Amazon"]                     || [health: []]                                                            || false
+    ["Amazon"]                     || [health: [Amazon(Up)]]                                                  || true
+    ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(Up)]]                              || true
+    ["Discovery"]                  || [health: [Discovery(Up)]]                                               || true
+    ["Discovery"]                  || [health: [Other(Up)]]                                                   || false
+    ["Discovery", "Other"]         || [health: [Other(Up)]]                                                   || true
+    ["Discovery"]                  || [health: [Other(Down)]]                                                 || false
   }
 
   def Amazon(HealthState state) {
