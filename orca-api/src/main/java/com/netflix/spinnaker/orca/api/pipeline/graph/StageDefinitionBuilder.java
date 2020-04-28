@@ -16,11 +16,9 @@
 
 package com.netflix.spinnaker.orca.api.pipeline.graph;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder;
 import static com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.GraphType.FULL;
 
-import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.annotations.Beta;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.TaskGraph;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
@@ -110,9 +108,10 @@ public interface StageDefinitionBuilder extends ExtensionPoint {
    */
   static String getType(Class<? extends StageDefinitionBuilder> clazz) {
     String className = clazz.getSimpleName();
-    checkState(
-        !Strings.isNullOrEmpty(className),
-        "StageDefinitionBuilder.getType() cannot be called on an anonymous type");
+    if (className.equals("")) {
+      throw new IllegalStateException(
+          "StageDefinitionBuilder.getType() cannot be called on an anonymous type");
+    }
     return className.substring(0, 1).toLowerCase()
         + className
             .substring(1)
