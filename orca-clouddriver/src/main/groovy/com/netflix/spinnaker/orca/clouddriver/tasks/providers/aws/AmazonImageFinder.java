@@ -93,7 +93,7 @@ public class AmazonImageFinder implements ImageFinder {
 
     if (allMatchedImages.size() == MAX_SEARCH_RESULTS) {
       warningsCollector.add(
-          "Truncated too many results matching search criteria. Consider refining the search.");
+          "Too many results matching search criteria: Consider refining the search.");
     }
 
     AppVersionFilter filter = new AppVersionFilter(packageName, stageData.regions);
