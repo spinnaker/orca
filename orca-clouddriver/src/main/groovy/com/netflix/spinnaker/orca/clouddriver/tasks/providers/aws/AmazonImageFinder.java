@@ -91,7 +91,7 @@ public class AmazonImageFinder implements ImageFinder {
             .sorted()
             .collect(Collectors.toList());
 
-    if (allMatchedImages.size() == MAX_SEARCH_RESULTS) {
+    if (allMatchedImages.size() >= MAX_SEARCH_RESULTS) {
       warningsCollector.add(
           "Too many results matching search criteria: Consider refining the search.");
     }
