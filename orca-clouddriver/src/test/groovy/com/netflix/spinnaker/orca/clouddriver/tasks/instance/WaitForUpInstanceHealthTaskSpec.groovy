@@ -32,8 +32,9 @@ class WaitForUpInstanceHealthTaskSpec extends Specification {
     interestingHealthProviderNames || instance || shouldBeUp
     []                             || [health: []]                                                            || false
     []                             || [health: null]                                                          || false
+    null                           || [health: [Amazon(Unknown)]]                                             || false
+    []                             || [health: [Amazon(Unknown)]]                                             || false
     ["Amazon"]                     || [health: [Amazon(Unknown)]]                                             || true
-    null                           || [health: [Amazon(Unknown)]]                                             || true
     ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(Down)]]                            || false
     ["Amazon", "Discovery"]        || [health: [Amazon(Unknown), Discovery(OutOfService)]]                    || false
     null                           || [health: [Amazon(Unknown), Discovery(OutOfService), LoadBalancer(Up)]]  || false
