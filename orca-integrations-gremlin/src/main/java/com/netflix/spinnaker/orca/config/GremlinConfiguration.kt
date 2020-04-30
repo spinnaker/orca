@@ -25,7 +25,7 @@ class GremlinConfiguration {
 
   @Bean
   fun gremlinEndpoint(
-    @Value("\${integrations.gremlin.base-url}") gremlinBaseUrl: String
+    @Value("\${integrations.gremlin.base-url:https://api.gremlin.com/v1}") gremlinBaseUrl: String
   ): Endpoint {
     return Endpoints.newFixedEndpoint(gremlinBaseUrl)
   }
