@@ -16,7 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.model;
 
+import lombok.extern.slf4j.Slf4j;
+
 // adapted from clouddriver's com.netflix.spinnaker.clouddriver.model.HealthState
+@Slf4j
 public enum HealthState {
   Failed,
   Down,
@@ -26,14 +29,24 @@ public enum HealthState {
   Succeeded,
   Up;
 
-  // HealthState.valueOf does:
-  // - a case-sensitive match
-  // - and throws an IllegalArgumentException if there is no match
-  // This does:
-  // - a case-insensitive match
-  // - and returns Unknown if there is no match
-  // Note that maybe we should be careful around that since Unknown essentially means
-  // "healthy" for some providers like Amazon)
+  /**
+   * {@code HealthState.valueOf} does:
+   *
+   * <ul>
+   *   <li>a case-sensitive match
+   *   <li>and throws an {@link IllegalArgumentException} if there is no match
+   * </ul>
+   *
+   * <p>This does:
+   *
+   * <ul>
+   *   <li>a case-insensitive match
+   *   <li>and returns {@code Unknown} if there is no match
+   * </ul>
+   *
+   * Note that maybe we should be careful around that since {@code Unknown} essentially means
+   * "healthy" for some providers like Amazon)
+   */
   public static HealthState fromString(String name) {
     for (HealthState state : values()) {
       if (state.name().equalsIgnoreCase(name)) {
@@ -41,6 +54,7 @@ public enum HealthState {
       }
     }
 
+    log.warn("Unexpected health state '{}', returning Unknown instead", name);
     return Unknown;
   }
 }

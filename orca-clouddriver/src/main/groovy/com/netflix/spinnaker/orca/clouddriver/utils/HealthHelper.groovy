@@ -39,9 +39,9 @@ class HealthHelper {
    * on the instance.
    */
   static List<Map> filterHealths(Map instance, Collection<String> interestingHealthProviderNames) {
-    return interestingHealthProviderNames != null ? instance.health.findAll { health ->
-      health.type in interestingHealthProviderNames
-    } : instance.health
+    return interestingHealthProviderNames != null
+        ? instance.health.findAll { health -> health.type in interestingHealthProviderNames }
+        : instance.health
   }
 
   /**
