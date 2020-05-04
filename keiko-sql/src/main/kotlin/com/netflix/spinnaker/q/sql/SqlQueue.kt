@@ -125,9 +125,11 @@ class SqlQueue(
   private val writeRetryBackoffMax = max(sqlRetryProperties.transactions.backoffMs + 50, 100)
 
   init {
-    log.info("Configured $javaClass queue: $queueName")
+    log.info("Configured queue $this")
     initTables()
   }
+
+  override fun toString(): String = "SqlQueue(queueName=$sanitizedName, poolName=$poolName)"
 
   override fun readState(): QueueState {
     withPool(poolName) {

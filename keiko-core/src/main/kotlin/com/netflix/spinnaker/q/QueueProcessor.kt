@@ -137,5 +137,5 @@ class QueueProcessor(
 
   @PostConstruct
   fun confirmQueueType() =
-    log.info("Using ${queue.javaClass.simpleName} queue")
+    log.info("Using queue $queue")
 }
