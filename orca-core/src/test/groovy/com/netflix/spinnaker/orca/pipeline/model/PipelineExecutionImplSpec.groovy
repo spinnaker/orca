@@ -66,6 +66,10 @@ class PipelineExecutionImplSpec extends Specification {
         outputs["covfefe"] = "covfefe-3"
         outputs["foo"] = "foo-3"
         outputs["baz"] = "baz-3"
+        outputs["myList"] = [[
+                foo: "listFoo",
+                bar: "listBar"
+        ]]
       }
       stage {
         refId = "1"
@@ -76,6 +80,10 @@ class PipelineExecutionImplSpec extends Specification {
         refId = "2"
         outputs["baz"] = "foo-2"
         outputs["qux"] = "qux-2"
+        outputs["myList"] = [[
+                baz: "listBaz",
+                qux: "listQux"
+        ]]
       }
     }
 
@@ -86,6 +94,13 @@ class PipelineExecutionImplSpec extends Specification {
       baz == "baz-3"
       qux == "qux-2"
       covfefe == "covfefe-3"
+      myList == [[
+              baz: "listBaz",
+              qux: "listQux"
+      ], [
+              foo: "listFoo",
+              bar: "listBar"
+      ]]
     }
   }
 }
