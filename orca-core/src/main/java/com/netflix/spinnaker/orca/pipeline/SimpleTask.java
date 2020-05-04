@@ -46,7 +46,7 @@ public class SimpleTask implements Task {
 
   private SimpleStageInput getStageInput(StageExecution stage, ObjectMapper objectMapper) {
     try {
-      Class<?> extensionClass = getExtensionClass();
+      Class<?> extensionClass = simpleStage.getExtensionClass();
       List<Class<?>> cArg = Arrays.asList(SimpleStageInput.class);
       Method method = extensionClass.getMethod("execute", cArg.toArray(new Class[0]));
       Type inputType = ResolvableType.forMethodParameter(method, 0).getGeneric().getType();
