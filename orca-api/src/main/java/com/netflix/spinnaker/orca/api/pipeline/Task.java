@@ -16,7 +16,6 @@
 package com.netflix.spinnaker.orca.api.pipeline;
 
 import com.netflix.spinnaker.kork.annotations.Beta;
-import com.netflix.spinnaker.kork.plugins.api.internal.SpinnakerExtensionPoint;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,10 +26,11 @@ import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.pf4j.ExtensionPoint;
 
 /** A discrete unit of work in a pipeline execution that does one thing and one thing only. */
 @Beta
-public interface Task extends SpinnakerExtensionPoint {
+public interface Task extends ExtensionPoint {
   /**
    * Execute the business logic of the task, using the provided stage execution state.
    *
