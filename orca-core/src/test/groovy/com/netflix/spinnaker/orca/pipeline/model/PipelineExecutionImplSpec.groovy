@@ -69,12 +69,16 @@ class PipelineExecutionImplSpec extends Specification {
         outputs["myList"] = [[
                 foo: "listFoo",
                 bar: "listBar"
+        ], [
+                quux: "quux-3",
+                corge: "corge-3"
         ]]
       }
       stage {
         refId = "1"
         outputs["foo"] = "foo-1"
         outputs["bar"] = "bar-1"
+        outputs["mySet"] = ["set-1", "set-2"] as Set<String>
       }
       stage {
         refId = "2"
@@ -83,6 +87,9 @@ class PipelineExecutionImplSpec extends Specification {
         outputs["myList"] = [[
                 baz: "listBaz",
                 qux: "listQux"
+        ], [
+                foo: "listFoo",
+                bar: "listBar"
         ]]
       }
     }
@@ -91,6 +98,7 @@ class PipelineExecutionImplSpec extends Specification {
     with(pipeline.context) {
       foo == "foo-3"
       bar == "bar-1"
+      mySet == ["set-1", "set-2"] as Set<String>
       baz == "baz-3"
       qux == "qux-2"
       covfefe == "covfefe-3"
@@ -100,6 +108,9 @@ class PipelineExecutionImplSpec extends Specification {
       ], [
               foo: "listFoo",
               bar: "listBar"
+      ], [
+              quux: "quux-3",
+              corge: "corge-3"
       ]]
     }
   }

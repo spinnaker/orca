@@ -173,8 +173,8 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
                 Map.Entry::getKey,
                 Map.Entry::getValue,
                 (o, o2) -> {
-                  if (o instanceof List && o2 instanceof List) {
-                    return Stream.concat(((List) o).stream(), ((List) o2).stream())
+                  if (o instanceof Collection && o2 instanceof Collection) {
+                    return Stream.concat(((Collection) o).stream(), ((Collection) o2).stream())
                         .distinct()
                         .collect(Collectors.toList());
                   }
