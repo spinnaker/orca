@@ -773,7 +773,7 @@ class SqlQueue(
   }
 
   private fun ackMessage(fingerprint: String) {
-    withPool("poolName") {
+    withPool(poolName) {
       withRetry(WRITE) {
         jooq.deleteFrom(unackedTable)
           .where(fingerprintField.eq(fingerprint))
