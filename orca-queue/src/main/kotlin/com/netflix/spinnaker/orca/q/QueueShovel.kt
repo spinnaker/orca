@@ -17,6 +17,7 @@ package com.netflix.spinnaker.orca.q
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.q.Activator
 import com.netflix.spinnaker.q.Message
@@ -83,6 +84,11 @@ class QueueShovel(
         queue.push(message)
         ack.invoke()
         registry.counter(shoveledMessageId).increment()
+      } catch (e: ExecutionNotFoundException) {
+        // no need to log the stack trace on ExecutionNotFoundException, which can be somewhat expected
+        log.error("Failed shoveling message from previous queue to active (message: $message) " +
+          "because of exception $e")
+        registry.counter(shovelErrorId).increment()
       } catch (e: Throwable) {
         log.error("Failed shoveling message from previous queue to active (message: $message)", e)
         registry.counter(shovelErrorId).increment()
