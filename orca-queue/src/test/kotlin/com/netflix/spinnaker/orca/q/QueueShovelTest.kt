@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.q.Activator
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.QueueCallback
@@ -40,9 +41,11 @@ class QueueShovelTest : SubjectSpek<QueueShovel>({
   val activator = object : Activator {
     override val enabled = true
   }
+  val executionRepository: ExecutionRepository = mock() {
+  }
 
   subject(CachingMode.GROUP) {
-    QueueShovel(queue, previousQueue, registry, activator, DynamicConfigService.NOOP)
+    QueueShovel(queue, previousQueue, registry, activator, DynamicConfigService.NOOP, executionRepository)
   }
 
   describe("polling the previous queue") {
