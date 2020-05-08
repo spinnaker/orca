@@ -122,7 +122,7 @@ class QueueShovel(
   fun confirmShovelUsage() {
     log.info("${javaClass.simpleName} migrator from $previousQueue to $queue is enabled")
     if (executionRepository == null) {
-      log.warn("${javaClass.simpleName} configured without an ExecutionRepository, won't be able to check execution partitions")
+      log.warn("${javaClass.simpleName} configured without an ExecutionRepository, won't be able to transfer ownership")
     }
   }
 }
