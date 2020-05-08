@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator;
+import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
@@ -90,7 +91,12 @@ public class SavePipelineTask implements RetryableTask {
         .filter(m -> m.supports(pipeline))
         .forEach(m -> m.mutate(pipeline));
 
-    Response response = front50Service.savePipeline(pipeline);
+    Response response;
+    if ((Boolean) Optional.ofNullable(stage.getContext().get("asAnonymous")).orElse(false)) {
+      response = AuthenticatedRequest.allowAnonymous(() -> front50Service.savePipeline(pipeline));
+    } else {
+      response = front50Service.savePipeline(pipeline);
+    }
 
     Map<String, Object> outputs = new HashMap<>();
     outputs.put("notification.type", "savepipeline");
