@@ -30,6 +30,9 @@ import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPEL
  *     <li>an upstream stage on the same parallel branch or on a parent pipeline branch.
  *     <li>the global context of the pipeline or of a parent pipeline.
  * </ol>
+ *
+ * TODO(rz): Change to Java interface.
+ * TODO(rz): Change signatures to use Consumer<T> instead of Closure.
  */
 trait DeploymentDetailsAware {
 

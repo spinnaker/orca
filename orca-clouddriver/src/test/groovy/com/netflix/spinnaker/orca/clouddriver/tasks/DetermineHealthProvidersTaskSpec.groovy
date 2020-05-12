@@ -18,10 +18,11 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks
 
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.AmazonServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.dcos.DcosServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.gce.GoogleServerGroupCreator
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.titus.TitusServerGroupCreator
+import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
@@ -74,5 +75,28 @@ class DetermineHealthProvidersTaskSpec extends Specification {
       platformHealthOnly: platformHealthOnly,
       platformHealthOnlyShowOverride: platformHealthOnlyShowOverride
     )
+  }
+
+  private static class TitusServerGroupCreator implements ServerGroupCreator {
+
+    @Override
+    List<Map> getOperations(StageExecution stage) {
+      return []
+    }
+
+    @Override
+    boolean isKatoResultExpected() {
+      return false
+    }
+
+    @Override
+    String getCloudProvider() {
+      return "titus"
+    }
+
+    @Override
+    Optional<String> getHealthProviderName() {
+      return Optional.of(getCloudProvider().capitalize())
+    }
   }
 }
