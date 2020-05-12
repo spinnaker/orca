@@ -41,6 +41,9 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
   @Value('${default.security-groups:#{T(com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask).DEFAULT_SECURITY_GROUPS}}')
   List<String> defaultSecurityGroups = DEFAULT_SECURITY_GROUPS
 
+  @Autowired
+  List<AmazonServerGroupCreatorDecorator> amazonServerGroupCreatorDecorators
+
   boolean katoResultExpected = true
   String cloudProvider = "aws"
 
@@ -74,7 +77,7 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
   }
 
   def createServerGroupOperation(StageExecution stage) {
-    def operation = [:]
+    Map<String, Object> operation = [:]
     def context = stage.context
 
     if (context.containsKey("cluster")) {
@@ -98,28 +101,8 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
       if (deploymentDetails) {
         // Because docker image ids are not region or cloud provider specific
         operation.imageId = deploymentDetails[0]?.imageId
-      } else {
-        // Get image id from the trigger
-        if (context.cloudProvider == 'titus') {
-          def trigger = stage.execution.trigger
-          if (trigger instanceof DockerTrigger) {
-            operation.imageId = "${trigger.repository}:${trigger.tag}".toString()
-          }
-          if (!operation.imageId && trigger.parameters.imageName) {
-            operation.imageId = trigger.parameters.imageName
-          }
-          if (!operation.imageId && trigger.properties && trigger.properties.imageName) {
-            operation.imageId = trigger.properties.imageName
-          }
-        }
       }
     }
-
-    if (context.cloudProvider == 'titus' && stage.execution.authentication?.user) {
-      operation.user = stage.execution.authentication?.user
-    }
-
-    log.info("Deploying ${operation.amiName ?: operation.imageId} to ${targetRegion}")
 
     if (context.account && !operation.credentials) {
       operation.credentials = context.account
@@ -139,6 +122,10 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
       log.error("Unable to lookup default security groups", e)
     }
     addAllNonEmpty(operation.securityGroups as List<String>, defaultSecurityGroupsForAccount)
+
+    getDecorator(stage).ifPresent { it.modifyCreateServerGroupOperationContext(stage, operation) }
+
+    log.info("Deploying ${operation.amiName ?: operation.imageId} to ${targetRegion}")
 
     return operation
   }
@@ -166,5 +153,14 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
         }
       }
     }
+  }
+
+  private Optional<AmazonServerGroupCreatorDecorator> getDecorator(StageExecution stage) {
+    return Optional.ofNullable((String) stage.getContext().get("cloudProvider"))
+        .flatMap { cloudProvider ->
+          amazonServerGroupCreatorDecorators.stream()
+              .filter { it.supports(cloudProvider) }
+              .findFirst()
+        }
   }
 }
