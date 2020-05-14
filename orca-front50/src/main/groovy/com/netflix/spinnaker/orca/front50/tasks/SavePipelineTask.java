@@ -93,14 +93,20 @@ public class SavePipelineTask implements RetryableTask {
         .forEach(m -> m.mutate(pipeline));
 
     Response response;
-    if ((Boolean) Optional.ofNullable(stage.getContext().get("asAnonymous")).orElse(false)) {
-      User unrestrictedUser = new User();
-      unrestrictedUser.setUsername("anonymous");
-      response =
-          AuthenticatedRequest.propagate(
-              () -> front50Service.savePipeline(pipeline), unrestrictedUser);
-    } else {
-      response = front50Service.savePipeline(pipeline);
+    try {
+      if ((Boolean) Optional.ofNullable(stage.getContext().get("asAnonymous")).orElse(false)) {
+        User unrestrictedUser = new User();
+        unrestrictedUser.setUsername("anonymous");
+        response =
+            AuthenticatedRequest.propagate(
+                    () -> front50Service.savePipeline(pipeline), unrestrictedUser)
+                .call();
+      } else {
+        response = front50Service.savePipeline(pipeline);
+      }
+    } catch (Exception e) {
+      log.error("Unable to save pipeline: " + e.getMessage());
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(new HashMap<>()).build();
     }
 
     Map<String, Object> outputs = new HashMap<>();
