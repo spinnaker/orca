@@ -43,8 +43,8 @@ public class SetPreferredPluginReleaseTask implements RetryableTask {
     final String pluginId = (String) stage.getContext().get("pluginId");
     final String version = (String) stage.getContext().get("preferredVersion");
 
-    Objects.requireNonNull(pluginId);
-    Objects.requireNonNull(version);
+    Objects.requireNonNull(pluginId, "pluginId must be provided");
+    Objects.requireNonNull(version, "preferredVersion must be provided");
 
     try {
       front50Service.setPreferredPluginVersion(pluginId, version, true);
