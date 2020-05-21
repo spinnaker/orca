@@ -66,8 +66,7 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
               + " with status "
               + stack.get("stackStatus"));
 
-      boolean isChangeSet =
-          (boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false);
+      boolean isChangeSet = isChangeSetStage(stage);
       boolean isChangeSetExecution =
           (boolean)
               Optional.ofNullable(stage.getContext().get("isChangeSetExecution")).orElse(false);
@@ -83,20 +82,20 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
 
       if (isComplete(status)) {
         return TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(stack).build();
-      } else if (isEmptyChangeSet(stage, stack)) {
+      }
+      if (isEmptyChangeSet(stage, stack)) {
         String changeSetName = (String) result.get("changeSetName");
         log.info("CloudFormation ChangeSet {} empty. Requesting to be deleted.", changeSetName);
         return TaskResult.builder(ExecutionStatus.SUCCEEDED)
             .context("deleteChangeSet", true)
             .outputs(stack)
             .build();
-      } else if (isInProgress(status)) {
+      }
+      if (isInProgress(status)) {
         return TaskResult.RUNNING;
-      } else if (isFailed(status)) {
-        String statusReason =
-            isChangeSet
-                ? getChangeSetInfo(stack, stage.getContext(), "statusReason")
-                : getStackInfo(stack, "stackStatusReason");
+      }
+      if (isFailed(status)) {
+        String statusReason = getFailureReason(stack, stage);
         log.info("Cloud formation stack failed to completed. Status: " + statusReason);
         throw new RuntimeException(statusReason);
       }
@@ -112,6 +111,10 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
     }
   }
 
+  private boolean isChangeSetStage(StageExecution stage) {
+    return (boolean) Optional.ofNullable(stage.getContext().get("isChangeSet")).orElse(false);
+  }
+
   @Override
   public long getBackoffPeriod() {
     return backoffPeriod;
@@ -120,6 +123,16 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
   @Override
   public long getTimeout() {
     return timeout;
+  }
+
+  private String getFailureReason(Map stack, StageExecution stage) {
+    if (stack.get("stackStatus").equals(CloudFormationStates.ROLLBACK_COMPLETE.name())) {
+      return "Irrecoverable stack status - Review the error, make changes in template and delete the stack to re-run the pipeline successfully; Reason: "
+          + getStackInfo(stack, "stackStatusReason");
+    }
+    return isChangeSetStage(stage)
+        ? getChangeSetInfo(stack, stage.getContext(), "statusReason")
+        : getStackInfo(stack, "stackStatusReason");
   }
 
   private String getStackInfo(Map stack, String field) {
