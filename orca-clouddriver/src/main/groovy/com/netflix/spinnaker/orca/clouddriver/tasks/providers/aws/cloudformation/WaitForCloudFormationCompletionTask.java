@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,19 +38,8 @@ import retrofit.RetrofitError;
 public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRetryableTask {
 
   public static final String TASK_NAME = "waitForCloudFormationCompletion";
-
-  private enum CloudFormationStates {
-    NOT_YET_READY,
-    CREATE_COMPLETE,
-    UPDATE_COMPLETE,
-    IN_PROGRESS,
-    ROLLBACK_COMPLETE,
-    FAILED
-  }
-
   private final long backoffPeriod = TimeUnit.SECONDS.toMillis(10);
   private final long timeout = TimeUnit.HOURS.toMillis(2);
-
   @Autowired private OortService oortService;
 
   @Nonnull
@@ -126,7 +116,13 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
   }
 
   private String getFailureReason(Map stack, StageExecution stage) {
-    if (stack.get("stackStatus").equals(CloudFormationStates.ROLLBACK_COMPLETE.name())) {
+    List unrecoverableStatuses =
+        Arrays.asList(
+            CloudFormationStates.ROLLBACK_COMPLETE.name(),
+            CloudFormationStates.ROLLBACK_FAILED.name(),
+            CloudFormationStates.DELETE_FAILED.name(),
+            CloudFormationStates.UPDATE_ROLLBACK_FAILED.name());
+    if (unrecoverableStatuses.contains(stack.get("stackStatus"))) {
       return "Irrecoverable stack status - Review the error, make changes in template and delete the stack to re-run the pipeline successfully; Reason: "
           + getStackInfo(stack, "stackStatusReason");
     }
@@ -186,5 +182,17 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
     } else {
       return false;
     }
+  }
+
+  private enum CloudFormationStates {
+    NOT_YET_READY,
+    CREATE_COMPLETE,
+    UPDATE_COMPLETE,
+    IN_PROGRESS,
+    ROLLBACK_COMPLETE,
+    DELETE_FAILED,
+    ROLLBACK_FAILED,
+    UPDATE_ROLLBACK_FAILED,
+    FAILED;
   }
 }
