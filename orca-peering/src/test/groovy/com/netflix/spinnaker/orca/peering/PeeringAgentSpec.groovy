@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.peering
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
+import org.jetbrains.annotations.NotNull
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -31,7 +32,7 @@ class PeeringAgentSpec extends Specification {
   ExecutionCopier copier = Mock(ExecutionCopier)
   def clockDrift = 10
 
-  PeeringAgent constructPeeringAgent(DynamicConfigService dynamicConfigService = DynamicConfigService.NOOP) {
+  PeeringAgent constructPeeringAgent(DynamicConfigService dynamicConfigService = DynamicConfigService.NOOP, List<CustomPeerer> customPeerers = []) {
     return new PeeringAgent(
         "peeredId",
         1000,
@@ -41,6 +42,7 @@ class PeeringAgentSpec extends Specification {
         dynamicConfigService,
         metrics,
         copier,
+        customPeerers,
         Mock(NotificationClusterLock)
     )
   }
@@ -327,6 +329,30 @@ class PeeringAgentSpec extends Specification {
     ORCHESTRATION | [key("ID3", 30)] | [key("IDx", 10), key("ID3", 10)]                 || ["IDx"]  | ["ID3"]
   }
 
+  def "calls custom peering agent"() {
+    def customPeerer1 = Mock(CustomPeerer)
+    def peeringAgent = constructPeeringAgent(DynamicConfigService.NOOP, [customPeerer1])
+
+    when:
+    peeringAgent.invokeCustomPeerers()
+
+    then:
+    1 * customPeerer1.doPeer(peeringAgent.srcDB, peeringAgent.destDB, peeringAgent.peeredId)
+  }
+
+  def "errors in custom peerer don't leak out"() {
+    def customPeerer1 = new ThrowingPeerer()
+    def customPeerer2 = Mock(CustomPeerer)
+    def peeringAgent = constructPeeringAgent(DynamicConfigService.NOOP, [customPeerer1, customPeerer2])
+
+    when:
+    peeringAgent.invokeCustomPeerers()
+
+    then:
+    1 * metrics.incrementCustomPeererError(customPeerer1.class.simpleName)
+    1 * customPeerer2.doPeer(peeringAgent.srcDB, peeringAgent.destDB, peeringAgent.peeredId)
+  }
+
   private static def key(String id, long updated_at) {
     return new SqlRawAccess.ExecutionDiffKey(id, updated_at)
   }
@@ -337,5 +363,12 @@ class PeeringAgentSpec extends Specification {
 
   private static def dOKey(int id, String execution_id ) {
     return new SqlRawAccess.DeletedExecution(id, execution_id, ORCHESTRATION.toString())
+  }
+
+  private class ThrowingPeerer implements CustomPeerer {
+    @Override
+    void doPeer(@NotNull SqlRawAccess srcDb, @NotNull SqlRawAccess destDb, @NotNull String peerId) {
+      throw new Exception("Custom peering failed")
+    }
   }
 }

@@ -18,6 +18,7 @@ apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spock.gradle"
 
 dependencies {
+  api("com.netflix.spinnaker.keiko:keiko-core:$keikoVersion")
   implementation(project(":orca-core"))
 
   implementation("com.netflix.spinnaker.kork:kork-sql")

@@ -64,6 +64,8 @@ class PeeringAgent(
 
   private val executionCopier: ExecutionCopier,
 
+  private val customPeerers: List<CustomPeerer>,
+
   clusterLock: NotificationClusterLock
 ) : AbstractPollingNotificationAgent(clusterLock) {
 
@@ -79,6 +81,7 @@ class PeeringAgent(
         peerExecutions(ExecutionType.PIPELINE)
         peerExecutions(ExecutionType.ORCHESTRATION)
         peerDeletedExecutions()
+        invokeCustomPeerers()
       }
     }
   }
@@ -186,6 +189,24 @@ class PeeringAgent(
       log.error("Failed to delete some executions", e)
       peeringMetrics.incrementNumErrors(ExecutionType.ORCHESTRATION)
       peeringMetrics.incrementNumErrors(ExecutionType.PIPELINE)
+    }
+  }
+
+  /**
+   * If we have any custom peerers, invoke them
+   */
+  private fun invokeCustomPeerers() {
+    customPeerers.forEach { customPeerer ->
+      val peererName = customPeerer.javaClass.simpleName
+
+      try {
+        log.info("Starting peering with custom peerer '$peererName'")
+        customPeerer.doPeer(srcDB, destDB, peeredId)
+        log.info("Completed peering with custom peerer '$peererName'")
+      } catch (e: Exception) {
+        peeringMetrics.incrementCustomPeererError(peererName)
+        log.error("Custom peerer '$peererName' failed", e)
+      }
     }
   }
 
