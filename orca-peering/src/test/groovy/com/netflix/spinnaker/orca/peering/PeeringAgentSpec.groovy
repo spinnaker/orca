@@ -337,7 +337,7 @@ class PeeringAgentSpec extends Specification {
     peeringAgent.invokeCustomPeerers()
 
     then:
-    1 * customPeerer1.doPeer(peeringAgent.srcDB, peeringAgent.destDB, peeringAgent.peeredId)
+    1 * customPeerer1.doPeer()
   }
 
   def "errors in custom peerer don't leak out"() {
@@ -349,8 +349,30 @@ class PeeringAgentSpec extends Specification {
     peeringAgent.invokeCustomPeerers()
 
     then:
+    customPeerer1.peerId == peeringAgent.peeredId
+    customPeerer1.srcDb == peeringAgent.srcDB
+    customPeerer1.destDb == peeringAgent.destDB
     1 * metrics.incrementCustomPeererError(customPeerer1.class.simpleName)
-    1 * customPeerer2.doPeer(peeringAgent.srcDB, peeringAgent.destDB, peeringAgent.peeredId)
+    1 * customPeerer2.doPeer()
+  }
+
+  def "errors in custom peerer init don't leak out"() {
+    def customPeerer1 = Mock(CustomPeerer)
+    def customPeerer2 = Mock(CustomPeerer)
+
+    when:
+    def peeringAgent = constructPeeringAgent(DynamicConfigService.NOOP, [customPeerer1, customPeerer2])
+
+    then:
+    1 * customPeerer1.init(_, _, _) >> { throw new Exception("Init failed") }
+    1 * customPeerer2.init(_, _, _)
+
+    when:
+    peeringAgent.invokeCustomPeerers()
+
+    then: 'failing peerer is not invoked'
+    0 * customPeerer1.doPeer()
+    1 * customPeerer2.doPeer()
   }
 
   private static def key(String id, long updated_at) {
@@ -366,8 +388,19 @@ class PeeringAgentSpec extends Specification {
   }
 
   private class ThrowingPeerer implements CustomPeerer {
+    @NotNull SqlRawAccess srcDb
+    @NotNull SqlRawAccess destDb
+    @NotNull String peerId
+
     @Override
-    void doPeer(@NotNull SqlRawAccess srcDb, @NotNull SqlRawAccess destDb, @NotNull String peerId) {
+    void init(@NotNull SqlRawAccess srcDb, @NotNull SqlRawAccess destDb, @NotNull String peerId) {
+      this.srcDb = srcDb
+      this.destDb = destDb
+      this.peerId = peerId
+    }
+
+    @Override
+    void doPeer() {
       throw new Exception("Custom peering failed")
     }
   }

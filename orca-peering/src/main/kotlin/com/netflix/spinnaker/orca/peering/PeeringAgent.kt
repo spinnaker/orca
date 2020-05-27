@@ -64,7 +64,7 @@ class PeeringAgent(
 
   private val executionCopier: ExecutionCopier,
 
-  private val customPeerers: List<CustomPeerer>,
+  customPeerers: List<CustomPeerer>,
 
   clusterLock: NotificationClusterLock
 ) : AbstractPollingNotificationAgent(clusterLock) {
@@ -73,6 +73,23 @@ class PeeringAgent(
   private var completedPipelinesMostRecentUpdatedTime = 0L
   private var completedOrchestrationsMostRecentUpdatedTime = 0L
   private var deletedExecutionCursor = 0
+  private val customPeerers: List<CustomPeerer>
+
+  init {
+    val initializedCustomPeerers = mutableListOf<CustomPeerer>()
+
+    customPeerers.forEach { customPeerer ->
+      try {
+        customPeerer.init(srcDB, destDB, peeredId)
+        initializedCustomPeerers.add(customPeerer)
+      } catch (e: Exception) {
+        peeringMetrics.incrementCustomPeererError(customPeerer.javaClass.simpleName)
+        log.error("Failed to initialize custom peerer '${customPeerer.javaClass.simpleName}' - this peerer will not be called", e)
+      }
+    }
+
+    this.customPeerers = initializedCustomPeerers.toList()
+  }
 
   override fun tick() {
     if (dynamicConfigService.isEnabled("pollers.peering", true) &&
@@ -201,7 +218,7 @@ class PeeringAgent(
 
       try {
         log.info("Starting peering with custom peerer '$peererName'")
-        customPeerer.doPeer(srcDB, destDB, peeredId)
+        customPeerer.doPeer()
         log.info("Completed peering with custom peerer '$peererName'")
       } catch (e: Exception) {
         peeringMetrics.incrementCustomPeererError(peererName)

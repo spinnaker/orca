@@ -21,11 +21,17 @@ package com.netflix.spinnaker.orca.peering
  */
 interface CustomPeerer {
   /**
-   * doPeer function will be called AFTER all default peering actions are completed for this agent cycle
+   * Let the custom peerer initialize itself
    *
    * @param srcDb source/foreign (read-only) database, use srcDb.runQuery to get the jooq context to perform queries on
    * @param destDb destination/local database
    * @param peerId the id of the peer we are peering
    */
-  fun doPeer(srcDb: SqlRawAccess, destDb: SqlRawAccess, peerId: String)
+  fun init(srcDb: SqlRawAccess, destDb: SqlRawAccess, peerId: String)
+
+  /**
+   * doPeer function will be called AFTER all default peering actions are completed for this agent cycle
+   *
+   */
+  fun doPeer()
 }
