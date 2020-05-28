@@ -179,7 +179,7 @@ open class MySqlRawAccess(
           }
 
           // Dump it to the DB
-          batchQuery
+          persisted += batchQuery
             .onDuplicateKeyUpdate()
             .set(updateSet)
             .execute()
@@ -194,13 +194,12 @@ open class MySqlRawAccess(
             .values(values)
         }
 
-        persisted++
         cumulativeSize += totalRecordSize
       }
 
       if (cumulativeSize > 0) {
         // Dump the last bit to the DB
-        batchQuery
+        persisted += batchQuery
           .onDuplicateKeyUpdate()
           .set(updateSet)
           .execute()

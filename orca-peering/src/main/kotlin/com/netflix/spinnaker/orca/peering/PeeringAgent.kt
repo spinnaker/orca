@@ -64,31 +64,32 @@ class PeeringAgent(
 
   private val executionCopier: ExecutionCopier,
 
-  customPeerers: List<CustomPeerer>,
+  customPeerer: CustomPeerer?,
 
   clusterLock: NotificationClusterLock
 ) : AbstractPollingNotificationAgent(clusterLock) {
 
   private val log = LoggerFactory.getLogger(javaClass)
+  private val customPeerer: CustomPeerer?
+
   private var completedPipelinesMostRecentUpdatedTime = 0L
   private var completedOrchestrationsMostRecentUpdatedTime = 0L
   private var deletedExecutionCursor = 0
-  private val customPeerers: List<CustomPeerer>
 
   init {
-    val initializedCustomPeerers = mutableListOf<CustomPeerer>()
+    var initSuccess = false
 
-    customPeerers.forEach { customPeerer ->
+    if (customPeerer != null) {
       try {
         customPeerer.init(srcDB, destDB, peeredId)
-        initializedCustomPeerers.add(customPeerer)
+        initSuccess = true
       } catch (e: Exception) {
-        peeringMetrics.incrementCustomPeererError(customPeerer.javaClass.simpleName)
+        peeringMetrics.incrementCustomPeererError(customPeerer.javaClass.simpleName, e)
         log.error("Failed to initialize custom peerer '${customPeerer.javaClass.simpleName}' - this peerer will not be called", e)
       }
     }
 
-    this.customPeerers = initializedCustomPeerers.toList()
+    this.customPeerer = if (initSuccess) customPeerer else null
   }
 
   override fun tick() {
@@ -98,7 +99,7 @@ class PeeringAgent(
         peerExecutions(ExecutionType.PIPELINE)
         peerExecutions(ExecutionType.ORCHESTRATION)
         peerDeletedExecutions()
-        invokeCustomPeerers()
+        invokeCustomPeerer()
       }
     }
   }
@@ -210,18 +211,22 @@ class PeeringAgent(
   }
 
   /**
-   * If we have any custom peerers, invoke them
+   * If we have a custom peerer, invoke it
    */
-  private fun invokeCustomPeerers() {
-    customPeerers.forEach { customPeerer ->
+  private fun invokeCustomPeerer() {
+    if (customPeerer != null) {
       val peererName = customPeerer.javaClass.simpleName
 
       try {
         log.info("Starting peering with custom peerer '$peererName'")
-        customPeerer.doPeer()
-        log.info("Completed peering with custom peerer '$peererName'")
+        val peeringSuccess = customPeerer.doPeer()
+        if (peeringSuccess) {
+          log.info("Completed peering with custom peerer '$peererName'")
+        } else {
+          log.error("Completed peering with custom peerer '$peererName' with errors")
+        }
       } catch (e: Exception) {
-        peeringMetrics.incrementCustomPeererError(peererName)
+        peeringMetrics.incrementCustomPeererError(peererName, e)
         log.error("Custom peerer '$peererName' failed", e)
       }
     }

@@ -49,7 +49,7 @@ class PeeringAgentConfiguration {
     dynamicConfigService: DynamicConfigService,
     registry: Registry,
     properties: PeeringAgentConfigurationProperties,
-    customPeerers: List<CustomPeerer>
+    customPeerer: CustomPeerer?
   ): PeeringAgent {
     if (properties.peerId == null || properties.poolName == null) {
       throw ConfigurationException("pollers.peering.id and pollers.peering.poolName must be specified for peering")
@@ -83,7 +83,7 @@ class PeeringAgentConfiguration {
       dynamicConfigService,
       metrics,
       copier,
-      customPeerers,
+      customPeerer,
       clusterLock)
   }
 }

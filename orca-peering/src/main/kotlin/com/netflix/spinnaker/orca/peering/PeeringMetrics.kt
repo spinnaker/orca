@@ -71,9 +71,9 @@ open class PeeringMetrics(
       .increment(count.toLong())
   }
 
-  open fun incrementCustomPeererError(peererName: String) {
+  open fun incrementCustomPeererError(peererName: String, exception: Exception) {
     registry
-      .counter(peeringCustomPeererNumErrorsId.withTag("peerer", peererName))
+      .counter(peeringCustomPeererNumErrorsId.withTags("peerer", peererName, "exception", exception.javaClass.simpleName))
       .increment()
   }
 }
