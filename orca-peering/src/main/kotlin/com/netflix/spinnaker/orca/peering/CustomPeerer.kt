@@ -32,6 +32,7 @@ interface CustomPeerer {
   /**
    * doPeer function will be called AFTER all default peering actions are completed for this agent cycle
    *
+   * @return true if peering completed successfully, false otherwise
    */
   fun doPeer(): Boolean
 }
