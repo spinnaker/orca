@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component
 import rx.Observable
 
 import javax.annotation.Nonnull
+import java.time.Duration
 
 @Component
 class KatoService {
@@ -45,7 +46,7 @@ class KatoService {
   Observable<TaskId> requestOperations(Collection<? extends Map<String, Map>> operations) {
     TaskId taskId = retrySupport.retry({
       katoRestService.requestOperations(requestId(operations), operations)
-    }, 3, 500, false)
+    }, 3, Duration.ofSeconds(1), false)
 
     return Observable.from(taskId)
   }
@@ -53,7 +54,7 @@ class KatoService {
   Observable<TaskId> requestOperations(String cloudProvider, Collection<? extends Map<String, Map>> operations) {
     TaskId taskId = retrySupport.retry({
       katoRestService.requestOperations(requestId(operations), cloudProvider, operations)
-    }, 3, 500, false)
+    }, 3, Duration.ofSeconds(1), false)
 
     return Observable.from(taskId)
   }
