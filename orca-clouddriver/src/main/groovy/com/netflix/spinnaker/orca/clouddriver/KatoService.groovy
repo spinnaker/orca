@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver
 
 import com.google.common.hash.Hashing
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.ExecutionContext
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
@@ -32,19 +33,29 @@ class KatoService {
 
   private final KatoRestService katoRestService
   private final CloudDriverTaskStatusService cloudDriverTaskStatusService
+  private final RetrySupport retrySupport
 
   @Autowired
-  KatoService(KatoRestService katoRestService, CloudDriverTaskStatusService cloudDriverTaskStatusService) {
+  KatoService(KatoRestService katoRestService, CloudDriverTaskStatusService cloudDriverTaskStatusService, RetrySupport retrySupport) {
     this.katoRestService = katoRestService
     this.cloudDriverTaskStatusService = cloudDriverTaskStatusService
+    this.retrySupport = retrySupport
   }
 
   Observable<TaskId> requestOperations(Collection<? extends Map<String, Map>> operations) {
-    return Observable.from(katoRestService.requestOperations(requestId(operations), operations))
+    TaskId taskId = retrySupport.retry({
+      katoRestService.requestOperations(requestId(operations), operations)
+    }, 3, 500, false)
+
+    return Observable.from(taskId)
   }
 
   Observable<TaskId> requestOperations(String cloudProvider, Collection<? extends Map<String, Map>> operations) {
-    return Observable.from(katoRestService.requestOperations(requestId(operations), cloudProvider, operations))
+    TaskId taskId = retrySupport.retry({
+      katoRestService.requestOperations(requestId(operations), cloudProvider, operations)
+    }, 3, 500, false)
+
+    return Observable.from(taskId)
   }
 
   Task lookupTask(String id, boolean skipReplica = false) {
