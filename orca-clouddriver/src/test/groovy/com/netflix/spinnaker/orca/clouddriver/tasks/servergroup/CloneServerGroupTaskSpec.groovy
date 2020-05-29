@@ -60,7 +60,7 @@ class CloneServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(_, _) >> {
         operations = it[1]
-        Observable.from(taskId)
+        taskId
       }
     }
 
@@ -84,7 +84,7 @@ class CloneServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(_, _) >> {
         operations = it[1]
-        Observable.from(taskId)
+        taskId
       }
     }
 
@@ -113,7 +113,7 @@ class CloneServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(_, _) >> {
         operations = it[1]
-        Observable.from(taskId)
+        taskId
       }
     }
 
@@ -149,7 +149,7 @@ class CloneServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(_, _) >> {
         operations = it[1]
-        Observable.from(taskId)
+        taskId
       }
     }
 
@@ -184,7 +184,7 @@ class CloneServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(_, _) >> {
         operations = it[1]
-        Observable.from(taskId)
+        taskId
       }
     }
 
@@ -212,7 +212,7 @@ class CloneServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(_, _) >> {
         operations = it[1]
-        Observable.from(taskId)
+        taskId
       }
     }
 
@@ -240,7 +240,7 @@ class CloneServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(_, _) >> {
         operations = it[1]
-        Observable.from(taskId)
+        taskId
       }
     }
 

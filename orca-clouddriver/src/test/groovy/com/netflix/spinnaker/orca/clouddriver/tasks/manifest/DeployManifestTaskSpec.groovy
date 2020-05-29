@@ -42,7 +42,7 @@ class DeployManifestTaskSpec extends Specification {
     then:
     1 * katoService.requestOperations("kubernetes", {
       Map it -> it.deployManifest.enableTraffic == true && !it.deployManifest.services
-    }) >> Observable.from(new TaskId(TASK_ID))
+    }) >> new TaskId(TASK_ID)
     0 * katoService._
   }
 
@@ -60,7 +60,7 @@ class DeployManifestTaskSpec extends Specification {
     then:
     1 * katoService.requestOperations("kubernetes", {
       Map it -> it.deployManifest.enableTraffic == true && !it.deployManifest.services
-    }) >> Observable.from(new TaskId(TASK_ID))
+    }) >> new TaskId(TASK_ID)
     0 * katoService._
   }
 
@@ -82,7 +82,7 @@ class DeployManifestTaskSpec extends Specification {
     then:
     1 * katoService.requestOperations("kubernetes", {
       Map it -> it.deployManifest.enableTraffic == true && it.deployManifest.services == ["service my-service"]
-    }) >> Observable.from(new TaskId(TASK_ID))
+    }) >> new TaskId(TASK_ID)
     0 * katoService._
   }
 
@@ -104,7 +104,7 @@ class DeployManifestTaskSpec extends Specification {
     then:
     1 * katoService.requestOperations("kubernetes", {
       Map it -> it.deployManifest.enableTraffic == false && it.deployManifest.services == ["service my-service"]
-    }) >> Observable.from(new TaskId(TASK_ID))
+    }) >> new TaskId(TASK_ID)
     0 * katoService._
   }
 

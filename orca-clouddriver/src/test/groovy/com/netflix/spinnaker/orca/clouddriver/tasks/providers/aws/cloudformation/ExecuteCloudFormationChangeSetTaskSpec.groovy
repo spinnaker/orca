@@ -70,7 +70,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
     then:
     1 * katoService.requestOperations("aws", {
       it.get(0).get("executeCloudFormationChangeSet")
-    }) >> Observable.just(taskId)
+    }) >> taskId
     result.context.'kato.result.expected' == true
     result.context.'kato.last.task.id' == taskId
 

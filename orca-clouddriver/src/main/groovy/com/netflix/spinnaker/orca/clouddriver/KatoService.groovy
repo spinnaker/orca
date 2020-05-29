@@ -43,20 +43,16 @@ class KatoService {
     this.retrySupport = retrySupport
   }
 
-  Observable<TaskId> requestOperations(Collection<? extends Map<String, Map>> operations) {
-    TaskId taskId = retrySupport.retry({
+  TaskId requestOperations(Collection<? extends Map<String, Map>> operations) {
+    return retrySupport.retry({
       katoRestService.requestOperations(requestId(operations), operations)
     }, 3, Duration.ofSeconds(1), false)
-
-    return Observable.from(taskId)
   }
 
-  Observable<TaskId> requestOperations(String cloudProvider, Collection<? extends Map<String, Map>> operations) {
-    TaskId taskId = retrySupport.retry({
+  TaskId requestOperations(String cloudProvider, Collection<? extends Map<String, Map>> operations) {
+    return retrySupport.retry({
       katoRestService.requestOperations(requestId(operations), cloudProvider, operations)
     }, 3, Duration.ofSeconds(1), false)
-
-    return Observable.from(taskId)
   }
 
   Task lookupTask(String id, boolean skipReplica = false) {

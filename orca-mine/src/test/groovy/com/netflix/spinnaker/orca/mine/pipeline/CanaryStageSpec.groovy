@@ -92,7 +92,7 @@ class CanaryStageSpec extends Specification {
       serverGroups: [[region: "us-east-1", createdTime: createdTime, name: "app-stack1-canary-v003"]]
     ]
 
-    disableOps * katoService.requestOperations("aws", disableOperation) >> { Observable.from(taskId) }
+    disableOps * katoService.requestOperations("aws", disableOperation) >> { taskId }
 
     where:
     createdTime | disableOps | destroyedServerGroups

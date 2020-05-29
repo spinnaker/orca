@@ -60,7 +60,7 @@ class DeleteCloudFormationChangeSetTaskSpec extends Specification {
       task.get("changeSetName").equals(context.get("changeSetName"))
       task.get("region").equals(context.get("regions")[0])
       task.get("credentials").equals(context.get("credentials"))
-    }) >> Observable.just(taskId)
+    }) >> taskId
     result.getStatus() == ExecutionStatus.SUCCEEDED
 
   }
