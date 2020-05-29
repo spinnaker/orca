@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.DestroyServerGro
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import rx.Observable
 import spock.lang.Specification
 import spock.lang.Unroll
 

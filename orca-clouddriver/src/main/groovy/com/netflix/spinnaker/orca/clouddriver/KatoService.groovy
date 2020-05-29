@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import rx.Observable
 
 import javax.annotation.Nonnull
 import java.time.Duration

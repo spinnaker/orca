@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
-import rx.Observable
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
