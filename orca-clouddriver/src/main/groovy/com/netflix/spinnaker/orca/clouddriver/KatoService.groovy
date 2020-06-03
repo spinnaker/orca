@@ -17,34 +17,41 @@
 package com.netflix.spinnaker.orca.clouddriver
 
 import com.google.common.hash.Hashing
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.ExecutionContext
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import rx.Observable
 
 import javax.annotation.Nonnull
+import java.time.Duration
 
 @Component
 class KatoService {
 
   private final KatoRestService katoRestService
   private final CloudDriverTaskStatusService cloudDriverTaskStatusService
+  private final RetrySupport retrySupport
 
   @Autowired
-  KatoService(KatoRestService katoRestService, CloudDriverTaskStatusService cloudDriverTaskStatusService) {
+  KatoService(KatoRestService katoRestService, CloudDriverTaskStatusService cloudDriverTaskStatusService, RetrySupport retrySupport) {
     this.katoRestService = katoRestService
     this.cloudDriverTaskStatusService = cloudDriverTaskStatusService
+    this.retrySupport = retrySupport
   }
 
-  Observable<TaskId> requestOperations(Collection<? extends Map<String, Map>> operations) {
-    return Observable.from(katoRestService.requestOperations(requestId(operations), operations))
+  TaskId requestOperations(Collection<? extends Map<String, Map>> operations) {
+    return retrySupport.retry({
+      katoRestService.requestOperations(requestId(operations), operations)
+    }, 3, Duration.ofSeconds(1), false)
   }
 
-  Observable<TaskId> requestOperations(String cloudProvider, Collection<? extends Map<String, Map>> operations) {
-    return Observable.from(katoRestService.requestOperations(requestId(operations), cloudProvider, operations))
+  TaskId requestOperations(String cloudProvider, Collection<? extends Map<String, Map>> operations) {
+    return retrySupport.retry({
+      katoRestService.requestOperations(requestId(operations), cloudProvider, operations)
+    }, 3, Duration.ofSeconds(1), false)
   }
 
   Task lookupTask(String id, boolean skipReplica = false) {
