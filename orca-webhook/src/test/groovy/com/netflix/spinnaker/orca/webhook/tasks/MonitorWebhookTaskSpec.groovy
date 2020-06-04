@@ -155,11 +155,13 @@ class MonitorWebhookTaskSpec extends Specification {
     result.status == expectedTaskStatus
 
     where:
-    statusCode                    | expectedTaskStatus
-    HttpStatus.TOO_MANY_REQUESTS  | ExecutionStatus.RUNNING
-    HttpStatus.NOT_FOUND          | ExecutionStatus.RUNNING
-    HttpStatus.METHOD_NOT_ALLOWED | ExecutionStatus.RUNNING
-    HttpStatus.NOT_ACCEPTABLE     | ExecutionStatus.TERMINAL
+    statusCode                         | expectedTaskStatus
+    HttpStatus.TOO_MANY_REQUESTS       | ExecutionStatus.RUNNING
+    HttpStatus.NOT_FOUND               | ExecutionStatus.RUNNING
+    HttpStatus.METHOD_NOT_ALLOWED      | ExecutionStatus.RUNNING
+    HttpStatus.FORBIDDEN               | ExecutionStatus.RUNNING
+    HttpStatus.INTERNAL_SERVER_ERROR   | ExecutionStatus.RUNNING
+    HttpStatus.NOT_ACCEPTABLE          | ExecutionStatus.TERMINAL
   }
 
   def "should do a get request to the defined statusEndpoint"() {

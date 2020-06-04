@@ -89,6 +89,7 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
 
       boolean shouldRetry = statusCode.is5xxServerError() ||
                             (statusValue == 429) ||
+                            (statusValue == 403) ||
                             ((stageData.retryStatusCodes != null) && (stageData.retryStatusCodes.contains(statusValue)))
 
       if (shouldRetry) {

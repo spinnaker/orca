@@ -90,7 +90,7 @@ class CreateWebhookTask implements RetryableTask {
         return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
       }
 
-      if (statusCode.is5xxServerError() || statusCode.value() == 429) {
+      if (statusCode.is5xxServerError() || statusCode.value() == 429 || statusCode.value() == 403) {
         String errorMessage = "error submitting webhook for pipeline ${stage.execution.id} to ${stageData.url}, will retry."
         log.warn(errorMessage, e)
 
