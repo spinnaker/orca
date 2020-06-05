@@ -7,7 +7,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     # Install Java 8 for cross-compilation support. Setting it up before
@@ -18,11 +18,11 @@ jobs:
     - uses: actions/setup-java@v1
       with:
         java-version: 11
-    - uses: actions/cache@v1
-      with:
-        path: ~/.gradle
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+#    - uses: actions/cache@v1
+#      with:
+#        path: ~/.gradle
+#        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+#        restore-keys: |
+#          ${{ runner.os }}-gradle-
     - name: Build
       run: ./gradlew -PenableCrossCompilerPlugin=true build
