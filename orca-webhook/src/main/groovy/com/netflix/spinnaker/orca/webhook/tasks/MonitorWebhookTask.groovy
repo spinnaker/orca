@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import groovy.util.logging.Slf4j
@@ -45,12 +46,12 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
   private static final String JSON_PATH_NOT_FOUND_ERR_FMT = "Unable to parse %s: JSON property '%s' not found in response body"
 
   WebhookService webhookService
-  int[] defaultRetryStatusCodes
+  WebhookProperties webhookProperties
 
   @Autowired
-  MonitorWebhookTask(WebhookService webhookService, @Value('${webhook.default-retry-status-codes:429}') int[] defaultRetryStatusCodes) {
+  MonitorWebhookTask(WebhookService webhookService, WebhookProperties webhookProperties) {
     this.webhookService = webhookService
-    this.defaultRetryStatusCodes = defaultRetryStatusCodes
+    this.webhookProperties = webhookProperties
   }
 
   @Override
@@ -92,7 +93,7 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
       def statusValue = statusCode.value()
 
       boolean shouldRetry = statusCode.is5xxServerError() ||
-                            statusValue in defaultRetryStatusCodes ||
+                            statusValue in webhookProperties.defaultRetryStatusCodes ||
                             ((stageData.retryStatusCodes != null) && (stageData.retryStatusCodes.contains(statusValue)))
 
       if (shouldRetry) {

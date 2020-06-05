@@ -39,7 +39,7 @@ class CreateWebhookTaskSpec extends Specification {
   def pipeline = PipelineExecutionImpl.newPipeline("orca")
 
   @Subject
-  def createWebhookTask = new CreateWebhookTask(null, null)
+  def createWebhookTask = new CreateWebhookTask(null, new WebhookProperties())
 
   def "should create new webhook task with expected parameters"() {
     setup:
@@ -171,7 +171,9 @@ class CreateWebhookTaskSpec extends Specification {
       ) >> { throwHttpException(status, null) }
     }
 
-    createWebhookTask.defaultRetryStatusCodes = [HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.FORBIDDEN.value()] as int[]
+    WebhookProperties webhookProperties = new WebhookProperties()
+    webhookProperties.defaultRetryStatusCodes = [429,403]
+    createWebhookTask.webhookProperties = webhookProperties
 
     when:
     def result = createWebhookTask.execute(stage)

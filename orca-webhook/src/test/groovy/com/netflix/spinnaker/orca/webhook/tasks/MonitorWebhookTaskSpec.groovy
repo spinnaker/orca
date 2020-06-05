@@ -20,6 +20,7 @@ package com.netflix.spinnaker.orca.webhook.tasks
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -34,7 +35,7 @@ class MonitorWebhookTaskSpec extends Specification {
   def pipeline = PipelineExecutionImpl.newPipeline("orca")
 
   @Subject
-  MonitorWebhookTask monitorWebhookTask = new MonitorWebhookTask(null, null)
+  MonitorWebhookTask monitorWebhookTask = new MonitorWebhookTask(null, new WebhookProperties())
 
   @Unroll
   def "should fail if required parameter #parameter is missing"() {
@@ -141,7 +142,10 @@ class MonitorWebhookTaskSpec extends Specification {
       terminalStatuses: 'TERMINAL',
       retryStatusCodes: [404, 405]
     ])
-    monitorWebhookTask.defaultRetryStatusCodes = [HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.FORBIDDEN.value()] as int[]
+
+    WebhookProperties webhookProperties = new WebhookProperties()
+    webhookProperties.defaultRetryStatusCodes = [429,403]
+    monitorWebhookTask.webhookProperties = webhookProperties
     monitorWebhookTask.webhookService = Mock(WebhookService) {
       1 * getStatus("https://my-service.io/api/status/123", _) >> {
         throw new HttpServerErrorException(statusCode, statusCode.name())

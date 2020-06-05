@@ -50,12 +50,12 @@ class CreateWebhookTask implements RetryableTask {
   long timeout = 300000
 
   WebhookService webhookService
-  int[] defaultRetryStatusCodes
+  WebhookProperties webhookProperties
 
   @Autowired
-  CreateWebhookTask(WebhookService webhookService, @Value('${webhook.default-retry-status-codes:429}') int[] defaultRetryStatusCodes) {
+  CreateWebhookTask(WebhookService webhookService, WebhookProperties webhookProperties) {
     this.webhookService = webhookService
-    this.defaultRetryStatusCodes = defaultRetryStatusCodes
+    this.webhookProperties = webhookProperties
   }
 
   @Override
@@ -97,7 +97,7 @@ class CreateWebhookTask implements RetryableTask {
         return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
       }
 
-      if (statusCode.is5xxServerError() || statusCode.value() in defaultRetryStatusCodes) {
+      if (statusCode.is5xxServerError() || statusCode.value() in webhookProperties.defaultRetryStatusCodes) {
         String errorMessage = "error submitting webhook for pipeline ${stage.execution.id} to ${stageData.url}, will retry."
         log.warn(errorMessage, e)
 
