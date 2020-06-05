@@ -34,7 +34,7 @@ class MonitorWebhookTaskSpec extends Specification {
   def pipeline = PipelineExecutionImpl.newPipeline("orca")
 
   @Subject
-  MonitorWebhookTask monitorWebhookTask = new MonitorWebhookTask()
+  MonitorWebhookTask monitorWebhookTask = new MonitorWebhookTask(null, null)
 
   @Unroll
   def "should fail if required parameter #parameter is missing"() {
@@ -141,7 +141,7 @@ class MonitorWebhookTaskSpec extends Specification {
       terminalStatuses: 'TERMINAL',
       retryStatusCodes: [404, 405]
     ])
-
+    monitorWebhookTask.defaultRetryStatusCodes = [HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.FORBIDDEN.value()] as int[]
     monitorWebhookTask.webhookService = Mock(WebhookService) {
       1 * getStatus("https://my-service.io/api/status/123", _) >> {
         throw new HttpServerErrorException(statusCode, statusCode.name())

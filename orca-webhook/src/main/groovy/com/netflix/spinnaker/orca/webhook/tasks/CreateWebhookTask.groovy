@@ -31,6 +31,7 @@ import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import groovy.util.logging.Slf4j
 import org.apache.http.HttpHeaders
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpMethod
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
@@ -48,8 +49,14 @@ class CreateWebhookTask implements RetryableTask {
   long backoffPeriod = 10000
   long timeout = 300000
 
-  @Autowired
   WebhookService webhookService
+  int[] defaultRetryStatusCodes
+
+  @Autowired
+  CreateWebhookTask(WebhookService webhookService, @Value('${webhook.default-retry-status-codes:429}') int[] defaultRetryStatusCodes) {
+    this.webhookService = webhookService
+    this.defaultRetryStatusCodes = defaultRetryStatusCodes
+  }
 
   @Override
   TaskResult execute(StageExecution stage) {
@@ -90,7 +97,7 @@ class CreateWebhookTask implements RetryableTask {
         return TaskResult.builder(ExecutionStatus.TERMINAL).context(outputs).build()
       }
 
-      if (statusCode.is5xxServerError() || statusCode.value() == 429 || statusCode.value() == 403) {
+      if (statusCode.is5xxServerError() || statusCode.value() in defaultRetryStatusCodes) {
         String errorMessage = "error submitting webhook for pipeline ${stage.execution.id} to ${stageData.url}, will retry."
         log.warn(errorMessage, e)
 

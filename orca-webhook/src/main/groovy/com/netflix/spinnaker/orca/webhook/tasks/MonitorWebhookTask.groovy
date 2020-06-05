@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpStatusCodeException
 
@@ -42,7 +43,15 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
   long backoffPeriod = TimeUnit.SECONDS.toMillis(1)
   long timeout = TimeUnit.HOURS.toMillis(1)
   private static final String JSON_PATH_NOT_FOUND_ERR_FMT = "Unable to parse %s: JSON property '%s' not found in response body"
+
   WebhookService webhookService
+  int[] defaultRetryStatusCodes
+
+  @Autowired
+  MonitorWebhookTask(WebhookService webhookService, @Value('${webhook.default-retry-status-codes:429}') int[] defaultRetryStatusCodes) {
+    this.webhookService = webhookService
+    this.defaultRetryStatusCodes = defaultRetryStatusCodes
+  }
 
   @Override
   long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
@@ -52,11 +61,6 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
     }
 
     return backoffPeriod
-  }
-
-  @Autowired
-  MonitorWebhookTask(WebhookService webhookService) {
-    this.webhookService = webhookService
   }
 
   @Override
@@ -88,8 +92,7 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
       def statusValue = statusCode.value()
 
       boolean shouldRetry = statusCode.is5xxServerError() ||
-                            (statusValue == 429) ||
-                            (statusValue == 403) ||
+                            statusValue in defaultRetryStatusCodes ||
                             ((stageData.retryStatusCodes != null) && (stageData.retryStatusCodes.contains(statusValue)))
 
       if (shouldRetry) {
