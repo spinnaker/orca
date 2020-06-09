@@ -110,6 +110,7 @@ class TrafficGuardSpec extends Specification {
     then:
     def e = thrown(TrafficGuardException)
     e.message.startsWith("Could not find server group 'app-foo-v999'")
+    1 * front50Service.get("app") >> application
     1 * oortHelper.getCluster("app", "test", "app-foo", "aws") >> [
       serverGroups: [
         makeServerGroup(targetName, 1),
@@ -119,11 +120,15 @@ class TrafficGuardSpec extends Specification {
   }
 
   void "should be able to handle a server group in a namespace"() {
+    given:
+    addGuard([account: "test", location: "us-east-1", stack: "foo"])
+
     when:
     trafficGuard.verifyTrafficRemoval(targetName, moniker, "test", location, "aws", "x")
 
     then:
     notThrown(TrafficGuardException)
+    1 * front50Service.get("app") >> application
     1 * oortHelper.getCluster("app", "test", "app-foo", "aws") >> [
       serverGroups: [
         makeServerGroup(targetName, 2, 0, [namespace: 'us-east-1']),
