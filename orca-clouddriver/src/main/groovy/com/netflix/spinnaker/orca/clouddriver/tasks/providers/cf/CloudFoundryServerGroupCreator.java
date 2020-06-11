@@ -74,7 +74,8 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
             .put("executionId", execution.getId())
             .put("trigger", execution.getTrigger().getOther())
             .put("applicationArtifact", resolveArtifact(stage, context.get("applicationArtifact")))
-            .put("manifest", evaluatedManifest.getManifests());
+            .put("manifest", evaluatedManifest.getManifests())
+            .put("moniker", moniker);
 
     if (context.get("stack") != null) {
       operation.put("stack", context.get("stack"));
