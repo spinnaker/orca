@@ -111,8 +111,8 @@ public class UserConfiguredUrlRestrictions {
         throw new IllegalArgumentException("unsupported URI scheme " + url);
       }
 
-      // If host contains '_', getHost is returning null, so falling back to authority to determine
-      // host.
+      // fallback to `getAuthority()` in the event that the hostname contains an underscore and
+      // `getHost()` returns null
       String host = u.getHost();
       if (host == null) {
         String authority = u.getAuthority();
