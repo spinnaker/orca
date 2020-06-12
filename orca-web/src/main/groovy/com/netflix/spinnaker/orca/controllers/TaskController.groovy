@@ -352,18 +352,14 @@ class TaskController {
 
     List<PipelineExecution> matchingExecutions = new ArrayList<>()
 
+    int page = 1
     while (matchingExecutions.size() < size) {
-      int page = 1
       List<PipelineExecution> executions = executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
           pipelineConfigIds,
           triggerTimeStartBoundary,
           triggerTimeEndBoundary,
           executionCriteria.setPage(page)
       )
-
-      if (executions.size() == 0) {
-        break
-      }
 
       matchingExecutions.addAll(
           executions
@@ -382,6 +378,11 @@ class TaskController {
               })
               .collect(Collectors.toList())
       )
+
+      if (executions.size() < executionCriteria.pageSize) {
+        break
+      }
+
       page++
     }
 
