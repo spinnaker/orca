@@ -25,7 +25,9 @@ import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import groovy.util.logging.Slf4j
 
+@Slf4j
 @Component
 class AppEngineServerGroupCreator implements ServerGroupCreator {
   boolean katoResultExpected = false
@@ -75,8 +77,19 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
       List<ArtifactAccountPair> configArtifacts = operation.configArtifacts
       if (configArtifacts != null && configArtifacts.size() > 0) {
         operation.configArtifacts = configArtifacts.collect { artifactAccountPair ->
-          def artifact = artifactUtils.getBoundArtifactForStage(stage, artifactAccountPair.id, artifactAccountPair.artifact)
-          artifact.artifactAccount = artifactAccountPair.account
+          log.debug ("appendArtifactData: artifactAccountPair.id="+artifactAccountPair.id+" artifactAccountPair.artifact="+artifactAccountPair.artifact+" className="+artifactAccountPair.artifact.getClass().getName()+" account="+artifactAccountPair.account)
+          String c_id = artifactAccountPair.id
+          def Artifact c_artifact
+          if (artifactAccountPair.artifact instanceof Map){
+            def map = artifactAccountPair.artifact
+            c_artifact = Artifact.builder().reference(map.get("reference")).metadata(map.get("metadata")).artifactAccount(map.get("artifactAccount")).uuid(map.get("id")).type(map.get("type")).build()
+          } else if (artifactAccountPair.artifact instanceof Artifact){
+            c_artifact = artifactAccountPair.artifact
+          }
+          def artifact = artifactUtils.getBoundArtifactForStage(stage, c_id, c_artifact)
+          if (artifactAccountPair.account != null){
+            artifact.artifactAccount = artifactAccountPair.account
+          }
           return artifact
         }
       }
