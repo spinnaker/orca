@@ -100,7 +100,8 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
             stageContextArtifactView.getArtifactId(),
             stageContextArtifactView.getArtifact());
     if (artifact == null) {
-      throw new IllegalArgumentException("Unable to bind the application artifact");
+      throw new IllegalArgumentException(
+          "Unable to bind the application artifact. Either the application artifact doesn't exist or this stage doesn't have access to fetch it");
     }
 
     return artifact;
@@ -112,7 +113,8 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
         artifactUtils.getBoundArtifactForStage(
             stage, manifest.getArtifactId(), manifest.getArtifact());
     if (artifact == null) {
-      throw new IllegalArgumentException("Unable to bind the manifest artifact");
+      throw new IllegalArgumentException(
+          "Unable to bind the manifest artifact. Either the manifest artifact doesn't exist or this stage doesn't have access to fetch it");
     }
 
     return artifact;
