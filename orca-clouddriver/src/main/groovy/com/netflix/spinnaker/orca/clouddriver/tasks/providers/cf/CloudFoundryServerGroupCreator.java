@@ -48,7 +48,6 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
   @Override
   public List<Map> getOperations(StageExecution stage) {
     Map<String, Object> context = stage.getContext();
-
     Artifact manifestArtifact = resolveManifestArtifact(stage, context.get("manifest"));
     CloudFoundryManifestContext manifestContext =
         CloudFoundryManifestContext.builder()
