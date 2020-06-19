@@ -77,16 +77,7 @@ class AppEngineServerGroupCreator implements ServerGroupCreator {
       List<ArtifactAccountPair> configArtifacts = operation.configArtifacts
       if (configArtifacts != null && configArtifacts.size() > 0) {
         operation.configArtifacts = configArtifacts.collect { artifactAccountPair ->
-          log.debug ("appendArtifactData: artifactAccountPair.id="+artifactAccountPair.id+" artifactAccountPair.artifact="+artifactAccountPair.artifact+" className="+artifactAccountPair.artifact.getClass().getName()+" account="+artifactAccountPair.account)
-          String c_id = artifactAccountPair.id
-          def Artifact c_artifact
-          if (artifactAccountPair.artifact instanceof Map){
-            def map = artifactAccountPair.artifact
-            c_artifact = Artifact.builder().reference(map.get("reference")).metadata(map.get("metadata")).artifactAccount(map.get("artifactAccount")).uuid(map.get("id")).type(map.get("type")).build()
-          } else if (artifactAccountPair.artifact instanceof Artifact){
-            c_artifact = artifactAccountPair.artifact
-          }
-          def artifact = artifactUtils.getBoundArtifactForStage(stage, c_id, c_artifact)
+          def artifact = artifactUtils.getBoundArtifactForStage(stage, artifactAccountPair.id, objectMapper.convertValue(artifactAccountPair.artifact, Artifact.class))
           if (artifactAccountPair.account != null){
             artifact.artifactAccount = artifactAccountPair.account
           }
