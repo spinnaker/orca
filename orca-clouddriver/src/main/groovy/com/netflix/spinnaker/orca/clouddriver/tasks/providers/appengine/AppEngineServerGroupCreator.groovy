@@ -25,9 +25,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
-import groovy.util.logging.Slf4j
 
-@Slf4j
 @Component
 class AppEngineServerGroupCreator implements ServerGroupCreator {
   boolean katoResultExpected = false
