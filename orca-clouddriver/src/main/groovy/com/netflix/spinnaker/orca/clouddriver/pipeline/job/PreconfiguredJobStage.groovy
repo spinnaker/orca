@@ -76,14 +76,14 @@ class PreconfiguredJobStage extends RunJobStage {
     }
     preconfiguredJob.parameters.each { defaults ->
       if (defaults.defaultValue != null) {
-        Eval.xy(context, defaults.defaultValue, "x.${defaults.mapping} = y.toString()")
+        context[defaults.mapping] = defaults.defaultValue
       }
     }
     if (context.parameters) {
       context.parameters.each { k, v ->
         def parameterDefinition = preconfiguredJob.parameters.find { it.name == k }
         if (parameterDefinition) {
-          Eval.xy(context, v, "x.${parameterDefinition.mapping} = y.toString()")
+          context[parameterDefinition.mapping] = v.toString()
         }
       }
     }
