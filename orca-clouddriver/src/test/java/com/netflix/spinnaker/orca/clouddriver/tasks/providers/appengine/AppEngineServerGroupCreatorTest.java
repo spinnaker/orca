@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine;
 
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,7 +34,6 @@ import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
-import groovy.lang.MissingMethodException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,8 +80,13 @@ final class AppEngineServerGroupCreatorTest {
                 "account", "my-account",
                 "artifact", ImmutableMap.of())));
 
-    assertThatThrownBy(() -> appEngineServerGroupCreator.appendArtifactData(stage, operation))
-        .isInstanceOf(MissingMethodException.class);
+    appEngineServerGroupCreator.appendArtifactData(stage, operation);
+
+    List<Artifact> configArtifacts = (List<Artifact>) operation.get("configArtifacts");
+    assertThat(configArtifacts).hasSize(1);
+
+    Artifact singleArtifact = Iterables.getOnlyElement(configArtifacts);
+    assertThat(singleArtifact.getArtifactAccount()).isEqualTo("my-account");
   }
 
   @Test
