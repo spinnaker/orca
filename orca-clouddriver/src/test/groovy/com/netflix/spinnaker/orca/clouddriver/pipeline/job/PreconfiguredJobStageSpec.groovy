@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.job
 
 import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageParameter
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
-import com.netflix.spinnaker.orca.clouddriver.config.KubernetesPreconfiguredJobProperties
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.KubernetesPreconfiguredJobProperties
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask
 import io.kubernetes.client.models.V1Job
 import spock.lang.Specification

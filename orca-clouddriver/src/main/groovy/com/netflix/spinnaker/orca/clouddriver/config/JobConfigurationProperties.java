@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.config;
 
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.KubernetesPreconfiguredJobProperties;
 import com.netflix.spinnaker.orca.api.preconfigured.jobs.TitusPreconfiguredJobProperties;
 import java.util.Collections;
 import java.util.List;

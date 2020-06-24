@@ -1,7 +1,7 @@
 /*
- * Copyright 2019 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.config;
+package com.netflix.spinnaker.orca.api.preconfigured.jobs;
 
-import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties;
 import io.kubernetes.client.models.V1Job;
 import java.util.ArrayList;
 import java.util.Arrays;

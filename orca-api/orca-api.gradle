@@ -26,6 +26,8 @@ dependencies {
   api("com.netflix.spinnaker.kork:kork-plugins-api")
   api("com.netflix.spinnaker.kork:kork-artifacts")
 
+  implementation("io.kubernetes:client-java:5.0.0")
+
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
 
