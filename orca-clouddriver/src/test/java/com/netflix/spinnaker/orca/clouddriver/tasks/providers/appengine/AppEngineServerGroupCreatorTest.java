@@ -17,7 +17,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine;
 
-import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -28,11 +28,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
-import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
-import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.Execution;
+import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +47,7 @@ final class AppEngineServerGroupCreatorTest {
     appEngineServerGroupCreator.setObjectMapper(OBJECT_MAPPER);
     appEngineServerGroupCreator.setArtifactUtils(mockArtifactUtils());
 
-    StageExecution stage = createExecution();
+    Stage stage = createExecution();
     Map<String, Object> operation = new HashMap<>();
     operation.put(
         "configArtifacts",
@@ -70,7 +68,7 @@ final class AppEngineServerGroupCreatorTest {
     appEngineServerGroupCreator.setObjectMapper(OBJECT_MAPPER);
     appEngineServerGroupCreator.setArtifactUtils(mockArtifactUtils());
 
-    StageExecution stage = createExecution();
+    Stage stage = createExecution();
     Map<String, Object> operation = new HashMap<>();
     operation.put(
         "configArtifacts",
@@ -95,7 +93,7 @@ final class AppEngineServerGroupCreatorTest {
     appEngineServerGroupCreator.setObjectMapper(OBJECT_MAPPER);
     appEngineServerGroupCreator.setArtifactUtils(mockArtifactUtils());
 
-    StageExecution stage = createExecution();
+    Stage stage = createExecution();
     Map<String, Object> operation = new HashMap<>();
     operation.put(
         "configArtifacts",
@@ -117,15 +115,15 @@ final class AppEngineServerGroupCreatorTest {
 
     // Just return the input artifact when looking for a bound artifact.
     when(artifactUtils.getBoundArtifactForStage(
-            any(StageExecution.class), any(String.class), any(Artifact.class)))
+            any(Stage.class), any(String.class), any(Artifact.class)))
         .thenAnswer((Answer<Artifact>) invocation -> (Artifact) invocation.getArguments()[2]);
 
     return artifactUtils;
   }
 
-  private StageExecution createExecution() {
-    PipelineExecution pipeline = new PipelineExecutionImpl(PIPELINE, "3", "foo");
-    return new StageExecutionImpl(pipeline, "test", new HashMap<>());
+  private Stage createExecution() {
+    Execution pipeline = new Execution(PIPELINE, "3", "foo");
+    return new Stage(pipeline, "test", new HashMap<>());
   }
 
   private ArtifactAccountPair artifactAccountPair(String id, String account, Artifact artifact) {
