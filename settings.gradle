@@ -6,6 +6,8 @@
   }
 }
 
+enableFeaturePreview("VERSION_ORDERING_V2")
+
 include(
   "keiko-core",
   "keiko-mem",
