@@ -20,6 +20,7 @@ import static com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder;
 import static com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.GraphType.FULL;
 
 import com.netflix.spinnaker.kork.annotations.Beta;
+import com.netflix.spinnaker.kork.plugins.api.internal.SpinnakerExtensionPoint;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.TaskGraph;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.lang.annotation.ElementType;
@@ -30,7 +31,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import javax.annotation.Nonnull;
-import org.pf4j.ExtensionPoint;
 
 /**
  * Provides a low-level API for building stages.
@@ -41,7 +41,7 @@ import org.pf4j.ExtensionPoint;
  * stages.
  */
 @Beta
-public interface StageDefinitionBuilder extends ExtensionPoint {
+public interface StageDefinitionBuilder extends SpinnakerExtensionPoint {
 
   default @Nonnull TaskGraph buildTaskGraph(@Nonnull StageExecution stage) {
     Builder graphBuilder = Builder(FULL);
@@ -108,6 +108,10 @@ public interface StageDefinitionBuilder extends ExtensionPoint {
    */
   static String getType(Class<? extends StageDefinitionBuilder> clazz) {
     String className = clazz.getSimpleName();
+    if (className.equals("")) {
+      throw new IllegalStateException(
+          "StageDefinitionBuilder.getType() cannot be called on an anonymous type");
+    }
     return className.substring(0, 1).toLowerCase()
         + className
             .substring(1)
@@ -122,7 +126,7 @@ public interface StageDefinitionBuilder extends ExtensionPoint {
 
   /** A collection of known aliases. */
   default Collection<String> aliases() {
-    if (getClass().isAnnotationPresent(Aliases.class)) {
+    if (this.getClass().isAnnotationPresent(Aliases.class)) {
       return Arrays.asList(getClass().getAnnotation(Aliases.class).value());
     }
 

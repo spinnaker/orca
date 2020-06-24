@@ -47,3 +47,9 @@ databaseChangeLog:
 - include:
     file: changelog/20200327-deleted-executions-table.yml
     relativeToChangelogFile: true
+- include:
+    file: changelog/20200424-index-deleted-executions-table.yml
+    relativeToChangelogFile: true
+- include:
+    file: changelog/20200603-deleted-executions-table-not-mysql.yml
+    relativeToChangelogFile: true

@@ -94,7 +94,7 @@ class CreateBakeTask implements RetryableTask {
       // throw a Retrofit exception (HTTP 404 Not Found)
       def bake = bakeFromContext(stage, bakery)
       String rebake = shouldRebake(stage) ? "1" : null
-      def bakeStatus = bakery.service.createBake(stage.context.region as String, bake, rebake).toBlocking().single()
+      def bakeStatus = bakery.service.createBake(stage.context.region as String, bake, rebake)
 
       def stageOutputs = [
         status         : bakeStatus,
@@ -144,13 +144,12 @@ class CreateBakeTask implements RetryableTask {
     return stage.execution.trigger?.rebake
   }
 
-  @CompileDynamic
   private BakeRequest bakeFromContext(StageExecution stage, SelectedService<BakeryService> bakery) {
     PackageType packageType
     if (bakery.config.roscoApisEnabled) {
       def baseImage = bakery.service.getBaseImage(stage.context.cloudProviderType as String,
-        stage.context.baseOs as String).toBlocking().single()
-      packageType = baseImage.packageType as PackageType
+        stage.context.baseOs as String)
+      packageType = baseImage.packageType
     } else {
       packageType = new OperatingSystem(stage.context.baseOs as String).getPackageType()
     }

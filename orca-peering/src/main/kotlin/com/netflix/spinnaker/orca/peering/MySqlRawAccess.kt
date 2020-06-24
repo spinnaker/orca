@@ -3,6 +3,10 @@ package com.netflix.spinnaker.orca.peering
 import com.netflix.spinnaker.kork.exceptions.SystemException
 import com.netflix.spinnaker.kork.sql.routing.withPool
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import io.github.resilience4j.retry.Retry
+import io.github.resilience4j.retry.RetryConfig
+import io.vavr.control.Try
+import java.time.Duration
 import kotlin.math.min
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -12,13 +16,12 @@ import org.jooq.impl.DSL.table
 
 /**
  * Provides raw access to various tables in the orca SQL
- * TODO(mvulfson): Need an extension point to deal with cases such as OCA
  */
 open class MySqlRawAccess(
-  private val jooq: DSLContext,
-  private val poolName: String,
+  jooq: DSLContext,
+  poolName: String,
   chunkSize: Int
-) : SqlRawAccess(chunkSize) {
+) : SqlRawAccess(jooq, poolName, chunkSize) {
 
   private var maxPacketSize: Long = 0
 
@@ -42,14 +45,16 @@ open class MySqlRawAccess(
       field("`partition`").eq(partitionName)
     }
 
-    return withPool(poolName) {
-      jooq
-        .select(field("id"), field("updated_at"))
-        .from(getExecutionTable(executionType))
-        .where(field("status").`in`(*completedStatuses.toTypedArray())
-          .and(field("updated_at").gt(updatedAfter))
-          .and(partitionConstraint))
-        .fetchInto(ExecutionDiffKey::class.java)
+    return withRetry {
+      withPool(poolName) {
+        jooq
+          .select(field("id"), field("updated_at"))
+          .from(getExecutionTable(executionType))
+          .where(field("status").`in`(*completedStatuses.toTypedArray())
+            .and(field("updated_at").gt(updatedAfter))
+            .and(partitionConstraint))
+          .fetchInto(ExecutionDiffKey::class.java)
+      }
     }
   }
 
@@ -174,7 +179,7 @@ open class MySqlRawAccess(
           }
 
           // Dump it to the DB
-          batchQuery
+          persisted += batchQuery
             .onDuplicateKeyUpdate()
             .set(updateSet)
             .execute()
@@ -189,13 +194,12 @@ open class MySqlRawAccess(
             .values(values)
         }
 
-        persisted++
         cumulativeSize += totalRecordSize
       }
 
       if (cumulativeSize > 0) {
         // Dump the last bit to the DB
-        batchQuery
+        persisted += batchQuery
           .onDuplicateKeyUpdate()
           .set(updateSet)
           .execute()
@@ -203,5 +207,17 @@ open class MySqlRawAccess(
     }
 
     return persisted
+  }
+
+  private fun <T> withRetry(action: () -> T): T {
+    val retry = Retry.of(
+      "sqlPeeringAgent",
+      RetryConfig.custom<T>()
+        .maxAttempts(3)
+        .waitDuration(Duration.ofMillis(500))
+        .build()
+    )
+
+    return Try.ofSupplier(Retry.decorateSupplier(retry, action)).get()
   }
 }

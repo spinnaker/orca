@@ -50,14 +50,14 @@ public class UpdateJobProcessesTask extends AbstractCloudProviderAwareTask {
     operations.add(Collections.singletonMap("updateJobProcesses", operation));
 
     TaskId taskId =
-        katoService
-            .requestOperations(request.get("cloudProvider").toString(), operations)
-            .toBlocking()
-            .first();
+        katoService.requestOperations(request.get("cloudProvider").toString(), operations);
 
     Map<String, Object> outputs = new HashMap<>();
     outputs.put("notification.type", "updateJobProcesses");
     outputs.put("kato.last.task.id", taskId);
+
+    // TODO(rz): Why is this prefixed with "titus"? How do we determine what,
+    //   if anything, is consuming outputs?
     outputs.put("titus.region", request.get("region"));
     outputs.put("titus.account.name", request.get("credentials"));
 

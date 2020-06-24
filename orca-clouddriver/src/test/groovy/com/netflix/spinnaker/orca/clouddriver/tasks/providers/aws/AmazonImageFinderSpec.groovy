@@ -53,7 +53,7 @@ class AmazonImageFinderSpec extends Specification {
     def noTags = [:]
 
     when:
-    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"])
+    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"], [])
 
     then:
     1 * oortService.findImage("aws", "mypackage", null, null, ["tag:engine": "spinnaker"]) >> {
@@ -137,7 +137,7 @@ class AmazonImageFinderSpec extends Specification {
     ]
 
     when:
-    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"])
+    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"], [])
 
     then:
     1 * oortService.findImage("aws", "mypackage", null, null, ["tag:engine": "spinnaker"]) >> {
@@ -196,7 +196,7 @@ class AmazonImageFinderSpec extends Specification {
     ]
 
     when:
-    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"])
+    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"], [])
 
     then:
     1 * oortService.findImage("aws", "mypackage", null, null, ["tag:engine": "spinnaker"]) >> {
@@ -257,6 +257,22 @@ class AmazonImageFinderSpec extends Specification {
     creationDates                                              || expectedOrder
     [bCD("2016"), bCD("2014"), bCD("2012"), bCD("2015")]       || [bCD("2016"), bCD("2015"), bCD("2014"), bCD("2012")]
     [bCD("2016"), bCD("2014"), null, bCD("2012"), bCD("2015")] || [bCD("2016"), bCD("2015"), bCD("2014"), bCD("2012"), null]
+  }
+
+  def 'passes imageOwnerAccount to oortService.findImage'() {
+    given: 'an imageOwnerAccount property in the stage'
+    String myAccount = 'my-account'
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
+      imageOwnerAccount: myAccount,
+      regions: ["us-west-1"]
+    ])
+
+    when:
+    amazonImageFinder.byTags(stage, 'mypackage', [:], [])
+
+    then:
+    1 * oortService.findImage('aws', 'mypackage', myAccount, null, _) >> {[]}
+    0 * _
   }
 
   String bCD(String year) {

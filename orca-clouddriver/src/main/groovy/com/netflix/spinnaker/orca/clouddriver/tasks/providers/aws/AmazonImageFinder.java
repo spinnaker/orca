@@ -33,6 +33,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AmazonImageFinder implements ImageFinder {
+
+  private static final int MAX_SEARCH_RESULTS = 1000;
+
   @Autowired OortService oortService;
 
   @Autowired ObjectMapper objectMapper;
@@ -75,15 +78,30 @@ public class AmazonImageFinder implements ImageFinder {
 
   @Override
   public Collection<ImageDetails> byTags(
-      StageExecution stage, String packageName, Map<String, String> tags) {
+      StageExecution stage,
+      String packageName,
+      Map<String, String> tags,
+      List<String> warningsCollector) {
     StageData stageData = (StageData) stage.mapTo(StageData.class);
+
     List<AmazonImage> allMatchedImages =
-        oortService.findImage(getCloudProvider(), packageName, null, null, prefixTags(tags))
+        oortService
+            .findImage(
+                getCloudProvider(),
+                packageName,
+                stageData.imageOwnerAccount,
+                null,
+                prefixTags(tags))
             .stream()
             .map(image -> objectMapper.convertValue(image, AmazonImage.class))
             .filter(image -> image.tagsByImageId != null && image.tagsByImageId.size() != 0)
             .sorted()
             .collect(Collectors.toList());
+
+    if (allMatchedImages.size() >= MAX_SEARCH_RESULTS) {
+      warningsCollector.add(
+          "Too many results matching search criteria: Consider refining the search.");
+    }
 
     AppVersionFilter filter = new AppVersionFilter(packageName, stageData.regions);
     List<AmazonImage> appversionMatches =
@@ -120,6 +138,7 @@ public class AmazonImageFinder implements ImageFinder {
 
   static class StageData {
     @JsonProperty Collection<String> regions;
+    public String imageOwnerAccount;
   }
 
   static class AmazonImage implements Comparable<AmazonImage> {

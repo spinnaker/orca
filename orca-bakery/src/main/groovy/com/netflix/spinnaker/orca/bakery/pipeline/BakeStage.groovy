@@ -94,7 +94,9 @@ class BakeStage implements StageDefinitionBuilder {
     Set<String> deployRegions = (stage.context.region ? [stage.context.region] : []) as Set<String>
     deployRegions.addAll(stage.context.regions as Set<String> ?: [])
 
-    if (!deployRegions.contains("global")) {
+
+    Boolean skipRegionDetection = Boolean.TRUE == stage.context.skipRegionDetection
+    if (!deployRegions.contains("global") && !skipRegionDetection) {
       deployRegions.addAll(regionCollector.getRegionsFromChildStages(stage))
       // TODO(duftler): Also filter added canary regions once canary supports multiple platforms.
     }
@@ -104,7 +106,7 @@ class BakeStage implements StageDefinitionBuilder {
       stage.context.amiSuffix = clock.instant().atZone(UTC).format("yyyyMMddHHmmss")
     }
     return deployRegions.collect {
-      stage.context - ["regions": stage.context.regions] + ([
+      stage.context - ["regions": stage.context.regions, "skipRegionDetection": stage.context.skipRegionDetection] + ([
         type  : PIPELINE_CONFIG_TYPE,
         region: it,
         name  : "Bake in ${it}" as String
@@ -117,6 +119,7 @@ class BakeStage implements StageDefinitionBuilder {
   static class CompleteParallelBakeTask implements Task {
     public static final List<String> DEPLOYMENT_DETAILS_CONTEXT_FIELDS = [
       "ami",
+      "amiName",
       "imageId",
       "imageName",
       "amiSuffix",
@@ -139,15 +142,8 @@ class BakeStage implements StageDefinitionBuilder {
 
     @Nonnull
     TaskResult execute(@Nonnull StageExecution stage) {
-      def bakeInitializationStages = stage.execution.stages.findAll {
-        it.parentStageId == stage.parentStageId && it.status == ExecutionStatus.RUNNING
-      }
-
-      // FIXME? (lpollo): I don't know why we do this, but we include in relatedStages all parallel bake stages in the
-      //  same pipeline, not just the ones related to the stage passed to this task, which means this list actually
-      //  contains *unrelated* bake stages...
       def relatedBakeStages = stage.execution.stages.findAll {
-        it.type == PIPELINE_CONFIG_TYPE && bakeInitializationStages*.id.contains(it.parentStageId)
+        it.type == PIPELINE_CONFIG_TYPE && stage.id == it.parentStageId
       }
 
       def globalContext = [

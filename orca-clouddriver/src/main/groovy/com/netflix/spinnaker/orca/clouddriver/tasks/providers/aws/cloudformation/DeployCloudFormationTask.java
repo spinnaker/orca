@@ -89,9 +89,11 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
               .map(m -> objectMapper.convertValue(m, Artifact.class))
               .orElse(null);
       Artifact artifact =
-          artifactUtils.getBoundArtifactForStage(stage, stackArtifactId, stackArtifact);
-      Optional.ofNullable(task.get("stackArtifactAccount"))
-          .ifPresent(account -> artifact.setArtifactAccount(account.toString()));
+          ArtifactUtils.withAccount(
+              artifactUtils.getBoundArtifactForStage(stage, stackArtifactId, stackArtifact),
+              Optional.ofNullable(task.get("stackArtifactAccount"))
+                  .map(Object::toString)
+                  .orElse(null));
       Response response = oortService.fetchArtifact(artifact);
       try {
         String template = CharStreams.toString(new InputStreamReader(response.getBody().in()));
@@ -139,10 +141,7 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
         new ImmutableMap.Builder<String, Map>().put(TASK_NAME, task).build();
 
     TaskId taskId =
-        katoService
-            .requestOperations(cloudProvider, Collections.singletonList(operation))
-            .toBlocking()
-            .first();
+        katoService.requestOperations(cloudProvider, Collections.singletonList(operation));
 
     Map<String, Object> context =
         new ImmutableMap.Builder<String, Object>()

@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 Salesforce.com, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License")
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -29,34 +30,20 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 @RunWith(JUnitPlatform.class)
-final class WaitOnJobCompletionTest {
-
+public final class WaitOnJobCompletionTest {
   @Test
-  void jobTimeoutOneMinute() {
-    WaitOnJobCompletion task = new WaitOnJobCompletion();
-    StageExecutionImpl myStage = createStageWithContext(ImmutableMap.of("timeoutMinutes", 1));
-    assertThat(task.getDynamicTimeout(myStage)).isEqualTo(60000);
-  }
+  void jobTimeoutSpecifiedByRunJobTask() {
+    Duration duration = Duration.ofMinutes(10);
 
-  @Test
-  void jobTimeoutMissingTimeoutShouldBe120Minutes() {
     WaitOnJobCompletion task = new WaitOnJobCompletion();
-    StageExecutionImpl myStage = createStageWithContext(ImmutableMap.of("isee", "nothing"));
-    assertThat(task.getDynamicTimeout(myStage)).isEqualTo(7200000);
-  }
+    StageExecutionImpl myStage =
+        createStageWithContext(ImmutableMap.of("jobRuntimeLimit", duration.toString()));
+    assertThat(task.getDynamicTimeout(myStage))
+        .isEqualTo((duration.plus(WaitOnJobCompletion.getPROVIDER_PADDING())).toMillis());
 
-  @Test
-  void jobTimeoutIsEmptyString() {
-    WaitOnJobCompletion task = new WaitOnJobCompletion();
-    StageExecutionImpl myStage = createStageWithContext(ImmutableMap.of("timeoutMinutes", ""));
-    assertThat(task.getDynamicTimeout(myStage)).isEqualTo(7200000);
-  }
-
-  @Test
-  void jobTimeoutIs1AsString() {
-    WaitOnJobCompletion task = new WaitOnJobCompletion();
-    StageExecutionImpl myStage = createStageWithContext(ImmutableMap.of("timeoutMinutes", "1"));
-    assertThat(task.getDynamicTimeout(myStage)).isEqualTo(60000);
+    StageExecutionImpl myStageInvalid =
+        createStageWithContext(ImmutableMap.of("jobRuntimeLimit", "garbage"));
+    assertThat(task.getDynamicTimeout(myStageInvalid)).isEqualTo(task.getTimeout());
   }
 
   private StageExecutionImpl createStageWithContext(Map<String, ?> context) {
