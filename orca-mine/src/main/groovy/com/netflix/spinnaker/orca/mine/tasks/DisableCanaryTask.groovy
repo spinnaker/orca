@@ -30,6 +30,8 @@ import retrofit.RetrofitError
 
 import javax.annotation.Nonnull
 
+import static com.netflix.spinnaker.orca.mine.pipeline.CanaryStage.DEFAULT_CLUSTER_DISABLE_WAIT_TIME
+
 @Component
 @Slf4j
 class DisableCanaryTask extends AbstractCloudProviderAwareTask implements Task {
@@ -40,6 +42,9 @@ class DisableCanaryTask extends AbstractCloudProviderAwareTask implements Task {
   @Nonnull
   @Override
   TaskResult execute(@Nonnull StageExecution stage) {
+
+    Integer waitTime = stage.context.clusterDisableWaitTime != null ? stage.context.clusterDisableWaitTime : DEFAULT_CLUSTER_DISABLE_WAIT_TIME
+
     try {
       def canary = mineService.getCanary(stage.context.canary.id)
       if (canary.health?.health == 'UNHEALTHY' || stage.context.unhealthy != null) {
@@ -65,7 +70,8 @@ class DisableCanaryTask extends AbstractCloudProviderAwareTask implements Task {
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
       'kato.last.task.id'    : taskId,
       'deploy.server.groups' : dSG,
-      disabledCluster        : selector
+      disabledCluster        : selector,
+      waitTime               : waitTime
     ]).build()
   }
 }
