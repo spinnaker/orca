@@ -41,7 +41,7 @@ import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHE
 @CompileStatic
 @Slf4j
 class EchoNotifyingStageListener implements StageListener {
-
+  public static final String INCLUDE_FULL_EXECUTION_PROPERTY = "echo.events.includeFullExecution"
   private final EchoService echoService
   private final ExecutionRepository repository
   private final ContextParameterProcessor contextParameterProcessor
@@ -131,7 +131,7 @@ class EchoNotifyingStageListener implements StageListener {
         event.content.taskName = "${stage.type}.${task.name}".toString()
       }
 
-      if (dynamicConfigService.isEnabled("orca.echoEvents.includeFullExecution.enabled", true)) {
+      if (dynamicConfigService.getConfig(Boolean, INCLUDE_FULL_EXECUTION_PROPERTY, true)) {
         event.content.execution = stage.execution
       } else {
         if (type == 'task') {

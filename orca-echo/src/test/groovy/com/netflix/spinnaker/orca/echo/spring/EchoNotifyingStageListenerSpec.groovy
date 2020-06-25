@@ -13,6 +13,7 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.*
+import static com.netflix.spinnaker.orca.echo.spring.EchoNotifyingStageListener.INCLUDE_FULL_EXECUTION_PROPERTY
 
 class EchoNotifyingStageListenerSpec extends Specification {
 
@@ -123,7 +124,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
     echoListener.afterTask(persister, stage, task, executionStatus, wasSuccessful)
 
     then:
-    1 * dynamicConfigService.isEnabled("orca.echoEvents.includeFullExecution.enabled", true) >> fullExecutionToggle
+    1 * dynamicConfigService.getConfig(Boolean, INCLUDE_FULL_EXECUTION_PROPERTY, _) >> fullExecutionToggle
     message.details.source == "orca"
     message.details.application == pipelineStage.execution.application
     message.details.type == "orca:task:$echoMessage"
