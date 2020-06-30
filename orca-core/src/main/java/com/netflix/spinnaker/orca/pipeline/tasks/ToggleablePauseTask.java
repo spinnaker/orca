@@ -35,17 +35,13 @@ public class ToggleablePauseTask implements RetryableTask {
 
     if (pauseToggle != null && dynamicConfigService.isEnabled(pauseToggle, false)) {
       log.debug(
-          stage.getName()
-              + " stage currently paused based on "
-              + pauseToggle
-              + " toggle. Waiting...");
+          "{} stage currently paused based on {} toggle. Waiting...", stage.getName(), pauseToggle);
       return TaskResult.RUNNING;
     } else {
       log.debug(
-          stage.getName()
-              + " stage currently unpaused based on "
-              + pauseToggle
-              + " toggle. Carrying on...");
+          "{} stage currently unpaused based on {} toggle. Carrying on...",
+          stage.getName(),
+          pauseToggle);
       return TaskResult.SUCCEEDED;
     }
   }
