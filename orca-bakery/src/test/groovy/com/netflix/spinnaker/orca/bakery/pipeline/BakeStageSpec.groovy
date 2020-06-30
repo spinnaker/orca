@@ -39,7 +39,7 @@ import static java.time.temporal.ChronoUnit.SECONDS
 
 class BakeStageSpec extends Specification {
   def dynamicConfigService = Mock(DynamicConfigService)
-  def regionCollector = Mock(RegionCollector)
+  def regionCollector = new RegionCollector()
   def builder = Mock(TaskNode.Builder)
 
   @Unroll
@@ -59,9 +59,8 @@ class BakeStageSpec extends Specification {
 
     def bakeStage = new StageExecutionImpl(pipeline, "bake", "Bake!", bakeStageContext + [refId: "1"])
     def builder = new BakeStage(
-      clock: Clock.fixed(EPOCH.plus(1, HOURS).plus(15, MINUTES).plus(12, SECONDS), UTC),
-      regionCollector: new RegionCollector()
-    )
+        regionCollector, dynamicConfigService,
+        Clock.fixed(EPOCH.plus(1, HOURS).plus(15, MINUTES).plus(12, SECONDS), UTC))
 
     when:
     def parallelContexts = builder.parallelContexts(bakeStage)
@@ -116,7 +115,7 @@ class BakeStageSpec extends Specification {
 
     def bakeStage = pipeline.stageById("1")
     def graph = StageGraphBuilderImpl.beforeStages(bakeStage)
-    new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+    new BakeStage(regionCollector, dynamicConfigService).beforeStages(bakeStage, graph)
     def parallelStages = graph.build()
 
     parallelStages.eachWithIndex { it, idx -> it.context.ami = idx + 1 }
@@ -149,7 +148,7 @@ class BakeStageSpec extends Specification {
 
     def bakeStage = pipeline.stageById("1")
     def graph = StageGraphBuilderImpl.beforeStages(bakeStage)
-    new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+    new BakeStage(regionCollector, dynamicConfigService).beforeStages(bakeStage, graph)
     def parallelStages = graph.build()
 
     parallelStages.eachWithIndex { it, idx ->
@@ -194,7 +193,7 @@ class BakeStageSpec extends Specification {
     for (stageId in ["1", "2"]) {
       def bakeStage = pipeline.stageById(stageId)
       def graph = StageGraphBuilderImpl.beforeStages(bakeStage)
-      new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+      new BakeStage(regionCollector, dynamicConfigService).beforeStages(bakeStage, graph)
       def childBakeStages = graph.build()
       childBakeStages.eachWithIndex { it, idx ->
         it.context.ami = "${idx}"
@@ -229,7 +228,7 @@ class BakeStageSpec extends Specification {
 
     def bakeStage = pipeline.stageById("1")
     def graph = StageGraphBuilderImpl.beforeStages(bakeStage)
-    new BakeStage(regionCollector: new RegionCollector()).beforeStages(bakeStage, graph)
+    new BakeStage(regionCollector, dynamicConfigService).beforeStages(bakeStage, graph)
     def parallelStages = graph.build()
 
     parallelStages.eachWithIndex { it, idx ->
