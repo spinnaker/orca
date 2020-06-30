@@ -18,22 +18,29 @@ package com.netflix.spinnaker.orca.bakery.pipeline
 
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
-
-import java.time.Clock
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.tasks.ToggleablePauseTask
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import java.time.Clock
+
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 import static java.time.Instant.EPOCH
 import static java.time.ZoneOffset.UTC
-import static java.time.temporal.ChronoUnit.*
+import static java.time.temporal.ChronoUnit.HOURS
+import static java.time.temporal.ChronoUnit.MINUTES
+import static java.time.temporal.ChronoUnit.SECONDS
 
 class BakeStageSpec extends Specification {
   def dynamicConfigService = Mock(DynamicConfigService)
+  def regionCollector = Mock(RegionCollector)
+  def builder = Mock(TaskNode.Builder)
 
   @Unroll
   def "should build contexts corresponding to locally specified bake region and all target deploy regions"() {
@@ -237,6 +244,29 @@ class BakeStageSpec extends Specification {
     with(taskResult.outputs) {
       deploymentDetails[0].amiName == "iwantthisname"
     }
+  }
+
+  @Unroll
+  def "should include a pause task when the bake pause toggle is ON"() {
+    given:
+    def bakeStage = new BakeStage(regionCollector, dynamicConfigService)
+    def stageExecution = stage {
+      id = "1"
+      parentStageId = 0
+    }
+
+    when:
+    bakeStage.taskGraph(stageExecution, builder)
+
+    then:
+    1 * dynamicConfigService.isEnabled(BakeStage.BAKE_PAUSE_TOGGLE, false) >> bakePauseToggle
+    expectedPauseTaskCount * builder.withTask("pauseBake", ToggleablePauseTask)
+    _ * builder.withTask(*_) >> builder
+
+    where:
+   bakePauseToggle | expectedPauseTaskCount
+   false           | 0
+   true            | 1
   }
 
   private
