@@ -6,6 +6,7 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.time.Duration;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,13 +26,15 @@ public class ToggleablePauseTask implements RetryableTask {
     this.dynamicConfigService = dynamicConfigService;
   }
 
+  @Nullable
+  private String getPauseToggleKey(@Nonnull final StageExecution stage) {
+    return (String) stage.getContext().get("pauseToggleKey");
+  }
+
   @Override
   @Nonnull
   public TaskResult execute(@Nonnull final StageExecution stage) {
-    final String pauseToggleKey =
-        stage.getContext().containsKey("pauseToggleKey")
-            ? stage.getContext().get("pauseToggleKey").toString()
-            : null;
+    final String pauseToggleKey = getPauseToggleKey(stage);
 
     if (pauseToggleKey == null) {
       log.error(
@@ -62,6 +65,13 @@ public class ToggleablePauseTask implements RetryableTask {
 
   @Override
   public long getTimeout() {
-    return Long.MAX_VALUE;
+    return Duration.ofHours(24).toMillis();
+  }
+
+  @Nullable
+  @Override
+  public TaskResult onTimeout(@Nonnull StageExecution stage) {
+    log.warn("ToggleablePauseTask with toggle key {} timed out.", getPauseToggleKey(stage));
+    return null;
   }
 }

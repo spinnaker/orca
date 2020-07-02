@@ -76,12 +76,6 @@ class BakeStage implements StageDefinitionBuilder {
         log.info("Baking is currently paused. Adding pause task to ${stage.name} stage.")
         stage.context.put("pauseToggleKey", BAKE_PAUSE_TOGGLE)
         builder.withTask("delayBake", ToggleablePauseTask)
-
-        if (stage.context.containsKey("stageTimeoutMs")) {
-          log.warn("Baking paused indefinitely based on ${BAKE_PAUSE_TOGGLE} toggle, " +
-              "but stage has timeout defined (${stage.context.stageTimeoutMs}ms). " +
-              "This pipeline may fail as a result.")
-        }
       }
 
       builder
