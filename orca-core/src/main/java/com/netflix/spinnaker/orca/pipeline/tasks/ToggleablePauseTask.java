@@ -13,8 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * A task that just waits indefinitely based on a feature toggle specified in the `pauseToggleKey`
- * property of the stage context. Useful for pausing stages as part of migrations, for instance.
+ * A task that waits based on a feature toggle specified in the `pauseToggleKey` property of the
+ * stage context. Useful for pausing stages as part of migrations, for instance.
  */
 @Component
 public class ToggleablePauseTask implements RetryableTask {
