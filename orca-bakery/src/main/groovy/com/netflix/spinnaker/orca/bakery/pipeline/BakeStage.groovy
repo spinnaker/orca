@@ -74,8 +74,8 @@ class BakeStage implements StageDefinitionBuilder {
     } else {
       if (dynamicConfigService.isEnabled(BAKE_PAUSE_TOGGLE, false)) {
         log.info("Baking is currently paused. Adding pause task to ${stage.name} stage.")
-        stage.context.put("pauseToggle", BAKE_PAUSE_TOGGLE)
-        builder.withTask("pauseBake", ToggleablePauseTask)
+        stage.context.put("pauseToggleKey", BAKE_PAUSE_TOGGLE)
+        builder.withTask("delayBake", ToggleablePauseTask)
 
         if (stage.context.containsKey("stageTimeoutMs")) {
           log.warn("Baking paused indefinitely based on ${BAKE_PAUSE_TOGGLE} toggle, " +

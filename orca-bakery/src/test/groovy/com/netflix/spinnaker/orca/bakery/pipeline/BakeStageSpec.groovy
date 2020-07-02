@@ -259,7 +259,7 @@ class BakeStageSpec extends Specification {
 
     then:
     1 * dynamicConfigService.isEnabled(BakeStage.BAKE_PAUSE_TOGGLE, false) >> bakePauseToggle
-    expectedPauseTaskCount * builder.withTask("pauseBake", ToggleablePauseTask)
+    expectedPauseTaskCount * builder.withTask("delayBake", ToggleablePauseTask)
     _ * builder.withTask(*_) >> builder
 
     where:

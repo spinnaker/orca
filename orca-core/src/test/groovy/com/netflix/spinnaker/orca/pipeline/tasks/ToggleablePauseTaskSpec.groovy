@@ -14,7 +14,7 @@ class ToggleablePauseTaskSpec extends Specification {
 
   def stage = stage {
     context = [
-        pauseToggle: 'my.test.toggle'
+        pauseToggleKey: 'my.test.toggle'
     ]
   }
 
@@ -23,7 +23,7 @@ class ToggleablePauseTaskSpec extends Specification {
 
   def "should return SUCCEEDED when pause toggle is missing"() {
     given:
-    stage.context.remove("pauseToggle")
+    stage.context.remove("pauseToggleKey")
 
     when:
     def result = task.execute(stage)

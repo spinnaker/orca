@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * A task that just waits indefinitely based on a feature toggle specified in the `pauseToggle`
+ * A task that just waits indefinitely based on a feature toggle specified in the `pauseToggleKey`
  * property of the stage context. Useful for pausing stages as part of migrations, for instance.
  */
 @Component
@@ -28,20 +28,29 @@ public class ToggleablePauseTask implements RetryableTask {
   @Override
   @Nonnull
   public TaskResult execute(@Nonnull final StageExecution stage) {
-    final String pauseToggle =
-        stage.getContext().containsKey("pauseToggle")
-            ? stage.getContext().get("pauseToggle").toString()
+    final String pauseToggleKey =
+        stage.getContext().containsKey("pauseToggleKey")
+            ? stage.getContext().get("pauseToggleKey").toString()
             : null;
 
-    if (pauseToggle != null && dynamicConfigService.isEnabled(pauseToggle, false)) {
+    if (pauseToggleKey == null) {
+      log.error(
+          "ToggleablePauseTask added to stage without pauseToggleKey in stage context. This is a bug.");
+      // we return SUCCEEDED here because this is not the user's fault...
+      return TaskResult.SUCCEEDED;
+    }
+
+    if (dynamicConfigService.isEnabled(pauseToggleKey, false)) {
       log.debug(
-          "{} stage currently paused based on {} toggle. Waiting...", stage.getName(), pauseToggle);
+          "{} stage currently paused based on {} toggle. Waiting...",
+          stage.getName(),
+          pauseToggleKey);
       return TaskResult.RUNNING;
     } else {
       log.debug(
           "{} stage currently unpaused based on {} toggle. Carrying on...",
           stage.getName(),
-          pauseToggle);
+          pauseToggleKey);
       return TaskResult.SUCCEEDED;
     }
   }
