@@ -36,6 +36,7 @@ import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -56,8 +57,8 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   private static final String REFRESH_TYPE = "manifest";
   public static final String TASK_NAME = "forceCacheRefresh";
 
-  @Getter private final long backoffPeriod = TimeUnit.SECONDS.toMillis(10);
-  @Getter private final long timeout = TimeUnit.MINUTES.toMillis(15);
+  @Getter private final Duration backoffPeriod = Duration.ofSeconds(10);
+  @Getter private final Duration timeout = Duration.ofMinutes(15);
 
   private final long autoSucceedAfterMs = TimeUnit.MINUTES.toMillis(12);
   private final Clock clock;

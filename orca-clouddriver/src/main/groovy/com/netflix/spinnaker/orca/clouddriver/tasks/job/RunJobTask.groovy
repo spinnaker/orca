@@ -43,8 +43,8 @@ class RunJobTask extends AbstractCloudProviderAwareTask implements RetryableTask
   @Autowired
   JobUtils jobUtils
 
-  long backoffPeriod = 2000
-  long timeout = 60000
+  Duration backoffPeriod = Duration.ofSeconds(2)
+  Duration timeout = Duration.ofMinutes(1)
 
   @Override
   @Nullable

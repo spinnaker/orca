@@ -38,8 +38,8 @@ import retrofit.RetrofitError
 
 @Slf4j
 abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask implements OverridableTimeoutRetryableTask {
-  long backoffPeriod = TimeUnit.SECONDS.toMillis(10)
-  long timeout = TimeUnit.HOURS.toMillis(2)
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofHours(2)
   long serverGroupWaitTime = TimeUnit.MINUTES.toMillis(10)
 
   @Autowired
@@ -77,13 +77,13 @@ abstract class AbstractInstancesCheckTask extends AbstractCloudProviderAwareTask
   }
 
   @Override
-  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  Duration getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     if (taskDuration.toMillis() > TimeUnit.MINUTES.toMillis(60)) {
       // task has been running > 60min, drop retry interval to every 2 minutes
-      return Math.max(backoffPeriod, TimeUnit.SECONDS.toMillis(120))
+      return (backoffPeriod.seconds > 120) ? backoffPeriod : Duration.ofSeconds(120)
     } else if (taskDuration.toMillis() > TimeUnit.MINUTES.toMillis(30)) {
       // task has been running > 30min, drop retry interval to every 60s
-      return Math.max(backoffPeriod, TimeUnit.SECONDS.toMillis(60))
+      return (backoffPeriod.seconds > 60) ? backoffPeriod : Duration.TimeUnit.SECONDS.toMillis(60)
     }
 
     return backoffPeriod

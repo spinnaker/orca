@@ -29,8 +29,8 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTa
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -144,12 +144,12 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(5);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(5);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(5);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(5);
   }
 }

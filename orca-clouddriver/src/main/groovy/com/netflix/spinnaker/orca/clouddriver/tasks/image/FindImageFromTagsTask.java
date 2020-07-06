@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -119,13 +120,13 @@ public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implem
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 10000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return this.findImageFromTagsTimeoutMillis;
+  public Duration getTimeout() {
+    return Duration.ofMillis(this.findImageFromTagsTimeoutMillis);
   }
 
   static class StageData {

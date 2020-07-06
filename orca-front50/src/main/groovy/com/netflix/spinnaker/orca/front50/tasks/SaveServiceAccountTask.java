@@ -27,13 +27,13 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
@@ -62,13 +62,13 @@ public class SaveServiceAccountTask implements RetryableTask {
   private FiatPermissionEvaluator fiatPermissionEvaluator;
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(1);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(1);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.SECONDS.toMillis(60);
+  public Duration getTimeout() {
+    return Duration.ofSeconds(60);
   }
 
   @Nonnull

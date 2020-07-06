@@ -29,12 +29,12 @@ import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,13 +122,13 @@ public class RestrictExecutionDuringTimeWindow implements StageDefinitionBuilder
   @VisibleForTesting
   private static class SuspendExecutionDuringTimeWindowTask implements RetryableTask {
     @Override
-    public long getBackoffPeriod() {
-      return TimeUnit.SECONDS.toMillis(30);
+    public Duration getBackoffPeriod() {
+      return Duration.ofSeconds(30);
     }
 
     @Override
-    public long getTimeout() {
-      return TimeUnit.DAYS.toMillis(7);
+    public Duration getTimeout() {
+      return Duration.ofDays(7);
     }
 
     private static final int DAY_START_HOUR = 0;

@@ -26,11 +26,11 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.snapshot.DeleteSnapshotStage;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -74,12 +74,12 @@ public class DeleteSnapshotTask extends AbstractCloudProviderAwareTask implement
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(10);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(2);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(2);
   }
 }

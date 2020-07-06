@@ -61,12 +61,12 @@ public class WaitUntilTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 1_000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(1);
   }
 
   @Override
-  public long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  public Duration getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     WaitUntilStage.WaitUntilStageContext context =
         stage.mapTo(WaitUntilStage.WaitUntilStageContext.class);
 
@@ -76,14 +76,14 @@ public class WaitUntilTask implements RetryableTask {
       Instant completion = Instant.ofEpochMilli(context.getEpochMillis());
 
       if (completion.isAfter(now)) {
-        return completion.toEpochMilli() - now.toEpochMilli();
+        return Duration.ofMillis(completion.toEpochMilli() - now.toEpochMilli());
       }
     }
     return getBackoffPeriod();
   }
 
   @Override
-  public long getTimeout() {
-    return Integer.MAX_VALUE;
+  public Duration getTimeout() {
+    return WaitTask.LOOONG_TIME;
   }
 }

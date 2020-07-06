@@ -31,18 +31,20 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 
+import java.time.Duration
+
 abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudProviderAwareTask implements OverridableTimeoutRetryableTask {
   private Logger log = LoggerFactory.getLogger(getClass())
 
   @Override
-  public long getBackoffPeriod() { 10000 }
+  public Duration getBackoffPeriod() { Duration.ofSeconds(10) }
 
   @Value('${tasks.wait-for-cluster-timeout-millis:1800000}')
   public long defaultTimeout
 
   @Override
-  public long getTimeout() {
-    return this.defaultTimeout
+  public Duration getTimeout() {
+    return Duration.ofMillis(this.defaultTimeout)
   }
 
   @Autowired

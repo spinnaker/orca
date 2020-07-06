@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.tasks
 
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.regex.Matcher
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -50,8 +51,8 @@ class JarDiffsTask implements DiffTask {
 
   private static final int MAX_RETRIES = 10
 
-  long backoffPeriod = 10000
-  long timeout = TimeUnit.MINUTES.toMillis(5) // always set this higher than retries * backoffPeriod would take
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofMinutes(5) // always set this higher than retries * backoffPeriod would take
 
   @Autowired
   ComparableLooseVersion comparableLooseVersion

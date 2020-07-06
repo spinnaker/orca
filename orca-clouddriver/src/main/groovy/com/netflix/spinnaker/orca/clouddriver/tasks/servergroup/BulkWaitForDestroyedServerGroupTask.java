@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTa
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -128,12 +129,12 @@ public class BulkWaitForDestroyedServerGroupTask extends AbstractCloudProviderAw
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 5000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(5);
   }
 
   @Override
-  public long getTimeout() {
-    return 10000;
+  public Duration getTimeout() {
+    return Duration.ofSeconds(10);
   }
 }

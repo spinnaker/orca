@@ -22,9 +22,9 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.model.RetryableStageDefinition;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,12 +34,12 @@ import retrofit.RetrofitError;
 @Slf4j
 public abstract class RetryableIgorTask<T extends RetryableStageDefinition>
     implements RetryableTask {
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(5);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(5);
   }
 
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(1);
+  public Duration getTimeout() {
+    return Duration.ofSeconds(1);
   }
 
   protected int getMaxConsecutiveErrors() {

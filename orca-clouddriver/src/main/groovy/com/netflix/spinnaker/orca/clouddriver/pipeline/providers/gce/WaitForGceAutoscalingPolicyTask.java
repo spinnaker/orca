@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper;
+import java.time.Duration;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import lombok.Data;
@@ -32,13 +33,13 @@ public class WaitForGceAutoscalingPolicyTask implements RetryableTask {
   @Autowired private OortHelper oortHelper;
 
   @Override
-  public long getBackoffPeriod() {
-    return 20000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(20);
   }
 
   @Override
-  public long getTimeout() {
-    return 1200000;
+  public Duration getTimeout() {
+    return Duration.ofMinutes(20);
   }
 
   @Nonnull

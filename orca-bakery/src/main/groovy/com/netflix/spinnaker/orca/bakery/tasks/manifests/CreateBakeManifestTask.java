@@ -29,6 +29,7 @@ import com.netflix.spinnaker.orca.bakery.api.manifests.helm.HelmBakeManifestRequ
 import com.netflix.spinnaker.orca.bakery.api.manifests.kustomize.KustomizeBakeManifestRequest;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -46,13 +47,13 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CreateBakeManifestTask implements RetryableTask {
   @Override
-  public long getBackoffPeriod() {
-    return 30000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(30);
   }
 
   @Override
-  public long getTimeout() {
-    return 300000;
+  public Duration getTimeout() {
+    return Duration.ofMinutes(5);
   }
 
   @Nullable private final BakeryService bakery;

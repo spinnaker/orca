@@ -42,8 +42,8 @@ import java.util.concurrent.TimeUnit
 public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implements OverridableTimeoutRetryableTask {
   private final Logger log = LoggerFactory.getLogger(getClass())
 
-  final long backoffPeriod = TimeUnit.SECONDS.toMillis(10)
-  final long timeout = TimeUnit.MINUTES.toMillis(120)
+  final Duration backoffPeriod = Duration.ofSeconds(10)
+  final Duration timeout = Duration.ofMinutes(120)
 
   @Autowired
   KatoRestService katoRestService
@@ -66,12 +66,12 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
   static final Duration PROVIDER_PADDING = Duration.ofMinutes(5)
 
   @Override
-  long getDynamicTimeout(@Nonnull StageExecution stage) {
+  Duration getDynamicTimeout(@Nonnull StageExecution stage) {
     String jobTimeoutFromProvider = (stage.context.get("jobRuntimeLimit") as String)
 
     if (jobTimeoutFromProvider != null) {
       try {
-        return Duration.parse(jobTimeoutFromProvider).plus(PROVIDER_PADDING).toMillis()
+        return Duration.parse(jobTimeoutFromProvider).plus(PROVIDER_PADDING)
       } catch (DateTimeParseException e) {
         log.warn("Failed to parse job timeout specified by provider: '${jobTimeoutFromProvider}', using default", e)
       }

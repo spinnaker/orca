@@ -26,8 +26,8 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.image.DeleteImageStage;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.validation.ConstraintViolation;
@@ -90,12 +90,12 @@ public class DeleteImageTask extends AbstractCloudProviderAwareTask implements R
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(10);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(2);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(2);
   }
 }

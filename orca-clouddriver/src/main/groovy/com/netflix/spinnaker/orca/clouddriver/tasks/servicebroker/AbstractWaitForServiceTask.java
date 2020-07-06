@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
+import java.time.Duration;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
@@ -34,13 +35,13 @@ public abstract class AbstractWaitForServiceTask extends AbstractCloudProviderAw
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 10 * 1000L;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return 30 * 60 * 1000L;
+  public Duration getTimeout() {
+    return Duration.ofMinutes(30);
   }
 
   @Nonnull

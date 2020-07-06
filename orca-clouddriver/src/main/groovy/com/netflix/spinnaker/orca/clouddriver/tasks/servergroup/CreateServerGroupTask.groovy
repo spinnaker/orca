@@ -27,6 +27,8 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import java.time.Duration
+
 @Slf4j
 @Component
 class CreateServerGroupTask extends AbstractCloudProviderAwareTask implements RetryableTask {
@@ -37,8 +39,8 @@ class CreateServerGroupTask extends AbstractCloudProviderAwareTask implements Re
   @Autowired
   List<ServerGroupCreator> serverGroupCreators
 
-  long backoffPeriod = 2000
-  long timeout = 60000
+  Duration backoffPeriod = Duration.ofSeconds(2)
+  Duration timeout = Duration.ofMinutes(1)
 
   @Override
   TaskResult execute(StageExecution stage) {

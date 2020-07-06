@@ -25,11 +25,13 @@ import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import java.time.Duration
+
 @Component
 class WaitForUpsertedSecurityGroupTask implements RetryableTask, CloudProviderAware {
 
-  long backoffPeriod = 1000
-  long timeout = 600000
+  Duration backoffPeriod = Duration.ofSeconds(1)
+  Duration timeout = Duration.ofMinutes(10)
 
   @Autowired
   List<SecurityGroupUpserter> securityGroupUpserters

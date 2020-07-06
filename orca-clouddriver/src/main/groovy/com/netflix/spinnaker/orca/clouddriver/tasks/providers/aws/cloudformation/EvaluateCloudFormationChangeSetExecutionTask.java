@@ -20,11 +20,11 @@ import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -67,13 +67,13 @@ public class EvaluateCloudFormationChangeSetExecutionTask
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 1_000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(1);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.DAYS.toMillis(3);
+  public Duration getTimeout() {
+    return Duration.ofDays(3);
   }
 
   private Optional getChangeSetExecutionChoice(StageExecution stage) {

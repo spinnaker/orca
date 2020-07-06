@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -49,13 +50,13 @@ public abstract class AbstractBulkServerGroupTask extends AbstractCloudProviderA
   abstract String getClouddriverOperation();
 
   @Override
-  public long getBackoffPeriod() {
-    return 10000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return 10000;
+  public Duration getTimeout() {
+    return Duration.ofSeconds(10);
   }
 
   @Override

@@ -79,24 +79,24 @@ public class UpsertLoadBalancerForceRefreshTask extends AbstractCloudProviderAwa
   }
 
   @Override
-  long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(10)
+  Duration getTimeout() {
+    return Duration.ofMinutes(10)
   }
 
   @Override
-  long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(5)
+  Duration getBackoffPeriod() {
+    return Duration.ofSeconds(5)
   }
 
   @Override
-  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  Duration getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     LBUpsertContext context = stage.mapTo(LBUpsertContext.class)
     if (context.refreshState.seenPendingCacheUpdates) {
       return getBackoffPeriod()
     } else {
       // Some LB types don't support onDemand updates and we'll never observe a pending update for their keys,
       // this ensures quicker short circuiting in that case.
-      return TimeUnit.SECONDS.toMillis(1)
+      return Duration.ofSeconds(1)
     }
   }
 

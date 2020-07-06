@@ -21,9 +21,9 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -58,12 +58,12 @@ public class DeleteV2PipelineTemplateTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 15000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(15);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(1);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(1);
   }
 }

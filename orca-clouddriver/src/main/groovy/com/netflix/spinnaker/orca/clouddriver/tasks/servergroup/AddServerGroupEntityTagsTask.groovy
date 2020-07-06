@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -33,8 +34,8 @@ import org.springframework.stereotype.Component
 @Component
 @Slf4j
 class AddServerGroupEntityTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
-  long backoffPeriod = TimeUnit.SECONDS.toMillis(30)
-  long timeout = TimeUnit.MINUTES.toMillis(15)
+  Duration backoffPeriod = Duration.ofSeconds(30)
+  Duration timeout = Duration.ofMinutes(15)
 
   @Autowired
   KatoService kato

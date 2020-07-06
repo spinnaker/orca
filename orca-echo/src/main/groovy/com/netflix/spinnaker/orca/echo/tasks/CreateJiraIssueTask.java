@@ -24,8 +24,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.echo.JiraService;
 import com.netflix.spinnaker.orca.echo.JiraService.CreateJiraIssueResponse;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,13 +40,13 @@ public class CreateJiraIssueTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(30);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(30);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(5);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(5);
   }
 
   @Nonnull

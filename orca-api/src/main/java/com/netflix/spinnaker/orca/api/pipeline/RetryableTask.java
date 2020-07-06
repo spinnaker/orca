@@ -25,21 +25,31 @@ import java.time.Duration;
  */
 @Beta
 public interface RetryableTask extends Task {
-  /** TODO(rz): Use Duration. */
-  long getBackoffPeriod();
+  Duration getBackoffPeriod();
 
-  /** TODO(rz): Use Duration. */
-  long getTimeout();
+  Duration getTimeout();
 
-  default long getDynamicTimeout(StageExecution stage) {
+  default Duration getDynamicTimeout(StageExecution stage) {
     return getTimeout();
   }
 
-  default long getDynamicBackoffPeriod(Duration taskDuration) {
-    return getBackoffPeriod();
+  default Duration getDynamicBackoffPeriod(Duration taskDuration) {
+    Duration backoff = getBackoffPeriod();
+
+    if (backoff == null) {
+      backoff = Duration.ZERO;
+    }
+
+    return backoff;
   }
 
-  default long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
-    return getDynamicBackoffPeriod(taskDuration);
+  default Duration getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+    Duration result = getDynamicBackoffPeriod(taskDuration);
+
+    if (result == null) {
+      return Duration.ZERO;
+    }
+
+    return result;
   }
 }

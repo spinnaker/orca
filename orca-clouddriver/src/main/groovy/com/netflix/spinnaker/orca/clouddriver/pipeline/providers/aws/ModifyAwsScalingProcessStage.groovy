@@ -35,6 +35,8 @@ import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import java.time.Duration
+
 @Component
 @CompileStatic
 class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport implements ForceCacheRefreshAware {
@@ -84,8 +86,8 @@ class ModifyAwsScalingProcessStage extends TargetServerGroupLinearStageSupport i
 
   @Component
   static class WaitForScalingProcess implements RetryableTask {
-    long timeout = 1200000
-    long backoffPeriod = 20000
+    Duration timeout = Duration.ofMinutes(20)
+    Duration backoffPeriod = Duration.ofSeconds(20)
 
     @Autowired
     OortHelper oortHelper

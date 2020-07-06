@@ -37,6 +37,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpStatusCodeException
 
+import java.time.Duration
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -46,8 +47,8 @@ class CreateWebhookTask implements RetryableTask {
 
   private static final Pattern URL_SCHEME = Pattern.compile("(.*)://(.*)")
 
-  long backoffPeriod = 10000
-  long timeout = 300000
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofMinutes(5)
 
   WebhookService webhookService
   WebhookProperties webhookProperties

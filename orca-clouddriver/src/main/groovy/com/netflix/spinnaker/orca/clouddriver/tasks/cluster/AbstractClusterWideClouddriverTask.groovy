@@ -34,6 +34,8 @@ import com.netflix.spinnaker.orca.kato.pipeline.CopyLastAsgStage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 
+import java.time.Duration
+
 /**
  * A task that operates on some subset of the ServerGroups in a cluster.
  */
@@ -41,13 +43,13 @@ import org.springframework.beans.factory.annotation.Autowired
 abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderAwareTask implements RetryableTask {
 
   @Override
-  public long getBackoffPeriod() {
-    5000
+  Duration getBackoffPeriod() {
+    return Duration.ofSeconds(5)
   }
 
   @Override
-  public long getTimeout() {
-    90000
+  Duration getTimeout() {
+    return Duration.ofSeconds(90)
   }
 
   abstract String getClouddriverOperation()

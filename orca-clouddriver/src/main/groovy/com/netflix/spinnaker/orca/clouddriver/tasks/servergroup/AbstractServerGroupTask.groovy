@@ -31,16 +31,18 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTa
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import org.springframework.beans.factory.annotation.Autowired
 
+import java.time.Duration
+
 abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask implements RetryableTask {
 
   @Override
-  long getBackoffPeriod() {
-    return 2000
+  Duration getBackoffPeriod() {
+    return Duration.ofSeconds(2)
   }
 
   @Override
-  long getTimeout() {
-    return 90000
+  Duration getTimeout() {
+    return Duration.ofSeconds(90)
   }
 
   @Autowired

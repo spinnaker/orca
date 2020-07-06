@@ -30,11 +30,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import java.time.Duration
+
 @Slf4j
 @Component
 class WaitForDestroyedServerGroupTask extends AbstractCloudProviderAwareTask implements RetryableTask {
-  long backoffPeriod = 10000
-  long timeout = 1800000
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofMinutes(30)
 
   @Autowired
   OortService oortService

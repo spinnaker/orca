@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.igor.tasks
 
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -39,8 +40,8 @@ import retrofit.RetrofitError
 class GetCommitsTask implements DiffTask {
   private static final int MAX_RETRIES = 3
 
-  long backoffPeriod = 3000
-  long timeout = TimeUnit.MINUTES.toMillis(5)
+  Duration backoffPeriod = Duration.ofSeconds(3)
+  Duration timeout = Duration.ofMinutes(5)
   // always set this higher than retries * backoffPeriod would take
 
   @Autowired

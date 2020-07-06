@@ -27,12 +27,14 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import java.time.Duration
+
 @Slf4j
 @Component
 class WaitForTerminatedInstancesTask extends AbstractCloudProviderAwareTask implements OverridableTimeoutRetryableTask {
 
-  long backoffPeriod = 10000
-  long timeout = 3600000
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofHours(1)
 
   @Autowired
   TerminatingInstanceSupport instanceSupport

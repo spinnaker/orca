@@ -23,8 +23,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.BuildService;
 import com.netflix.spinnaker.orca.igor.model.ConcourseStageDefinition;
 import com.netflix.spinnaker.orca.pipeline.model.ConcourseBuildInfo;
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -35,8 +35,8 @@ public class WaitForConcourseJobCompletionTask implements OverridableTimeoutRetr
   private final BuildService buildService;
   private final ObjectMapper mapper;
 
-  private final long backoffPeriod = 15000;
-  private final long timeout = TimeUnit.DAYS.toMillis(3);
+  private final Duration backoffPeriod = Duration.ofSeconds(15);
+  private final Duration timeout = Duration.ofDays(3);
 
   @Override
   @Nonnull
@@ -64,12 +64,12 @@ public class WaitForConcourseJobCompletionTask implements OverridableTimeoutRetr
   }
 
   @Override
-  public long getBackoffPeriod() {
+  public Duration getBackoffPeriod() {
     return backoffPeriod;
   }
 
   @Override
-  public long getTimeout() {
+  public Duration getTimeout() {
     return timeout;
   }
 }

@@ -20,6 +20,7 @@ import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -36,9 +37,9 @@ class WaitForNewUpInstancesLaunchTask implements OverridableTimeoutRetryableTask
   @Autowired ObjectMapper objectMapper
   @Autowired(required = false) List<ServerGroupInstanceIdCollector> serverGroupInstanceIdCollectors = []
 
-  long getBackoffPeriod() { TimeUnit.SECONDS.toMillis(10) }
+  Duration getBackoffPeriod() { Duration.ofSeconds(10) }
 
-  long getTimeout() { TimeUnit.HOURS.toMillis(2) }
+  Duration getTimeout() { Duration.ofHours(2) }
 
   @Override
   TaskResult execute(StageExecution stage) {

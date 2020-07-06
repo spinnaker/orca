@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.echo.tasks
 
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
@@ -34,8 +35,8 @@ import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUC
 @Component
 @CompileStatic
 class PageApplicationOwnerTask implements RetryableTask {
-  long backoffPeriod = 15000
-  long timeout = TimeUnit.MINUTES.toMillis(5)
+  Duration backoffPeriod = Duration.ofSeconds(15)
+  Duration timeout = Duration.ofMinutes(5)
 
   @Autowired
   EchoService echoService

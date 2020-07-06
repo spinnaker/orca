@@ -29,8 +29,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.igor.ScmService
 import java.net.URL
+import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -182,9 +182,9 @@ constructor(
     return TaskResult.builder(ExecutionStatus.TERMINAL).context(mapOf("error" to normalizedError)).build()
   }
 
-  override fun getBackoffPeriod() = TimeUnit.SECONDS.toMillis(30)
+  override fun getBackoffPeriod() = Duration.ofSeconds(30)
 
-  override fun getTimeout() = TimeUnit.SECONDS.toMillis(180)
+  override fun getTimeout() = Duration.ofSeconds(180)
 
   val RetrofitError.friendlyMessage: String
     get() = if (kind == RetrofitError.Kind.HTTP) {

@@ -22,9 +22,9 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -57,13 +57,13 @@ public class WaitForUpsertedImageTagsTask implements RetryableTask, CloudProvide
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(30);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(30);
   }
 
   @Override
-  public long getTimeout() {
-    return this.waitForUpsertedImageTagsTimeoutMillis;
+  public Duration getTimeout() {
+    return Duration.ofMillis(this.waitForUpsertedImageTagsTimeoutMillis);
   }
 
   static class StageData {

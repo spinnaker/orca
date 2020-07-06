@@ -28,6 +28,8 @@ import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 import retrofit.client.Client
 
+import java.time.Duration
+
 @Component
 @Slf4j
 class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
@@ -41,8 +43,8 @@ class TriggerQuipTask extends AbstractQuipTask implements RetryableTask {
 
   long instanceVersionSleep = DEFAULT_INSTANCE_VERSION_SLEEP
 
-  long backoffPeriod = 10000
-  long timeout = 600000 // 10min
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofMinutes(10)
 
   @Override
   TaskResult execute(StageExecution stage) {

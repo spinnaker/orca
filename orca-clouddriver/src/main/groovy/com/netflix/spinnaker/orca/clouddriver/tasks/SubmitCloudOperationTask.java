@@ -51,12 +51,12 @@ public class SubmitCloudOperationTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return Duration.ofSeconds(5).toMillis();
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(5);
   }
 
   @Override
-  public long getTimeout() {
-    return Duration.ofMinutes(1).toMillis();
+  public Duration getTimeout() {
+    return Duration.ofMinutes(1);
   }
 }

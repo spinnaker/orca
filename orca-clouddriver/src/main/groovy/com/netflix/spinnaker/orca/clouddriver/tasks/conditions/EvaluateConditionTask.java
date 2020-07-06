@@ -31,7 +31,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
@@ -66,13 +65,13 @@ public class EvaluateConditionTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 3000L;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(3);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.SECONDS.toMillis(conditionsConfigurationProperties.getWaitTimeoutMs());
+  public Duration getTimeout() {
+    return Duration.ofMillis(conditionsConfigurationProperties.getWaitTimeoutMs());
   }
 
   @Nonnull

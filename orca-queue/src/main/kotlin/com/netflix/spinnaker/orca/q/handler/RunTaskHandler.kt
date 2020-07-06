@@ -239,7 +239,8 @@ class RunTaskHandler(
   ): Long {
     val dynamicBackOffPeriod = getDynamicBackoffPeriod(
       stage, Duration.ofMillis(System.currentTimeMillis() - (taskModel.startTime ?: 0))
-    )
+    ).toMillis()
+
     val backOffs: MutableList<Long> = mutableListOf(
       dynamicBackOffPeriod,
       dynamicConfigService.getConfig(
@@ -298,7 +299,7 @@ class RunTaskHandler(
           if (this is OverridableTimeoutRetryableTask && stage.parentWithTimeout.isPresent)
             stage.parentWithTimeout.get().timeout.get().toDuration()
           else
-            getDynamicTimeout(stage).toDuration()
+            getDynamicTimeout(stage) ?: ZERO
           )
         if (elapsedTime.minus(pausedDuration) > actualTimeout) {
           val durationString = formatTimeout(elapsedTime.toMillis())

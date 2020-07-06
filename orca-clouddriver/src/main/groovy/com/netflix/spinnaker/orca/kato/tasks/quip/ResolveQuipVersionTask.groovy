@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.tasks.quip
 
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -34,9 +35,9 @@ import org.springframework.stereotype.Component
 @Component
 class ResolveQuipVersionTask implements RetryableTask {
 
-  final long backoffPeriod = TimeUnit.SECONDS.toMillis(5)
+  final Duration backoffPeriod = Duration.ofSeconds(5)
 
-  final long timeout = TimeUnit.SECONDS.toMillis(30)
+  final Duration timeout = Duration.ofSeconds(30)
 
   @Autowired(required = false)
   BakeryService bakeryService

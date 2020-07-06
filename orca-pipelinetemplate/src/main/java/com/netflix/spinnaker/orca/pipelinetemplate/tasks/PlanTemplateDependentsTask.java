@@ -24,11 +24,11 @@ import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.model.PipelineTemplate;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,12 +104,12 @@ public class PlanTemplateDependentsTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 15000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(15);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(10);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(10);
   }
 }

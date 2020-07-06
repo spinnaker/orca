@@ -20,12 +20,12 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +38,8 @@ import retrofit.RetrofitError;
 public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRetryableTask {
 
   public static final String TASK_NAME = "waitForCloudFormationCompletion";
-  private final long backoffPeriod = TimeUnit.SECONDS.toMillis(10);
-  private final long timeout = TimeUnit.HOURS.toMillis(2);
+  private final Duration backoffPeriod = Duration.ofSeconds(10);
+  private final Duration timeout = Duration.ofHours(2);
   @Autowired private OortService oortService;
 
   @Nonnull
@@ -106,12 +106,12 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
   }
 
   @Override
-  public long getBackoffPeriod() {
+  public Duration getBackoffPeriod() {
     return backoffPeriod;
   }
 
   @Override
-  public long getTimeout() {
+  public Duration getTimeout() {
     return timeout;
   }
 

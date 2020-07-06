@@ -29,10 +29,12 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import retrofit.RetrofitError
 
+import java.time.Duration
+
 @Slf4j
 abstract class AbstractWaitForAppEngineServerGroupStopStartTask extends AbstractCloudProviderAwareTask implements RetryableTask {
-  long backoffPeriod = 10000
-  long timeout = 1800000
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofMinutes(30)
 
   @Autowired
   OortService oortService

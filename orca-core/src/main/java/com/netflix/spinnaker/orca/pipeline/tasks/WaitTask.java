@@ -30,6 +30,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class WaitTask implements RetryableTask {
 
+  static final Duration LOOONG_TIME = Duration.ofDays(10 * 365);
+
   private final Clock clock;
 
   @Autowired
@@ -56,16 +58,16 @@ public class WaitTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 1_000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(1);
   }
 
   @Override
-  public long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  public Duration getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     WaitStage.WaitStageContext context = stage.mapTo(WaitStage.WaitStageContext.class);
 
     if (context.isSkipRemainingWait()) {
-      return 0L;
+      return Duration.ZERO;
     }
 
     // Return a backoff time that reflects the requested waitTime
@@ -75,7 +77,7 @@ public class WaitTask implements RetryableTask {
           Instant.ofEpochMilli(stage.getStartTime()).plus(context.getWaitDuration());
 
       if (completion.isAfter(now)) {
-        return completion.toEpochMilli() - now.toEpochMilli();
+        return Duration.ofMillis(completion.toEpochMilli() - now.toEpochMilli());
       }
     }
 
@@ -83,7 +85,7 @@ public class WaitTask implements RetryableTask {
   }
 
   @Override
-  public long getTimeout() {
-    return Long.MAX_VALUE;
+  public Duration getTimeout() {
+    return LOOONG_TIME;
   }
 }

@@ -27,12 +27,14 @@ import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 import retrofit.client.Client
 
+import java.time.Duration
+
 @Component
 class InstanceHealthCheckTask extends AbstractQuipTask implements RetryableTask  {
   @Autowired ObjectMapper objectMapper
 
-  long backoffPeriod = 10000
-  long timeout = 3600000 // 60min
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofHours(1)
 
   @Autowired
   OortHelper oortHelper

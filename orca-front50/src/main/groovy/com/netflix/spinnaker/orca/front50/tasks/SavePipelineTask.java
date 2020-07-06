@@ -22,8 +22,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,13 +123,13 @@ public class SavePipelineTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 1000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(1);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.SECONDS.toMillis(30);
+  public Duration getTimeout() {
+    return Duration.ofSeconds(30);
   }
 
   private void updateServiceAccount(Map<String, Object> pipeline, String serviceAccount) {

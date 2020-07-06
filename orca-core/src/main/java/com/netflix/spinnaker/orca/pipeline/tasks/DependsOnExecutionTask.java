@@ -26,7 +26,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import javax.annotation.Nonnull;
 import javax.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,13 +43,13 @@ public class DependsOnExecutionTask implements OverridableTimeoutRetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(10);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.HOURS.toMillis(2);
+  public Duration getTimeout() {
+    return Duration.ofHours(2);
   }
 
   @Nonnull

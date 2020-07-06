@@ -24,8 +24,8 @@ import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.image.DeleteImageStage;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,12 +87,12 @@ public class MonitorDeleteImageTask extends AbstractCloudProviderAwareTask
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(5);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(5);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(5);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(5);
   }
 }

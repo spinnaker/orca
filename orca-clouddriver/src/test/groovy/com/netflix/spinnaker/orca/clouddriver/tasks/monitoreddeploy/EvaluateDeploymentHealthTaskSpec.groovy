@@ -32,6 +32,7 @@ import spock.lang.Specification
 import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProvider
 import spock.lang.Unroll
 
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
@@ -155,15 +156,15 @@ class EvaluateDeploymentHealthTaskSpec extends Specification {
     def stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
 
     then:
-    task.getTimeout() == 0
-    task.getDynamicTimeout(stage) == TimeUnit.MINUTES.toMillis(15)
+    task.getTimeout() == Duration.ZERO
+    task.getDynamicTimeout(stage) == Duration.ofMinutes(15)
 
     when: 'stage override is provided'
     stageData.deploymentMonitor.maxAnalysisMinutesOverride = new Integer(21)
     stage = new StageExecutionImpl(pipe, "evaluateDeploymentHealth", stageData.toContextMap() + [application: pipe.application])
 
     then:
-    task.getDynamicTimeout(stage) == TimeUnit.MINUTES.toMillis(21)
+    task.getDynamicTimeout(stage) == Duration.ofMinutes(21)
   }
 
   @Unroll

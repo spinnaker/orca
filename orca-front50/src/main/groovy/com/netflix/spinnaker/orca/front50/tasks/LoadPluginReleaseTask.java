@@ -66,12 +66,12 @@ public class LoadPluginReleaseTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return Duration.ofSeconds(10).toMillis();
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return Duration.ofMinutes(2).toMillis();
+  public Duration getTimeout() {
+    return Duration.ofMinutes(2);
   }
 }

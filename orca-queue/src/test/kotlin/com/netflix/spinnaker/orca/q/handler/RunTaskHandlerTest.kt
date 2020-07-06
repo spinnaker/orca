@@ -400,7 +400,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       val stage = pipeline.stages.first()
       val message = RunTask(pipeline.type, pipeline.id, "foo", stage.id, "1", DummyTask::class.java)
       val taskResult = TaskResult.RUNNING
-      val taskBackoffMs = 30_000L
+      val taskBackoff = Duration.ofSeconds(30)
       val maxBackOffLimit = 120_000L
 
       beforeGroup {
@@ -409,7 +409,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
         taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(task, stage, taskResult)) doReturn taskResult }
         whenever(task.execute(any())) doReturn taskResult
-        whenever(task.getDynamicBackoffPeriod(any(), any())) doReturn taskBackoffMs
+        whenever(task.getDynamicBackoffPeriod(any(), any())) doReturn taskBackoff
         whenever(dynamicConfigService.getConfig(eq(Long::class.java), eq("tasks.global.backOffPeriod"), any())) doReturn 0L
         whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
       }
@@ -421,7 +421,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       it("re-queues the command") {
-        verify(queue).push(message, Duration.ofMillis(taskBackoffMs))
+        verify(queue).push(message, taskBackoff)
       }
     }
 
@@ -626,7 +626,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       and("it is recoverable") {
-        val taskBackoffMs = 30_000L
+        val taskBackoff = Duration.ofMillis(30_000)
         val exceptionDetails = ExceptionHandler.Response(
           RuntimeException::class.qualifiedName,
           "o noes",
@@ -636,7 +636,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
         beforeGroup {
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
-          whenever(task.getDynamicBackoffPeriod(any(), any())) doReturn taskBackoffMs
+          whenever(task.getDynamicBackoffPeriod(any(), any())) doReturn taskBackoff
           whenever(task.execute(any())) doThrow RuntimeException("o noes")
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
           whenever(exceptionHandler.handles(any())) doReturn true
@@ -650,7 +650,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         }
 
         it("re-runs the task") {
-          verify(queue).push(eq(message), eq(Duration.ofMillis(taskBackoffMs)))
+          verify(queue).push(eq(message), eq(taskBackoff))
         }
       }
     }
@@ -802,7 +802,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -841,7 +841,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -875,7 +875,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -916,7 +916,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -953,7 +953,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -994,7 +994,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -1043,7 +1043,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -1086,7 +1086,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         beforeGroup {
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
         }
 
         afterGroup(::resetMocks)
@@ -1125,7 +1125,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
           whenever(task.onTimeout(any())) doReturn TaskResult.ofStatus(FAILED_CONTINUE)
         }
 
@@ -1149,7 +1149,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
           whenever(task.onTimeout(any())) doReturn TaskResult.ofStatus(TERMINAL)
         }
 
@@ -1172,7 +1172,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         beforeGroup {
           tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
           whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+          whenever(task.getDynamicTimeout(any())) doReturn timeout
           whenever(task.onTimeout(any())) doReturn TaskResult.ofStatus(SUCCEEDED)
         }
 
@@ -1221,7 +1221,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
               taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
               taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(task, stage, taskResult)) doReturn taskResult }
               whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-              whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+              whenever(task.getDynamicTimeout(any())) doReturn timeout
             }
 
             afterGroup(::resetMocks)
@@ -1258,7 +1258,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
                 taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
                 taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(task, stage, taskResult)) doReturn taskResult }
                 whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-                whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+                whenever(task.getDynamicTimeout(any())) doReturn timeout
               }
 
               afterGroup(::resetMocks)
@@ -1302,7 +1302,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
                 taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
                 taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(task, stage, taskResult)) doReturn taskResult }
                 whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-                whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+                whenever(task.getDynamicTimeout(any())) doReturn timeout
               }
 
               afterGroup(::resetMocks)
@@ -1338,7 +1338,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
               beforeGroup {
                 tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
                 whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-                whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+                whenever(task.getDynamicTimeout(any())) doReturn timeout
               }
 
               afterGroup(::resetMocks)
@@ -1378,7 +1378,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
               beforeGroup {
                 tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
                 whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-                whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+                whenever(task.getDynamicTimeout(any())) doReturn timeout
               }
 
               afterGroup(::resetMocks)
@@ -1420,7 +1420,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
               taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(timeoutOverrideTask, stage)) doReturn stage }
               taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(timeoutOverrideTask, stage, taskResult)) doReturn taskResult }
               whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-              whenever(timeoutOverrideTask.timeout) doReturn timeout.toMillis()
+              whenever(timeoutOverrideTask.timeout) doReturn timeout
             }
 
             afterGroup(::resetMocks)
@@ -1767,7 +1767,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(cloudProviderAwareTask, stage)) doReturn stage }
           taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(cloudProviderAwareTask, stage, taskResult)) doReturn taskResult }
 
-          whenever(cloudProviderAwareTask.getDynamicBackoffPeriod(any(), any())) doReturn backOff.taskBackOffMs
+          whenever(cloudProviderAwareTask.getDynamicBackoffPeriod(any(), any())) doReturn Duration.ofMillis(backOff.taskBackOffMs)
           whenever(dynamicConfigService.getConfig(eq(Long::class.java), eq("tasks.global.backOffPeriod"), any())) doReturn backOff.globalBackOffMs
           whenever(cloudProviderAwareTask.hasCloudProvider(any())) doReturn true
           whenever(cloudProviderAwareTask.getCloudProvider(any<StageExecution>())) doReturn "aws"

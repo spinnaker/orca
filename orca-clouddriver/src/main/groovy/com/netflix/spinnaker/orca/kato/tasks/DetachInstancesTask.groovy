@@ -29,12 +29,14 @@ import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import java.time.Duration
+
 @Component
 class DetachInstancesTask implements RetryableTask, CloudProviderAware {
 
-  final long backoffPeriod = 5000
+  final Duration backoffPeriod = Duration.ofSeconds(5)
 
-  final long timeout = 30000
+  final Duration timeout = Duration.ofSeconds(30)
 
   @Autowired
   KatoService kato

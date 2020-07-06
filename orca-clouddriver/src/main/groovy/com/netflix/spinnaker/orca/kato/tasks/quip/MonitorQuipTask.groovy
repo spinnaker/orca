@@ -26,14 +26,16 @@ import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 import retrofit.client.Client
 
+import java.time.Duration
+
 @Component
 class MonitorQuipTask extends AbstractQuipTask implements RetryableTask {
   @Autowired ObjectMapper objectMapper
 
   @Autowired Client retrofitClient
 
-  long backoffPeriod = 10000
-  long timeout = 1200000 // 20mins
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofMinutes(20)
 
   /**
    * TODO: make this more efficient by only polling the instances which are not done.

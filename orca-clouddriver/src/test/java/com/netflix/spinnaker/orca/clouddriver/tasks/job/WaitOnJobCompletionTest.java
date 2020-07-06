@@ -39,7 +39,7 @@ public final class WaitOnJobCompletionTest {
     StageExecutionImpl myStage =
         createStageWithContext(ImmutableMap.of("jobRuntimeLimit", duration.toString()));
     assertThat(task.getDynamicTimeout(myStage))
-        .isEqualTo((duration.plus(WaitOnJobCompletion.getPROVIDER_PADDING())).toMillis());
+        .isEqualTo((duration.plus(WaitOnJobCompletion.getPROVIDER_PADDING())));
 
     StageExecutionImpl myStageInvalid =
         createStageWithContext(ImmutableMap.of("jobRuntimeLimit", "garbage"));

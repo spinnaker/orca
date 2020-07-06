@@ -41,14 +41,16 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import java.time.Duration
+
 import static com.netflix.spinnaker.kork.web.selector.v2.SelectableService.*
 
 @Component
 @CompileStatic
 class CreateBakeTask implements RetryableTask {
 
-  long backoffPeriod = 30000
-  long timeout = 300000
+  Duration backoffPeriod = Duration.ofSeconds(30)
+  Duration timeout = Duration.ofMinutes(5)
 
   @Autowired
   ArtifactUtils artifactUtils

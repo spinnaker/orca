@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit
 @Component
 class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
 
-  long backoffPeriod = TimeUnit.SECONDS.toMillis(1)
-  long timeout = TimeUnit.HOURS.toMillis(1)
+  Duration backoffPeriod = Duration.ofSeconds(1)
+  Duration timeout = Duration.ofHours(1)
   private static final String JSON_PATH_NOT_FOUND_ERR_FMT = "Unable to parse %s: JSON property '%s' not found in response body"
 
   WebhookService webhookService
@@ -55,10 +55,10 @@ class MonitorWebhookTask implements OverridableTimeoutRetryableTask {
   }
 
   @Override
-  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  Duration getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     if (taskDuration.toMillis() > TimeUnit.MINUTES.toMillis(1)) {
       // task has been running > 1min, drop retry interval to every 15 sec
-      return Math.max(backoffPeriod, TimeUnit.SECONDS.toMillis(15))
+      return (backoffPeriod > Duration.ofSeconds(15)) ? backoffPeriod : Duration.ofSeconds(15)
     }
 
     return backoffPeriod

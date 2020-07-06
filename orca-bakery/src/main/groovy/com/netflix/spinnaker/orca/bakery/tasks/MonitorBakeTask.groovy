@@ -28,13 +28,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import java.time.Duration
+
 @Slf4j
 @Component
 @CompileStatic
 class MonitorBakeTask implements OverridableTimeoutRetryableTask {
 
-  long backoffPeriod = 30000
-  long timeout = 3600000 // 1hr
+  Duration backoffPeriod = Duration.ofSeconds(30)
+  Duration timeout = Duration.ofHours(1)
 
   @Autowired(required = false)
   BakerySelector bakerySelector

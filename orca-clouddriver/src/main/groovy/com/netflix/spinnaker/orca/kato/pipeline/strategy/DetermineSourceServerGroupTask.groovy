@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.kato.pipeline.strategy
 
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
@@ -39,10 +40,10 @@ class DetermineSourceServerGroupTask implements RetryableTask {
   static final int MAX_ATTEMPTS = 10
   static final int MIN_CONSECUTIVE_404 = 3
 
-  final long backoffPeriod = TimeUnit.SECONDS.toMillis(5)
+  final Duration backoffPeriod = Duration.ofSeconds(5)
 
   // not expecting to timeout, we will fail after MAX_ATTEMPTS:
-  final long timeout = TimeUnit.SECONDS.toMillis(300)
+  final Duration timeout = Duration.ofSeconds(300)
 
   @Autowired
   SourceResolver sourceResolver

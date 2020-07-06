@@ -21,6 +21,7 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 import java.time.Clock
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -47,8 +48,8 @@ class ServerGroupCacheForceRefreshTask extends AbstractCloudProviderAwareTask im
 
   private final Id cacheForceRefreshTaskId
 
-  long backoffPeriod = TimeUnit.SECONDS.toMillis(10)
-  long timeout = TimeUnit.MINUTES.toMillis(15)
+  Duration backoffPeriod = Duration.ofSeconds(10)
+  Duration timeout = Duration.ofMinutes(15)
 
   long autoSucceedAfterMs = TimeUnit.MINUTES.toMillis(12)
 

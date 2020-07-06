@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 
 import javax.annotation.Nonnull
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.*
@@ -66,8 +67,8 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
   @Component
   @VisibleForTesting
   public static class WaitForManualJudgmentTask implements OverridableTimeoutRetryableTask {
-    final long backoffPeriod = 15000
-    final long timeout = TimeUnit.DAYS.toMillis(3)
+    final Duration backoffPeriod = Duration.ofSeconds(15)
+    final Duration timeout = Duration.ofDays(3)
 
     @Autowired(required = false)
     EchoService echoService

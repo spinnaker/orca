@@ -24,11 +24,11 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -111,12 +111,12 @@ public class UpdateV2PipelineTemplateTask implements RetryableTask, SaveV2Pipeli
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 15000;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(15);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(1);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(1);
   }
 }

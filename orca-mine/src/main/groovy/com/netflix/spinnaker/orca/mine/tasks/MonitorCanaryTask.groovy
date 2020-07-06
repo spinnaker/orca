@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.mine.tasks
 
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
@@ -33,8 +34,8 @@ import retrofit.RetrofitError
 @Component
 @Slf4j
 class MonitorCanaryTask extends AbstractCloudProviderAwareTask implements OverridableTimeoutRetryableTask {
-  long backoffPeriod = TimeUnit.MINUTES.toMillis(1)
-  long timeout = TimeUnit.DAYS.toMillis(2)
+  Duration backoffPeriod = Duration.ofMinutes(1)
+  Duration timeout = Duration.ofDays(2)
 
   private long timeoutBuffer = TimeUnit.MINUTES.toMillis(15)
 
@@ -51,7 +52,7 @@ class MonitorCanaryTask extends AbstractCloudProviderAwareTask implements Overri
     Long canaryDurationMillis = TimeUnit.HOURS.toMillis(canaryDuration) + timeoutBuffer
     Map outputs = [
       canary : context.canary,
-      stageTimeoutMs: Math.max(canaryDurationMillis, timeout)
+      stageTimeoutMs: Math.max(canaryDurationMillis, timeout.toMillis())
     ]
 
     try {

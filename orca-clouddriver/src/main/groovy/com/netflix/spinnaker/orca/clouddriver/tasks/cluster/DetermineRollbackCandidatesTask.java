@@ -35,13 +35,13 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServe
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollbackSupport;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -93,13 +93,13 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.SECONDS.toMillis(15);
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(15);
   }
 
   @Override
-  public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(5);
+  public Duration getTimeout() {
+    return Duration.ofMinutes(5);
   }
 
   @Nonnull

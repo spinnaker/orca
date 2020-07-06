@@ -26,19 +26,21 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTa
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import java.time.Duration
+
 @Component
 class UpsertLoadBalancerTask extends AbstractCloudProviderAwareTask implements RetryableTask {
 
   static final String CLOUD_OPERATION_TYPE = "upsertLoadBalancer"
 
   @Override
-  long getBackoffPeriod() {
-    return 2000
+  Duration getBackoffPeriod() {
+    return Duration.ofSeconds(2)
   }
 
   @Override
-  long getTimeout() {
-    return 60000
+  Duration getTimeout() {
+    return Duration.ofMinutes(1)
   }
 
   @Autowired

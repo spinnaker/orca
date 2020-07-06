@@ -76,7 +76,7 @@ class WaitUntilTaskSpec extends Specification {
 
     then:
     result.status == RUNNING
-    backOff == waitTimeSeconds * 1000
+    backOff == Duration.ofSeconds(waitTimeSeconds)
   }
 
 }

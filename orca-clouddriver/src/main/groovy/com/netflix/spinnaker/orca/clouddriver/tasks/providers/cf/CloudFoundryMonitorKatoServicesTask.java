@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.clouddriver.model.Task;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import groovy.transform.CompileStatic;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -46,13 +47,13 @@ public class CloudFoundryMonitorKatoServicesTask extends AbstractCloudProviderAw
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return 10 * 1000L;
+  public Duration getBackoffPeriod() {
+    return Duration.ofSeconds(10);
   }
 
   @Override
-  public long getTimeout() {
-    return 30 * 60 * 1000L;
+  public Duration getTimeout() {
+    return Duration.ofMinutes(30);
   }
 
   @Nonnull

@@ -34,7 +34,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -74,31 +73,31 @@ public class MonitoredDeployBaseTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return TimeUnit.MINUTES.toMillis(1);
+  public Duration getBackoffPeriod() {
+    return Duration.ofMinutes(1);
   }
 
   @Override
-  public long getTimeout() {
+  public Duration getTimeout() {
     // NOTE: This is not used since we override getDynamicTimeout
-    return 0;
+    return Duration.ZERO;
   }
 
   @Override
-  public long getDynamicTimeout(StageExecution stage) {
+  public Duration getDynamicTimeout(StageExecution stage) {
     MonitoredDeployInternalStageData stageData =
         stage.mapTo(MonitoredDeployInternalStageData.class);
 
     // If stage has an override, use that
     Integer stageOverride = stageData.getDeploymentMonitor().getMaxAnalysisMinutesOverride();
     if ((stageOverride != null) && (stageOverride > 0)) {
-      return Duration.ofMinutes(stageOverride).toMillis();
+      return Duration.ofMinutes(stageOverride);
     }
 
     DeploymentMonitorDefinition monitorDefinition = getDeploymentMonitorDefinition(stage);
 
     try {
-      return Duration.ofMinutes(monitorDefinition.getMaxAnalysisMinutes()).toMillis();
+      return Duration.ofMinutes(monitorDefinition.getMaxAnalysisMinutes());
     } catch (Exception e) {
       log.error(
           "Failed to compute timeout for {}, returning {} min",
@@ -106,8 +105,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
           DeploymentMonitorDefinition.DEFAULT_MAX_ANALYSIS_MINUTES,
           e);
 
-      return Duration.ofMinutes(DeploymentMonitorDefinition.DEFAULT_MAX_ANALYSIS_MINUTES)
-          .toMillis();
+      return Duration.ofMinutes(DeploymentMonitorDefinition.DEFAULT_MAX_ANALYSIS_MINUTES);
     }
   }
 

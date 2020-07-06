@@ -24,9 +24,11 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import org.springframework.beans.factory.annotation.Autowired
 
+import java.time.Duration
+
 abstract class AbstractWaitForInstanceHealthChangeTask implements OverridableTimeoutRetryableTask {
-  long backoffPeriod = 5000
-  long timeout = 3600000
+  Duration backoffPeriod = Duration.ofSeconds(5)
+  Duration timeout = Duration.ofHours(1)
 
   @Autowired
   OortService oortService

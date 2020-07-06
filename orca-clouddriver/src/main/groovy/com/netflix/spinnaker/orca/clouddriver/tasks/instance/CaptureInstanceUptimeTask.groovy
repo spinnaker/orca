@@ -29,11 +29,13 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import java.time.Duration
+
 @Slf4j
 @Component
 class CaptureInstanceUptimeTask extends AbstractCloudProviderAwareTask implements RetryableTask {
-  long backoffPeriod = 15000
-  long timeout = 300000
+  Duration backoffPeriod = Duration.ofSeconds(15)
+  Duration timeout = Duration.ofMinutes(5)
 
   @Autowired(required = false)
   InstanceUptimeCommand instanceUptimeCommand;

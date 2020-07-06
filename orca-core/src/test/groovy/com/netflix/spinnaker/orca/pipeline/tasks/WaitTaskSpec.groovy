@@ -21,8 +21,6 @@ import com.netflix.spinnaker.orca.time.MutableClock
 import spock.lang.Specification
 import spock.lang.Subject
 
-import java.util.concurrent.TimeUnit
-
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
@@ -75,7 +73,7 @@ class WaitTaskSpec extends Specification {
 
     then:
     result.status == RUNNING
-    backOff == TimeUnit.SECONDS.toMillis(wait)
+    backOff == Duration.ofSeconds(wait)
   }
 
   void "should skip waiting when marked in context"() {

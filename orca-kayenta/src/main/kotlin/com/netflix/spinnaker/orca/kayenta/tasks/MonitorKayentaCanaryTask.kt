@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.CanaryResults
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.kayenta.Thresholds
-import java.util.concurrent.TimeUnit.HOURS
+import java.time.Duration
 import org.springframework.stereotype.Component
 
 @Component
@@ -36,9 +36,9 @@ class MonitorKayentaCanaryTask(
   private val kayentaService: KayentaService
 ) : OverridableTimeoutRetryableTask {
 
-  override fun getBackoffPeriod() = 1000L
+  override fun getBackoffPeriod() = Duration.ofSeconds(10)
 
-  override fun getTimeout() = HOURS.toMillis(12)
+  override fun getTimeout() = Duration.ofHours(12)
 
   data class MonitorKayentaCanaryContext(
     val canaryPipelineExecutionId: String,

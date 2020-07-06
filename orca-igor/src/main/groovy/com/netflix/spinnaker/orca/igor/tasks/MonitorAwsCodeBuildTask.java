@@ -22,9 +22,9 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +36,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MonitorAwsCodeBuildTask extends RetryableIgorTask<AwsCodeBuildStageDefinition>
     implements OverridableTimeoutRetryableTask {
-  @Getter protected long backoffPeriod = TimeUnit.SECONDS.toMillis(10);
-  @Getter protected long timeout = TimeUnit.HOURS.toMillis(8); // maximum build timeout
+  @Getter protected Duration backoffPeriod = Duration.ofSeconds(10);
+  @Getter protected Duration timeout = Duration.ofHours(8); // maximum build timeout
 
   private final IgorService igorService;
 

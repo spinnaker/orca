@@ -69,14 +69,14 @@ class MonitorKatoTask implements RetryableTask, CloudProviderAware {
     this.retrySupport = retrySupport
   }
 
-  long getBackoffPeriod() { 5000L }
+  Duration getBackoffPeriod() { return Duration.ofSeconds(5) }
 
-  long getTimeout() { 3600000L }
+  Duration getTimeout() { return Duration.ofHours(1) }
 
   @Override
-  long getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
+  Duration getDynamicBackoffPeriod(StageExecution stage, Duration taskDuration) {
     if ((stage.context."kato.task.lastStatus" as ExecutionStatus) == ExecutionStatus.TERMINAL) {
-      return Math.max(backoffPeriod, TimeUnit.MINUTES.toMillis(2))
+      return backoffPeriod > Duration.ofMinutes(2) ? backoffPeriod : Duration.ofMinutes(2)
     }
     return backoffPeriod
   }

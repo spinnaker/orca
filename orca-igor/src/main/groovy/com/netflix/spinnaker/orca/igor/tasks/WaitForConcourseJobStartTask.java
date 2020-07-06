@@ -22,9 +22,9 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.ConcourseService;
 import com.netflix.spinnaker.orca.igor.model.ConcourseStageExecution;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -34,8 +34,8 @@ import org.springframework.stereotype.Component;
 public class WaitForConcourseJobStartTask implements OverridableTimeoutRetryableTask {
   private final ConcourseService concourseService;
 
-  private final long backoffPeriod = 15000;
-  private final long timeout = TimeUnit.HOURS.toMillis(1);
+  private final Duration backoffPeriod = Duration.ofSeconds(15);
+  private final Duration timeout = Duration.ofHours(1);
 
   @Nonnull
   @Override
@@ -51,12 +51,12 @@ public class WaitForConcourseJobStartTask implements OverridableTimeoutRetryable
   }
 
   @Override
-  public long getBackoffPeriod() {
+  public Duration getBackoffPeriod() {
     return backoffPeriod;
   }
 
   @Override
-  public long getTimeout() {
+  public Duration getTimeout() {
     return timeout;
   }
 }

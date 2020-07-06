@@ -32,13 +32,15 @@ import retrofit.RetrofitError
 import retrofit.converter.ConversionException
 import retrofit.converter.JacksonConverter
 
+import java.time.Duration
+
 @Component
 class ClusterSizePreconditionTask extends AbstractCloudProviderAwareTask implements RetryableTask, PreconditionTask {
   public static final String PRECONDITION_TYPE = 'clusterSize'
 
   final String preconditionType = PRECONDITION_TYPE
-  final long backoffPeriod = 5000
-  final long timeout = 30000
+  final Duration backoffPeriod = Duration.ofSeconds(5)
+  final Duration timeout = Duration.ofSeconds(30)
 
   @Autowired
   OortService oortService

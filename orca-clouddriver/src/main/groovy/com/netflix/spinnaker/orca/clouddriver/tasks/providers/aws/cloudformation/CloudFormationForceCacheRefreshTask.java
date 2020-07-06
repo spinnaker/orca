@@ -21,10 +21,10 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,8 +37,8 @@ public class CloudFormationForceCacheRefreshTask extends AbstractCloudProviderAw
 
   @Autowired CloudDriverCacheService cacheService;
 
-  private final long backoffPeriod = TimeUnit.SECONDS.toMillis(10);
-  private final long timeout = TimeUnit.MINUTES.toMillis(5);
+  private final Duration backoffPeriod = Duration.ofSeconds(10);
+  private final Duration timeout = Duration.ofMinutes(5);
 
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
@@ -70,12 +70,12 @@ public class CloudFormationForceCacheRefreshTask extends AbstractCloudProviderAw
   }
 
   @Override
-  public long getBackoffPeriod() {
+  public Duration getBackoffPeriod() {
     return backoffPeriod;
   }
 
   @Override
-  public long getTimeout() {
+  public Duration getTimeout() {
     return timeout;
   }
 }

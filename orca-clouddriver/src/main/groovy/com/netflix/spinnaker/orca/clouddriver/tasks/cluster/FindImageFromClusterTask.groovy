@@ -36,16 +36,23 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
+import java.time.Duration
+
 @Component
 @Slf4j
 class FindImageFromClusterTask extends AbstractCloudProviderAwareTask implements RetryableTask {
 
   static String SUMMARY_TYPE = "Images"
 
-  final long backoffPeriod = 10000
+  final Duration backoffPeriod = Duration.ofSeconds(10)
 
   @Value('${tasks.find-image-from-cluster-timeout-millis:600000}')
-  long timeout
+  long configTimeout
+
+  @Override
+  Duration getTimeout() {
+    return Duration.ofMillis(configTimeout)
+  }
 
   static enum SelectionStrategy {
     /**
