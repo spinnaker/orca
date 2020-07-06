@@ -59,13 +59,13 @@ public class ToggleablePauseTask implements RetryableTask {
   }
 
   @Override
-  public long getBackoffPeriod() {
-    return Duration.ofMinutes(1).toMillis();
+  public Duration getBackoffPeriod() {
+    return Duration.ofMinutes(1);
   }
 
   @Override
-  public long getTimeout() {
-    return Duration.ofHours(24).toMillis();
+  public Duration getTimeout() {
+    return Duration.ofHours(24);
   }
 
   @Nullable
