@@ -63,10 +63,10 @@ final class ManifestEvaluatorTest {
               .build());
 
   private final TypedString manifestString =
-      new TypedString("{'metadata': {'name': 'my-manifest'}}");
+      new TypedString("{\"metadata\": {\"name\": \"my-manifest\"}}");
 
   private final TypedString spelManifestString =
-      new TypedString("{'metadata': {'name': '${manifest}'}}");
+      new TypedString("{\"metadata\": {\"name\": \"${manifest}\"}}");
 
   private final String manifestsWithEmptyDocument =
       "---\n"
