@@ -75,12 +75,12 @@ public class ManifestEvaluator implements CloudProviderAware {
       ContextParameterProcessor contextParameterProcessor,
       OortService oortService,
       RetrySupport retrySupport,
-      ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties1) {
+      ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties) {
     this.artifactUtils = artifactUtils;
     this.contextParameterProcessor = contextParameterProcessor;
     this.oortService = oortService;
     this.retrySupport = retrySupport;
-    this.manifestEvaluatorConfigurationProperties = manifestEvaluatorConfigurationProperties1;
+    this.manifestEvaluatorConfigurationProperties = manifestEvaluatorConfigurationProperties;
   }
 
   @RequiredArgsConstructor
