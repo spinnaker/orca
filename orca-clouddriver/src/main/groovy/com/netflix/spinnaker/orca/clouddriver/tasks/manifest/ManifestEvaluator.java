@@ -31,6 +31,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.BindArtifact;
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.config.ManifestEvaluatorConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
@@ -49,7 +50,6 @@ import java.util.stream.StreamSupport;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -67,7 +67,7 @@ public class ManifestEvaluator implements CloudProviderAware {
   private final ContextParameterProcessor contextParameterProcessor;
   private final OortService oortService;
   private final RetrySupport retrySupport;
-  private final Boolean failOnUnknownKeys;
+  private final ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties;
 
   @Autowired
   public ManifestEvaluator(
@@ -75,12 +75,12 @@ public class ManifestEvaluator implements CloudProviderAware {
       ContextParameterProcessor contextParameterProcessor,
       OortService oortService,
       RetrySupport retrySupport,
-      @Value("${manifest.evaluator.failOnUnknownKeys:true}") Boolean failOnUnknownKeys) {
+      ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties) {
     this.artifactUtils = artifactUtils;
     this.contextParameterProcessor = contextParameterProcessor;
     this.oortService = oortService;
     this.retrySupport = retrySupport;
-    this.failOnUnknownKeys = failOnUnknownKeys;
+    this.manifestEvaluatorConfigurationProperties = manifestEvaluatorConfigurationProperties;
   }
 
   @RequiredArgsConstructor
@@ -199,7 +199,8 @@ public class ManifestEvaluator implements CloudProviderAware {
             contextParameterProcessor.buildExecutionContext(stage),
             /* allowUnknownKeys= */ true);
 
-    if (failOnUnknownKeys && processorResult.containsKey(PipelineExpressionEvaluator.SUMMARY)) {
+    if (manifestEvaluatorConfigurationProperties.isFailOnUnknownKeys()
+        && processorResult.containsKey(PipelineExpressionEvaluator.SUMMARY)) {
       throw new IllegalStateException(
           String.format(
               "Failure evaluating manifest expressions: %s",
