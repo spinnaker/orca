@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.controllers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.Collections2
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -369,7 +370,7 @@ class TaskControllerSpec extends Specification {
       ]
     ]
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _ ) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _ ) >> pipelines.findAll {
         it.pipelineConfigId == "1"
       }.collect { config ->
         PipelineExecutionImpl pipeline = pipeline {
@@ -417,7 +418,7 @@ class TaskControllerSpec extends Specification {
       ]
     ]
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       PipelineExecutionImpl pipeline = pipeline {
@@ -466,7 +467,7 @@ class TaskControllerSpec extends Specification {
       ]
     ]
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       PipelineExecutionImpl pipeline = pipeline {
@@ -509,7 +510,7 @@ class TaskControllerSpec extends Specification {
       ]
     ]
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       PipelineExecutionImpl pipeline = pipeline {
@@ -548,7 +549,7 @@ class TaskControllerSpec extends Specification {
       ]
     ]
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["2"], _, _, _) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["2"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "2"
     }.collect { config ->
       PipelineExecutionImpl pipeline = pipeline {
@@ -587,7 +588,7 @@ class TaskControllerSpec extends Specification {
       ]
     ]
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       PipelineExecutionImpl pipeline = pipeline {
@@ -611,7 +612,7 @@ class TaskControllerSpec extends Specification {
     results.id == ['test-1', 'test-3']
   }
 
-  void '/applications/{application}/pipelines/search should handle a trigger search field that is a list of maps correctly and deterministicly'() {
+  void '/applications/{application}/pipelines/search should handle a trigger search field that is a list of maps correctly and deterministically'() {
     given:
     def app = "covfefe"
     def pipelines = [
@@ -622,10 +623,10 @@ class TaskControllerSpec extends Specification {
        trigger: new DockerTrigger("test-account", "test-repo", "1")
       ]
     ]
-    pipelines[0].trigger.artifacts.addAll([[name: "a", version: "1"],  [name: "a"]])
-    pipelines[1].trigger.artifacts.addAll([[name: "a"], [name: "a", version: "1"]])
+    pipelines[0].trigger.artifacts.addAll([Artifact.builder().name("a").version("1").build(), Artifact.builder().name("a").build()])
+    pipelines[1].trigger.artifacts.addAll([Artifact.builder().name("a").build(), Artifact.builder().name("a").version("1").build()])
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       PipelineExecutionImpl pipeline = pipeline {
@@ -669,7 +670,7 @@ class TaskControllerSpec extends Specification {
       ]
     ]
 
-    executionRepository.retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
+    executionRepository.retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(["1"], _, _, _) >> pipelines.findAll {
       it.pipelineConfigId == "1"
     }.collect { config ->
       PipelineExecutionImpl pipeline = pipeline {

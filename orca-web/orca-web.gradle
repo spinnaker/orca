@@ -15,10 +15,11 @@
  */
 
 apply from: "$rootDir/gradle/groovy.gradle"
+apply from: "$rootDir/gradle/kotlin.gradle"
 apply plugin: 'io.spinnaker.package'
 
 ext {
-  springConfigLocation = System.getProperty('spring.config.additional-location', "${System.getProperty('user.home')}/.spinnaker/")
+  springConfigLocation = System.getProperty('spring.config.additional-location', "${System.getProperty('user.home')}/.spinnaker/".toString())
 }
 
 run {
@@ -62,12 +63,13 @@ dependencies {
   implementation(project(":orca-sql"))
   implementation(project(":orca-webhook"))
   implementation("com.netflix.spinnaker.kork:kork-exceptions")
-  implementation("com.netflix.spinnaker.kork:kork-stackdriver")
   implementation("com.netflix.spinnaker.kork:kork-web")
   implementation("com.netflix.spinnaker.kork:kork-plugins")
   implementation("net.logstash.logback:logstash-logback-encoder")
   implementation("com.netflix.spinnaker.fiat:fiat-api:$fiatVersion")
   implementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
+
+  runtimeOnly("com.netflix.spinnaker.kork:kork-runtime")
 
   if (!rootProject.hasProperty("excludeSqlDrivers")) {
     runtimeOnly(project(":orca-sql-mysql"))
@@ -76,9 +78,6 @@ dependencies {
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
 
-  runtimeOnly("com.netflix.spinnaker.kork:kork-core")
-  runtimeOnly("com.netflix.spinnaker.kork:kork-secrets-aws")
-  runtimeOnly("com.netflix.spinnaker.kork:kork-secrets-gcp")
   //this brings in the jetty GzipFilter which boot will autoconfigure
   runtimeOnly("org.eclipse.jetty:jetty-servlets:9.2.11.v20150529")
 
@@ -92,6 +91,11 @@ dependencies {
   testImplementation("org.objenesis:objenesis")
   testImplementation("org.junit.jupiter:junit-jupiter-api")
   testImplementation("com.netflix.spinnaker.keiko:keiko-mem:$keikoVersion")
+
+  testImplementation(project(":orca-api-tck"))
+  testImplementation("dev.minutest:minutest")
+  testImplementation("io.strikt:strikt-core")
+  testImplementation("io.mockk:mockk")
 }
 
 test {
@@ -99,9 +103,14 @@ test {
   //assertions can be made against the version (see orca-plugins-test, for example).
   jar {
     manifest {
-      attributes(
-          'Implementation-Version': '1.0.0'
-      )
+      String implementationVersion = getAttributes()["Implementation-Version"]
+      if (implementationVersion == null
+          || implementationVersion.isEmpty()
+          || implementationVersion == "undefined") {
+        attributes(
+            'Implementation-Version': '1.0.0'
+        )
+      }
     }
   }
   useJUnitPlatform {

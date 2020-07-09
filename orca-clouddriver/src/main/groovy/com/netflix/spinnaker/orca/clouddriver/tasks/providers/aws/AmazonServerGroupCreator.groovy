@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -41,11 +40,15 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
   @Value('${default.bake.account:default}')
   String defaultBakeAccount
 
-  @Value('${default.security-groups:#{T(com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask).DEFAULT_SECURITY_GROUPS}}')
+  @Value('${default.security-groups:#{T(com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.AmazonServerGroupCreator).DEFAULT_SECURITY_GROUPS}}')
   List<String> defaultSecurityGroups = DEFAULT_SECURITY_GROUPS
 
   boolean katoResultExpected = true
-  String cloudProvider = "aws"
+
+  @Override
+  String getCloudProvider() {
+    return "aws"
+  }
 
   @Override
   List<Map> getOperations(StageExecution stage) {

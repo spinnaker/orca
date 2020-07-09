@@ -17,6 +17,10 @@
 package com.netflix.spinnaker.orca.echo.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.jakewharton.retrofit.Ok3Client
+import com.netflix.spinnaker.config.DefaultServiceEndpoint
+import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.echo.spring.EchoNotifyingExecutionListener
 import com.netflix.spinnaker.orca.echo.spring.EchoNotifyingStageListener
@@ -39,7 +43,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import retrofit.Endpoint
 import retrofit.RestAdapter
-import retrofit.client.Client as RetrofitClient
 import retrofit.converter.JacksonConverter
 import static retrofit.Endpoints.newFixedEndpoint
 
@@ -50,7 +53,7 @@ import static retrofit.Endpoints.newFixedEndpoint
 @CompileStatic
 class EchoConfiguration {
 
-  @Autowired RetrofitClient retrofitClient
+  @Autowired OkHttpClientProvider clientProvider
   @Autowired RestAdapter.LogLevel retrofitLogLevel
   @Autowired ObjectMapper objectMapper
 
@@ -64,7 +67,7 @@ class EchoConfiguration {
   EchoService echoService(Endpoint echoEndpoint) {
     new RestAdapter.Builder()
       .setEndpoint(echoEndpoint)
-      .setClient(retrofitClient)
+      .setClient(new Ok3Client(clientProvider.getClient(new DefaultServiceEndpoint("echo", echoEndpoint.url))))
       .setLogLevel(retrofitLogLevel)
       .setLog(new RetrofitSlf4jLog(EchoService))
       .setConverter(new JacksonConverter())
@@ -73,8 +76,10 @@ class EchoConfiguration {
   }
 
   @Bean
-  EchoNotifyingStageListener echoNotifyingStageExecutionListener(EchoService echoService, ExecutionRepository repository, ContextParameterProcessor contextParameterProcessor) {
-    new EchoNotifyingStageListener(echoService, repository, contextParameterProcessor)
+  EchoNotifyingStageListener echoNotifyingStageExecutionListener(EchoService echoService, ExecutionRepository repository,
+                                                                 ContextParameterProcessor contextParameterProcessor,
+                                                                 DynamicConfigService dynamicConfigService) {
+    new EchoNotifyingStageListener(echoService, repository, contextParameterProcessor, dynamicConfigService)
   }
 
   @Bean
