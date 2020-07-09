@@ -6,7 +6,6 @@ dependencies {
   api("com.netflix.spinnaker.kork:kork-core") {
     exclude(module: "logback-classic")
   }
-  api "com.netflix.eureka:eureka-client"
 
   testImplementation project(":keiko-test-common")
 }

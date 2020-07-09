@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.q.discovery
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
-import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
+import com.netflix.spinnaker.kork.discovery.InstanceStatus.UP
+import com.netflix.spinnaker.kork.discovery.RemoteStatusChangedEvent
 import com.netflix.spinnaker.q.Activator
 import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory

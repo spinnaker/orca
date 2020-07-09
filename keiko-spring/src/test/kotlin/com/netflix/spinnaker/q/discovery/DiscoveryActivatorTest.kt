@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.q.discovery
 
-import com.netflix.appinfo.InstanceInfo.InstanceStatus
-import com.netflix.appinfo.InstanceInfo.InstanceStatus.OUT_OF_SERVICE
-import com.netflix.appinfo.InstanceInfo.InstanceStatus.UP
-import com.netflix.discovery.StatusChangeEvent
-import com.netflix.spinnaker.kork.eureka.RemoteStatusChangedEvent
+import com.netflix.spinnaker.kork.discovery.DiscoveryStatusChangeEvent
+import com.netflix.spinnaker.kork.discovery.InstanceStatus
+import com.netflix.spinnaker.kork.discovery.InstanceStatus.OUT_OF_SERVICE
+import com.netflix.spinnaker.kork.discovery.InstanceStatus.UP
+import com.netflix.spinnaker.kork.discovery.RemoteStatusChangedEvent
 import com.netflix.spinnaker.spek.and
 import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.spek.api.Spek
@@ -66,4 +66,4 @@ private fun DiscoveryActivator.triggerEvent(from: InstanceStatus, to: InstanceSt
   onApplicationEvent(event(from, to))
 
 private fun event(from: InstanceStatus, to: InstanceStatus) =
-  RemoteStatusChangedEvent(StatusChangeEvent(from, to))
+  RemoteStatusChangedEvent(DiscoveryStatusChangeEvent(from, to))
