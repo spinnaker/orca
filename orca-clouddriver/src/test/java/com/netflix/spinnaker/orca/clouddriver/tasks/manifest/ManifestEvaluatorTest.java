@@ -33,6 +33,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.BindArtifact;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.Source;
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.config.ManifestEvaluatorConfigurationProperties;
 import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
@@ -50,6 +51,8 @@ import retrofit.mime.TypedString;
 @ExtendWith(MockitoExtension.class)
 final class ManifestEvaluatorTest {
   private ManifestEvaluator manifestEvaluator;
+  private ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties =
+      new ManifestEvaluatorConfigurationProperties();
 
   @Mock private ArtifactUtils artifactUtils;
   private ContextParameterProcessor contextParameterProcessor =
@@ -80,7 +83,11 @@ final class ManifestEvaluatorTest {
   void setup() {
     manifestEvaluator =
         new ManifestEvaluator(
-            artifactUtils, contextParameterProcessor, oortService, new RetrySupport(), true);
+            artifactUtils,
+            contextParameterProcessor,
+            oortService,
+            new RetrySupport(),
+            manifestEvaluatorConfigurationProperties);
   }
 
   @Test
@@ -313,9 +320,16 @@ final class ManifestEvaluatorTest {
 
   @Test
   void shouldSucceedWhenFailedEvaluatingManifestExpressionsWithFlagSet() {
+    ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties =
+        new ManifestEvaluatorConfigurationProperties();
+    manifestEvaluatorConfigurationProperties.setFailOnUnknownKeys(false);
     ManifestEvaluator manifestEvaluator =
         new ManifestEvaluator(
-            artifactUtils, contextParameterProcessor, oortService, new RetrySupport(), false);
+            artifactUtils,
+            contextParameterProcessor,
+            oortService,
+            new RetrySupport(),
+            manifestEvaluatorConfigurationProperties);
     StageExecutionImpl stage = new StageExecutionImpl();
     Artifact manifestArtifact =
         Artifact.builder()

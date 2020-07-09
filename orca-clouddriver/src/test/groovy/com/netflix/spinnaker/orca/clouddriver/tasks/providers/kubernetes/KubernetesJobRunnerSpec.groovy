@@ -23,6 +23,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.config.ManifestEvaluatorConfigurationProperties
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
@@ -37,6 +38,7 @@ class KubernetesJobRunnerSpec extends Specification {
     given:
     ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
+    ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties = new ManifestEvaluatorConfigurationProperties();
     ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
         Mock(ArtifactUtils) {
           getArtifacts(_ as StageExecution) >> ImmutableList.of()
@@ -44,7 +46,7 @@ class KubernetesJobRunnerSpec extends Specification {
         Mock(ContextParameterProcessor),
         Mock(OortService),
         new RetrySupport(),
-       true
+        manifestEvaluatorConfigurationProperties
     )
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
@@ -73,6 +75,7 @@ class KubernetesJobRunnerSpec extends Specification {
     given:
     ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
+    ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties = new ManifestEvaluatorConfigurationProperties();
     ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
         Mock(ArtifactUtils) {
           getArtifacts(_ as StageExecution) >> ImmutableList.of()
@@ -80,7 +83,7 @@ class KubernetesJobRunnerSpec extends Specification {
         Mock(ContextParameterProcessor),
         Mock(OortService),
         new RetrySupport(),
-       true
+        manifestEvaluatorConfigurationProperties
     )
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
@@ -110,8 +113,9 @@ class KubernetesJobRunnerSpec extends Specification {
     OortService oortService = Mock(OortService)
     ContextParameterProcessor contextParameterProcessor = Mock(ContextParameterProcessor)
     RetrySupport retrySupport = new RetrySupport()
+    ManifestEvaluatorConfigurationProperties manifestEvaluatorConfigurationProperties = new ManifestEvaluatorConfigurationProperties();
     ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
-      artifactUtils, contextParameterProcessor, oortService, retrySupport, true
+      artifactUtils, contextParameterProcessor, oortService, retrySupport, manifestEvaluatorConfigurationProperties
     )
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
