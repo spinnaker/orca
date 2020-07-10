@@ -42,7 +42,6 @@ dependencies {
   implementation(project(":orca-deploymentmonitor"))
   implementation(project(":orca-dry-run"))
   implementation(project(":orca-echo"))
-  implementation(project(":orca-eureka"))
   implementation(project(":orca-flex"))
   implementation(project(":orca-front50"))
   implementation(project(":orca-igor"))
@@ -63,12 +62,13 @@ dependencies {
   implementation(project(":orca-sql"))
   implementation(project(":orca-webhook"))
   implementation("com.netflix.spinnaker.kork:kork-exceptions")
-  implementation("com.netflix.spinnaker.kork:kork-stackdriver")
   implementation("com.netflix.spinnaker.kork:kork-web")
   implementation("com.netflix.spinnaker.kork:kork-plugins")
   implementation("net.logstash.logback:logstash-logback-encoder")
   implementation("com.netflix.spinnaker.fiat:fiat-api:$fiatVersion")
   implementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
+
+  runtimeOnly("com.netflix.spinnaker.kork:kork-runtime")
 
   if (!rootProject.hasProperty("excludeSqlDrivers")) {
     runtimeOnly(project(":orca-sql-mysql"))
@@ -77,9 +77,6 @@ dependencies {
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
 
-  runtimeOnly("com.netflix.spinnaker.kork:kork-core")
-  runtimeOnly("com.netflix.spinnaker.kork:kork-secrets-aws")
-  runtimeOnly("com.netflix.spinnaker.kork:kork-secrets-gcp")
   //this brings in the jetty GzipFilter which boot will autoconfigure
   runtimeOnly("org.eclipse.jetty:jetty-servlets:9.2.11.v20150529")
 
