@@ -50,6 +50,7 @@ import java.util.stream.StreamSupport;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -57,6 +58,7 @@ import retrofit.client.Response;
 
 /** This class handles resolving a list of manifests and associated artifacts. */
 @Component
+@EnableConfigurationProperties(ManifestEvaluatorConfigurationProperties.class)
 @NonnullByDefault
 public class ManifestEvaluator implements CloudProviderAware {
   private static final ThreadLocal<Yaml> yamlParser =
