@@ -128,7 +128,6 @@ public class SaveServiceAccountTask implements RetryableTask {
     }
 
     if (!isUserAuthorized(user, roles)) {
-      // TODO: Push this to the output result so Deck can show it.
       log.warn("User {} is not authorized with all roles for pipeline", user);
       Map<String, Object> exception = new HashMap<>();
       Map<String, Object> outputsData = new HashMap<>();
