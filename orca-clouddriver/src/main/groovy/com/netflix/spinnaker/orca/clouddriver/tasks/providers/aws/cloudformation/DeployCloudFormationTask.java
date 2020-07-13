@@ -20,15 +20,15 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
@@ -56,13 +56,13 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
 
   @Autowired ObjectMapper objectMapper;
 
-  @Autowired ArtifactResolver artifactResolver;
+  @Autowired ArtifactUtils artifactUtils;
 
   public static final String TASK_NAME = "deployCloudFormation";
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage);
 
     Map<String, Object> task = new HashMap<>(stage.getContext());
@@ -89,9 +89,11 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
               .map(m -> objectMapper.convertValue(m, Artifact.class))
               .orElse(null);
       Artifact artifact =
-          artifactResolver.getBoundArtifactForStage(stage, stackArtifactId, stackArtifact);
-      Optional.ofNullable(task.get("stackArtifactAccount"))
-          .ifPresent(account -> artifact.setArtifactAccount(account.toString()));
+          ArtifactUtils.withAccount(
+              artifactUtils.getBoundArtifactForStage(stage, stackArtifactId, stackArtifact),
+              Optional.ofNullable(task.get("stackArtifactAccount"))
+                  .map(Object::toString)
+                  .orElse(null));
       Response response = oortService.fetchArtifact(artifact);
       try {
         String template = CharStreams.toString(new InputStreamReader(response.getBody().in()));
@@ -139,10 +141,7 @@ public class DeployCloudFormationTask extends AbstractCloudProviderAwareTask imp
         new ImmutableMap.Builder<String, Map>().put(TASK_NAME, task).build();
 
     TaskId taskId =
-        katoService
-            .requestOperations(cloudProvider, Collections.singletonList(operation))
-            .toBlocking()
-            .first();
+        katoService.requestOperations(cloudProvider, Collections.singletonList(operation));
 
     Map<String, Object> context =
         new ImmutableMap.Builder<String, Object>()

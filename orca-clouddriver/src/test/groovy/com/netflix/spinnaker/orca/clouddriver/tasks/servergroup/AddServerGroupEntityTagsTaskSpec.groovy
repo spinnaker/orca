@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -40,7 +40,7 @@ class AddServerGroupEntityTagsTaskSpec extends Specification {
 
   void "should return with failed/continue status if tagging operation fails"() {
     when:
-    def stage = new Stage(Execution.newPipeline("orca"), "whatever", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", [
       "deploy.server.groups": [
         "us-east-1": ["foo-v001"]
       ]
@@ -52,12 +52,12 @@ class AddServerGroupEntityTagsTaskSpec extends Specification {
     1 * katoService.requestOperations(_) >> { throw new RuntimeException("something went wrong") }
   }
 
-  void "skips tagging when no tag generators or generators do not produce any tags"() {
+  void "just completes when no tag generators or generators do not produce any tags"() {
     given:
     AddServerGroupEntityTagsTask emptyTask = new AddServerGroupEntityTagsTask(kato: katoService, tagGenerators: [])
 
     when:
-    def stage = new Stage(Execution.newPipeline("orca"), "whatever", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever", [
       "deploy.server.groups": [
         "us-east-1": ["foo-v001"],
       ]
@@ -65,7 +65,7 @@ class AddServerGroupEntityTagsTaskSpec extends Specification {
     def result = emptyTask.execute(stage)
 
     then:
-    result.status == ExecutionStatus.SKIPPED
+    result.status == ExecutionStatus.SUCCEEDED
     0 * _
   }
 }

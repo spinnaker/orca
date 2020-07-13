@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup.SecurityGroupUpserter
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -35,7 +35,7 @@ class AmazonSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
   MortService mortService
 
   @Override
-  SecurityGroupUpserter.OperationContext getOperationContext(Stage stage) {
+  SecurityGroupUpserter.OperationContext getOperationContext(StageExecution stage) {
     def operation = new HashMap(stage.context)
     operation.regions = operation.regions ?: (operation.region ? [operation.region] : [])
 
@@ -52,7 +52,10 @@ class AmazonSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
             allVPCs, operation.vpcId as String, region, operation.credentials as String
         ).id
       }
-
+      /**
+       * Additional security group details can be used to pass additional details that can be used in custom preprocessor in clouddriver,
+       * In order to consume this detail, changes are required in clouddriver preprocessor/atomic operation.
+       */
       return [
           (SecurityGroupUpserter.OPERATION): [
               name                : operation.securityGroupName,
@@ -62,7 +65,8 @@ class AmazonSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
               description         : operation.description,
               securityGroupIngress: operation.securityGroupIngress,
               ipIngress           : operation.ipIngress,
-              ingressAppendOnly   : operation.ingressAppendOnly ?: false
+              ingressAppendOnly   : operation.ingressAppendOnly ?: false,
+              additionalSecurityGroupDetails : operation.additionalSecurityGroupDetails
           ]
       ]
     }
@@ -79,7 +83,7 @@ class AmazonSecurityGroupUpserter implements SecurityGroupUpserter, CloudProvide
     return new SecurityGroupUpserter.OperationContext(ops, [targets: targets, securityGroupIngress: securityGroupIngress])
   }
 
-  boolean isSecurityGroupUpserted(MortService.SecurityGroup upsertedSecurityGroup, Stage stage) {
+  boolean isSecurityGroupUpserted(MortService.SecurityGroup upsertedSecurityGroup, StageExecution stage) {
     if (!upsertedSecurityGroup) {
       return false
     }

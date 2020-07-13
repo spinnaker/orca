@@ -18,15 +18,15 @@ package com.netflix.spinnaker.orca.igor.tasks;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild;
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuildStageDefinition;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.io.IOException;
 import java.util.Map;
@@ -42,7 +42,7 @@ import retrofit.client.Response;
 public class StartGoogleCloudBuildTask implements Task {
   private final IgorService igorService;
   private final OortService oortService;
-  private final ArtifactResolver artifactResolver;
+  private final ArtifactUtils artifactUtils;
   private final ContextParameterProcessor contextParameterProcessor;
 
   private final RetrySupport retrySupport = new RetrySupport();
@@ -51,7 +51,7 @@ public class StartGoogleCloudBuildTask implements Task {
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     GoogleCloudBuildStageDefinition stageDefinition =
         stage.mapTo(GoogleCloudBuildStageDefinition.class);
 
@@ -81,10 +81,10 @@ public class StartGoogleCloudBuildTask implements Task {
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
   }
 
-  private Map<String, Object> getBuildDefinitionFromArtifact(
-      @Nonnull Stage stage, GoogleCloudBuildStageDefinition stageDefinition) {
+  private Artifact getBuildDefinitionArtifact(
+      @Nonnull StageExecution stage, GoogleCloudBuildStageDefinition stageDefinition) {
     Artifact buildDefinitionArtifact =
-        artifactResolver.getBoundArtifactForStage(
+        artifactUtils.getBoundArtifactForStage(
             stage,
             stageDefinition.getBuildDefinitionArtifact().getArtifactId(),
             stageDefinition.getBuildDefinitionArtifact().getArtifact());
@@ -93,15 +93,19 @@ public class StartGoogleCloudBuildTask implements Task {
       throw new IllegalArgumentException("No manifest artifact was specified.");
     }
 
-    if (stageDefinition.getBuildDefinitionArtifact().getArtifactAccount() != null) {
-      buildDefinitionArtifact.setArtifactAccount(
-          stageDefinition.getBuildDefinitionArtifact().getArtifactAccount());
-    }
-
+    buildDefinitionArtifact =
+        ArtifactUtils.withAccount(
+            buildDefinitionArtifact,
+            stageDefinition.getBuildDefinitionArtifact().getArtifactAccount());
     if (buildDefinitionArtifact.getArtifactAccount() == null) {
       throw new IllegalArgumentException("No manifest artifact account was specified.");
     }
+    return buildDefinitionArtifact;
+  }
 
+  private Map<String, Object> getBuildDefinitionFromArtifact(
+      @Nonnull StageExecution stage, GoogleCloudBuildStageDefinition stageDefinition) {
+    final Artifact buildDefinitionArtifact = getBuildDefinitionArtifact(stage, stageDefinition);
     Map<String, Object> buildDefinition =
         retrySupport.retry(
             () -> {

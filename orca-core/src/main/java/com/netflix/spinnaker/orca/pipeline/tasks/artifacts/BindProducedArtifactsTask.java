@@ -21,15 +21,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,13 +40,13 @@ import org.springframework.stereotype.Component;
 public class BindProducedArtifactsTask implements Task {
   public static final String TASK_NAME = "bindProducedArtifacts";
 
-  @Autowired ArtifactResolver artifactResolver;
+  @Autowired ArtifactUtils artifactUtils;
 
   @Autowired ObjectMapper objectMapper;
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     Map<String, Object> context = stage.getContext();
     Map<String, Object> outputs = new HashMap<>();
 
@@ -58,12 +58,13 @@ public class BindProducedArtifactsTask implements Task {
       return TaskResult.SUCCEEDED;
     }
 
-    List<Artifact> artifacts = artifactResolver.getArtifacts(stage);
-    Set<Artifact> resolvedArtifacts =
-        artifactResolver.resolveExpectedArtifacts(expectedArtifacts, artifacts, false);
+    List<Artifact> artifacts = artifactUtils.getArtifacts(stage);
+    ArtifactResolver.ResolveResult resolveResult =
+        ArtifactResolver.getInstance(artifacts, /* requireUniqueMatches= */ false)
+            .resolveExpectedArtifacts(expectedArtifacts);
 
-    outputs.put("artifacts", resolvedArtifacts);
-    outputs.put("resolvedExpectedArtifacts", expectedArtifacts);
+    outputs.put("artifacts", resolveResult.getResolvedArtifacts());
+    outputs.put("resolvedExpectedArtifacts", resolveResult.getResolvedExpectedArtifacts());
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).outputs(outputs).build();
   }

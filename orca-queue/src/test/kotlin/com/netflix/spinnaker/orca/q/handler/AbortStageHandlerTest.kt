@@ -16,20 +16,19 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.netflix.spinnaker.orca.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.test.pipeline
+import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.events.StageComplete
-import com.netflix.spinnaker.orca.fixture.pipeline
-import com.netflix.spinnaker.orca.fixture.stage
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.AbortStage
 import com.netflix.spinnaker.orca.q.CancelStage
 import com.netflix.spinnaker.orca.q.CompleteExecution
 import com.netflix.spinnaker.orca.q.CompleteStage
-import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.any
@@ -120,7 +119,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       it("marks the stage as TERMINAL") {
         verify(repository).storeStage(check {
           assertThat(it.status).isEqualTo(TERMINAL)
-          assertThat(it.endTime.toInstant()).isEqualTo(clock.instant())
+          assertThat(it.endTime).isEqualTo(clock.instant().toEpochMilli())
         })
       }
 
@@ -170,7 +169,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
       it("marks the stage as TERMINAL") {
         verify(repository).storeStage(check {
           assertThat(it.status).isEqualTo(TERMINAL)
-          assertThat(it.endTime.toInstant()).isEqualTo(clock.instant())
+          assertThat(it.endTime).isEqualTo(clock.instant().toEpochMilli())
         })
       }
 

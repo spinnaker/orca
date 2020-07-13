@@ -20,8 +20,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 import java.util.stream.Collectors
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -39,7 +39,7 @@ class AmazonImageFinderSpec extends Specification {
 
   def "uses appversion tag to filter image results on package name"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
       regions: ["us-west-1", "us-west-2"]
     ])
     def tags = [
@@ -53,7 +53,7 @@ class AmazonImageFinderSpec extends Specification {
     def noTags = [:]
 
     when:
-    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"])
+    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"], [])
 
     then:
     1 * oortService.findImage("aws", "mypackage", null, null, ["tag:engine": "spinnaker"]) >> {
@@ -128,7 +128,7 @@ class AmazonImageFinderSpec extends Specification {
 
   def "should match most recently created image per region"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
       regions: ["us-west-1", "us-west-2"]
     ])
     def tags = [
@@ -137,7 +137,7 @@ class AmazonImageFinderSpec extends Specification {
     ]
 
     when:
-    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"])
+    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"], [])
 
     then:
     1 * oortService.findImage("aws", "mypackage", null, null, ["tag:engine": "spinnaker"]) >> {
@@ -187,7 +187,7 @@ class AmazonImageFinderSpec extends Specification {
 
   def "should skip images with incomplete information"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
       regions: ["us-west-2"]
     ])
     def tags = [
@@ -196,7 +196,7 @@ class AmazonImageFinderSpec extends Specification {
     ]
 
     when:
-    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"])
+    def imageDetails = amazonImageFinder.byTags(stage, "mypackage", ["engine": "spinnaker"], [])
 
     then:
     1 * oortService.findImage("aws", "mypackage", null, null, ["tag:engine": "spinnaker"]) >> {
@@ -257,6 +257,22 @@ class AmazonImageFinderSpec extends Specification {
     creationDates                                              || expectedOrder
     [bCD("2016"), bCD("2014"), bCD("2012"), bCD("2015")]       || [bCD("2016"), bCD("2015"), bCD("2014"), bCD("2012")]
     [bCD("2016"), bCD("2014"), null, bCD("2012"), bCD("2015")] || [bCD("2016"), bCD("2015"), bCD("2014"), bCD("2012"), null]
+  }
+
+  def 'passes imageOwnerAccount to oortService.findImage'() {
+    given: 'an imageOwnerAccount property in the stage'
+    String myAccount = 'my-account'
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
+      imageOwnerAccount: myAccount,
+      regions: ["us-west-1"]
+    ])
+
+    when:
+    amazonImageFinder.byTags(stage, 'mypackage', [:], [])
+
+    then:
+    1 * oortService.findImage('aws', 'mypackage', myAccount, null, _) >> {[]}
+    0 * _
   }
 
   String bCD(String year) {

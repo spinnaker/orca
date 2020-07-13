@@ -18,12 +18,12 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.ecs
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
 import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import groovy.util.logging.Slf4j
 import javax.annotation.Nullable
 import org.springframework.stereotype.Component
@@ -38,14 +38,14 @@ class EcsServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAwar
   final Optional<String> healthProviderName = Optional.of("ecs")
 
   final ObjectMapper mapper = new ObjectMapper()
-  final ArtifactResolver artifactResolver
+  final ArtifactUtils artifactUtils
 
-  EcsServerGroupCreator(ArtifactResolver artifactResolver) {
-    this.artifactResolver = artifactResolver
+  EcsServerGroupCreator(ArtifactUtils artifactUtils) {
+    this.artifactUtils = artifactUtils
   }
 
   @Override
-  List<Map> getOperations(Stage stage) {
+  List<Map> getOperations(StageExecution stage) {
     def operation = [:]
 
     operation.putAll(stage.context)
@@ -94,10 +94,10 @@ class EcsServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAwar
     }
   }
 
-  private Artifact getTaskDefArtifact(Stage stage, Object input) {
+  private Artifact getTaskDefArtifact(StageExecution stage, Object input) {
     TaskDefinitionArtifact taskDefArtifactInput = mapper.convertValue(input, TaskDefinitionArtifact.class)
 
-    Artifact taskDef = artifactResolver.getBoundArtifactForStage(
+    Artifact taskDef = artifactUtils.getBoundArtifactForStage(
       stage,
       taskDefArtifactInput.artifactId,
       taskDefArtifactInput.artifact)
@@ -107,7 +107,7 @@ class EcsServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAwar
     return taskDef
   }
 
-  private Map<String, String> getContainerToImageMap(ArrayList<Map<String, Object>> mappings, Stage stage) {
+  private Map<String, String> getContainerToImageMap(ArrayList<Map<String, Object>> mappings, StageExecution stage) {
     def containerToImageMap = [:]
 
     // each mapping should be in the shape { containerName: "", imageDescription: {}}
@@ -120,7 +120,7 @@ class EcsServerGroupCreator implements ServerGroupCreator, DeploymentDetailsAwar
     return containerToImageMap
   }
 
-  private String getImageAddressFromDescription(Map<String, Object> description, Stage givenStage) {
+  private String getImageAddressFromDescription(Map<String, Object> description, StageExecution givenStage) {
     if (description.fromContext) {
       if (givenStage.execution.type == ExecutionType.ORCHESTRATION) {
         // Use image from specific "find image from tags" stage

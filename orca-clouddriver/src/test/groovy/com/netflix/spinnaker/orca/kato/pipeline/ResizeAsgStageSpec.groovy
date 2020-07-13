@@ -16,25 +16,17 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline
 
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReference
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner
-import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import spock.lang.Shared
+import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilderImpl
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 
 class ResizeAsgStageSpec extends Specification {
 
-  @Shared
-  def stageNavigator = new StageNavigator([])
-
-  def mapper = OrcaObjectMapper.newInstance()
   def targetReferenceSupport = Mock(TargetReferenceSupport)
   def resizeSupport = new ResizeSupport(targetReferenceSupport: targetReferenceSupport)
   def stageBuilder = new ResizeAsgStage()
@@ -50,15 +42,15 @@ class ResizeAsgStageSpec extends Specification {
     setup:
     def config = [asgName    : "testapp-asg-v000", regions: ["us-west-1", "us-east-1"], capacity: [min: 0, max: 0, desired: 0],
                   credentials: "test"]
-    def stage = new Stage(Execution.newPipeline("orca"), "resizeAsg", config)
-    def graphBefore = StageGraphBuilder.beforeStages(stage)
-    def graphAfter = StageGraphBuilder.afterStages(stage)
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "resizeAsg", config)
+    def graphBefore = StageGraphBuilderImpl.beforeStages(stage)
+    def graphAfter = StageGraphBuilderImpl.afterStages(stage)
 
     when:
     stageBuilder.buildTaskGraph(stage)
 
     then:
-    stage.status == ExecutionStatus.SUCCEEDED
+    stage.status == ExecutionStatus.NOT_STARTED
 
     when:
     stageBuilder.beforeStages(stage, graphBefore)
@@ -112,10 +104,10 @@ class ResizeAsgStageSpec extends Specification {
     setup:
     def config = [cluster : "testapp-asg", target: target, regions: ["us-west-1", "us-east-1"],
                   capacity: [min: 0, max: 0, desired: 0], credentials: "test"]
-    def stage = new Stage(Execution.newPipeline("orca"), "resizeAsg", config)
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "resizeAsg", config)
 
-    def graphBefore = StageGraphBuilder.beforeStages(stage)
-    def graphAfter = StageGraphBuilder.afterStages(stage)
+    def graphBefore = StageGraphBuilderImpl.beforeStages(stage)
+    def graphAfter = StageGraphBuilderImpl.afterStages(stage)
 
     when:
     stageBuilder.beforeStages(stage, graphBefore)
@@ -159,9 +151,9 @@ class ResizeAsgStageSpec extends Specification {
     setup:
     def config = [cluster : "testapp-asg", target: target, regions: ["us-east-1"],
                   capacity: [min: 0, max: 0, desired: 0], credentials: "test"]
-    def stage = new Stage(Execution.newPipeline("orca"), "resizeAsg", config)
-    def graphBefore = StageGraphBuilder.beforeStages(stage)
-    def graphAfter = StageGraphBuilder.afterStages(stage)
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "resizeAsg", config)
+    def graphBefore = StageGraphBuilderImpl.beforeStages(stage)
+    def graphAfter = StageGraphBuilderImpl.afterStages(stage)
 
     when:
     stageBuilder.beforeStages(stage, graphBefore)

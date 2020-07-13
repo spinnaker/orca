@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver
 
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import io.github.resilience4j.retry.annotation.Retry
@@ -45,7 +46,13 @@ interface KatoRestService {
                            @Path("cloudProvider") String cloudProvider,
                            @Body Collection<? extends Map<String, Map>> operations)
 
-  @POST("/applications/{app}/jobs/{account}/{region}/{id}")
+  @POST("/{cloudProvider}/ops/{operationName}")
+  Response submitOperation(@Query("clientRequestId") String clientRequestId,
+                           @Path("cloudProvider") String cloudProvider,
+                           @Path("operationName") String operationName,
+                           @Body OperationContext operation);
+
+  @GET("/applications/{app}/jobs/{account}/{region}/{id}")
   Response collectJob(@Path("app") String app,
                       @Path("account") String account,
                       @Path("region") String region,

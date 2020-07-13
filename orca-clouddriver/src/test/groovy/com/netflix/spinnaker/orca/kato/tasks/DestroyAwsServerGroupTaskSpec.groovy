@@ -17,20 +17,20 @@
 package com.netflix.spinnaker.orca.kato.tasks
 
 import com.fasterxml.jackson.datatype.guava.GuavaModule
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceConfiguration
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
 class DestroyAwsServerGroupTaskSpec extends Specification {
   @Subject task = new DestroyAwsServerGroupTask()
-  def stage = new Stage(Execution.newPipeline("orca"), "whatever")
+  def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever")
   def mapper = OrcaObjectMapper.newInstance()
   def taskId = new TaskId(UUID.randomUUID().toString())
 
@@ -54,7 +54,7 @@ class DestroyAwsServerGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations('aws', _) >> {
         operations = it[1]
-        rx.Observable.from(taskId)
+        taskId
       }
     }
 
@@ -74,7 +74,7 @@ class DestroyAwsServerGroupTaskSpec extends Specification {
   def "returns a success status with the kato task id"() {
     given:
     task.kato = Stub(KatoService) {
-      requestOperations('aws', _) >> rx.Observable.from(taskId)
+      requestOperations('aws', _) >> taskId
     }
 
     when:
@@ -93,7 +93,7 @@ class DestroyAwsServerGroupTaskSpec extends Specification {
       [asgName: "bar", regions: ["us"], credentials: account]
     ]
     task.kato = Stub(KatoService) {
-      requestOperations('aws', _) >> rx.Observable.from(taskId)
+      requestOperations('aws', _) >> taskId
     }
 
     when:
@@ -111,7 +111,7 @@ class DestroyAwsServerGroupTaskSpec extends Specification {
     setup:
     stage.context.target = TargetReferenceConfiguration.Target.ancestor_asg_dynamic
     task.kato = Stub(KatoService) {
-      requestOperations('aws', _) >> rx.Observable.from(taskId)
+      requestOperations('aws', _) >> taskId
     }
 
     when:
@@ -129,7 +129,7 @@ class DestroyAwsServerGroupTaskSpec extends Specification {
 
   def "task uses serverGroupName if present"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "whatever2")
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever2")
     stage.context = [
       cloudProvider   : "aws",
       serverGroupName : "test-server-group",
@@ -137,7 +137,7 @@ class DestroyAwsServerGroupTaskSpec extends Specification {
       credentials     : "test"
     ]
     task.kato = Stub(KatoService) {
-      requestOperations('aws', _) >> rx.Observable.from(taskId)
+      requestOperations('aws', _) >> taskId
     }
 
     when:

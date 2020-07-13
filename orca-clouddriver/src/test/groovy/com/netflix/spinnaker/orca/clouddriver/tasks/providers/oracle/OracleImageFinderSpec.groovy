@@ -13,8 +13,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.oracle
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.image.ImageFinder
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -32,7 +32,7 @@ class OracleImageFinderSpec extends Specification {
 
   def "should find first matching image for single region"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
       regions: ["us-ashburn-1"]
     ])
     def tags = [
@@ -42,7 +42,7 @@ class OracleImageFinderSpec extends Specification {
 
     when:
     Collection<ImageFinder.ImageDetails> imageDetails = oracleImageFinder.byTags(
-      stage, "imageName*", ["version": "latest"])
+      stage, "imageName*", ["version": "latest"], []) 
 
     then:
     1 * oortService.findImage("oracle", "imageName*", null, null, ["tag:version": "latest"]) >> {
@@ -58,7 +58,7 @@ class OracleImageFinderSpec extends Specification {
 
   def "should match first image per region for multiple regions"() {
     given:
-    def stage = new Stage(Execution.newPipeline("orca"), "", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
       regions: ["us-ashburn-1", "us-phoenix-1"]
     ])
     def tags = [
@@ -66,7 +66,7 @@ class OracleImageFinderSpec extends Specification {
     ]
 
     when:
-    def imageDetails = oracleImageFinder.byTags(stage, "image*", ["version": "latest"])
+    def imageDetails = oracleImageFinder.byTags(stage, "image*", ["version": "latest"], [])
 
     then:
     1 * oortService.findImage("oracle", "image*", null, null, ["tag:version": "latest"]) >> {

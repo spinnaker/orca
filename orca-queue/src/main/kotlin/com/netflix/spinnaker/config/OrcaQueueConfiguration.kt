@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.config
 
-import com.netflix.spinnaker.orca.q.NoopQueue
+import com.netflix.spinnaker.q.NoopQueue
 import com.netflix.spinnaker.q.Queue
+import java.time.Clock
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableScheduling
-import java.time.Clock
 
 @Configuration
 @ComponentScan(basePackages = [

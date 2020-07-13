@@ -16,13 +16,14 @@
 
 package com.netflix.spinnaker.orca.mine.tasks
 
+import com.netflix.spinnaker.security.AuthenticatedRequest
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import java.util.concurrent.TimeUnit
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.mine.MineService
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -38,15 +39,16 @@ class MonitorAcaTaskTask extends AbstractCloudProviderAwareTask implements Overr
   MineService mineService
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     Map context = stage.context
     Map outputs = [
       canary : context.canary
     ]
 
     try {
+      def canary = AuthenticatedRequest.allowAnonymous({ mineService.getCanary(context.canary.id) })
       outputs << [
-        canary : mineService.getCanary(context.canary.id)
+          canary: canary
       ]
     } catch (RetrofitError e) {
       log.error("Exception occurred while getting canary with id ${context.canary.id} from mine service", e)

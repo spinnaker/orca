@@ -18,27 +18,40 @@ package com.netflix.spinnaker.orca.keel
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.KeelService
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
+import com.netflix.spinnaker.orca.config.KeelConfiguration
 import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
+import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE
+import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.SpringHttpError
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.FORBIDDEN
 import retrofit.RetrofitError
 import retrofit.client.Response
+import retrofit.converter.JacksonConverter
+import retrofit.mime.TypedInput
 import strikt.api.expectThat
 import strikt.api.expectThrows
+import strikt.assertions.contains
+import strikt.assertions.isA
 import strikt.assertions.isEqualTo
-import java.lang.IllegalArgumentException
+import strikt.assertions.isNotNull
 
 internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
   data class ManifestLocation(
@@ -54,7 +67,7 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
     val trigger: Trigger
   ) {
     companion object {
-      val objectMapper = ObjectMapper()
+      val objectMapper: ObjectMapper = KeelConfiguration().keelObjectMapper()
     }
 
     val manifestLocation = ManifestLocation(
@@ -89,16 +102,46 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
 
     fun execute(context: Map<String, Any?>) =
       subject.execute(
-        Stage(
-          Execution(Execution.ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
-          Execution.ExecutionType.PIPELINE.toString(),
+        StageExecutionImpl(
+          PipelineExecutionImpl(ExecutionType.PIPELINE, "keeldemo").also { it.trigger = trigger },
+          ExecutionType.PIPELINE.toString(),
           context
         )
       )
+
+    val parsingError = SpringHttpError(
+      status = BAD_REQUEST.value(),
+      error = BAD_REQUEST.reasonPhrase,
+      message = "Parsing error",
+      details = mapOf(
+        "message" to "Parsing error",
+        "path" to listOf(
+          mapOf(
+            "type" to "SomeClass",
+            "field" to "someField"
+          )
+        ),
+        "pathExpression" to ".someField"
+      ),
+      // Jackson writes this as ms-since-epoch, so we need to strip off the nanoseconds, since we'll
+      // be round-tripping it through Jackson before testing for equality.
+      timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+    )
+
+    val accessDeniedError = SpringHttpError(
+      status = FORBIDDEN.value(),
+      error = FORBIDDEN.reasonPhrase,
+      message = "Access denied",
+      // Jackson writes this as ms-since-epoch, so we need to strip off the nanoseconds, since we'll
+      // be round-tripping it through Jackson before testing for equality.
+      timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+    )
   }
 
   private fun ManifestLocation.toMap() =
     Fixture.objectMapper.convertValue<Map<String, Any?>>(this).toMutableMap()
+
+  private val objectMapper = Fixture.objectMapper
 
   fun tests() = rootContext<Fixture> {
     context("basic behavior") {
@@ -135,7 +178,7 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
 
       context("with required stage context missing") {
         test("throws an exception") {
-          expectThrows<IllegalArgumentException> {
+          expectThrows<InvalidRequestException> {
             execute(manifestLocation.toMap().also { it.remove("repoType") })
           }
         }
@@ -264,7 +307,82 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
         }
       }
 
-      context("failure to call downstream services") {
+      context("unauthorized access to manifest") {
+        modifyFixture {
+          with(scmService) {
+            every {
+              getDeliveryConfigManifest(
+                manifestLocation.repoType,
+                manifestLocation.projectKey,
+                manifestLocation.repositorySlug,
+                manifestLocation.directory,
+                manifestLocation.manifest,
+                manifestLocation.ref
+              )
+            } throws RetrofitError.httpError("http://igor",
+              Response("http://igor", 401, "", emptyList(), null),
+              null, null)
+          }
+        }
+
+        test("task fails with a helpful error message") {
+          val result = execute(manifestLocation.toMap())
+          expectThat(result.status).isEqualTo(ExecutionStatus.TERMINAL)
+          expectThat(result.context["error"]).isEqualTo(mapOf("message" to UNAUTHORIZED_SCM_ACCESS_MESSAGE))
+        }
+      }
+
+      context("keel access denied error") {
+        modifyFixture {
+          with(scmService) {
+            every {
+              getDeliveryConfigManifest(
+                manifestLocation.repoType,
+                manifestLocation.projectKey,
+                manifestLocation.repositorySlug,
+                manifestLocation.directory,
+                manifestLocation.manifest,
+                manifestLocation.ref
+              )
+            } throws RetrofitError.httpError("http://keel",
+              Response("http://keel", 403, "", emptyList(),
+                JacksonConverter(objectMapper).toBody(accessDeniedError) as TypedInput), null, null)
+          }
+        }
+
+        test("task fails and includes the error details returned by keel") {
+          val result = execute(manifestLocation.toMap())
+          expectThat(result.status).isEqualTo(ExecutionStatus.TERMINAL)
+          expectThat(result.context["error"]).isA<SpringHttpError>().isEqualTo(accessDeniedError)
+        }
+      }
+
+      context("delivery config parsing error") {
+        modifyFixture {
+          with(scmService) {
+            every {
+              getDeliveryConfigManifest(
+                manifestLocation.repoType,
+                manifestLocation.projectKey,
+                manifestLocation.repositorySlug,
+                manifestLocation.directory,
+                manifestLocation.manifest,
+                manifestLocation.ref
+              )
+            } throws RetrofitError.httpError("http://keel",
+              Response("http://keel", 400, "", emptyList(),
+                JacksonConverter(objectMapper).toBody(parsingError) as TypedInput), null, null)
+          }
+        }
+
+        test("task fails and includes the error details returned by keel") {
+          val result = execute(manifestLocation.toMap())
+          expectThat(result.status).isEqualTo(ExecutionStatus.TERMINAL)
+          expectThat(result.context["error"]).isA<SpringHttpError>().isEqualTo(parsingError)
+        }
+      }
+
+      context("retryable failure to call downstream services") {
         modifyFixture {
           with(scmService) {
             every {
@@ -294,6 +412,15 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
         test("task fails if max retries reached") {
           val result = execute(manifestLocation.toMap().also { it["attempt"] = ImportDeliveryConfigTask.MAX_RETRIES })
           expectThat(result.status).isEqualTo(ExecutionStatus.TERMINAL)
+        }
+
+        test("task result context includes the error from the last attempt") {
+          var result: TaskResult? = null
+          for (attempt in 1..ImportDeliveryConfigTask.MAX_RETRIES) {
+            result = execute(manifestLocation.toMap().also { it["attempt"] = attempt })
+          }
+          expectThat(result!!.context["errorFromLastAttempt"]).isNotNull()
+          expectThat(result!!.context["error"] as String).contains(result!!.context["errorFromLastAttempt"] as String)
         }
       }
     }

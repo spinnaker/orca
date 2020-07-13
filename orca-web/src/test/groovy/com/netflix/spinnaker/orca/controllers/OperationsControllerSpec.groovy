@@ -21,25 +21,27 @@ import com.netflix.spinnaker.fiat.model.resources.Account
 import com.netflix.spinnaker.fiat.model.resources.Role
 import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
-
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.TitusPreconfiguredJobProperties
+import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.front50.Front50Service
 
 import javax.servlet.http.HttpServletResponse
+import com.netflix.spinnaker.kork.common.Header
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.PipelineTemplateService
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
-import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.json.JsonSlurper
 import org.slf4j.MDC
 import org.springframework.http.HttpHeaders
@@ -50,10 +52,9 @@ import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
-import static com.netflix.spinnaker.orca.ExecutionStatus.CANCELED
-import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static java.lang.String.format
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -70,12 +71,13 @@ class OperationsControllerSpec extends Specification {
   def executionRepository = Mock(ExecutionRepository)
   def pipelineTemplateService = Mock(PipelineTemplateService)
   def webhookService = Mock(WebhookService)
-  def artifactResolver = Mock(ArtifactResolver)
+  def artifactUtils = Mock(ArtifactUtils)
   def fiatService = Mock(FiatService)
   def fiatStatus = Mock(FiatStatus) {
     _ * isEnabled() >> { return false }
   }
   def front50Service = Mock(Front50Service)
+  def jobService = Mock(JobService)
 
   @Subject
     controller = new OperationsController(
@@ -86,10 +88,11 @@ class OperationsControllerSpec extends Specification {
       executionLauncher: executionLauncher,
       contextParameterProcessor: new ContextParameterProcessor(),
       webhookService: webhookService,
-      artifactResolver: artifactResolver,
+      artifactUtils: artifactUtils,
       fiatService: fiatService,
       fiatStatus: fiatStatus,
-      front50Service: front50Service
+      front50Service: front50Service,
+      jobService: jobService
     )
 
   @Unroll
@@ -112,7 +115,7 @@ class OperationsControllerSpec extends Specification {
     where:
     contentType << [MediaType.APPLICATION_JSON, MediaType.valueOf('application/context+json')]
     endpoint = "/orchestrate"
-    pipeline = Execution.newPipeline("1")
+    pipeline = PipelineExecutionImpl.newPipeline("1")
   }
 
   private Map slurp(String json) {
@@ -121,9 +124,9 @@ class OperationsControllerSpec extends Specification {
 
   def "uses trigger details from pipeline if present"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
@@ -160,9 +163,9 @@ class OperationsControllerSpec extends Specification {
 
   def "should not get pipeline execution details from trigger if provided"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
@@ -186,13 +189,13 @@ class OperationsControllerSpec extends Specification {
 
   def "should get pipeline execution details from trigger if not provided"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
-    Execution parentPipeline = pipeline {
+    PipelineExecutionImpl parentPipeline = pipeline {
       name = "pipeline from orca"
       status = CANCELED
       id = "12345"
@@ -223,9 +226,9 @@ class OperationsControllerSpec extends Specification {
 
   def "should get pipeline execution context from a previous execution if not provided and attribute plan is truthy"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
@@ -255,16 +258,16 @@ class OperationsControllerSpec extends Specification {
 
   def "trigger user takes precedence over query parameter"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
     buildService.getBuild(buildNumber, master, job) >> buildInfo
 
     if (queryUser) {
-      MDC.put(AuthenticatedRequest.Header.USER.header, queryUser)
+      MDC.put(Header.USER.header, queryUser)
     }
     when:
     controller.orchestrate(requestedPipeline, Mock(HttpServletResponse))
@@ -304,9 +307,9 @@ class OperationsControllerSpec extends Specification {
 
   def "gets properties file from igor if specified in pipeline"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
@@ -341,9 +344,9 @@ class OperationsControllerSpec extends Specification {
 
   def "context parameters are processed before pipeline is started"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
     }
 
     Map requestedPipeline = [
@@ -372,9 +375,9 @@ class OperationsControllerSpec extends Specification {
 
   def "processes pipeline parameters"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
     }
 
     Map requestedPipeline = [
@@ -399,9 +402,9 @@ class OperationsControllerSpec extends Specification {
 
   def "fills out pipeline parameters with defaults"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
     }
 
     Map requestedPipeline = [
@@ -443,9 +446,9 @@ class OperationsControllerSpec extends Specification {
 
   def "an empty string does not get overridden with default values"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
@@ -475,16 +478,16 @@ class OperationsControllerSpec extends Specification {
 
   def "provided trigger can evaluate spel"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
     executionRepository.retrievePipelinesForPipelineConfigId(*_) >> Observable.empty()
-    ArtifactResolver realArtifactResolver = new ArtifactResolver(mapper, executionRepository, new ContextParameterProcessor())
+    ArtifactUtils realArtifactUtils = new ArtifactUtils(mapper, executionRepository, new ContextParameterProcessor())
 
-    // can't use @subject, since we need to test the behavior of otherwise mocked-out 'artifactResolver'
+    // can't use @subject, since we need to test the behavior of otherwise mocked-out 'artifactUtils'
     def tempController = new OperationsController(
         objectMapper: mapper,
         buildService: buildService,
@@ -493,7 +496,7 @@ class OperationsControllerSpec extends Specification {
         executionLauncher: executionLauncher,
         contextParameterProcessor: new ContextParameterProcessor(),
         webhookService: webhookService,
-        artifactResolver: realArtifactResolver,
+        artifactUtils: realArtifactUtils,
     )
 
     def reference = 'gs://bucket'
@@ -580,9 +583,9 @@ class OperationsControllerSpec extends Specification {
       ]
     ]
     def response = Mock(HttpServletResponse)
-    Execution failedPipeline = null
+    PipelineExecutionImpl failedPipeline = null
     1 * executionLauncher.fail(*_) >> { ExecutionType type, String json, Throwable t ->
-      failedPipeline = mapper.readValue(json, Execution)
+      failedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       failedPipeline.id = UUID.randomUUID().toString()
       failedPipeline
     }
@@ -601,12 +604,12 @@ class OperationsControllerSpec extends Specification {
       type: PIPELINE
     ]
     def response = Mock(HttpServletResponse)
-    artifactResolver.resolveArtifacts(*_) >> { Map pipeline ->
+    artifactUtils.resolveArtifacts(*_) >> { Map pipeline ->
       throw new IllegalStateException(format("Unmatched expected artifact could not be resolved."))
     }
-    Execution failedPipeline = null
+    PipelineExecutionImpl failedPipeline = null
     1 * executionLauncher.fail(*_) >> { ExecutionType type, String json, Throwable t ->
-      failedPipeline = mapper.readValue(json, Execution)
+      failedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       failedPipeline.id = UUID.randomUUID().toString()
       failedPipeline
     }
@@ -634,7 +637,8 @@ class OperationsControllerSpec extends Specification {
   def "should call webhookService and return correct information"() {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "failFastStatusCodes", "waitForCompletion", "statusUrlResolution",
-                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses",
+                                   "signalCancellation", "cancelEndpoint", "cancelMethod", "cancelPayload"]
 
     when:
     def preconfiguredWebhooks = controller.preconfiguredWebhooks()
@@ -653,9 +657,10 @@ class OperationsControllerSpec extends Specification {
   def "should not return protected preconfigured webhooks if user don't have the role"() {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "failFastStatusCodes", "waitForCompletion", "statusUrlResolution",
-                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses",
+                                   "signalCancellation", "cancelEndpoint", "cancelMethod", "cancelPayload"]
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
@@ -686,9 +691,10 @@ class OperationsControllerSpec extends Specification {
   def "should return protected preconfigured webhooks if user have the role"() {
     given:
     def preconfiguredProperties = ["url", "customHeaders", "method", "payload", "failFastStatusCodes", "waitForCompletion", "statusUrlResolution",
-                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses"]
+                                   "statusUrlJsonPath", "statusJsonPath", "progressJsonPath", "successStatuses", "canceledStatuses", "terminalStatuses",
+                                   "signalCancellation", "cancelEndpoint", "cancelMethod", "cancelPayload"]
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
       startedPipeline.id = UUID.randomUUID().toString()
       startedPipeline
     }
@@ -740,9 +746,9 @@ class OperationsControllerSpec extends Specification {
 
   def "should start pipeline by config id with provided trigger"() {
     given:
-    Execution startedPipeline = null
+    PipelineExecutionImpl startedPipeline = null
     executionLauncher.start(*_) >> { ExecutionType type, String json ->
-      startedPipeline = mapper.readValue(json, Execution)
+      startedPipeline = mapper.readValue(json, PipelineExecutionImpl)
     }
     front50Service.getPipeline("1234") >> [id: '1234', stages: []]
 
@@ -763,6 +769,22 @@ class OperationsControllerSpec extends Specification {
     startedPipeline.trigger.parameters.key1 == 'value1'
   }
 
+  def "should return only jobs that are enabled"() {
+    given:
+    TitusPreconfiguredJobProperties jobProps1 = new TitusPreconfiguredJobProperties(enabled: true, label: 'job1')
+    TitusPreconfiguredJobProperties jobProps2 = new TitusPreconfiguredJobProperties(enabled: false, label: 'job2')
+    TitusPreconfiguredJobProperties jobProps3 = new TitusPreconfiguredJobProperties(label: 'job3')
+
+    when:
+    def preconfiguredWebhooks = controller.preconfiguredJob()
+
+    then:
+    1* jobService.getPreconfiguredStages() >> [jobProps1, jobProps2, jobProps3]
+    preconfiguredWebhooks.size() == 2
+    preconfiguredWebhooks.find { it.label == 'job1' }
+    preconfiguredWebhooks.find { it.label == 'job3' }
+  }
+
   static WebhookProperties.PreconfiguredWebhook createPreconfiguredWebhook(
     def label, def description, def type, def permissions) {
     def customHeaders = new HttpHeaders()
@@ -772,7 +794,7 @@ class OperationsControllerSpec extends Specification {
       url: "a", customHeaders: customHeaders, method: HttpMethod.POST, payload: "b",
       failFastStatusCodes: [500, 501], waitForCompletion: true, statusUrlResolution: WebhookProperties.StatusUrlResolution.webhookResponse,
       statusUrlJsonPath: "c", statusJsonPath: "d", progressJsonPath: "e", successStatuses: "f", canceledStatuses: "g", terminalStatuses: "h", parameters: null, parameterData: null,
-      permissions: permissions
+      permissions: permissions, signalCancellation: true, cancelEndpoint: "i", cancelMethod: HttpMethod.POST, cancelPayload: "j"
     )
   }
 }

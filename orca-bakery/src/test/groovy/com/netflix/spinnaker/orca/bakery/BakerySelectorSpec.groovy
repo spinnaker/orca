@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.bakery
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.bakery.api.Bake
 import com.netflix.spinnaker.orca.bakery.api.BakeRequest
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
@@ -24,11 +25,9 @@ import com.netflix.spinnaker.orca.bakery.api.BakeryService
 import com.netflix.spinnaker.orca.bakery.api.BaseImage
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfigurationProperties
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import retrofit.http.Body
 import retrofit.http.Path
 import retrofit.http.Query
-import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -82,7 +81,7 @@ class BakerySelectorSpec extends Specification {
     given:
     def bakePipeline = pipeline {
       application: "foo"
-      authentication = new Execution.AuthenticationDetails(user: user)
+      authentication = new PipelineExecution.AuthenticationDetails(user: user)
       stage {
         type = "bake"
         context = ctx as Map
@@ -132,22 +131,22 @@ class BakerySelectorSpec extends Specification {
     }
 
     @Override
-    Observable<BakeStatus> createBake(@Path("region") String region, @Body BakeRequest bake, @Query("rebake") String rebake) {
+    BakeStatus createBake(@Path("region") String region, @Body BakeRequest bake, @Query("rebake") String rebake) {
       return null
     }
 
     @Override
-    Observable<BakeStatus> lookupStatus(@Path("region") String region, @Path("statusId") String statusId) {
+    BakeStatus lookupStatus(@Path("region") String region, @Path("statusId") String statusId) {
       return null
     }
 
     @Override
-    Observable<Bake> lookupBake(@Path("region") String region, @Path("bakeId") String bakeId) {
+    Bake lookupBake(@Path("region") String region, @Path("bakeId") String bakeId) {
       return null
     }
 
     @Override
-    Observable<BaseImage> getBaseImage(@Path("cloudProvider") String cloudProvider, @Path("imageId") String imageId) {
+    BaseImage getBaseImage(@Path("cloudProvider") String cloudProvider, @Path("imageId") String imageId) {
       return null
     }
   }

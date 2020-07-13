@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.matches;
@@ -24,17 +24,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import rx.Observable;
 
 class CloudFoundryCreateServiceKeyTaskTest {
   @Test
@@ -54,7 +53,7 @@ class CloudFoundryCreateServiceKeyTaskTest {
     when(kato.requestOperations(
             matches(cloudProvider),
             eq(Collections.singletonList(Collections.singletonMap(type, context)))))
-        .thenReturn(Observable.from(new TaskId[] {taskId}));
+        .thenReturn(taskId);
     CloudFoundryCreateServiceKeyTask task = new CloudFoundryCreateServiceKeyTask(kato);
 
     Map<String, Object> expectedContext =
@@ -67,7 +66,9 @@ class CloudFoundryCreateServiceKeyTaskTest {
     TaskResult expected =
         TaskResult.builder(ExecutionStatus.SUCCEEDED).context(expectedContext).build();
 
-    TaskResult result = task.execute(new Stage(new Execution(PIPELINE, "orca"), type, context));
+    TaskResult result =
+        task.execute(
+            new StageExecutionImpl(new PipelineExecutionImpl(PIPELINE, "orca"), type, context));
 
     assertThat(result).isEqualToComparingFieldByFieldRecursively(expected);
   }

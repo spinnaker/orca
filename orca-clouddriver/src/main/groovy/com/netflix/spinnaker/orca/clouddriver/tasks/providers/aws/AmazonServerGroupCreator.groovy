@@ -16,11 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws
 
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.MortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
-import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -35,17 +34,24 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
   @Autowired
   MortService mortService
 
+  @Autowired(required = false)
+  List<AmazonServerGroupCreatorDecorator> amazonServerGroupCreatorDecorators = []
+
   @Value('${default.bake.account:default}')
   String defaultBakeAccount
 
-  @Value('${default.security-groups:#{T(com.netflix.spinnaker.orca.kato.tasks.CreateDeployTask).DEFAULT_SECURITY_GROUPS}}')
+  @Value('${default.security-groups:#{T(com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.AmazonServerGroupCreator).DEFAULT_SECURITY_GROUPS}}')
   List<String> defaultSecurityGroups = DEFAULT_SECURITY_GROUPS
 
   boolean katoResultExpected = true
-  String cloudProvider = "aws"
 
   @Override
-  List<Map> getOperations(Stage stage) {
+  String getCloudProvider() {
+    return "aws"
+  }
+
+  @Override
+  List<Map> getOperations(StageExecution stage) {
     def ops = []
     def createServerGroupOp = createServerGroupOperation(stage)
     def allowLaunchOps = allowLaunchOperations(createServerGroupOp)
@@ -73,8 +79,8 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
     return Optional.of("Amazon")
   }
 
-  def createServerGroupOperation(Stage stage) {
-    def operation = [:]
+  def createServerGroupOperation(StageExecution stage) {
+    Map<String, Object> operation = [:]
     def context = stage.context
 
     if (context.containsKey("cluster")) {
@@ -98,28 +104,9 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
       if (deploymentDetails) {
         // Because docker image ids are not region or cloud provider specific
         operation.imageId = deploymentDetails[0]?.imageId
-      } else {
-        // Get image id from the trigger
-        if (context.cloudProvider == 'titus') {
-          def trigger = stage.execution.trigger
-          if (trigger instanceof DockerTrigger) {
-            operation.imageId = "${trigger.repository}:${trigger.tag}".toString()
-          }
-          if (!operation.imageId && trigger.parameters.imageName) {
-            operation.imageId = trigger.parameters.imageName
-          }
-          if (!operation.imageId && trigger.properties && trigger.properties.imageName) {
-            operation.imageId = trigger.properties.imageName
-          }
-        }
       }
     }
 
-    if (context.cloudProvider == 'titus' && stage.execution.authentication?.user) {
-      operation.user = stage.execution.authentication?.user
-    }
-
-    log.info("Deploying ${operation.amiName ?: operation.imageId} to ${targetRegion}")
 
     if (context.account && !operation.credentials) {
       operation.credentials = context.account
@@ -139,6 +126,10 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
       log.error("Unable to lookup default security groups", e)
     }
     addAllNonEmpty(operation.securityGroups as List<String>, defaultSecurityGroupsForAccount)
+
+    getDecorator(stage).ifPresent { it.modifyCreateServerGroupOperationContext(stage, operation) }
+
+    log.info("Deploying ${operation.amiName ?: operation.imageId} to ${targetRegion}")
 
     return operation
   }
@@ -166,5 +157,14 @@ class AmazonServerGroupCreator implements ServerGroupCreator, DeploymentDetailsA
         }
       }
     }
+  }
+
+  private Optional<AmazonServerGroupCreatorDecorator> getDecorator(StageExecution stage) {
+    return Optional.ofNullable((String) stage.getContext().get("cloudProvider"))
+        .flatMap { cloudProvider ->
+          amazonServerGroupCreatorDecorators.stream()
+              .filter { it.supports(cloudProvider) }
+              .findFirst()
+        }
   }
 }

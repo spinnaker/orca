@@ -16,18 +16,18 @@
 
 package com.netflix.spinnaker.orca.kato.tasks
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
 class ResizeAsgTaskSpec extends Specification {
   @Subject task = new ResizeAsgTask()
-  def stage = new Stage(type: "pipeline")
+  def stage = new StageExecutionImpl(type: "pipeline")
   def taskId = new TaskId(UUID.randomUUID().toString())
 
   def resizeASGConfig = [
@@ -52,7 +52,7 @@ class ResizeAsgTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(*_) >> {
         operations = it[0]
-        rx.Observable.from(taskId)
+        taskId
       }
     }
 
@@ -78,7 +78,7 @@ class ResizeAsgTaskSpec extends Specification {
   def "returns a success status with the kato task id"() {
     given:
     task.kato = Stub(KatoService) {
-      requestOperations(*_) >> rx.Observable.from(taskId)
+      requestOperations(*_) >> taskId
     }
 
     when:
@@ -96,7 +96,7 @@ class ResizeAsgTaskSpec extends Specification {
     def resizeSupport = Mock(ResizeSupport)
 
     task.kato = Stub(KatoService) {
-      requestOperations(*_) >> rx.Observable.from(taskId)
+      requestOperations(*_) >> taskId
     }
     task.targetReferenceSupport = targetReferenceSupport
     task.resizeSupport = resizeSupport

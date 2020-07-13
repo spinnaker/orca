@@ -19,13 +19,13 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import groovy.util.logging.Slf4j;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
@@ -40,7 +40,7 @@ public class CloudFoundryJobRunner implements JobRunner {
   private final TargetServerGroupResolver resolver;
 
   @Override
-  public List<Map> getOperations(Stage stage) {
+  public List<Map> getOperations(StageExecution stage) {
     Map<String, Object> stageContext = stage.getContext();
     String targetServerGroup = (String) stageContext.get("target");
     String accountName = (String) stageContext.get("credentials");
@@ -62,18 +62,21 @@ public class CloudFoundryJobRunner implements JobRunner {
 
     TargetServerGroup serverGroup = resolvedServerGroups.get(0);
 
-    Map<String, String> operationContext = new HashMap<>();
-    operationContext.put("region", region);
-    operationContext.put("credentials", accountName);
-    operationContext.put("jobName", (String) stageContext.get("jobName"));
-    operationContext.put("serverGroupName", serverGroup.getName());
-    operationContext.put("command", (String) stageContext.get("command"));
+    ImmutableMap.Builder<String, Object> operationContext =
+        ImmutableMap.<String, Object>builder()
+            .put("region", region)
+            .put("credentials", accountName)
+            .put("jobName", stageContext.get("jobName"))
+            .put("serverGroupName", serverGroup.getName())
+            .put("command", stageContext.get("command"))
+            .put("moniker", serverGroup.getMoniker());
 
-    return Collections.singletonList(Collections.singletonMap(OPERATION, operationContext));
+    return Collections.singletonList(
+        ImmutableMap.<String, Object>builder().put(OPERATION, operationContext.build()).build());
   }
 
   @Override
-  public Map<String, Object> getAdditionalOutputs(Stage stage, List<Map> operations) {
+  public Map<String, Object> getAdditionalOutputs(StageExecution stage, List<Map> operations) {
     return Collections.emptyMap();
   }
 }

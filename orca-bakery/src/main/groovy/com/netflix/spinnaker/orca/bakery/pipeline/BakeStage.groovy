@@ -17,21 +17,20 @@
 package com.netflix.spinnaker.orca.bakery.pipeline
 
 import com.google.common.base.Joiner
-import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.pipeline.graph.StageGraphBuilder
-
-import java.time.Clock
-import javax.annotation.Nonnull
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.kork.exceptions.ConstraintViolationException
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.bakery.tasks.CompletedBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.CreateBakeTask
 import com.netflix.spinnaker.orca.bakery.tasks.MonitorBakeTask
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
+import com.netflix.spinnaker.orca.pipeline.tasks.ToggleablePauseTask
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask
 import com.netflix.spinnaker.orca.pipeline.util.RegionCollector
 import groovy.transform.CompileDynamic
@@ -40,9 +39,11 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
+import javax.annotation.Nonnull
+import java.time.Clock
 import java.util.stream.Collectors
 
-import static com.netflix.spinnaker.orca.pipeline.model.SyntheticStageOwner.STAGE_BEFORE
+import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import static java.time.Clock.systemUTC
 import static java.time.ZoneOffset.UTC
 
@@ -52,19 +53,31 @@ import static java.time.ZoneOffset.UTC
 class BakeStage implements StageDefinitionBuilder {
 
   public static final String PIPELINE_CONFIG_TYPE = "bake"
+  public static final String BAKE_PAUSE_TOGGLE = "stages.bake-stage.pause"
+
+  private RegionCollector regionCollector
+  private Clock clock
+  private DynamicConfigService dynamicConfigService
 
   @Autowired
-  RegionCollector regionCollector
-
-  @Autowired
-  Clock clock = systemUTC()
+  BakeStage(RegionCollector regionCollector, DynamicConfigService dynamicConfigService, Clock clock = systemUTC()) {
+    this.regionCollector = regionCollector
+    this.clock = clock
+    this.dynamicConfigService = dynamicConfigService
+  }
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     if (isTopLevelStage(stage)) {
       builder
         .withTask("completeParallel", CompleteParallelBakeTask)
     } else {
+      if (dynamicConfigService.isEnabled(BAKE_PAUSE_TOGGLE, false)) {
+        log.info("Baking is currently paused. Adding pause task to ${stage.name} stage.")
+        stage.context.put("pauseToggleKey", BAKE_PAUSE_TOGGLE)
+        builder.withTask("delayBake", ToggleablePauseTask)
+      }
+
       builder
         .withTask("createBake", CreateBakeTask)
         .withTask("monitorBake", MonitorBakeTask)
@@ -74,26 +87,28 @@ class BakeStage implements StageDefinitionBuilder {
   }
 
   @Override
-  void beforeStages(@Nonnull Stage parent, @Nonnull StageGraphBuilder graph) {
+  void beforeStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
     if (isTopLevelStage(parent)) {
       parallelContexts(parent)
         .collect({ context ->
-          newStage(parent.execution, type, "Bake in ${context.region}", context, parent, STAGE_BEFORE)
+          StageExecutionFactory.newStage(parent.execution, type, "Bake in ${context.region}", context, parent, STAGE_BEFORE)
         })
-        .forEach({Stage s -> graph.add(s) })
+        .forEach({ StageExecution s -> graph.add(s) })
     }
   }
 
-  private boolean isTopLevelStage(Stage stage) {
+  private boolean isTopLevelStage(StageExecution stage) {
     stage.parentStageId == null
   }
 
   @CompileDynamic
-  Collection<Map<String, Object>> parallelContexts(Stage stage) {
+  Collection<Map<String, Object>> parallelContexts(StageExecution stage) {
     Set<String> deployRegions = (stage.context.region ? [stage.context.region] : []) as Set<String>
     deployRegions.addAll(stage.context.regions as Set<String> ?: [])
 
-    if (!deployRegions.contains("global")) {
+
+    Boolean skipRegionDetection = Boolean.TRUE == stage.context.skipRegionDetection
+    if (!deployRegions.contains("global") && !skipRegionDetection) {
       deployRegions.addAll(regionCollector.getRegionsFromChildStages(stage))
       // TODO(duftler): Also filter added canary regions once canary supports multiple platforms.
     }
@@ -103,7 +118,7 @@ class BakeStage implements StageDefinitionBuilder {
       stage.context.amiSuffix = clock.instant().atZone(UTC).format("yyyyMMddHHmmss")
     }
     return deployRegions.collect {
-      stage.context - ["regions": stage.context.regions] + ([
+      stage.context - ["regions": stage.context.regions, "skipRegionDetection": stage.context.skipRegionDetection] + ([
         type  : PIPELINE_CONFIG_TYPE,
         region: it,
         name  : "Bake in ${it}" as String
@@ -116,6 +131,7 @@ class BakeStage implements StageDefinitionBuilder {
   static class CompleteParallelBakeTask implements Task {
     public static final List<String> DEPLOYMENT_DETAILS_CONTEXT_FIELDS = [
       "ami",
+      "amiName",
       "imageId",
       "imageName",
       "amiSuffix",
@@ -136,20 +152,14 @@ class BakeStage implements StageDefinitionBuilder {
       this.dynamicConfigService = dynamicConfigService
     }
 
-    TaskResult execute(Stage stage) {
-      def bakeInitializationStages = stage.execution.stages.findAll {
-        it.parentStageId == stage.parentStageId && it.status == ExecutionStatus.RUNNING
-      }
-
-      // FIXME? (lpollo): I don't know why we do this, but we include in relatedStages all parallel bake stages in the
-      //  same pipeline, not just the ones related to the stage passed to this task, which means this list actually
-      //  contains *unrelated* bake stages...
+    @Nonnull
+    TaskResult execute(@Nonnull StageExecution stage) {
       def relatedBakeStages = stage.execution.stages.findAll {
-        it.type == PIPELINE_CONFIG_TYPE && bakeInitializationStages*.id.contains(it.parentStageId)
+        it.type == PIPELINE_CONFIG_TYPE && stage.id == it.parentStageId
       }
 
       def globalContext = [
-        deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { Stage bakeStage ->
+        deploymentDetails: relatedBakeStages.findAll{it.context.ami || it.context.imageId}.collect { StageExecution bakeStage ->
           def deploymentDetails = [:]
           DEPLOYMENT_DETAILS_CONTEXT_FIELDS.each {
             if (bakeStage.context.containsKey(it)) {

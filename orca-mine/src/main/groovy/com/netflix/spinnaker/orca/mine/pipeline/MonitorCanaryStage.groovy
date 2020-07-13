@@ -16,18 +16,22 @@
 
 package com.netflix.spinnaker.orca.mine.pipeline
 
-import com.netflix.spinnaker.orca.CancellableStage
+import com.netflix.spinnaker.orca.api.pipeline.CancellableStage
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCacheForceRefreshTask
+import com.netflix.spinnaker.orca.mine.pipeline.CanaryDisableClusterStage
 import com.netflix.spinnaker.orca.mine.MineService
 import com.netflix.spinnaker.orca.mine.tasks.*
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Slf4j
 @Component
@@ -35,26 +39,26 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
 
   @Autowired MineService mineService
   @Autowired CanaryStage canaryStage
+  @Autowired CanaryDisableClusterStage canaryDisableClusterStage
 
   @Override
-  void taskGraph(Stage stage, TaskNode.Builder builder) {
+  void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
       .withTask("registerCanary", RegisterCanaryTask)
       .withTask("monitorCanary", MonitorCanaryTask)
-      .withTask("disableCanaryCluster", DisableCanaryTask)
-      .withTask("monitorDisable", MonitorKatoTask)
-      .withTask("waitBeforeCleanup", WaitTask)
-      .withTask("disableBaselineCluster", DisableCanaryTask)
-      .withTask("monitorDisable", MonitorKatoTask)
-      .withTask("waitBeforeCleanup", WaitTask)
-      .withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
-      .withTask("cleanupCanary", CleanupCanaryTask)
-      .withTask("monitorCleanup", MonitorKatoTask)
-      .withTask("completeCanary", CompleteCanaryTask)
   }
 
   @Override
-  CancellableStage.Result cancel(Stage stage) {
+  void afterStages(StageExecution parent, StageGraphBuilder graph) {
+    graph.append {
+      it.type = canaryDisableClusterStage.type
+      it.name = "Disable Canary and Baseline"
+      it.context = parent.context
+    }
+  }
+
+  @Override
+  CancellableStage.Result cancel(StageExecution stage) {
     def cancelCanaryResults = [:]
     def canaryId = stage.context.canary?.id as String
 
@@ -78,7 +82,7 @@ class MonitorCanaryStage implements StageDefinitionBuilder, CancellableStage {
       log.error("Unable to cancel canary '${canaryId}' in mine", e)
     }
 
-    Stage canaryStageInstance = stage.ancestors().find {
+    StageExecution canaryStageInstance = stage.directAncestors().find {
       it.type == CanaryStage.PIPELINE_CONFIG_TYPE
     }
 

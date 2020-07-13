@@ -18,13 +18,13 @@ package com.netflix.spinnaker.orca.igor.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.igor.IgorService
 import com.netflix.spinnaker.orca.igor.model.GoogleCloudBuild
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -57,21 +57,21 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
   ]
   def objectMapper = new ObjectMapper()
 
-  Execution execution = Mock(Execution)
+  PipelineExecutionImpl execution = Mock(PipelineExecutionImpl)
   IgorService igorService = Mock(IgorService)
   OortService oortService = Mock(OortService)
-  ArtifactResolver artifactResolver = Mock(ArtifactResolver)
+  ArtifactUtils artifactUtils = Mock(ArtifactUtils)
   ContextParameterProcessor contextParameterProcessor = Mock(ContextParameterProcessor)
 
   @Subject
-  StartGoogleCloudBuildTask task = new StartGoogleCloudBuildTask(igorService, oortService, artifactResolver, contextParameterProcessor)
+  StartGoogleCloudBuildTask task = new StartGoogleCloudBuildTask(igorService, oortService, artifactUtils, contextParameterProcessor)
 
   def "starts a build defined inline"() {
     given:
     def igorResponse = GoogleCloudBuild.builder()
       .id("98edf783-162c-4047-9721-beca8bd2c275")
       .build()
-    def stage = new Stage(execution, "googleCloudBuild", [account: ACCOUNT, buildDefinition: BUILD])
+    def stage = new StageExecutionImpl(execution, "googleCloudBuild", [account: ACCOUNT, buildDefinition: BUILD])
 
     when:
     TaskResult result = task.execute(stage)
@@ -86,7 +86,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
     def igorResponse = GoogleCloudBuild.builder()
       .id("98edf783-162c-4047-9721-beca8bd2c275")
       .build()
-    def stage = new Stage(execution, "googleCloudBuild", [
+    def stage = new StageExecutionImpl(execution, "googleCloudBuild", [
       account: ACCOUNT,
       buildDefinitionSource: "trigger",
       triggerId: "myTriggerId",
@@ -115,7 +115,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
       .uuid("b4541a86-fa45-4a1f-8c55-45cb5cc9d537")
       .artifactAccount("my-account")
       .build()
-    def stage = new Stage(execution, "googleCloudBuild", [
+    def stage = new StageExecutionImpl(execution, "googleCloudBuild", [
       account: ACCOUNT,
       buildDefinitionSource: "artifact",
       buildDefinitionArtifact: [
@@ -128,7 +128,7 @@ class StartGoogleCloudBuildTaskSpec extends Specification {
     TaskResult result = task.execute(stage)
 
     then:
-    artifactResolver.getBoundArtifactForStage(stage, null, artifact) >> artifact
+    artifactUtils.getBoundArtifactForStage(stage, null, artifact) >> artifact
     oortService.fetchArtifact(artifact) >> new Response("", 200, "", Collections.emptyList(), new TypedString(objectMapper.writeValueAsString(RAW_BUILD)))
     1 * contextParameterProcessor.process(RAW_BUILD, _, _) >> BUILD
 

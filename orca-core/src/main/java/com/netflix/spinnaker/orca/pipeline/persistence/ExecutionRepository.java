@@ -17,11 +17,11 @@ package com.netflix.spinnaker.orca.pipeline.persistence;
 
 import static java.util.stream.Collectors.toList;
 
-import com.netflix.spinnaker.kork.telemetry.Instrumented;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.kork.annotations.Metered;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.time.Instant;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -29,17 +29,17 @@ import javax.annotation.Nullable;
 import rx.Observable;
 
 public interface ExecutionRepository {
-  void store(@Nonnull Execution execution);
+  void store(@Nonnull PipelineExecution execution);
 
-  void storeStage(@Nonnull Stage stage);
+  void storeStage(@Nonnull StageExecution stage);
 
-  void updateStageContext(@Nonnull Stage stage);
+  void updateStageContext(@Nonnull StageExecution stage);
 
-  void removeStage(@Nonnull Execution execution, @Nonnull String stageId);
+  void removeStage(@Nonnull PipelineExecution execution, @Nonnull String stageId);
 
-  void addStage(@Nonnull Stage stage);
+  void addStage(@Nonnull StageExecution stage);
 
-  @Instrumented(metricName = "cancelNullReason")
+  @Metered(metricName = "cancelNullReason")
   void cancel(@Nonnull ExecutionType type, @Nonnull String id);
 
   void cancel(
@@ -50,7 +50,7 @@ public interface ExecutionRepository {
 
   void pause(@Nonnull ExecutionType type, @Nonnull String id, @Nullable String user);
 
-  @Instrumented(metricName = "resumeNoIgnore")
+  @Metered(metricName = "resumeNoIgnore")
   void resume(@Nonnull ExecutionType type, @Nonnull String id, @Nullable String user);
 
   void resume(
@@ -64,25 +64,28 @@ public interface ExecutionRepository {
   void updateStatus(ExecutionType type, @Nonnull String id, @Nonnull ExecutionStatus status);
 
   @Nonnull
-  @Instrumented(metricName = "retrieveById")
-  Execution retrieve(@Nonnull ExecutionType type, @Nonnull String id)
+  @Metered(metricName = "retrieveById")
+  PipelineExecution retrieve(@Nonnull ExecutionType type, @Nonnull String id)
       throws ExecutionNotFoundException;
 
   void delete(@Nonnull ExecutionType type, @Nonnull String id);
 
-  @Nonnull
-  @Instrumented(metricName = "retrieveByType")
-  Observable<Execution> retrieve(@Nonnull ExecutionType type);
+  void delete(@Nonnull ExecutionType type, @Nonnull List<String> idsToDelete);
 
   @Nonnull
-  @Instrumented(metricName = "retrieveByCriteria")
-  Observable<Execution> retrieve(@Nonnull ExecutionType type, @Nonnull ExecutionCriteria criteria);
+  @Metered(metricName = "retrieveByType")
+  Observable<PipelineExecution> retrieve(@Nonnull ExecutionType type);
 
   @Nonnull
-  Observable<Execution> retrievePipelinesForApplication(@Nonnull String application);
+  @Metered(metricName = "retrieveByCriteria")
+  Observable<PipelineExecution> retrieve(
+      @Nonnull ExecutionType type, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
-  Observable<Execution> retrievePipelinesForPipelineConfigId(
+  Observable<PipelineExecution> retrievePipelinesForApplication(@Nonnull String application);
+
+  @Nonnull
+  Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
   /**
@@ -94,7 +97,7 @@ public interface ExecutionRepository {
    *     page to control pagination
    */
   @Nonnull
-  List<Execution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+  List<PipelineExecution> retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
       @Nonnull List<String> pipelineConfigIds,
       long buildTimeStartBoundary,
       long buildTimeEndBoundary,
@@ -108,7 +111,7 @@ public interface ExecutionRepository {
    *     sort the results
    */
   @Nonnull
-  List<Execution> retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
+  List<PipelineExecution> retrieveAllPipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
       @Nonnull List<String> pipelineConfigIds,
       long buildTimeStartBoundary,
       long buildTimeEndBoundary,
@@ -116,45 +119,63 @@ public interface ExecutionRepository {
 
   @Deprecated // Use the non-rx interface instead
   @Nonnull
-  @Instrumented(metricName = "retrieveOrchestrationsForApplicationSortedAsc")
-  Observable<Execution> retrieveOrchestrationsForApplication(
+  @Metered(metricName = "retrieveOrchestrationsForApplicationSortedAsc")
+  Observable<PipelineExecution> retrieveOrchestrationsForApplication(
       @Nonnull String application, @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
-  List<Execution> retrieveOrchestrationsForApplication(
+  List<PipelineExecution> retrieveOrchestrationsForApplication(
       @Nonnull String application,
       @Nonnull ExecutionCriteria criteria,
       @Nullable ExecutionComparator sorter);
 
   @Nonnull
-  Execution retrieveByCorrelationId(
+  PipelineExecution retrieveByCorrelationId(
       @Nonnull ExecutionType executionType, @Nonnull String correlationId)
       throws ExecutionNotFoundException;
 
   @Deprecated
   @Nonnull
-  Execution retrieveOrchestrationForCorrelationId(@Nonnull String correlationId)
+  PipelineExecution retrieveOrchestrationForCorrelationId(@Nonnull String correlationId)
       throws ExecutionNotFoundException;
 
   @Deprecated
   @Nonnull
-  Execution retrievePipelineForCorrelationId(@Nonnull String correlationId)
+  PipelineExecution retrievePipelineForCorrelationId(@Nonnull String correlationId)
       throws ExecutionNotFoundException;
 
   @Nonnull
-  List<Execution> retrieveBufferedExecutions();
+  List<PipelineExecution> retrieveBufferedExecutions();
 
   @Nonnull
   List<String> retrieveAllApplicationNames(@Nullable ExecutionType executionType);
 
   @Nonnull
-  @Instrumented(metricName = "retrieveAllApplicationNamesWithMinExecutions")
+  @Metered(metricName = "retrieveAllApplicationNamesWithMinExecutions")
   List<String> retrieveAllApplicationNames(
       @Nullable ExecutionType executionType, int minExecutions);
 
   boolean hasExecution(@Nonnull ExecutionType type, @Nonnull String id);
 
   List<String> retrieveAllExecutionIds(@Nonnull ExecutionType type);
+
+  /**
+   * Returns the name of the partition that this execution repository owns/handles. {@code null}
+   * means that it handles any partition (in other words, this execution repository is not partition
+   * aware)
+   */
+  @Nullable
+  default String getPartition() {
+    return null;
+  }
+
+  default boolean handlesPartition(@Nullable String partitionOfExecution) {
+    return partitionOfExecution
+            == null // executions with no partition are implied to be owned by current orca
+        || getPartition()
+            == null // this repository is not restricted to a partition, can handle any execution
+        || partitionOfExecution.equals(getPartition()); // both are set and must match
+  }
 
   final class ExecutionCriteria {
     private int pageSize = 3500;
@@ -232,17 +253,17 @@ public interface ExecutionRepository {
     }
   }
 
-  enum ExecutionComparator implements Comparator<Execution> {
+  enum ExecutionComparator implements Comparator<PipelineExecution> {
     NATURAL_ASC {
       @Override
-      public int compare(Execution a, Execution b) {
+      public int compare(PipelineExecution a, PipelineExecution b) {
         return b.getId().compareTo(a.getId());
       }
     },
 
     NATURAL_DESC {
       @Override
-      public int compare(Execution a, Execution b) {
+      public int compare(PipelineExecution a, PipelineExecution b) {
         return a.getId().compareTo(b.getId());
       }
     },
@@ -253,18 +274,19 @@ public interface ExecutionRepository {
      */
     START_TIME_OR_ID {
       @Override
-      public int compare(Execution a, Execution b) {
+      public int compare(PipelineExecution a, PipelineExecution b) {
         Long aStartTime = a.getStartTime();
         Long bStartTime = b.getStartTime();
 
+        int startCompare;
         if (aStartTime == null) {
-          return -1;
-        }
-        if (bStartTime == null) {
-          return 0;
+          startCompare = bStartTime == null ? 0 : -1;
+        } else if (bStartTime == null) {
+          startCompare = 1;
+        } else {
+          startCompare = bStartTime.compareTo(aStartTime);
         }
 
-        int startCompare = bStartTime.compareTo(aStartTime);
         if (startCompare == 0) {
           return b.getId().compareTo(a.getId());
         }
@@ -274,7 +296,7 @@ public interface ExecutionRepository {
 
     BUILD_TIME_DESC {
       @Override
-      public int compare(Execution a, Execution b) {
+      public int compare(PipelineExecution a, PipelineExecution b) {
         Long aBuildTime = Optional.ofNullable(a.getBuildTime()).orElse(0L);
         Long bBuildTime = Optional.ofNullable(b.getBuildTime()).orElse(0L);
 
@@ -288,7 +310,7 @@ public interface ExecutionRepository {
 
     BUILD_TIME_ASC {
       @Override
-      public int compare(Execution a, Execution b) {
+      public int compare(PipelineExecution a, PipelineExecution b) {
         Long aBuildTime = Optional.ofNullable(a.getBuildTime()).orElse(0L);
         Long bBuildTime = Optional.ofNullable(b.getBuildTime()).orElse(0L);
 

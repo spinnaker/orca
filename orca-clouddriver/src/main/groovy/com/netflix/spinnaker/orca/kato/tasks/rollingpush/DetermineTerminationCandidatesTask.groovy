@@ -17,14 +17,16 @@
 package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class DetermineTerminationCandidatesTask implements Task {
@@ -33,16 +35,21 @@ class DetermineTerminationCandidatesTask implements Task {
   OortService oortService
   @Autowired
   ObjectMapper objectMapper
+  @Autowired(required = false)
+  List<ServerGroupInstanceIdCollector> serverGroupInstanceIdCollectors = []
 
+  @Nonnull
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def stageData = stage.mapTo(StageData)
     def response = oortService.getServerGroupFromCluster(stageData.application, stageData.account, stageData.cluster, stage.context.asgName, stage.context.region, stage.context.cloudProvider ?: 'aws')
     def serverGroup = objectMapper.readValue(response.body.in(), Map)
     boolean ascending = stage.context.termination?.order != 'newest'
     def serverGroupInstances = serverGroup.instances.sort { ascending ? it.launchTime : -it.launchTime }
     // need to use id instead of instanceIds for titus as the titus API doesn't yet support this yet.
-    def knownInstanceIds = stage.context.cloudProvider == 'titus' ? serverGroupInstances*.id : serverGroupInstances*.instanceId
+    def knownInstanceIds = getServerGroupInstanceIdCollector(stage)
+        .flatMap { it.collect(serverGroupInstances) }
+        .orElseGet { serverGroupInstances*.instanceId }
     def terminationInstancePool = knownInstanceIds
     if (stage.context.termination?.instances) {
       terminationInstancePool = knownInstanceIds.intersect(stage.context.termination?.instances)
@@ -61,5 +68,11 @@ class DetermineTerminationCandidatesTask implements Task {
     }
 
     return termination.totalRelaunches as Integer
+  }
+
+  private Optional<ServerGroupInstanceIdCollector> getServerGroupInstanceIdCollector(StageExecution stage) {
+    return Optional.ofNullable((String) stage.getContext().get("cloudProvider")).flatMap { cloudProvider ->
+      serverGroupInstanceIdCollectors.stream().filter { it.supports(cloudProvider) }.findFirst()
+    }
   }
 }

@@ -18,9 +18,8 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.test.model.ExecutionBuilder
-import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -46,7 +45,7 @@ class UpdateLaunchConfigTaskSpec extends Specification {
       def result = task.execute(stage)
 
     then:
-      1 * katoService.requestOperations("aws", _) >> rx.Observable.just(new TaskId("blerg"))
+      1 * katoService.requestOperations("aws", _) >> new TaskId("blerg")
     result.context."deploy.server.groups" == [(region): [asgName]]
 
     where:
@@ -77,7 +76,7 @@ class UpdateLaunchConfigTaskSpec extends Specification {
         def opConfig = ops.last().updateLaunchConfig
 
         assert opConfig.amiName == expectedAmi
-        rx.Observable.just(new TaskId("blerg"))
+        new TaskId("blerg")
       }
 
     where:
@@ -115,34 +114,34 @@ class UpdateLaunchConfigTaskSpec extends Specification {
         def taskId = new TaskId(UUID.randomUUID().toString())
         katoService.requestOperations(*_) >> { cloudProvider, ops ->
           operations.addAll(ops.flatten())
-          Observable.from(taskId)
+          taskId
         }
       }
 
     and:
-      def bakeStage1 = new Stage(stage.execution, "bake")
+      def bakeStage1 = new StageExecutionImpl(stage.execution, "bake")
       bakeStage1.id = UUID.randomUUID()
       bakeStage1.refId = "1a"
       stage.execution.stages << bakeStage1
 
       def bakeSynthetic1 =
-        new Stage(stage.execution, "bake in $region", [ami: amiName, region: region, cloudProvider: "aws"])
+        new StageExecutionImpl(stage.execution, "bake in $region", [ami: amiName, region: region, cloudProvider: "aws"])
       bakeSynthetic1.id = UUID.randomUUID()
       bakeSynthetic1.parentStageId = bakeStage1.id
       stage.execution.stages << bakeSynthetic1
 
-      def bakeStage2 = new Stage(stage.execution, "bake")
+      def bakeStage2 = new StageExecutionImpl(stage.execution, "bake")
       bakeStage2.id = UUID.randomUUID()
       bakeStage2.refId = "2a"
       stage.execution.stages << bakeStage2
 
-      def bakeSynthetic2 = new Stage(stage.execution, "bake in $region",
+      def bakeSynthetic2 = new StageExecutionImpl(stage.execution, "bake in $region",
                                              [ami: "parallel-branch-ami", region: region, cloudProvider: "aws"])
       bakeSynthetic2.id = UUID.randomUUID()
       bakeSynthetic2.parentStageId = bakeStage2.id
       stage.execution.stages << bakeSynthetic2
 
-      def intermediateStage = new Stage(stage.execution, "whatever")
+      def intermediateStage = new StageExecutionImpl(stage.execution, "whatever")
       intermediateStage.id = UUID.randomUUID()
       intermediateStage.refId = "1b"
       stage.execution.stages << intermediateStage
@@ -190,7 +189,7 @@ class UpdateLaunchConfigTaskSpec extends Specification {
           assert allowLaunch.region == region
           assert allowLaunch.amiName == "ami-abcdef"
         }
-        rx.Observable.just(new TaskId("blerg"))
+        new TaskId("blerg")
       }
 
     where:
@@ -222,7 +221,7 @@ class UpdateLaunchConfigTaskSpec extends Specification {
         ops.find {
           it.containsKey("updateLaunchConfig")
         }.updateLaunchConfig == taskConfig
-        rx.Observable.just(new TaskId("blerg"))
+        new TaskId("blerg")
       }
   }
 }

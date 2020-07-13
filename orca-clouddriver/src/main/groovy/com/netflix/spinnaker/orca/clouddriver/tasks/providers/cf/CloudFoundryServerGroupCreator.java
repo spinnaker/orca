@@ -19,12 +19,14 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.moniker.Moniker;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,27 +42,28 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 class CloudFoundryServerGroupCreator implements ServerGroupCreator {
   private final ObjectMapper mapper;
-  private final ArtifactResolver artifactResolver;
+  private final ArtifactUtils artifactUtils;
   private final ManifestEvaluator manifestEvaluator;
 
   @Override
-  public List<Map> getOperations(Stage stage) {
+  public List<Map> getOperations(StageExecution stage) {
     Map<String, Object> context = stage.getContext();
-
-    DeploymentManifest manifest =
-        mapper.convertValue(context.get("manifest"), DeploymentManifest.class);
+    Artifact manifestArtifact = resolveManifestArtifact(stage, context.get("manifest"));
     CloudFoundryManifestContext manifestContext =
         CloudFoundryManifestContext.builder()
             .source(ManifestContext.Source.Artifact)
-            .manifestArtifactId(manifest.getArtifactId())
-            .manifestArtifact(manifest.getArtifact())
-            .manifestArtifactAccount(manifest.getArtifact().getArtifactAccount())
+            .manifestArtifactId(manifestArtifact.getUuid())
+            .manifestArtifact(manifestArtifact)
+            .manifestArtifactAccount(manifestArtifact.getArtifactAccount())
             .skipExpressionEvaluation(
                 (Boolean)
                     Optional.ofNullable(context.get("skipExpressionEvaluation")).orElse(false))
             .build();
-    ManifestEvaluator.Result manifestResult = manifestEvaluator.evaluate(stage, manifestContext);
-    final Execution execution = stage.getExecution();
+    ManifestEvaluator.Result evaluatedManifest = manifestEvaluator.evaluate(stage, manifestContext);
+
+    Moniker moniker = buildMoniker(context);
+
+    final PipelineExecution execution = stage.getExecution();
     ImmutableMap.Builder<String, Object> operation =
         ImmutableMap.<String, Object>builder()
             .put("application", context.get("application"))
@@ -71,8 +74,9 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
             .put("trigger", execution.getTrigger().getOther())
             .put(
                 "applicationArtifact",
-                getCloudFoundryDeployArtifact(stage, context.get("applicationArtifact")))
-            .put("manifest", manifestResult.getManifests());
+                resolveApplicationArtifact(stage, context.get("applicationArtifact")))
+            .put("manifest", evaluatedManifest.getManifests())
+            .put("moniker", moniker);
 
     if (context.get("stack") != null) {
       operation.put("stack", context.get("stack"));
@@ -86,19 +90,48 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
         ImmutableMap.<String, Object>builder().put(OPERATION, operation.build()).build());
   }
 
-  private Artifact getCloudFoundryDeployArtifact(Stage stage, Object input) {
-    CloudFoundryDeployArtifact applicationArtifactInput =
-        mapper.convertValue(input, CloudFoundryDeployArtifact.class);
+  private Artifact resolveApplicationArtifact(StageExecution stage, Object input) {
+    StageContextArtifactView stageContextArtifactView =
+        mapper.convertValue(input, StageContextArtifactView.class);
     Artifact artifact =
-        artifactResolver.getBoundArtifactForStage(
+        artifactUtils.getBoundArtifactForStage(
             stage,
-            applicationArtifactInput.getArtifactId(),
-            applicationArtifactInput.getArtifact());
+            stageContextArtifactView.getArtifactId(),
+            stageContextArtifactView.getArtifact());
     if (artifact == null) {
-      throw new IllegalArgumentException("Unable to bind the application artifact");
+      throw new IllegalArgumentException(
+          "Unable to bind the application artifact. Either the application artifact doesn't exist or this stage doesn't have access to fetch it");
     }
 
     return artifact;
+  }
+
+  private Artifact resolveManifestArtifact(StageExecution stage, Object input) {
+    DeploymentManifest manifest = mapper.convertValue(input, DeploymentManifest.class);
+    Artifact artifact =
+        artifactUtils.getBoundArtifactForStage(
+            stage, manifest.getArtifactId(), manifest.getArtifact());
+    if (artifact == null) {
+      throw new IllegalArgumentException(
+          "Unable to bind the manifest artifact. Either the manifest artifact doesn't exist or this stage doesn't have access to fetch it");
+    }
+
+    return artifact;
+  }
+
+  private Moniker buildMoniker(Map<String, Object> context) {
+    String app = context.get("application").toString();
+    String stack = (String) context.getOrDefault("stack", "");
+    String detail = (String) context.getOrDefault("freeFormDetails", "");
+
+    String cluster = app;
+    if (!stack.isEmpty()) {
+      cluster = cluster + "-" + stack;
+    }
+    if (!detail.isEmpty()) {
+      cluster = cluster + "-" + detail;
+    }
+    return MonikerHelper.friggaToMoniker(cluster);
   }
 
   @Override
@@ -117,9 +150,8 @@ class CloudFoundryServerGroupCreator implements ServerGroupCreator {
   }
 
   @Data
-  private static class CloudFoundryDeployArtifact {
+  private static class StageContextArtifactView {
     @Nullable private String artifactId;
-
     @Nullable private Artifact artifact;
   }
 }

@@ -17,9 +17,10 @@
 package com.netflix.spinnaker.orca;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStage;
+import com.netflix.spinnaker.orca.pipeline.SimpleTask;
+import java.util.*;
 import javax.annotation.Nonnull;
 
 /**
@@ -43,8 +44,12 @@ public class TaskResolver {
    *     alias
    */
   public TaskResolver(Collection<Task> tasks, boolean allowFallback) {
+    this(tasks, Collections.emptyList(), true);
+  }
+
+  public TaskResolver(Collection<Task> tasks, List<SimpleStage> stages, boolean allowFallback) {
     for (Task task : tasks) {
-      taskByAlias.put(task.getClass().getCanonicalName(), task);
+      taskByAlias.put(task.getExtensionClass().getCanonicalName(), task);
       for (String alias : task.aliases()) {
         if (taskByAlias.containsKey(alias)) {
           throw new DuplicateTaskAliasException(
@@ -52,11 +57,14 @@ public class TaskResolver {
                   "Duplicate task alias detected (alias: %s, previous: %s, current: %s)",
                   alias,
                   taskByAlias.get(alias).getClass().getCanonicalName(),
-                  task.getClass().getCanonicalName()));
+                  task.getExtensionClass().getCanonicalName()));
         }
 
         taskByAlias.put(alias, task);
       }
+    }
+    for (SimpleStage stage : stages) {
+      taskByAlias.put(stage.getClass().getCanonicalName(), new SimpleTask(stage));
     }
 
     this.allowFallback = allowFallback;
@@ -81,6 +89,23 @@ public class TaskResolver {
   }
 
   /**
+   * Fetch a {@code Task} by {@code Class type}.
+   *
+   * @param taskType Task type (class of task)
+   * @return the Task matching {@code taskType}
+   * @throws NoSuchTaskException if Task does not exist
+   */
+  @Nonnull
+  public Task getTask(@Nonnull Class<? extends Task> taskType) {
+    Task matchingTask =
+        taskByAlias.values().stream()
+            .filter((Task task) -> taskType.isAssignableFrom(task.getClass()))
+            .findFirst()
+            .orElseThrow(() -> new NoSuchTaskException(taskType.getCanonicalName()));
+    return matchingTask;
+  }
+
+  /**
    * @param taskTypeIdentifier Task identifier (class name or alias)
    * @return Task Class
    * @throws NoSuchTaskException if task does not exist
@@ -88,7 +113,8 @@ public class TaskResolver {
   @Nonnull
   public Class<? extends Task> getTaskClass(@Nonnull String taskTypeIdentifier) {
     try {
-      return getTask(taskTypeIdentifier).getClass();
+      Task task = getTask(taskTypeIdentifier);
+      return (Class<? extends Task>) task.getExtensionClass();
     } catch (IllegalArgumentException e) {
       if (!allowFallback) {
         throw e;
@@ -102,13 +128,13 @@ public class TaskResolver {
     }
   }
 
-  class DuplicateTaskAliasException extends IllegalStateException {
+  public class DuplicateTaskAliasException extends IllegalStateException {
     DuplicateTaskAliasException(String message) {
       super(message);
     }
   }
 
-  class NoSuchTaskException extends IllegalArgumentException {
+  public class NoSuchTaskException extends IllegalArgumentException {
     NoSuchTaskException(String taskTypeIdentifier) {
       super("No task found for '" + taskTypeIdentifier + "'");
     }

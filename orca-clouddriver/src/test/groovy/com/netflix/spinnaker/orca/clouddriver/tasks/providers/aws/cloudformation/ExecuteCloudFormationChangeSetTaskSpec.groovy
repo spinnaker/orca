@@ -16,11 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.cloudformation
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import rx.Observable
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -37,7 +36,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
   def "should put a kato task information as output"() {
     given:
     def taskId = new TaskId(id: 'id')
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecutionImpl.newPipeline('orca')
     def context = [
       credentials: 'creds',
       cloudProvider: 'aws',
@@ -61,7 +60,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
         ]
       ]
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecutionImpl(pipeline, 'test', 'test', context)
     stage.setOutputs(outputs)
 
     when:
@@ -70,7 +69,7 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
     then:
     1 * katoService.requestOperations("aws", {
       it.get(0).get("executeCloudFormationChangeSet")
-    }) >> Observable.just(taskId)
+    }) >> taskId
     result.context.'kato.result.expected' == true
     result.context.'kato.last.task.id' == taskId
 
@@ -79,14 +78,14 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
   @Unroll
   def "should finish successfully unless is a replacement and it's configured to skip"(){
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecutionImpl.newPipeline('orca')
     def context = [
       'cloudProvider': 'aws',
       'isChangeSet': true,
       'actionOnReplacement': 'skip',
       'changeSetName': 'changeSetName'
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecutionImpl(pipeline, 'test', 'test', context)
     def outputs = [
       changeSets: [
         [
@@ -126,16 +125,43 @@ class ExecuteCloudFormationChangeSetTaskSpec extends Specification {
 
   }
 
+  def "should end up succesfully when the changeset has been deleted in previous tasks"() {
+    given:
+    def pipeline = PipelineExecutionImpl.newPipeline('orca')
+    def context = [
+      'cloudProvider': 'aws',
+      'isChangeSet': true,
+      'deleteChangeSet': true,
+      'changeSetName': 'deletedOne'
+    ]
+    def stage = new StageExecutionImpl(pipeline, 'test', 'test', context)
+    def outputs = [
+      changeSets: [
+        [
+          name: 'deletedOne',
+          changes: []
+        ]
+      ]
+    ]
+    stage.setOutputs(outputs)
+
+    when:
+    def result = executeCloudFormationChangeSetTask.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.SUCCEEDED
+
+  }
   def "should throw and exception when is a changeset and is set to fail"() {
     given:
-    def pipeline = Execution.newPipeline('orca')
+    def pipeline = PipelineExecutionImpl.newPipeline('orca')
     def context = [
       'cloudProvider': 'aws',
       'isChangeSet': true,
       'actionOnReplacement': 'fail',
       'changeSetName': 'changeSetName'
     ]
-    def stage = new Stage(pipeline, 'test', 'test', context)
+    def stage = new StageExecutionImpl(pipeline, 'test', 'test', context)
     def outputs = [
       changeSets: [
         [

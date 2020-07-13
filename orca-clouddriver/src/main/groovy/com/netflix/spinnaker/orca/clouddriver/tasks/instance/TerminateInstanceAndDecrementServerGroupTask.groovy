@@ -16,9 +16,10 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstance
 import com.netflix.spinnaker.orca.clouddriver.pipeline.instance.TerminatingInstanceSupport
@@ -26,9 +27,10 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Locat
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class TerminateInstanceAndDecrementServerGroupTask extends AbstractCloudProviderAwareTask implements Task {
@@ -43,8 +45,9 @@ class TerminateInstanceAndDecrementServerGroupTask extends AbstractCloudProvider
   @Autowired
   TrafficGuard trafficGuard
 
+  @Nonnull
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
 
@@ -72,8 +75,7 @@ class TerminateInstanceAndDecrementServerGroupTask extends AbstractCloudProvider
               cloudProvider,
               "Terminating the requested instance in ")
       def taskId = kato.requestOperations(cloudProvider, [[(CLOUD_OPERATION_TYPE): stage.context]])
-              .toBlocking()
-              .first()
+
       ctx['kato.last.task.id'] = taskId
     }
 

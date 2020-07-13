@@ -16,12 +16,12 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf;
 
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
 import com.netflix.spinnaker.orca.clouddriver.tasks.instance.AbstractInstanceLoadBalancerRegistrationTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -33,11 +33,15 @@ abstract class AbstractLoadBalancerRegistrationTask
 
   @Override
   @Nonnull
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     List<TargetServerGroup> tsgList = tsgResolver.resolve(stage);
     if (!tsgList.isEmpty()) {
       Optional.ofNullable(tsgList.get(0))
-          .ifPresent(tsg -> stage.getContext().put("serverGroupName", tsg.getName()));
+          .ifPresent(
+              tsg -> {
+                stage.getContext().put("serverGroupName", tsg.getName());
+                stage.getContext().put("moniker", tsg.getMoniker());
+              });
     }
 
     return super.execute(stage);

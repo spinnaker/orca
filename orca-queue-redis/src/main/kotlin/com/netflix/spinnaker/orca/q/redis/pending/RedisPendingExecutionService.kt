@@ -21,7 +21,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.netflix.spinnaker.orca.q.pending.PendingExecutionService
 import com.netflix.spinnaker.q.Message
 import redis.clients.jedis.Jedis
-import redis.clients.util.Pool
+import redis.clients.jedis.util.Pool
 
 class RedisPendingExecutionService(
   private val pool: Pool<Jedis>,
@@ -59,6 +59,9 @@ class RedisPendingExecutionService(
     pool.resource.use { redis ->
       redis.llen(listName(pipelineConfigId)).toInt()
     }
+
+  override fun pendingIds(): List<String> =
+    throw NotImplementedError("only implemented on SqlPendingExecutionService")
 
   private fun listName(pipelineConfigId: String) =
     "orca.pipeline.queue.$pipelineConfigId"

@@ -16,12 +16,12 @@
 package com.netflix.spinnaker.orca.kato.tasks;
 
 import com.google.common.collect.ImmutableMap;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.kato.pipeline.support.ScalingGroupDescriptionSupport;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,13 +37,13 @@ public class ModifyScalingGroupTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     List list = new ArrayList<>();
     Map<String, Map> objectMap = new HashMap<>(16);
     Map<String, Object> context = stage.getContext();
     objectMap.put("modifyScalingGroupDescription", context);
     list.add(objectMap);
-    Object taskId = kato.requestOperations(list).toBlocking().first();
+    Object taskId = kato.requestOperations(list);
     List<Map<String, String>> scalingGroups = (List) context.get("scalingGroups");
     Map deployServerGroups =
         ScalingGroupDescriptionSupport.convertScalingGroupToDeploymentTargets(scalingGroups);

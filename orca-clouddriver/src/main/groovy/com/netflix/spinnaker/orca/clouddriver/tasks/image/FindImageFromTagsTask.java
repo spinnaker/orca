@@ -19,11 +19,11 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.image;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +45,7 @@ public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implem
   private Long findImageFromTagsTimeoutMillis;
 
   @Override
-  public TaskResult execute(Stage stage) {
+  public TaskResult execute(StageExecution stage) {
     String cloudProvider = getCloudProvider(stage);
 
     ImageFinder imageFinder =
@@ -63,8 +63,9 @@ public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implem
       stageData.tags = Collections.emptyMap();
     }
 
+    List<String> warnings = new ArrayList<>();
     Collection<ImageFinder.ImageDetails> imageDetails =
-        imageFinder.byTags(stage, stageData.packageName, stageData.tags);
+        imageFinder.byTags(stage, stageData.packageName, stageData.tags, warnings);
 
     if (imageDetails == null || imageDetails.isEmpty()) {
       throw new IllegalStateException(
@@ -81,6 +82,14 @@ public class FindImageFromTagsTask extends AbstractCloudProviderAwareTask implem
     Map<String, Object> stageOutputs = new HashMap<>();
     stageOutputs.put("amiDetails", imageDetails);
     stageOutputs.put("artifacts", artifacts);
+
+    if (!warnings.isEmpty()) {
+      Map<String, String[]> messages = new HashMap<>();
+      messages.put("errors", warnings.toArray(new String[0]));
+      Map<String, Object> details = new HashMap<>();
+      details.put("details", messages);
+      stageOutputs.put("exception", details);
+    }
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED)
         .context(stageOutputs)

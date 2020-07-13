@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -41,7 +41,7 @@ class AbstractServerGroupTaskSpec extends Specification {
         _ * sleep(_) >> { /* do nothing */ }
       }
     )
-  def stage = new Stage(Execution.newPipeline("orca"), "whatever")
+  def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "whatever")
   def taskId = new TaskId(UUID.randomUUID().toString())
 
   def stageContext = [
@@ -61,7 +61,7 @@ class AbstractServerGroupTaskSpec extends Specification {
       task.kato = Mock(KatoService) {
         1 * requestOperations(*_) >> {
           operations = it[1]
-          rx.Observable.from(taskId)
+          taskId
         }
       }
 
@@ -82,7 +82,7 @@ class AbstractServerGroupTaskSpec extends Specification {
   def "returns a success status with the kato task id"() {
     given:
       task.kato = Stub(KatoService) {
-        requestOperations(*_) >> rx.Observable.from(taskId)
+        requestOperations(*_) >> taskId
       }
 
     when:
@@ -98,7 +98,7 @@ class AbstractServerGroupTaskSpec extends Specification {
     setup:
       stage.context.target = TargetServerGroup.Params.Target.ancestor_asg_dynamic
       task.kato = Stub(KatoService) {
-        requestOperations(*_) >> rx.Observable.from(taskId)
+        requestOperations(*_) >> taskId
       }
       GroovyMock(TargetServerGroupResolver, global: true)
 

@@ -16,16 +16,18 @@
 
 package com.netflix.spinnaker.orca.kato.tasks
 
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.kato.pipeline.ResizeAsgStage
 import com.netflix.spinnaker.orca.kato.pipeline.support.ResizeSupport
 import com.netflix.spinnaker.orca.kato.pipeline.support.TargetReferenceSupport
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 @Deprecated
@@ -40,12 +42,12 @@ class ResizeAsgTask implements Task {
   @Autowired
   ResizeSupport resizeSupport
 
+  @Nonnull
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     def operation = convert(stage)
     def taskId = kato.requestOperations([[resizeAsgDescription: operation]])
-                     .toBlocking()
-                     .first()
+
     TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
         "notification.type"   : "resizeasg",
         "deploy.account.name" : operation.credentials,
@@ -59,7 +61,7 @@ class ResizeAsgTask implements Task {
     ]).build()
   }
 
-  Map convert(Stage stage) {
+  Map convert(StageExecution stage) {
     Map context = stage.context
     if (targetReferenceSupport.isDynamicallyBound(stage)) {
       def targetReference = targetReferenceSupport.getDynamicallyBoundTargetAsgReference(stage)

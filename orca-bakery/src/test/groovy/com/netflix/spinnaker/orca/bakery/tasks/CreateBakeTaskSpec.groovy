@@ -18,17 +18,19 @@ package com.netflix.spinnaker.orca.bakery.tasks
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.web.selector.v2.SelectableService
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.BakeRequest
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
+import com.netflix.spinnaker.orca.bakery.api.BaseImage
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.*
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
+import com.netflix.spinnaker.orca.pipeline.util.PackageType
 import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedString
-import rx.Observable
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -45,10 +47,10 @@ class CreateBakeTaskSpec extends Specification {
 
   @Subject
     task = new CreateBakeTask()
-  Stage bakeStage
+  StageExecutionImpl bakeStage
   def mapper = OrcaObjectMapper.newInstance()
 
-  ArtifactResolver artifactResolver = Stub() {
+  ArtifactUtils artifactUtils = Stub() {
     getAllArtifacts(_) >> []
   }
 
@@ -66,7 +68,7 @@ class CreateBakeTaskSpec extends Specification {
     baseLabel: "release"
   ]
 
-  Execution pipeline = pipeline {
+  PipelineExecutionImpl pipeline = pipeline {
     stage {
       type = "bake"
       context = bakeConfig
@@ -211,7 +213,7 @@ class CreateBakeTaskSpec extends Specification {
 
   def setup() {
     task.mapper = mapper
-    task.artifactResolver = artifactResolver
+    task.artifactUtils = artifactUtils
     bakeStage = pipeline.stages.first()
   }
 
@@ -237,7 +239,37 @@ class CreateBakeTaskSpec extends Specification {
     task.execute(bakeStage)
 
     then:
-    1 * bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> Observable.from(runningStatus)
+    1 * bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> runningStatus
+  }
+
+  def "creates a bake for the correct region with rosco"() {
+    given:
+    def bakery = Mock(BakeryService) {
+      getBaseImage(*_) >> new BaseImage().with {
+        packageType = PackageType.DEB
+        it
+      }
+    }
+
+    and:
+    def selectedBakeryService = Stub(SelectableService.SelectedService) {
+      getService() >> bakery
+      getConfig() >> [
+          extractBuildDetails: false,
+          allowMissingPackageInstallation: false,
+          roscoApisEnabled: true
+      ]
+    }
+
+    task.bakerySelector = Mock(BakerySelector) {
+      select(_) >> selectedBakeryService
+    }
+
+    when:
+    task.execute(bakeStage)
+
+    then:
+    1 * bakery.createBake(bakeConfig.region, _ as BakeRequest, null) >> runningStatus
   }
 
   def "should surface error message (if available) on a 404"() {
@@ -275,7 +307,7 @@ class CreateBakeTaskSpec extends Specification {
     def bakery = Mock(BakeryService) {
       1 * createBake(*_) >> {
         bake = it[1]
-        Observable.from(runningStatus)
+        runningStatus
       }
     }
 
@@ -322,7 +354,7 @@ class CreateBakeTaskSpec extends Specification {
     def bakery = Mock(BakeryService) {
       1 * createBake(*_) >> {
         bake = it[1]
-        Observable.from(runningStatus)
+        runningStatus
       }
     }
 
@@ -446,7 +478,7 @@ class CreateBakeTaskSpec extends Specification {
   def "outputs the status of the bake"() {
     given:
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     and:
@@ -476,7 +508,7 @@ class CreateBakeTaskSpec extends Specification {
   def "outputs the packageName of the bake"() {
     given:
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     and:
@@ -516,7 +548,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     and:
@@ -567,7 +599,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     and:
@@ -616,7 +648,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     and:
@@ -665,7 +697,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     and:
@@ -714,7 +746,7 @@ class CreateBakeTaskSpec extends Specification {
     }
 
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(runningStatus)
+      createBake(*_) >> runningStatus
     }
 
     and:
@@ -795,7 +827,7 @@ class CreateBakeTaskSpec extends Specification {
           it.buildNumber == "69"
         it.commitHash == null
       },
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
 
     where:
     triggerInfo      | contextInfo
@@ -849,7 +881,7 @@ class CreateBakeTaskSpec extends Specification {
           it.buildNumber == null &&
           it.commitHash == null
       },
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
 
     where:
     triggerInfo      | contextInfo
@@ -903,7 +935,7 @@ class CreateBakeTaskSpec extends Specification {
           it.buildNumber == null &&
           it.commitHash == null
       },
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
 
     where:
     triggerInfo | contextInfo
@@ -923,7 +955,7 @@ class CreateBakeTaskSpec extends Specification {
     def bakery = Mock(BakeryService) {
       1 * createBake(*_) >> {
         bake = it[1]
-        Observable.from(runningStatus)
+        runningStatus
       }
     }
 
@@ -956,7 +988,7 @@ class CreateBakeTaskSpec extends Specification {
   def "sets previouslyBaked flag to #previouslyBaked when status is #status.state"() {
     given:
     def bakery = Stub(BakeryService) {
-      createBake(*_) >> Observable.from(status)
+      createBake(*_) >> status
     }
 
     and:
@@ -1017,7 +1049,7 @@ class CreateBakeTaskSpec extends Specification {
           it.baseLabel == "release" &&
           it.baseOs == "ubuntu"
       } as BakeRequest,
-      "1") >> Observable.from(runningStatus)
+      "1") >> runningStatus
     0 * _
   }
 
@@ -1056,7 +1088,7 @@ class CreateBakeTaskSpec extends Specification {
           it.baseLabel == "release" &&
           it.baseOs == "ubuntu"
       } as BakeRequest,
-      queryParameter) >> Observable.from(runningStatus)
+      queryParameter) >> runningStatus
     0 * _
 
     when:
@@ -1074,7 +1106,7 @@ class CreateBakeTaskSpec extends Specification {
           it.baseLabel == "release" &&
           it.baseOs == "ubuntu"
       } as BakeRequest,
-      null) >> Observable.from(runningStatus)
+      null) >> runningStatus
     0 * _
 
     where:
@@ -1090,7 +1122,7 @@ class CreateBakeTaskSpec extends Specification {
       type = "bake"
       context = bakeConfigWithArtifacts
     }
-    task.artifactResolver = Mock(ArtifactResolver)
+    task.artifactUtils = Mock(ArtifactUtils)
     def bakery = Mock(BakeryService)
 
     and:
@@ -1107,8 +1139,8 @@ class CreateBakeTaskSpec extends Specification {
     def bakeResult = task.bakeFromContext(stage, selectedBakeryService)
 
     then:
-    2 * task.artifactResolver.getBoundArtifactForId(stage, _) >> Artifact.builder().build()
-    1 * task.artifactResolver.getAllArtifacts(_) >> []
+    2 * task.artifactUtils.getBoundArtifactForId(stage, _) >> Artifact.builder().build()
+    1 * task.artifactUtils.getAllArtifacts(_) >> []
     bakeResult.getPackageArtifacts().size() == 2
   }
 
@@ -1118,7 +1150,7 @@ class CreateBakeTaskSpec extends Specification {
       type = "bake"
       context = bakeConfig
     }
-    task.artifactResolver = Mock(ArtifactResolver)
+    task.artifactUtils = Mock(ArtifactUtils)
     def bakery = Mock(BakeryService)
 
     and:
@@ -1135,8 +1167,8 @@ class CreateBakeTaskSpec extends Specification {
     def bakeResult = task.bakeFromContext(stage, selectedBakeryService)
 
     then:
-    0 * task.artifactResolver.getBoundArtifactForId(*_) >> Artifact.builder().build()
-    1 * task.artifactResolver.getAllArtifacts(_) >> []
+    0 * task.artifactUtils.getBoundArtifactForId(*_) >> Artifact.builder().build()
+    1 * task.artifactUtils.getAllArtifacts(_) >> []
     bakeResult.getPackageArtifacts().size() == 0
   }
 
@@ -1146,7 +1178,7 @@ class CreateBakeTaskSpec extends Specification {
       type = "bake"
       context = bakeConfigWithoutOs
     }
-    task.artifactResolver = Mock(ArtifactResolver)
+    task.artifactUtils = Mock(ArtifactUtils)
     def bakery = Mock(BakeryService)
 
     and:
@@ -1164,8 +1196,8 @@ class CreateBakeTaskSpec extends Specification {
 
     then:
     noExceptionThrown()
-    2 * task.artifactResolver.getBoundArtifactForId(stage, _) >> Artifact.builder().build()
-    1 * task.artifactResolver.getAllArtifacts(_) >> []
+    2 * task.artifactUtils.getBoundArtifactForId(stage, _) >> Artifact.builder().build()
+    1 * task.artifactUtils.getAllArtifacts(_) >> []
     bakeResult.getPackageArtifacts().size() == 2
   }
 }

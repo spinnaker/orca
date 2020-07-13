@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.loadbalancer
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import spock.lang.Specification
@@ -47,7 +47,7 @@ class DeleteLoadBalancerTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations(this.deleteLoadBalancerConfig.cloudProvider, _) >> {
         operations = it[1]
-        rx.Observable.from(taskId)
+        taskId
       }
     }
 
@@ -67,7 +67,7 @@ class DeleteLoadBalancerTaskSpec extends Specification {
   def "returns a success status with the kato task id"() {
     given:
     task.kato = Stub(KatoService) {
-      requestOperations(this.deleteLoadBalancerConfig.cloudProvider, _) >> rx.Observable.from(taskId)
+      requestOperations(this.deleteLoadBalancerConfig.cloudProvider, _) >> taskId
     }
 
     when:

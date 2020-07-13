@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.junit4.SpringRunner
 import redis.clients.jedis.Jedis
-import redis.clients.util.Pool
+import redis.clients.jedis.util.Pool
 
 @Configuration
 class RedisTestConfig {
@@ -68,6 +68,7 @@ class RedisTestConfig {
     "logging.level.root=ERROR",
     "logging.level.org.springframework.test=ERROR",
     "logging.level.com.netflix.spinnaker=FATAL",
-    "execution-repository.redis.enabled=true"
-  ])
+    "execution-repository.redis.enabled=true",
+    "spring.application.name=orcaTest"
+])
 class RedisQueueIntegrationTest : QueueIntegrationTest()

@@ -16,16 +16,16 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 
-import com.netflix.spinnaker.orca.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 
 import java.util.concurrent.TimeUnit
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -34,13 +34,14 @@ class WaitForNewUpInstancesLaunchTask implements OverridableTimeoutRetryableTask
 
   @Autowired OortService oortService
   @Autowired ObjectMapper objectMapper
+  @Autowired(required = false) List<ServerGroupInstanceIdCollector> serverGroupInstanceIdCollectors = []
 
   long getBackoffPeriod() { TimeUnit.SECONDS.toMillis(10) }
 
   long getTimeout() { TimeUnit.HOURS.toMillis(2) }
 
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(StageExecution stage) {
     StageData stageData = stage.mapTo(StageData)
 
     // similar check in `AbstractInstancesCheckTask`
@@ -57,7 +58,9 @@ class WaitForNewUpInstancesLaunchTask implements OverridableTimeoutRetryableTask
 
     List<String> healthProviders = stage.context.interestingHealthProviderNames as List<String>
     Set<String> newUpInstanceIds = serverGroupInstances.findResults {
-      String id = stageData.cloudProvider == 'titus' ? it.id : it.instanceId
+      String id = getServerGroupInstanceIdCollector(stage)
+          .map { collector -> collector.one(it) }
+          .orElse((String) it.instanceId)
       !knownInstanceIds.contains(id) &&
         HealthHelper.someAreUpAndNoneAreDownOrStarting(it, healthProviders) ? id : null
     }
@@ -68,5 +71,11 @@ class WaitForNewUpInstancesLaunchTask implements OverridableTimeoutRetryableTask
       return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([knownInstanceIds: knownInstanceIds.toList()]).build()
     }
     return TaskResult.ofStatus(ExecutionStatus.RUNNING)
+  }
+
+  private Optional<ServerGroupInstanceIdCollector> getServerGroupInstanceIdCollector(StageExecution stage) {
+    return Optional.ofNullable((String) stage.getContext().get("cloudProvider")).flatMap { cloudProvider ->
+      serverGroupInstanceIdCollectors.stream().filter { it.supports(cloudProvider) }.findFirst()
+    }
   }
 }

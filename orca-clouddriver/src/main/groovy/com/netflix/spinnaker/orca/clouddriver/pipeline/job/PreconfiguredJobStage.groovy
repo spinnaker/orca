@@ -17,14 +17,16 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.job
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.orca.clouddriver.config.PreconfiguredJobStageProperties
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageProperties
 import com.netflix.spinnaker.orca.clouddriver.exception.PreconfiguredJobNotFoundException
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask
-import com.netflix.spinnaker.orca.pipeline.TaskNode
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class PreconfiguredJobStage extends RunJobStage {
@@ -33,14 +35,14 @@ class PreconfiguredJobStage extends RunJobStage {
   private ObjectMapper objectMapper
 
   @Autowired
-  public PreconfiguredJobStage(DestroyJobTask destroyJobTask, Optional<JobService> optionalJobService) {
-    super(destroyJobTask)
+  PreconfiguredJobStage(DestroyJobTask destroyJobTask, List<RunJobStageDecorator> runJobStageDecorators, Optional<JobService> optionalJobService) {
+    super(destroyJobTask, runJobStageDecorators)
     this.jobService = optionalJobService.orElse(null)
     this.objectMapper = new ObjectMapper()
   }
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     def preconfiguredJob = jobService.getPreconfiguredStages().find { stage.type == it.type }
 
     if (!preconfiguredJob) {
@@ -74,19 +76,32 @@ class PreconfiguredJobStage extends RunJobStage {
     }
     preconfiguredJob.parameters.each { defaults ->
       if (defaults.defaultValue != null) {
-        Eval.xy(context, defaults.defaultValue, "x.${defaults.mapping} = y.toString()")
+        setNestedValue(context, defaults.mapping, defaults.defaultValue)
       }
     }
     if (context.parameters) {
       context.parameters.each { k, v ->
         def parameterDefinition = preconfiguredJob.parameters.find { it.name == k }
         if (parameterDefinition) {
-          Eval.xy(context, v, "x.${parameterDefinition.mapping} = y.toString()")
+          setNestedValue(context, parameterDefinition.mapping, v.toString())
         }
       }
     }
     context.preconfiguredJobParameters = preconfiguredJob.parameters
     return context
+  }
+
+  private static void setNestedValue(Object root, String mapping, Object value) {
+    String[] props = mapping.split(/\./)
+    Object current = root
+    for (int i = 0; i < props.length - 1; i++) {
+      Object next = current[props[i]]
+      if (next == null) {
+        throw new IllegalArgumentException("no property ${props[i]} on $current")
+      }
+      current = next
+    }
+    current[props.last()] = value
   }
 
 }

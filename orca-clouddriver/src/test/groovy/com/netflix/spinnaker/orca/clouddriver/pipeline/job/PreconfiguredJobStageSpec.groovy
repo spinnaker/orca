@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.job
 
-import com.netflix.spinnaker.orca.clouddriver.config.PreconfiguredJobStageParameter
+import com.netflix.spinnaker.orca.api.preconfigured.jobs.PreconfiguredJobStageParameter
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.clouddriver.config.KubernetesPreconfiguredJobProperties
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask
@@ -43,7 +43,7 @@ class PreconfiguredJobStageSpec extends Specification {
     }
 
     when:
-    PreconfiguredJobStage preconfiguredJobStage = new PreconfiguredJobStage(Mock(DestroyJobTask), Optional.of(jobService))
+    PreconfiguredJobStage preconfiguredJobStage = new PreconfiguredJobStage(Mock(DestroyJobTask), [], Optional.of(jobService))
     preconfiguredJobStage.buildTaskGraph(stage)
 
     then:
@@ -89,7 +89,7 @@ class PreconfiguredJobStageSpec extends Specification {
     }
 
     when:
-    PreconfiguredJobStage preconfiguredJobStage = new PreconfiguredJobStage(Mock(DestroyJobTask), Optional.of(jobService))
+    PreconfiguredJobStage preconfiguredJobStage = new PreconfiguredJobStage(Mock(DestroyJobTask), [], Optional.of(jobService))
     preconfiguredJobStage.buildTaskGraph(stage)
 
     then:

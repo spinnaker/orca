@@ -17,6 +17,7 @@ package com.netflix.spinnaker.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.jedis.JedisDriverProperties
 import com.netflix.spinnaker.kork.jedis.JedisPoolFactory
 import com.netflix.spinnaker.orca.q.QueueShovel
@@ -27,6 +28,10 @@ import com.netflix.spinnaker.q.migration.SerializationMigrator
 import com.netflix.spinnaker.q.redis.AbstractRedisQueue
 import com.netflix.spinnaker.q.redis.RedisClusterQueue
 import com.netflix.spinnaker.q.redis.RedisQueue
+import java.net.URI
+import java.time.Clock
+import java.time.Duration
+import java.util.Optional
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.springframework.beans.factory.BeanInitializationException
 import org.springframework.beans.factory.annotation.Qualifier
@@ -40,11 +45,7 @@ import redis.clients.jedis.HostAndPort
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisCluster
 import redis.clients.jedis.Protocol
-import redis.clients.util.Pool
-import java.net.URI
-import java.time.Clock
-import java.time.Duration
-import java.util.Optional
+import redis.clients.jedis.util.Pool
 
 @Configuration
 @ConditionalOnProperty(value = ["queue.redis.enabled"], matchIfMissing = true)
@@ -153,13 +154,16 @@ class RedisQueueShovelConfiguration {
     queue: AbstractRedisQueue,
     @Qualifier("previousQueue") previousQueueImpl: RedisQueue,
     registry: Registry,
-    discoveryActivator: Activator
+    discoveryActivator: Activator,
+    dynamicConfigService: DynamicConfigService
   ) =
     QueueShovel(
       queue = queue,
       previousQueue = previousQueueImpl,
       registry = registry,
-      activator = discoveryActivator
+      activator = discoveryActivator,
+      config = dynamicConfigService,
+      executionRepository = null
     )
 
   @Bean
@@ -168,12 +172,15 @@ class RedisQueueShovelConfiguration {
     queue: AbstractRedisQueue,
     @Qualifier("previousClusterQueue") previousQueueImpl: AbstractRedisQueue,
     registry: Registry,
-    discoveryActivator: Activator
+    discoveryActivator: Activator,
+    dynamicConfigService: DynamicConfigService
   ) =
     QueueShovel(
       queue = queue,
       previousQueue = previousQueueImpl,
       registry = registry,
-      activator = discoveryActivator
+      activator = discoveryActivator,
+      config = dynamicConfigService,
+      executionRepository = null
     )
 }

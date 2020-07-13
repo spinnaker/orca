@@ -5,8 +5,8 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.config.DualPendingExecutionServiceConfiguration
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
-import com.netflix.spinnaker.orca.fixture.pipeline
-import com.netflix.spinnaker.orca.fixture.stage
+import com.netflix.spinnaker.orca.api.test.pipeline
+import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.q.PendingExecutionServiceTest
 import com.netflix.spinnaker.orca.q.RestartStage
 import com.netflix.spinnaker.orca.q.StartExecution
@@ -14,6 +14,7 @@ import com.netflix.spinnaker.orca.q.redis.pending.RedisPendingExecutionService
 import com.netflix.spinnaker.q.Message
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.verify
+import java.util.UUID
 import org.assertj.core.api.Assertions
 import org.jetbrains.spek.api.dsl.describe
 import org.jetbrains.spek.api.dsl.given
@@ -21,7 +22,6 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.subject.SubjectSpek
 import org.jetbrains.spek.subject.itBehavesLike
-import java.util.UUID
 
 internal object DualPendingExecutionServiceTest : SubjectSpek<DualPendingExecutionService>({
 
@@ -177,4 +177,7 @@ class RedisPendingExecutionServiceProxy(
 
   override fun depth(pipelineConfigId: String): Int =
     service.depth(pipelineConfigId)
+
+  override fun pendingIds(): List<String> =
+    service.pendingIds()
 }

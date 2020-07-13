@@ -17,13 +17,15 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.collect.ImmutableList
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import com.netflix.spinnaker.orca.clouddriver.KatoService
+import com.netflix.spinnaker.kork.core.RetrySupport
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import retrofit.client.Header
 import retrofit.client.Response
@@ -31,41 +33,30 @@ import retrofit.mime.TypedString
 import spock.lang.Specification
 
 class KubernetesJobRunnerSpec extends Specification {
-
-  def "should return a run job operation if cluster set in context"() {
-    given:
-    ArtifactResolver artifactResolver = Mock(ArtifactResolver)
-    ObjectMapper objectMapper = new ObjectMapper()
-    ManifestEvaluator manifestEvaluator = Mock(ManifestEvaluator)
-    def stage = new Stage(Execution.newPipeline("test"), "runJob", [
-      credentials: "abc", cloudProvider: "kubernetes",
-      cluster: [
-        foo: "bar"
-      ]
-    ])
-    KubernetesJobRunner kubernetesJobRunner = new KubernetesJobRunner(artifactResolver, objectMapper, manifestEvaluator)
-
-    when:
-    def ops = kubernetesJobRunner.getOperations(stage)
-    def op = ops.get(0)
-
-    then:
-    op.containsKey("runJob") == true
-    op.get("runJob").containsKey("foo") == true
-    op.get("runJob").get("foo") == "bar"
-
-  }
-
   def "should return a run job operation with all context"() {
     given:
-    ArtifactResolver artifactResolver = Mock(ArtifactResolver)
+    ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
-    ManifestEvaluator manifestEvaluator = Mock(ManifestEvaluator)
-    def stage = new Stage(Execution.newPipeline("test"), "runJob", [
+    ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
+        Mock(ArtifactUtils) {
+          getArtifacts(_ as StageExecution) >> ImmutableList.of()
+        },
+        Mock(ContextParameterProcessor),
+        Mock(OortService),
+        new RetrySupport(),
+       true
+    )
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
-      foo: "bar"
+      foo: "bar",
+      source: "text",
+      manifest: [
+        metadata: [
+          name: "my-job"
+        ]
+      ]
     ])
-    KubernetesJobRunner kubernetesJobRunner = new KubernetesJobRunner(artifactResolver, objectMapper, manifestEvaluator)
+    KubernetesJobRunner kubernetesJobRunner = new KubernetesJobRunner(artifactUtils, objectMapper, manifestEvaluator)
 
     when:
     def ops = kubernetesJobRunner.getOperations(stage)
@@ -80,10 +71,18 @@ class KubernetesJobRunnerSpec extends Specification {
 
   def "getAdditionalOutputs should return manifest log template if present"() {
     given:
-    ArtifactResolver artifactResolver = Mock(ArtifactResolver)
+    ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
-    ManifestEvaluator manifestEvaluator = Mock(ManifestEvaluator)
-    def stage = new Stage(Execution.newPipeline("test"), "runJob", [
+    ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
+        Mock(ArtifactUtils) {
+          getArtifacts(_ as StageExecution) >> ImmutableList.of()
+        },
+        Mock(ContextParameterProcessor),
+        Mock(OortService),
+        new RetrySupport(),
+       true
+    )
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
       manifest: [
         metadata: [
@@ -93,7 +92,7 @@ class KubernetesJobRunnerSpec extends Specification {
         ]
       ]
     ])
-    KubernetesJobRunner kubernetesJobRunner = new KubernetesJobRunner(artifactResolver, objectMapper, manifestEvaluator)
+    KubernetesJobRunner kubernetesJobRunner = new KubernetesJobRunner(artifactUtils, objectMapper, manifestEvaluator)
 
     when:
     def ops = kubernetesJobRunner.getOperations(stage)
@@ -106,21 +105,21 @@ class KubernetesJobRunnerSpec extends Specification {
   def "populates manifest from artifact if artifact source"() {
     given:
     def manifest = [metadata: [name: "manifest"]]
-    ArtifactResolver artifactResolver = Mock(ArtifactResolver)
+    ArtifactUtils artifactUtils = Mock(ArtifactUtils)
     ObjectMapper objectMapper = new ObjectMapper()
     OortService oortService = Mock(OortService)
     ContextParameterProcessor contextParameterProcessor = Mock(ContextParameterProcessor)
-    KatoService katoService = Mock(KatoService)
+    RetrySupport retrySupport = new RetrySupport()
     ManifestEvaluator manifestEvaluator = new ManifestEvaluator(
-      artifactResolver, oortService, objectMapper, contextParameterProcessor, katoService
+      artifactUtils, contextParameterProcessor, oortService, retrySupport, true
     )
-    def stage = new Stage(Execution.newPipeline("test"), "runJob", [
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("test"), "runJob", [
       credentials: "abc", cloudProvider: "kubernetes",
       source: "artifact",
       manifestArtifactId: "foo",
       manifestArtifactAccount: "bar",
     ])
-    KubernetesJobRunner kubernetesJobRunner = new KubernetesJobRunner(artifactResolver, objectMapper, manifestEvaluator)
+    KubernetesJobRunner kubernetesJobRunner = new KubernetesJobRunner(artifactUtils, objectMapper, manifestEvaluator)
 
     when:
     def ops = kubernetesJobRunner.getOperations(stage)
@@ -139,11 +138,14 @@ class KubernetesJobRunnerSpec extends Specification {
         new TypedString('{"metadata": {"name": "manifest"}}')
       )
     }
-    1 * artifactResolver.getBoundArtifactForStage(_, _, _) >> {
+    1 * artifactUtils.getBoundArtifactForStage(_, _, _) >> {
       return Artifact.builder().build()
+    }
+    1 * artifactUtils.getArtifacts(_) >> {
+      return []
     }
     op.manifest == manifest
     op.requiredArtifacts == []
-    op.optionalArtifacts == null
+    op.optionalArtifacts == []
   }
 }

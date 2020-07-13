@@ -17,12 +17,12 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.RunJobManifestContext;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.*;
 import lombok.Data;
 import org.springframework.stereotype.Component;
@@ -34,51 +34,50 @@ public class KubernetesJobRunner implements JobRunner {
   private boolean katoResultExpected = false;
   private String cloudProvider = "kubernetes";
 
-  private ArtifactResolver artifactResolver;
+  private ArtifactUtils artifactUtils;
   private ObjectMapper objectMapper;
   private ManifestEvaluator manifestEvaluator;
 
   public KubernetesJobRunner(
-      ArtifactResolver artifactResolver,
-      ObjectMapper objectMapper,
-      ManifestEvaluator manifestEvaluator) {
-    this.artifactResolver = artifactResolver;
+      ArtifactUtils artifactUtils, ObjectMapper objectMapper, ManifestEvaluator manifestEvaluator) {
+    this.artifactUtils = artifactUtils;
     this.objectMapper = objectMapper;
     this.manifestEvaluator = manifestEvaluator;
   }
 
-  public List<Map> getOperations(Stage stage) {
+  public List<Map> getOperations(StageExecution stage) {
     Map<String, Object> operation = new HashMap<>();
 
-    if (stage.getContext().containsKey("cluster")) {
-      operation.putAll((Map) stage.getContext().get("cluster"));
-    } else {
-      operation.putAll(stage.getContext());
-    }
+    operation.putAll(stage.getContext());
 
-    RunJobManifestContext runJobManifestContext = stage.mapTo(RunJobManifestContext.class);
-    if (runJobManifestContext.getSource().equals(ManifestContext.Source.Artifact)) {
-      ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, runJobManifestContext);
+    operation.putAll(getManifestFields(stage));
 
-      List<Map<Object, Object>> manifests = result.getManifests();
-      if (manifests.size() != 1) {
-        throw new IllegalArgumentException("Run Job only supports manifests with a single Job.");
-      }
-
-      operation.put("source", "text");
-      operation.put("manifest", manifests.get(0));
-      operation.put("requiredArtifacts", result.getRequiredArtifacts());
-      operation.put("optionalArtifacts", result.getOptionalArtifacts());
-    }
-
-    KubernetesContainerFinder.populateFromStage(operation, stage, artifactResolver);
+    KubernetesContainerFinder.populateFromStage(operation, stage, artifactUtils);
 
     Map<String, Object> task = new HashMap<>();
     task.put(OPERATION, operation);
     return Collections.singletonList(task);
   }
 
-  public Map<String, Object> getAdditionalOutputs(Stage stage, List<Map> operations) {
+  // Gets the fields relevant to manifests that should be added to the operation
+  private ImmutableMap<String, Object> getManifestFields(StageExecution stage) {
+    RunJobManifestContext runJobManifestContext = stage.mapTo(RunJobManifestContext.class);
+
+    ManifestEvaluator.Result result = manifestEvaluator.evaluate(stage, runJobManifestContext);
+
+    List<Map<Object, Object>> manifests = result.getManifests();
+    if (manifests.size() != 1) {
+      throw new IllegalArgumentException("Run Job only supports manifests with a single Job.");
+    }
+
+    return ImmutableMap.of(
+        "source", "text",
+        "manifest", manifests.get(0),
+        "requiredArtifacts", result.getRequiredArtifacts(),
+        "optionalArtifacts", result.getOptionalArtifacts());
+  }
+
+  public Map<String, Object> getAdditionalOutputs(StageExecution stage, List<Map> operations) {
     Map<String, Object> outputs = new HashMap<>();
     Map<String, Object> execution = new HashMap<>();
 

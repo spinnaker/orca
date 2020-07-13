@@ -16,12 +16,14 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+
 import java.util.concurrent.TimeUnit
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import org.slf4j.MDC
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -34,7 +36,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
 
   @Subject task = new WaitForUpInstancesTask() {
     @Override
-    void verifyServerGroupsExist(Stage stage) {
+    void verifyServerGroupsExist(StageExecution stage) {
       // do nothing
     }
   }
@@ -47,7 +49,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
 
   void "should check cluster to get server groups"() {
     given:
-    def pipeline = Execution.newPipeline("orca")
+    def pipeline = PipelineExecutionImpl.newPipeline("orca")
     task.objectMapper = mapper
     def response = new Response('oort', 200, 'ok', [], new TypedString(mapper.writeValueAsString([
       name        : "front50",
@@ -109,7 +111,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
     }
 
     and:
-    def stage = new Stage(pipeline, "whatever", [
+    def stage = new StageExecutionImpl(pipeline, "whatever", [
       "account.name"                  : "test",
       "targetop.asg.enableAsg.name"   : "front50-v000",
       "targetop.asg.enableAsg.regions": ["us-west-1", "us-east-1"]
@@ -132,7 +134,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
     def instances = [[health: [[state: 'Up']]]]
 
     expect:
-    !task.hasSucceeded(new Stage(Execution.newPipeline("orca"), "", "", [:]), serverGroup, instances, null)
+    !task.hasSucceeded(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", [:]), serverGroup, instances, null)
 
     where:
     serverGroup << [null, [:], [asg: [], capacity: [],]]
@@ -143,7 +145,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
   void 'should return #hasSucceeded for hasSucceeded when targetHealthyDeployPercentage is #percent and #healthy/#total instances are healthy'() {
     expect:
     def instances = []
-    (1..healthy).each {
+    healthy.times {
       instances << [health: [[state: 'Up']]]
     }
     def serverGroup = [
@@ -155,7 +157,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
       ]
     ]
     hasSucceeded == task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", [
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", [
         targetHealthyDeployPercentage: percent
       ]
       ), serverGroup, instances, null
@@ -172,24 +174,26 @@ class WaitForUpInstancesTaskSpec extends Specification {
     // zero percent (should always return true)
     0       | 1       | 2     || true
     0       | 0       | 100   || true
+    100     | 0       | 0     || true
 
     // >= checks
     89      | 9       | 10    || true
     90      | 9       | 10    || true
     90      | 8       | 10    || false
-    91      | 9       | 10    || false
+    91      | 9       | 10    || true
+    95      | 9       | 10    || false
 
-    // verify ceiling
+    // verify round
     90      | 10      | 11    || true
-    90      | 8       | 9     || false
-
+    90      | 8       | 9     || true
+    95      | 8       | 9     || false
   }
 
   @Unroll
   void 'should return #hasSucceeded for hasSucceeded when desiredPercentage is #percent and #healthy/#total instances are healthy'() {
     expect:
     def instances = []
-    (1..healthy).each {
+    healthy.times {
       instances << [health: [[state: 'Up']]]
     }
     def serverGroup = [
@@ -203,7 +207,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
       ]
     ]
     hasSucceeded == task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", [
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", [
         desiredPercentage: percent
       ]
       ), serverGroup, instances, null
@@ -227,7 +231,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
     90      | 8       | 10    | 10  | 10  || false
     91      | 9       | 10    | 10  | 10  || false
 
-    // verify ceiling
+    // verify round
     90      | 10      | 11    | 10  | 11  || true
     90      | 8       | 9     | 9   | 9   || false
 
@@ -254,7 +258,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
 
     then:
     task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", context),
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", context),
       serverGroup, instances, null
     )
   }
@@ -282,7 +286,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
 
     then:
     task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", context),
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", context),
       serverGroup, instances, null
     )
   }
@@ -310,13 +314,13 @@ class WaitForUpInstancesTaskSpec extends Specification {
     }
 
     def instances = []
-    (1..healthy).each {
+    healthy.times {
       instances << [health: [[state: 'Up']]]
     }
 
     then:
     result == task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", context),
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", context),
       serverGroup, instances, null
     )
 
@@ -363,13 +367,13 @@ class WaitForUpInstancesTaskSpec extends Specification {
     }
 
     def instances = []
-    (1..healthy).each {
+    healthy.times {
       instances << [health: [[state: 'Up']]]
     }
 
     then:
     result == task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", context),
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", context),
       serverGroup, instances, null
     )
 
@@ -402,7 +406,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
   void 'should throw an exception if targetHealthyDeployPercentage is not between 0 and 100'() {
     when:
     task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", [
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", [
         targetHealthyDeployPercentage: percent
       ]
       ), [asg: [desiredCapacity: 2], capacity: [desired: 2]], [], null
@@ -425,7 +429,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
       ]
     ]
     def serverGroup = [asg: [desiredCapacity: 0], capacity: [desired: 0]]
-    hasSucceeded == task.hasSucceeded(new Stage(Execution.newPipeline("orca"), "", "", context), serverGroup, [], null)
+    hasSucceeded == task.hasSucceeded(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", context), serverGroup, [], null)
 
     where:
     hasSucceeded || counter | snapshotCapacity
@@ -440,7 +444,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
   void 'should succeed as #hasSucceeded based on instance providers #healthProviderNames for instances #instances'() {
     expect:
     hasSucceeded == task.hasSucceeded(
-      new Stage(Execution.newPipeline("orca"), "", "", [:]), [asg: [desiredCapacity: desiredCapacity], capacity: [desired: desiredCapacity]], instances, healthProviderNames
+      new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", "", [:]), [asg: [desiredCapacity: desiredCapacity], capacity: [desired: desiredCapacity]], instances, healthProviderNames
     )
 
     where:

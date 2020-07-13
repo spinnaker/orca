@@ -14,28 +14,40 @@
  * limitations under the License.
  */
 
+['fiat', 'keiko', 'kork'].each { prj ->
+  String propName = "${prj}Composite"
+  String projectPath = "../$prj"
+  if (settings.ext.has(propName) && Boolean.parseBoolean(settings.ext.get(propName) as String)) {
+    includeBuild projectPath
+  }
+}
+
 include "orca-api",
+  "orca-api-tck",
   "orca-applications",
   "orca-bakery",
   "orca-bom",
   "orca-clouddriver",
+  "orca-clouddriver-provider-titus",
   "orca-core-tck",
   "orca-core",
   "orca-deploymentmonitor",
   "orca-dry-run",
   "orca-echo",
-  "orca-eureka",
   "orca-flex",
   "orca-front50",
   "orca-igor",
   "orca-integrations-cloudfoundry",
   "orca-integrations-gremlin",
+  "orca-interlink",
   "orca-kayenta",
   "orca-keel",
   "orca-kotlin",
   "orca-migration",
   "orca-mine",
+  "orca-peering",
   "orca-pipelinetemplate",
+  "orca-plugins-test",
   "orca-qos",
   "orca-queue-redis",
   "orca-queue-sql",

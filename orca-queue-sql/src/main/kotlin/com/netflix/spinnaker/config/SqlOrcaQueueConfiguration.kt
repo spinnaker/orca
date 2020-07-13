@@ -21,21 +21,21 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spinnaker.orca.TaskResolver
-import com.netflix.spinnaker.orca.pipeline.model.Execution
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.q.migration.ExecutionTypeDeserializer
 import com.netflix.spinnaker.orca.q.migration.TaskTypeDeserializer
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.migration.SerializationMigrator
 import com.netflix.spinnaker.q.sql.SqlDeadMessageHandler
 import com.netflix.spinnaker.q.sql.SqlQueue
+import java.time.Clock
+import java.util.Optional
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.time.Clock
-import java.util.Optional
 
 @Configuration
 @EnableConfigurationProperties(ObjectMapperSubtypeProperties::class)
@@ -55,7 +55,7 @@ class SqlOrcaQueueConfiguration : SqlQueueConfiguration() {
       registerModule(KotlinModule())
       registerModule(
         SimpleModule()
-          .addDeserializer(Execution.ExecutionType::class.java, ExecutionTypeDeserializer())
+          .addDeserializer(ExecutionType::class.java, ExecutionTypeDeserializer())
           .addDeserializer(Class::class.java, TaskTypeDeserializer(taskResolver))
       )
       disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

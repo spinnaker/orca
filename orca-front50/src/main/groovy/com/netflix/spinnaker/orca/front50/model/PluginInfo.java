@@ -18,31 +18,38 @@ package com.netflix.spinnaker.orca.front50.model;
 
 import java.util.List;
 import javax.annotation.Nonnull;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PluginInfo {
   @Nonnull private String id;
   private String description;
   private String provider;
   @Nonnull private List<Release> releases;
+  private String homepage;
+  private Repository repository;
 
   @Data
   public static class Release {
     private String version;
     private String date;
 
-    private List<String> requires;
+    private String requires;
     private String url;
     private String sha512sum;
-    private State state;
+    private boolean preferred;
     private String lastModifiedBy;
+  }
 
-    public enum State {
-      CANDIDATE,
-      RELEASE
-    }
+  @Data
+  public static class Repository {
+    private String type;
+    private String url;
   }
 }

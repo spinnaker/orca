@@ -19,18 +19,19 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
+import com.netflix.spinnaker.orca.pipelinetemplate.exceptions.PipelineMissingTemplateVariabledException
 import com.netflix.spinnaker.orca.pipelinetemplate.handler.DefaultHandlerChain
 import com.netflix.spinnaker.orca.pipelinetemplate.handler.GlobalPipelineTemplateContext
 import com.netflix.spinnaker.orca.pipelinetemplate.handler.PipelineTemplateContext
 import com.netflix.spinnaker.orca.pipelinetemplate.handler.PipelineTemplateErrorHandler
 import com.netflix.spinnaker.orca.pipelinetemplate.handler.SchemaVersionHandler
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.model.V2PipelineTemplate
+import javax.annotation.Nonnull
+import javax.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import javax.annotation.Nonnull
-import javax.annotation.PostConstruct
 
 @Component("pipelineTemplatePreprocessor")
 @Order(2)
@@ -71,8 +72,6 @@ class PipelineTemplatePreprocessor
       return pipeline
     }
 
-    log.debug("Starting handler chain")
-
     val chain = DefaultHandlerChain()
     val context = GlobalPipelineTemplateContext(chain, request)
 
@@ -88,7 +87,11 @@ class PipelineTemplatePreprocessor
           throw IrrecoverableConditionException(t)
         }
 
-        log.error("Unexpected error occurred while processing template: ", context.getRequest().getId(), t)
+        // Missing variables is a very common error and not really an exception, just a user forgetting to specify all variables
+        // No point logging anything in this case - it's just noise
+        if (t !is PipelineMissingTemplateVariabledException) {
+          log.error("Unexpected error occurred while processing template: ", context.getRequest().getId(), t)
+        }
         context.getCaughtThrowables().add(t)
         chain.clear()
       }
@@ -101,7 +104,6 @@ class PipelineTemplatePreprocessor
 
     recordRequest(context, !context.getErrors().hasErrors(false))
 
-    log.debug("Handler chain complete")
     return context.getProcessedOutput()
   }
 

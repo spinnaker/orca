@@ -18,16 +18,15 @@ package com.netflix.spinnaker.orca.bakery.tasks
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.web.selector.v2.SelectableService
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.bakery.BakerySelector
 import com.netflix.spinnaker.orca.bakery.api.Bake
 import com.netflix.spinnaker.orca.bakery.api.BakeStatus
 import com.netflix.spinnaker.orca.bakery.api.BakeryService
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
 import retrofit.client.Response
-import rx.Observable
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -38,7 +37,7 @@ class CompletedBakeTaskSpec extends Specification {
 
   @Subject task = new CompletedBakeTask()
 
-  @Shared Execution pipeline = pipeline()
+  @Shared PipelineExecutionImpl pipeline = pipeline()
 
   @Shared notFoundError = RetrofitError.httpError(
     null,
@@ -50,7 +49,7 @@ class CompletedBakeTaskSpec extends Specification {
   def "finds the AMI and artifact created by a bake"() {
     given:
     def bakery = Stub(BakeryService) {
-      lookupBake(region, bakeId) >> Observable.from(new Bake(id: bakeId, ami: ami, artifact: artifact))
+      lookupBake(region, bakeId) >> new Bake(id: bakeId, ami: ami, artifact: artifact)
     }
 
     task.bakerySelector = Mock(BakerySelector)
@@ -64,7 +63,7 @@ class CompletedBakeTaskSpec extends Specification {
     }
 
     and:
-    def stage = new Stage(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
+    def stage = new StageExecutionImpl(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
 
     when:
     def result = task.execute(stage)
@@ -99,7 +98,7 @@ class CompletedBakeTaskSpec extends Specification {
     }
 
     and:
-    def stage = new Stage(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
+    def stage = new StageExecutionImpl(pipeline, "bake", [region: region, status: new BakeStatus(resourceId: bakeId)])
 
     when:
     task.execute(stage)

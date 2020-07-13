@@ -19,15 +19,15 @@ package com.netflix.spinnaker.orca.bakery.tasks.manifests;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
 import com.netflix.spinnaker.orca.bakery.api.manifests.helm.HelmBakeManifestRequest;
 import com.netflix.spinnaker.orca.bakery.api.manifests.kustomize.KustomizeBakeManifestRequest;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,23 +57,23 @@ public class CreateBakeManifestTask implements RetryableTask {
 
   @Nullable private final BakeryService bakery;
 
-  private final ArtifactResolver artifactResolver;
+  private final ArtifactUtils artifactUtils;
 
   private final ContextParameterProcessor contextParameterProcessor;
 
   @Autowired
   public CreateBakeManifestTask(
-      ArtifactResolver artifactResolver,
+      ArtifactUtils artifactUtils,
       ContextParameterProcessor contextParameterProcessor,
       Optional<BakeryService> bakery) {
-    this.artifactResolver = artifactResolver;
+    this.artifactUtils = artifactUtils;
     this.contextParameterProcessor = contextParameterProcessor;
     this.bakery = bakery.orElse(null);
   }
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     if (bakery == null) {
       throw new IllegalStateException(
           "A BakeryService must be configured in order to run a Bake Manifest task.");
@@ -91,15 +91,14 @@ public class CreateBakeManifestTask implements RetryableTask {
             .map(
                 p -> {
                   Artifact a =
-                      artifactResolver.getBoundArtifactForStage(stage, p.getId(), p.getArtifact());
+                      artifactUtils.getBoundArtifactForStage(stage, p.getId(), p.getArtifact());
                   if (a == null) {
                     throw new IllegalArgumentException(
                         String.format(
                             "Input artifact (id: %s, account: %s) could not be found in execution (id: %s).",
                             p.getId(), p.getAccount(), stage.getExecution().getId()));
                   }
-                  a.setArtifactAccount(p.getAccount());
-                  return a;
+                  return ArtifactUtils.withAccount(a, p.getAccount());
                 })
             .collect(Collectors.toList());
 
@@ -107,7 +106,8 @@ public class CreateBakeManifestTask implements RetryableTask {
 
     if (expectedArtifacts.size() != 1) {
       throw new IllegalArgumentException(
-          "Exactly one expected artifact must be supplied. Please ensure that your Bake stage config's `expectedArtifacts` list contains exactly one artifact.");
+          "The Bake (Manifest) stage produces one embedded base64 artifact.  Please ensure that your Bake (Manifest) stage"
+              + " config's `Produces Artifacts` section (`expectedArtifacts` field) contains exactly one artifact.");
     }
 
     String outputArtifactName = expectedArtifacts.get(0).getMatchArtifact().getName();
@@ -124,6 +124,7 @@ public class CreateBakeManifestTask implements RetryableTask {
 
     BakeManifestRequest request;
     switch (context.getTemplateRenderer().toUpperCase()) {
+      case "HELM3":
       case "HELM2":
         request =
             new HelmBakeManifestRequest(

@@ -16,14 +16,16 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.snapshot
 
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+
+import javax.annotation.Nonnull
 
 @Component
 class RestoreSnapshotTask extends AbstractCloudProviderAwareTask implements Task {
@@ -31,14 +33,14 @@ class RestoreSnapshotTask extends AbstractCloudProviderAwareTask implements Task
   @Autowired
   KatoService kato
 
+  @Nonnull
   @Override
-  TaskResult execute(Stage stage) {
+  TaskResult execute(@Nonnull StageExecution stage) {
     String cloudProvider = getCloudProvider(stage)
     String account = getCredentials(stage)
     //TODO(nwwebb) emit events to echo for every resource that is being restored or destroyed
     def taskId = kato.requestOperations(cloudProvider, [[restoreSnapshot: stage.context]])
-      .toBlocking()
-      .first()
+
     Map outputs = [
       "notification.type"       : "restoresnapshot",
       "kato.last.task.id"       : taskId,

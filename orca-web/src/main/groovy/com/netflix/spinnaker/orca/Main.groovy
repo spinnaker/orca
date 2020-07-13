@@ -16,12 +16,6 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.config.ErrorConfiguration
-import com.netflix.spinnaker.config.QosConfiguration
-import com.netflix.spinnaker.config.StackdriverConfig
-import com.netflix.spinnaker.config.TomcatConfiguration
-import com.netflix.spinnaker.kork.PlatformComponents
-import com.netflix.spinnaker.kork.plugins.spring.SpinnakerApplication
 import com.netflix.spinnaker.orca.applications.config.ApplicationConfig
 import com.netflix.spinnaker.orca.bakery.config.BakeryConfiguration
 import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfiguration
@@ -33,7 +27,6 @@ import com.netflix.spinnaker.orca.config.OrcaConfiguration
 import com.netflix.spinnaker.orca.config.PipelineTemplateConfiguration
 import com.netflix.spinnaker.orca.config.RedisConfiguration
 import com.netflix.spinnaker.orca.echo.config.EchoConfiguration
-import com.netflix.spinnaker.orca.eureka.DiscoveryPollingConfiguration
 import com.netflix.spinnaker.orca.flex.config.FlexConfiguration
 import com.netflix.spinnaker.orca.front50.config.Front50Configuration
 import com.netflix.spinnaker.orca.igor.config.IgorConfiguration
@@ -41,28 +34,18 @@ import com.netflix.spinnaker.orca.kayenta.config.KayentaConfiguration
 import com.netflix.spinnaker.orca.mine.config.MineConfiguration
 import com.netflix.spinnaker.orca.web.config.WebConfiguration
 import com.netflix.spinnaker.orca.webhook.config.WebhookConfiguration
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
 import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.scheduling.annotation.EnableAsync
 
-@Configuration
 @EnableAsync
-@EnableAutoConfiguration(exclude = [
-  BatchAutoConfiguration,
-  GroovyTemplateAutoConfiguration,
-  DataSourceAutoConfiguration
-])
 @Import([
-  PlatformComponents,
   WebConfiguration,
-  ErrorConfiguration,
   OrcaConfiguration,
   RedisConfiguration,
   BakeryConfiguration,
@@ -72,23 +55,22 @@ import org.springframework.scheduling.annotation.EnableAsync
   CloudDriverConfiguration,
   ClouddriverJobConfiguration,
   IgorConfiguration,
-  DiscoveryPollingConfiguration,
-  TomcatConfiguration,
   MineConfiguration,
   ApplicationConfig,
-  StackdriverConfig,
   PipelineTemplateConfiguration,
   KayentaConfiguration,
   WebhookConfiguration,
   KeelConfiguration,
-  QosConfiguration,
   CloudFoundryConfiguration,
-  GremlinConfiguration
+  GremlinConfiguration,
 ])
-@ComponentScan([
-  "com.netflix.spinnaker.config", "com.netflix.spinnaker.plugin"
-])
-class Main extends SpinnakerApplication {
+@SpringBootApplication(
+    scanBasePackages = [
+        "com.netflix.spinnaker.config"
+    ],
+    exclude = [BatchAutoConfiguration, GroovyTemplateAutoConfiguration, DataSourceAutoConfiguration]
+)
+class Main extends SpringBootServletInitializer {
   static final Map<String, String> DEFAULT_PROPS = [
     'netflix.environment'              : 'test',
     'netflix.account'                  : '${netflix.environment}',
@@ -100,7 +82,7 @@ class Main extends SpinnakerApplication {
   ]
 
   static void main(String... args) {
-    SpinnakerApplication.initialize(DEFAULT_PROPS, Main, args)
+    new SpringApplicationBuilder().properties(DEFAULT_PROPS).sources(Main).run(args)
   }
 
   @Override

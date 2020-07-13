@@ -10,33 +10,30 @@ default:
 
 front50:
   enabled: true
-  baseUrl: http://localhost:8080
+  baseUrl: ${services.front50.baseUrl:http://localhost:8080}
 tide:
   baseUrl: http://localhost:8090
 oort:
-  baseUrl: http://localhost:7002
+  baseUrl: ${services.clouddriver.baseUrl:http://localhost:7002}
 mort:
-  baseUrl: http://localhost:7002
+  baseUrl: ${services.clouddriver.baseUrl:http://localhost:7002}
 kato:
-  baseUrl: http://localhost:7002
+  baseUrl: ${services.clouddriver.baseUrl:http://localhost:7002}
 echo:
-  enabled: false
+  enabled: true
+  baseUrl: ${services.echo.baseUrl:http://localhost:8089}
 igor:
   enabled: true
-  baseUrl: http://localhost:8088
+  baseUrl: ${services.igor.baseUrl:http://localhost:8088}
 bakery:
   enabled: true
-  baseUrl: http://localhost:8087
-  # Rosco exposes more endpoints than Netflix's internal bakery. This disables
-  # the use of those endpoints.
-  roscoApisEnabled: true
-  allowMissingPackageInstallation: false
+  baseUrl: ${services.rosco.baseUrl:http://localhost:8087}
 kayenta:
-  enabled: false
-  baseUrl: http://localhost:8090
+  enabled: ${services.kayenta.enabled:false}
+  baseUrl: ${services.kayenta.baseUrl:http://localhost:8090}
 
 redis:
-  connection: ${REDIS_URL:redis://localhost:6379}
+  connection: ${services.redis.baseUrl:redis://localhost:6379}
 
 keiko:
   queue:
@@ -47,6 +44,8 @@ keiko:
 
 tasks:
   useWaitForAllNetflixAWSInstancesDownTask: false
+  executionWindow:
+    timezone: ${global.spinnaker.timezone:America/Los_Angeles}
 
 logging:
   config: classpath:logback-defaults.xml
@@ -62,11 +61,6 @@ resilience4j.retry:
     katoRetrofitServiceWriter:
       retryExceptions:
         - retrofit.RetrofitError
-
-integrations:
-  gremlin:
-    enabled: false
-    baseUrl: https://api.gremlin.com/v1
 
 # This configuration lets you configure Webhook stages that will appear as native stages in the Deck UI.
 # Properties that are set here will not be displayed in the GUI
@@ -92,6 +86,10 @@ integrations:
 #      failFastStatusCodes:
 #        - 404
 #        - 501
+#      signalCancellation: true
+#      cancelEndpoint: https://my.webhook.com/cancel
+#      cancelMethod: POST
+#      cancelPayload: "{}"
 #      waitForCompletion: true
 #      # The rest of the properties are only used if waitForCompletion == true
 #      statusUrlResolution: webhookResponse # getMethod, locationHeader, webhookResponse

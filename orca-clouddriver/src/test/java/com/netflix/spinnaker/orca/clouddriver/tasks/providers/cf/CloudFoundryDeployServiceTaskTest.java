@@ -21,10 +21,11 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import rx.Observable;
 
 class CloudFoundryDeployServiceTaskTest {
   @Test
@@ -57,18 +57,17 @@ class CloudFoundryDeployServiceTaskTest {
         new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     KatoService katoService = mock(KatoService.class);
-    when(katoService.requestOperations(any(), any()))
-        .thenReturn(Observable.just(new TaskId("taskid")));
+    when(katoService.requestOperations(any(), any())).thenReturn(new TaskId("taskid"));
 
     ManifestEvaluator manifestEvaluator = mock(ManifestEvaluator.class);
-    List<Map<Object, Object>> returnedManifests =
-        Collections.singletonList(Collections.singletonMap("serviceNameInstance", "foo"));
+    ImmutableList<Map<Object, Object>> returnedManifests =
+        ImmutableList.of(Collections.singletonMap("serviceNameInstance", "foo"));
     when(manifestEvaluator.evaluate(any(), any()))
         .thenReturn(new ManifestEvaluator.Result(returnedManifests, null, null));
 
     CloudFoundryDeployServiceTask task =
         new CloudFoundryDeployServiceTask(mapper, katoService, manifestEvaluator);
-    Stage stage = new Stage();
+    StageExecutionImpl stage = new StageExecutionImpl();
     stage.setContext(mapper.readValue(stageJson, Map.class));
     task.execute(stage);
 

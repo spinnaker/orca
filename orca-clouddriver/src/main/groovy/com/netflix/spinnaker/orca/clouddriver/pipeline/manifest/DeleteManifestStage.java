@@ -17,14 +17,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeleteManifestTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DynamicResolveManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestForceCacheRefreshTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.PromoteManifestKatoOutputsTask;
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.TaskNode;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ResolveTargetManifestTask;
+import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,9 +33,9 @@ public class DeleteManifestStage implements StageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "deleteManifest";
 
   @Override
-  public void taskGraph(Stage stage, TaskNode.Builder builder) {
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
-        .withTask(DynamicResolveManifestTask.TASK_NAME, DynamicResolveManifestTask.class)
+        .withTask(ResolveTargetManifestTask.TASK_NAME, ResolveTargetManifestTask.class)
         .withTask(DeleteManifestTask.TASK_NAME, DeleteManifestTask.class)
         .withTask("monitorDelete", MonitorKatoTask.class)
         .withTask(PromoteManifestKatoOutputsTask.TASK_NAME, PromoteManifestKatoOutputsTask.class)

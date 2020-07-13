@@ -18,12 +18,13 @@ package com.netflix.spinnaker.orca.config;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.jedis.JedisClientConfiguration;
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
+import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.notifications.RedisClusterNotificationClusterLock;
 import com.netflix.spinnaker.orca.notifications.RedisNotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.persistence.jedis.RedisExecutionRepository;
-import com.netflix.spinnaker.orca.telemetry.RedisInstrumentedExecutionRepository;
+import java.util.Collections;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,9 +33,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.*;
 import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPoolConfig;
 import rx.Scheduler;
 
 @Configuration
+@ConditionalOnProperty(value = "redis.enabled", matchIfMissing = true)
 @Import({JedisClientConfiguration.class, JedisConfiguration.class})
 public class RedisConfiguration {
 
@@ -52,15 +55,16 @@ public class RedisConfiguration {
       @Qualifier("queryByAppScheduler") Scheduler queryByAppScheduler,
       @Value("${chunk-size.execution-repository:75}") Integer threadPoolChunkSize,
       @Value("${keiko.queue.redis.queue-name:}") String bufferedPrefix) {
-    return new RedisInstrumentedExecutionRepository(
+    ExecutionRepository repository =
         new RedisExecutionRepository(
             registry,
             redisClientSelector,
             queryAllScheduler,
             queryByAppScheduler,
             threadPoolChunkSize,
-            bufferedPrefix),
-        registry);
+            bufferedPrefix);
+    return InstrumentedProxy.proxy(
+        registry, repository, "redis.executionRepository", Collections.emptyMap());
   }
 
   @Bean
@@ -84,7 +88,7 @@ public class RedisConfiguration {
   @Bean
   @ConfigurationProperties("redis")
   public GenericObjectPoolConfig redisPoolConfig() {
-    GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+    GenericObjectPoolConfig config = new JedisPoolConfig();
     config.setMaxTotal(100);
     config.setMaxIdle(100);
     config.setMinIdle(25);

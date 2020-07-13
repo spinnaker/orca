@@ -17,52 +17,52 @@
 package com.netflix.spinnaker.orca.pipeline.util;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
-import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import java.util.Collection;
+import com.netflix.spinnaker.orca.StageResolver;
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Provides an enhanced version of {@link Stage#ancestors()} that returns tuples of the ancestor
- * stages and their {@link StageDefinitionBuilder}s.
+ * Provides an enhanced version of {@link StageExecution#ancestors()} that returns tuples of the
+ * ancestor stages and their {@link StageDefinitionBuilder}s.
  */
 @Component
 public class StageNavigator {
-  private final Map<String, StageDefinitionBuilder> stageDefinitionBuilders;
+  private final StageResolver stageResolver;
 
   @Autowired
-  public StageNavigator(Collection<StageDefinitionBuilder> stageDefinitionBuilders) {
-    this.stageDefinitionBuilders =
-        stageDefinitionBuilders.stream()
-            .collect(toMap(StageDefinitionBuilder::getType, Function.identity()));
+  public StageNavigator(StageResolver stageResolver) {
+    this.stageResolver = stageResolver;
   }
 
   /**
    * As per `Stage.ancestors` except this method returns tuples of the stages and their
    * `StageDefinitionBuilder`.
    */
-  public List<Result> ancestors(Stage startingStage) {
+  public List<Result> ancestors(StageExecution startingStage) {
     return startingStage.ancestors().stream()
-        .map(it -> new Result(it, stageDefinitionBuilders.get(it.getType())))
+        .map(
+            it ->
+                new Result(
+                    it,
+                    stageResolver.getStageDefinitionBuilder(
+                        it.getType(), (String) it.getContext().get("alias"))))
         .collect(toList());
   }
 
   public static class Result {
-    private final Stage stage;
+    private final StageExecution stage;
     private final StageDefinitionBuilder stageBuilder;
 
-    Result(Stage stage, StageDefinitionBuilder stageBuilder) {
+    Result(StageExecution stage, StageDefinitionBuilder stageBuilder) {
       this.stage = stage;
       this.stageBuilder = stageBuilder;
     }
 
-    public Stage getStage() {
+    public StageExecution getStage() {
       return stage;
     }
 

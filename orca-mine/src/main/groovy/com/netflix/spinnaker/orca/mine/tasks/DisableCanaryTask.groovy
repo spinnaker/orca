@@ -16,18 +16,19 @@
 
 package com.netflix.spinnaker.orca.mine.tasks
 
-import com.netflix.spinnaker.orca.ExecutionStatus
-import com.netflix.spinnaker.orca.Task
-import com.netflix.spinnaker.orca.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.Task
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
 import com.netflix.spinnaker.orca.mine.MineService
-import com.netflix.spinnaker.orca.pipeline.model.Stage
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
-import static com.netflix.spinnaker.orca.mine.pipeline.CanaryStage.DEFAULT_CLUSTER_DISABLE_WAIT_TIME
+
+import javax.annotation.Nonnull
 
 @Component
 @Slf4j
@@ -36,17 +37,14 @@ class DisableCanaryTask extends AbstractCloudProviderAwareTask implements Task {
   @Autowired MineService mineService
   @Autowired KatoService katoService
 
+  @Nonnull
   @Override
-  TaskResult execute(Stage stage) {
-
-    Integer waitTime = stage.context.clusterDisableWaitTime != null ? stage.context.clusterDisableWaitTime : DEFAULT_CLUSTER_DISABLE_WAIT_TIME
-
+  TaskResult execute(@Nonnull StageExecution stage) {
     try {
       def canary = mineService.getCanary(stage.context.canary.id)
       if (canary.health?.health == 'UNHEALTHY' || stage.context.unhealthy != null) {
         // If unhealthy, already disabled in MonitorCanaryTask
         return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
-          waitTime  : waitTime,
           unhealthy : true
         ]).build()
       }
@@ -61,13 +59,12 @@ class DisableCanaryTask extends AbstractCloudProviderAwareTask implements Task {
 
     log.info "Disabling ${selector} in ${stage.id} with ${ops}"
     String cloudProvider = ops && !ops.empty ? ops.first()?.values().first()?.cloudProvider : getCloudProvider(stage) ?: 'aws'
-    def taskId = katoService.requestOperations(cloudProvider, ops).toBlocking().first()
+    def taskId = katoService.requestOperations(cloudProvider, ops)
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
       'kato.last.task.id'    : taskId,
       'deploy.server.groups' : dSG,
-      disabledCluster        : selector,
-      waitTime               : waitTime
+      disabledCluster        : selector
     ]).build()
   }
 }

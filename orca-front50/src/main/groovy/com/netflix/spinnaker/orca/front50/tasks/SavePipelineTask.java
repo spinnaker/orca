@@ -16,12 +16,12 @@
 package com.netflix.spinnaker.orca.front50.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.RetryableTask;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
@@ -47,7 +47,7 @@ public class SavePipelineTask implements RetryableTask {
 
   @SuppressWarnings("unchecked")
   @Override
-  public TaskResult execute(Stage stage) {
+  public TaskResult execute(StageExecution stage) {
     if (front50Service == null) {
       throw new UnsupportedOperationException(
           "Front50 is not enabled, no way to save pipeline. Fix this by setting front50.enabled: true");
@@ -57,20 +57,12 @@ public class SavePipelineTask implements RetryableTask {
       throw new IllegalArgumentException("pipeline context must be provided");
     }
 
+    Map<String, Object> pipeline;
     if (!(stage.getContext().get("pipeline") instanceof String)) {
-      throw new IllegalArgumentException(
-          "'pipeline' context key must be a base64-encoded string: Ensure you're on the most recent version of gate");
+      pipeline = (Map<String, Object>) stage.getContext().get("pipeline");
+    } else {
+      pipeline = (Map<String, Object>) stage.decodeBase64("/pipeline", Map.class);
     }
-
-    byte[] pipelineData;
-    try {
-      pipelineData = Base64.getDecoder().decode((String) stage.getContext().get("pipeline"));
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("pipeline must be encoded as base64", e);
-    }
-    log.info("Expanded encoded pipeline:" + new String(pipelineData));
-
-    Map<String, Object> pipeline = (Map<String, Object>) stage.decodeBase64("/pipeline", Map.class);
 
     if (!pipeline.containsKey("index")) {
       Map<String, Object> existingPipeline = fetchExistingPipeline(pipeline);

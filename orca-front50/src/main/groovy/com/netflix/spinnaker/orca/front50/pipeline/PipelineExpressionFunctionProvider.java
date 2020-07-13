@@ -22,8 +22,8 @@ import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
-import com.netflix.spinnaker.orca.pipeline.model.Execution;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
@@ -54,11 +54,29 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
             "pipelineId",
             "Lookup pipeline ID given the name of the pipeline in the current application",
             new FunctionParameter(
-                Execution.class,
+                PipelineExecution.class,
                 "execution",
                 "The execution containing the currently executing stage"),
             new FunctionParameter(
-                String.class, "pipelineName", "A valid stage reference identifier")));
+                String.class, "pipelineName", "A valid stage reference identifier")),
+        new FunctionDefinition(
+            "pipelineIdOrNull",
+            "Lookup pipeline ID (or null if not found) given the name of the pipeline in the current application",
+            new FunctionParameter(
+                PipelineExecution.class,
+                "execution",
+                "The execution containing the currently executing stage"),
+            new FunctionParameter(
+                String.class, "pipelineName", "A valid stage reference identifier")),
+        new FunctionDefinition(
+            "pipelineIdInApplication",
+            "Lookup pipeline ID (or null if not found) given the name of the pipeline and the name of the application",
+            new FunctionParameter(
+                PipelineExecution.class,
+                "execution",
+                "The execution containing the currently executing stage"),
+            new FunctionParameter(String.class, "pipelineName", "The name of the pipeline"),
+            new FunctionParameter(String.class, "applicationName", "The name of the application")));
   }
 
   /**
@@ -66,46 +84,94 @@ public class PipelineExpressionFunctionProvider implements ExpressionFunctionPro
    *
    * @param execution the current execution
    * @param pipelineName name of the pipeline to lookup
-   * @return the id of the pipeline or null if pipeline not found
+   * @return the id of the pipeline or exception if pipeline not found
    */
-  public static String pipelineId(Execution execution, String pipelineName) {
+  public static String pipelineId(PipelineExecution execution, String pipelineName) {
     if (Strings.isNullOrEmpty(pipelineName)) {
       throw new SpelHelperFunctionException(
           "pipelineName must be specified for function #pipelineId");
     }
 
+    String currentApplication = execution.getApplication();
+    Map<String, Object> pipeline =
+        searchForPipelineInApplication("pipelineId", currentApplication, pipelineName);
+
+    if (pipeline == null) {
+      throw new SpelHelperFunctionException(
+          format(
+              "Pipeline with name '%s' could not be found on application %s",
+              pipelineName, currentApplication));
+    }
+
+    return (String) pipeline.get("id");
+  }
+
+  /**
+   * Function to convert pipeline name to pipeline ID (within current application), will return Null
+   * if pipeline ID not found
+   *
+   * @param execution the current execution
+   * @param pipelineName name of the pipeline to lookup
+   * @return the id of the pipeline or null if pipeline not found
+   */
+  public static String pipelineIdOrNull(PipelineExecution execution, String pipelineName) {
+    try {
+      return pipelineId(execution, pipelineName);
+    } catch (SpelHelperFunctionException e) {
+      if (e.getMessage().startsWith("Pipeline with name ")) {
+        return null;
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Function to convert pipeline name/application name to pipeline ID
+   *
+   * @param execution the current execution
+   * @param pipelineName name of the pipeline to lookup
+   * @param applicationName name of the application
+   * @return the id of the pipeline or null if pipeline not found
+   */
+  public static String pipelineIdInApplication(
+      PipelineExecution execution, String pipelineName, String applicationName) {
+    if (Strings.isNullOrEmpty(applicationName)) {
+      throw new SpelHelperFunctionException(
+          "applicationName must be specified for function #pipelineIdInApplication");
+    }
+
+    Map<String, Object> pipeline =
+        searchForPipelineInApplication("pipelineIdInApplication", applicationName, pipelineName);
+
+    if (pipeline == null) {
+      return null;
+    }
+
+    return (String) pipeline.get("id");
+  }
+
+  private static Map<String, Object> searchForPipelineInApplication(
+      String functionName, String applicationName, String pipelineName) {
     if (front50Service == null) {
       throw new SpelHelperFunctionException(
-          "front50 service is missing. It's required when using #pipelineId function");
+          String.format(
+              "front50 service is missing. It's required when using #%s function", functionName));
     }
 
     try {
-      String currentApplication = execution.getApplication();
-
       RetrySupport retrySupport = new RetrySupport();
-      Map<String, Object> pipeline =
-          retrySupport.retry(
-              () ->
-                  front50Service.getPipelines(currentApplication).stream()
-                      .filter(p -> pipelineName.equals(p.getOrDefault("name", null)))
-                      .findFirst()
-                      .orElse(null),
-              3,
-              1000,
-              true);
-
-      if (pipeline == null) {
-        throw new SpelHelperFunctionException(
-            format(
-                "Pipeline with name '%s' could not be found on application %s",
-                pipelineName, currentApplication));
-      }
-
-      return (String) pipeline.get("id");
-    } catch (SpelHelperFunctionException e) {
-      throw e;
+      return retrySupport.retry(
+          () ->
+              front50Service.getPipelines(applicationName).stream()
+                  .filter(p -> pipelineName.equals(p.getOrDefault("name", null)))
+                  .findFirst()
+                  .orElse(null),
+          3,
+          1000,
+          true);
     } catch (Exception e) {
-      throw new SpelHelperFunctionException("Failed to evaluate #pipelineId function", e);
+      throw new SpelHelperFunctionException(
+          String.format("Failed to evaluate #%s function", functionName), e);
     }
   }
 }

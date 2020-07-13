@@ -17,13 +17,14 @@
 package com.netflix.spinnaker.orca.front50.spring
 
 import com.netflix.spinnaker.fiat.shared.FiatStatus
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -34,7 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.stereotype.Component
 
-import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 
 @Slf4j
 @CompileDynamic
@@ -63,7 +64,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
   }
 
   @Override
-  void afterExecution(Persister persister, Execution execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
+  void afterExecution(Persister persister, PipelineExecution execution, ExecutionStatus executionStatus, boolean wasSuccessful) {
     if (!execution || !(execution.type == PIPELINE)) {
       return
     }
@@ -76,6 +77,10 @@ class DependentPipelineExecutionListener implements ExecutionListener {
        if (V2Util.isV2Pipeline(pipeline)) {
          try {
            return V2Util.planPipeline(contextParameterProcessor, executionPreprocessors, pipeline)
+         } catch (ValidationException ignored) {
+           // Really no point in logging this error out here - the user created a bad template, which has no relation
+           // to the currently executing pipeline
+           return null
          } catch (Exception e) {
            log.error("Failed to plan V2 templated pipeline {}", pipeline.getOrDefault("id", "<UNKNOWN ID>"), e)
            return null
@@ -123,7 +128,7 @@ class DependentPipelineExecutionListener implements ExecutionListener {
     }
   }
 
-  private static String convertStatus(Execution execution) {
+  private static String convertStatus(PipelineExecution execution) {
     switch (execution.status) {
       case ExecutionStatus.CANCELED:
         return 'canceled'

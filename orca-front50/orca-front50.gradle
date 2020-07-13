@@ -19,9 +19,13 @@ apply from: "$rootDir/gradle/groovy.gradle"
 dependencies {
   implementation(project(":orca-core"))
   implementation(project(":orca-retrofit"))
+
+  api("org.codehaus.groovy:groovy")
+
   implementation("com.netflix.spinnaker.fiat:fiat-api:$fiatVersion")
   implementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
   implementation("com.netflix.spectator:spectator-api")
+  implementation("org.jetbrains:annotations")
   implementation("org.springframework.boot:spring-boot-autoconfigure")
   implementation("org.springframework.security:spring-security-config")
   implementation("org.springframework.security:spring-security-core")

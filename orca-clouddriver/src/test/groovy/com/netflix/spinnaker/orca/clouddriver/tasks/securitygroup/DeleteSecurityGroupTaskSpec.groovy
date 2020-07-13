@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.securitygroup
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import spock.lang.Specification
@@ -41,7 +41,7 @@ class DeleteSecurityGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations('aws', *_) >> {
         operations = it[1]
-        rx.Observable.from(taskId)
+        taskId
       }
     }
 
@@ -66,7 +66,7 @@ class DeleteSecurityGroupTaskSpec extends Specification {
     task.kato = Mock(KatoService) {
       1 * requestOperations('aws', *_) >> {
         operations = it[1]
-        rx.Observable.from(taskId)
+        taskId
       }
     }
 
@@ -87,7 +87,7 @@ class DeleteSecurityGroupTaskSpec extends Specification {
   def "returns a success status with the kato task id"() {
     stage.context.putAll(config)
     task.kato = Stub(KatoService) {
-      requestOperations('aws', *_) >> rx.Observable.from(taskId)
+      requestOperations('aws', *_) >> taskId
     }
 
     when:

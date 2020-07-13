@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import spock.lang.Specification
@@ -48,7 +48,7 @@ class UpsertServerGroupTagsTaskSpec extends Specification {
       task.kato = Mock(KatoService) {
         1 * requestOperations("abc", _) >> {
           operations = it[1]
-          rx.Observable.from(taskId)
+          taskId
         }
       }
 
@@ -70,7 +70,7 @@ class UpsertServerGroupTagsTaskSpec extends Specification {
   def "returns a success status with the kato task id"() {
     given:
       task.kato = Stub(KatoService) {
-        requestOperations(*_) >> rx.Observable.from(taskId)
+        requestOperations(*_) >> taskId
       }
 
     when:

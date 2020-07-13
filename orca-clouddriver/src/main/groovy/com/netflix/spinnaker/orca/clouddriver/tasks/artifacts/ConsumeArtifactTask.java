@@ -20,16 +20,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Objects;
-import lombok.NonNull;
+import java.util.Optional;
+import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 import retrofit.client.Response;
 
@@ -37,29 +38,31 @@ import retrofit.client.Response;
 public class ConsumeArtifactTask implements Task {
   public static final String TASK_NAME = "consumeArtifact";
 
-  private ArtifactResolver artifactResolver;
+  private ArtifactUtils artifactUtils;
   private OortService oort;
   private RetrySupport retrySupport;
   private ObjectMapper objectMapper = new ObjectMapper();
 
   public ConsumeArtifactTask(
-      ArtifactResolver artifactResolver, OortService oortService, RetrySupport retrySupport) {
-    this.artifactResolver = artifactResolver;
+      ArtifactUtils artifactUtils, OortService oortService, RetrySupport retrySupport) {
+    this.artifactUtils = artifactUtils;
     this.oort = oortService;
     this.retrySupport = retrySupport;
   }
 
+  @Nonnull
   @Override
-  public TaskResult execute(@NonNull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     Map<String, Object> task = stage.getContext();
     String artifactId = (String) task.get("consumeArtifactId");
 
-    Artifact artifact = artifactResolver.getBoundArtifactForId(stage, artifactId);
-    if (artifact == null) {
-      throw new IllegalArgumentException("No artifact could be bound to '" + artifactId + "'");
-    }
-
-    artifact.setArtifactAccount((String) task.get("consumeArtifactAccount"));
+    Artifact artifact =
+        Optional.ofNullable(artifactUtils.getBoundArtifactForId(stage, artifactId))
+            .map(a -> ArtifactUtils.withAccount(a, (String) task.get("consumeArtifactAccount")))
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No artifact could be bound to '" + artifactId + "'"));
 
     InputStream fetchedArtifact =
         retrySupport.retry(

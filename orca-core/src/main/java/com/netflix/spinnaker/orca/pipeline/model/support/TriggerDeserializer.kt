@@ -20,16 +20,17 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.pipeline.model.ArtifactoryTrigger
 import com.netflix.spinnaker.orca.pipeline.model.ConcourseTrigger
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
 import com.netflix.spinnaker.orca.pipeline.model.DockerTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Execution
 import com.netflix.spinnaker.orca.pipeline.model.GitTrigger
 import com.netflix.spinnaker.orca.pipeline.model.JenkinsTrigger
 import com.netflix.spinnaker.orca.pipeline.model.NexusTrigger
 import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
-import com.netflix.spinnaker.orca.pipeline.model.Trigger
+import com.netflix.spinnaker.orca.pipeline.model.PluginTrigger
 
 class TriggerDeserializer :
   StdDeserializer<Trigger>(Trigger::class.java) {
@@ -97,7 +98,7 @@ class TriggerDeserializer :
           get("rebake")?.booleanValue() == true,
           get("dryRun")?.booleanValue() == true,
           get("strategy")?.booleanValue() == true,
-          get("parentExecution").parseValue<Execution>(parser),
+          get("parentExecution").parseValue<PipelineExecution>(parser),
           get("parentPipelineStageId")?.textValue()
         )
         looksLikeArtifactory() -> ArtifactoryTrigger(
@@ -141,6 +142,25 @@ class TriggerDeserializer :
           get("slug").textValue(),
           get("action")?.textValue() ?: "undefined"
         )
+        looksLikePlugin() -> PluginTrigger(
+          get("type").textValue(),
+          get("correlationId")?.textValue(),
+          get("user")?.textValue() ?: "[anonymous]",
+          get("parameters")?.mapValue(parser) ?: mutableMapOf(),
+          get("artifacts")?.listValue(parser) ?: mutableListOf(),
+          get("notifications")?.listValue(parser) ?: mutableListOf(),
+          get("rebake")?.booleanValue() == true,
+          get("dryRun")?.booleanValue() == true,
+          get("strategy")?.booleanValue() == true,
+          get("pluginId").textValue(),
+          get("description")?.textValue() ?: "[no description]",
+          get("provider")?.textValue() ?: "[no provider]",
+          get("version").textValue(),
+          get("releaseDate").textValue(),
+          get("requires").listValue(parser),
+          get("binaryUrl").textValue(),
+          get("preferred").booleanValue()
+        )
         looksLikeCustom() -> {
           // chooses the first custom deserializer to keep behavior consistent
           // with the rest of this conditional
@@ -158,7 +178,7 @@ class TriggerDeserializer :
           get("strategy")?.booleanValue() == true
         )
       }.apply {
-        other = mapValue(parser)
+        mapValue<Any>(parser).forEach { (k, v) -> other[k] = v }
         resolvedExpectedArtifacts = get("resolvedExpectedArtifacts")?.listValue(parser) ?: mutableListOf()
       }
     }
@@ -183,16 +203,22 @@ class TriggerDeserializer :
   private fun JsonNode.looksLikeNexus() =
     hasNonNull("nexusSearchName")
 
+  private fun JsonNode.looksLikePlugin() =
+    hasNonNull("pluginId")
+
   private fun JsonNode.looksLikeCustom() =
     customTriggerSuppliers.any { it.predicate.invoke(this) }
 
-  private inline fun <reified E> JsonNode.listValue(parser: JsonParser) =
-    this.map { parser.codec.treeToValue(it, E::class.java) }
+  private inline fun <reified E> JsonNode.listValue(parser: JsonParser): MutableList<E> =
+    this.map { parser.codec.treeToValue(it, E::class.java) }.toMutableList()
 
-  private inline fun <reified V> JsonNode.mapValue(parser: JsonParser): Map<String, V> =
-    this.fields().asSequence().fold(mapOf()) { acc, mutableEntry ->
-      acc + (mutableEntry.key to parser.codec.treeToValue(mutableEntry.value, V::class.java))
+  private inline fun <reified V> JsonNode.mapValue(parser: JsonParser): MutableMap<String, V> {
+    val m = mutableMapOf<String, V>()
+    this.fields().asSequence().forEach { entry ->
+      m[entry.key] = parser.codec.treeToValue(entry.value, V::class.java)
     }
+    return m
+  }
 
   private inline fun <reified T> JsonNode.parseValue(parser: JsonParser): T =
     parser.codec.treeToValue(this, T::class.java)

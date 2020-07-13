@@ -17,18 +17,19 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.artifacts;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -38,15 +39,15 @@ import org.springframework.stereotype.Component;
 public class FindArtifactFromExecutionTask implements Task {
   public static final String TASK_NAME = "findArtifactFromExecution";
 
-  private final ArtifactResolver artifactResolver;
+  private final ArtifactUtils artifactUtils;
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     FindArtifactFromExecutionContext context = stage.mapTo(FindArtifactFromExecutionContext.class);
     Map<String, Object> outputs = new HashMap<>();
     String pipeline = context.getPipeline();
-    List<ExpectedArtifact> expectedArtifacts = context.getExpectedArtifacts();
+    ImmutableList<ExpectedArtifact> expectedArtifacts = context.getExpectedArtifacts();
     FindArtifactFromExecutionContext.ExecutionOptions executionOptions =
         context.getExecutionOptions();
 
@@ -57,18 +58,19 @@ public class FindArtifactFromExecutionTask implements Task {
         Optional.ofNullable(stage.getExecution().getPipelineConfigId()).orElse("");
     if (pipelineConfigId.equals(pipeline)) {
       priorArtifacts =
-          artifactResolver.getArtifactsForPipelineIdWithoutStageRef(
+          artifactUtils.getArtifactsForPipelineIdWithoutStageRef(
               pipeline, stage.getRefId(), executionOptions.toCriteria());
     } else {
       priorArtifacts =
-          artifactResolver.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
+          artifactUtils.getArtifactsForPipelineId(pipeline, executionOptions.toCriteria());
     }
 
-    Set<Artifact> matchingArtifacts =
-        artifactResolver.resolveExpectedArtifacts(expectedArtifacts, priorArtifacts, null, false);
+    ArtifactResolver.ResolveResult resolveResult =
+        ArtifactResolver.getInstance(priorArtifacts, /* requireUniqueMatches= */ false)
+            .resolveExpectedArtifacts(expectedArtifacts);
 
-    outputs.put("resolvedExpectedArtifacts", expectedArtifacts);
-    outputs.put("artifacts", matchingArtifacts);
+    outputs.put("resolvedExpectedArtifacts", resolveResult.getResolvedExpectedArtifacts());
+    outputs.put("artifacts", resolveResult.getResolvedArtifacts());
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(outputs).outputs(outputs).build();
   }

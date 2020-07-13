@@ -18,12 +18,12 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.core.RetrySupport
-import com.netflix.spinnaker.orca.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.ConsumeArtifactTask
-import com.netflix.spinnaker.orca.pipeline.model.Execution
-import com.netflix.spinnaker.orca.pipeline.model.Stage
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver
+import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
 import retrofit.client.Response
 import retrofit.mime.TypedString
 import spock.lang.Specification
@@ -32,20 +32,20 @@ import spock.lang.Subject
 class ConsumeArtifactTaskSpec extends Specification {
 
   def oortService = Mock(OortService)
-  def artifactResolver = Stub(ArtifactResolver) {
+  def artifactUtils = Stub(ArtifactUtils) {
     getBoundArtifactForId(*_) >> Artifact.builder().build()
   }
 
   @Subject
   ConsumeArtifactTask task = new ConsumeArtifactTask(
-    artifactResolver,
+    artifactUtils,
     oortService,
     new RetrySupport()
   )
 
   def "parses JSON artifact into task outputs"() {
     given:
-    def stage = new Stage(Stub(Execution), "consumeArtifact", [
+    def stage = new StageExecutionImpl(Stub(PipelineExecutionImpl), "consumeArtifact", [
       artifactId: "12345",
       artifactAccount: "test",
     ])

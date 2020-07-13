@@ -16,11 +16,12 @@
 
 package com.netflix.spinnaker.orca.pipeline.tasks;
 
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
+import com.google.common.base.Strings;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.EvaluateVariablesStage;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -40,13 +41,15 @@ public class EvaluateVariablesTask implements Task {
 
   @Nonnull
   @Override
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     EvaluateVariablesStage.EvaluateVariablesStageContext context =
         stage.mapTo(EvaluateVariablesStage.EvaluateVariablesStageContext.class);
 
     Map<String, Object> outputs = new HashMap<>();
     for (EvaluateVariablesStage.Variable v : context.getVariables()) {
-      outputs.put(v.getKey(), v.getValue());
+      if (!Strings.isNullOrEmpty(v.getKey())) {
+        outputs.put(v.getKey(), v.getValue());
+      }
     }
 
     return TaskResult.builder(ExecutionStatus.SUCCEEDED)

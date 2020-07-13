@@ -17,15 +17,15 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.orca.ExecutionStatus;
-import com.netflix.spinnaker.orca.Task;
-import com.netflix.spinnaker.orca.TaskResult;
-import com.netflix.spinnaker.orca.api.SimpleStage;
-import com.netflix.spinnaker.orca.api.SimpleStageInput;
-import com.netflix.spinnaker.orca.api.SimpleStageOutput;
-import com.netflix.spinnaker.orca.api.SimpleStageStatus;
+import com.netflix.spinnaker.orca.api.pipeline.Task;
+import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStage;
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput;
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput;
+import com.netflix.spinnaker.orca.api.simplestage.SimpleStageStatus;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -35,35 +35,33 @@ import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.ResolvableType;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 public class SimpleTask implements Task {
   private SimpleStage simpleStage;
 
-  SimpleTask(@Nullable SimpleStage simpleStage) {
+  public SimpleTask(@Nullable SimpleStage simpleStage) {
     this.simpleStage = simpleStage;
   }
 
-  private SimpleStageInput getStageInput(Stage stage, ObjectMapper objectMapper) {
+  private SimpleStageInput getStageInput(StageExecution stage, ObjectMapper objectMapper) {
     try {
+      Class<?> extensionClass = simpleStage.getExtensionClass();
       List<Class<?>> cArg = Arrays.asList(SimpleStageInput.class);
-      Method method = simpleStage.getClass().getMethod("execute", cArg.toArray(new Class[0]));
+      Method method = extensionClass.getMethod("execute", cArg.toArray(new Class[0]));
       Type inputType = ResolvableType.forMethodParameter(method, 0).getGeneric().getType();
       Map<TypeVariable, Type> typeVariableMap =
-          GenericTypeResolver.getTypeVariableMap(simpleStage.getClass());
+          GenericTypeResolver.getTypeVariableMap(extensionClass);
+      Class<?> resolvedType = GenericTypeResolver.resolveType(inputType, typeVariableMap);
 
-      return new SimpleStageInput(
-          objectMapper.convertValue(
-              stage.getContext(), GenericTypeResolver.resolveType(inputType, typeVariableMap)));
+      return new SimpleStageInput(objectMapper.convertValue(stage.getContext(), resolvedType));
     } catch (NoSuchMethodException exeception) {
       throw new NoSuchStageException(exeception.getMessage());
     }
   }
 
   @Nonnull
-  public TaskResult execute(@Nonnull Stage stage) {
+  public TaskResult execute(@Nonnull StageExecution stage) {
     ObjectMapper objectMapper = OrcaObjectMapper.newInstance();
     SimpleStageInput simpleStageInput = getStageInput(stage, objectMapper);
     SimpleStageOutput output = simpleStage.execute(simpleStageInput);
