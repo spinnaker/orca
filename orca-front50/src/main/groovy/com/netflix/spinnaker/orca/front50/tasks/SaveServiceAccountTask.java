@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.front50.tasks;
 
+import static java.lang.String.format;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.fiat.model.UserPermission;
 import com.netflix.spinnaker.fiat.model.resources.Role;
@@ -128,9 +131,19 @@ public class SaveServiceAccountTask implements RetryableTask {
     }
 
     if (!isUserAuthorized(user, roles)) {
-      // TODO: Push this to the output result so Deck can show it.
       log.warn("User {} is not authorized with all roles for pipeline", user);
-      return TaskResult.ofStatus(ExecutionStatus.TERMINAL);
+      Map<String, Object> operation = new HashMap<>();
+      operation.put(
+          "exception",
+          ImmutableMap.of(
+              "details",
+              ImmutableMap.of(
+                  "error",
+                  "UserAuthorized error",
+                  "errors",
+                  ImmutableList.of(
+                      format("User '%s' is not authorized with all roles for pipeline", user)))));
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(operation).build();
     }
 
     ServiceAccount svcAcct = new ServiceAccount();
