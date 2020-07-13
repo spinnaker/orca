@@ -130,7 +130,16 @@ public class SaveServiceAccountTask implements RetryableTask {
     if (!isUserAuthorized(user, roles)) {
       // TODO: Push this to the output result so Deck can show it.
       log.warn("User {} is not authorized with all roles for pipeline", user);
-      return TaskResult.ofStatus(ExecutionStatus.TERMINAL);
+      Map<String, Object> exception = new HashMap<>();
+      Map<String, Object> outputsData = new HashMap<>();
+      Map<String, Object> details = new HashMap<>();
+      List<String> errors = new ArrayList<>();
+      errors.add(format("User '%s' is not authorized with all roles for pipeline", user));
+      details.put("error", "UserAuthorized error");
+      details.put("errors", errors);
+      outputsData.put("details", details);
+      exception.put("exception", outputsData);
+      return TaskResult.builder(ExecutionStatus.TERMINAL).context(exception).build();
     }
 
     ServiceAccount svcAcct = new ServiceAccount();
