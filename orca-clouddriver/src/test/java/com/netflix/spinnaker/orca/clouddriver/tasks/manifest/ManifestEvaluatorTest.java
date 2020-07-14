@@ -35,6 +35,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext.Sou
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
+import com.netflix.spinnaker.orca.pipeline.expressions.PipelineExpressionEvaluator;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
