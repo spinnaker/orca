@@ -7,6 +7,8 @@ import com.netflix.spinnaker.kork.sql.config.SqlRetryProperties
 import com.netflix.spinnaker.q.DeadMessageCallback
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import com.netflix.spinnaker.q.sql.util.createTableLike
+import com.netflix.spinnaker.q.sql.util.excluded
 import de.huxhorn.sulky.ulid.ULID
 import io.github.resilience4j.retry.Retry
 import io.github.resilience4j.retry.RetryConfig
@@ -16,6 +18,7 @@ import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import org.jooq.DSLContext
+import org.jooq.SQLDialect
 import org.jooq.exception.SQLDialectNotSupportedException
 import org.jooq.impl.DSL
 import org.jooq.util.mysql.MySQLDSL
@@ -70,9 +73,21 @@ class SqlDeadMessageHandler(
           .set(fingerprintField, fingerprint)
           .set(updatedAtField, clock.millis())
           .set(bodyField, json)
-          .onDuplicateKeyUpdate()
-          .set(updatedAtField, MySQLDSL.values(updatedAtField) as Any)
-          .set(bodyField, MySQLDSL.values(bodyField) as Any)
+          .run {
+            when (jooq.dialect()) {
+              SQLDialect.POSTGRES ->
+                onConflict(fingerprintField)
+                  .doUpdate()
+                  .set(updatedAtField, clock.millis())
+                  .set(bodyField, excluded(bodyField) as Any)
+                  .execute()
+              else ->
+                onDuplicateKeyUpdate()
+                  .set(updatedAtField, MySQLDSL.values(updatedAtField) as Any)
+                  .set(bodyField, MySQLDSL.values(bodyField) as Any)
+                  .execute()
+            }
+          }
       }
     } catch (e: Exception) {
       log.error("Failed to deadLetter message, fingerprint: $fingerprint, message: $json", e)
@@ -80,7 +95,7 @@ class SqlDeadMessageHandler(
   }
 
   private fun initTables() {
-    jooq.execute("CREATE TABLE IF NOT EXISTS $dlqTableName LIKE ${dlqBase}_template")
+    createTableLike(dlqTableName, "${dlqBase}_template", jooq)
   }
 
   @Suppress("UnstableApiUsage")

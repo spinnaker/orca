@@ -2,6 +2,9 @@ databaseChangeLog:
   - changeSet:
       id: create-keiko-queue-table-v1
       author: afeldman
+      validCheckSum:
+        # Original changeset checksum
+        - 8:551ab623136d3c624d7fd4928d0f4c51
       changes:
         - createTable:
             tableName: keiko_v1_queue_template
@@ -19,7 +22,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: delivery
-                  type: bigint(13)
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
@@ -175,6 +178,9 @@ databaseChangeLog:
   - changeSet:
       id: create-keiko-dlq-table-v1
       author: afeldman
+      validCheckSum:
+        # Original changeset checksum
+        - 8:7b2c146b7f0ff7de56fdb729c8e87277
       changes:
         - createTable:
             tableName: keiko_v1_dlq_template
@@ -192,7 +198,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: updated_at
-                  type: bigint(13)
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
@@ -233,13 +239,16 @@ databaseChangeLog:
   - changeSet:
       id: add-keiko-queue-messages-updated-col
       author: afeldman
+      validCheckSum:
+        # Original changeset checksum
+        - 8:53370973bc79095573dfe46d41cffae7
       changes:
       - addColumn:
           tableName: keiko_v1_messages_template
           columns:
             - column:
                 name: updated_at
-                type: bigint(13)
+                type: bigint
                 defaultValue: 0
                 constraints:
                   nullable: false

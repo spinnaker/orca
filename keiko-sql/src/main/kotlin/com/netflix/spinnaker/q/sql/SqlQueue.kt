@@ -28,6 +28,8 @@ import com.netflix.spinnaker.q.metrics.RetryPolled
 import com.netflix.spinnaker.q.migration.SerializationMigrator
 import com.netflix.spinnaker.q.sql.SqlQueue.RetryCategory.READ
 import com.netflix.spinnaker.q.sql.SqlQueue.RetryCategory.WRITE
+import com.netflix.spinnaker.q.sql.util.createTableLike
+import com.netflix.spinnaker.q.sql.util.excluded
 import de.huxhorn.sulky.ulid.ULID
 import io.github.resilience4j.retry.Retry
 import io.github.resilience4j.retry.RetryConfig
@@ -47,6 +49,7 @@ import kotlin.math.min
 import kotlin.random.Random.Default.nextLong
 import org.funktionale.partials.partially1
 import org.jooq.DSLContext
+import org.jooq.SQLDialect
 import org.jooq.SortOrder
 import org.jooq.exception.SQLDialectNotSupportedException
 import org.jooq.impl.DSL
@@ -371,8 +374,17 @@ class SqlQueue(
               .set(idField, ulid.toString())
               .set(fingerprintField, m.fingerprint)
               .set(expiryField, m.expiry)
-              .onDuplicateKeyIgnore()
-              .execute()
+              .run {
+                when (jooq.dialect()) {
+                  SQLDialect.POSTGRES ->
+                    onConflict(fingerprintField)
+                      .doNothing()
+                      .execute()
+                  else ->
+                    onDuplicateKeyIgnore()
+                      .execute()
+                }
+              }
 
             when (changed) {
               0 -> toRelease.add(m.queueId)
@@ -444,25 +456,46 @@ class SqlQueue(
     withRetry(WRITE) {
       jooq.transaction { config ->
         val txn = DSL.using(config)
+        val bodyVal = mapper.writeValueAsString(message)
 
         txn.insertInto(messagesTable)
           .set(idField, ulid.toString())
           .set(fingerprintField, fingerprint)
-          .set(bodyField, mapper.writeValueAsString(message))
+          .set(bodyField, bodyVal)
           .set(updatedAtField, clock.millis())
-          .onDuplicateKeyUpdate()
-          .set(idField, MySQLDSL.values(idField) as Any)
-          .set(bodyField, MySQLDSL.values(bodyField) as Any)
-          .execute()
+          .run {
+            when (jooq.dialect()) {
+              SQLDialect.POSTGRES ->
+                onConflict(fingerprintField)
+                  .doUpdate()
+                  .set(bodyField, excluded(bodyField) as Any)
+                  .execute()
+              else ->
+                onDuplicateKeyUpdate()
+                  .set(idField, MySQLDSL.values(idField) as Any)
+                  .set(bodyField, MySQLDSL.values(bodyField) as Any)
+                  .execute()
+            }
+          }
 
         txn.insertInto(queueTable)
           .set(idField, ULID.nextMonotonicValue(ulid).toString())
           .set(fingerprintField, fingerprint)
           .set(deliveryField, deliveryTime)
           .set(lockedField, "0")
-          .onDuplicateKeyUpdate()
-          .set(deliveryField, MySQLDSL.values(deliveryField) as Any)
-          .execute()
+          .run {
+            when (jooq.dialect()) {
+              SQLDialect.POSTGRES ->
+                onConflict(fingerprintField)
+                  .doUpdate()
+                  .set(deliveryField, deliveryTime)
+                  .execute()
+              else ->
+                onDuplicateKeyUpdate()
+                  .set(deliveryField, MySQLDSL.values(deliveryField) as Any)
+                  .execute()
+            }
+          }
       }
     }
 
@@ -680,9 +713,19 @@ class SqlQueue(
             .set(fingerprintField, fingerprint)
             .set(deliveryField, atTime(lockTtlDuration))
             .set(lockedField, "0")
-            .onDuplicateKeyUpdate()
-            .set(deliveryField, MySQLDSL.values(deliveryField) as Any)
-            .execute()
+            .run {
+              when (jooq.dialect()) {
+                SQLDialect.POSTGRES ->
+                  onConflict(fingerprintField)
+                    .doUpdate()
+                    .set(deliveryField, atTime(lockTtlDuration))
+                    .execute()
+                else ->
+                  onDuplicateKeyUpdate()
+                    .set(deliveryField, MySQLDSL.values(deliveryField) as Any)
+                    .execute()
+              }
+            }
         }
       }
 
@@ -808,11 +851,17 @@ class SqlQueue(
   }
 
   private fun initTables() {
+    val tables = listOf(
+      Pair(queueTableName, queueBase),
+      Pair(unackedTableName, unackedBase),
+      Pair(messagesTableName, messagesBase)
+    )
+
     withPool(poolName) {
       withRetry(WRITE) {
-        jooq.execute("CREATE TABLE IF NOT EXISTS $queueTableName LIKE ${queueBase}_template")
-        jooq.execute("CREATE TABLE IF NOT EXISTS $unackedTableName LIKE ${unackedBase}_template")
-        jooq.execute("CREATE TABLE IF NOT EXISTS $messagesTableName LIKE ${messagesBase}_template")
+        for (tablePair in tables) {
+          createTableLike(tablePair.first, "${tablePair.second}_template", jooq)
+        }
       }
     }
   }
