@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -52,8 +51,7 @@ final class ManifestEvaluatorTest {
   private ManifestEvaluator manifestEvaluator;
 
   @Mock private ArtifactUtils artifactUtils;
-  private ContextParameterProcessor contextParameterProcessor =
-      mock(ContextParameterProcessor.class);
+  @Mock private ContextParameterProcessor contextParameterProcessor;
   @Mock private OortService oortService;
 
   private final List<Map<Object, Object>> manifests =
@@ -63,7 +61,7 @@ final class ManifestEvaluatorTest {
               .build());
 
   private final TypedString manifestString =
-      new TypedString("{\"metadata\": {\"name\": \"my-manifest\"}}");
+      new TypedString("{'metadata': {'name': 'my-manifest'}}");
 
   private final TypedString spelManifestString =
       new TypedString("{\"metadata\": {\"name\": \"${manifest}\"}}");
@@ -80,7 +78,7 @@ final class ManifestEvaluatorTest {
   void setup() {
     manifestEvaluator =
         new ManifestEvaluator(
-            artifactUtils, contextParameterProcessor, oortService, new RetrySupport(), true);
+            artifactUtils, contextParameterProcessor, oortService, new RetrySupport());
   }
 
   @Test
@@ -281,6 +279,8 @@ final class ManifestEvaluatorTest {
   @Test
   void shouldThrowExceptionWhenFailedEvaluatingManifestExpressions() {
     StageExecutionImpl stage = new StageExecutionImpl();
+    stage.getContext().put("failOnFailedExpressions", true);
+
     Artifact manifestArtifact =
         Artifact.builder()
             .artifactAccount("my-artifact-account")
@@ -313,10 +313,8 @@ final class ManifestEvaluatorTest {
 
   @Test
   void shouldSucceedWhenFailedEvaluatingManifestExpressionsWithFlagSet() {
-    ManifestEvaluator manifestEvaluator =
-        new ManifestEvaluator(
-            artifactUtils, contextParameterProcessor, oortService, new RetrySupport(), false);
     StageExecutionImpl stage = new StageExecutionImpl();
+    stage.getContext().put("failOnFailedExpressions", false);
     Artifact manifestArtifact =
         Artifact.builder()
             .artifactAccount("my-artifact-account")
