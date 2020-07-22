@@ -71,15 +71,6 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
   }
 
   @Shared
-  @Subject
-  ExecutionRepository previousRepository
-
-  @Override
-  ExecutionRepository previousRepository() {
-    return previousRepository
-  }
-
-  @Shared
   @AutoCleanup("close")
   TestDatabase currentDatabase
 
@@ -92,20 +83,14 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
   def setupSpec() {
     currentDatabase = getDatabase()
     repository = createExecutionRepository()
-    previousRepository = createExecutionRepositoryPrevious()
   }
 
   def cleanup() {
     cleanupDb(currentDatabase.context)
-    cleanupDb(currentDatabase.previousContext)
   }
 
   ExecutionRepository createExecutionRepository() {
     return createExecutionRepository("test")
-  }
-
-  ExecutionRepository createExecutionRepositoryPrevious() {
-    new SqlExecutionRepository("test", currentDatabase.previousContext, mapper, new RetryProperties(), 10, 100, "poolName", null)
   }
 
   ExecutionRepository createExecutionRepository(String partition, Interlink interlink = null) {

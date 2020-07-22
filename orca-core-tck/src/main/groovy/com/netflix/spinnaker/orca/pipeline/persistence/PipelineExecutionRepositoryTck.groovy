@@ -49,8 +49,6 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
   abstract T repository()
 
-  abstract T previousRepository()
-
   def "can retrieve pipelines by status"() {
     given:
     def runningExecution = pipeline {

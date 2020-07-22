@@ -69,7 +69,6 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
   @Subject
   RedisExecutionRepository previousRepository
 
-  @Override
   RedisExecutionRepository previousRepository() {
     return previousRepository
   }
