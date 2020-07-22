@@ -98,7 +98,7 @@ class PreconfiguredJobStage extends RunJobStage {
     Object current = root
     for (int i = 0; i < props.length - 1; i++) {
       Object next
-      if(props[i].matches(".*\\[\\d+\\]\$")) {
+      if(props[i] ==~ /.*\[\d+\]$/) {
         next = getValueFromArrayExpression(current, props[i])
       } else {
         next = current[props[i]]
@@ -113,7 +113,7 @@ class PreconfiguredJobStage extends RunJobStage {
 
   private static Object getValueFromArrayExpression(Object root, String expression) {
     // TODO: Do we need to handle arrays nested in other arrays?
-    String[] parts = expression.split("[\\[\\]]")
+    String[] parts = expression.split(/[\[\]]/)
     String propName = parts[0]
     int index = -1
     try {
