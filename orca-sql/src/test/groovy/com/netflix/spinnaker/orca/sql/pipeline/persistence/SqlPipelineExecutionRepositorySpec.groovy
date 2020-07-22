@@ -50,7 +50,7 @@ import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepositor
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.orchestration
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 
-class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<ExecutionRepository> {
+abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<ExecutionRepository> {
 
   @Shared
   ObjectMapper mapper = OrcaObjectMapper.newInstance().with {
@@ -68,8 +68,10 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
   @AutoCleanup("close")
   TestDatabase previousDatabase
 
+  abstract TestDatabase getDatabase()
+
   def setupSpec() {
-    currentDatabase = initDualTcMysqlDatabases()
+    currentDatabase = getDatabase()
   }
 
   def cleanup() {
@@ -667,8 +669,16 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
   }
 }
 
+class MySqlPipelineExecutionRepositorySpec extends SqlPipelineExecutionRepositorySpec {
+  @Override
+  TestDatabase getDatabase() {
+    return initDualTcMysqlDatabases()
+  }
+}
+
 class PgSqlPipelineExecutionRepositorySpec extends SqlPipelineExecutionRepositorySpec {
-  def setupSpec() {
-    currentDatabase = initDualTcPostgresDatabases()
+  @Override
+  TestDatabase getDatabase() {
+    return initDualTcPostgresDatabases()
   }
 }
