@@ -56,6 +56,7 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
   @AutoCleanup("destroy")
   EmbeddedRedis embeddedRedisPrevious
 
+  @Shared
   @Subject
   RedisExecutionRepository repository
 
@@ -64,6 +65,7 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
     return repository
   }
 
+  @Shared
   @Subject
   RedisExecutionRepository previousRepository
 
@@ -94,9 +96,6 @@ class JedisPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTc
         new JedisClientDelegate("primaryDefault", jedisPool),
         new JedisClientDelegate("previousDefault", jedisPoolPrevious)
     ])
-  }
-
-  def setup() {
     repository = createExecutionRepository()
     previousRepository = createExecutionRepositoryPrevious()
   }

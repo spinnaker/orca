@@ -61,6 +61,7 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
 
   def ulid = new ULID()
 
+  @Shared
   @Subject
   ExecutionRepository repository
 
@@ -69,6 +70,7 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
     return repository
   }
 
+  @Shared
   @Subject
   ExecutionRepository previousRepository
 
@@ -89,9 +91,6 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
 
   def setupSpec() {
     currentDatabase = getDatabase()
-  }
-
-  def setup() {
     repository = createExecutionRepository()
     previousRepository = createExecutionRepositoryPrevious()
   }
