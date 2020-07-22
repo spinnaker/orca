@@ -38,6 +38,7 @@ import rx.schedulers.Schedulers
 import de.huxhorn.sulky.ulid.ULID
 import spock.lang.AutoCleanup
 import spock.lang.Shared
+import spock.lang.Subject
 import spock.lang.Unroll
 
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.cleanupDb
@@ -60,6 +61,22 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
 
   def ulid = new ULID()
 
+  @Subject
+  ExecutionRepository repository
+
+  @Override
+  ExecutionRepository repository() {
+    return repository
+  }
+
+  @Subject
+  ExecutionRepository previousRepository
+
+  @Override
+  ExecutionRepository previousRepository() {
+    return previousRepository
+  }
+
   @Shared
   @AutoCleanup("close")
   TestDatabase currentDatabase
@@ -74,17 +91,20 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
     currentDatabase = getDatabase()
   }
 
+  def setup() {
+    repository = createExecutionRepository()
+    previousRepository = createExecutionRepositoryPrevious()
+  }
+
   def cleanup() {
     cleanupDb(currentDatabase.context)
     cleanupDb(currentDatabase.previousContext)
   }
 
-  @Override
   ExecutionRepository createExecutionRepository() {
     return createExecutionRepository("test")
   }
 
-  @Override
   ExecutionRepository createExecutionRepositoryPrevious() {
     new SqlExecutionRepository("test", currentDatabase.previousContext, mapper, new RetryProperties(), 10, 100, "poolName", null)
   }

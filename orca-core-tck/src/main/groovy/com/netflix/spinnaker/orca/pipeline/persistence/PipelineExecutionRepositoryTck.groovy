@@ -45,23 +45,11 @@ import static java.time.temporal.ChronoUnit.HOURS
 @Subject(ExecutionRepository)
 @Unroll
 abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> extends Specification {
-
-  @Subject
-  ExecutionRepository repository
-
-  @Subject
-  ExecutionRepository previousRepository
-
   def clock = Clock.fixed(Instant.now(), UTC)
 
-  void setup() {
-    repository = createExecutionRepository()
-    previousRepository = createExecutionRepositoryPrevious()
-  }
+  abstract T repository()
 
-  abstract T createExecutionRepository()
-
-  abstract T createExecutionRepositoryPrevious()
+  abstract T previousRepository()
 
   def "can retrieve pipelines by status"() {
     given:
@@ -75,9 +63,9 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
 
     when:
-    repository.store(runningExecution)
-    repository.store(succeededExecution)
-    def pipelines = repository.retrievePipelinesForPipelineConfigId(
+    repository().store(runningExecution)
+    repository().store(succeededExecution)
+    def pipelines = repository().retrievePipelinesForPipelineConfigId(
       "pipeline-1", new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
@@ -85,7 +73,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     pipelines*.id.sort() == [runningExecution.id, succeededExecution.id].sort()
 
     when:
-    pipelines = repository.retrievePipelinesForPipelineConfigId(
+    pipelines = repository().retrievePipelinesForPipelineConfigId(
       "pipeline-1", new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
@@ -93,7 +81,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     pipelines*.id.sort() == [runningExecution.id].sort()
 
     when:
-    pipelines = repository.retrievePipelinesForPipelineConfigId(
+    pipelines = repository().retrievePipelinesForPipelineConfigId(
       "pipeline-1", new ExecutionCriteria(pageSize: 5, statuses: ["TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
@@ -116,9 +104,9 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
 
     when:
-    repository.store(runningExecution)
-    repository.store(succeededExecution)
-    def orchestrations = repository.retrieveOrchestrationsForApplication(
+    repository().store(runningExecution)
+    repository().store(succeededExecution)
+    def orchestrations = repository().retrieveOrchestrationsForApplication(
       runningExecution.application, new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
@@ -126,7 +114,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     orchestrations*.id.sort() == [runningExecution.id, succeededExecution.id].sort()
 
     when:
-    orchestrations = repository.retrieveOrchestrationsForApplication(
+    orchestrations = repository().retrieveOrchestrationsForApplication(
       runningExecution.application, new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
@@ -134,7 +122,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     orchestrations*.id.sort() == [runningExecution.id].sort()
 
     when:
-    orchestrations = repository.retrieveOrchestrationsForApplication(
+    orchestrations = repository().retrieveOrchestrationsForApplication(
       runningExecution.application, new ExecutionCriteria(pageSize: 5, statuses: ["TERMINAL"])
     ).subscribeOn(Schedulers.io()).toList().toBlocking().single()
 
@@ -158,9 +146,9 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
 
     when:
-    repository.store(runningExecution)
-    repository.store(succeededExecution)
-    def orchestrations = repository.retrieveOrchestrationsForApplication(
+    repository().store(runningExecution)
+    repository().store(succeededExecution)
+    def orchestrations = repository().retrieveOrchestrationsForApplication(
       runningExecution.application,
       new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING", "SUCCEEDED", "TERMINAL"]),
       NATURAL_ASC
@@ -172,7 +160,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     orchestrations*.id == [succeededExecution.id, runningExecution.id]
 
     when:
-    orchestrations = repository.retrieveOrchestrationsForApplication(
+    orchestrations = repository().retrieveOrchestrationsForApplication(
       runningExecution.application,
       new ExecutionCriteria(pageSize: 5, statuses: ["RUNNING"]),
       NATURAL_ASC
@@ -182,7 +170,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     orchestrations*.id == [runningExecution.id]
 
     when:
-    orchestrations = repository.retrieveOrchestrationsForApplication(
+    orchestrations = repository().retrieveOrchestrationsForApplication(
       runningExecution.application,
       new ExecutionCriteria(pageSize: 5, statuses: ["TERMINAL"]),
       NATURAL_ASC
@@ -208,11 +196,11 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
         startTime = config.startTime
       }
     }.forEach {
-      repository.store(it)
+      repository().store(it)
     }
 
     when:
-    def orchestrations = repository.retrieveOrchestrationsForApplication(
+    def orchestrations = repository().retrieveOrchestrationsForApplication(
       "covfefe",
       new ExecutionCriteria().with {
         startTimeCutoff = clock
@@ -255,12 +243,12 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
       }
     }
     def application = pipeline.application
-    repository.store(pipeline)
+    repository().store(pipeline)
 
     expect:
-    repository.retrieve(PIPELINE).toBlocking().first().id == pipeline.id
+    repository().retrieve(PIPELINE).toBlocking().first().id == pipeline.id
 
-    with(repository.retrieve(pipeline.type, pipeline.id)) {
+    with(repository().retrieve(pipeline.type, pipeline.id)) {
       id == pipeline.id
       application == pipeline.application
       name == pipeline.name
@@ -277,7 +265,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
   def "trying to retrieve an invalid #type.simpleName id throws an exception"() {
     when:
-    repository.retrieve(type, "invalid")
+    repository().retrieve(type, "invalid")
 
     then:
     thrown ExecutionNotFoundException
@@ -288,7 +276,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
   def "trying to delete a non-existent #type.simpleName id does not throw an exception"() {
     when:
-    repository.delete(type, "invalid")
+    repository().delete(type, "invalid")
 
     then:
     notThrown ExecutionNotFoundException
@@ -317,33 +305,33 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
 
     and:
-    repository.store(pipeline)
-    repository.delete(PIPELINE, pipeline.id)
+    repository().store(pipeline)
+    repository().delete(PIPELINE, pipeline.id)
 
     when:
-    repository.retrieve(PIPELINE, pipeline.id)
+    repository().retrieve(PIPELINE, pipeline.id)
 
     then:
     thrown ExecutionNotFoundException
 
     and:
-    repository.retrieve(PIPELINE).toList().toBlocking().first() == []
+    repository().retrieve(PIPELINE).toList().toBlocking().first() == []
   }
 
   def "updateStatus sets startTime to current time if new status is RUNNING"() {
     given:
-    repository.store(execution)
+    repository().store(execution)
 
     expect:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       startTime == null
     }
 
     when:
-    repository.updateStatus(execution.type, execution.id, RUNNING)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == RUNNING
       startTime != null
     }
@@ -359,19 +347,19 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
   def "updateStatus sets endTime to current time if new status is #status"() {
     given:
     execution.startTime = System.currentTimeMillis()
-    repository.store(execution)
+    repository().store(execution)
 
     expect:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       startTime != null
       endTime == null
     }
 
     when:
-    repository.updateStatus(execution.type, execution.id, status)
+    repository().updateStatus(execution.type, execution.id, status)
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == status
       endTime != null
     }
@@ -385,19 +373,19 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
 
   def "updateStatus does not set endTime if a pipeline never started"() {
     given:
-    repository.store(execution)
+    repository().store(execution)
 
     expect:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       startTime == null
       endTime == null
     }
 
     when:
-    repository.updateStatus(execution.type, execution.id, status)
+    repository().updateStatus(execution.type, execution.id, status)
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == status
       endTime == null
     }
@@ -410,19 +398,19 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
   def "cancelling a not-yet-started execution updates the status immediately"() {
     given:
     def execution = pipeline()
-    repository.store(execution)
+    repository().store(execution)
 
     expect:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == NOT_STARTED
     }
 
     when:
-    repository.cancel(execution.type, execution.id)
+    repository().cancel(execution.type, execution.id)
 
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       canceled
       status == CANCELED
     }
@@ -431,20 +419,20 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
   def "cancelling a running execution does not update the status immediately"() {
     given:
     def execution = pipeline()
-    repository.store(execution)
-    repository.updateStatus(execution.type, execution.id, RUNNING)
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
 
     expect:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == RUNNING
     }
 
     when:
-    repository.cancel(execution.type, execution.id)
+    repository().cancel(execution.type, execution.id)
 
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       canceled
       status == RUNNING
     }
@@ -455,20 +443,20 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     given:
     def execution = pipeline()
     def user = "user@netflix.com"
-    repository.store(execution)
-    repository.updateStatus(execution.type, execution.id, RUNNING)
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
 
     expect:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == RUNNING
     }
 
     when:
-    repository.cancel(execution.type, execution.id, user, reason)
+    repository().cancel(execution.type, execution.id, user, reason)
 
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       canceled
       canceledBy == user
       status == RUNNING
@@ -485,14 +473,14 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
   def "pausing/resuming a running execution will set appropriate 'paused' details"() {
     given:
     def execution = pipeline()
-    repository.store(execution)
-    repository.updateStatus(execution.type, execution.id, RUNNING)
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
 
     when:
-    repository.pause(execution.type, execution.id, "user@netflix.com")
+    repository().pause(execution.type, execution.id, "user@netflix.com")
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == PAUSED
       paused.pauseTime != null
       paused.resumeTime == null
@@ -502,10 +490,10 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
 
     when:
-    repository.resume(execution.type, execution.id, "another@netflix.com")
+    repository().resume(execution.type, execution.id, "another@netflix.com")
 
     then:
-    with(repository.retrieve(execution.type, execution.id)) {
+    with(repository().retrieve(execution.type, execution.id)) {
       status == RUNNING
       paused.pauseTime != null
       paused.resumeTime != null
@@ -520,11 +508,11 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
   def "should only #method a #expectedStatus execution"() {
     given:
     def execution = pipeline()
-    repository.store(execution)
-    repository.updateStatus(execution.type, execution.id, status)
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, status)
 
     when:
-    repository."${method}"(execution.type, execution.id, "user@netflix.com")
+    repository()."${method}"(execution.type, execution.id, "user@netflix.com")
 
     then:
     def e = thrown(IllegalStateException)
@@ -542,20 +530,20 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
   def "should force resume an execution regardless of status"() {
     given:
     def execution = pipeline()
-    repository.store(execution)
-    repository.updateStatus(execution.type, execution.id, RUNNING)
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
 
     when:
-    repository.pause(execution.type, execution.id, "user@netflix.com")
-    execution = repository.retrieve(execution.type, execution.id)
+    repository().pause(execution.type, execution.id, "user@netflix.com")
+    execution = repository().retrieve(execution.type, execution.id)
 
     then:
     execution.paused.isPaused()
 
     when:
-    repository.updateStatus(execution.type, execution.id, status)
-    repository.resume(execution.type, execution.id, "user@netflix.com", true)
-    execution = repository.retrieve(execution.type, execution.id)
+    repository().updateStatus(execution.type, execution.id, status)
+    repository().resume(execution.type, execution.id, "user@netflix.com", true)
+    execution = repository().retrieve(execution.type, execution.id)
 
     then:
     execution.status == RUNNING
@@ -570,18 +558,18 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     def execution = orchestration {
       trigger = new DefaultTrigger("manual", "covfefe")
     }
-    repository.store(execution)
-    repository.updateStatus(execution.type, execution.id, RUNNING)
+    repository().store(execution)
+    repository().updateStatus(execution.type, execution.id, RUNNING)
 
     when:
-    def result = repository.retrieveOrchestrationForCorrelationId('covfefe')
+    def result = repository().retrieveOrchestrationForCorrelationId('covfefe')
 
     then:
     result.id == execution.id
 
     when:
-    repository.updateStatus(execution.type, execution.id, SUCCEEDED)
-    repository.retrieveOrchestrationForCorrelationId('covfefe')
+    repository().updateStatus(execution.type, execution.id, SUCCEEDED)
+    repository().retrieveOrchestrationForCorrelationId('covfefe')
 
     then:
     thrown(ExecutionNotFoundException)
@@ -592,10 +580,10 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     def execution = pipeline {
       trigger = new PipelineTrigger(pipeline())
     }
-    repository.store(execution)
+    repository().store(execution)
 
     expect:
-    with(repository.retrieve(PIPELINE, execution.id)) {
+    with(repository().retrieve(PIPELINE, execution.id)) {
       trigger.parentExecution instanceof PipelineExecution
     }
   }
@@ -606,10 +594,10 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     for (status in ExecutionStatus.values()) {
       pipeline {
         setStatus(status)
-      }.with { execution -> repository.store(execution) }
+      }.with { execution -> repository().store(execution) }
       orchestration {
         setStatus(status)
-      }.with { execution -> repository.store(execution) }
+      }.with { execution -> repository().store(execution) }
     }
 
     and:
@@ -618,7 +606,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
       .setPageSize(limit)
 
     expect:
-    with(repository.retrieve(type, criteria).toList().toBlocking().single()) {
+    with(repository().retrieve(type, criteria).toList().toBlocking().single()) {
       size() == expectedResults
       type.every { it == type }
       if (statuses) {
@@ -654,11 +642,11 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     }
 
     when:
-    repository.store(execution1)
-    repository.store(execution2)
-    repository.store(execution3)
-    repository.store(execution4)
-    def apps = repository.retrieveAllApplicationNames(executionType, minExecutions)
+    repository().store(execution1)
+    repository().store(execution2)
+    repository().store(execution3)
+    repository().store(execution4)
+    def apps = repository().retrieveAllApplicationNames(executionType, minExecutions)
 
     then:
     apps.sort() == expectedApps.sort()
