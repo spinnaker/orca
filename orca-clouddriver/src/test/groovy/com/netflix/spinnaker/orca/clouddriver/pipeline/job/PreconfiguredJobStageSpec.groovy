@@ -122,7 +122,7 @@ class PreconfiguredJobStageSpec extends Specification {
           name: "envVariable"
         )
       ],
-      manifest: new V1Job(spec: [template: [spec: [containers: [new V1Container(env: [new V1EnvVar(name: "foo", value: "defaultValue")])]]]])
+      manifest: new V1Job(spec: [template: [spec: [containers: [new V1Container(env: [new V1EnvVar(name: "foo", value: manifestEnvValue)])]]]])
     )
 
     def jobService = Mock(JobService) {
@@ -165,7 +165,7 @@ class PreconfiguredJobStageSpec extends Specification {
           name: "envVariable"
         )
       ],
-      manifest: new V1Job(spec: [template: [spec: [containers: [new V1Container(env: [new V1EnvVar(name: "foo", value: "defaultValue")])]]]])
+      manifest: new V1Job(spec: [template: [spec: [containers: [new V1Container(env: [new V1EnvVar(name: "foo", value: manifestEnvValue)])]]]])
     )
 
     def jobService = Mock(JobService) {
@@ -181,6 +181,47 @@ class PreconfiguredJobStageSpec extends Specification {
     preconfiguredJobStage.buildTaskGraph(stage)
 
     then:
-    thrown(IllegalArgumentException)
+    def ex = thrown(IllegalArgumentException)
+    assert ex.getMessage().startsWith("Invalid index 1 for list")
+  }
+
+  def "setNestedValue throws an error if an array property name is invalid"() {
+    given:
+    def manifestEnvValue = "defaultValue"
+    def overriddenValue = "newValue"
+    def stage = stage {
+      type = "test"
+      context = [account: "test"]
+    }
+    def property = new KubernetesPreconfiguredJobProperties(
+      enabled: true,
+      label: "test",
+      type: "test",
+      cloudProvider: "kubernetes",
+      parameters: [
+        new PreconfiguredJobStageParameter(
+          mapping: "manifest.spec.template.spec.containers[0].missingProperty[0].value",
+          defaultValue: overriddenValue,
+          name: "envVariable"
+        )
+      ],
+      manifest: new V1Job(spec: [template: [spec: [containers: [new V1Container(env: [new V1EnvVar(name: "foo", value: manifestEnvValue)])]]]])
+    )
+
+    def jobService = Mock(JobService) {
+      1 * getPreconfiguredStages() >> {
+        return [
+          property
+        ]
+      }
+    }
+
+    when:
+    PreconfiguredJobStage preconfiguredJobStage = new PreconfiguredJobStage(Mock(DestroyJobTask), [], Optional.of(jobService))
+    preconfiguredJobStage.buildTaskGraph(stage)
+
+    then:
+    def ex = thrown(IllegalArgumentException)
+    assert ex.getMessage().startsWith("no property missingProperty on")
   }
 }
