@@ -194,7 +194,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
     return getBestCandidate(cluster, region, serverGroupToRollBack, candidates, imageDetails);
   }
 
-  private ServerGroup getServerGroupToRollBack(List<ServerGroup> enabledServerGroupsInRegion) {
+  private ServerGroup getServerGroupToRollBack(@Nonnull List<ServerGroup> enabledServerGroupsInRegion) {
     return enabledServerGroupsInRegion.get(0);
   }
 
