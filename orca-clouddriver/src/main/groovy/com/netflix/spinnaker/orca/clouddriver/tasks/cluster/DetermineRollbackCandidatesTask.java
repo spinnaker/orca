@@ -121,10 +121,10 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       return TaskResult.RUNNING;
     }
 
-    return getResult(stageData, moniker.get().getCluster(), serverGroups);
+    return determineRollbackCandidates(stageData, moniker.get().getCluster(), serverGroups);
   }
 
-  private TaskResult getResult(
+  private TaskResult determineRollbackCandidates(
       StageData stageData, String cluster, List<ServerGroup> serverGroups) {
 
     List<Map> imagesToRestore = new ArrayList<>();
