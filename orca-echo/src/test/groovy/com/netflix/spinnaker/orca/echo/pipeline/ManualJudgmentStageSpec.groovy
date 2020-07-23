@@ -42,10 +42,10 @@ class ManualJudgmentStageSpec extends Specification {
     where:
     context                      || expectedStatus
     [:]                          || ExecutionStatus.RUNNING
-    [judgmentStatus: "continue"] || ExecutionStatus.SUCCEEDED
-    [judgmentStatus: "Continue"] || ExecutionStatus.SUCCEEDED
-    [judgmentStatus: "stop"]     || ExecutionStatus.TERMINAL
-    [judgmentStatus: "STOP"]     || ExecutionStatus.TERMINAL
+    [judgmentStatus: "continue", isAuthorized: true, isTest: true] || ExecutionStatus.SUCCEEDED
+    [judgmentStatus: "Continue", isAuthorized: true, isTest: true] || ExecutionStatus.SUCCEEDED
+    [judgmentStatus: "stop", isAuthorized: true, isTest: true]    || ExecutionStatus.TERMINAL
+    [judgmentStatus: "STOP", isAuthorized: true, isTest: true]     || ExecutionStatus.TERMINAL
     [judgmentStatus: "unknown"]  || ExecutionStatus.RUNNING
   }
 
@@ -80,7 +80,9 @@ class ManualJudgmentStageSpec extends Specification {
       notifications: [
         new Notification(type: "email", address: "test@netflix.com", when: [ notificationState ])
       ],
-      judgmentStatus: judgmentStatus
+      judgmentStatus: judgmentStatus,
+      isAuthorized: true,
+      isTest: true
     ]))
 
     then:
