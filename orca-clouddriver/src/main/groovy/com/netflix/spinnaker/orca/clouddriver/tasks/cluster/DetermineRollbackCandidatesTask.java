@@ -233,7 +233,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   private List<ServerGroup> getServerGroups(
       AtomicReference<Moniker> moniker, String credentials, String cloudProvider) {
     return Optional.ofNullable(fetchClusterInfoWithRetry(moniker, credentials, cloudProvider))
-        .map(c -> c.get("serverGroups"))
+        .map(clusterInfo -> clusterInfo.get("serverGroups"))
         .map(this::toServerGroups)
         .orElse(null);
   }
