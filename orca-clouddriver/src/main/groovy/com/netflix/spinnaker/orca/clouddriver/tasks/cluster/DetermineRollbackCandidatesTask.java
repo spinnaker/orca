@@ -207,7 +207,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       List<ServerGroup> candidates,
       ImageDetails imageDetails) {
     return Optional.ofNullable(imageDetails)
-        .map(d -> getDetailsUsingEntityTags(candidates, serverGroupToRollBack, d, cluster, region))
+        .map(imgDetails -> getDetailsUsingEntityTags(candidates, serverGroupToRollBack, imgDetails, cluster, region))
         .orElseGet(
             () ->
                 getDetailsUsingPreviousServerGroups(
