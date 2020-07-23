@@ -108,7 +108,10 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
     StageData stageData = stage.mapTo(StageData.class);
     AtomicReference<Moniker> moniker =
         populateMonikerWithServerGroupInfo(
-            stageData.moniker, stageData.credentials, stageData.regions.get(0), stageData.serverGroup);
+            stageData.moniker,
+            stageData.credentials,
+            stageData.regions.get(0),
+            stageData.serverGroup);
     if (moniker == null) {
       return TaskResult.RUNNING;
     }
@@ -192,7 +195,8 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
     return getBestCandidate(cluster, region, serverGroupToRollBack, candidates, imageDetails);
   }
 
-  private ServerGroup getServerGroupToRollBack(@Nonnull List<ServerGroup> enabledServerGroupsInRegion) {
+  private ServerGroup getServerGroupToRollBack(
+      @Nonnull List<ServerGroup> enabledServerGroupsInRegion) {
     return enabledServerGroupsInRegion.get(0);
   }
 
@@ -205,7 +209,10 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       List<ServerGroup> candidates,
       ImageDetails imageDetails) {
     return Optional.ofNullable(imageDetails)
-        .map(imgDetails -> getDetailsUsingEntityTags(candidates, serverGroupToRollBack, imgDetails, cluster, region))
+        .map(
+            imgDetails ->
+                getDetailsUsingEntityTags(
+                    candidates, serverGroupToRollBack, imgDetails, cluster, region))
         .orElseGet(
             () ->
                 getDetailsUsingPreviousServerGroups(
