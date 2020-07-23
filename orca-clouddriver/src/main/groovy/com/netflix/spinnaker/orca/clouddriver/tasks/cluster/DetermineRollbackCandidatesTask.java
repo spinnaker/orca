@@ -137,7 +137,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
               .filter(s -> region.equalsIgnoreCase(s.region))
               .collect(Collectors.toList());
 
-      if (!IsRollbackPossible(allServerGroupsInRegion, cluster, region)) {
+      if (!isRollbackPossible(allServerGroupsInRegion, cluster, region)) {
         continue;
       }
 
