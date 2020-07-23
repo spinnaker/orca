@@ -106,12 +106,10 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
-    AtomicReference<Moniker> moniker = new AtomicReference<>(stageData.moniker);
-
-    boolean success =
+    AtomicReference<Moniker> moniker =
         populateMonikerWithServerGroupInfo(
-            moniker, stageData.credentials, stageData.regions.get(0), stageData.serverGroup);
-    if (!success) {
+            stageData.moniker, stageData.credentials, stageData.regions.get(0), stageData.serverGroup);
+    if (moniker == null) {
       return TaskResult.RUNNING;
     }
 
@@ -348,8 +346,9 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
    *
    * @return true on success, false on failure
    */
-  private boolean populateMonikerWithServerGroupInfo(
-      AtomicReference<Moniker> moniker, String credentials, String region, String serverGroupName) {
+  private AtomicReference<Moniker> populateMonikerWithServerGroupInfo(
+      Moniker m, String credentials, String region, String serverGroupName) {
+    AtomicReference<Moniker> moniker = new AtomicReference<>(m);
     if (moniker.get() == null && serverGroupName != null) {
       try {
         Map<String, Object> serverGroup =
@@ -364,10 +363,10 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
             region,
             serverGroupName,
             e);
-        return false;
+        return null;
       }
     }
-    return true;
+    return moniker;
   }
 
   /** Get info about cluster */
