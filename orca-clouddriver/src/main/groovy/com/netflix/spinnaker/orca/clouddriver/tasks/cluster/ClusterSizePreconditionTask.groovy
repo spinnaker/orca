@@ -84,7 +84,7 @@ class ClusterSizePreconditionTask extends AbstractCloudProviderAwareTask impleme
         errors << 'Missing regions'
       }
       if (errors) {
-        throw new ConfigurationException("Invalid configuration " + errors.join(','))
+        throw new ConfigurationException("Invalid configuration " + errors.join(', '))
       }
     }
   }

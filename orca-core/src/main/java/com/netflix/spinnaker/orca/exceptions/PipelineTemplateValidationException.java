@@ -22,36 +22,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-public class PipelineTemplateValidationException extends UserException
+public final class PipelineTemplateValidationException extends UserException
     implements HasAdditionalAttributes {
   private final Collection errors;
 
-  public PipelineTemplateValidationException(Collection errors) {
-    this.errors = errors;
-  }
-
   public PipelineTemplateValidationException(String message, Collection errors) {
     super(message);
-    this.errors = errors;
-  }
-
-  public PipelineTemplateValidationException(String message, Throwable cause, Collection errors) {
-    super(message, cause);
-    this.errors = errors;
-  }
-
-  public PipelineTemplateValidationException(Throwable cause, Collection errors) {
-    super(cause);
-    this.errors = errors;
-  }
-
-  public PipelineTemplateValidationException(
-      String message,
-      Throwable cause,
-      boolean enableSuppression,
-      boolean writableStackTrace,
-      Collection errors) {
-    super(message, cause, enableSuppression, writableStackTrace);
     this.errors = errors;
   }
 
