@@ -126,7 +126,7 @@ class PreconfiguredJobStage extends RunJobStage {
       throw new IllegalArgumentException("no property ${propName} on $root")
     }
     if (nextList.size() <= index || index < 0) {
-      throw new IllegalArgumentException("Invalid index $index for list $nextList")
+      throw new IllegalArgumentException("Invalid index $index for list $propName")
     }
     return nextList.get(index)
   }
