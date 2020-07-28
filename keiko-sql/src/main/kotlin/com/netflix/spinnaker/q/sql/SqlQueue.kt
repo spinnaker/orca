@@ -95,8 +95,10 @@ class SqlQueue(
       enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
     }
 
-    private val lockedAtRegex = """^\w+:(\d+)$""".toRegex()
-    private val nameSanitization = """[^A-Za-z0-9_]""".toRegex()
+    private val lockedAtRegex =
+      """^\w+:(\d+)$""".toRegex()
+    private val nameSanitization =
+      """[^A-Za-z0-9_]""".toRegex()
 
     private val log = LoggerFactory.getLogger(SqlQueue::class.java)
   }
@@ -203,8 +205,11 @@ class SqlQueue(
         try {
           found = predicate.invoke(mapper.readValue(rs.getString("body")))
         } catch (e: Exception) {
-          log.error("Failed reading message with fingerprint: ${rs.getString("fingerprint")} " +
-            "message: ${rs.getString("body")}", e)
+          log.error(
+            "Failed reading message with fingerprint: ${rs.getString("fingerprint")} " +
+              "message: ${rs.getString("body")}",
+            e
+          )
         }
         lastId = rs.getString("id")
       }
@@ -297,10 +302,12 @@ class SqlQueue(
 
     if (changed > 0) {
       val rs = withRetry(READ) {
-        jooq.select(field("q.id").`as`("id"),
+        jooq.select(
+          field("q.id").`as`("id"),
           field("q.fingerprint").`as`("fingerprint"),
           field("q.delivery").`as`("delivery"),
-          field("m.body").`as`("body"))
+          field("m.body").`as`("body")
+        )
           .from(queueTable.`as`("q"))
           .leftOuterJoin(messagesTable.`as`("m"))
           .on(sql("q.fingerprint = m.fingerprint"))
@@ -351,8 +358,11 @@ class SqlQueue(
             )
           )
         } catch (e: Exception) {
-          log.error("Failed reading message for fingerprint: $fingerprint, " +
-            "json: $json, removing", e)
+          log.error(
+            "Failed reading message for fingerprint: $fingerprint, " +
+              "json: $json, removing",
+            e
+          )
           deleteAll(fingerprint)
         }
       }
@@ -521,8 +531,10 @@ class SqlQueue(
         log.debug("Rescheduled message: $message, fingerprint: $fingerprint to deliver in $delay")
         fire(MessageRescheduled(message))
       } else {
-        log.warn("Failed to reschedule message: $message, fingerprint: $fingerprint, not found " +
-          "on queue")
+        log.warn(
+          "Failed to reschedule message: $message, fingerprint: $fingerprint, not found " +
+            "on queue"
+        )
         fire(MessageNotFound(message))
       }
     }
@@ -600,8 +612,10 @@ class SqlQueue(
           continue
         }
       } else {
-        log.error("Failed parsing lockedAt time for message id: $id, " +
-          "fingerprint: $fingerprint, lock: $lock, releasing")
+        log.error(
+          "Failed parsing lockedAt time for message id: $id, " +
+            "fingerprint: $fingerprint, lock: $lock, releasing"
+        )
       }
 
       /**
@@ -649,10 +663,12 @@ class SqlQueue(
 
     val unackBaseTime = clock.instant().toEpochMilli()
 
-    val rs = jooq.select(field("u.id").`as`("id"),
+    val rs = jooq.select(
+      field("u.id").`as`("id"),
       field("u.expiry").`as`("expiry"),
       field("u.fingerprint").`as`("fingerprint"),
-      field("m.body").`as`("body"))
+      field("m.body").`as`("body")
+    )
       .from(unackedTable.`as`("u"))
       .leftOuterJoin(messagesTable.`as`("m"))
       .on(sql("u.fingerprint = m.fingerprint"))
@@ -682,7 +698,8 @@ class SqlQueue(
           ?: 0
 
         if (ackAttemptsAttribute.ackAttempts >= Queue.maxRetries ||
-          (maxAttempts > 0 && attempts > maxAttempts)) {
+          (maxAttempts > 0 && attempts > maxAttempts)
+        ) {
           log.warn("Message $fingerprint with payload $message exceeded max ack retries")
           dlq = true
         }
@@ -810,8 +827,10 @@ class SqlQueue(
     }
 
     if (deleted > 0) {
-      log.debug("Deleted $deleted completed messages / ${candidates.size} attempted in " +
-        "${clock.millis() - start}ms")
+      log.debug(
+        "Deleted $deleted completed messages / ${candidates.size} attempted in " +
+          "${clock.millis() - start}ms"
+      )
     }
   }
 
@@ -907,7 +926,9 @@ class SqlQueue(
           .maxAttempts(sqlRetryProperties.transactions.maxRetries)
           .waitDuration(
             Duration.ofMillis(
-              nextLong(writeRetryBackoffMin, writeRetryBackoffMax)))
+              nextLong(writeRetryBackoffMin, writeRetryBackoffMax)
+            )
+          )
           .ignoreExceptions(SQLDialectNotSupportedException::class.java)
           .build()
       )

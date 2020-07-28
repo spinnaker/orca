@@ -43,17 +43,19 @@ object RedisMonitorableQueueTest : MonitorableQueueTest<RedisQueue>(
 private var redis: EmbeddedRedis? = null
 
 private val createQueue = { clock: Clock,
-                            deadLetterCallback: DeadMessageCallback,
-                            publisher: EventPublisher? ->
+  deadLetterCallback: DeadMessageCallback,
+  publisher: EventPublisher? ->
   redis = EmbeddedRedis.embed()
   RedisQueue(
     queueName = "test",
     pool = redis!!.pool,
     clock = clock,
     deadMessageHandlers = listOf(deadLetterCallback),
-    publisher = publisher ?: (object : EventPublisher {
-      override fun publishEvent(event: QueueEvent) {}
-    }),
+    publisher = publisher ?: (
+      object : EventPublisher {
+        override fun publishEvent(event: QueueEvent) {}
+      }
+      ),
     mapper = ObjectMapper().apply {
       registerModule(KotlinModule())
       disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

@@ -39,7 +39,8 @@ class SqlDeadMessageHandler(
       enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
     }
 
-    private val nameSanitization = """[^A-Za-z0-9_]""".toRegex()
+    private val nameSanitization =
+      """[^A-Za-z0-9_]""".toRegex()
 
     private val log = LoggerFactory.getLogger(SqlDeadMessageHandler::class.java)
   }
@@ -106,7 +107,8 @@ class SqlDeadMessageHandler(
         Hashing
           .murmur3_128()
           .hashString(
-            "v2:${hashObjectMapper.writeValueAsString(it)}", StandardCharsets.UTF_8)
+            "v2:${hashObjectMapper.writeValueAsString(it)}", StandardCharsets.UTF_8
+          )
           .toString()
       }
 

@@ -32,13 +32,15 @@ object InMemoryMonitorableQueueTest : MonitorableQueueTest<InMemoryQueue>(
 )
 
 private val createQueue = { clock: Clock,
-                            deadLetterCallback: DeadMessageCallback,
-                            publisher: EventPublisher? ->
+  deadLetterCallback: DeadMessageCallback,
+  publisher: EventPublisher? ->
   InMemoryQueue(
     clock = clock,
     deadMessageHandlers = listOf(deadLetterCallback),
-    publisher = publisher ?: (object : EventPublisher {
-      override fun publishEvent(event: QueueEvent) {}
-    })
+    publisher = publisher ?: (
+      object : EventPublisher {
+        override fun publishEvent(event: QueueEvent) {}
+      }
+      )
   )
 }

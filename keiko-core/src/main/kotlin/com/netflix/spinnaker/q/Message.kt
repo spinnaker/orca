@@ -60,8 +60,10 @@ const val JSON_NAME_PROPERTY = "kind"
 @JsonTypeInfo(use = NAME, property = JSON_NAME_PROPERTY)
 interface Attribute
 
-@Deprecated("Message attributes are intended for internal keiko use only, handlers should " +
-  "limit attempts or run-time through other means.")
+@Deprecated(
+  "Message attributes are intended for internal keiko use only, handlers should " +
+    "limit attempts or run-time through other means."
+)
 /**
  * An attribute representing the maximum number of retries for a message.
  *

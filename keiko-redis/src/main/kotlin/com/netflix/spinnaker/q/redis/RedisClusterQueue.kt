@@ -113,8 +113,10 @@ class RedisClusterQueue(
   override fun push(message: Message, delay: TemporalAmount) {
     jedisCluster.firstFingerprint(queueKey, message.fingerprint()).also { fingerprint ->
       if (fingerprint != null) {
-        log.info("Re-prioritizing message as an identical one is already on the queue: " +
-          "$fingerprint, message: $message")
+        log.info(
+          "Re-prioritizing message as an identical one is already on the queue: " +
+            "$fingerprint, message: $message"
+        )
         jedisCluster.zadd(queueKey, score(delay), fingerprint, zAddParams().xx())
         fire(MessageDuplicate(message))
       } else {
@@ -138,7 +140,8 @@ class RedisClusterQueue(
   override fun ensure(message: Message, delay: TemporalAmount) {
     val fingerprint = message.fingerprint()
     if (!jedisCluster.anyZismember(queueKey, fingerprint.all) &&
-      !jedisCluster.anyZismember(unackedKey, fingerprint.all)) {
+      !jedisCluster.anyZismember(unackedKey, fingerprint.all)
+    ) {
       log.debug(
         "Pushing ensured message onto queue as it does not exist in queue or unacked sets"
       )
@@ -178,8 +181,10 @@ class RedisClusterQueue(
                     zadd(queueKey, score(), fingerprint)
                     hincrBy(attemptsKey, fingerprint, 1L)
                   }
-                log.info("Not retrying message $fingerprint because an identical message " +
-                  "is already on the queue")
+                log.info(
+                  "Not retrying message $fingerprint because an identical message " +
+                    "is already on the queue"
+                )
                 fire(MessageDuplicate(message))
               } else {
                 log.warn("Retrying message $fingerprint after $attempts attempts")
@@ -284,18 +289,22 @@ class RedisClusterQueue(
 
   internal fun JedisCluster.readMessageWithLock(): Triple<String, Instant, String?>? {
     try {
-      val response = evalsha(readMessageWithLockScriptSha, listOf(
-        queueKey,
-        unackedKey,
-        locksKey,
-        messagesKey
-      ), listOf(
-        score().toString(),
-        10.toString(), // TODO rz - make this configurable.
-        lockTtlSeconds.toString(),
-        java.lang.String.format(Locale.US, "%f", score(ackTimeout)),
-        java.lang.String.format(Locale.US, "%f", score())
-      ))
+      val response = evalsha(
+        readMessageWithLockScriptSha,
+        listOf(
+          queueKey,
+          unackedKey,
+          locksKey,
+          messagesKey
+        ),
+        listOf(
+          score().toString(),
+          10.toString(), // TODO rz - make this configurable.
+          lockTtlSeconds.toString(),
+          java.lang.String.format(Locale.US, "%f", score(ackTimeout)),
+          java.lang.String.format(Locale.US, "%f", score())
+        )
+      )
       if (response is List<*>) {
         return Triple(
           response[0].toString(), // fingerprint

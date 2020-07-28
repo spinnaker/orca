@@ -19,7 +19,8 @@ import org.springframework.context.annotation.Configuration
 @ConditionalOnProperty(
   value = ["keiko.queue.sql.enabled"],
   havingValue = "true",
-  matchIfMissing = false)
+  matchIfMissing = false
+)
 class SqlQueueConfiguration {
 
   companion object {

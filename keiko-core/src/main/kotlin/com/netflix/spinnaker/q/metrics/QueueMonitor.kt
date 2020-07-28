@@ -33,27 +33,39 @@ class QueueMonitor(
   init {
     PolledMeter.using(registry)
       .withName("queue.depth")
-      .monitorValue(this, {
-        it.lastState.depth.toDouble()
-      })
+      .monitorValue(
+        this,
+        {
+          it.lastState.depth.toDouble()
+        }
+      )
 
     PolledMeter.using(registry)
       .withName("queue.unacked.depth")
-      .monitorValue(this, {
-        it.lastState.unacked.toDouble()
-      })
+      .monitorValue(
+        this,
+        {
+          it.lastState.unacked.toDouble()
+        }
+      )
 
     PolledMeter.using(registry)
       .withName("queue.ready.depth")
-      .monitorValue(this, {
-        it.lastState.ready.toDouble()
-      })
+      .monitorValue(
+        this,
+        {
+          it.lastState.ready.toDouble()
+        }
+      )
 
     PolledMeter.using(registry)
       .withName("queue.orphaned.messages")
-      .monitorValue(this, {
-        it.lastState.orphaned.toDouble()
-      })
+      .monitorValue(
+        this,
+        {
+          it.lastState.orphaned.toDouble()
+        }
+      )
   }
 
   val lastState: QueueState

@@ -126,7 +126,8 @@ abstract class AbstractRedisQueue(
   )
 }
 
-internal const val READ_MESSAGE_SRC = """
+internal const val READ_MESSAGE_SRC =
+  """
   local java_scientific = function(x)
     return string.format("%.12E", x):gsub("\+", "")
   end
@@ -150,7 +151,8 @@ internal const val READ_MESSAGE_SRC = """
 """
 
 /* ktlint-disable max-line-length */
-internal const val READ_MESSAGE_WITH_LOCK_SRC = """
+internal const val READ_MESSAGE_WITH_LOCK_SRC =
+  """
   local queueKey = KEYS[1]
   local unackKey = KEYS[2]
   local lockKey = KEYS[3]

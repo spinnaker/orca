@@ -150,8 +150,12 @@ object QueueMetricsPublisherTest : SubjectSpek<QueueMetricsPublisher>({
       }
 
       it("increments a counter") {
-        assertThat(registry.counter("queue.duplicate.messages",
-          "messageType", event.payload.javaClass.simpleName).count())
+        assertThat(
+          registry.counter(
+            "queue.duplicate.messages",
+            "messageType", event.payload.javaClass.simpleName
+          ).count()
+        )
           .isEqualTo(1)
       }
     }

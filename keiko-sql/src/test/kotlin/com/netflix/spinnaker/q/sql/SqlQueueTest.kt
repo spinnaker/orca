@@ -32,8 +32,8 @@ private val testDb = SqlTestUtil.initTcMysqlDatabase()
 private val jooq = testDb.context
 
 private val createQueue = { clock: Clock,
-                            deadLetterCallback: DeadMessageCallback,
-                            publisher: EventPublisher? ->
+  deadLetterCallback: DeadMessageCallback,
+  publisher: EventPublisher? ->
   SqlQueue(
     queueName = "test",
     schemaVersion = 1,
@@ -45,18 +45,24 @@ private val createQueue = { clock: Clock,
       disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
       registerSubtypes(TestMessage::class.java)
-      registerSubtypes(MaxAttemptsAttribute::class.java,
+      registerSubtypes(
+        MaxAttemptsAttribute::class.java,
         AttemptsAttribute::class.java,
-        AckAttemptsAttribute::class.java)
+        AckAttemptsAttribute::class.java
+      )
     },
     serializationMigrator = Optional.empty(),
     ackTimeout = Duration.ofSeconds(60),
     deadMessageHandlers = listOf(deadLetterCallback),
-    publisher = publisher ?: (object : EventPublisher {
-      override fun publishEvent(event: QueueEvent) {}
-    }),
-    sqlRetryProperties = SqlRetryProperties(transactions = retryPolicy,
-      reads = retryPolicy)
+    publisher = publisher ?: (
+      object : EventPublisher {
+        override fun publishEvent(event: QueueEvent) {}
+      }
+      ),
+    sqlRetryProperties = SqlRetryProperties(
+      transactions = retryPolicy,
+      reads = retryPolicy
+    )
   )
 }
 

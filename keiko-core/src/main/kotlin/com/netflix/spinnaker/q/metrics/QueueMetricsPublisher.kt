@@ -37,21 +37,27 @@ class QueueMetricsPublisher(
   init {
     PolledMeter.using(registry)
       .withName("queue.last.poll.age")
-      .monitorValue(this, {
-        Duration
-          .between(it.lastQueuePoll, clock.instant())
-          .toMillis()
-          .toDouble()
-      })
+      .monitorValue(
+        this,
+        {
+          Duration
+            .between(it.lastQueuePoll, clock.instant())
+            .toMillis()
+            .toDouble()
+        }
+      )
 
     PolledMeter.using(registry)
       .withName("queue.last.retry.check.age")
-      .monitorValue(this, {
-        Duration
-          .between(it.lastRetryPoll, clock.instant())
-          .toMillis()
-          .toDouble()
-      })
+      .monitorValue(
+        this,
+        {
+          Duration
+            .between(it.lastRetryPoll, clock.instant())
+            .toMillis()
+            .toDouble()
+        }
+      )
   }
 
   override fun publishEvent(event: QueueEvent) {
@@ -104,8 +110,10 @@ class QueueMetricsPublisher(
    * message is already on the queue.
    */
   private val MessageDuplicate.counter: Counter
-    get() = registry.counter("queue.duplicate.messages",
-      "messageType", payload.javaClass.simpleName)
+    get() = registry.counter(
+      "queue.duplicate.messages",
+      "messageType", payload.javaClass.simpleName
+    )
 
   /**
    * Count of attempted message reads that failed to acquire a lock (in other

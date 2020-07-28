@@ -615,7 +615,7 @@ abstract class QueueTest<out Q : Queue>(
 
       /* ktlint-disable max-line-length */
       and("the first message is never acknowledged, gets re-delivered then another identical message is pushed") {
-      /* ktlint-enable max-line-length */
+        /* ktlint-enable max-line-length */
         beforeGroup {
           queue = createQueue(clock, deadLetterCallback).apply {
             push(message)

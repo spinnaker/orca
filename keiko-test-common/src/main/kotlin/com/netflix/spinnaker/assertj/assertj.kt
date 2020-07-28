@@ -32,7 +32,7 @@ private val actualField: Field = AbstractAssert::class.java
 
 @Suppress("UNCHECKED_CAST")
 private val <ACTUAL>
-  Assert<*, ACTUAL>.actual: ACTUAL
+Assert<*, ACTUAL>.actual: ACTUAL
   get() = actualField.get(this) as ACTUAL
 
 /**
@@ -64,9 +64,9 @@ fun Assert<*, *>.asIterable() = run {
 //    .`as`(getter.name) as Assert<*, PROP>
 
 fun <SELF : Assert<*, ACTUAL>, ACTUAL, PROP>
-  SELF.get(
-    property: KProperty1<ACTUAL, PROP>
-  ): Assert<*, PROP> =
+SELF.get(
+  property: KProperty1<ACTUAL, PROP>
+): Assert<*, PROP> =
   assertThat(property.get(actual))
     .`as`(property.name) as Assert<*, PROP>
 

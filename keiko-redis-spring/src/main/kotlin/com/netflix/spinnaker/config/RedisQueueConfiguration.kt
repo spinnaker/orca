@@ -49,7 +49,8 @@ import redis.clients.jedis.util.Pool
 @ConditionalOnProperty(
   value = ["keiko.queue.redis.enabled"],
   havingValue = "true",
-  matchIfMissing = true)
+  matchIfMissing = true
+)
 class RedisQueueConfiguration {
 
   @Bean
@@ -64,7 +65,8 @@ class RedisQueueConfiguration {
   @ConditionalOnProperty(
     value = ["redis.cluster-enabled"],
     havingValue = "false",
-    matchIfMissing = true)
+    matchIfMissing = true
+  )
   fun queueRedisPool(
     @Value("\${redis.connection:redis://localhost:6379}") connection: String,
     @Value("\${redis.timeout:2000}") timeout: Int,
@@ -86,7 +88,8 @@ class RedisQueueConfiguration {
   @ConditionalOnProperty(
     value = ["redis.cluster-enabled"],
     havingValue = "false",
-    matchIfMissing = true)
+    matchIfMissing = true
+  )
   fun queue(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,
@@ -112,7 +115,8 @@ class RedisQueueConfiguration {
   @ConditionalOnProperty(
     value = ["redis.cluster-enabled"],
     havingValue = "false",
-    matchIfMissing = true)
+    matchIfMissing = true
+  )
   fun redisDeadMessageHandler(
     @Qualifier("queueRedisPool") redisPool: Pool<Jedis>,
     redisQueueProperties: RedisQueueProperties,

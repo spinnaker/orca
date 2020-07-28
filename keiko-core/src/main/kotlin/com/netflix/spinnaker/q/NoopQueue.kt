@@ -32,8 +32,10 @@ class NoopQueue : MonitorableQueue {
   private val log = LoggerFactory.getLogger(this.javaClass)
 
   init {
-    log.warn("${this.javaClass.simpleName} was created - all queue operations will be NOOP'd. " +
-      "This is OK if the queue was intended to be disabled")
+    log.warn(
+      "${this.javaClass.simpleName} was created - all queue operations will be NOOP'd. " +
+        "This is OK if the queue was intended to be disabled"
+    )
   }
 
   override val ackTimeout: TemporalAmount
@@ -53,8 +55,10 @@ class NoopQueue : MonitorableQueue {
   }
 
   override fun push(message: Message, delay: TemporalAmount) {
-    log.warn("A message ({}) was pushed onto the NoopQueue - this is probably not the intent",
-      message)
+    log.warn(
+      "A message ({}) was pushed onto the NoopQueue - this is probably not the intent",
+      message
+    )
   }
 
   override fun reschedule(message: Message, delay: TemporalAmount) {
