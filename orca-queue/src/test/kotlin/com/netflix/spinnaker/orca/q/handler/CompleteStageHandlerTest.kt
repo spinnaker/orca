@@ -741,10 +741,12 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
         }
 
         it("updates the stage state") {
-          verify(repository).storeStage(check {
-            assertThat(it.status).isEqualTo(SUCCEEDED)
-            assertThat(it.endTime).isEqualTo(clock.millis())
-          })
+          verify(repository).storeStage(
+            check {
+              assertThat(it.status).isEqualTo(SUCCEEDED)
+              assertThat(it.endTime).isEqualTo(clock.millis())
+            }
+          )
         }
       }
 
@@ -776,10 +778,12 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
         }
 
         it("updates the stage state") {
-          verify(repository).storeStage(check {
-            assertThat(it.status).isEqualTo(SUCCEEDED)
-            assertThat(it.endTime).isEqualTo(clock.millis())
-          })
+          verify(repository).storeStage(
+            check {
+              assertThat(it.status).isEqualTo(SUCCEEDED)
+              assertThat(it.endTime).isEqualTo(clock.millis())
+            }
+          )
         }
       }
     }
