@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.api.preconfigured.jobs;
 
 import java.util.Arrays;
 import java.util.List;
+
+import com.netflix.spinnaker.kork.annotations.Alpha;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -28,6 +30,13 @@ public abstract class PreconfiguredJobStageProperties {
 
   /** If enabled, a pipeline can be configured to use this configuration for running a job. */
   private boolean enabled = true;
+
+  /**
+   * If enabled, the stage executes as a remote stage and is expected to be compatible with the
+   * Orca remote stage API.  See the orca-remote-stage module for more details.
+   */
+  @Alpha
+  private boolean remoteStage = false;
 
   /** Label to use on the Spinnaker UI while configuring pipeline stages. */
   private String label;

@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.job.DestroyJobTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.MonitorJobTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.RunJobTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.WaitOnJobCompletion;
+import com.netflix.spinnaker.orca.clouddriver.tasks.job.WaitOnRemoteJobStageCompletion;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import java.util.*;
@@ -55,12 +56,22 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
 
     getCloudProviderDecorator(stage).ifPresent(it -> it.afterRunJobTaskGraph(stage, builder));
 
-    if (!stage
+    boolean isRemoteStage = stage
+        .getContext()
+        .getOrDefault("remoteStage", "false")
+        .toString()
+        .equalsIgnoreCase("true");
+
+    boolean waitForCompletion = stage
         .getContext()
         .getOrDefault("waitForCompletion", "true")
         .toString()
-        .equalsIgnoreCase("false")) {
+        .equalsIgnoreCase("true");
+
+    if (waitForCompletion && !isRemoteStage) {
       builder.withTask("waitOnJobCompletion", WaitOnJobCompletion.class);
+    } else if (isRemoteStage) {
+      builder.withTask("waitOnRemoteStageCompletion", WaitOnRemoteJobStageCompletion.class);
     }
 
     if (stage.getContext().containsKey("expectedArtifacts")) {
