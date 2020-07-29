@@ -29,7 +29,6 @@ import com.netflix.spinnaker.orca.api.preconfigured.jobs.TitusPreconfiguredJobPr
 import com.netflix.spinnaker.orca.remote.stage.RemoteStageExecution;
 import com.netflix.spinnaker.orca.remote.stage.RemoteStageExecutionParsingException;
 import com.netflix.spinnaker.orca.remote.stage.RemoteStageExecutionProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
