@@ -36,6 +36,8 @@ class DisableServerGroupTask extends AbstractServerGroupTask {
 
   @Override
   void validateClusterStatus(Map operation, Moniker moniker) {
+    Thread.sleep(new Random().nextInt(20) * 1000)
+
     // if any operation has a non-null desiredPercentage that indicates an entire server group is not going away
     // (e.g. in the case of rolling red/black deploy), let's bypass the traffic guard check for now.
     // In the future, we should actually use this percentage to correctly determine if the disable operation is safe
