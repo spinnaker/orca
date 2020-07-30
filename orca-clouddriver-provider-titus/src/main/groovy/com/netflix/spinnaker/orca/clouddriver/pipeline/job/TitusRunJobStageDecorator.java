@@ -25,8 +25,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.Base64;
 import java.util.Map;
 
+import com.netflix.spinnaker.orca.api.pipeline.remote.execution.RemoteStageExecution;
 import com.netflix.spinnaker.orca.api.preconfigured.jobs.TitusPreconfiguredJobProperties;
-import com.netflix.spinnaker.orca.remote.stage.RemoteStageExecution;
 import com.netflix.spinnaker.orca.remote.stage.RemoteStageExecutionParsingException;
 import com.netflix.spinnaker.orca.remote.stage.RemoteStageExecutionProvider;
 import org.springframework.stereotype.Component;

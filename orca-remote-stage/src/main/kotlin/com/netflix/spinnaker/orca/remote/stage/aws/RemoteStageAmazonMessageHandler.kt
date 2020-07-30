@@ -6,9 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.annotations.VisibleForTesting
 import com.netflix.spinnaker.kork.pubsub.aws.NotificationMessage
 import com.netflix.spinnaker.kork.pubsub.aws.api.AmazonPubsubMessageHandler
+import com.netflix.spinnaker.orca.api.pipeline.remote.messages.RemoteStageMessage
 import com.netflix.spinnaker.orca.remote.stage.RemoteStageMessageHandlingException
 import com.netflix.spinnaker.orca.remote.stage.messages.RemoteStageMessageHandler
-import com.netflix.spinnaker.orca.remote.stage.messages.RemoteStageMessage
 
 class RemoteStageAmazonMessageHandler(
   private val objectMapper: ObjectMapper,

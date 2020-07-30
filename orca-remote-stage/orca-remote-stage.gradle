@@ -24,6 +24,7 @@ dependencies {
   api("com.netflix.spinnaker.kork:kork-pubsub-aws")
 
   implementation(project(":orca-core"))
+  implementation(project(":orca-api"))
   implementation("com.amazonaws:aws-java-sdk-sqs")
 
   compileOnly("org.projectlombok:lombok")

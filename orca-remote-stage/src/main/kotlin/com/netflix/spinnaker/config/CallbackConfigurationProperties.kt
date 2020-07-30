@@ -8,12 +8,12 @@ class CallbackConfigurationProperties {
   var pubsub: PubsubConfigurationProperties = PubsubConfigurationProperties()
 
   inner class HttpConfigurationProperties {
-    var uri: String = "configure-me"
+    var url: String = "configure-me"
   }
 
   inner class PubsubConfigurationProperties {
-    var name: String = "configure-me"
+    var id: String = "configure-me"
     var provider: String = "configure-me"
-    var providerConfig: MutableMap<String, String> = mutableMapOf()
+    var providerConfig: Map<String, String> = mapOf()
   }
 }

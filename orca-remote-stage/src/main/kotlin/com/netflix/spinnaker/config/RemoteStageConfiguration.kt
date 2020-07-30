@@ -5,8 +5,8 @@ import com.netflix.spinnaker.kork.annotations.Alpha
 import com.netflix.spinnaker.kork.pubsub.aws.api.AmazonPubsubMessageHandlerFactory
 import com.netflix.spinnaker.kork.pubsub.aws.config.AmazonPubsubConfig
 import com.netflix.spinnaker.kork.pubsub.config.PubsubConfig
+import com.netflix.spinnaker.orca.api.pipeline.remote.messages.RemoteStageMessage
 import com.netflix.spinnaker.orca.remote.stage.aws.RemoteStageAmazonMessageHandler
-import com.netflix.spinnaker.orca.remote.stage.messages.RemoteStageMessage
 import com.netflix.spinnaker.orca.remote.stage.messages.RemoteStageMessageHandler
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
