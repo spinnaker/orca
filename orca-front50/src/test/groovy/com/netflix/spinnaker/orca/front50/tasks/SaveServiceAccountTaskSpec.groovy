@@ -144,12 +144,17 @@ class SaveServiceAccountTaskSpec extends Specification {
     }
 
     def user = "abc@somedomain.io"
-
-    def exception = [details: [error: "UserAuthorized error", errors: ["User '"+ user +"' is not authorized with all roles for pipeline"]]]
+    def message = ""
+    def exceptionMessage = "User '"+ user +"' is not authorized with all roles for pipeline"
 
     when:
     stage.getExecution().setTrigger(new DefaultTrigger('manual', null, user))
-    def result = task.execute(stage)
+
+    try {
+      task.execute(stage)
+    } catch (Exception e) {
+      message = e.message
+    }
 
     then:
     1 * fiatPermissionEvaluator.getPermission(user) >> {
@@ -158,8 +163,7 @@ class SaveServiceAccountTaskSpec extends Specification {
 
     0 * front50Service.saveServiceAccount(_)
 
-    result.status == ExecutionStatus.TERMINAL
-    result.context == ImmutableMap.of("exception", exception)
+    message == exceptionMessage
   }
 
   def "should allow an admin to save pipelines"() {

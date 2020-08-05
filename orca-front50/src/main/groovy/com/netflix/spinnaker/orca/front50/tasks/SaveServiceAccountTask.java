@@ -18,13 +18,13 @@ package com.netflix.spinnaker.orca.front50.tasks;
 
 import static java.lang.String.format;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.fiat.model.UserPermission;
 import com.netflix.spinnaker.fiat.model.resources.Role;
 import com.netflix.spinnaker.fiat.model.resources.ServiceAccount;
 import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator;
 import com.netflix.spinnaker.fiat.shared.FiatStatus;
+import com.netflix.spinnaker.kork.exceptions.UserException;
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
@@ -132,18 +132,8 @@ public class SaveServiceAccountTask implements RetryableTask {
 
     if (!isUserAuthorized(user, roles)) {
       log.warn("User {} is not authorized with all roles for pipeline", user);
-      Map<String, Object> operation = new HashMap<>();
-      operation.put(
-          "exception",
-          ImmutableMap.of(
-              "details",
-              ImmutableMap.of(
-                  "error",
-                  "UserAuthorized error",
-                  "errors",
-                  ImmutableList.of(
-                      format("User '%s' is not authorized with all roles for pipeline", user)))));
-      return TaskResult.builder(ExecutionStatus.TERMINAL).context(operation).build();
+      throw new UserException(
+          format("User '%s' is not authorized with all roles for pipeline", user));
     }
 
     ServiceAccount svcAcct = new ServiceAccount();
