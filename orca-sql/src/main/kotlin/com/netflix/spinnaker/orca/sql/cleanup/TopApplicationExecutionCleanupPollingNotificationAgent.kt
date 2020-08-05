@@ -25,6 +25,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import java.util.concurrent.atomic.AtomicInteger
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
+import org.jooq.impl.DSL.name
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
@@ -42,7 +43,8 @@ class TopApplicationExecutionCleanupPollingNotificationAgent(
 ) : AbstractCleanupPollingAgent(
   clusterLock,
   configurationProperties.intervalMs,
-  registry) {
+  registry
+) {
 
   override fun performCleanup() {
     // We don't have an index on partition/application so a query on a given partition is very expensive.
@@ -59,11 +61,13 @@ class TopApplicationExecutionCleanupPollingNotificationAgent(
       val applicationsWithLotsOfOrchestrations = jooq
         .select(DSL.field("application"))
         .from(DSL.table("orchestrations"))
-        .where(if (orcaSqlProperties.partitionName == null) {
-          DSL.noCondition()
-        } else {
-          DSL.field("`partition`").eq(orcaSqlProperties.partitionName)
-        })
+        .where(
+          if (orcaSqlProperties.partitionName == null) {
+            DSL.noCondition()
+          } else {
+            DSL.field(name("partition")).eq(orcaSqlProperties.partitionName)
+          }
+        )
         .and(DSL.field("application").`in`(*chunk.toTypedArray()))
         .groupBy(DSL.field("application"))
         .having(DSL.count(DSL.field("id")).gt(configurationProperties.threshold))

@@ -38,16 +38,19 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.cleanupDb
+import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initTcPostgresDatabase
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initTcMysqlDatabase
 import static java.time.temporal.ChronoUnit.DAYS
 
-class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
+abstract class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
   @Shared
   ObjectMapper mapper = OrcaObjectMapper.newInstance().with {
     registerModule(new KotlinModule())
     it
   }
+
+  abstract SqlTestUtil.TestDatabase getDatabase()
 
   @Shared
   @AutoCleanup("close")
@@ -74,7 +77,7 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
   )
 
   def setupSpec() {
-    currentDatabase = initTcMysqlDatabase()
+    currentDatabase = getDatabase()
     executionRepository = new SqlExecutionRepository("test", currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", null)
   }
 
@@ -142,5 +145,19 @@ class OldPipelineCleanupPollingNotificationAgentSpec extends Specification {
     e.stages.add(new StageExecutionImpl(e, "wait", "wait stage", [waitTime: 10]))
 
     return e
+  }
+}
+
+class MySqlOldPipelineCleanupPollingNotificationAgentSpec extends OldPipelineCleanupPollingNotificationAgentSpec {
+  @Override
+  SqlTestUtil.TestDatabase getDatabase() {
+    return initTcMysqlDatabase()
+  }
+}
+
+class PgOldPipelineCleanupPollingNotificationAgentSpec extends OldPipelineCleanupPollingNotificationAgentSpec {
+  @Override
+  SqlTestUtil.TestDatabase getDatabase() {
+    return initTcPostgresDatabase()
   }
 }

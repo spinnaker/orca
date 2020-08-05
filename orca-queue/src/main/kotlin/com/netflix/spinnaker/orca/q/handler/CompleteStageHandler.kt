@@ -86,8 +86,10 @@ class CompleteStageHandler(
       if (stage.status in setOf(RUNNING, NOT_STARTED)) {
         var status = stage.determineStatus()
         if (stage.shouldFailOnFailedExpressionEvaluation()) {
-          log.warn("Stage ${stage.id} (${stage.type}) of ${stage.execution.id} " +
-            "is set to fail because of failed expressions.")
+          log.warn(
+            "Stage ${stage.id} (${stage.type}) of ${stage.execution.id} " +
+              "is set to fail because of failed expressions."
+          )
           status = TERMINAL
         }
 
@@ -269,7 +271,7 @@ class CompleteStageHandler(
       allStatuses.contains(STOPPED) -> STOPPED
       allStatuses.contains(CANCELED) -> CANCELED
       allStatuses.contains(FAILED_CONTINUE) -> FAILED_CONTINUE
-      allStatuses.all { it == SUCCEEDED } -> SUCCEEDED
+      allStatuses.all { it == SUCCEEDED || it == SKIPPED } -> SUCCEEDED
       afterStageStatuses.contains(NOT_STARTED) -> RUNNING // after stages were planned but not run yet
       else -> {
         log.error("Unhandled condition for stage $id of ${execution.id}, marking as TERMINAL. syntheticStatuses=$syntheticStatuses, taskStatuses=$taskStatuses, planningStatus=$planningStatus, afterStageStatuses=$afterStageStatuses")

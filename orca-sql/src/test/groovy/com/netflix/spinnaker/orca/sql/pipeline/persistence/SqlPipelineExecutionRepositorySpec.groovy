@@ -38,19 +38,20 @@ import rx.schedulers.Schedulers
 import de.huxhorn.sulky.ulid.ULID
 import spock.lang.AutoCleanup
 import spock.lang.Shared
+import spock.lang.Subject
 import spock.lang.Unroll
 
-import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initPreviousTcMysqlDatabase
+import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.cleanupDb
+import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initDualTcMysqlDatabases
+import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initDualTcPostgresDatabases
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_ASC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator.BUILD_TIME_DESC
 import static com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionCriteria
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.orchestration
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
-import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.cleanupDb
-import static com.netflix.spinnaker.kork.sql.test.SqlTestUtil.initTcMysqlDatabase
 
-class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<ExecutionRepository> {
+abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<ExecutionRepository> {
 
   @Shared
   ObjectMapper mapper = OrcaObjectMapper.newInstance().with {
@@ -61,6 +62,15 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
   def ulid = new ULID()
 
   @Shared
+  @Subject
+  ExecutionRepository repository
+
+  @Override
+  ExecutionRepository repository() {
+    return repository
+  }
+
+  @Shared
   @AutoCleanup("close")
   TestDatabase currentDatabase
 
@@ -68,24 +78,19 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
   @AutoCleanup("close")
   TestDatabase previousDatabase
 
+  abstract TestDatabase getDatabase()
+
   def setupSpec() {
-    currentDatabase = initTcMysqlDatabase()
-    previousDatabase = initPreviousTcMysqlDatabase()
+    currentDatabase = getDatabase()
+    repository = createExecutionRepository()
   }
 
   def cleanup() {
     cleanupDb(currentDatabase.context)
-    cleanupDb(previousDatabase.context)
   }
 
-  @Override
   ExecutionRepository createExecutionRepository() {
     return createExecutionRepository("test")
-  }
-
-  @Override
-  ExecutionRepository createExecutionRepositoryPrevious() {
-    new SqlExecutionRepository("test", previousDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", null)
   }
 
   ExecutionRepository createExecutionRepository(String partition, Interlink interlink = null) {
@@ -154,7 +159,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
 
     currentDatabase.context
       .update(DSL.table("pipelines"))
-      .set(DSL.field("`partition`"), DSL.value("foreign"))
+      .set(DSL.field(DSL.name("partition")), DSL.value("foreign"))
       .execute()
 
     when:
@@ -200,7 +205,7 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
 
     currentDatabase.context
         .update(DSL.table("pipelines"))
-        .set(DSL.field("`partition`"), DSL.value("foreign"))
+        .set(DSL.field(DSL.name("partition")), DSL.value("foreign"))
         .execute()
 
     when:
@@ -665,5 +670,19 @@ class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepositoryTck<
       5L,
       new ExecutionCriteria().setPageSize(1).setSortType(BUILD_TIME_ASC)
     ).size() == 0
+  }
+}
+
+class MySqlPipelineExecutionRepositorySpec extends SqlPipelineExecutionRepositorySpec {
+  @Override
+  TestDatabase getDatabase() {
+    return initDualTcMysqlDatabases()
+  }
+}
+
+class PgSqlPipelineExecutionRepositorySpec extends SqlPipelineExecutionRepositorySpec {
+  @Override
+  TestDatabase getDatabase() {
+    return initDualTcPostgresDatabases()
   }
 }

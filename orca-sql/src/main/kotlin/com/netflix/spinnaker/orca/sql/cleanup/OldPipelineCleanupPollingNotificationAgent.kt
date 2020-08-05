@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.jooq.DSLContext
 import org.jooq.impl.DSL.count
 import org.jooq.impl.DSL.field
+import org.jooq.impl.DSL.name
 import org.jooq.impl.DSL.table
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -48,7 +49,8 @@ class OldPipelineCleanupPollingNotificationAgent(
 ) : AbstractCleanupPollingAgent(
   clusterLock,
   configurationProperties.intervalMs,
-  registry) {
+  registry
+) {
 
   override fun performCleanup() {
     val exceptionalApps = configurationProperties.exceptionalApplications.toHashSet()
@@ -75,16 +77,20 @@ class OldPipelineCleanupPollingNotificationAgent(
           .select(field("application"), field("config_id"), count(field("id")).`as`("count"))
           .from(table("pipelines"))
           .where(
-            field("application").`in`(*chunk.toTypedArray()))
+            field("application").`in`(*chunk.toTypedArray())
+          )
           .and(
-            field("build_time").le(thresholdMillis))
+            field("build_time").le(thresholdMillis)
+          )
           .and(
-            field("status").`in`(*completedStatuses.toTypedArray()))
+            field("status").`in`(*completedStatuses.toTypedArray())
+          )
 
         if (orcaSqlProperties.partitionName != null) {
           queryBuilder = queryBuilder
             .and(
-              field("`partition`").eq(orcaSqlProperties.partitionName))
+              field(name("partition")).eq(orcaSqlProperties.partitionName)
+            )
         }
 
         val pipelineConfigsWithOldExecutions = queryBuilder
@@ -136,16 +142,18 @@ class OldPipelineCleanupPollingNotificationAgent(
     var queryBuilder = jooq
       .select(field("id"))
       .from(table("pipelines"))
-      .where(field("build_time").le(thresholdMillis)
-        .and(field("status").`in`(*completedStatuses.toTypedArray()))
-        .and(field("application").eq(application))
-        .and(field("config_id").eq(pipelineConfigId))
+      .where(
+        field("build_time").le(thresholdMillis)
+          .and(field("status").`in`(*completedStatuses.toTypedArray()))
+          .and(field("application").eq(application))
+          .and(field("config_id").eq(pipelineConfigId))
       )
 
     if (orcaSqlProperties.partitionName != null) {
       queryBuilder = queryBuilder
         .and(
-          field("`partition`").eq(orcaSqlProperties.partitionName))
+          field(name("partition")).eq(orcaSqlProperties.partitionName)
+        )
     }
 
     val executionsToRemove = queryBuilder
