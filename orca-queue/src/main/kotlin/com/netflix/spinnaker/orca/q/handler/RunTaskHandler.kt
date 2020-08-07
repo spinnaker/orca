@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.orca.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
@@ -170,7 +171,11 @@ class RunTaskHandler(
               queue.push(CompleteTask(message, SUCCEEDED))
             } else {
               if (e !is TimeoutException) {
-                log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
+                if (e is UserException) {
+                  log.warn("${message.taskType.simpleName} for ${message.executionType}[${message.executionId}] failed, likely due to user error", e)
+                } else {
+                  log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
+                }
               }
 
               val status = stage.failureStatus(default = TERMINAL)
