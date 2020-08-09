@@ -191,17 +191,20 @@ class RunTaskHandler(
   }
 
   private fun trackResult(stage: StageExecution, thisInvocationStartTimeMs: Long, taskModel: TaskExecution, status: ExecutionStatus) {
-    val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
-    val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
+    try {
+      val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
+      val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
 
-    val elapsedMillis = clock.millis() - thisInvocationStartTimeMs
+      val elapsedMillis = clock.millis() - thisInvocationStartTimeMs
 
-    hashMapOf(
-      "task.invocations.duration" to commonTags + BasicTag("application", stage.execution.application),
-      "task.invocations.duration.withType" to commonTags + detailedTags
-    ).forEach {
-      name, tags ->
-      registry.timer(name, tags).record(elapsedMillis, TimeUnit.MILLISECONDS)
+      hashMapOf(
+        "task.invocations.duration" to commonTags + BasicTag("application", stage.execution.application),
+        "task.invocations.duration.withType" to commonTags + detailedTags
+      ).forEach { name, tags ->
+        registry.timer(name, tags).record(elapsedMillis, TimeUnit.MILLISECONDS)
+      }
+    } catch (e: java.lang.Exception) {
+      log.warn("Failed to track result for stage: ${stage.id}, task: ${taskModel.id}", e)
     }
   }
 
