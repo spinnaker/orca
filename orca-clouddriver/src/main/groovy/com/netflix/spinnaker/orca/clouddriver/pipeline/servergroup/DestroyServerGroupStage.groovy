@@ -40,10 +40,14 @@ class DestroyServerGroupStage extends TargetServerGroupLinearStageSupport implem
   }
 
   private static void addDisableStage(Map<String, Object> context, StageGraphBuilderImpl graph) {
-    graph.add {
-      it.name = "disableServerGroup"
-      it.type = getType(DisableServerGroupStage)
-      it.context.putAll(context)
+    boolean skipDisable = (boolean)context.getOrDefault("forceSkipDisable", false)
+
+    if (!skipDisable ) {
+      graph.add {
+        it.name = "disableServerGroup"
+        it.type = getType(DisableServerGroupStage)
+        it.context.putAll(context)
+      }
     }
   }
 
