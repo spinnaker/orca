@@ -266,7 +266,8 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
     // Check if there's least one enabled
     boolean atLeastOneEnabled =
-        allServerGroupsInRegion.stream().anyMatch(DetermineRollbackCandidatesTask::isServerGroupEnabled);
+        allServerGroupsInRegion.stream()
+            .anyMatch(DetermineRollbackCandidatesTask::isServerGroupEnabled);
     if (!atLeastOneEnabled) {
       logger.warn(
           "No enabled server groups in cluster {} and region {} to rollback from. Skipping this region.",
@@ -347,12 +348,10 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
         .orElse(false);
   }
 
-  /**
-   * Retrieve info about the server group and use it to populate a Moniker object
-   *
-   * @return true on success, false on failure
-   */
-  private Moniker populateMonikerWithServerGroupInfo(Moniker moniker, String credentials, String region, String serverGroupName) {
+  /** Retrieve info about the server group and use it to populate a Moniker object */
+  @Nullable
+  private Moniker populateMonikerWithServerGroupInfo(
+      Moniker moniker, String credentials, String region, String serverGroupName) {
     if (moniker == null && serverGroupName != null) {
       try {
         Map<String, Object> serverGroup =
@@ -375,12 +374,11 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Get info about cluster */
   @Nullable
-  private Map<String, Object> fetchClusterInfoWithRetry(Moniker moniker, String credentials, String cloudProvider) {
+  private Map<String, Object> fetchClusterInfoWithRetry(
+      Moniker moniker, String credentials, String cloudProvider) {
     try {
       return retrySupport.retry(
-          () ->
-              fetchCluster(
-                  moniker.getApp(), credentials, moniker.getCluster(), cloudProvider),
+          () -> fetchCluster(moniker.getApp(), credentials, moniker.getCluster(), cloudProvider),
           5,
           1000,
           false);
