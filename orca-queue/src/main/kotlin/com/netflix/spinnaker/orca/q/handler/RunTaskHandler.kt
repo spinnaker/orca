@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.orca.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
@@ -170,7 +171,11 @@ class RunTaskHandler(
               queue.push(CompleteTask(message, SUCCEEDED))
             } else {
               if (e !is TimeoutException) {
-                log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
+                if (e is UserException) {
+                  log.warn("${message.taskType.simpleName} for ${message.executionType}[${message.executionId}] failed, likely due to user error", e)
+                } else {
+                  log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
+                }
               }
 
               val status = stage.failureStatus(default = TERMINAL)
@@ -186,17 +191,20 @@ class RunTaskHandler(
   }
 
   private fun trackResult(stage: StageExecution, thisInvocationStartTimeMs: Long, taskModel: TaskExecution, status: ExecutionStatus) {
-    val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
-    val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
+    try {
+      val commonTags = MetricsTagHelper.commonTags(stage, taskModel, status)
+      val detailedTags = MetricsTagHelper.detailedTaskTags(stage, taskModel, status)
 
-    val elapsedMillis = clock.millis() - thisInvocationStartTimeMs
+      val elapsedMillis = clock.millis() - thisInvocationStartTimeMs
 
-    hashMapOf(
-      "task.invocations.duration" to commonTags + BasicTag("application", stage.execution.application),
-      "task.invocations.duration.withType" to commonTags + detailedTags
-    ).forEach {
-      name, tags ->
+      hashMapOf(
+        "task.invocations.duration" to commonTags + BasicTag("application", stage.execution.application),
+        "task.invocations.duration.withType" to commonTags + detailedTags
+      ).forEach { name, tags ->
         registry.timer(name, tags).record(elapsedMillis, TimeUnit.MILLISECONDS)
+      }
+    } catch (e: java.lang.Exception) {
+      log.warn("Failed to track result for stage: ${stage.id}, task: ${taskModel.id}", e)
     }
   }
 
@@ -245,7 +253,8 @@ class RunTaskHandler(
       dynamicConfigService.getConfig(
         Long::class.java,
         "tasks.global.backOffPeriod",
-        dynamicBackOffPeriod)
+        dynamicBackOffPeriod
+      )
     )
 
     if (this is CloudProviderAware && hasCloudProvider(stage)) {
@@ -349,12 +358,14 @@ class RunTaskHandler(
   ) =
     counter(
       createId("queue.task.timeouts")
-        .withTags(mapOf(
-          "executionType" to executionType.toString(),
-          "application" to application,
-          "stageType" to stageType,
-          "taskType" to taskType
-        ))
+        .withTags(
+          mapOf(
+            "executionType" to executionType.toString(),
+            "application" to application,
+            "stageType" to stageType,
+            "taskType" to taskType
+          )
+        )
     )
 
   private fun PipelineExecution.pausedDurationRelativeTo(instant: Instant?): Duration {
