@@ -144,7 +144,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
       List<ServerGroup> enabledServerGroupsInRegion =
           allServerGroupsInRegion.stream()
-              .filter(DetermineRollbackCandidatesTask::isEnabled)
+              .filter(DetermineRollbackCandidatesTask::isServerGroupEnabled)
               .collect(Collectors.toList());
 
       ServerGroup serverGroupToRollBack = getServerGroupToRollBack(enabledServerGroupsInRegion);
@@ -267,7 +267,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
     // Check if there's least one enabled
     boolean atLeastOneEnabled =
-        allServerGroupsInRegion.stream().anyMatch(DetermineRollbackCandidatesTask::isEnabled);
+        allServerGroupsInRegion.stream().anyMatch(DetermineRollbackCandidatesTask::isServerGroupEnabled);
     if (!atLeastOneEnabled) {
       logger.warn(
           "No enabled server groups in cluster {} and region {} to rollback from. Skipping this region.",
@@ -278,7 +278,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
     return atLeastOneEnabled;
   }
 
-  private static boolean isEnabled(ServerGroup serverGroup) {
+  private static boolean isServerGroupEnabled(ServerGroup serverGroup) {
     return serverGroup.disabled == null || !serverGroup.disabled;
   }
 
