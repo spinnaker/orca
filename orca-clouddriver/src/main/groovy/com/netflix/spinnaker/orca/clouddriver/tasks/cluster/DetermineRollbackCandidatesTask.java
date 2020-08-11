@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -106,7 +105,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
-    AtomicReference<Moniker> moniker =
+    Moniker moniker =
         populateMonikerWithServerGroupInfo(
             stageData.moniker,
             stageData.credentials,
@@ -122,7 +121,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       return TaskResult.RUNNING;
     }
 
-    return determineRollbackCandidates(stageData, moniker.get().getCluster(), serverGroups);
+    return determineRollbackCandidates(stageData, moniker.getCluster(), serverGroups);
   }
 
   private TaskResult determineRollbackCandidates(
@@ -236,7 +235,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   @Nullable
   private List<ServerGroup> getServerGroups(
-      AtomicReference<Moniker> moniker, String credentials, String cloudProvider) {
+      Moniker moniker, String credentials, String cloudProvider) {
     return Optional.ofNullable(fetchClusterInfoWithRetry(moniker, credentials, cloudProvider))
         .map(clusterInfo -> clusterInfo.get("serverGroups"))
         .map(this::toServerGroups)
@@ -353,16 +352,14 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
    *
    * @return true on success, false on failure
    */
-  private AtomicReference<Moniker> populateMonikerWithServerGroupInfo(
-      Moniker m, String credentials, String region, String serverGroupName) {
-    AtomicReference<Moniker> moniker = new AtomicReference<>(m);
-    if (moniker.get() == null && serverGroupName != null) {
+  private Moniker populateMonikerWithServerGroupInfo(Moniker moniker, String credentials, String region, String serverGroupName) {
+    if (moniker == null && serverGroupName != null) {
       try {
         Map<String, Object> serverGroup =
             retrySupport.retry(
                 () -> fetchServerGroup(credentials, region, serverGroupName), 5, 1000, false);
 
-        moniker.set(objectMapper.convertValue(serverGroup.get("moniker"), Moniker.class));
+        moniker = objectMapper.convertValue(serverGroup.get("moniker"), Moniker.class);
       } catch (Exception e) {
         logger.warn(
             "Failed to fetch server group, retrying! (account: {}, region: {}, serverGroup: {})",
@@ -378,22 +375,21 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Get info about cluster */
   @Nullable
-  private Map<String, Object> fetchClusterInfoWithRetry(
-      AtomicReference<Moniker> moniker, String credentials, String cloudProvider) {
+  private Map<String, Object> fetchClusterInfoWithRetry(Moniker moniker, String credentials, String cloudProvider) {
     try {
       return retrySupport.retry(
           () ->
               fetchCluster(
-                  moniker.get().getApp(), credentials, moniker.get().getCluster(), cloudProvider),
+                  moniker.getApp(), credentials, moniker.getCluster(), cloudProvider),
           5,
           1000,
           false);
     } catch (Exception e) {
       logger.warn(
           "Failed to fetch cluster, retrying! (application: {}, account: {}, cluster: {}, cloudProvider: {})",
-          moniker.get().getApp(),
+          moniker.getApp(),
           credentials,
-          moniker.get().getCluster(),
+          moniker.getCluster(),
           cloudProvider,
           e);
       return null;
