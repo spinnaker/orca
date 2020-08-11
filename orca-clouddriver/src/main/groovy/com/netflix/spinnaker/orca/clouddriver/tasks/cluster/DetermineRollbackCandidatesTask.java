@@ -73,6 +73,9 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   private static final Logger logger =
       LoggerFactory.getLogger(DetermineRollbackCandidatesTask.class);
 
+  private static final TypeReference<List<ServerGroup>> listOfServerGroupsTypeReference =
+      new TypeReference<List<ServerGroup>>() {};
+
   private final ObjectMapper objectMapper;
   private final RetrySupport retrySupport;
   private final OortService oortService;
@@ -246,7 +249,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   @Nonnull
   private List<ServerGroup> toServerGroups(Object obj) {
     List<ServerGroup> serverGroups =
-        objectMapper.convertValue(obj, new TypeReference<List<ServerGroup>>() {});
+        objectMapper.convertValue(obj, listOfServerGroupsTypeReference);
     serverGroups.sort(Comparator.comparing((ServerGroup o) -> o.createdTime).reversed());
     return serverGroups;
   }
