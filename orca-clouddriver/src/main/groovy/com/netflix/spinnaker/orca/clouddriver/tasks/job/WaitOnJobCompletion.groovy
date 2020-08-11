@@ -146,7 +146,11 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
           retrySupport.retry({
             properties = katoRestService.getFileContents(appName, account, location, name, stage.context.propertyFile)
             if (properties.size() == 0) {
-              throw new ConfigurationException("Expected properties file ${stage.context.propertyFile} but it was either missing, empty or contained invalid syntax")
+              if (status == ExecutionStatus.SUCCEEDED) {
+                throw new ConfigurationException("Expected properties file ${stage.context.propertyFile} but it was either missing, empty or contained invalid syntax")
+              } else {
+                throw new ConfigurationException("Expected properties file ${stage.context.propertyFile} but it was either missing, empty or contained invalid syntax (this may be because the job failed)")
+              }
             }
           }, 6, 5000, false) // retry for 30 seconds
           outputs << properties
