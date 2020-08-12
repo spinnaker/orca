@@ -443,6 +443,58 @@ class ArtifactUtilsSpec extends Specification {
     initialArtifacts == finalArtifacts
   }
 
+  def "include subpath as location in artifact to have unique git artifacts"() {
+    given:
+    def matchArtifact = Artifact.builder()
+        .type("git/repo")
+        .customKind(false)
+        .reference("reference")
+        .version("master")
+        .metadata(Collections.singletonMap("subPath", "test"))
+        .build()
+    def defaultArtifact = Artifact.builder()
+        .type("git/repo")
+        .customKind(false)
+        .reference("reference")
+        .version("master")
+        .metadata(Collections.singletonMap("subPath", "test"))
+        .build()
+    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).defaultArtifact(defaultArtifact).useDefaultArtifact(true).build()
+    def parentArtifact = Artifact.builder()
+        .type("git/repo")
+        .customKind(false)
+        .reference("reference")
+        .version("master")
+        .metadata(Collections.singletonMap("subPath", "config"))
+        .build()
+    def anotherParentArtifact = Artifact.builder()
+        .type("git/repo")
+        .customKind(false)
+        .reference("reference")
+        .version("master")
+        .metadata(Collections.singletonMap("subPath", "template"))
+        .build()
+    def pipeline = [
+        id: "abc",
+        trigger: [
+            artifacts: [parentArtifact, anotherParentArtifact],
+        ],
+        expectedArtifacts: [expectedArtifact]
+    ]
+    def artifactUtils = makeArtifactUtils()
+
+    when:
+    artifactUtils.resolveArtifacts(pipeline)
+
+    then:
+    List<Artifact> triggerArtifacts = extractTriggerArtifacts(pipeline.trigger)
+    triggerArtifacts.size() == 3
+    List<ExpectedArtifact> resolvedArtifacts = objectMapper.convertValue(
+        pipeline.trigger.resolvedExpectedArtifacts,
+        new TypeReference<List<ExpectedArtifact>>() {})
+    resolvedArtifacts.size() == 1
+  }
+
   private List<Artifact> extractTriggerArtifacts(Map<String, Object> trigger) {
     return objectMapper.convertValue(trigger.artifacts, new TypeReference<List<Artifact>>(){});
   }

@@ -202,6 +202,7 @@ public class ArtifactUtils {
             .map(Collection::stream)
             .orElse(Stream.empty())
             .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
+            .map(this::updateExpectedArtifacts)
             .collect(toImmutableList());
 
     ImmutableSet<Artifact> receivedArtifacts =
@@ -213,6 +214,7 @@ public class ArtifactUtils {
                     .map(Collection::stream)
                     .orElse(Stream.empty()))
             .map(it -> objectMapper.convertValue(it, Artifact.class))
+            .map(this::updateLocationOnGitArtifact)
             .collect(toImmutableSet());
 
     ArtifactResolver.ResolveResult resolveResult =
@@ -311,4 +313,38 @@ public class ArtifactUtils {
       Comparator.comparing(
               PipelineExecution::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
           .thenComparing(PipelineExecution::getId, Comparator.reverseOrder());
+
+  private ExpectedArtifact updateExpectedArtifacts(ExpectedArtifact expectedArtifact) {
+    return ExpectedArtifact.builder()
+        .matchArtifact(updateLocationOnGitArtifact(expectedArtifact.getMatchArtifact()))
+        .usePriorArtifact(expectedArtifact.isUsePriorArtifact())
+        .useDefaultArtifact(expectedArtifact.isUseDefaultArtifact())
+        .defaultArtifact(updateLocationOnGitArtifact(expectedArtifact.getDefaultArtifact()))
+        .id(expectedArtifact.getId())
+        .boundArtifact(updateLocationOnGitArtifact(expectedArtifact.getBoundArtifact()))
+        .build();
+  }
+
+  // When using git/repo artifact type, we are able to specify subpath on the artifact
+  // docs: https://spinnaker.io/reference/artifacts-with-artifactsrewrite/types/git-repo/
+  // this method includes subpath in location field to have unique git/repo artifacts
+  private Artifact updateLocationOnGitArtifact(@Nullable Artifact artifact) {
+    if (artifact == null
+        || artifact.isCustomKind()
+        || !Strings.nullToEmpty(artifact.getType()).equals("git/repo")) {
+      return artifact;
+    }
+    return Artifact.builder()
+        .type(artifact.getType())
+        .customKind(artifact.isCustomKind())
+        .name(artifact.getName())
+        .version(artifact.getVersion())
+        .location(Strings.nullToEmpty((String) artifact.getMetadata("subPath")))
+        .reference(artifact.getReference())
+        .metadata(artifact.getMetadata())
+        .artifactAccount(artifact.getArtifactAccount())
+        .provenance(artifact.getProvenance())
+        .uuid(artifact.getUuid())
+        .build();
+  }
 }
