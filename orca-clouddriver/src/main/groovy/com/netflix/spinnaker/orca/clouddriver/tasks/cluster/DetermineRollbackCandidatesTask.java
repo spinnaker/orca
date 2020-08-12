@@ -465,7 +465,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       // this should never happen in reality!
       throw new IllegalStateException(
           format(
-              "Found more than one server group with the same name! (serverGroupName: %s)",
+              "Could not find a server group to roll back to! (serverGroupName: %s)",
               serverGroupToRollBack.name));
     }
 
