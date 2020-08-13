@@ -47,6 +47,8 @@ class DestroyServerGroupStage extends TargetServerGroupLinearStageSupport implem
     boolean skipDisable = (boolean)context.getOrDefault("skipDisableBeforeDestroy", false)
 
     if (!skipDisable) {
+      // conditional opt-out for server groups where an explicit disable is unnecessary 
+      // (ie. they do not register in service discovery or a load balancer)
       graph.add {
         it.name = "disableServerGroup"
         it.type = getType(DisableServerGroupStage)
