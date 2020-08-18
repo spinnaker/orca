@@ -151,6 +151,26 @@ class ManualJudgmentStageSpec extends Specification {
   }
 
   @Unroll
+  void "should retain unknown fields in the notification context"() {
+    given:
+    def task = new WaitForManualJudgmentTask(echoService: Mock(EchoService))
+
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
+        notifications: [
+            new Notification(type: "slack", customMessage: "hello slack"),
+            new Notification(type: "email", customSubject: "hello email")
+        ]
+    ])
+
+    when:
+    def result = task.execute(stage)
+
+    then:
+    result.context.notifications?.get(0)?.other?.customMessage == "hello slack"
+    result.context.notifications?.get(1)?.other?.customSubject == "hello email"
+  }
+
+  @Unroll
   void "should return modified authentication context"() {
     given:
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
