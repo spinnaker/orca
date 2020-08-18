@@ -163,12 +163,12 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     Map<String, Object> other = new HashMap<>()
 
     @JsonAnyGetter
-    public Map<String, Object> other() {
+    Map<String, Object> other() {
       return other
     }
 
     @JsonAnySetter
-    public void set(String name, Object value) {
+    void set(String name, Object value) {
       other.put(name, value)
     }
 
