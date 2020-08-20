@@ -20,23 +20,27 @@ package com.netflix.spinnaker.orca.clouddriver.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
+import java.util.Objects;
+import javax.annotation.ParametersAreNullableByDefault;
 import lombok.Builder;
 import lombok.Value;
 
 @JsonDeserialize(builder = ManifestCoordinates.ManifestCoordinatesBuilder.class)
 @NonnullByDefault
 @Value
-public class ManifestCoordinates {
-  String kind;
-  String namespace;
-  String name;
+public final class ManifestCoordinates {
+  private final String kind;
+  private final String namespace;
+  private final String name;
 
   @Builder(toBuilder = true)
+  @ParametersAreNullableByDefault
   private ManifestCoordinates(String kind, String namespace, String name) {
-    this.kind = kind;
-    this.namespace = namespace;
-    this.name = name;
+    this.kind = Objects.requireNonNull(kind);
+    this.namespace = Strings.nullToEmpty(namespace);
+    this.name = Strings.nullToEmpty(name);
   }
 
   @JsonPOJOBuilder(withPrefix = "")
