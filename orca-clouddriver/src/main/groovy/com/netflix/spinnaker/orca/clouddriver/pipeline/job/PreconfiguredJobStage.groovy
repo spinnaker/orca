@@ -95,8 +95,8 @@ class PreconfiguredJobStage extends RunJobStage {
     //without requiring an update to the configuration.
     //If the root property does not exist in the preconfigured job configuration, an
     //IllegalArgumentException is thrown.
-    if (context.dynamicPreconfiguredParameters) {
-      context.dynamicPreconfiguredParameters.each { k, v ->
+    if (context.dynamicParameters) {
+      context.dynamicParameters.each { k, v ->
         setNestedValue(context, (String)k, v.toString())
       }
     }
