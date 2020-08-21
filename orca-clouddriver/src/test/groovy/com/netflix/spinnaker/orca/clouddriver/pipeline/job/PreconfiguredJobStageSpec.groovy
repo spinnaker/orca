@@ -108,7 +108,7 @@ class PreconfiguredJobStageSpec extends Specification {
     def overriddenValue = "newValue"
     def stage = stage {
       type = "test"
-      context = [account: "test"]
+      context = [account: "test", dynamicPreconfiguredParameters: ["manifest.addValue": "value"]]
     }
     def property = new KubernetesPreconfiguredJobProperties(
       enabled: true,
@@ -143,6 +143,7 @@ class PreconfiguredJobStageSpec extends Specification {
     preconfiguredJob.getManifest().getSpec().getTemplate().getSpec().getContainers()[0].getEnv()[0].getValue() == manifestEnvValue
     // verify that stage manifest has the correctly overridden name
     stage.getContext().get("manifest").spec.template.spec.containers[0].env[0].value == overriddenValue
+    stage.getContext().get("manifest").addValue == "value"
   }
 
   def "setNestedValue throws an error if the index is invalid"() {
