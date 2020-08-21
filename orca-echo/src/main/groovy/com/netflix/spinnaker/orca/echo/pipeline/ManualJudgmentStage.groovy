@@ -168,7 +168,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     }
 
     @JsonAnySetter
-    void set(String name, Object value) {
+    void setOther(String name, Object value) {
       other.put(name, value)
     }
 

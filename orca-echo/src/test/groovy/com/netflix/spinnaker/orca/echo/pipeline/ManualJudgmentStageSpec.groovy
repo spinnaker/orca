@@ -155,10 +155,16 @@ class ManualJudgmentStageSpec extends Specification {
     given:
     def task = new WaitForManualJudgmentTask(echoService: Mock(EchoService))
 
+    def slackNotification = new Notification(type: "slack")
+    slackNotification.setOther("customMessage", "hello slack")
+
+    def emailNotification = new Notification(type: "email")
+    emailNotification.setOther("customSubject", "hello email")
+
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
         notifications: [
-            new Notification(type: "slack", customMessage: "hello slack"),
-            new Notification(type: "email", customSubject: "hello email")
+            slackNotification,
+            emailNotification
         ]
     ])
 
