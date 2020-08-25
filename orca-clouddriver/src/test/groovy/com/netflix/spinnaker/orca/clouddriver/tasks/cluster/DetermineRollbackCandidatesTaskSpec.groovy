@@ -57,7 +57,7 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
 
   def "should EXPLICIT-ly roll back to original ASG when parent createServerGroup has source info"() {
 
-    given: "a parent create server group stage in the pipeline"
+    given: "an ancestor create server group stage in the pipeline"
     pipeline {
       stage {
         type = "createServerGroup"
