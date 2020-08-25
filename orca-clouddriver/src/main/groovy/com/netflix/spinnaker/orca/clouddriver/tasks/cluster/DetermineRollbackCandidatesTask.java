@@ -239,6 +239,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
         return serverGroupName.toString();
       }
     }
+    logger.error("Failed to get source server group from createServerGroup context");
     return null;
   }
 
