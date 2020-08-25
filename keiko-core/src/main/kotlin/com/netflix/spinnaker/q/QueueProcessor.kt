@@ -41,7 +41,7 @@ class QueueProcessor(
   private val activators: List<Activator>,
   private val publisher: EventPublisher,
   private val deadMessageHandler: DeadMessageCallback,
-  private val fillExecutorEachCycle: Boolean = false,
+  private val fillExecutorEachCycle: Boolean = true,
   private val requeueDelay: Duration = Duration.ofSeconds(0),
   private val requeueMaxJitter: Duration = Duration.ofSeconds(0)
 ) {

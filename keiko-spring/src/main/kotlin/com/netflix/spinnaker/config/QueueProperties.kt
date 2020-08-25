@@ -24,7 +24,7 @@ class QueueProperties {
   var handlerThreadNamePrefix: String = "handlers-"
   var handlerCorePoolSize: Int = 20
   var handlerMaxPoolSize: Int = 20
-  var fillExecutorEachCycle: Boolean = false
+  var fillExecutorEachCycle: Boolean = true
   var requeueDelaySeconds: Long = 0
   var requeueMaxJitterSeconds: Long = 0
 }
