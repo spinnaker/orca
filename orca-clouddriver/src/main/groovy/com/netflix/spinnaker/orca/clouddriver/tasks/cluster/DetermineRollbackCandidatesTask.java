@@ -31,6 +31,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollbackSupport;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
@@ -220,7 +221,8 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Return the name of the original server group we should roll back to */
   private Optional<String> getOriginalServerGroup(StageExecution stage) {
-    return Optional.ofNullable(stage.findAncestor(isType("createServerGroup")))
+    return Optional.ofNullable(
+            stage.findAncestor(isType(CreateServerGroupStage.PIPELINE_CONFIG_TYPE)))
         .map(StageExecution::getContext)
         .map(this::getSourceServerGroup);
   }
