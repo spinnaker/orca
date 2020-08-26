@@ -55,6 +55,50 @@ class DetermineRollbackCandidatesTaskSpec extends Specification {
     ]
   }
 
+  def "should EXPLICIT-ly roll back to original ASG when original cluster is in context"() {
+    given: "the name of the original server group is present in the context"
+    stage.context["originalServerGroup"] = "servergroup-v001"
+
+    and: "entity tags contain metadata with the image id of the original server group"
+    featuresService.areEntityTagsAvailable() >> { return true }
+    oortService.getEntityTags(*_) >> {
+      return [buildSpinnakerMetadata("my_image-0", "ami-xxxxx0", "5")]
+    }
+
+    and: "there are at least two server groups"
+    oortService.getCluster("app", "test", "app-stack-details", "aws") >> {
+      return buildResponse([
+          serverGroups: [
+              buildServerGroup("servergroup-v001", "us-west-2",  100, true, [:], [:], 5),
+              buildServerGroup("servergroup-v002", "us-west-2" , 150, false, [:], [:], 5)
+          ]
+      ])
+    }
+
+    when: "the task is executed"
+    def result = task.execute(stage)
+
+    then: "it uses the EXPLICIT strategy to roll back to the original server group"
+    result.context == [
+        imagesToRestore: [
+            [region: "us-west-2", image: "my_image-0", buildNumber: "5", rollbackMethod: "EXPLICIT"]
+        ]
+    ]
+
+    result.outputs == [
+        rollbackTypes   : [
+            "us-west-2": "EXPLICIT"
+        ],
+        rollbackContexts: [
+            "us-west-2": [
+                rollbackServerGroupName        : "servergroup-v002",
+                restoreServerGroupName         : "servergroup-v001",
+                targetHealthyRollbackPercentage: 100
+            ]
+        ]
+    ]
+  }
+
   def "should EXPLICIT-ly roll back to original ASG when parent createServerGroup has source info"() {
 
     given: "an ancestor create server group stage in the pipeline"
