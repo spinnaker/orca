@@ -31,7 +31,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollbackSupport;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
@@ -221,28 +220,11 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Return the name of the original server group we should roll back to */
   private Optional<String> getOriginalServerGroup(StageExecution stage) {
-    return Optional.ofNullable(
-            stage.findAncestor(isType(CreateServerGroupStage.PIPELINE_CONFIG_TYPE)))
-        .map(StageExecution::getContext)
-        .map(this::getSourceServerGroup);
-  }
+    Object originalServerGroup = stage.getContext().get("originalServerGroup");
 
-  /**
-   * Given context info from a createServerGroup stage, extract the field:
-   *
-   * <p>{"source": {"serverGroupName": "`ASG-NAME-HERE`" }}
-   */
-  @Nullable
-  private String getSourceServerGroup(Map<String, Object> contextFromCreateServerGroupStage) {
-    Object source = contextFromCreateServerGroupStage.get("source");
-    if (source instanceof Map) {
-      Object serverGroupName = ((Map<?, ?>) source).get("serverGroupName");
-      if (serverGroupName instanceof String) {
-        return serverGroupName.toString();
-      }
-    }
-    logger.error("Failed to get source server group from createServerGroup context");
-    return null;
+    return originalServerGroup instanceof String
+        ? Optional.of(originalServerGroup.toString())
+        : Optional.empty();
   }
 
   private ServerGroup getServerGroupToRollBack(
