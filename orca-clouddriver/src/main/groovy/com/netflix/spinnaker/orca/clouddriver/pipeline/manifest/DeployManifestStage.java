@@ -84,16 +84,16 @@ public class DeployManifestStage implements StageDefinitionBuilder {
     }
   }
 
-  private void disableOldManifests(Map parentContext, StageGraphBuilder graph) {
+  private void disableOldManifests(Map<String, Object> parentContext, StageGraphBuilder graph) {
     addStagesForOldManifests(parentContext, graph, DisableManifestStage.PIPELINE_CONFIG_TYPE);
   }
 
-  private void deleteOldManifests(Map parentContext, StageGraphBuilder graph) {
+  private void deleteOldManifests(Map<String, Object> parentContext, StageGraphBuilder graph) {
     addStagesForOldManifests(parentContext, graph, DeleteManifestStage.PIPELINE_CONFIG_TYPE);
   }
 
   private void addStagesForOldManifests(
-      Map parentContext, StageGraphBuilder graph, String stageType) {
+      Map<String, Object> parentContext, StageGraphBuilder graph, String stageType) {
     List<Map<String, ?>> deployedManifests = getNewManifests(parentContext);
     String account = (String) parentContext.get("account");
     Map manifestMoniker = (Map) parentContext.get("moniker");
@@ -127,7 +127,7 @@ public class DeployManifestStage implements StageDefinitionBuilder {
         });
   }
 
-  private List<Map<String, ?>> getNewManifests(Map parentContext) {
+  private List<Map<String, ?>> getNewManifests(Map<String, Object> parentContext) {
     List<Map<String, ?>> manifests = (List<Map<String, ?>>) parentContext.get("outputs.manifests");
     return manifests.stream()
         .filter(manifest -> manifest.get("kind").equals("ReplicaSet"))
