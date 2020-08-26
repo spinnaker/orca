@@ -57,8 +57,11 @@ import retrofit.client.Response;
  * The {@code DetermineRollbackCandidatesTask} task determines how one or more regions of a cluster
  * should be rolled back.
  *
- * <p>The determination is based on inspecting the most recently deployed (and enabled!) server
- * group in each region.
+ * <p>If the stage's context contains an `originalServerGroup` key, then this value is used as the
+ * server group to roll back to.
+ *
+ * <p>If the `originalServerGroup` is not specified in the stage context, the determination is based
+ * on inspecting the most recently deployed (and enabled!) server group in each region.
  *
  * <p>If this server group has the `spinnaker:metadata` entity tag: - rollback to a previous server
  * group (if exists!) with the `spinnaker:metadata` image id - if no such server group exists, clone
