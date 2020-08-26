@@ -534,11 +534,6 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
     return 95;
   }
 
-  /** Helper function for finding an ancestor stage */
-  private static Predicate<StageExecution> isType(String stageType) {
-    return s -> s.getType().equals(stageType);
-  }
-
   /** Helper function useful for filtering streams */
   private static Predicate<ServerGroup> exclude(ServerGroup group) {
     return s -> !(s.name.equalsIgnoreCase(group.name));
