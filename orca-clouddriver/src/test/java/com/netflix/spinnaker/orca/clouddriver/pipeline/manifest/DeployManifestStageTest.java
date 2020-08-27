@@ -77,6 +77,11 @@ final class DeployManifestStageTest {
                     .name("my-rs-v000")
                     .kind("replicaSet")
                     .namespace(NAMESAPCE)
+                    .build(),
+                ManifestCoordinates.builder()
+                    .name("my-rs-v001")
+                    .kind("replicaSet")
+                    .namespace(NAMESAPCE)
                     .build()));
     Map<String, Object> context =
         getContext(
@@ -121,6 +126,11 @@ final class DeployManifestStageTest {
                     .name("my-rs-v000")
                     .kind("replicaSet")
                     .namespace(NAMESAPCE)
+                    .build(),
+                ManifestCoordinates.builder()
+                    .name("my-rs-v001")
+                    .kind("replicaSet")
+                    .namespace(NAMESAPCE)
                     .build()));
     Map<String, Object> context =
         getContext(
@@ -158,9 +168,15 @@ final class DeployManifestStageTest {
   }
 
   @Test
-  void rolloutStrategyEmptyCluster() {
+  void rolloutStrategyNoClusterSiblings() {
     when(oortService.getClusterManifests(ACCOUNT, NAMESAPCE, "replicaSet", APPLICATION, CLUSTER))
-        .thenReturn(ImmutableList.of());
+        .thenReturn(
+            ImmutableList.of(
+                ManifestCoordinates.builder()
+                    .name("my-rs-v001")
+                    .kind("replicaSet")
+                    .namespace(NAMESAPCE)
+                    .build()));
     Map<String, Object> context =
         getContext(
             DeployManifestContext.builder()
