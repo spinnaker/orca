@@ -2,18 +2,14 @@ package com.netflix.spinnaker.orca.remote.pipeline
 
 import com.netflix.spinnaker.kork.annotations.Beta
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder.Aliases
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.remote.model.RemoteStageExtensionConfig
+import com.netflix.spinnaker.orca.remote.model.RemoteStageExtensionPointConfig
 import com.netflix.spinnaker.orca.remote.service.RemoteStageExtensionService
 import com.netflix.spinnaker.orca.remote.tasks.MonitorRemoteStageTask
 import com.netflix.spinnaker.orca.remote.tasks.StartRemoteStageTask
-import org.springframework.stereotype.Component
 
 @Beta
-@Component
-@Aliases("remoteStage")
 class RemoteStage(
   private val remoteStageExtensionService: RemoteStageExtensionService
 ) : StageDefinitionBuilder {
@@ -21,7 +17,7 @@ class RemoteStage(
   override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     val remoteExtensionConfig = remoteStageExtensionService
       .getByStageType(stage.type)
-      .getTypedConfig<RemoteStageExtensionConfig>()
+      .getTypedConfig<RemoteStageExtensionPointConfig>()
 
     // Set default parameters if necessary
     remoteExtensionConfig.parameters.forEach { (k, v) ->
