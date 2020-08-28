@@ -7,5 +7,5 @@ import com.netflix.spinnaker.orca.remote.model.RemoteStageExtensionPointConfig
 @Beta
 class RemoteStageExtensionPointDefinition : RemoteExtensionPointDefinition {
   override fun type(): String = "stage"
-  override fun config(): Class<out RemoteStageExtensionPointConfig> = RemoteStageExtensionPointConfig::class.java
+  override fun configType(): Class<out RemoteStageExtensionPointConfig> = RemoteStageExtensionPointConfig::class.java
 }
