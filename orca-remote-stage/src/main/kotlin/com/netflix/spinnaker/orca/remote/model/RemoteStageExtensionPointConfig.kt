@@ -6,5 +6,5 @@ data class RemoteStageExtensionPointConfig(
   val type: String,
   val description: String,
   val label: String,
-  val parameters: MutableMap<String, Any> = mutableMapOf()
+  val parameters: MutableMap<String, Any?> = mutableMapOf()
 ) : RemoteExtensionPointConfig

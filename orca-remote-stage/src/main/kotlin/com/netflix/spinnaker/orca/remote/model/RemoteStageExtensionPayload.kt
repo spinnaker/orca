@@ -6,5 +6,5 @@ data class RemoteStageExtensionPayload(
   val type: String,
   val id: String,
   val pipelineExecutionId: String,
-  val context: MutableMap<String, Any>
+  val context: MutableMap<String, Any?>
 ) : RemoteExtensionPayload
