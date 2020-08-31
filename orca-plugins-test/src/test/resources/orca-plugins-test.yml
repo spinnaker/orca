@@ -24,6 +24,8 @@ spring:
 
 spinnaker:
   extensibility:
+    framework:
+      version: v2
     plugins-root-path: build/plugins
     plugins:
       com.netflix.orca.enabled.plugin:
