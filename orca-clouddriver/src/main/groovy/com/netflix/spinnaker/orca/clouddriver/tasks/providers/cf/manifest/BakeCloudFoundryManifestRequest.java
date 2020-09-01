@@ -19,31 +19,30 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class BakeCloudFoundryManifestRequest extends BakeManifestRequest {
 
-    @JsonProperty("manifestTemplate")
-    private Artifact manifestTemplate;
+  @JsonProperty("manifestTemplate")
+  private Artifact manifestTemplate;
 
-    @JsonProperty("varsArtifacts")
-    private List<Artifact> varsArtifacts;
+  @JsonProperty("varsArtifacts")
+  private List<Artifact> varsArtifacts;
 
-    public BakeCloudFoundryManifestRequest(
-            BakeCloudFoundryManifestContext bakeCloudFoundryManifestContext,
-            Artifact manifestTemplate,
-            List<Artifact> varsArtifacts,
-            String outputArtifactName) {
-        super(
-                bakeCloudFoundryManifestContext.getTemplateRenderer(),
-                outputArtifactName,
-                bakeCloudFoundryManifestContext.getOutputName());
-        this.setManifestTemplate(manifestTemplate);
-        this.setVarsArtifacts(varsArtifacts);
-    }
+  public BakeCloudFoundryManifestRequest(
+      BakeCloudFoundryManifestContext bakeCloudFoundryManifestContext,
+      Artifact manifestTemplate,
+      List<Artifact> varsArtifacts,
+      String outputArtifactName) {
+    super(
+        bakeCloudFoundryManifestContext.getTemplateRenderer(),
+        outputArtifactName,
+        bakeCloudFoundryManifestContext.getOutputName());
+    this.setManifestTemplate(manifestTemplate);
+    this.setVarsArtifacts(varsArtifacts);
+  }
 }

@@ -23,19 +23,18 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest.BakeCl
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import groovy.transform.CompileStatic;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Nonnull;
 
 @Slf4j
 @Component
 @CompileStatic
 public class BakeCloudFoundryManifestStage implements StageDefinitionBuilder, CloudProviderAware {
-    @Override
-    public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
-        builder
-                .withTask("bakeCloudFoundryManifest", BakeCloudFoundryManifestTask.class)
-                .withTask("bindProducedArtifacts", BindProducedArtifactsTask.class);
-    }
+  @Override
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
+    builder
+        .withTask("bakeCloudFoundryManifest", BakeCloudFoundryManifestTask.class)
+        .withTask("bindProducedArtifacts", BindProducedArtifactsTask.class);
+  }
 }
