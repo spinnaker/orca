@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest.CloudFoundryCreateManifestTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest.BakeCloudFoundryManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import groovy.transform.CompileStatic;
@@ -31,11 +31,11 @@ import javax.annotation.Nonnull;
 @Slf4j
 @Component
 @CompileStatic
-public class CreateCloudFoundryManifestStage implements StageDefinitionBuilder, CloudProviderAware {
+public class BakeCloudFoundryManifestStage implements StageDefinitionBuilder, CloudProviderAware {
     @Override
     public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
         builder
-                .withTask("createCloudFoundryManifest", CloudFoundryCreateManifestTask.class)
+                .withTask("bakeCloudFoundryManifest", BakeCloudFoundryManifestTask.class)
                 .withTask("bindProducedArtifacts", BindProducedArtifactsTask.class);
     }
 }

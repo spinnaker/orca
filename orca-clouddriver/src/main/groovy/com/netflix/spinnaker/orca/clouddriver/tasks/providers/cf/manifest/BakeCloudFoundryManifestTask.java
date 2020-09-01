@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Armory, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
-import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -43,21 +42,17 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class CloudFoundryCreateManifestTask implements RetryableTask {
+public class BakeCloudFoundryManifestTask implements RetryableTask {
 
     @Nullable private final BakeryService bakery;
 
     private final ArtifactUtils artifactUtils;
 
-    private final ContextParameterProcessor contextParameterProcessor;
-
     @Autowired
-    public CloudFoundryCreateManifestTask(
+    public BakeCloudFoundryManifestTask(
             ArtifactUtils artifactUtils,
-            ContextParameterProcessor contextParameterProcessor,
             Optional<BakeryService> bakery) {
         this.artifactUtils = artifactUtils;
-        this.contextParameterProcessor = contextParameterProcessor;
         this.bakery = bakery.orElse(null);
     }
 
@@ -81,26 +76,14 @@ public class CloudFoundryCreateManifestTask implements RetryableTask {
                     "A BakeryService must be configured in order to run a Bake Manifest task.");
         }
 
-        CloudFoundryCreateManifestContext context = stage.mapTo(CloudFoundryCreateManifestContext.class);
+        BakeCloudFoundryManifestContext context = stage.mapTo(BakeCloudFoundryManifestContext.class);
 
-        if (context.getManifestTemplate() == null || context.getVarsArtifacts().isEmpty()) {
+        if (context.getInputArtifacts() == null || context.getInputArtifacts().size() < 2) {
             throw new IllegalArgumentException("There must be one manifest template and at least one variables artifact supplied");
         }
 
-        Artifact resolvedManifestTemplate =
-                artifactUtils.getBoundArtifactForStage(stage, context.getManifestTemplate().getId(), context.getManifestTemplate().getArtifact());
-
-        if(resolvedManifestTemplate != null) {
-            resolvedManifestTemplate = ArtifactUtils.withAccount(resolvedManifestTemplate, context.getManifestTemplate().getAccount());
-        } else {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Input artifact (id: %s, account: %s) could not be found in execution (id: %s).",
-                            context.getManifestTemplate().getId(), context.getManifestTemplate().getAccount(), stage.getExecution().getId()));
-        }
-
-        List<Artifact> resolvedVarsArtifacts =
-                context.getVarsArtifacts().stream()
+        List<Artifact> resolvedInputArtifacts =
+                context.getInputArtifacts().stream()
                         .map(
                                 p -> {
                                     Artifact a =
@@ -115,17 +98,20 @@ public class CloudFoundryCreateManifestTask implements RetryableTask {
                                 })
                         .collect(Collectors.toList());
 
-        ExpectedArtifact expectedArtifacts = context.getExpectedArtifact();
-
-        if (expectedArtifacts == null) {
+        if (context.getExpectedArtifacts() == null || context.getExpectedArtifacts().size() > 1) {
             throw new IllegalArgumentException(
                     "The CreateCloudFoundryManifest stage produces one embedded base64 artifact.  Please ensure that your stage"
                             + " config's `Produces Artifacts` section (`expectedArtifacts` field) contains exactly one artifact.");
         }
 
+        ExpectedArtifact expectedArtifacts = context.getExpectedArtifacts().get(0);
         String outputArtifactName = expectedArtifacts.getMatchArtifact().getName();
 
-        BakeManifestRequest request = new CloudFoundryBakeManifestRequest(context, resolvedManifestTemplate, resolvedVarsArtifacts, outputArtifactName);
+        if (context.getOutputName() == null || !context.getOutputName().equals(outputArtifactName)) {
+            throw new IllegalArgumentException("The name of the output manifest is required and it must match the artifact name in the Produces Artifact section.");
+        }
+
+        BakeManifestRequest request = new BakeCloudFoundryManifestRequest(context, resolvedInputArtifacts.get(0), resolvedInputArtifacts.subList(1, resolvedInputArtifacts.size()), outputArtifactName);
 
         Artifact result = bakery.bakeManifest(request.getTemplateRenderer(), request);
 

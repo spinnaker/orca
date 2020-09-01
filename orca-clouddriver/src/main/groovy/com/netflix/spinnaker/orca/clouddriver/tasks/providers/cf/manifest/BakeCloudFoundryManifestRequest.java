@@ -26,7 +26,7 @@ import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class CloudFoundryBakeManifestRequest extends BakeManifestRequest {
+public class BakeCloudFoundryManifestRequest extends BakeManifestRequest {
 
     @JsonProperty("manifestTemplate")
     private Artifact manifestTemplate;
@@ -34,15 +34,15 @@ public class CloudFoundryBakeManifestRequest extends BakeManifestRequest {
     @JsonProperty("varsArtifacts")
     private List<Artifact> varsArtifacts;
 
-    public CloudFoundryBakeManifestRequest(
-            CloudFoundryCreateManifestContext cloudFoundryCreateManifestContext,
+    public BakeCloudFoundryManifestRequest(
+            BakeCloudFoundryManifestContext bakeCloudFoundryManifestContext,
             Artifact manifestTemplate,
             List<Artifact> varsArtifacts,
             String outputArtifactName) {
         super(
-                cloudFoundryCreateManifestContext.getTemplateRenderer(),
+                bakeCloudFoundryManifestContext.getTemplateRenderer(),
                 outputArtifactName,
-                cloudFoundryCreateManifestContext.getOutputName());
+                bakeCloudFoundryManifestContext.getOutputName());
         this.setManifestTemplate(manifestTemplate);
         this.setVarsArtifacts(varsArtifacts);
     }

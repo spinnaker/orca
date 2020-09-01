@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Armory, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,23 +23,20 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public class CloudFoundryCreateManifestContext {
+public class BakeCloudFoundryManifestContext {
 
-    private final CloudFoundryCreateManifestTask.InputArtifact manifestTemplate;
-    private final List<CloudFoundryCreateManifestTask.InputArtifact> varsArtifacts;
-    private final ExpectedArtifact expectedArtifact;
+    private final List<BakeCloudFoundryManifestTask.InputArtifact> inputArtifacts;
+    private final List<ExpectedArtifact> expectedArtifacts;
     private final String outputName;
     private final String templateRenderer = "CF";
 
 
-    public CloudFoundryCreateManifestContext(
-            @JsonProperty("manifestTemplate") CloudFoundryCreateManifestTask.InputArtifact manifestTemplate,
-            @JsonProperty("varsArtifacts") List<CloudFoundryCreateManifestTask.InputArtifact> varsArtifacts,
-            @JsonProperty("expectedArtifact") ExpectedArtifact expectedArtifact,
+    public BakeCloudFoundryManifestContext(
+            @JsonProperty("inputArtifacts") List<BakeCloudFoundryManifestTask.InputArtifact> inputArtifacts,
+            @JsonProperty("expectedArtifacts") List<ExpectedArtifact> expectedArtifact,
             @JsonProperty("outputName") String outputName) {
-        this.manifestTemplate = manifestTemplate;
-        this.varsArtifacts = varsArtifacts;
-        this.expectedArtifact = expectedArtifact;
+        this.inputArtifacts = inputArtifacts;
+        this.expectedArtifacts = expectedArtifact;
         this.outputName = outputName;
     }
 
