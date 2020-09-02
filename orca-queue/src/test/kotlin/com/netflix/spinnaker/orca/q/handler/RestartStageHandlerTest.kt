@@ -25,15 +25,13 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.RestartStage
+import com.netflix.spinnaker.orca.q.StageDefinitionBuildersProvider
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.buildAfterStages
 import com.netflix.spinnaker.orca.q.buildBeforeStages
@@ -81,27 +79,18 @@ object RestartStageHandlerTest : SubjectSpek<RestartStageHandler>({
   val pendingExecutionService: PendingExecutionService = mock()
   val clock = fixedClock()
 
-  val emptyApiStage = object : SimpleStage<Object> {
-    override fun getName() = "emptyApiStage"
-
-    override fun execute(simpleStageInput: SimpleStageInput<Object>): SimpleStageOutput<Any, Any> {
-      return SimpleStageOutput()
-    }
-  }
-
   subject(GROUP) {
     RestartStageHandler(
       queue,
       repository,
       DefaultStageDefinitionBuilderFactory(
         DefaultStageResolver(
-          listOf(
-            singleTaskStage,
-            stageWithSyntheticBefore,
-            stageWithNestedSynthetics
-          ),
-          listOf(
-            emptyApiStage
+          StageDefinitionBuildersProvider(
+            listOf(
+              singleTaskStage,
+              stageWithSyntheticBefore,
+              stageWithNestedSynthetics
+            )
           )
         )
       ),

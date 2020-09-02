@@ -20,7 +20,6 @@ import com.netflix.spinnaker.orca.DefaultStageResolver
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.events.TaskStarted
@@ -29,7 +28,9 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.q.DummyTask
 import com.netflix.spinnaker.orca.q.RunTask
+import com.netflix.spinnaker.orca.q.StageDefinitionBuildersProvider
 import com.netflix.spinnaker.orca.q.StartTask
+import com.netflix.spinnaker.orca.q.TasksProvider
 import com.netflix.spinnaker.orca.q.buildTasks
 import com.netflix.spinnaker.orca.q.singleTaskStage
 import com.netflix.spinnaker.q.Queue
@@ -55,8 +56,8 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
-  val taskResolver = TaskResolver(emptyList())
-  val stageResolver = DefaultStageResolver(emptyList(), emptyList<SimpleStage<Object>>())
+  val taskResolver = TaskResolver(TasksProvider(emptyList()))
+  val stageResolver = DefaultStageResolver(StageDefinitionBuildersProvider(emptyList()))
   val clock = fixedClock()
 
   subject(GROUP) {
