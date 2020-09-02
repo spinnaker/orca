@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Armory, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest;
+package com.netflix.spinnaker.orca.bakery.api.manifests.cf;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
+import com.netflix.spinnaker.orca.bakery.tasks.manifests.cf.BakeCloudFoundryManifestContext;
 import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

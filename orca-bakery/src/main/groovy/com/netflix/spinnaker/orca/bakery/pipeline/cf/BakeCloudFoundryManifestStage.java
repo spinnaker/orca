@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
+package com.netflix.spinnaker.orca.bakery.pipeline.cf;
 
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest.BakeCloudFoundryManifestTask;
+import com.netflix.spinnaker.orca.bakery.tasks.manifests.cf.BakeCloudFoundryManifestTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import groovy.transform.CompileStatic;

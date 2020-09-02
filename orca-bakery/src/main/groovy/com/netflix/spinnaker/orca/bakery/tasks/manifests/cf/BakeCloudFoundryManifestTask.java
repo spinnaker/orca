@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest;
+package com.netflix.spinnaker.orca.bakery.tasks.manifests.cf;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
 import com.netflix.spinnaker.orca.bakery.api.manifests.BakeManifestRequest;
+import com.netflix.spinnaker.orca.bakery.api.manifests.cf.BakeCloudFoundryManifestRequest;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.Collections;
 import java.util.HashMap;

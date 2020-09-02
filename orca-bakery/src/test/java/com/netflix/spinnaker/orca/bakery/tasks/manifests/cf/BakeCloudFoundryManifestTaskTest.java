@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest;
+package com.netflix.spinnaker.orca.bakery.tasks.manifests.cf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,13 +27,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.bakery.api.BakeryService;
+import com.netflix.spinnaker.orca.bakery.api.manifests.cf.BakeCloudFoundryManifestRequest;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class BakeCloudFoundryManifestTaskTest {
 

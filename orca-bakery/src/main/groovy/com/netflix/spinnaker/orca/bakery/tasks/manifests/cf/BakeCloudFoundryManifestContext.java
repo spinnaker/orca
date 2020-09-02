@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.manifest;
+package com.netflix.spinnaker.orca.bakery.tasks.manifests.cf;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
