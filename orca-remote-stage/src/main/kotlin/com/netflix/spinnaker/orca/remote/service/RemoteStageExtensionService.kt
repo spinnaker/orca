@@ -31,7 +31,7 @@ class RemoteStageExtensionService(
       }
     }
 
-    if (remoteStageExtensions.size > 1) throw DuplicateRemoteStageTypeException(stageType, remoteExtensions)
+    if (remoteStageExtensions.size > 1) throw DuplicateRemoteStageTypeException(stageType, remoteStageExtensions)
     return if (remoteStageExtensions.isNotEmpty()) remoteStageExtensions.first() else throw RemoteStageTypeNotFoundException(stageType)
   }
 }
