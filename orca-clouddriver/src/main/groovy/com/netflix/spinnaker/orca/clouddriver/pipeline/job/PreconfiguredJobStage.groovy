@@ -28,6 +28,8 @@ import org.springframework.stereotype.Component
 
 import javax.annotation.Nonnull
 
+import java.util.List
+
 @Component
 class PreconfiguredJobStage extends RunJobStage {
 
@@ -87,6 +89,18 @@ class PreconfiguredJobStage extends RunJobStage {
         }
       }
     }
+
+    //Allow for parameters not defined in the preconfigured job parameters configuration to be passed
+    //in via dynamicPreconfiguredParameters.  This way additional optional parameters may be used
+    //without requiring an update to the configuration.
+    //If the root property does not exist in the preconfigured job configuration, an
+    //IllegalArgumentException is thrown.
+    if (context.dynamicParameters) {
+      context.dynamicParameters.each { k, v ->
+        setNestedValue(context, (String)k, v.toString())
+      }
+    }
+
     context.preconfiguredJobParameters = preconfiguredJob.parameters
     return context
   }
@@ -95,13 +109,38 @@ class PreconfiguredJobStage extends RunJobStage {
     String[] props = mapping.split(/\./)
     Object current = root
     for (int i = 0; i < props.length - 1; i++) {
-      Object next = current[props[i]]
-      if (next == null) {
-        throw new IllegalArgumentException("no property ${props[i]} on $current")
+      Object next
+      if(props[i] ==~ /.*\[\d+\]$/) {
+        next = getValueFromArrayExpression(current, props[i])
+      } else {
+        next = current[props[i]]
+        if (next == null) {
+          throw new IllegalArgumentException("no property ${props[i]} on $current")
+        }
       }
       current = next
     }
     current[props.last()] = value
+  }
+
+  private static Object getValueFromArrayExpression(Object root, String expression) {
+    // TODO: Do we need to handle arrays nested in other arrays?
+    String[] parts = expression.split(/[\[\]]/)
+    String propName = parts[0]
+    int index = -1
+    try {
+      index = Integer.parseInt(parts[1])
+    } catch (NumberFormatException ex) {
+      throw new IllegalArgumentException("Unable to parse index from expresion ${expression}", ex)
+    }
+    List<Object> nextList = root[propName]
+    if (nextList == null) {
+      throw new IllegalArgumentException("no property ${propName} on $root")
+    }
+    if (nextList.size() <= index || index < 0) {
+      throw new IllegalArgumentException("Invalid index $index for list $propName")
+    }
+    return nextList.get(index)
   }
 
 }
