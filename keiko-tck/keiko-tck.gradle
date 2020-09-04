@@ -1,0 +1,8 @@
+repositories {
+  maven { url "https://dl.bintray.com/jetbrains/spek" }
+}
+
+dependencies {
+  api project(":keiko-core")
+  api project(":keiko-test-common")
+}
