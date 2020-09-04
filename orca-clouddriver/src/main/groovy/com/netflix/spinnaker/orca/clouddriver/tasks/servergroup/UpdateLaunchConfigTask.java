@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
+import groovy.util.logging.Slf4j;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,11 +28,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UpdateLaunchTemplateTask extends AbstractUpdateLaunchSettingsTask {
-  public static final String OPERATION = "updateLaunchTemplate";
+@Slf4j
+public class UpdateLaunchConfigTask extends AbstractUpdateLaunchSettingsTask {
+  public static final String OPERATION = "updateLaunchConfig";
 
   @Autowired
-  public UpdateLaunchTemplateTask(
+  public UpdateLaunchConfigTask(
       KatoService kato, @Value("${default.bake.account:default}") String defaultBakeAccount) {
     super(kato, defaultBakeAccount);
   }
@@ -47,9 +49,9 @@ public class UpdateLaunchTemplateTask extends AbstractUpdateLaunchSettingsTask {
                 .getOrDefault(
                     stage.getContext().get("serverGroupName"), stage.getContext().get("asgName"));
 
-    ctx.put("notification.type", "modifyservergrouplaunchtemplate");
-    ctx.put("modifyservergrouplaunchtemplate.account.name", getCredentials(stage));
-    ctx.put("modifyservergrouplaunchtemplate.region", region);
+    ctx.put("notification.type", "modifyasglaunchconfiguration");
+    ctx.put("modifyasglaunchconfiguration.account.name", getCredentials(stage));
+    ctx.put("modifyasglaunchconfiguration.region", region);
     ctx.put("kato.last.task.id", taskId);
     ctx.put(
         "deploy.server.groups",

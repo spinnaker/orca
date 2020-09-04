@@ -25,23 +25,16 @@ import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.kato.tasks.DeploymentDetailsAware
 import groovy.util.logging.Slf4j
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
-
 import javax.annotation.Nonnull
 
-@Component
 @Slf4j
-class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProviderAware {
-
-  public static final String OPERATION = "updateLaunchConfig"
-
-  @Autowired
+abstract class AbstractUpdateLaunchSettingsTask implements Task, DeploymentDetailsAware, CloudProviderAware {
   KatoService kato
-
-  @Value('${default.bake.account:default}')
   String defaultBakeAccount
+  AbstractUpdateLaunchSettingsTask(KatoService kato, String defaultBakeAccount) {
+    this.kato = kato
+    this.defaultBakeAccount = defaultBakeAccount
+  }
 
   @Nonnull
   @Override
@@ -98,17 +91,6 @@ class UpdateLaunchConfigTask implements Task, DeploymentDetailsAware, CloudProvi
     [account: targetAccount, credentials: sourceAccount, region: region, amiName: ami]
   }
 
-  String getOperation() {
-    return "updateLaunchConfig"
-  }
-
-  Map<String, Object> getContext(StageExecution stage, TaskId taskId) {
-    return [
-      "notification.type"                        : "modifyasglaunchconfiguration",
-      "modifyasglaunchconfiguration.account.name": getCredentials(stage),
-      "modifyasglaunchconfiguration.region"      : stage.context.region,
-      "kato.last.task.id"                        : taskId,
-      "deploy.server.groups"                     : [(stage.context.region): [stage.context.serverGroupName ?: stage.context.asgName]]
-    ]
-  }
+  abstract String getOperation()
+  abstract Map<String, Object> getContext(StageExecution stage, TaskId taskId)
 }

@@ -49,9 +49,9 @@ class UpdateSecurityGroupsForServerGroupStage
     Boolean hasLaunchTemplate =
         (Boolean) stage.getContext().getOrDefault("hasLaunchTemplate", false);
     if (hasLaunchTemplate) {
-      builder.withTask("updateLaunchTemplate", UpdateLaunchTemplateTask.class);
+      builder.withTask(UpdateLaunchTemplateTask.OPERATION, UpdateLaunchTemplateTask.class);
     } else {
-      builder.withTask("updateLaunchConfig", UpdateLaunchConfigTask.class);
+      builder.withTask(UpdateLaunchConfigTask.OPERATION, UpdateLaunchConfigTask.class);
     }
 
     builder.withTask("updateInstances", UpdateInstancesTask.class);
