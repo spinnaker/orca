@@ -16,9 +16,6 @@
 
 package com.netflix.spinnaker.orca
 
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.pipeline.WaitStage
 import spock.lang.Specification
@@ -27,13 +24,10 @@ import spock.lang.Unroll
 
 class DefaultStageResolverSpec extends Specification {
   @Subject
-  def stageResolver = new DefaultStageResolver([
+  def stageResolver = new DefaultStageResolver(new StageDefinitionBuildersProvider([
     new WaitStage(),
     new AliasedStageDefinitionBuilder()
-  ],
-    [
-      new TestSimpleStage()
-    ])
+  ]))
 
   @Unroll
   def "should lookup stage by name or alias"() {
@@ -49,13 +43,10 @@ class DefaultStageResolverSpec extends Specification {
 
   def "should raise exception on duplicate alias"() {
     when:
-    new DefaultStageResolver([
+    new DefaultStageResolver(new StageDefinitionBuildersProvider([
       new AliasedStageDefinitionBuilder(),
       new AliasedStageDefinitionBuilder()
-    ],
-      [
-        new TestSimpleStage()
-      ])
+    ]))
 
     then:
     thrown(StageResolver.DuplicateStageAliasException)
@@ -71,17 +62,5 @@ class DefaultStageResolverSpec extends Specification {
 
   @StageDefinitionBuilder.Aliases("notAliased")
   class AliasedStageDefinitionBuilder implements StageDefinitionBuilder {
-  }
-
-  class TestSimpleStage implements SimpleStage {
-    @Override
-    SimpleStageOutput execute(SimpleStageInput input) {
-      return new SimpleStageOutput();
-    }
-
-    @Override
-    String getName() {
-      return "simpleApiStage";
-    }
   }
 }

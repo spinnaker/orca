@@ -59,6 +59,7 @@ dependencies {
   implementation(project(":orca-queue-redis"))
   implementation(project(":orca-queue-sql"))
   implementation(project(":orca-redis"))
+  implementation(project(":orca-remote-stage"))
   implementation(project(":orca-sql"))
   implementation(project(":orca-webhook"))
   implementation("com.netflix.spinnaker.kork:kork-exceptions")
@@ -106,7 +107,8 @@ test {
       String implementationVersion = getAttributes()["Implementation-Version"]
       if (implementationVersion == null
           || implementationVersion.isEmpty()
-          || implementationVersion == "undefined") {
+          || implementationVersion == "undefined"
+          || implementationVersion.endsWith("SNAPSHOT")) {
         attributes(
             'Implementation-Version': '1.0.0'
         )
