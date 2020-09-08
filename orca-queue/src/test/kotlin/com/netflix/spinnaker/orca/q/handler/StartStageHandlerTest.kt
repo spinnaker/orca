@@ -28,10 +28,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStageInput
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStageOutput
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStageStatus
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.events.StageStarted
@@ -48,6 +44,7 @@ import com.netflix.spinnaker.orca.q.DummyTask
 import com.netflix.spinnaker.orca.q.InvalidExecutionId
 import com.netflix.spinnaker.orca.q.InvalidStageId
 import com.netflix.spinnaker.orca.q.SkipStage
+import com.netflix.spinnaker.orca.q.StageDefinitionBuildersProvider
 import com.netflix.spinnaker.orca.q.StartStage
 import com.netflix.spinnaker.orca.q.StartTask
 import com.netflix.spinnaker.orca.q.buildBeforeStages
@@ -104,16 +101,6 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
   val registry = NoopRegistry()
   val retryDelay = Duration.ofSeconds(5)
 
-  val runningApiStage = object : SimpleStage<Any> {
-    override fun getName() = "runningApiStage"
-
-    override fun execute(simpleStageInput: SimpleStageInput<Any>): SimpleStageOutput<Any, Any> {
-      val output = SimpleStageOutput<Any, Any>()
-      output.status = SimpleStageStatus.RUNNING
-      return output
-    }
-  }
-
   subject(GROUP) {
     StartStageHandler(
       queue,
@@ -121,20 +108,19 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
       stageNavigator,
       DefaultStageDefinitionBuilderFactory(
         DefaultStageResolver(
-          listOf(
-            singleTaskStage,
-            multiTaskStage,
-            stageWithSyntheticBefore,
-            stageWithSyntheticAfter,
-            stageWithParallelBranches,
-            rollingPushStage,
-            zeroTaskStage,
-            stageWithSyntheticAfterAndNoTasks,
-            webhookStage,
-            failPlanningStage
-          ),
-          listOf(
-            runningApiStage
+          StageDefinitionBuildersProvider(
+            listOf(
+              singleTaskStage,
+              multiTaskStage,
+              stageWithSyntheticBefore,
+              stageWithSyntheticAfter,
+              stageWithParallelBranches,
+              rollingPushStage,
+              zeroTaskStage,
+              stageWithSyntheticAfterAndNoTasks,
+              webhookStage,
+              failPlanningStage
+            )
           )
         )
       ),
@@ -1196,26 +1182,6 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("emits an error event") {
         verify(queue).push(isA<InvalidStageId>())
-      }
-    }
-
-    given("api stage") {
-      val pipeline = pipeline {
-        stage {
-          refId = "1"
-          type = runningApiStage.name
-        }
-      }
-
-      val message = StartStage(pipeline.stageByRef("1"))
-      pipeline.stageById(message.stageId).apply {
-        status = RUNNING
-      }
-
-      afterGroup(::resetMocks)
-
-      it("stage was successfully started") {
-        assertThat(pipeline.stageById(message.stageId).status).isEqualTo(RUNNING)
       }
     }
   }
