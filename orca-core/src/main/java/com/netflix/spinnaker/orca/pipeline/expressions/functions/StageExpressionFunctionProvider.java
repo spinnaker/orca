@@ -23,6 +23,8 @@ import com.netflix.spinnaker.kork.expressions.SpelHelperFunctionException;
 import com.netflix.spinnaker.orca.ExecutionContext;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -83,7 +85,9 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
         new FunctionDefinition(
             "judgement",
             "Returns the judgement made by the user in the given manual judgement stage",
-            stageParameters));
+            stageParameters),
+        new FunctionDefinition(
+            "stageStatus", "Returns the stage execution status as a string", stageParameters));
   }
 
   /**
@@ -187,6 +191,33 @@ public class StageExpressionFunctionProvider implements ExpressionFunctionProvid
   /** Alias to judgment */
   public static String judgement(PipelineExecution execution, String id) {
     return judgment(execution, id);
+  }
+
+  /**
+   * Returns the stage execution status as a string.
+   *
+   * @param execution #root.execution
+   * @param id the name or id of the stage to find
+   * @return the stage execution status
+   */
+  public static String stageStatus(PipelineExecution execution, String id) {
+    return stageByIdOrName(execution, id)
+        .map(StageExecution::getStatus)
+        .map(Objects::toString)
+        .orElseThrow(
+            () ->
+                new SpelHelperFunctionException(
+                    format(
+                        "Unable to locate [%s] using #stageStatus(%s) in execution %s",
+                        id, id, execution.getId())));
+  }
+
+  private static Optional<StageExecution> stageByIdOrName(
+      PipelineExecution execution, String idOrName) {
+    return execution.getStages().stream()
+        .filter(
+            i -> idOrName != null && (idOrName.equals(i.getName()) || idOrName.equals(i.getId())))
+        .findFirst();
   }
 
   private static Predicate<StageExecution> isManualStageWithManualInput(String id) {

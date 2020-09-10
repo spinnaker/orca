@@ -187,6 +187,7 @@ class StageExpressionFunctionProviderSpec extends Specification {
     thrown(SpelHelperFunctionException)
   }
 
+  @Unroll
   def "stageExists() returns whether a stage exists or not"() {
     when:
     def exists = StageExpressionFunctionProvider.stageExists(pipeline, id)
@@ -202,5 +203,21 @@ class StageExpressionFunctionProviderSpec extends Specification {
     "2"                  | true
     "Non-existent Stage" | false
     "42"                 | false
+  }
+
+  @Unroll
+  def "stageStatus returns the string representation of a stage execution status"() {
+    when:
+    def status = StageExpressionFunctionProvider.stageStatus(pipeline, id)
+
+    then:
+    status == expected
+
+    where:
+    id                    || expected
+    "1"                   || "NOT_STARTED"
+    "My First Stage"      || "NOT_STARTED"
+    "4"                   || "SUCCEEDED"
+    "Deploy in us-east-1" || "SUCCEEDED"
   }
 }
