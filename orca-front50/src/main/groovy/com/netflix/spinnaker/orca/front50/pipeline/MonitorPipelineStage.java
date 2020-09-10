@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.front50.pipeline;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.netflix.spinnaker.kork.annotations.DeprecationInfo;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
@@ -77,6 +78,12 @@ public class MonitorPipelineStage implements StageDefinitionBuilder {
      * DO NOT USE: Legacy from PipelineStage Use {@link executionIds} instead (even if you only have
      * one execution ID to monitor)
      */
+    @Deprecated
+    @DeprecationInfo(
+        reason = "Used for backwards compat with PipelineStage",
+        replaceWith = "Use executionIds instead even if you only have one execution ID",
+        since = "2020.4",
+        eol = "n/a")
     public String executionId;
 
     /** List of executions IDs to monitor */

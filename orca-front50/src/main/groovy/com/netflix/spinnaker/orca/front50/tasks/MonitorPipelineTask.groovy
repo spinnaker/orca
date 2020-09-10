@@ -66,7 +66,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
     pipelineIds.forEach { pipelineId ->
       PipelineExecution childPipeline = executionRepository.retrieve(PIPELINE, pipelineId)
       if (firstPipeline == null) {
-        // Capture the first pipeline, since if there is only, we will return its context as part of taskresult
+        // Capture the first pipeline, since if there is only one, we will return its context as part of TaskResult
         firstPipeline = childPipeline
       }
       MonitorPipelineStage.ChildPipelineStatusDetails details = new MonitorPipelineStage.ChildPipelineStatusDetails()
@@ -138,7 +138,8 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
       }
     }
 
-    // Finally, if all completed and we didn't catch that case yet that means they all were cancelled
+    // Finally, if all pipelines completed and we didn't catch that case above it means at least one of those pipelines was CANCELED
+    // and we should propagate that result up
     if (allPipelinesCompleted) {
       return buildTaskResult(ExecutionStatus.CANCELED, context, result)
     }
