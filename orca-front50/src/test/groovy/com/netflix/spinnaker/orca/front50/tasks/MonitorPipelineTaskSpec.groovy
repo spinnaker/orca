@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.pipeline.PipelineStage
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
@@ -28,14 +29,13 @@ import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
 
 class MonitorPipelineTaskSpec extends Specification {
 
-
-  @Subject
-  MonitorPipelineTask task = new MonitorPipelineTask()
   ExecutionRepository repo = Mock(ExecutionRepository)
   StageExecutionImpl stage = new StageExecutionImpl(type: "whatever")
 
+  @Subject
+  MonitorPipelineTask task = new MonitorPipelineTask(repo, new ObjectMapper())
+
   def setup() {
-    task.executionRepository = repo
     stage.context.executionId = 'abc'
   }
 
