@@ -197,7 +197,7 @@ public class WebhookResponseProcessor {
           stageOutput.put("artifacts", JsonPath.parse(response.getBody()).read("artifacts"));
         } catch (Exception e) {
           webHookOutput.put(
-              "error", "Expected artifacts in webhook response couldn't be parsed " + e.toString());
+              "error", "Expected artifacts in webhook response couldn't be parsed: " + e.toString());
           return TaskResult.builder(ExecutionStatus.TERMINAL).context(stageOutput).build();
         }
       }
