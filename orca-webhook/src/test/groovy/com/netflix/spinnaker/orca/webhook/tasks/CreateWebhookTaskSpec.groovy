@@ -214,7 +214,7 @@ class CreateWebhookTaskSpec extends Specification {
     result.status == ExecutionStatus.RUNNING
     (result.context as Map) == [
       webhook: [
-        error: "Name resolution failure in webhook for pipeline ${stage.execution.id} to ${stage.context.url}, will retry."
+        error: "Remote host resolution failure in webhook for pipeline ${stage.execution.id} to ${stage.context.url}, will retry."
       ]
     ]
   }
@@ -263,7 +263,7 @@ class CreateWebhookTaskSpec extends Specification {
     result.status == ExecutionStatus.TERMINAL
     (result.context as Map) == [
       webhook: [
-        error: "An exception occurred for pipeline ${stage.execution.id} to wrong://my-service.io/api/. java.lang.IllegalArgumentException: Invalid URL"
+        error: "An exception occurred for pipeline ${stage.execution.id} performing a request to wrong://my-service.io/api/. java.lang.IllegalArgumentException: Invalid URL"
       ]
     ]
   }
@@ -340,7 +340,7 @@ class CreateWebhookTaskSpec extends Specification {
     result.status == ExecutionStatus.TERMINAL
     result.context as Map == [
       webhook: [
-        error: "Received a status code 503 configured to fail fast, terminating stage for pipeline ${stage.getExecution().id} to ${stage.context.url}",
+        error: "Received status code 503, which is configured to fail fast, terminating stage for pipeline ${stage.getExecution().id} to ${stage.context.url}",
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
         statusCodeValue: HttpStatus.SERVICE_UNAVAILABLE.value(),
         body: bodyString

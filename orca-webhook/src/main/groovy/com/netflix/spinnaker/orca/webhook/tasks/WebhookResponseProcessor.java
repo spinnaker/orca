@@ -16,9 +16,12 @@
 
 package com.netflix.spinnaker.orca.webhook.tasks;
 
+import static java.lang.String.format;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import com.netflix.spinnaker.kork.exceptions.SystemException;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
@@ -74,7 +77,7 @@ public class WebhookResponseProcessor {
       return processResponse(response);
     }
 
-    throw new IllegalArgumentException("No response or exception to process.");
+    throw new SystemException("No response or exception is provided to process.");
   }
 
   TaskResult processReceivedHttpStatusException(HttpStatusCodeException e) {
@@ -98,7 +101,7 @@ public class WebhookResponseProcessor {
     if (stageData.failFastStatusCodes != null
         && stageData.failFastStatusCodes.contains(status.value())) {
       errorMessage =
-          String.format(
+          format(
               "Received status code %s, which is configured to fail fast, terminating stage for pipeline %s to %s",
               status.value(), executionId, stageData.url);
       executionStatus = ExecutionStatus.TERMINAL;
@@ -106,13 +109,13 @@ public class WebhookResponseProcessor {
         || IntStream.of(webhookProperties.getDefaultRetryStatusCodes())
             .anyMatch(i -> i == status.value())) {
       errorMessage =
-          String.format(
+          format(
               "Error submitting webhook for pipeline %s to %s with status code %s, will retry.",
               executionId, stageData.url, status.value());
       executionStatus = ExecutionStatus.RUNNING;
     } else {
       errorMessage =
-          String.format(
+          format(
               "Error submitting webhook for pipeline %s to %s with status code %s.",
               executionId, stageData.url, status.value());
       executionStatus = ExecutionStatus.TERMINAL;
@@ -127,7 +130,7 @@ public class WebhookResponseProcessor {
     ExecutionStatus executionStatus;
     if (e instanceof UnknownHostException || e.getCause() instanceof UnknownHostException) {
       errorMessage =
-          String.format(
+          format(
               "Remote host resolution failure in webhook for pipeline %s to %s, will retry.",
               executionId, stageData.url);
       executionStatus = ExecutionStatus.RUNNING;
@@ -135,13 +138,13 @@ public class WebhookResponseProcessor {
         && (e instanceof SocketTimeoutException
             || e.getCause() instanceof SocketTimeoutException)) {
       errorMessage =
-          String.format(
+          format(
               "Socket timeout in webhook on GET request for pipeline %s to %s, will retry.",
               executionId, stageData.url);
       executionStatus = ExecutionStatus.RUNNING;
     } else {
       errorMessage =
-          String.format(
+          format(
               "An exception occurred for pipeline %s performing a request to %s. %s",
               executionId, stageData.url, e.toString());
       executionStatus = ExecutionStatus.TERMINAL;
@@ -197,7 +200,8 @@ public class WebhookResponseProcessor {
           stageOutput.put("artifacts", JsonPath.parse(response.getBody()).read("artifacts"));
         } catch (Exception e) {
           webHookOutput.put(
-              "error", "Expected artifacts in webhook response couldn't be parsed: " + e.toString());
+              "error",
+              "Expected artifacts in webhook response couldn't be parsed: " + e.toString());
           return TaskResult.builder(ExecutionStatus.TERMINAL).context(stageOutput).build();
         }
       }
