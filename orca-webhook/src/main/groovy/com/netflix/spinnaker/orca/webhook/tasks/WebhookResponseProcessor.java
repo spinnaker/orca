@@ -99,7 +99,7 @@ public class WebhookResponseProcessor {
         && stageData.failFastStatusCodes.contains(status.value())) {
       errorMessage =
           String.format(
-              "Received a status code %s configured to fail fast, terminating stage for pipeline %s to %s",
+              "Received status code %s, which is configured to fail fast, terminating stage for pipeline %s to %s",
               status.value(), executionId, stageData.url);
       executionStatus = ExecutionStatus.TERMINAL;
     } else if (status.is5xxServerError()
