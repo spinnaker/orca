@@ -71,6 +71,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
       }
       MonitorPipelineStage.ChildPipelineStatusDetails details = new MonitorPipelineStage.ChildPipelineStatusDetails()
       details.status = childPipeline.status
+      details.application = childPipeline.application
       pipelineStatuses.put(pipelineId, details)
 
       if (childPipeline.status.halt) {

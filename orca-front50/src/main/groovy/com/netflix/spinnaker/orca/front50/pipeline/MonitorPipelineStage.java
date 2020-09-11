@@ -120,6 +120,7 @@ public class MonitorPipelineStage implements StageDefinitionBuilder {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public static class ChildPipelineStatusDetails {
     public ExecutionStatus status;
+    public String application;
 
     public ChildPipelineException exception;
   }
