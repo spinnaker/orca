@@ -38,7 +38,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 
-/** processes response or the client exception received from a webhook call. */
+/** Processes responses and errors from webhook stage executions. */
 public class WebhookResponseProcessor {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
