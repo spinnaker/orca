@@ -181,7 +181,7 @@ public class WebhookResponseProcessor {
         if (StringUtils.isEmpty(statusUrl)) {
           webHookOutput.put(
               "error",
-              "The status URL couldn't be resolved, but 'Wait for completion' was checked");
+              "The status URL couldn't be resolved, but 'Wait for completion' is configured");
           return TaskResult.builder(ExecutionStatus.TERMINAL).context(stageOutput).build();
         }
         stageData.statusEndpoint = statusUrl;
