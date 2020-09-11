@@ -128,7 +128,7 @@ public class WebhookResponseProcessor {
     if (e instanceof UnknownHostException || e.getCause() instanceof UnknownHostException) {
       errorMessage =
           String.format(
-              "Name resolution failure in webhook for pipeline %s to %s, will retry.",
+              "Remote host resolution failure in webhook for pipeline %s to %s, will retry.",
               executionId, stageData.url);
       executionStatus = ExecutionStatus.RUNNING;
     } else if (stageData.method == HttpMethod.GET
