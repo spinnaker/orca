@@ -142,7 +142,7 @@ public class WebhookResponseProcessor {
     } else {
       errorMessage =
           String.format(
-              "An exception occurred for pipeline %s to %s. %s",
+              "An exception occurred for pipeline %s performing a request to %s. %s",
               executionId, stageData.url, e.toString());
       executionStatus = ExecutionStatus.TERMINAL;
     }
