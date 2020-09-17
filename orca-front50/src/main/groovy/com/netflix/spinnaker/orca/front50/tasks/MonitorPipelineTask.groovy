@@ -135,6 +135,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
 
     if (anyPipelinesFailed) {
       if (allPipelinesCompleted || stageData.monitorBehavior == MonitorPipelineStage.MonitorBehavior.FailFast) {
+        stage.appendErrorMessage("At least one monitored pipeline failed, look for errors in failed pipelines")
         return buildTaskResult(ExecutionStatus.TERMINAL, context, result)
       }
     }
@@ -142,6 +143,7 @@ class MonitorPipelineTask implements OverridableTimeoutRetryableTask {
     // Finally, if all pipelines completed and we didn't catch that case above it means at least one of those pipelines was CANCELED
     // and we should propagate that result up
     if (allPipelinesCompleted) {
+      stage.appendErrorMessage("At least one monitored pipeline was cancelled")
       return buildTaskResult(ExecutionStatus.CANCELED, context, result)
     }
 
