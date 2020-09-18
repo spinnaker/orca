@@ -22,6 +22,8 @@ import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import retrofit.RetrofitError
+import retrofit.client.Response
+import retrofit.mime.TypedString
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -46,7 +48,8 @@ class StartJenkinsJobTaskSpec extends Specification {
 
         and:
         task.buildService = Stub(BuildService) {
-           build(stage.context.master, stage.context.job, stage.context.parameters) >> [result: 'SUCCESS', running: true, number: 4]
+          build(stage.context.master, stage.context.job, stage.context.parameters) >>
+              new Response("", 200, "OK", [], new TypedString(new ObjectMapper().writeValueAsString([result: 'SUCCESS', running: true, number: 4])))
         }
 
         when:
@@ -62,7 +65,8 @@ class StartJenkinsJobTaskSpec extends Specification {
 
       and:
       task.buildService = Stub(BuildService) {
-          build(stage.context.master, stage.context.job, stage.context.parameters) >> [ result : 'SUCCESS', running: true, number: 4 ]
+        build(stage.context.master, stage.context.job, stage.context.parameters) >>
+            new Response("", 200, "OK", [], new TypedString(new ObjectMapper().writeValueAsString([result: 'SUCCESS', running: true, number: 4])))
       }
 
       when:
