@@ -1,0 +1,33 @@
+@startuml
+participant "Controller" as OC
+participant "ExecutionLauncher" as EL
+participant "ExecutionRepository" as ER
+participant "QoS"
+participant "Queue" as Q
+participant "QueueProcessor" as QP
+participant "MessageHandler" as MH
+
+OC -> OC : build pipeline execution
+note right
+  Preprocessing (MPT), validation, etc.
+end note
+OC -> EL : start(Execution)
+EL -> ER : save(Execution)
+ER -> QoS : [onPersist event]
+QoS -> QoS : Are we at capacity?
+alt throttled
+  QoS -> QoS : status: BUFFERED
+else
+  QoS -> QoS : Evaluate promotion \ncandidates
+  QoS -> EL : start unbuffered \nexecutions
+end
+EL -> Q : StartExecution
+
+loop * messages
+  QP -> Q : poll()
+  QP -> MH : Handle message(s)
+  MH -> Q : push events
+  MH -> ER : saveExecution
+end
+@enduml
+

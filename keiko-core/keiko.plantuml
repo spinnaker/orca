@@ -1,0 +1,25 @@
+@startuml
+participant QueueProcessor as QP
+participant Queue as Q
+participant QueueExecutor as QE
+participant MessageHandler as MH
+participant DB
+
+loop if activated in Discovery
+  QP -> Q : poll()
+  Q <-> DB : try to get 10 "ready" messages
+  note right
+    ready messages have a delivery
+    time of now or in the past
+  end note
+  Q -> QP : [0..10 messages]
+
+  loop each message
+    QP -> QE : Submit to worker pool
+    QE -> MH : handle specific message type
+    MH -> Q : fire 0..* new messages
+  end
+end
+
+@enduml
+
