@@ -91,4 +91,21 @@ class StartJenkinsJobTaskSpec extends Specification {
         then:
         thrown(RetrofitError)
     }
+
+  def "handle 202 response from igor"() {
+    given:
+    def stage = new StageExecutionImpl(pipeline, "jenkins", [master: "builds", job: "orca"])
+
+    and:
+    task.buildService = Stub(BuildService) {
+      build(stage.context.master, stage.context.job, stage.context.parameters) >>
+          new Response("", 202, "OK", [], null)
+    }
+
+    when:
+    def result = task.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.RUNNING
+  }
 }

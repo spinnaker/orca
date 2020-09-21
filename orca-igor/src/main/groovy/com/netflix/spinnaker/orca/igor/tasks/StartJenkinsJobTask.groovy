@@ -75,7 +75,7 @@ class StartJenkinsJobTask implements RetryableTask {
       throw e
     }
 
-    throw new SystemException("Failure starting script")
+    throw new SystemException("Failure starting jenkins job")
   }
 
   @Override
