@@ -79,6 +79,7 @@ class WaitForClusterDisableTaskSpec extends Specification {
     "other"   | 0           | false    | 3       | null       | ['platformHealthType']         | []                            | 'Unknown'           || SUCCEEDED  // exercises if (!remainingDeployServerGroups)...
     "other"   | 90          | false    | 3       | null       | ['platformHealthType']         | []                            | 'Unknown'           || RUNNING    // keeps running if duration < minWaitTime
     region    | 0           | false    | 3       | null       | null                           | []                            | 'Unknown'           || RUNNING    // keeps running if disabled is false
+    region    | 0           | false    | 3       | null       | ['platformHealthType']         | []                            | 'Unknown'           || SUCCEEDED  // wait for instances down if only platform health check
 
     // tests for isDisabled==true
     region    | 0           | true     | 3       | null       | ['platformHealthType']         | []                            | 'Unknown'           || SUCCEEDED

@@ -23,6 +23,7 @@ import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Targe
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForRequiredInstancesDownTask
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
+import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Value
@@ -67,6 +68,7 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
   boolean isServerGroupOperationInProgress(StageExecution stage,
                                            List<Map> interestingHealthProviderNames,
                                            Optional<TargetServerGroup> serverGroup) {
+
     // null vs empty interestingHealthProviderNames do mean very different things to Spinnaker
     // a null value will result in Spinnaker waiting for discovery + platform, etc. whereas an empty will not wait for anything.
     if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {
@@ -77,15 +79,29 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
       return COMPLETED
     }
 
-    // make sure that we wait for the disabled flag to be set
     def targetServerGroup = serverGroup.get()
-    if (!targetServerGroup.isDisabled()) {
-      return RUNNING
+
+    def platformHealthType = getPlatformHealthType(stage, targetServerGroup)
+    def onlyPlatformHealthCheck = platformHealthType && (interestingHealthProviderNames == [platformHealthType])
+
+    // make sure that we wait for the disabled flag to be set
+    // When only checking platform health continue with task
+    if (targetServerGroup.isDisabled() || onlyPlatformHealthCheck) {
+      // we want to make sure instances are down
+      // to prevent downstream stages (e.g. scaleDownCluster) from having to deal with disabled-but-instances-up server groups
+      // note that waitForRequiredInstancesDownTask knows how to deal with desiredPercentages, interestingHealthProviderNames, etc.
+      return !waitForRequiredInstancesDownTask.hasSucceeded(stage, targetServerGroup as Map, targetServerGroup.getInstances(), interestingHealthProviderNames)
     }
 
-    // we want to make sure instances are down
-    // to prevent downstream stages (e.g. scaleDownCluster) from having to deal with disabled-but-instances-up server groups
-    // note that waitForRequiredInstancesDownTask knows how to deal with desiredPercentages, interestingHealthProviderNames, etc.
-    return !waitForRequiredInstancesDownTask.hasSucceeded(stage, targetServerGroup as Map, targetServerGroup.getInstances(), interestingHealthProviderNames)
+    return RUNNING
+  }
+
+  private String getPlatformHealthType(StageExecution stage, TargetServerGroup targetServerGroup) {
+    def platformHealthType = targetServerGroup.instances.collect { instance ->
+      HealthHelper.findPlatformHealth(instance.health)
+    }?.find {
+      it.type
+    }?.type
+    return platformHealthType ? platformHealthType : healthProviderNamesByPlatform[getCloudProvider(stage)]
   }
 }
