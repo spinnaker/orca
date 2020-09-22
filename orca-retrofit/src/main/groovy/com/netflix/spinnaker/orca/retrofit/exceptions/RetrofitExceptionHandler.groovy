@@ -100,7 +100,7 @@ class RetrofitExceptionHandler implements ExceptionHandler {
 
   private boolean isMalformedRequest(RetrofitError e) {
     // We never want to retry errors like "Path parameter "blah" value must not be null.
-    return e.kind == UNEXPECTED && e.message.contains("Path parameter")
+    return e.kind == UNEXPECTED && e.message?.contains("Path parameter")
   }
 
   private static boolean isIdempotentRequest(RetrofitError e) {

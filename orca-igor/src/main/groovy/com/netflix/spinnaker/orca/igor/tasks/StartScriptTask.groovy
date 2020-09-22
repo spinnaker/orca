@@ -24,7 +24,9 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.Task
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.igor.BuildService
+import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,6 +48,9 @@ class StartScriptTask implements RetryableTask {
 
   @Autowired
   ObjectMapper objectMapper
+
+  @Autowired
+  RetrofitExceptionHandler retrofitExceptionHandler
 
   @Value('${script.master:master}')
   String master
@@ -97,7 +102,7 @@ class StartScriptTask implements RetryableTask {
       Response igorResponse = buildService.build(master, job, parameters)
 
       if (igorResponse.getStatus() == HttpStatus.ACCEPTED.value()) {
-        log.info("script start for $master $job is pending, waiting")
+        log.info("script for job=$job on master=$master is pending, waiting for script to start")
         return TaskResult.RUNNING
       }
 
@@ -110,8 +115,11 @@ class StartScriptTask implements RetryableTask {
       }
     }
     catch (RetrofitError e) {
-      if (e.kind == RetrofitError.Kind.NETWORK) {
-        log.warn("Network failure communicating with igor to start a jenkins job, will retry", e)
+      // This igor call is idempotent so we can retry despite it being PUT/POST
+      ExceptionHandler.Response exceptionResponse = retrofitExceptionHandler.handle("StartJenkinsJob", e)
+
+      if (exceptionResponse.shouldRetry) {
+        log.warn("Failure communicating with igor to start a jenkins job, will retry", e)
         return TaskResult.RUNNING
       }
       throw e

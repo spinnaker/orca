@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler
 import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedString
@@ -37,6 +38,8 @@ class StartJenkinsJobTaskSpec extends Specification {
     task.objectMapper = Mock(ObjectMapper) {
       convertValue(_,_) >> [:]
     }
+
+    task.retrofitExceptionHandler = new RetrofitExceptionHandler()
   }
 
   @Shared
