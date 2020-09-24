@@ -91,7 +91,11 @@ class RunTaskHandler(
    *  This is an indication that the task might eventually hit the dreaded message ack timeout and might end
    *  running multiple times cause unintended side-effects.
    */
-  private val warningInvocationTimeMs = 30000
+  private val warningInvocationTimeMs: Int = dynamicConfigService.getConfig(
+    Int::class.java,
+    "tasks.warningInvocationTimeMs",
+    30000
+  )
 
   override fun handle(message: RunTask) {
     message.withTask { origStage, taskModel, task ->
@@ -213,7 +217,10 @@ class RunTaskHandler(
       }
 
       if (elapsedMillis >= warningInvocationTimeMs) {
-        log.info("Task invocation for task ${taskModel.implementingClass} in stage ${stage.type} with id ${stage.id} took over $warningInvocationTimeMs")
+        log.info(
+          "Task invocation took over ${warningInvocationTimeMs}ms " +
+            "(taskType: ${taskModel.implementingClass}, stageType: ${stage.type}, stageId: ${stage.id})"
+        )
       }
     } catch (e: java.lang.Exception) {
       log.warn("Failed to track result for stage: ${stage.id}, task: ${taskModel.id}", e)
