@@ -20,7 +20,6 @@ import static java.util.Collections.emptySet;
 import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.kork.annotations.Beta;
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner;
-import java.io.Serializable;
 import java.util.*;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
