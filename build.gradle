@@ -19,6 +19,7 @@ plugins {
   id "nebula.kotlin" version "$kotlinVersion" apply false
   id "org.jetbrains.kotlin.plugin.allopen" version "$kotlinVersion" apply false
   id "org.jetbrains.dokka" version "0.10.1" apply false
+  id "io.gitlab.arturbosch.detekt" version "1.7.4" apply false
 }
 
 allprojects {
@@ -35,7 +36,7 @@ allprojects {
 
 subprojects {
 
-  if ([korkVersion, keikoVersion, fiatVersion].any { it.endsWith("-SNAPSHOT") }) {
+  if ([korkVersion, fiatVersion].any { it.endsWith("-SNAPSHOT") }) {
     logger.info("Enabling mavenLocal")
     repositories {
       mavenLocal()

@@ -34,7 +34,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution.PausedDetails
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.api.test.task
@@ -55,6 +54,8 @@ import com.netflix.spinnaker.orca.q.InvalidTask
 import com.netflix.spinnaker.orca.q.InvalidTaskType
 import com.netflix.spinnaker.orca.q.PauseTask
 import com.netflix.spinnaker.orca.q.RunTask
+import com.netflix.spinnaker.orca.q.StageDefinitionBuildersProvider
+import com.netflix.spinnaker.orca.q.TasksProvider
 import com.netflix.spinnaker.orca.q.singleTaskStage
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
@@ -68,6 +69,7 @@ import com.nhaarman.mockito_kotlin.isA
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.never
 import com.nhaarman.mockito_kotlin.reset
+import com.nhaarman.mockito_kotlin.times
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.whenever
@@ -112,16 +114,18 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   val contextParameterProcessor = ContextParameterProcessor()
   val dynamicConfigService: DynamicConfigService = mock()
   val taskExecutionInterceptors: List<TaskExecutionInterceptor> = listOf(mock())
-  val stageResolver = DefaultStageResolver(emptyList(), emptyList<SimpleStage<Object>>())
+  val stageResolver = DefaultStageResolver(StageDefinitionBuildersProvider(emptyList()))
 
   subject(GROUP) {
+    whenever(dynamicConfigService.getConfig(eq(Int::class.java), eq("tasks.warningInvocationTimeMs"), any())) doReturn 0
+
     RunTaskHandler(
       queue,
       repository,
       stageNavigator,
       DefaultStageDefinitionBuilderFactory(stageResolver),
       contextParameterProcessor,
-      TaskResolver(mutableListOf(task, timeoutOverrideTask, cloudProviderAwareTask) as Collection<Task>?),
+      TaskResolver(TasksProvider(mutableListOf(task, timeoutOverrideTask, cloudProviderAwareTask) as Collection<Task>)),
       clock,
       listOf(exceptionHandler),
       taskExecutionInterceptors,
@@ -1734,8 +1738,8 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
     }
 
     it("does not run any tasks") {
-      verify(task).aliases()
-      verify(task).extensionClass
+      verify(task, times(2)).aliases()
+      verify(task, times(2)).extensionClass
       verifyNoMoreInteractions(task)
     }
 

@@ -19,12 +19,15 @@ package com.netflix.spinnaker.orca;
 import static java.lang.String.format;
 
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStage;
-import com.netflix.spinnaker.orca.pipeline.SimpleStageDefinitionBuilder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 
 /**
  * {@code StageResolver} allows for {@code StageDefinitionBuilder} retrieval via bean name or alias.
@@ -32,29 +35,49 @@ import javax.annotation.Nonnull;
  * <p>Aliases represent the previous bean names that a {@code StageDefinitionBuilder} registered as.
  */
 public class DefaultStageResolver implements StageResolver {
-  private final Map<String, StageDefinitionBuilder> stageDefinitionBuilderByAlias = new HashMap<>();
+  private final ConcurrentHashMap<String, StageDefinitionBuilder> stageDefinitionBuilderByAlias =
+      new ConcurrentHashMap<>();
+  private final ObjectProvider<Collection<StageDefinitionBuilder>> stageDefinitionBuildersProvider;
+
+  private final Logger log = LoggerFactory.getLogger(getClass());
 
   public DefaultStageResolver(
-      Collection<StageDefinitionBuilder> stageDefinitionBuilders,
-      Collection<SimpleStage> simpleStages) {
+      ObjectProvider<Collection<StageDefinitionBuilder>> stageDefinitionBuildersProvider) {
+    this.stageDefinitionBuildersProvider = stageDefinitionBuildersProvider;
+    computeStageDefinitionBuilders();
+  }
+
+  /**
+   * Compute a cache of stage definition builders. A local map is first built and validated for
+   * duplicate stages and then copied to the thread safe cache.
+   *
+   * <p>This allows us to re-compute the stage definition builder cache if necessary (on a cache
+   * miss for example) and ensures the validation always runs correctly against the latest set of
+   * {@link StageDefinitionBuilder} classes.
+   */
+  private void computeStageDefinitionBuilders() {
+    Collection<StageDefinitionBuilder> stageDefinitionBuilders =
+        stageDefinitionBuildersProvider.getIfAvailable(ArrayList::new);
+    Map<String, StageDefinitionBuilder> localStageDefinitionBuildersByAlias = new HashMap<>();
+
     for (StageDefinitionBuilder stageDefinitionBuilder : stageDefinitionBuilders) {
-      stageDefinitionBuilderByAlias.put(stageDefinitionBuilder.getType(), stageDefinitionBuilder);
+      localStageDefinitionBuildersByAlias.put(
+          stageDefinitionBuilder.getType(), stageDefinitionBuilder);
       for (String alias : stageDefinitionBuilder.aliases()) {
-        if (stageDefinitionBuilderByAlias.containsKey(alias)) {
+        if (localStageDefinitionBuildersByAlias.containsKey(alias)) {
           throw new DuplicateStageAliasException(
               format(
                   "Duplicate stage alias detected (alias: %s, previous: %s, current: %s)",
                   alias,
-                  stageDefinitionBuilderByAlias.get(alias).getClass().getCanonicalName(),
+                  localStageDefinitionBuildersByAlias.get(alias).getClass().getCanonicalName(),
                   stageDefinitionBuilder.getClass().getCanonicalName()));
         }
 
-        stageDefinitionBuilderByAlias.put(alias, stageDefinitionBuilder);
+        localStageDefinitionBuildersByAlias.put(alias, stageDefinitionBuilder);
       }
     }
 
-    simpleStages.forEach(
-        s -> stageDefinitionBuilderByAlias.put(s.getName(), new SimpleStageDefinitionBuilder(s)));
+    stageDefinitionBuilderByAlias.putAll(localStageDefinitionBuildersByAlias);
   }
 
   /**
@@ -68,13 +91,36 @@ public class DefaultStageResolver implements StageResolver {
   @Override
   @Nonnull
   public StageDefinitionBuilder getStageDefinitionBuilder(@Nonnull String type, String typeAlias) {
-    StageDefinitionBuilder stageDefinitionBuilder =
-        stageDefinitionBuilderByAlias.getOrDefault(
-            type, stageDefinitionBuilderByAlias.get(typeAlias));
+    StageDefinitionBuilder stageDefinitionBuilder = getOrDefault(type, typeAlias);
 
     if (stageDefinitionBuilder == null) {
-      throw new NoSuchStageDefinitionBuilderException(
-          type, typeAlias, stageDefinitionBuilderByAlias.keySet());
+      log.debug(
+          "Stage definition builder for '{}' not found in initial stage definition builder cache, re-computing...",
+          type);
+      computeStageDefinitionBuilders();
+      stageDefinitionBuilder = getOrDefault(type, typeAlias);
+
+      if (stageDefinitionBuilder == null) {
+        throw new NoSuchStageDefinitionBuilderException(
+            type, typeAlias, stageDefinitionBuilderByAlias.keySet());
+      }
+    }
+
+    return stageDefinitionBuilder;
+  }
+
+  /**
+   * {@link ConcurrentHashMap#get)} throws an NPE if the parameter is null, so first check if
+   * typeAlias is null and then perform the necessary lookups.
+   */
+  private StageDefinitionBuilder getOrDefault(@Nonnull String type, String typeAlias) {
+    StageDefinitionBuilder stageDefinitionBuilder = null;
+    if (typeAlias == null) {
+      stageDefinitionBuilder = stageDefinitionBuilderByAlias.get(type);
+    }
+
+    if (stageDefinitionBuilder == null && typeAlias != null) {
+      stageDefinitionBuilder = stageDefinitionBuilderByAlias.get(typeAlias);
     }
 
     return stageDefinitionBuilder;

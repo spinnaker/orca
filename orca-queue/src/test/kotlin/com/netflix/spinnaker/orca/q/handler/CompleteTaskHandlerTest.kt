@@ -27,7 +27,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
-import com.netflix.spinnaker.orca.api.simplestage.SimpleStage
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.events.TaskComplete
@@ -39,6 +38,7 @@ import com.netflix.spinnaker.orca.q.CompleteStage
 import com.netflix.spinnaker.orca.q.CompleteTask
 import com.netflix.spinnaker.orca.q.RunTask
 import com.netflix.spinnaker.orca.q.SkipStage
+import com.netflix.spinnaker.orca.q.StageDefinitionBuildersProvider
 import com.netflix.spinnaker.orca.q.StartTask
 import com.netflix.spinnaker.orca.q.buildTasks
 import com.netflix.spinnaker.orca.q.get
@@ -71,7 +71,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
   val clock = fixedClock()
-  val stageResolver = DefaultStageResolver(emptyList(), emptyList<SimpleStage<Object>>())
+  val stageResolver = DefaultStageResolver(StageDefinitionBuildersProvider(emptyList()))
 
   subject(GROUP) {
     CompleteTaskHandler(queue, repository, DefaultStageDefinitionBuilderFactory(stageResolver), ContextParameterProcessor(), publisher, clock, NoopRegistry())
