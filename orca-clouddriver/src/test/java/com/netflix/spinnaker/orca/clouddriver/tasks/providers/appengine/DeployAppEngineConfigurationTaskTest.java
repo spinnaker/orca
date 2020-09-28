@@ -39,7 +39,7 @@ import java.util.Map;
 import org.junit.Test;
 
 public class DeployAppEngineConfigurationTaskTest {
-  private final String CLOUD_OPERATION_TYPE = "deployAppEngineConfiguration";
+  private final String CLOUD_OPERATION_TYPE = "deployAppengineConfiguration";
 
   ObjectMapper mapper = new ObjectMapper();
   KatoService katoService = mock(KatoService.class);
@@ -65,7 +65,7 @@ public class DeployAppEngineConfigurationTaskTest {
             + "  },\n"
             + "  \"name\": \"Deploy Global AppEngine Configuration\",\n"
             + "  \"region\": \"us-east1\",\n"
-            + "  \"type\": \"deployAppEngineConfig\"\n"
+            + "  \"type\": \"deployAppengineConfig\"\n"
             + "}";
 
     Map<String, Object> input = mapper.readValue(json, Map.class);
@@ -102,7 +102,7 @@ public class DeployAppEngineConfigurationTaskTest {
             + "  \"account\": \"my-appengine-account\",\n"
             + "  \"name\": \"Deploy Global AppEngine Configuration\",\n"
             + "  \"region\": \"us-east1\",\n"
-            + "  \"type\": \"deployAppEngineConfig\"\n"
+            + "  \"type\": \"deployAppengineConfig\"\n"
             + "}";
 
     Map<String, Object> input = mapper.readValue(json, Map.class);
