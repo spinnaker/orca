@@ -28,9 +28,11 @@ import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +43,7 @@ public class DeployAppEngineConfigurationTask extends AbstractCloudProviderAware
 
   private final ObjectMapper objectMapper;
   private final KatoService kato;
-  private final String CLOUD_OPERATION_TYPE = "deployAppEngineConfiguration";
+  private final String CLOUD_OPERATION_TYPE = "deployAppengineConfiguration";
   private final String CLOUD_PROVIDER = "appengine";
   private final ArtifactUtils artifactUtils;
 
@@ -59,7 +61,9 @@ public class DeployAppEngineConfigurationTask extends AbstractCloudProviderAware
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
     Map<String, Object> context = stage.getContext();
+    Map<String, Object> operationDescription = new HashMap<>();
     String account = getCredentials(stage);
+    operationDescription.put("accountName", account);
 
     if (context.get("cronArtifact") == null
         && context.get("dispatchArtifact") == null
@@ -76,7 +80,7 @@ public class DeployAppEngineConfigurationTask extends AbstractCloudProviderAware
               stage,
               artifactAccountPair.getId(),
               objectMapper.convertValue(artifactAccountPair.getArtifact(), Artifact.class));
-      context.put("cronArtifact", artifact);
+      operationDescription.put("cronArtifact", artifact);
     }
 
     if (context.get("dispatchArtifact") != null) {
@@ -87,7 +91,7 @@ public class DeployAppEngineConfigurationTask extends AbstractCloudProviderAware
               stage,
               artifactAccountPair.getId(),
               objectMapper.convertValue(artifactAccountPair.getArtifact(), Artifact.class));
-      context.put("dispatchArtifact", artifact);
+      operationDescription.put("dispatchArtifact", artifact);
     }
 
     if (context.get("indexArtifact") != null) {
@@ -98,7 +102,7 @@ public class DeployAppEngineConfigurationTask extends AbstractCloudProviderAware
               stage,
               artifactAccountPair.getId(),
               objectMapper.convertValue(artifactAccountPair.getArtifact(), Artifact.class));
-      context.put("indexArtifact", artifact);
+      operationDescription.put("indexArtifact", artifact);
     }
 
     if (context.get("queueArtifact") != null) {
@@ -109,11 +113,12 @@ public class DeployAppEngineConfigurationTask extends AbstractCloudProviderAware
               stage,
               artifactAccountPair.getId(),
               objectMapper.convertValue(artifactAccountPair.getArtifact(), Artifact.class));
-      context.put("queueArtifact", artifact);
+      operationDescription.put("queueArtifact", artifact);
+
     }
 
     Map<String, Map> operation =
-        new ImmutableMap.Builder<String, Map>().put(CLOUD_OPERATION_TYPE, context).build();
+        new ImmutableMap.Builder<String, Map>().put(CLOUD_OPERATION_TYPE, operationDescription).build();
 
     TaskId taskId = kato.requestOperations(CLOUD_PROVIDER, Collections.singletonList(operation));
 

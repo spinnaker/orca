@@ -21,20 +21,16 @@ import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.appengine.DeployAppEngineConfigurationTask;
-import groovy.transform.CompileStatic;
 import javax.annotation.Nonnull;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@CompileStatic
 public class DeployAppEngineConfigurationStage implements StageDefinitionBuilder {
 
   @Override
   public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
-        .withTask("deployAppEngineConfiguration", DeployAppEngineConfigurationTask.class)
+        .withTask("deployAppengineConfiguration", DeployAppEngineConfigurationTask.class)
         .withTask("monitorTask", MonitorKatoTask.class);
   }
 }
