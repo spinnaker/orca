@@ -113,11 +113,12 @@ public class DeployAppEngineConfigurationTask extends AbstractCloudProviderAware
               artifactAccountPair.getId(),
               objectMapper.convertValue(artifactAccountPair.getArtifact(), Artifact.class));
       operationDescription.put("queueArtifact", artifact);
-
     }
 
     Map<String, Map> operation =
-        new ImmutableMap.Builder<String, Map>().put(CLOUD_OPERATION_TYPE, operationDescription).build();
+        new ImmutableMap.Builder<String, Map>()
+            .put(CLOUD_OPERATION_TYPE, operationDescription)
+            .build();
 
     TaskId taskId = kato.requestOperations(CLOUD_PROVIDER, Collections.singletonList(operation));
 
