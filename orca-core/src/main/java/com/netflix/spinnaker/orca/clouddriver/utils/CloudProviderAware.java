@@ -17,9 +17,12 @@
 package com.netflix.spinnaker.orca.clouddriver.utils;
 
 import com.google.common.collect.ImmutableList;
+import com.netflix.frigga.Names;
+import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -92,5 +95,35 @@ public interface CloudProviderAware {
 
   default boolean hasCredentials(@Nonnull StageExecution stage) {
     return getCredentials(stage) != null;
+  }
+
+  default @Nullable String getServerGroupName(StageExecution stage) {
+    String serverGroupName = (String) stage.getContext().get("serverGroupName");
+    return serverGroupName != null ? serverGroupName : (String) stage.getContext().get("asgName");
+  }
+
+  default @Nullable Moniker getMoniker(StageExecution stage) {
+    return (Moniker) stage.getContext().get("moniker");
+  }
+
+  default ClusterDescriptor getClusterDescriptor(StageExecution stage) {
+    String cloudProvider = getCloudProvider(stage);
+    String account = getCredentials(stage);
+
+    // Names accept a null String, and all its fields will be null which is fine in this context
+    Names namesFromServerGroup = Names.parseName(getServerGroupName(stage));
+    Moniker moniker = getMoniker(stage);
+
+    String appName = Optional.ofNullable(moniker.getApp()).orElse(namesFromServerGroup.getApp());
+    String clusterName =
+        Optional.ofNullable(moniker.getCluster()).orElse(namesFromServerGroup.getCluster());
+
+    return new ClusterDescriptor(appName, account, clusterName, cloudProvider);
+  }
+
+  default ServerGroupDescriptor getServerGroupDescriptor(StageExecution stage) {
+    List<String> regions = getRegions(stage.getContext());
+    String region = regions.isEmpty() ? null : regions.get(0);
+    return new ServerGroupDescriptor(getCredentials(stage), getServerGroupName(stage), region);
   }
 }

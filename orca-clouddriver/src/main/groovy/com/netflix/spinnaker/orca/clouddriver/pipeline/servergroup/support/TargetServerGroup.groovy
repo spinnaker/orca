@@ -21,6 +21,7 @@ import com.netflix.frigga.Names
 import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData
+import groovy.transform.CompileDynamic
 import groovy.transform.InheritConstructors
 import groovy.transform.ToString
 import groovy.util.logging.Slf4j
@@ -46,6 +47,12 @@ class TargetServerGroup {
       ((Map) serverGroupData.get("asg")).remove("instances")
     }
     serverGroup = new HashMap(serverGroupData).asImmutable()
+  }
+
+  @CompileDynamic
+  Collection<String> getSuspendedProcesses() {
+    def asgDetails = serverGroup.asg as Map
+    return asgDetails.suspendedProcesses*.processName
   }
 
   /**
