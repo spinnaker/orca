@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Netflix, Inc.
+ * Copyright 2020 Armory, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.http.MediaType
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.post
+import strikt.api.expect
+import strikt.assertions.contains
+import strikt.assertions.isEqualTo
 
 class KubernetesPreconfiguredJobSpec : JUnit5Minutests {
 
@@ -41,12 +44,19 @@ class KubernetesPreconfiguredJobSpec : JUnit5Minutests {
     }
 
     context("kubernetes preconfigured job") {
-      test("the application has a preconfigured job") {
-        subject.perform(MockMvcRequestBuilders.get("/jobs/preconfigured"))
-          .andExpect(MockMvcResultMatchers.status().is2xxSuccessful)
-          .andExpect(MockMvcResultMatchers.content().json("[{\"label\":\"Test Preconfigured Job\",\"description\":\"Preconfigured job for testing\",\"type\":\"testPreconfiguredJob\"}]", false))
+      test("preconfigured jobs endpoint returns job definition") {
+        val resp = subject.get("/jobs/preconfigured")
+          .andReturn().response
+
+        expect {
+          that(resp.status).isEqualTo(200)
+          that(resp.contentAsString)
+            .contains("\"label\":\"Test Preconfigured Job\"")
+            .contains("\"description\":\"Preconfigured job for testing\"")
+            .contains("\"type\":\"testPreconfiguredJob\"")
+        }
       }
-      test("the application submit an execution with a preconfigured job") {
+      test("can execute a pipeline that contains a stage type provided by the preconfigured job definition") {
 
         val pipeline =
           """
@@ -64,13 +74,16 @@ class KubernetesPreconfiguredJobSpec : JUnit5Minutests {
 
         every { katoRestService.requestOperations(any(), any(), any()) } returns TaskId("1")
 
-        subject.perform(
-          MockMvcRequestBuilders.post("/orchestrate")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(pipeline)
-        )
-          .andExpect(MockMvcResultMatchers.status().is2xxSuccessful)
-          .andExpect(MockMvcResultMatchers.jsonPath("$.ref").exists())
+        val resp = subject.post("/orchestrate") {
+          contentType = MediaType.APPLICATION_JSON
+          content = pipeline
+        }.andReturn().response
+
+        expect {
+          that(resp.status).isEqualTo(200)
+          that(resp.contentAsString)
+            .contains("\"ref\":\"/pipelines")
+        }
 
         verify(timeout = 1000) { katoRestService.requestOperations(any(), "kubernetes", match { it.toString().contains("alias=preconfiguredJob") }) }
       }

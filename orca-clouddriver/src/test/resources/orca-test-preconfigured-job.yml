@@ -51,7 +51,7 @@ job:
         parameters:
           - name: Counter Limit
             label: Counter Limit
-            description: The maximun value to iterate
+            description: The maximum value to iterate
             mapping: manifest.spec.template.spec.containers[0].env[0].value
             defaultValue: 20
         manifest:
