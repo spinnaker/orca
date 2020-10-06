@@ -117,6 +117,8 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   val stageResolver = DefaultStageResolver(StageDefinitionBuildersProvider(emptyList()))
 
   subject(GROUP) {
+    whenever(dynamicConfigService.getConfig(eq(Int::class.java), eq("tasks.warningInvocationTimeMs"), any())) doReturn 0
+
     RunTaskHandler(
       queue,
       repository,
@@ -728,8 +730,8 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       it("does not execute the task") {
-        verify(task).aliases()
-        verify(task).extensionClass
+        verify(task, times(1)).aliases()
+        verify(task, times(3)).extensionClass
         verifyNoMoreInteractions(task)
       }
     }
@@ -812,8 +814,8 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       it("does not execute the task") {
-        verify(task).aliases()
-        verify(task).extensionClass
+        verify(task, times(1)).aliases()
+        verify(task, times(3)).extensionClass
         verifyNoMoreInteractions(task)
       }
     }
@@ -1736,8 +1738,8 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
     }
 
     it("does not run any tasks") {
-      verify(task, times(2)).aliases()
-      verify(task, times(2)).extensionClass
+      verify(task, times(1)).aliases()
+      verify(task, times(5)).extensionClass
       verifyNoMoreInteractions(task)
     }
 
