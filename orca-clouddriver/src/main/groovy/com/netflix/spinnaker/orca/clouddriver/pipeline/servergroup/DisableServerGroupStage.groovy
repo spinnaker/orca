@@ -29,6 +29,7 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForRequiredI
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
 
 @Component
@@ -37,11 +38,11 @@ class DisableServerGroupStage extends TargetServerGroupLinearStageSupport implem
   public static final String TOGGLE = "stages.disable-server-group.wait-for-disabled.enabled"
   static final String PIPELINE_CONFIG_TYPE = "disableServerGroup"
 
-  private final DynamicConfigService dynamicConfigService
+  private final Environment environment
 
   @Autowired
-  DisableServerGroupStage(DynamicConfigService dynamicConfigService) {
-    this.dynamicConfigService = dynamicConfigService
+  DisableServerGroupStage(Environment environment) {
+    this.environment = environment
   }
 
   @Override
@@ -52,7 +53,7 @@ class DisableServerGroupStage extends TargetServerGroupLinearStageSupport implem
       .withTask("monitorServerGroup", MonitorKatoTask)
       .withTask("waitForDownInstances", WaitForRequiredInstancesDownTask)
 
-    if (dynamicConfigService.isEnabled(TOGGLE, false)) {
+    if (environment.getProperty(TOGGLE, Boolean)) {
       builder.withTask("waitForServerGroupDisabled", WaitForDisabledServerGroupTask)
     }
 

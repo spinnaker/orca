@@ -20,7 +20,7 @@ import retrofit.RetrofitError;
 
 @Component
 @Slf4j
-class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTask
+public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTask
     implements RetryableTask {
   private final OortService oortService;
   private final ObjectMapper objectMapper;
