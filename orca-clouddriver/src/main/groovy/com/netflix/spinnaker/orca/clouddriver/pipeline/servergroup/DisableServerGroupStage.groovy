@@ -53,11 +53,11 @@ class DisableServerGroupStage extends TargetServerGroupLinearStageSupport implem
       .withTask("monitorServerGroup", MonitorKatoTask)
       .withTask("waitForDownInstances", WaitForRequiredInstancesDownTask)
 
-    if (environment.getProperty(TOGGLE, Boolean)) {
+    if (environment.getProperty(TOGGLE, Boolean, false)) {
       builder.withTask("waitForServerGroupDisabled", WaitForDisabledServerGroupTask)
     }
 
-    if (isForceCacheRefreshEnabled(dynamicConfigService)) {
+    if (isForceCacheRefreshEnabled(environment)) {
       builder.withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
     }
   }
