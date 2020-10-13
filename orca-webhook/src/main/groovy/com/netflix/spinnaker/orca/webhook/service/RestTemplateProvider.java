@@ -16,11 +16,19 @@
 
 package com.netflix.spinnaker.orca.webhook.service;
 
+import com.netflix.spinnaker.orca.webhook.pipeline.WebhookStage;
 import org.springframework.web.client.RestTemplate;
 
-public interface RestTemplateProvider {
+/**
+ * Concrete implementations will provide a rest template customized to call webhook related
+ * endpoints.
+ *
+ * @param <T> stage configuration data.
+ */
+public interface RestTemplateProvider<T extends WebhookStage.StageData> {
+
   /** @return true if this {@code RestTemplateProvider} supports the given url */
-  boolean supports(String targetUrl);
+  boolean supports(String targetUrl, T stageData);
 
   /**
    * Provides an opportunity for a {@code RestTemplateProvider} to modify any aspect of the target
@@ -30,10 +38,13 @@ public interface RestTemplateProvider {
    *
    * @return a potentially modified target url
    */
-  default String getTargetUrl(String targetUrl) {
+  default String getTargetUrl(String targetUrl, T stageData) {
     return targetUrl;
   }
 
   /** @return a configured {@code RestTemplate} */
   RestTemplate getRestTemplate(String targetUrl);
+
+  /** @return type of stage data that the template provider is expecting */
+  Class<T> getStageDataType();
 }
