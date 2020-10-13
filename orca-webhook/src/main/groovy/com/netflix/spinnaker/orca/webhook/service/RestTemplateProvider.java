@@ -27,7 +27,10 @@ import org.springframework.web.client.RestTemplate;
  */
 public interface RestTemplateProvider<T extends WebhookStage.StageData> {
 
-  /** @return true if this {@code RestTemplateProvider} supports the given url */
+  /**
+   * @return true if this {@code RestTemplateProvider} supports the given url and stage
+   *     configuration
+   */
   boolean supports(String targetUrl, T stageData);
 
   /**

@@ -59,7 +59,7 @@ class WebhookService {
   private WebhookProperties preconfiguredWebhookProperties
 
   ResponseEntity<Object> callWebhook(StageExecution stageExecution) {
-    RestTemplateData restTemplateData = getRestTemplateData('CreateWebhook', stageExecution)
+    RestTemplateData restTemplateData = getRestTemplateData(WebhookTaskType.CREATE, stageExecution)
     if (restTemplateData == null) {
       throw new SpinnakerException("Unable to determine rest template to call webhook")
     }
@@ -67,7 +67,7 @@ class WebhookService {
   }
 
   ResponseEntity<Object> getWebhookStatus(StageExecution stageExecution) {
-    RestTemplateData restTemplateData = getRestTemplateData('MonitorWebhook', stageExecution)
+    RestTemplateData restTemplateData = getRestTemplateData(WebhookTaskType.MONITOR, stageExecution)
     if (restTemplateData == null) {
       throw new SpinnakerException("Unable to determine rest template to monitor webhook")
     }
@@ -75,7 +75,7 @@ class WebhookService {
   }
 
   ResponseEntity<Object> cancelWebhook(StageExecution stageExecution) {
-    RestTemplateData restTemplateData = getRestTemplateData("CancelWebhook", stageExecution)
+    RestTemplateData restTemplateData = getRestTemplateData(WebhookTaskType.CANCEL, stageExecution)
 
     // Only do cancellation if we can determine the rest template to use.
     if (restTemplateData == null) {
@@ -101,24 +101,24 @@ class WebhookService {
 
   }
 
-  private RestTemplateData getRestTemplateData(String taskType, StageExecution stageExecution) {
+  private RestTemplateData getRestTemplateData(WebhookTaskType taskType, StageExecution stageExecution) {
+    String destinationUrl = null
     for (RestTemplateProvider provider : restTemplateProviders) {
       WebhookStage.StageData stageData = stageExecution.mapTo(provider.getStageDataType())
-      String destinationUrl
       HttpHeaders headers = buildHttpHeaders(stageData.customHeaders)
       HttpMethod httpMethod = HttpMethod.GET
       HttpEntity<Object> payloadEntity = null
       switch (taskType) {
-        case 'CreateWebhook':
+        case WebhookTaskType.CREATE:
           destinationUrl = stageData.url
           payloadEntity = new HttpEntity<>(stageData.payload, headers)
           httpMethod = stageData.method
           break
-        case 'MonitorWebhook':
+        case WebhookTaskType.MONITOR:
           destinationUrl = stageData.statusEndpoint
           payloadEntity = new HttpEntity<>(null, headers)
           break
-        case 'CancelWebhook':
+        case WebhookTaskType.CANCEL:
           destinationUrl = stageData.cancelEndpoint
           payloadEntity = new HttpEntity<>(stageData.cancelPayload, headers)
           httpMethod = stageData.cancelMethod
@@ -135,6 +135,13 @@ class WebhookService {
         return new RestTemplateData(restTemplate, validatedUri, httpMethod, payloadEntity, stageData)
       }
     }
+
+    // No providers found.
+    log.warn('Unable to find rest template provider for url: {} , executionId: {}, webhookTaskType: {}',
+        destinationUrl,
+        stageExecution.id,
+        taskType)
+    return null
   }
 
   List<WebhookProperties.PreconfiguredWebhook> getPreconfiguredWebhooks() {
@@ -164,7 +171,11 @@ class WebhookService {
     final HttpEntity<Object> payloadEntity
     final WebhookStage.StageData stageData
 
-    RestTemplateData(RestTemplate restTemplate, URI validatedUri, HttpMethod httpMethod, HttpEntity<Object> payloadEntity, WebhookStage.StageData stageData) {
+    RestTemplateData(RestTemplate restTemplate,
+                     URI validatedUri,
+                     HttpMethod httpMethod,
+                     HttpEntity<Object> payloadEntity,
+                     WebhookStage.StageData stageData) {
       this.restTemplate = restTemplate
       this.validatedUri = validatedUri
       this.httpMethod = httpMethod
@@ -176,6 +187,12 @@ class WebhookService {
       return this.restTemplate.exchange(validatedUri, httpMethod, payloadEntity, Object)
     }
 
+  }
+
+  private static enum WebhookTaskType {
+    CREATE,
+    MONITOR,
+    CANCEL
   }
 
 }
