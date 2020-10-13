@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.val;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,12 +113,11 @@ public interface CloudProviderAware {
 
     // Names accept a null String, and all its fields will be null which is fine in this context
     Names namesFromServerGroup = Names.parseName(getServerGroupName(stage));
-    Moniker moniker = getMoniker(stage);
+    val moniker = Optional.ofNullable(getMoniker(stage));
 
-    String appName = Optional.ofNullable(moniker.getApp()).orElse(namesFromServerGroup.getApp());
+    String appName = moniker.isPresent() ? moniker.get().getApp() : namesFromServerGroup.getApp();
     String clusterName =
-        Optional.ofNullable(moniker.getCluster()).orElse(namesFromServerGroup.getCluster());
-
+        moniker.isPresent() ? moniker.get().getCluster() : namesFromServerGroup.getCluster();
     return new ClusterDescriptor(appName, account, clusterName, cloudProvider);
   }
 
