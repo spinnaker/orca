@@ -8,9 +8,11 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
+import com.netflix.spinnaker.orca.clouddriver.utils.ServerGroupDescriptor;
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
@@ -46,13 +48,7 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
   public TaskResult execute(@NotNull StageExecution stage) {
     val serverGroupDescriptor = getServerGroupDescriptor(stage);
     try {
-      val response =
-          oortService.getServerGroup(
-              serverGroupDescriptor.getAccount(),
-              serverGroupDescriptor.getRegion(),
-              serverGroupDescriptor.getName());
-
-      val serverGroup = objectMapper.readValue(response.getBody().in(), TargetServerGroup.class);
+      var serverGroup = fetchServerGroup(serverGroupDescriptor);
       return serverGroup.isDisabled() ? TaskResult.SUCCEEDED : TaskResult.RUNNING;
     } catch (RetrofitError e) {
       val retrofitErrorResponse = new RetrofitExceptionHandler().handle(stage.getName(), e);
@@ -66,5 +62,17 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
           .context(Collections.singletonMap("lastException", e))
           .build();
     }
+  }
+
+  private TargetServerGroup fetchServerGroup(ServerGroupDescriptor serverGroupDescriptor)
+      throws IOException {
+    val response =
+        oortService.getServerGroup(
+            serverGroupDescriptor.getAccount(),
+            serverGroupDescriptor.getRegion(),
+            serverGroupDescriptor.getName());
+    var serverGroupData =
+        (Map<String, Object>) objectMapper.readValue(response.getBody().in(), Map.class);
+    return new TargetServerGroup(serverGroupData);
   }
 }
