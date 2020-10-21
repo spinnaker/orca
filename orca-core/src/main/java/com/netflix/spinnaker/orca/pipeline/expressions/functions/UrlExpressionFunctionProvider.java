@@ -77,11 +77,11 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
             new FunctionParameter(String.class, "value", "A String containing JSON text")),
         new FunctionDefinition(
             "readYaml",
-            "Parses YAML from a string to be accessed, parsed JSON can be accessed as an object",
+            "Parses YAML from a string to be accessed, parsed YAML can be accessed as an object",
             new FunctionParameter(String.class, "value", "A String containing YAML text")),
         new FunctionDefinition(
             "readYamlAll",
-            "Parses multi-doc YAML from a string to be accessed, list of parsed JSON can be accessed as objects",
+            "Parses multi-doc YAML from a string to be accessed, list of parsed YAML can be accessed as objects",
             new FunctionParameter(String.class, "value", "A String containing YAML text")));
   }
 
