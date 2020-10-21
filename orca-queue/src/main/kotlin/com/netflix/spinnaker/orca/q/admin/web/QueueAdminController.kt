@@ -20,14 +20,10 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.StartWaitingExecutions
 import com.netflix.spinnaker.orca.q.ZombieExecutionService
-import com.netflix.spinnaker.orca.q.admin.HydrateQueueCommand
-import com.netflix.spinnaker.orca.q.admin.HydrateQueueInput
-import com.netflix.spinnaker.orca.q.admin.HydrateQueueOutput
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
 import java.lang.IllegalStateException
 import java.time.Duration
-import java.time.Instant
 import java.util.Optional
 import javassist.NotFoundException
 import javax.ws.rs.QueryParam
@@ -42,27 +38,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/admin/queue")
 class QueueAdminController(
-  private val hydrateCommand: HydrateQueueCommand,
   private val zombieExecutionService: Optional<ZombieExecutionService>,
   private val queue: Queue,
   private val executionRepository: ExecutionRepository
 ) {
-
-  @PostMapping(value = ["/hydrate"])
-  fun hydrateQueue(
-    @QueryParam("dryRun") dryRun: Boolean?,
-    @QueryParam("executionId") executionId: String?,
-    @QueryParam("startMs") startMs: Long?,
-    @QueryParam("endMs") endMs: Long?
-  ): HydrateQueueOutput =
-    hydrateCommand(
-      HydrateQueueInput(
-        executionId,
-        if (startMs != null) Instant.ofEpochMilli(startMs) else null,
-        if (endMs != null) Instant.ofEpochMilli(endMs) else null,
-        dryRun ?: true
-      )
-    )
 
   @PostMapping(value = ["/zombies:kill"])
   fun killZombies(@QueryParam("minimumActivity") minimumActivity: Duration = Duration.ofMinutes(60)) {
