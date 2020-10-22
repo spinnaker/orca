@@ -42,9 +42,9 @@ class UrlExpressionFunctionProviderSpec extends Specification {
   }
 
   @Unroll
-  def "test readYamlAll"() {
+  def "test readAllYaml"() {
     expect:
-    UrlExpressionFunctionProvider.readYamlAll(currentYaml) == expectedYaml
+    UrlExpressionFunctionProvider.readAllYaml(currentYaml) == expectedYaml
 
     where:
     currentYaml               || expectedYaml

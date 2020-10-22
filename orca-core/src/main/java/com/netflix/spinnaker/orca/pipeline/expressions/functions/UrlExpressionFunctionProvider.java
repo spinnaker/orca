@@ -80,7 +80,7 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
             "Parses YAML from a string to be accessed, parsed YAML can be accessed as an object",
             new FunctionParameter(String.class, "value", "A String containing YAML text")),
         new FunctionDefinition(
-            "readYamlAll",
+            "readAllYaml",
             "Parses multi-doc YAML from a string to be accessed, list of parsed YAML can be accessed as objects",
             new FunctionParameter(String.class, "value", "A String containing YAML text")));
   }
@@ -144,7 +144,7 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
    * @param text text to read as yaml
    * @return a list of the object representations of the yaml text
    */
-  public static Object readYamlAll(String text) {
+  public static Object readAllYaml(String text) {
     try {
       List<Object> yamlDocs = new ArrayList<>();
       Iterable<Object> iterable = new Yaml().loadAll(text);
@@ -153,7 +153,7 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
       }
       return yamlDocs;
     } catch (Exception e) {
-      throw new SpelHelperFunctionException(format("#readYamlAll(%s) failed", text), e);
+      throw new SpelHelperFunctionException(format("#readAllYaml(%s) failed", text), e);
     }
   }
 
