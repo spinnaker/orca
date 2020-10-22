@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component
 @ConditionalOnExpression(
   "\${queue.zombie-check.enabled:false}"
 )
-@ConditionalOnBean(MonitorableQueue::class)
+@ConditionalOnBean(ZombieExecutionService::class)
 class ZombieExecutionCheckingAgent(
   private val zombieExecutionService: ZombieExecutionService,
   private val registry: Registry,
@@ -56,7 +56,7 @@ class ZombieExecutionCheckingAgent(
 
   override fun getPollingInterval() = pollingIntervalMs
 
-  override fun getNotificationType() = javaClass.getSimpleName()
+  override fun getNotificationType(): String = javaClass.simpleName
 
   override fun tick() {
     checkForZombies()
