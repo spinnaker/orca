@@ -22,6 +22,7 @@ import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.webhook.config.WebhookProperties
 import com.netflix.spinnaker.orca.webhook.service.WebhookService
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.HttpServerErrorException
@@ -80,7 +81,7 @@ class MonitorWebhookTaskSpec extends Specification {
       statusJsonPath: '$.status'])
 
     monitorWebhookTask.webhookService = Stub(WebhookService) {
-      getStatus(_, _) >> {
+      getWebhookStatus(_) >> {
         throw new IllegalArgumentException("Invalid URL")
       }
     }
@@ -100,7 +101,7 @@ class MonitorWebhookTaskSpec extends Specification {
       statusJsonPath: '$.status'])
 
     monitorWebhookTask.webhookService = Stub(WebhookService) {
-      getStatus(_, _) >> {
+      getWebhookStatus(_) >> {
         throw new Exception("Invalid URL", new UnknownHostException())
       }
     }
@@ -119,7 +120,7 @@ class MonitorWebhookTaskSpec extends Specification {
       statusJsonPath: '$.status'])
 
     monitorWebhookTask.webhookService = Stub(WebhookService) {
-      getStatus(_, _) >> {
+      getWebhookStatus(_) >> {
         throw new ResourceAccessException('I/O error on GET request for "https://my-service.io/api/status/123"', new SocketTimeoutException("timeout"))
       }
     }
@@ -147,7 +148,7 @@ class MonitorWebhookTaskSpec extends Specification {
     webhookProperties.defaultRetryStatusCodes = [429,403]
     monitorWebhookTask.webhookProperties = webhookProperties
     monitorWebhookTask.webhookService = Mock(WebhookService) {
-      1 * getStatus("https://my-service.io/api/status/123", _) >> {
+      1 * getWebhookStatus(_) >> {
         throw new HttpServerErrorException(statusCode, statusCode.name())
       }
     }
@@ -170,8 +171,10 @@ class MonitorWebhookTaskSpec extends Specification {
 
   def "should do a get request to the defined statusEndpoint"() {
     setup:
+    def headers = new HttpHeaders()
+    headers.add(HttpHeaders.CONTENT_TYPE, "application/json")
     monitorWebhookTask.webhookService = Mock(WebhookService) {
-      1 * getStatus("https://my-service.io/api/status/123", [Authorization: "Basic password"]) >> new ResponseEntity<Map>([status:"RUNNING"], HttpStatus.OK)
+      1 * getWebhookStatus(_) >> new ResponseEntity<Map>([status:"RUNNING"], headers, HttpStatus.OK)
     }
     def stage = new StageExecutionImpl(pipeline, "webhook", [
       statusEndpoint: 'https://my-service.io/api/status/123',
@@ -188,13 +191,13 @@ class MonitorWebhookTaskSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.RUNNING
-    result.context.webhook.monitor == [body: [status: "RUNNING"], statusCode: HttpStatus.OK, statusCodeValue: HttpStatus.OK.value()]
+    result.context.webhook.monitor == [headers: ["Content-Type": "application/json"], body: [status: "RUNNING"], statusCode: HttpStatus.OK, statusCodeValue: HttpStatus.OK.value()]
   }
 
   def "should find correct element using statusJsonPath parameter"() {
     setup:
     monitorWebhookTask.webhookService = Mock(WebhookService) {
-      1 * getStatus("https://my-service.io/api/status/123", null) >> new ResponseEntity<Map>([status:"TERMINAL"], HttpStatus.OK)
+      1 * getWebhookStatus(_) >> new ResponseEntity<Map>([status:"TERMINAL"], HttpStatus.OK)
     }
     def stage = new StageExecutionImpl(pipeline, "webhook", [
       statusEndpoint: 'https://my-service.io/api/status/123',
@@ -216,7 +219,7 @@ class MonitorWebhookTaskSpec extends Specification {
   def "should return percentComplete if supported by endpoint"() {
     setup:
     monitorWebhookTask.webhookService = Mock(WebhookService) {
-      1 * getStatus("https://my-service.io/api/status/123", [:]) >> new ResponseEntity<Map>([status:42], HttpStatus.OK)
+      1 * getWebhookStatus(_) >> new ResponseEntity<Map>([status:42], HttpStatus.OK)
     }
     def stage = new StageExecutionImpl(pipeline, "webhook", [
       statusEndpoint: 'https://my-service.io/api/status/123',
@@ -239,7 +242,7 @@ class MonitorWebhookTaskSpec extends Specification {
   def "100 percent complete should result in SUCCEEDED status"() {
     setup:
     monitorWebhookTask.webhookService = Mock(WebhookService) {
-      1 * getStatus("https://my-service.io/api/status/123", null) >> new ResponseEntity<Map>([status:100], HttpStatus.OK)
+      1 * getWebhookStatus(_) >> new ResponseEntity<Map>([status:100], HttpStatus.OK)
     }
     def stage = new StageExecutionImpl(pipeline, "webhook", [
       statusEndpoint: 'https://my-service.io/api/status/123',
@@ -261,7 +264,7 @@ class MonitorWebhookTaskSpec extends Specification {
   def "should return TERMINAL status if jsonPath can not be found"() {
     setup:
     monitorWebhookTask.webhookService = Mock(WebhookService) {
-      1 * getStatus("https://my-service.io/api/status/123", null) >> new ResponseEntity<Map>([status:"SUCCESS"], HttpStatus.OK)
+      1 * getWebhookStatus(_) >> new ResponseEntity<Map>([status:"SUCCESS"], HttpStatus.OK)
     }
     def stage = new StageExecutionImpl(pipeline, "webhook", [
       statusEndpoint: 'https://my-service.io/api/status/123',
@@ -280,7 +283,7 @@ class MonitorWebhookTaskSpec extends Specification {
   def "should return TERMINAL status if jsonPath isn't evaluated to single value"() {
     setup:
     monitorWebhookTask.webhookService = Mock(WebhookService) {
-      1 * getStatus("https://my-service.io/api/status/123", null) >> new ResponseEntity<Map>([status:["some", "complex", "list"]], HttpStatus.OK)
+      1 * getWebhookStatus(_) >> new ResponseEntity<Map>([status:["some", "complex", "list"]], HttpStatus.OK)
     }
     def stage = new StageExecutionImpl(pipeline, "webhook", [
       statusEndpoint: 'https://my-service.io/api/status/123',

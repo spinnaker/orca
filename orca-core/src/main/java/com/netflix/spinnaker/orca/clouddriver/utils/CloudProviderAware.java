@@ -17,12 +17,16 @@
 package com.netflix.spinnaker.orca.clouddriver.utils;
 
 import com.google.common.collect.ImmutableList;
+import com.netflix.frigga.Names;
+import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.val;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,5 +96,55 @@ public interface CloudProviderAware {
 
   default boolean hasCredentials(@Nonnull StageExecution stage) {
     return getCredentials(stage) != null;
+  }
+
+  default @Nullable String getServerGroupName(StageExecution stage) {
+    String serverGroupName = (String) stage.getContext().get("serverGroupName");
+    return serverGroupName != null ? serverGroupName : (String) stage.getContext().get("asgName");
+  }
+
+  default @Nullable Moniker getMoniker(StageExecution stage) {
+    Object moniker = stage.getContext().get("moniker");
+    if (moniker == null) {
+      return null;
+    }
+
+    if (moniker instanceof Moniker) {
+      return (Moniker) moniker;
+    }
+
+    if (moniker instanceof Map) {
+      var monikerAsMap = (Map<?, ?>) moniker;
+      return Moniker.builder()
+          .app((String) monikerAsMap.get("app"))
+          .cluster((String) monikerAsMap.get("cluster"))
+          .stack((String) monikerAsMap.get("stack"))
+          .detail((String) monikerAsMap.get("detail"))
+          .sequence((Integer) monikerAsMap.get("sequence"))
+          .build();
+    }
+
+    cloudProviderAwareLog.warn("Unexpected moniker in context: {}", moniker);
+    return null;
+  }
+
+  default ClusterDescriptor getClusterDescriptor(StageExecution stage) {
+    String cloudProvider = getCloudProvider(stage);
+    String account = getCredentials(stage);
+
+    // Names accept a null String, and all its fields will be null which is fine in this context
+    Names namesFromServerGroup = Names.parseName(getServerGroupName(stage));
+    val moniker = Optional.ofNullable(getMoniker(stage));
+
+    String appName = moniker.isPresent() ? moniker.get().getApp() : namesFromServerGroup.getApp();
+    String clusterName =
+        moniker.isPresent() ? moniker.get().getCluster() : namesFromServerGroup.getCluster();
+    return new ClusterDescriptor(appName, account, clusterName, cloudProvider);
+  }
+
+  default ServerGroupDescriptor getServerGroupDescriptor(StageExecution stage) {
+    List<String> regions = getRegions(stage.getContext());
+    String region = regions.isEmpty() ? null : regions.get(0);
+    return new ServerGroupDescriptor(getCredentials(stage), getServerGroupName(stage), region);
   }
 }
