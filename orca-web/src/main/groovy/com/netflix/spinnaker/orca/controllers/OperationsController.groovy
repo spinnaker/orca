@@ -24,6 +24,10 @@ import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException
 import com.netflix.spinnaker.kork.exceptions.UserException
+import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
+import com.netflix.spinnaker.orca.front50.model.Application
+import com.netflix.spinnaker.fiat.model.Authorization
+import com.fasterxml.jackson.core.type.TypeReference
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.exceptions.OperationFailedException
@@ -104,6 +108,9 @@ class OperationsController {
   @Autowired(required = false)
   Front50Service front50Service
 
+  @Autowired(required = false)
+  private FiatPermissionEvaluator fiatPermissionEvaluator
+
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
     return planOrOrchestratePipeline(pipeline)
@@ -172,7 +179,7 @@ class OperationsController {
 
   private Map<String, Object> orchestratePipeline(Map pipeline) {
     def request = objectMapper.writeValueAsString(pipeline)
-
+    addStageAuthorizedRoles(request,pipeline)
     Exception pipelineError = null
     try {
       pipeline = parseAndValidatePipeline(pipeline)
@@ -196,6 +203,68 @@ class OperationsController {
       log.info("Failed to start pipeline {} based on request body {}", id, request)
       throw pipelineError
     }
+  }
+
+  private void addStageAuthorizedRoles(def request, Map pipeline) {
+
+    def applicationName = pipeline.application
+    if (applicationName) {
+      Application application = front50Service.get(applicationName)
+      if (application) {
+        def username = AuthenticatedRequest.getSpinnakerUser().orElse("")
+        if (application.getPermission().permissions && application.getPermission().permissions.permissions) {
+          def permissions = objectMapper.convertValue(application.getPermission().permissions.permissions,
+              new TypeReference<Map<String, Object>>() {})
+          UserPermission.View permission = fiatPermissionEvaluator.getPermission(username);
+          if (permission == null) { // Should never happen?
+            return;
+          }
+          // User has to have all the pipeline roles.
+          Set<Role.View> roleView = permission.getRoles()
+          def userRoles = []
+          roleView.each { it -> userRoles.add(it.getName().trim()) }
+          def stageList = pipeline.stages
+          def stageRoles = []
+          stageList.each { item ->
+            stageRoles = item.selectedStageRoles
+            item.isAuthorized = checkAuthorizedGroups(userRoles, stageRoles, permissions)
+            item.stageRoles = stageRoles
+            item.permissions = permissions
+          }
+        }
+      }
+    }
+  }
+
+  private boolean checkAuthorizedGroups(def userRoles, def stageRoles,
+                                        def permissions) {
+
+    def value = false
+    if (!stageRoles) {
+      return true
+    }
+    for (role in userRoles) {
+      if (stageRoles.contains(role)) {
+        for (perm in permissions) {
+          def permKey = perm.getKey()
+          List<String> strList = null
+          if (Authorization.CREATE.name().equals(permKey) ||
+              Authorization.EXECUTE.name().equals(permKey) ||
+              Authorization.WRITE.name().equals(permKey)) {
+            strList = perm.getValue()
+            if (strList && strList.contains(role)) {
+              return true
+            }
+          } else if (Authorization.READ.name().equals(permKey)) {
+            strList = perm.getValue()
+            if (strList && strList.contains(role)) {
+              value = false
+            }
+          }
+        }
+      }
+    }
+    return value
   }
 
   private void recordPipelineFailure(Map pipeline, String errorMessage) {
