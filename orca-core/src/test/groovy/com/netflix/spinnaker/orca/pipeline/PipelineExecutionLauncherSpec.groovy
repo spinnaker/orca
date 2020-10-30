@@ -17,8 +17,14 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine
+
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine.v2
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine.v3
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine.v4
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
 import org.springframework.context.ApplicationEventPublisher
+import spock.lang.Unroll
 
 import javax.annotation.Nonnull
 import java.time.Clock
@@ -34,8 +40,9 @@ import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPEL
 
 class PipelineExecutionLauncherSpec extends Specification {
 
-  @Shared def objectMapper = new ObjectMapper()
-  def executionRunner = Mock(ExecutionRunner)
+  @Shared
+  def objectMapper = new ObjectMapper()
+  def executionRunner = Mock(ExecutionEngineRunner)
   def executionRepository = Mock(ExecutionRepository)
   def pipelineValidator = Stub(PipelineValidator)
   def applicationEventPublisher = Mock(ApplicationEventPublisher)
@@ -117,6 +124,31 @@ class PipelineExecutionLauncherSpec extends Specification {
 
     where:
     config = [id: "whatever", stages: []]
+    json = objectMapper.writeValueAsString(config)
+  }
+
+  @Unroll
+  def "sets executionEngine correctly"() {
+    given:
+    @Subject def launcher = create()
+
+    when:
+    launcher.start(PIPELINE, json)
+
+    then:
+    1 * executionRepository.store({
+      it.executionEngine == expected
+    })
+
+    where:
+    supplied                | expected
+    [executionEngine: "v2"] | v2
+    [executionEngine: "v3"] | v3
+    [executionEngine: "v4"] | v4
+    [executionEngine: null] | ExecutionEngine.DEFAULT
+    [:]                     | ExecutionEngine.DEFAULT
+
+    config = [id: "1", stages: []] + supplied
     json = objectMapper.writeValueAsString(config)
   }
 }

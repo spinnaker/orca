@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline;
+package com.netflix.spinnaker.orca.api.pipeline;
 
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/** The touch point into running a {@link PipelineExecution}. */
 public interface ExecutionRunner {
   void start(@Nonnull PipelineExecution execution);
 

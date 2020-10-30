@@ -89,6 +89,10 @@ public interface PipelineExecution {
 
   void setStatus(ExecutionStatus status);
 
+  ExecutionEngine getExecutionEngine();
+
+  void setExecutionEngine(ExecutionEngine executionEngine);
+
   AuthenticationDetails getAuthentication();
 
   void setAuthentication(AuthenticationDetails authentication);

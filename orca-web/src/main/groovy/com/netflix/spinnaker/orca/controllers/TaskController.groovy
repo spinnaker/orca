@@ -20,12 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
+import com.netflix.spinnaker.orca.api.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.pipeline.models.*
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.model.OrchestrationViewModel
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator
-import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
+import com.netflix.spinnaker.orca.pipeline.ExecutionEngineRunner
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -67,7 +68,7 @@ class TaskController {
   ExecutionRepository executionRepository
 
   @Autowired
-  ExecutionRunner executionRunner
+  ExecutionEngineRunner executionRunner
 
   @Autowired
   CompoundExecutionOperator executionOperator;

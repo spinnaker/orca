@@ -20,12 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.Collections2
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.orca.api.pipeline.ExecutionRunner
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator
-import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
+import com.netflix.spinnaker.orca.pipeline.ExecutionEngineRunner
 import com.netflix.spinnaker.orca.pipeline.model.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -54,7 +55,7 @@ class TaskControllerSpec extends Specification {
   MockMvc mockMvc
   def executionRepository = Mock(ExecutionRepository)
   def front50Service = Mock(Front50Service)
-  def executionRunner = Mock(ExecutionRunner)
+  def executionRunner = Mock(ExecutionEngineRunner)
   def executionOperator = Mock(CompoundExecutionOperator)
   def mapper = OrcaObjectMapper.getInstance()
   def registry = new NoopRegistry()
