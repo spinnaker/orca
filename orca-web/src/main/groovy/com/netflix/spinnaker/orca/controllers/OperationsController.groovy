@@ -208,7 +208,7 @@ class OperationsController {
 
   private void addStageAuthorizedRoles(def request, Map pipeline) {
 
-    if (fiatStatus.isEnabled()) {
+    if (fiatStatus && fiatStatus.isEnabled()) {
       def applicationName = pipeline.application
       if (applicationName) {
         Optional<Application> optApplication = getApplication(applicationName)
@@ -248,6 +248,8 @@ class OperationsController {
         return Optional.empty();
       }
       throw new SpinnakerException(format("Failed to retrieve application '%s'", applicationName), e);
+    } catch (RuntimeException re) {
+      return Optional.empty();
     }
   }
 
