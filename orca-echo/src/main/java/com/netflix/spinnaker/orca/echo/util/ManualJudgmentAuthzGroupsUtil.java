@@ -17,14 +17,13 @@
 package com.netflix.spinnaker.orca.echo.util;
 
 import com.netflix.spinnaker.fiat.model.Authorization;
-
 import java.util.List;
 import java.util.Map;
 
 public class ManualJudgmentAuthzGroupsUtil {
 
-  public static boolean checkAuthorizedGroups(List<String> userRoles, List<String> stageRoles,
-                                              Map<String, Object> permissions) {
+  public static boolean checkAuthorizedGroups(
+      List<String> userRoles, List<String> stageRoles, Map<String, Object> permissions) {
 
     boolean isAuthorizedGroup = false;
     if (stageRoles == null || stageRoles.isEmpty()) {
@@ -33,9 +32,9 @@ public class ManualJudgmentAuthzGroupsUtil {
     for (String role : userRoles) {
       if (stageRoles.contains(role)) {
         for (Map.Entry<String, Object> entry : permissions.entrySet()) {
-          if (Authorization.CREATE.name().equals(entry.getKey()) ||
-              Authorization.EXECUTE.name().equals(entry.getKey()) ||
-              Authorization.WRITE.name().equals(entry.getKey())) {
+          if (Authorization.CREATE.name().equals(entry.getKey())
+              || Authorization.EXECUTE.name().equals(entry.getKey())
+              || Authorization.WRITE.name().equals(entry.getKey())) {
             if (entry.getValue() != null && ((List<String>) entry.getValue()).contains(role)) {
               return true;
             }
@@ -45,7 +44,6 @@ public class ManualJudgmentAuthzGroupsUtil {
             }
           }
         }
-
       }
     }
     return isAuthorizedGroup;
