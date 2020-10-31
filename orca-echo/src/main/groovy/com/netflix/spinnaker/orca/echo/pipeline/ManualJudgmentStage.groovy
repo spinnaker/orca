@@ -79,13 +79,6 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
 
     private final FiatPermissionEvaluator fiatPermissionEvaluator
 
-    WaitForManualJudgmentTask() {
-    }
-
-    WaitForManualJudgmentTask(Optional<FiatPermissionEvaluator> fpe) {
-      this.fiatPermissionEvaluator = fpe.orElse(null)
-    }
-
     WaitForManualJudgmentTask(Optional<EchoService> echoService, Optional<FiatPermissionEvaluator> fpe) {
       this.echoService = echoService.orElse(null)
       this.fiatPermissionEvaluator = fpe.orElse(null)

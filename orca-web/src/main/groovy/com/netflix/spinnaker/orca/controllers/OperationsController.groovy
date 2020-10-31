@@ -208,32 +208,46 @@ class OperationsController {
 
   private void addStageAuthorizedRoles(def request, Map pipeline) {
 
-    def applicationName = pipeline.application
-    if (applicationName) {
-      Application application = front50Service.get(applicationName)
-      if (application) {
-        def username = AuthenticatedRequest.getSpinnakerUser().orElse("")
-        if (application.getPermission().permissions && application.getPermission().permissions.permissions) {
-          def permissions = objectMapper.convertValue(application.getPermission().permissions.permissions,
-              new TypeReference<Map<String, Object>>() {})
-          UserPermission.View permission = fiatPermissionEvaluator.getPermission(username);
-          if (permission == null) { // Should never happen?
-            return;
-          }
-          // User has to have all the pipeline roles.
-          Set<Role.View> roleView = permission.getRoles()
-          def userRoles = []
-          roleView.each { it -> userRoles.add(it.getName().trim()) }
-          def stageList = pipeline.stages
-          def stageRoles = []
-          stageList.each { item ->
-            stageRoles = item.selectedStageRoles
-            item.isAuthorized = ManualJudgmentAuthzGroupsUtil.checkAuthorizedGroups(userRoles, stageRoles, permissions)
-            item.stageRoles = stageRoles
-            item.permissions = permissions
+    if (fiatStatus.isEnabled()) {
+      def applicationName = pipeline.application
+      if (applicationName) {
+        Optional<Application> optApplication = getApplication(applicationName)
+        if (optApplication.isPresent()) {
+          Application application = optApplication.get();
+          def username = AuthenticatedRequest.getSpinnakerUser().orElse("")
+          if (application.getPermission().permissions && application.getPermission().permissions.permissions) {
+            def permissions = objectMapper.convertValue(application.getPermission().permissions.permissions,
+                new TypeReference<Map<String, Object>>() {})
+            UserPermission.View permission = fiatPermissionEvaluator.getPermission(username);
+            if (permission == null) { // Should never happen?
+              return;
+            }
+            // User has to have all the pipeline roles.
+            Set<Role.View> roleView = permission.getRoles()
+            def userRoles = []
+            roleView.each { it -> userRoles.add(it.getName().trim()) }
+            def stageList = pipeline.stages
+            def stageRoles = []
+            stageList.each { item ->
+              stageRoles = item.selectedStageRoles
+              item.isAuthorized = ManualJudgmentAuthzGroupsUtil.checkAuthorizedGroups(userRoles, stageRoles, permissions)
+              item.stageRoles = stageRoles
+              item.permissions = permissions
+            }
           }
         }
       }
+    }
+  }
+
+  private Optional<Application> getApplication(String applicationName) {
+    try {
+      return Optional.of(front50Service.get(applicationName));
+    } catch (RetrofitError e) {
+      if (e.getResponse().getStatus() == HttpStatus.NOT_FOUND.value()) {
+        return Optional.empty();
+      }
+      throw new SpinnakerException(format("Failed to retrieve application '%s'", applicationName), e);
     }
   }
 

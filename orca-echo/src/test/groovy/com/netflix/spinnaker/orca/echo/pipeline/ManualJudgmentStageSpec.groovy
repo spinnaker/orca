@@ -38,14 +38,13 @@ class ManualJudgmentStageSpec extends Specification {
   @Unroll
   void "should return execution status based on judgmentStatus"() {
     given:
-    def task = new WaitForManualJudgmentTask()
+    def task = new WaitForManualJudgmentTask(Optional.of(echoService), Optional.of(fpe))
 
     when:
     def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", context))
 
     then:
     result.status == expectedStatus
-    result.context.isEmpty()
 
     where:
     context                      || expectedStatus
@@ -60,7 +59,7 @@ class ManualJudgmentStageSpec extends Specification {
   @Unroll
   void "should return execution status based on authorizedGroups"() {
     given:
-    def task = new WaitForManualJudgmentTask(Optional.of(fpe))
+    def task = new WaitForManualJudgmentTask(Optional.of(echoService), Optional.of(fpe))
 
     when:
     def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", context))
@@ -74,17 +73,17 @@ class ManualJudgmentStageSpec extends Specification {
     where:
     context                      || expectedStatus
     [judgmentStatus: "continue", isAuthorized: false, username: "abc@somedomain.io",
-     stageRoles: "foo", permissions: [WRITE: "foo",READ: "foo",READ: "baz"]] || ExecutionStatus.SUCCEEDED
+     stageRoles: ['foo'], permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.SUCCEEDED
     [judgmentStatus: "Continue", isAuthorized: false, username: "abc@somedomain.io",
-     stageRoles: "foo", permissions: [WRITE: "foo",READ: "foo",READ: "baz"]] || ExecutionStatus.SUCCEEDED
+     stageRoles: ['foo'], permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.SUCCEEDED
     [judgmentStatus: "stop", isAuthorized: false, username: "abc@somedomain.io",
-     stageRoles: "foo", permissions: [WRITE: "foo",READ: "foo",READ: "baz"]] || ExecutionStatus.TERMINAL
+     stageRoles: ['foo'], permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.TERMINAL
     [judgmentStatus: "STOP", isAuthorized: false, username: "abc@somedomain.io",
-     stageRoles: "foo", permissions: [WRITE: "foo",READ: "foo",READ: "baz"]] || ExecutionStatus.TERMINAL
+     stageRoles: ['foo'], permissions: [WRITE: ["foo"],READ: ["foo","baz"],EXECUTE: ["foo"]]] || ExecutionStatus.TERMINAL
     [judgmentStatus: "Continue", isAuthorized: false, username: "abc@somedomain.io",
-     stageRoles: "baz", permissions: [WRITE: "foo",READ: "foo",READ: "baz"]] || ExecutionStatus.RUNNING
+     stageRoles: ['baz'], permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.RUNNING
     [judgmentStatus: "Stop", isAuthorized: false, username: "abc@somedomain.io",
-     stageRoles: "baz", permissions: [WRITE: "foo",READ: "foo",READ: "baz"]] || ExecutionStatus.RUNNING
+     stageRoles: ['baz'], permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.RUNNING
   }
 
   void "should only send notifications for supported types"() {
