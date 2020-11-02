@@ -57,42 +57,60 @@ public class SavePipelineTask implements RetryableTask {
       throw new IllegalArgumentException("pipeline context must be provided");
     }
 
-    Map<String, Object> pipeline;
+    Map<String, Object> pipeline = null;
+    List<Map<String, Object>> pipelineList = new ArrayList<>();
+    Boolean staleCheck = false;
+    Boolean isSavingMultiplePipelines = false;
+    boolean bulksave = false;
     if (!(stage.getContext().get("pipeline") instanceof String)) {
       pipeline = (Map<String, Object>) stage.getContext().get("pipeline");
+    } else if (stage.getContext().containsKey("bulksave")
+        && (boolean) stage.getContext().get("bulksave")) {
+      pipelineList = (List) stage.decodeBase64("/pipeline", List.class);
+      bulksave = true;
     } else {
       pipeline = (Map<String, Object>) stage.decodeBase64("/pipeline", Map.class);
+      pipelineList.add(pipeline);
     }
-
-    if (!pipeline.containsKey("index")) {
-      Map<String, Object> existingPipeline = fetchExistingPipeline(pipeline);
-      if (existingPipeline != null) {
-        pipeline.put("index", existingPipeline.get("index"));
+    for (Map<String, Object> obj : pipelineList) {
+      pipeline = obj;
+      if (!pipeline.containsKey("index")) {
+        Map<String, Object> existingPipeline = fetchExistingPipeline(pipeline);
+        if (existingPipeline != null) {
+          pipeline.put("index", existingPipeline.get("index"));
+        }
       }
-    }
-    String serviceAccount = (String) stage.getContext().get("pipeline.serviceAccount");
-    if (serviceAccount != null) {
-      updateServiceAccount(pipeline, serviceAccount);
-    }
-    final Boolean isSavingMultiplePipelines =
-        (Boolean)
-            Optional.ofNullable(stage.getContext().get("isSavingMultiplePipelines")).orElse(false);
-    final Boolean staleCheck =
-        (Boolean) Optional.ofNullable(stage.getContext().get("staleCheck")).orElse(false);
-    if (stage.getContext().get("pipeline.id") != null
-        && pipeline.get("id") == null
-        && !isSavingMultiplePipelines) {
-      pipeline.put("id", stage.getContext().get("pipeline.id"));
+      String serviceAccount = (String) stage.getContext().get("pipeline.serviceAccount");
+      if (serviceAccount != null) {
+        updateServiceAccount(pipeline, serviceAccount);
+      }
+      isSavingMultiplePipelines =
+          (Boolean)
+              Optional.ofNullable(stage.getContext().get("isSavingMultiplePipelines"))
+                  .orElse(false);
+      staleCheck =
+          (Boolean) Optional.ofNullable(stage.getContext().get("staleCheck")).orElse(false);
+      if (stage.getContext().get("pipeline.id") != null
+          && pipeline.get("id") == null
+          && !isSavingMultiplePipelines) {
+        pipeline.put("id", stage.getContext().get("pipeline.id"));
 
-      // We need to tell front50 to regenerate cron trigger id's
-      pipeline.put("regenerateCronTriggerIds", true);
+        // We need to tell front50 to regenerate cron trigger id's
+        pipeline.put("regenerateCronTriggerIds", true);
+      }
+
+      Map<String, Object> finalPipeline = pipeline;
+      Map<String, Object> finalPipeline1 = pipeline;
+      pipelineModelMutators.stream()
+          .filter(m -> m.supports(finalPipeline))
+          .forEach(m -> m.mutate(finalPipeline1));
     }
-
-    pipelineModelMutators.stream()
-        .filter(m -> m.supports(pipeline))
-        .forEach(m -> m.mutate(pipeline));
-
-    Response response = front50Service.savePipeline(pipeline, staleCheck);
+    Response response = null;
+    if (bulksave) {
+      response = front50Service.savePipelineList(pipelineList, false);
+    } else {
+      response = front50Service.savePipeline(pipeline, staleCheck);
+    }
 
     Map<String, Object> outputs = new HashMap<>();
     outputs.put("notification.type", "savepipeline");
@@ -102,7 +120,7 @@ public class SavePipelineTask implements RetryableTask {
     try {
       Map<String, Object> savedPipeline =
           (Map<String, Object>) objectMapper.readValue(response.getBody().in(), Map.class);
-      outputs.put("pipeline.id", savedPipeline.get("id"));
+      outputs.put("bulksave", savedPipeline);
     } catch (Exception e) {
       log.error("Unable to deserialize saved pipeline, reason: ", e.getMessage());
 

@@ -47,6 +47,9 @@ tasks:
   executionWindow:
     timezone: ${global.spinnaker.timezone:America/Los_Angeles}
 
+okhttp:
+  timeout: 10
+
 logging:
   config: classpath:logback-defaults.xml
 
