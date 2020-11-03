@@ -16,6 +16,9 @@
 
 package com.netflix.spinnaker.orca.echo.pipeline
 
+import com.netflix.spinnaker.fiat.model.UserPermission
+import com.netflix.spinnaker.fiat.model.resources.Role
+import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.echo.EchoService
@@ -27,31 +30,67 @@ import static com.netflix.spinnaker.orca.echo.pipeline.ManualJudgmentStage.Notif
 import static com.netflix.spinnaker.orca.echo.pipeline.ManualJudgmentStage.WaitForManualJudgmentTask
 
 class ManualJudgmentStageSpec extends Specification {
+
+  EchoService echoService = Mock(EchoService)
+
+  FiatPermissionEvaluator fpe = Mock(FiatPermissionEvaluator)
+
   @Unroll
   void "should return execution status based on judgmentStatus"() {
     given:
-    def task = new WaitForManualJudgmentTask()
+    def task = new WaitForManualJudgmentTask(Optional.of(echoService), Optional.of(fpe))
 
     when:
     def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", context))
 
     then:
     result.status == expectedStatus
-    result.context.isEmpty()
 
     where:
     context                      || expectedStatus
     [:]                          || ExecutionStatus.RUNNING
-    [judgmentStatus: "continue"] || ExecutionStatus.SUCCEEDED
-    [judgmentStatus: "Continue"] || ExecutionStatus.SUCCEEDED
-    [judgmentStatus: "stop"]     || ExecutionStatus.TERMINAL
-    [judgmentStatus: "STOP"]     || ExecutionStatus.TERMINAL
-    [judgmentStatus: "unknown"]  || ExecutionStatus.RUNNING
+    [judgmentStatus: "continue", isAuthorized: true] || ExecutionStatus.SUCCEEDED
+    [judgmentStatus: "Continue", isAuthorized: true] || ExecutionStatus.SUCCEEDED
+    [judgmentStatus: "stop", isAuthorized: true]     || ExecutionStatus.TERMINAL
+    [judgmentStatus: "STOP", isAuthorized: true]     || ExecutionStatus.TERMINAL
+    [judgmentStatus: "unknown", isAuthorized: true]  || ExecutionStatus.RUNNING
+  }
+
+  @Unroll
+  void "should return execution status based on authorizedGroups"() {
+    given:
+    def task = new WaitForManualJudgmentTask(Optional.of(echoService), Optional.of(fpe))
+
+    when:
+    def stage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", context)
+    stage.lastModified = new StageExecution.LastModifiedDetails(user: "abc@somedomain.io", allowedAccounts: ["group1"])
+    def result = task.execute(stage)
+
+    then:
+    1 * fpe.getPermission('abc@somedomain.io') >> {
+      new UserPermission().addResources([new Role('foo'), new Role('baz')]).view
+    }
+    result.status == expectedStatus
+
+    where:
+    context                      || expectedStatus
+    [judgmentStatus: "continue", isAuthorized: false, stageRoles: ['foo'],
+     permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.SUCCEEDED
+    [judgmentStatus: "Continue", isAuthorized: false, stageRoles: ['foo'],
+     permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.SUCCEEDED
+    [judgmentStatus: "stop", isAuthorized: false, stageRoles: ['foo'],
+     permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.TERMINAL
+    [judgmentStatus: "STOP", isAuthorized: false, stageRoles: ['foo'],
+     permissions: [WRITE: ["foo"],READ: ["foo","baz"],EXECUTE: ["foo"]]] || ExecutionStatus.TERMINAL
+    [judgmentStatus: "Continue", isAuthorized: false, stageRoles: ['baz'],
+     permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.RUNNING
+    [judgmentStatus: "Stop", isAuthorized: false, stageRoles: ['baz'],
+     permissions: [WRITE: ["foo"],READ: ["foo","baz"], EXECUTE: ["foo"]]] || ExecutionStatus.RUNNING
   }
 
   void "should only send notifications for supported types"() {
     given:
-    def task = new WaitForManualJudgmentTask(echoService: Mock(EchoService))
+    def task = new WaitForManualJudgmentTask(Optional.of(echoService), Optional.of(fpe))
 
     when:
     def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [notifications: [
@@ -72,7 +111,7 @@ class ManualJudgmentStageSpec extends Specification {
   @Unroll
   void "if deprecated notification configuration is in use, only send notifications for awaiting judgment state"() {
     given:
-    def task = new WaitForManualJudgmentTask(echoService: Mock(EchoService))
+    def task = new WaitForManualJudgmentTask(Optional.of(echoService), Optional.of(fpe))
 
     when:
     def result = task.execute(new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "", [
@@ -80,6 +119,7 @@ class ManualJudgmentStageSpec extends Specification {
       notifications: [
         new Notification(type: "email", address: "test@netflix.com", when: [ notificationState ])
       ],
+      isAuthorized: true,
       judgmentStatus: judgmentStatus
     ]))
 
@@ -153,7 +193,7 @@ class ManualJudgmentStageSpec extends Specification {
   @Unroll
   void "should retain unknown fields in the notification context"() {
     given:
-    def task = new WaitForManualJudgmentTask(echoService: Mock(EchoService))
+    def task = new WaitForManualJudgmentTask(Optional.of(echoService), Optional.of(fpe))
 
     def slackNotification = new Notification(type: "slack")
     slackNotification.setOther("customMessage", "hello slack")
