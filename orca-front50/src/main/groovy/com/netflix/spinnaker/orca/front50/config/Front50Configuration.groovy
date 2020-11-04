@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
 import com.netflix.spinnaker.orca.retrofit.logging.RetrofitSlf4jLog
 import groovy.transform.CompileStatic
+import okhttp3.OkHttpClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
@@ -40,6 +41,8 @@ import retrofit.Endpoint
 import retrofit.RequestInterceptor
 import retrofit.RestAdapter
 import retrofit.converter.JacksonConverter
+
+import java.util.concurrent.TimeUnit
 
 import static retrofit.Endpoints.newFixedEndpoint
 
@@ -71,10 +74,14 @@ class Front50Configuration {
 
   @Bean
   Front50Service front50Service(Endpoint front50Endpoint, ObjectMapper mapper) {
+    OkHttpClient okHttpClient = clientProvider.getClient(new DefaultServiceEndpoint("front50", front50Endpoint.getUrl()));
+    okHttpClient = okHttpClient.newBuilder().readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS).build();
     new RestAdapter.Builder()
       .setRequestInterceptor(spinnakerRequestInterceptor)
       .setEndpoint(front50Endpoint)
-      .setClient(new Ok3Client(clientProvider.getClient(new DefaultServiceEndpoint("front50", front50Endpoint.getUrl()))))
+      .setClient(new Ok3Client(okHttpClient))
       .setLogLevel(retrofitLogLevel)
       .setLog(new RetrofitSlf4jLog(Front50Service))
       .setConverter(new JacksonConverter(mapper))

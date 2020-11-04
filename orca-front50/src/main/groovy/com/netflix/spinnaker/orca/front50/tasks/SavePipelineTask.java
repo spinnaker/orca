@@ -59,7 +59,6 @@ public class SavePipelineTask implements RetryableTask {
 
     Map<String, Object> pipeline = null;
     List<Map<String, Object>> pipelineList = new ArrayList<>();
-    Boolean staleCheck = false;
     Boolean isSavingMultiplePipelines = false;
     boolean bulksave = false;
     if (!(stage.getContext().get("pipeline") instanceof String)) {
@@ -72,6 +71,7 @@ public class SavePipelineTask implements RetryableTask {
       pipeline = (Map<String, Object>) stage.decodeBase64("/pipeline", Map.class);
       pipelineList.add(pipeline);
     }
+
     for (Map<String, Object> obj : pipelineList) {
       pipeline = obj;
       if (!pipeline.containsKey("index")) {
@@ -88,8 +88,6 @@ public class SavePipelineTask implements RetryableTask {
           (Boolean)
               Optional.ofNullable(stage.getContext().get("isSavingMultiplePipelines"))
                   .orElse(false);
-      staleCheck =
-          (Boolean) Optional.ofNullable(stage.getContext().get("staleCheck")).orElse(false);
       if (stage.getContext().get("pipeline.id") != null
           && pipeline.get("id") == null
           && !isSavingMultiplePipelines) {
@@ -106,10 +104,11 @@ public class SavePipelineTask implements RetryableTask {
           .forEach(m -> m.mutate(finalPipeline1));
     }
     Response response = null;
+
     if (bulksave) {
       response = front50Service.savePipelineList(pipelineList, false);
     } else {
-      response = front50Service.savePipeline(pipeline, staleCheck);
+      response = front50Service.savePipeline(pipeline);
     }
 
     Map<String, Object> outputs = new HashMap<>();
