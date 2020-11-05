@@ -303,9 +303,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
       ]
     ]
 
-    def context = [
-      source: [useSourceCapacity: useSource],
-    ]
+    def context = [:]
     if (configured) {
       context.capacity = [desired: configured]
     }
@@ -325,15 +323,14 @@ class WaitForUpInstancesTaskSpec extends Specification {
     )
 
     where:
-    result || useSource | healthy | configured | snapshot | asg | description
-    true   || true      | 3       | 4          | 4        | 3   | 'using source capacity of 3, ignoring snapshot capacity and configured capacity'
-    false  || true      | 3       | 3          | null     | 4   | 'using source capacity of 4 with no snapshot, ignoring configured capacity'
-    true   || true      | 3       | 4          | 3        | 5   | 'using source capacity of 4, snapshot overrides to account for autoscaling'
-    true   || true      | 3       | 4          | 4        | 3   | 'using source capacity of 4, snapshot ignored because it is larger than actual desired capacity'
-    true   || false     | 2       | null       | null     | 2   | 'source not specified, falling back to ASG desired size of 2'
-    false  || false     | 2       | null       | null     | 3   | 'source not specified, falling back to ASG desired size of 3'
-    false  || false     | 2       | 2          | null     | 3   | 'not using source, using configured size of 3, ignoring source size of 2'
-    true   || false     | 3       | 2          | null     | 3   | 'not using source, using configured size of 2, ignoring source size of 3'
+    result || healthy | configured | snapshot | asg | description
+    true   || 3       | 4          | 4        | 3   | 'using source capacity of 3, ignoring snapshot capacity and configured capacity'
+    false  || 3       | 3          | null     | 4   | 'using source capacity of 4 with no snapshot, ignoring configured capacity'
+    true   || 3       | 4          | 4        | 3   | 'using source capacity of 4, snapshot ignored because it is larger than actual desired capacity'
+    true   || 2       | null       | null     | 2   | 'source not specified, falling back to ASG desired size of 2'
+    false  || 2       | null       | null     | 3   | 'source not specified, falling back to ASG desired size of 3'
+    false  || 2       | 2          | null     | 3   | 'not using source, using configured size of 3, ignoring source size of 2'
+    true   || 3       | 2          | null     | 3   | 'not using source, using configured size of 2, ignoring source size of 3'
   }
 
   @Unroll
