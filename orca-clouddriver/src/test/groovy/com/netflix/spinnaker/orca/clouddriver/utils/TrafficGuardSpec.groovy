@@ -70,7 +70,7 @@ class TrafficGuardSpec extends Specification {
     ] + overrides
   }
 
-  def "is pinned in serialized capacity?"() {
+  def "pinned should not appear in serialized capacity"() {
     def mapper = new ObjectMapper()
     def capacity = new Capacity(1, 1, 1)
 
