@@ -347,9 +347,7 @@ class WaitForUpInstancesTaskSpec extends Specification {
       ]
     ]
 
-    def context = [
-      source: [useSourceCapacity: (snapshot != null)],
-    ]
+    def context = [:]
 
     if (snapshot) {
       context.capacitySnapshot = [desiredCapacity: snapshot]
@@ -378,19 +376,23 @@ class WaitForUpInstancesTaskSpec extends Specification {
     where:
     result || snapshot | healthy | asg                          | configured
     false  || null     | 2       | [min: 3, max: 3, desired: 3] | null
+
     // configured is used if present and min == max == desired
     true   || null     | 2       | [min: 3, max: 3, desired: 3] | [min: 2, max: 2, desired: 2, pinned: true]
     true   || null     | 2       | [min: 3, max: 3, desired: 3] | [min: "2", max: "2", desired: "2", pinned: "true"]
+
     // configured is used if current allows autoscaling but configured doesn't
     true   || null     | 2       | [min: 3, max: 3, desired: 3] | [min: 2, max: 500, desired: 2]
     true   || null     | 2       | [min: 3, max: 3, desired: 3] | [min: "2", max: "500", desired: "2"]
     true   || null     | 2       | [min: 5, max: 5, desired: 5] | [min: 1, max: 5, desired: 2]
     true   || null     | 2       | [min: 5, max: 5, desired: 5] | [min: "1", max: "5", desired: "2"]
-    // useSourceCapacity with a snapshot is used over configured and current
-    true   || 3        | 3       | [min: 5, max: 5, desired: 5] | [min: 5, max: 5, desired: 5]
-    true   || 3        | 3       | [min: 5, max: 5, desired: 5] | [min: "5", max: "5", desired: "5"]
-    true   || 3        | 3       | [min: 5, max: 5, desired: 5] | null
-    false  || 4        | 3       | [min: 5, max: 5, desired: 5] | null
+
+    // configured and current are used over snapshot
+    false  || 3        | 3       | [min: 5, max: 5, desired: 5] | [min: 5, max: 5, desired: 5]
+    false  || 3        | 3       | [min: 5, max: 5, desired: 5] | [min: "5", max: "5", desired: "5"]
+    false  || 3        | 3       | [min: 5, max: 5, desired: 5] | null
+    true   || 3        | 5       | [min: 5, max: 5, desired: 5] | null
+
     // sourceCapacity is ignored if > than the calculated target due to a scale down corner case
     true   || 4        | 3       | [min: 3, max: 3, desired: 3] | null
     false  || 4        | 3       | [min: 3, max: 3, desired: 3] | [min: 4, max: 4, desired: 4]
