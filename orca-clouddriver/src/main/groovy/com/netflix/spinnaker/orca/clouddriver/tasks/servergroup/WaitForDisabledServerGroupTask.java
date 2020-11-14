@@ -46,6 +46,11 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
   @NotNull
   @Override
   public TaskResult execute(@NotNull StageExecution stage) {
+    Object desiredPercentage = stage.getContext().get("desiredPercentage");
+    if (isPartialDisable(desiredPercentage)) {
+      return TaskResult.builder(ExecutionStatus.SKIPPED).build();
+    }
+
     val serverGroupDescriptor = getServerGroupDescriptor(stage);
     try {
       var serverGroup = fetchServerGroup(serverGroupDescriptor);
@@ -62,6 +67,23 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
           .context(Collections.singletonMap("lastException", e))
           .build();
     }
+  }
+
+  private boolean isPartialDisable(Object desiredPercentage) {
+    if (desiredPercentage == null) {
+      return false;
+    }
+
+    if (desiredPercentage instanceof Integer) {
+      return ((Integer) desiredPercentage) < 100;
+    }
+
+    if (desiredPercentage instanceof String) {
+      return Integer.parseInt((String) desiredPercentage) < 100;
+    }
+
+    log.warn("Unexpected value in stage context, desiredPercentage={}", desiredPercentage);
+    return true;
   }
 
   private TargetServerGroup fetchServerGroup(ServerGroupDescriptor serverGroupDescriptor)
