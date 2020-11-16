@@ -13,6 +13,7 @@ import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
@@ -46,11 +47,19 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
   @NotNull
   @Override
   public TaskResult execute(@NotNull StageExecution stage) {
-    Object desiredPercentage = stage.getContext().get("desiredPercentage");
-    if (isPartialDisable(desiredPercentage)) {
+    try {
+      TaskInput input = stage.mapTo(TaskInput.class);
+      input.validate();
+      if (!isPartialDisable(input)) {
+        return TaskResult.builder(ExecutionStatus.SKIPPED).build();
+      }
+    } catch (IllegalArgumentException e) {
+      log.warn("Error mapping task input", e);
       return TaskResult.builder(ExecutionStatus.SKIPPED).build();
     }
 
+    // we have established that this is a full disable, so we need to enforce that the server group
+    // is actually disabled
     val serverGroupDescriptor = getServerGroupDescriptor(stage);
     try {
       var serverGroup = fetchServerGroup(serverGroupDescriptor);
@@ -69,21 +78,8 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
     }
   }
 
-  private boolean isPartialDisable(Object desiredPercentage) {
-    if (desiredPercentage == null) {
-      return false;
-    }
-
-    if (desiredPercentage instanceof Integer) {
-      return ((Integer) desiredPercentage) < 100;
-    }
-
-    if (desiredPercentage instanceof String) {
-      return Integer.parseInt((String) desiredPercentage) < 100;
-    }
-
-    log.warn("Unexpected value in stage context, desiredPercentage={}", desiredPercentage);
-    return true;
+  private boolean isPartialDisable(TaskInput input) {
+    return input.desiredPercentage != null && input.desiredPercentage < 100;
   }
 
   private TargetServerGroup fetchServerGroup(ServerGroupDescriptor serverGroupDescriptor)
@@ -96,5 +92,16 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
     var serverGroupData =
         (Map<String, Object>) objectMapper.readValue(response.getBody().in(), Map.class);
     return new TargetServerGroup(serverGroupData);
+  }
+
+  private static class TaskInput {
+    @Nullable public Integer desiredPercentage;
+
+    void validate() {
+      if (desiredPercentage != null && (desiredPercentage < 0 || desiredPercentage > 100)) {
+        throw new IllegalArgumentException(
+            "desiredPercentage is expected to be in [0, 100] but found " + desiredPercentage);
+      }
+    }
   }
 }
