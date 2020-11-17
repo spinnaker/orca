@@ -1,5 +1,6 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
@@ -93,7 +94,8 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
             serverGroupDescriptor.getRegion(),
             serverGroupDescriptor.getName());
     var serverGroupData =
-        (Map<String, Object>) objectMapper.readValue(response.getBody().in(), Map.class);
+        objectMapper.readValue(
+            response.getBody().in(), new TypeReference<Map<String, Object>>() {});
     return new TargetServerGroup(serverGroupData);
   }
 
