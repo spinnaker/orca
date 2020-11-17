@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup
 
-import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.clouddriver.ForceCacheRefreshAware
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupLinearStageSupport

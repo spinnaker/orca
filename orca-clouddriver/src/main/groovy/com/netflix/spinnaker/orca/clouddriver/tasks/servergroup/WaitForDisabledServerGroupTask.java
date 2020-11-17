@@ -51,7 +51,7 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
     try {
       TaskInput input = stage.mapTo(TaskInput.class);
       input.validate();
-      if (!isPartialDisable(input)) {
+      if (isPartialDisable(input)) {
         return TaskResult.builder(ExecutionStatus.SKIPPED).build();
       }
     } catch (IllegalArgumentException e) {
