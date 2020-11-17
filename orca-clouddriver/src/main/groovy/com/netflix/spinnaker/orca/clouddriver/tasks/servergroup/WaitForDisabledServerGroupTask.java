@@ -79,10 +79,8 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
   }
 
   // RRB and Monitored Deployments do "partial disables", i.e. they run DisableServerGroupTask with
-  // a `desiredPercentage`
-  // which will only disable some instances, not the entire server group (so this won't set the
-  // `disabled` flag on the
-  // server group)
+  // a `desiredPercentage` which will only disable some instances, not the entire server group (so
+  // this won't set the `disabled` flag on the server group)
   private boolean isPartialDisable(TaskInput input) {
     return input.desiredPercentage != null && input.desiredPercentage < 100;
   }
