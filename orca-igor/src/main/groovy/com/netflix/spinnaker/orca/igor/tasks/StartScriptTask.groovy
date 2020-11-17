@@ -107,6 +107,11 @@ class StartScriptTask implements RetryableTask {
 
       if (igorResponse.getStatus() == HttpStatus.OK.value()) {
         String queuedBuild = igorResponse.body.in().text
+        if(queuedBuild == null || queuedBuild == "" || queuedBuild == "null") {
+          // If an invalid build identifier is returned, consider that a failure and retry
+          log.warn("Igor returned an empty body: " + queuedBuild)
+          throw new SystemException("Failure starting script")
+        }
         return TaskResult
             .builder(ExecutionStatus.SUCCEEDED)
             .context([master: master, job: job, queuedBuild: queuedBuild, REPO_URL: repoUrl ?: 'default'])
