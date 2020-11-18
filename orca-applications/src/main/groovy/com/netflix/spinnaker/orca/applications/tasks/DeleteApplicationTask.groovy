@@ -51,7 +51,10 @@ class DeleteApplicationTask extends AbstractFront50Task {
           return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
         }
         // delete Managed Delivery data
-        keelService.deleteDeliveryConfig(application.name)
+        if (keelService != null) {
+          log.debug("Deleting Managed Delivery data for {}", application.name)
+          keelService.deleteDeliveryConfig(application.name)
+        }
       }
     } catch (RetrofitError e) {
       if (e.response?.status == 404) {
