@@ -16,20 +16,25 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
+import com.google.common.base.CaseFormat
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
+import com.netflix.spinnaker.orca.events.TaskComplete
 import com.netflix.spinnaker.orca.events.TaskStarted
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
+import com.netflix.spinnaker.orca.q.CompleteTask
 import com.netflix.spinnaker.orca.q.RunTask
 import com.netflix.spinnaker.orca.q.StartTask
 import com.netflix.spinnaker.q.Queue
-import java.time.Clock
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
+import java.time.Clock
 
 @Component
 class StartTaskHandler(
@@ -39,21 +44,40 @@ class StartTaskHandler(
   override val stageDefinitionBuilderFactory: StageDefinitionBuilderFactory,
   @Qualifier("queueEventPublisher") private val publisher: ApplicationEventPublisher,
   private val taskResolver: TaskResolver,
-  private val clock: Clock
+  private val clock: Clock,
+  private val environment: Environment
 ) : OrcaMessageHandler<StartTask>, ExpressionAware {
 
   override fun handle(message: StartTask) {
     message.withTask { stage, task ->
-      task.status = RUNNING
-      task.startTime = clock.millis()
-      val mergedContextStage = stage.withMergedContext()
-      repository.storeStage(mergedContextStage)
+      if (isTaskEnabled(task)) {
+        task.status = RUNNING
+        task.startTime = clock.millis()
+        val mergedContextStage = stage.withMergedContext()
+        repository.storeStage(mergedContextStage)
 
-      queue.push(RunTask(message, task.id, task.type))
+        queue.push(RunTask(message, task.id, task.type))
+        publisher.publishEvent(TaskStarted(this, mergedContextStage, task))
+      } else {
+        log.debug("Skipping task.id=${task.id} with task.type=${task.type} because ${getTaskToggle(task)}=false")
+        task.status = SKIPPED
+        val mergedContextStage = stage.withMergedContext()
+        repository.storeStage(mergedContextStage)
 
-      publisher.publishEvent(TaskStarted(this, mergedContextStage, task))
+        queue.push(CompleteTask(message, SKIPPED))
+        publisher.publishEvent(TaskComplete(this, mergedContextStage, task))
+      }
     }
   }
+
+  fun getTaskToggle(task: TaskExecution): String {
+    val justTheClassName = task.implementingClass.substring(task.implementingClass.lastIndexOf('.') + 1)
+    val snakifiedClassName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, justTheClassName)
+    return "tasks.$snakifiedClassName.enabled"
+  }
+
+  fun isTaskEnabled(task: TaskExecution): Boolean =
+    environment.getProperty(getTaskToggle(task), Boolean::class.java, true)
 
   override val messageType = StartTask::class.java
 
