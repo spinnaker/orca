@@ -47,7 +47,7 @@ class DeleteApplicationTask extends AbstractFront50Task {
           if (re.response?.status == 404) {
             return TaskResult.SUCCEEDED
           }
-          log.error("Could not delete application permission: {}", re.toString(), re)
+          log.error("Could not delete application permission", re)
           return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
         }
         // delete Managed Delivery data
@@ -57,7 +57,7 @@ class DeleteApplicationTask extends AbstractFront50Task {
       if (e.response?.status == 404) {
         return TaskResult.SUCCEEDED
       }
-      log.error("Could not delete application: {}", e.toString(), e)
+      log.error("Could not delete application", e)
       return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
     }
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(outputs).build()
