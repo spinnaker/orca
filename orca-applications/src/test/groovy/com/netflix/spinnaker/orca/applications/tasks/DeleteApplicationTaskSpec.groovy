@@ -100,22 +100,4 @@ class DeleteApplicationTaskSpec extends Specification {
     then:
     taskResult.status == ExecutionStatus.SUCCEEDED
   }
-
-
-  void "should attempt to delete managed delivery data even if application is not found in front50"() {
-    given:
-    task.front50Service = Mock(Front50Service) {
-      get(config.application.name) >> null
-    }
-    task.keelService = Mock(KeelService)
-
-    when:
-    def taskResult = task.execute(pipeline.stages.first())
-
-    then:
-    1 * task.keelService.deleteDeliveryConfig(config.application.name)
-
-    and:
-    taskResult.status == ExecutionStatus.SUCCEEDED
-  }
 }

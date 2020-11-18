@@ -50,9 +50,9 @@ class DeleteApplicationTask extends AbstractFront50Task {
           log.error("Could not delete application permission: {}", re.toString(), re)
           return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
         }
+        // delete Managed Delivery data
+        keelService.deleteDeliveryConfig(application.name)
       }
-      // delete Managed Delivery data
-      keelService.deleteDeliveryConfig(application.name)
     } catch (RetrofitError e) {
       if (e.response?.status == 404) {
         return TaskResult.SUCCEEDED
