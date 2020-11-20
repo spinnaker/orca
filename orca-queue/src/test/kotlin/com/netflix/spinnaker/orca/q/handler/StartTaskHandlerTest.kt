@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.DefaultStageResolver
 import com.netflix.spinnaker.orca.TaskResolver
+import com.netflix.spinnaker.orca.api.pipeline.SkippableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
@@ -56,12 +57,18 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.core.env.Environment
 
 object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
-
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
   val publisher: ApplicationEventPublisher = mock()
   val environment: Environment = mock()
-  val taskResolver = TaskResolver(TasksProvider(emptyList()))
+
+  val task: DummyTask = mock {
+    on { extensionClass } doReturn DummyTask::class.java
+    on { aliases() } doReturn emptyList<String>()
+    on { isEnabledPropertyName } doReturn SkippableTask.isEnabledPropertyName("DummyTask")
+  }
+
+  val taskResolver = TaskResolver(TasksProvider(listOf(task)))
   val stageResolver = DefaultStageResolver(StageDefinitionBuildersProvider(emptyList()))
   val clock = fixedClock()
 
@@ -82,7 +89,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
 
     beforeGroup {
       whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-      whenever(environment.getProperty("tasks.dummy-task.enabled", Boolean::class.java, true)) doReturn true
+      whenever(environment.getProperty("tasks.dummyTask.enabled", Boolean::class.java, true)) doReturn true
     }
 
     afterGroup(::resetMocks)
@@ -139,7 +146,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
 
     beforeGroup {
       whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-      whenever(environment.getProperty("tasks.dummy-task.enabled", Boolean::class.java, true)) doReturn false
+      whenever(environment.getProperty("tasks.dummyTask.enabled", Boolean::class.java, true)) doReturn false
     }
 
     afterGroup(::resetMocks)

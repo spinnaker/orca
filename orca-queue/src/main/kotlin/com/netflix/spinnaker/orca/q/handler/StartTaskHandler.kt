@@ -16,9 +16,7 @@
 
 package com.netflix.spinnaker.orca.q.handler
 
-import com.google.common.base.CaseFormat
 import com.netflix.spinnaker.orca.TaskResolver
-import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.SkippableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
@@ -52,15 +50,7 @@ class StartTaskHandler(
 
   override fun handle(message: StartTask) {
     message.withTask { stage, task ->
-      if (isTaskSkippable(task) && !isTaskEnabled(task)) {
-        log.debug("Skipping task.type=${task.type} because ${getTaskToggle(task)}=false")
-        task.status = SKIPPED
-        val mergedContextStage = stage.withMergedContext()
-        repository.storeStage(mergedContextStage)
-
-        queue.push(CompleteTask(message, SKIPPED))
-        publisher.publishEvent(TaskComplete(this, mergedContextStage, task))
-      } else {
+      if (isTaskEnabled(task)) {
         task.status = RUNNING
         task.startTime = clock.millis()
         val mergedContextStage = stage.withMergedContext()
@@ -68,25 +58,36 @@ class StartTaskHandler(
 
         queue.push(RunTask(message, task.id, task.type))
         publisher.publishEvent(TaskStarted(this, mergedContextStage, task))
+      } else {
+        task.status = SKIPPED
+        val mergedContextStage = stage.withMergedContext()
+        repository.storeStage(mergedContextStage)
+
+        queue.push(CompleteTask(message, SKIPPED))
+        publisher.publishEvent(TaskComplete(this, mergedContextStage, task))
       }
     }
   }
 
-  fun getTaskToggle(task: TaskExecution): String {
-    val justTheClassName = task.implementingClass.substring(task.implementingClass.lastIndexOf('.') + 1)
-    val snakifiedClassName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, justTheClassName)
-    return "tasks.$snakifiedClassName.enabled"
-  }
-
-  fun isTaskSkippable(task: TaskExecution): Boolean =
-    SkippableTask::class.java.isAssignableFrom(task.type)
-
   fun isTaskEnabled(task: TaskExecution): Boolean =
-    environment.getProperty(getTaskToggle(task), Boolean::class.java, true)
+    when (task.instance) {
+      is SkippableTask -> {
+        val asSkippableTask = task.instance as SkippableTask
+        val enabled = environment.getProperty(asSkippableTask.isEnabledPropertyName, Boolean::class.java, true)
+        if (!enabled) {
+          log.debug("Skipping task.type=${task.type} because ${asSkippableTask.isEnabledPropertyName}=false")
+        }
+        enabled
+      }
+      else -> true
+    }
 
   override val messageType = StartTask::class.java
 
   @Suppress("UNCHECKED_CAST")
   private val TaskExecution.type
     get() = taskResolver.getTaskClass(implementingClass)
+
+  private val TaskExecution.instance
+    get() = taskResolver.getTask(implementingClass)
 }
