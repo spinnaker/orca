@@ -34,7 +34,6 @@ import org.springframework.stereotype.Component
 @Component
 @CompileStatic
 class DisableServerGroupStage extends TargetServerGroupLinearStageSupport implements ForceCacheRefreshAware {
-  public static final String TOGGLE = "stages.disable-server-group.wait-for-disabled.enabled"
   static final String PIPELINE_CONFIG_TYPE = "disableServerGroup"
 
   private final Environment environment
@@ -51,10 +50,7 @@ class DisableServerGroupStage extends TargetServerGroupLinearStageSupport implem
       .withTask("disableServerGroup", DisableServerGroupTask)
       .withTask("monitorServerGroup", MonitorKatoTask)
       .withTask("waitForDownInstances", WaitForRequiredInstancesDownTask)
-
-    if (environment.getProperty(TOGGLE, Boolean, false)) {
-      builder.withTask("waitForServerGroupDisabled", WaitForDisabledServerGroupTask)
-    }
+      .withTask("waitForServerGroupDisabled", WaitForDisabledServerGroupTask)
 
     if (isForceCacheRefreshEnabled(environment)) {
       builder.withTask("forceCacheRefresh", ServerGroupCacheForceRefreshTask)
