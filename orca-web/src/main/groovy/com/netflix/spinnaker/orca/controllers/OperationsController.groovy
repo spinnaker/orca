@@ -16,11 +16,9 @@
 
 package com.netflix.spinnaker.orca.controllers
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.fiat.model.UserPermission
 import com.netflix.spinnaker.fiat.model.resources.Role
-import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
 import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
@@ -33,7 +31,6 @@ import com.netflix.spinnaker.orca.exceptions.PipelineTemplateValidationException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator
-import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
@@ -101,9 +98,6 @@ class OperationsController {
 
   @Autowired(required = false)
   Front50Service front50Service
-
-  @Autowired(required = false)
-  private FiatPermissionEvaluator fiatPermissionEvaluator
 
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
@@ -174,7 +168,6 @@ class OperationsController {
   private Map<String, Object> orchestratePipeline(Map pipeline) {
     long startTime = System.currentTimeMillis()
     def request = objectMapper.writeValueAsString(pipeline)
-    addStageAuthorizedRoles(request,pipeline)
     Exception pipelineError = null
     try {
       pipeline = parseAndValidatePipeline(pipeline)
@@ -202,52 +195,6 @@ class OperationsController {
       def id = markPipelineFailed(processedPipeline, pipelineError)
       log.info("Failed to start pipeline {} based on request body {}", id, request)
       throw pipelineError
-    }
-  }
-
-  private void addStageAuthorizedRoles(def request, Map pipeline) {
-
-    if (fiatStatus && fiatStatus.isEnabled()) {
-      def applicationName = pipeline.application
-      if (applicationName) {
-        getApplication(applicationName).ifPresent({ application ->
-          def username = AuthenticatedRequest.getSpinnakerUser().orElse("")
-          if (application.getPermission().permissions && application.getPermission().permissions.permissions) {
-            def permissions = objectMapper.convertValue(application.getPermission().permissions.permissions,
-                new TypeReference<Map<String, Object>>() {})
-            UserPermission.View permission = fiatPermissionEvaluator.getPermission(username);
-            if (permission == null) { // Should never happen?
-              log.warn("Attempted to get user permission for '$username' but none were found.")
-              return;
-            }
-            // User has to have all the pipeline roles.
-            Set<Role.View> roleView = permission.getRoles()
-            def userRoles = []
-            roleView.each { it -> userRoles.add(it.getName().trim()) }
-            def stageList = pipeline.stages
-            def stageRoles = []
-            stageList.each { item ->
-              stageRoles = item.selectedStageRoles
-              item.isAuthorized = ManualJudgmentAuthzGroupsUtil.checkAuthorizedGroups(userRoles, stageRoles, permissions)
-              item.stageRoles = stageRoles
-              item.permissions = permissions
-            }
-          }
-        });
-      }
-    }
-  }
-
-  private Optional<Application> getApplication(String applicationName) {
-    try {
-      return Optional.of(front50Service.get(applicationName));
-    } catch (RetrofitError e) {
-      if (e.getResponse().getStatus() == HttpStatus.NOT_FOUND.value()) {
-        return Optional.empty();
-      }
-      throw new SpinnakerException(format("Failed to retrieve application '%s'", applicationName), e);
-    } catch (RuntimeException re) {
-      return Optional.empty();
     }
   }
 
