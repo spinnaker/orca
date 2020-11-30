@@ -31,8 +31,10 @@ import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
+import com.netflix.spinnaker.orca.pipeline.model.support.TriggerDeserializer
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.PipelineExecutionRepositoryTck
+import com.netflix.spinnaker.orca.sql.PipelineRefTriggerDeserializerSupplier
 import org.jooq.impl.DSL
 import rx.schedulers.Schedulers
 import de.huxhorn.sulky.ulid.ULID
@@ -56,6 +58,7 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
   @Shared
   ObjectMapper mapper = OrcaObjectMapper.newInstance().with {
     registerModule(new KotlinModule())
+    TriggerDeserializer.customTriggerSuppliers.add(new PipelineRefTriggerDeserializerSupplier())
     it
   }
 
@@ -96,7 +99,7 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
   ExecutionRepository createExecutionRepository(String partition, Interlink interlink = null) {
     return com.netflix.spinnaker.kork.telemetry.InstrumentedProxy.proxy(
         new DefaultRegistry(),
-        new SqlExecutionRepository(partition, currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", interlink),
+        new SqlExecutionRepository(partition, currentDatabase.context, mapper, new RetryProperties(), 10, 100, "poolName", interlink, []),
         "namespace")
   }
 

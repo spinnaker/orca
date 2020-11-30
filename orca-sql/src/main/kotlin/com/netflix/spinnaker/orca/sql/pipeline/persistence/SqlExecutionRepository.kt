@@ -31,6 +31,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATIO
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
 import com.netflix.spinnaker.orca.interlink.events.CancelInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.DeleteInterlinkEvent
@@ -38,6 +39,7 @@ import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
+import com.netflix.spinnaker.orca.pipeline.model.PipelineTrigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -88,7 +90,8 @@ class SqlExecutionRepository(
   private val batchReadSize: Int = 10,
   private val stageReadSize: Int = 200,
   private val poolName: String = "default",
-  private val interlink: Interlink? = null
+  private val interlink: Interlink? = null,
+  private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList()
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -375,7 +378,7 @@ class SqlExecutionRepository(
     withPool(poolName) {
       val select = jooq.selectExecutions(
         type,
-        fields = selectFields() + field("status"),
+        fields = selectExecutionFields() + field("status"),
         conditions = {
           if (partition.isNullOrEmpty()) {
             it.statusIn(criteria.statuses)
@@ -751,6 +754,7 @@ class SqlExecutionRepository(
   private fun storeExecutionInternal(ctx: DSLContext, execution: PipelineExecution, storeStages: Boolean = false) {
     validateHandledPartitionOrThrow(execution)
 
+    val pipelineTrigger = mutatePipelineTrigger(execution)
     val stages = execution.stages.toMutableList().toList()
     execution.stages.clear()
 
@@ -830,11 +834,47 @@ class SqlExecutionRepository(
         stages.forEach { storeStageInternal(ctx, it, executionId) }
       }
     } finally {
+      withListener { onUpsert(execution) }
+      
+      // Restore original object state.
       execution.stages.addAll(stages)
+      pipelineTrigger?.let {
+        execution.trigger = it
+      }
     }
   }
 
-  private fun storeStageInternal(ctx: DSLContext, stage: StageExecution, executionId: String? = null) {
+  /**
+   * Converts a [PipelineTrigger] into a [PipelineRefTrigger] for storage.
+   *
+   * Returns the original [PipelineTrigger], if one exists.
+   */
+  private fun mutatePipelineTrigger(execution: PipelineExecution): PipelineTrigger? {
+    val pipelineTrigger = execution.trigger
+    if (pipelineTrigger !is PipelineTrigger) {
+      return null
+    }
+    execution.trigger = PipelineRefTrigger(
+      correlationId = pipelineTrigger.correlationId,
+      user = pipelineTrigger.user,
+      parameters = pipelineTrigger.parameters,
+      artifacts = pipelineTrigger.artifacts,
+      notifications = pipelineTrigger.notifications,
+      isRebake = pipelineTrigger.isRebake,
+      isDryRun = pipelineTrigger.isDryRun,
+      isStrategy = pipelineTrigger.isStrategy,
+      parentExecutionId = pipelineTrigger.parentExecution.id,
+      parentPipelineStageId = pipelineTrigger.parentPipelineStageId
+    )
+    return pipelineTrigger
+  }
+
+  private fun storeStageInternal(
+    ctx: DSLContext,
+    stage: StageExecution,
+    executionId: String? = null,
+    notifyListener: Boolean = false
+  ) {
     val stageTable = stage.execution.type.stagesTableName
     val table = stage.execution.type.tableName
     val body = mapper.writeValueAsString(stage)
@@ -859,6 +899,12 @@ class SqlExecutionRepository(
     )
 
     upsert(ctx, stageTable, insertPairs, updatePairs, stage.id)
+
+    // This method is called from [storeInternal] as well. We don't want to notify multiple times for the same
+    // overall persist operation.
+    if (notifyListener) {
+      withListener { onUpsert(stage.execution) }
+    }
   }
 
   private fun storeCorrelationIdInternal(ctx: DSLContext, execution: PipelineExecution) {
@@ -1008,7 +1054,7 @@ class SqlExecutionRepository(
 
   private fun DSLContext.selectExecutions(
     type: ExecutionType,
-    fields: List<Field<Any>> = selectFields(),
+    fields: List<Field<Any>> = selectExecutionFields(),
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
   ) =
@@ -1019,7 +1065,7 @@ class SqlExecutionRepository(
 
   private fun DSLContext.selectExecutions(
     type: ExecutionType,
-    fields: List<Field<Any>> = selectFields(),
+    fields: List<Field<Any>> = selectExecutionFields(),
     usingIndex: String,
     conditions: (SelectJoinStep<Record>) -> SelectConnectByStep<out Record>,
     seek: (SelectConnectByStep<out Record>) -> SelectForUpdateStep<out Record>
@@ -1029,15 +1075,12 @@ class SqlExecutionRepository(
       .let { conditions(it) }
       .let { seek(it) }
 
-  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectFields()) =
+  private fun DSLContext.selectExecution(type: ExecutionType, fields: List<Field<Any>> = selectExecutionFields()) =
     select(fields)
       .from(type.tableName)
 
-  private fun selectFields() =
-    listOf(field("id"), field("body"), field(name("partition")))
-
   private fun SelectForUpdateStep<out Record>.fetchExecutions() =
-    ExecutionMapper(mapper, stageReadSize).map(fetch().intoResultSet(), jooq)
+    fetchExecutions(mapper, stageReadSize, jooq)
 
   private fun SelectForUpdateStep<out Record>.fetchExecution() =
     fetchExecutions().firstOrNull()
@@ -1081,6 +1124,16 @@ class SqlExecutionRepository(
 
   private fun validateHandledPartitionOrThrow(execution: PipelineExecution): Boolean =
     isForeign(execution, true)
+
+  private fun withListener(callback: ExecutionRepositoryListener.() -> Unit) {
+    executionRepositoryListeners.forEach {
+      try {
+        callback(it)
+      } catch (e: Exception) {
+        log.warn("Listener '${it.javaClass.simpleName}' encountered an error", e)
+      }
+    }
+  }
 
   class SyntheticStageRequired : IllegalArgumentException("Only synthetic stages can be inserted ad-hoc")
 }

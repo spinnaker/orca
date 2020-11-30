@@ -21,10 +21,13 @@ import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.sql.config.DefaultSqlConfiguration
 import com.netflix.spinnaker.kork.sql.config.SqlProperties
 import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy
+import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.notifications.SqlNotificationClusterLock
+import com.netflix.spinnaker.orca.pipeline.model.support.CustomTriggerDeserializerSupplier
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import com.netflix.spinnaker.orca.sql.PipelineRefTriggerDeserializerSupplier
 import com.netflix.spinnaker.orca.sql.SpringLiquibaseProxy
 import com.netflix.spinnaker.orca.sql.SqlHealthIndicator
 import com.netflix.spinnaker.orca.sql.SqlHealthcheckActivator
@@ -65,7 +68,8 @@ class SqlConfiguration {
     registry: Registry,
     properties: SqlProperties,
     orcaSqlProperties: OrcaSqlProperties,
-    interlink: Optional<Interlink>
+    interlink: Optional<Interlink>,
+    executionRepositoryListeners: Collection<ExecutionRepositoryListener>
   ) =
     SqlExecutionRepository(
       orcaSqlProperties.partitionName,
@@ -74,7 +78,8 @@ class SqlConfiguration {
       properties.retries.transactions,
       orcaSqlProperties.batchReadSize,
       orcaSqlProperties.stageReadSize,
-      interlink = interlink.orElse(null)
+      interlink = interlink.orElse(null),
+      executionRepositoryListeners = executionRepositoryListeners
     ).let {
       InstrumentedProxy.proxy(registry, it, "sql.executions", mapOf(Pair("repository", "primary"))) as ExecutionRepository
     }
@@ -135,4 +140,8 @@ class SqlConfiguration {
     clock = clock,
     retryProperties = properties.retries.transactions
   )
+
+  @Bean
+  fun pipelineRefTriggerDeserializer(): CustomTriggerDeserializerSupplier =
+    PipelineRefTriggerDeserializerSupplier()
 }
