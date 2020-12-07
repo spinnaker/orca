@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.pipeline.util.HttpClientUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,8 +139,6 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Attempts to read a multi-doc yaml from a text String. Will throw a parsing exception on bad
    * yaml
    *
@@ -160,7 +159,6 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
   }
 
   /**
->>>>>>> b3e85629e... fix(core): Apply tag validation when parsing yaml (#4017)
    * Reads a properties file stored at a url
    *
    * @param url the location of the properties file
