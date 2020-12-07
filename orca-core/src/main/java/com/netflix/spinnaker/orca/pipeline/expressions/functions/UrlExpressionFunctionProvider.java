@@ -138,8 +138,6 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Attempts to read a multi-doc yaml from a text String. Will throw a parsing exception on bad
    * yaml
    *
@@ -160,7 +158,6 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
   }
 
   /**
->>>>>>> b3e85629e... fix(core): Apply tag validation when parsing yaml (#4017)
    * Reads a properties file stored at a url
    *
    * @param url the location of the properties file
