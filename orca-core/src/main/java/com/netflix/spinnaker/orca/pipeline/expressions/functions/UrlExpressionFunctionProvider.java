@@ -27,6 +27,7 @@ import com.netflix.spinnaker.orca.pipeline.util.HttpClientUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 @SuppressWarnings("unused")
 @Component
@@ -130,9 +132,29 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
    */
   public static Object readYaml(String text) {
     try {
-      return new Yaml().load(text);
+      return new Yaml(new SafeConstructor()).load(text);
     } catch (Exception e) {
       throw new SpelHelperFunctionException(format("#readYaml(%s) failed", text), e);
+    }
+  }
+
+  /**
+   * Attempts to read a multi-doc yaml from a text String. Will throw a parsing exception on bad
+   * yaml
+   *
+   * @param text text to read as yaml
+   * @return a list of the object representations of the yaml text
+   */
+  public static Object readAllYaml(String text) {
+    try {
+      List<Object> yamlDocs = new ArrayList<>();
+      Iterable<Object> iterable = new Yaml(new SafeConstructor()).loadAll(text);
+      for (Object o : iterable) {
+        yamlDocs.add(o);
+      }
+      return yamlDocs;
+    } catch (Exception e) {
+      throw new SpelHelperFunctionException(format("#readAllYaml(%s) failed", text), e);
     }
   }
 
