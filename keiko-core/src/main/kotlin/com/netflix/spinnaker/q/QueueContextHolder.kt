@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.q
 
-apply from: "$rootDir/gradle/groovy.gradle"
+/**
+ * Holds a [Message] object in a [ThreadLocal].
+ */
+object QueueContextHolder {
 
-dependencies {
-  implementation(project(":orca-core"))
-  implementation(project(":orca-clouddriver"))
-  implementation(project(":orca-front50"))
-  implementation(project(":orca-keel"))
-  implementation(project(":orca-retrofit"))
-  implementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
+  private val holder: ThreadLocal<Message> = ThreadLocal()
 
-  compileOnly("org.projectlombok:lombok")
-  annotationProcessor("org.projectlombok:lombok")
+  fun set(context: Message) {
+    holder.set(context)
+  }
 
-  testImplementation(project(":orca-test-groovy"))
+  fun get(): Message? = holder.get()
+
+  fun clear() {
+    holder.remove()
+  }
 }
