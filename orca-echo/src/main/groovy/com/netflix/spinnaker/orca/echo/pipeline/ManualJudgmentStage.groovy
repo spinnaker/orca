@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.echo.pipeline
 import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
@@ -72,33 +73,59 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     final long backoffPeriod = 15000
     final long timeout = TimeUnit.DAYS.toMillis(3)
 
-    @Autowired(required = false)
-    EchoService echoService
+    final EchoService echoService
+    final FiatPermissionEvaluator fiatPermissionEvaluator
+
+    @Autowired
+    WaitForManualJudgmentTask(Optional<EchoService> echoService, Optional<FiatPermissionEvaluator> fiatPermissionEvaluator) {
+      this.echoService = echoService.orElse(null)
+      this.fiatPermissionEvaluator = fiatPermissionEvaluator.orElse(null)
+    }
 
     @Override
     TaskResult execute(StageExecution stage) {
       StageData stageData = stage.mapTo(StageData)
-      String notificationState
-      ExecutionStatus executionStatus
+      String notificationState = "manualJudgment"
+      ExecutionStatus executionStatus = ExecutionStatus.RUNNING
 
-      switch (stageData.state) {
-        case StageData.State.CONTINUE:
-          notificationState = "manualJudgmentContinue"
-          executionStatus = ExecutionStatus.SUCCEEDED
-          break
-        case StageData.State.STOP:
-          notificationState = "manualJudgmentStop"
-          executionStatus = ExecutionStatus.TERMINAL
-          break
-        default:
-          notificationState = "manualJudgment"
-          executionStatus = ExecutionStatus.RUNNING
-          break
+      def updatedStageContext = [:]
+
+      def hasRequiredActionRoles = true
+      if (fiatPermissionEvaluator && stageData.requiredActionRoles && !stageData.judgmentStatus?.trim()?.isEmpty()) {
+        // AuthenticatedRequest.getSpinnakerUser() does not yet reflect the user that judged this stage until it has
+        // been marked CONTINUE (see ManualJudgmentStage.authenticatedUser()).
+        def judgingUser = stage.lastModified?.user
+        def userPermissionRoles = fiatPermissionEvaluator.getPermission(judgingUser).roles.collect { it.name }
+
+        def missingRequiredActionRoles = stageData.requiredActionRoles - userPermissionRoles.intersect(stageData.requiredActionRoles)
+        if (missingRequiredActionRoles) {
+          log.debug(
+              "Judging user '{}' is missing the following required action roles: {}",
+              judgingUser,
+              missingRequiredActionRoles
+          )
+          hasRequiredActionRoles = false
+        }
       }
 
-      Map outputs = processNotifications(stage, stageData, notificationState)
+      if (!hasRequiredActionRoles) {
+        // one or more required action roles are missing, prepare stage context for re-judging.
+        updatedStageContext.judgementStatus = ""
+      } else {
+        switch (stageData.state) {
+          case StageData.State.CONTINUE:
+            notificationState = "manualJudgmentContinue"
+            executionStatus = ExecutionStatus.SUCCEEDED
+            break
+          case StageData.State.STOP:
+            notificationState = "manualJudgmentStop"
+            executionStatus = ExecutionStatus.TERMINAL
+            break
+        }
+      }
 
-      return TaskResult.builder(executionStatus).context(outputs).build()
+      updatedStageContext = updatedStageContext + processNotifications(stage, stageData, notificationState)
+      return TaskResult.builder(executionStatus).context(updatedStageContext).build()
     }
 
     Map processNotifications(StageExecution stage, StageData stageData, String notificationState) {
@@ -129,6 +156,8 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     String judgmentStatus = ""
     List<Notification> notifications = []
     boolean propagateAuthenticationContext
+
+    List<String> requiredActionRoles = []
 
     State getState() {
       switch (judgmentStatus?.toLowerCase()) {
