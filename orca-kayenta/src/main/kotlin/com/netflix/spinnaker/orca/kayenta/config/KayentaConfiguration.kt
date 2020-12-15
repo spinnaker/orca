@@ -36,7 +36,7 @@ import retrofit.RestAdapter
 import retrofit.RestAdapter.LogLevel
 import retrofit.client.Client
 import retrofit.converter.JacksonConverter
-import com.netflix.spinnaker.orca.kayenta.pipeline.functions.ConfigExpressionFunctionProvider
+import com.netflix.spinnaker.orca.kayenta.pipeline.functions.KayentaConfigExpressionFunctionProvider
 
 
 @Configuration
@@ -83,6 +83,6 @@ class KayentaConfiguration {
 
   @Bean
   fun kayentaExpressionFunctionProvider(kayentaService: KayentaService): ExpressionFunctionProvider {
-    return ConfigExpressionFunctionProvider(kayentaService)
+    return KayentaConfigExpressionFunctionProvider(kayentaService)
   }
 }

@@ -28,12 +28,12 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ConfigExpressionFunctionProvider implements ExpressionFunctionProvider {
+public class KayentaConfigExpressionFunctionProvider implements ExpressionFunctionProvider {
 
   // Static because it's needed during expression eval (which is a static)
   private static KayentaService kayentaService;
 
-  public ConfigExpressionFunctionProvider(KayentaService kayentaService) {
+  public KayentaConfigExpressionFunctionProvider(KayentaService kayentaService) {
     this.kayentaService = kayentaService;
   }
 
@@ -48,27 +48,27 @@ public class ConfigExpressionFunctionProvider implements ExpressionFunctionProvi
   public Functions getFunctions() {
     return new Functions(
         new FunctionDefinition(
-            "acaNameToId",
-            "Look up the ACA config ID for the given Name and App",
+            "canaryConfigNameToId",
+            "Look up the canary config ID for the given config name and app",
             new FunctionParameter(String.class, "name", "The name of the config"),
             new FunctionParameter(String.class, "app", "The name of the app")));
   }
 
   /**
-   * SpEL expression used to convert the name of an ACA config to the ID.
+   * SpEL expression used to convert the name of a canary config to the ID.
    *
    * @param name Name of the config.
    * @param app Application which owns the config.
    * @return The ID of the config which corresponds to the name and app provided.
    */
-  public static String acaNameToId(String name, String app) {
+  public static String canaryConfigNameToId(String name, String app) {
     if (Strings.isNullOrEmpty(name)) {
       throw new SpelHelperFunctionException(
-          "Config name is a required field for the acaNameToId function.");
+          "Config name is a required field for the canaryConfigNameToId function.");
     }
     if (Strings.isNullOrEmpty(app)) {
       throw new SpelHelperFunctionException(
-          "App is a required field for the acaNameToId function.");
+          "App is a required field for the canaryConfigNameToId function.");
     }
 
     List<KayentaCanaryConfig> configs = kayentaService.getAllCanaryConfigs();

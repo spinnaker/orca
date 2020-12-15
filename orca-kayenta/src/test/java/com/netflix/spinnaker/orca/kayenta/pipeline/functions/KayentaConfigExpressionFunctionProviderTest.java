@@ -12,20 +12,20 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class ConfigExpressionFunctionProviderTest {
+public class KayentaConfigExpressionFunctionProviderTest {
 
   @Test(expected = SpelHelperFunctionException.class)
   public void missingName() {
-    ConfigExpressionFunctionProvider provider =
-        new ConfigExpressionFunctionProvider(Mockito.mock(KayentaService.class));
-    provider.acaNameToId(null, "myapp");
+    KayentaConfigExpressionFunctionProvider provider =
+        new KayentaConfigExpressionFunctionProvider(Mockito.mock(KayentaService.class));
+    provider.canaryConfigNameToId(null, "myapp");
   }
 
   @Test(expected = SpelHelperFunctionException.class)
   public void missingApp() {
-    ConfigExpressionFunctionProvider provider =
-        new ConfigExpressionFunctionProvider(Mockito.mock(KayentaService.class));
-    provider.acaNameToId("myname", null);
+    KayentaConfigExpressionFunctionProvider provider =
+        new KayentaConfigExpressionFunctionProvider(Mockito.mock(KayentaService.class));
+    provider.canaryConfigNameToId("myname", null);
   }
 
   @Test
@@ -37,9 +37,9 @@ public class ConfigExpressionFunctionProviderTest {
     canaryConfigs.add(config);
     when(kayentaService.getAllCanaryConfigs()).thenReturn(canaryConfigs);
 
-    ConfigExpressionFunctionProvider provider =
-        new ConfigExpressionFunctionProvider(kayentaService);
-    String configId = provider.acaNameToId("myname", "myapp");
+    KayentaConfigExpressionFunctionProvider provider =
+        new KayentaConfigExpressionFunctionProvider(kayentaService);
+    String configId = provider.canaryConfigNameToId("myname", "myapp");
 
     Assert.assertEquals("myconfig", configId);
   }
@@ -53,8 +53,8 @@ public class ConfigExpressionFunctionProviderTest {
     canaryConfigs.add(config);
     when(kayentaService.getAllCanaryConfigs()).thenReturn(canaryConfigs);
 
-    ConfigExpressionFunctionProvider provider =
-        new ConfigExpressionFunctionProvider(kayentaService);
-    provider.acaNameToId("someothername", "myapp");
+    KayentaConfigExpressionFunctionProvider provider =
+        new KayentaConfigExpressionFunctionProvider(kayentaService);
+    provider.canaryConfigNameToId("someothername", "myapp");
   }
 }
