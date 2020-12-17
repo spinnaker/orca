@@ -17,10 +17,10 @@ package com.netflix.spinnaker.orca.qos
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.annotations.Sync
+import com.netflix.spinnaker.orca.api.annotations.Sync
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
-import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
+import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersistImpl
 import com.netflix.spinnaker.orca.qos.BufferAction.BUFFER
 import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
@@ -51,8 +51,8 @@ class ExecutionBufferActuator(
   private val elapsedTimeId = registry.createId("qos.actuator.elapsedTime")
 
   @Sync
-  @EventListener(BeforeInitialExecutionPersist::class)
-  fun beforeInitialPersist(event: BeforeInitialExecutionPersist) {
+  @EventListener(BeforeInitialExecutionPersistImpl::class)
+  fun beforeInitialPersist(event: BeforeInitialExecutionPersistImpl) {
     if (!configService.isEnabled("qos", false)) {
       return
     }

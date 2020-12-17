@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.annotations;
+package com.netflix.spinnaker.orca.api.pipeline.events;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public interface OrcaApplicationEvent {
 
-/**
- * Used for flagging application event listeners as synchronous. By default, orca's event listeners
- * will be setup as asynchronous unless explicitly flagged with this annotation.
- */
-@Target({ElementType.METHOD, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Sync {}
+  Object getSource();
+
+  String toString();
+
+  long getTimestamp();
+}

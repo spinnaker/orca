@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.spinnaker.orca.events;
+package com.netflix.spinnaker.orca.api.pipeline.events;
 
+import com.netflix.spinnaker.orca.api.annotations.Sync;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import javax.annotation.Nonnull;
-import org.springframework.context.ApplicationEvent;
 
-/** An event emitted immediately before the initial persist of an execution. */
-public final class BeforeInitialExecutionPersist extends ApplicationEvent {
+/**
+ * An event emitted immediately before the initial persist of a {@link PipelineExecution}.
+ *
+ * <p>Under most circumstances, event listeners for this event will also want to use the {@link
+ * Sync} annotation so that any changes made to the pipeline execution are actually persisted.
+ */
+public interface BeforeInitialExecutionPersist extends OrcaApplicationEvent {
 
-  private final PipelineExecution execution;
-
-  public BeforeInitialExecutionPersist(
-      @Nonnull Object source, @Nonnull PipelineExecution execution) {
-    super(source);
-    this.execution = execution;
-  }
-
-  public final @Nonnull PipelineExecution getExecution() {
-    return execution;
-  }
+  /** @return The {@link PipelineExecution} that is being persisted. */
+  @Nonnull
+  PipelineExecution getExecution();
 }

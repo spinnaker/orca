@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline
 
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
-import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
+import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersistImpl
 import org.springframework.context.ApplicationEventPublisher
 
 import javax.annotation.Nonnull
@@ -112,7 +112,7 @@ class PipelineExecutionLauncherSpec extends Specification {
     launcher.start(PIPELINE, json)
 
     then:
-    1 * applicationEventPublisher.publishEvent(_ as BeforeInitialExecutionPersist)
+    1 * applicationEventPublisher.publishEvent(_ as BeforeInitialExecutionPersistImpl)
     1 * executionRunner.start(_)
 
     where:
