@@ -17,7 +17,7 @@ package com.netflix.spinnaker.orca.qos
 
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.api.annotations.Sync
+import com.netflix.spinnaker.orca.annotations.Sync
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersistImpl

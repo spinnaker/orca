@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.listeners
 
-import com.netflix.spinnaker.orca.api.annotations.Sync
+import com.netflix.spinnaker.orca.annotations.Sync
 import org.springframework.beans.factory.BeanClassLoaderAware
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.BeanFactoryAware

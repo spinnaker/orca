@@ -22,10 +22,9 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.FAILED_CONTINUE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.REDIRECT
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
-import com.netflix.spinnaker.orca.events.TaskComplete
+import com.netflix.spinnaker.orca.events.TaskCompletedImpl
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.ext.nextTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
@@ -83,7 +82,7 @@ class CompleteTaskHandler(
           }
         }
 
-        publisher.publishEvent(TaskComplete(this, mergedContextStage, task))
+        publisher.publishEvent(TaskCompletedImpl(this, mergedContextStage, task))
       }
     }
   }

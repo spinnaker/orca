@@ -31,7 +31,7 @@ import org.springframework.context.ApplicationListener;
  * This listener translates events coming from the nu-orca queueing system to the old Spring Batch
  * style listeners. Once we're running full-time on the queue we should simplify things.
  */
-public final class StageListenerAdapter implements ApplicationListener<ExecutionEvent> {
+public final class StageListenerAdapter implements ApplicationListener<AbstractExecutionEvent> {
 
   private final StageListener delegate;
   private final ExecutionRepository repository;
@@ -45,19 +45,19 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
   }
 
   @Override
-  public void onApplicationEvent(ExecutionEvent event) {
-    if (event instanceof StageStarted) {
-      onStageStarted((StageStarted) event);
-    } else if (event instanceof StageComplete) {
-      onStageComplete((StageComplete) event);
-    } else if (event instanceof TaskStarted) {
-      onTaskStarted((TaskStarted) event);
-    } else if (event instanceof TaskComplete) {
-      onTaskComplete((TaskComplete) event);
+  public void onApplicationEvent(AbstractExecutionEvent event) {
+    if (event instanceof StageStartedImpl) {
+      onStageStarted((StageStartedImpl) event);
+    } else if (event instanceof StageCompletedImpl) {
+      onStageComplete((StageCompletedImpl) event);
+    } else if (event instanceof TaskStartedImpl) {
+      onTaskStarted((TaskStartedImpl) event);
+    } else if (event instanceof TaskCompletedImpl) {
+      onTaskComplete((TaskCompletedImpl) event);
     }
   }
 
-  private void onStageStarted(StageStarted event) {
+  private void onStageStarted(StageStartedImpl event) {
     PipelineExecution execution = retrieve(event);
     List<StageExecution> stages = execution.getStages();
     stages.stream()
@@ -66,7 +66,7 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
         .ifPresent(stage -> delegate.beforeStage(persister, stage));
   }
 
-  private void onStageComplete(StageComplete event) {
+  private void onStageComplete(StageCompletedImpl event) {
     PipelineExecution execution = retrieve(event);
     List<StageExecution> stages = execution.getStages();
     stages.stream()
@@ -75,7 +75,7 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
         .ifPresent(stage -> delegate.afterStage(persister, stage));
   }
 
-  private void onTaskStarted(TaskStarted event) {
+  private void onTaskStarted(TaskStartedImpl event) {
     PipelineExecution execution = retrieve(event);
     List<StageExecution> stages = execution.getStages();
     stages.stream()
@@ -92,7 +92,7 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
                         .get()));
   }
 
-  private void onTaskComplete(TaskComplete event) {
+  private void onTaskComplete(TaskCompletedImpl event) {
     PipelineExecution execution = retrieve(event);
     List<StageExecution> stages = execution.getStages();
     ExecutionStatus status = event.getStatus();
@@ -113,7 +113,7 @@ public final class StageListenerAdapter implements ApplicationListener<Execution
                     status.isSuccessful()));
   }
 
-  private PipelineExecution retrieve(ExecutionEvent event) {
+  private PipelineExecution retrieve(AbstractExecutionEvent event) {
     return repository.retrieve(event.getExecutionType(), event.getExecutionId());
   }
 }

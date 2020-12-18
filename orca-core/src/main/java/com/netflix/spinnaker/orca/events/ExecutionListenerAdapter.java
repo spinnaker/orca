@@ -27,7 +27,7 @@ import org.slf4j.MDC;
 import org.springframework.context.ApplicationListener;
 
 /** Adapts events emitted by the nu-orca queue to an old-style listener. */
-public final class ExecutionListenerAdapter implements ApplicationListener<ExecutionEvent> {
+public final class ExecutionListenerAdapter implements ApplicationListener<AbstractExecutionEvent> {
 
   private final ExecutionListener delegate;
   private final ExecutionRepository repository;
@@ -40,29 +40,29 @@ public final class ExecutionListenerAdapter implements ApplicationListener<Execu
   }
 
   @Override
-  public void onApplicationEvent(ExecutionEvent event) {
+  public void onApplicationEvent(AbstractExecutionEvent event) {
     try {
       MDC.put(Header.EXECUTION_ID.getHeader(), event.getExecutionId());
-      if (event instanceof ExecutionStarted) {
-        onExecutionStarted((ExecutionStarted) event);
-      } else if (event instanceof ExecutionComplete) {
-        onExecutionComplete((ExecutionComplete) event);
+      if (event instanceof ExecutionStartedImpl) {
+        onExecutionStarted((ExecutionStartedImpl) event);
+      } else if (event instanceof ExecutionCompletedImpl) {
+        onExecutionComplete((ExecutionCompletedImpl) event);
       }
     } finally {
       MDC.remove(Header.EXECUTION_ID.getHeader());
     }
   }
 
-  private void onExecutionStarted(ExecutionStarted event) {
+  private void onExecutionStarted(ExecutionStartedImpl event) {
     delegate.beforeExecution(persister, executionFor(event));
   }
 
-  private void onExecutionComplete(ExecutionComplete event) {
+  private void onExecutionComplete(ExecutionCompletedImpl event) {
     ExecutionStatus status = event.getStatus();
     delegate.afterExecution(persister, executionFor(event), status, status.isSuccessful());
   }
 
-  private PipelineExecution executionFor(ExecutionEvent event) {
+  private PipelineExecution executionFor(AbstractExecutionEvent event) {
     return repository.retrieve(event.getExecutionType(), event.getExecutionId());
   }
 }

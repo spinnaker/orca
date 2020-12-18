@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.events.StageStarted
+import com.netflix.spinnaker.orca.events.StageStartedImpl
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.ext.anyUpstreamStagesFailed
@@ -100,7 +100,7 @@ class StartStageHandler(
 
                 stage.start()
 
-                publisher.publishEvent(StageStarted(this, stage))
+                publisher.publishEvent(StageStartedImpl(this, stage))
                 trackResult(stage)
               } catch (e: Exception) {
                 val exceptionDetails = exceptionHandlers.shouldRetry(e, stage.name)

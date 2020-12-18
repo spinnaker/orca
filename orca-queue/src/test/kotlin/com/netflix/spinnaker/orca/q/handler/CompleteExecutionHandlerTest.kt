@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
-import com.netflix.spinnaker.orca.events.ExecutionComplete
+import com.netflix.spinnaker.orca.events.ExecutionCompletedImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelStage
 import com.netflix.spinnaker.orca.q.CompleteExecution
@@ -96,7 +96,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<ExecutionComplete> {
+          check<ExecutionCompletedImpl> {
             assertThat(it.executionType).isEqualTo(pipeline.type)
             assertThat(it.executionId).isEqualTo(pipeline.id)
             assertThat(it.status).isEqualTo(stageStatus)
@@ -213,7 +213,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<ExecutionComplete> {
+          check<ExecutionCompletedImpl> {
             assertThat(it.executionType).isEqualTo(pipeline.type)
             assertThat(it.executionId).isEqualTo(pipeline.id)
             assertThat(it.status).isEqualTo(stageStatus)
@@ -264,7 +264,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
     it("publishes an event") {
       verify(publisher).publishEvent(
-        check<ExecutionComplete> {
+        check<ExecutionCompletedImpl> {
           assertThat(it.executionType).isEqualTo(pipeline.type)
           assertThat(it.executionId).isEqualTo(pipeline.id)
           assertThat(it.status).isEqualTo(TERMINAL)
@@ -312,7 +312,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
     it("publishes an event") {
       verify(publisher).publishEvent(
-        check<ExecutionComplete> {
+        check<ExecutionCompletedImpl> {
           assertThat(it.executionType).isEqualTo(pipeline.type)
           assertThat(it.executionId).isEqualTo(pipeline.id)
           assertThat(it.status).isEqualTo(SUCCEEDED)

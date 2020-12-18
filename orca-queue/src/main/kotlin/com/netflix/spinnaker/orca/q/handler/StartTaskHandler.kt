@@ -21,8 +21,8 @@ import com.netflix.spinnaker.orca.api.pipeline.SkippableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
-import com.netflix.spinnaker.orca.events.TaskComplete
-import com.netflix.spinnaker.orca.events.TaskStarted
+import com.netflix.spinnaker.orca.events.TaskCompletedImpl
+import com.netflix.spinnaker.orca.events.TaskStartedImpl
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -57,14 +57,14 @@ class StartTaskHandler(
         repository.storeStage(mergedContextStage)
 
         queue.push(RunTask(message, task.id, task.type))
-        publisher.publishEvent(TaskStarted(this, mergedContextStage, task))
+        publisher.publishEvent(TaskStartedImpl(this, mergedContextStage, task))
       } else {
         task.status = SKIPPED
         val mergedContextStage = stage.withMergedContext()
         repository.storeStage(mergedContextStage)
 
         queue.push(CompleteTask(message, SKIPPED))
-        publisher.publishEvent(TaskComplete(this, mergedContextStage, task))
+        publisher.publishEvent(TaskCompletedImpl(this, mergedContextStage, task))
       }
     }
   }

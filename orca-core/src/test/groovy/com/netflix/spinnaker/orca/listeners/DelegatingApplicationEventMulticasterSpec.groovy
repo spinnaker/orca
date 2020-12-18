@@ -15,7 +15,7 @@
  */
 package com.netflix.spinnaker.orca.listeners
 
-import com.netflix.spinnaker.orca.api.annotations.Sync
+import com.netflix.spinnaker.orca.annotations.Sync
 import org.springframework.context.ApplicationEvent
 import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ApplicationEventMulticaster

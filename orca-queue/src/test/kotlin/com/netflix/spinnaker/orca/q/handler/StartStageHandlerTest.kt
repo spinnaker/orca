@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
-import com.netflix.spinnaker.orca.events.StageStarted
+import com.netflix.spinnaker.orca.events.StageStartedImpl
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
@@ -187,7 +187,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<StageStarted> {
+          check<StageStartedImpl> {
             assertThat(it.executionType).isEqualTo(pipeline.type)
             assertThat(it.executionId).isEqualTo(pipeline.id)
             assertThat(it.stageId).isEqualTo(message.stageId)
@@ -233,7 +233,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         it("publishes an event") {
           verify(publisher).publishEvent(
-            check<StageStarted> {
+            check<StageStartedImpl> {
               assertThat(it.executionType).isEqualTo(pipeline.type)
               assertThat(it.executionId).isEqualTo(pipeline.id)
               assertThat(it.stageId).isEqualTo(message.stageId)
@@ -278,7 +278,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         it("publishes an event") {
           verify(publisher).publishEvent(
-            check<StageStarted> {
+            check<StageStartedImpl> {
               assertThat(it.executionType).isEqualTo(pipeline.type)
               assertThat(it.executionId).isEqualTo(pipeline.id)
               assertThat(it.stageId).isEqualTo(message.stageId)
@@ -494,7 +494,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         }
 
         it("publishes an event") {
-          verify(publisher).publishEvent(isA<StageStarted>())
+          verify(publisher).publishEvent(isA<StageStartedImpl>())
         }
       }
 

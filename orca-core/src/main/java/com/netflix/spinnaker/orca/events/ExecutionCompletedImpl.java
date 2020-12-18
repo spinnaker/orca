@@ -16,47 +16,25 @@
 
 package com.netflix.spinnaker.orca.events;
 
+import com.netflix.spinnaker.orca.api.pipeline.events.ExecutionCompleted;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
-import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import javax.annotation.Nonnull;
 
-public final class StageStarted extends ExecutionEvent {
-  private final String stageId;
-  private final String stageType;
-  private final String stageName;
+public final class ExecutionCompletedImpl extends AbstractExecutionEvent
+    implements ExecutionCompleted {
+  private final ExecutionStatus status;
 
-  public StageStarted(
+  public ExecutionCompletedImpl(
       @Nonnull Object source,
       @Nonnull ExecutionType executionType,
       @Nonnull String executionId,
-      @Nonnull String stageId,
-      @Nonnull String stageType,
-      @Nonnull String stageName) {
+      @Nonnull ExecutionStatus status) {
     super(source, executionType, executionId);
-    this.stageId = stageId;
-    this.stageType = stageType;
-    this.stageName = stageName;
+    this.status = status;
   }
 
-  public StageStarted(@Nonnull Object source, @Nonnull StageExecution stage) {
-    this(
-        source,
-        stage.getExecution().getType(),
-        stage.getExecution().getId(),
-        stage.getId(),
-        stage.getType(),
-        stage.getName());
-  }
-
-  public @Nonnull String getStageId() {
-    return stageId;
-  }
-
-  public @Nonnull String getStageType() {
-    return stageType;
-  }
-
-  public @Nonnull String getStageName() {
-    return stageName;
+  public @Nonnull ExecutionStatus getStatus() {
+    return status;
   }
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,14 +15,18 @@
  */
 package com.netflix.spinnaker.orca.api.pipeline.events;
 
+import com.netflix.spinnaker.kork.annotations.NonnullByDefault;
 import com.netflix.spinnaker.kork.plugins.api.events.SpinnakerApplicationEvent;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
-import javax.annotation.Nonnull;
 
-/** An event emitted immediately before the initial persist of a {@link PipelineExecution}. */
-public interface BeforeInitialExecutionPersist extends SpinnakerApplicationEvent {
+/** Events emitted at various stages in the lifecycle of an execution. */
+@NonnullByDefault
+public interface ExecutionEvent extends SpinnakerApplicationEvent {
 
-  /** @return The {@link PipelineExecution} that is being persisted. */
-  @Nonnull
-  PipelineExecution getExecution();
+  /** @return The type of execution */
+  ExecutionType getExecutionType();
+
+  /** @return The {@link PipelineExecution#getId()} */
+  String getExecutionId();
 }

@@ -29,7 +29,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
-import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.events.StageCompletedImpl
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.ext.afterStages
 import com.netflix.spinnaker.orca.ext.failureStatus
@@ -158,7 +158,7 @@ class CompleteStageHandler(
           }
         }
 
-        publisher.publishEvent(StageComplete(this, stage))
+        publisher.publishEvent(StageCompletedImpl(this, stage))
         trackResult(stage)
       }
     }

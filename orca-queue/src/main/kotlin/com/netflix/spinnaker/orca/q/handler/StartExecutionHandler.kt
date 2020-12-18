@@ -21,8 +21,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
-import com.netflix.spinnaker.orca.events.ExecutionComplete
-import com.netflix.spinnaker.orca.events.ExecutionStarted
+import com.netflix.spinnaker.orca.events.ExecutionCompletedImpl
+import com.netflix.spinnaker.orca.events.ExecutionStartedImpl
 import com.netflix.spinnaker.orca.ext.initialStages
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelExecution
@@ -92,18 +92,18 @@ class StartExecutionHandler(
       if (initialStages.isEmpty()) {
         log.warn("No initial stages found (executionId: ${execution.id})")
         repository.updateStatus(execution.type, execution.id, TERMINAL)
-        publisher.publishEvent(ExecutionComplete(this, execution.type, execution.id, TERMINAL))
+        publisher.publishEvent(ExecutionCompletedImpl(this, execution.type, execution.id, TERMINAL))
       } else {
         repository.updateStatus(execution.type, execution.id, RUNNING)
         initialStages.forEach { queue.push(StartStage(it)) }
-        publisher.publishEvent(ExecutionStarted(this, execution.type, execution.id))
+        publisher.publishEvent(ExecutionStartedImpl(this, execution.type, execution.id))
       }
     }
   }
 
   private fun terminate(execution: PipelineExecution) {
     if (execution.status == CANCELED || execution.isCanceled) {
-      publisher.publishEvent(ExecutionComplete(this, execution.type, execution.id, execution.status))
+      publisher.publishEvent(ExecutionCompletedImpl(this, execution.type, execution.id, execution.status))
       execution.pipelineConfigId?.let {
         queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
       }

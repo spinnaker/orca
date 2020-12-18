@@ -21,9 +21,9 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
-import com.netflix.spinnaker.orca.events.ExecutionComplete
-import com.netflix.spinnaker.orca.events.ExecutionEvent
-import com.netflix.spinnaker.orca.events.ExecutionStarted
+import com.netflix.spinnaker.orca.events.ExecutionCompletedImpl
+import com.netflix.spinnaker.orca.events.AbstractExecutionEvent
+import com.netflix.spinnaker.orca.events.ExecutionStartedImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.StageSerializationException
@@ -59,7 +59,7 @@ class RedisActiveExecutionsMonitor(
   @Value("\${monitor.active-executions.refresh.frequency.ms:60000}") refreshFrequencyMs: Long,
   @Value("\${monitor.active-executions.cleanup.frequency.ms:300000}") cleanupFrequencyMs: Long,
   @Value("\${monitor.active-executions.key:monitor.active-executions}") val redisKey: String
-) : ApplicationListener<ExecutionEvent> {
+) : ApplicationListener<AbstractExecutionEvent> {
 
   private val log = LoggerFactory.getLogger(javaClass)
 
@@ -160,10 +160,10 @@ class RedisActiveExecutionsMonitor(
     }
   }
 
-  override fun onApplicationEvent(event: ExecutionEvent) {
-    if (event is ExecutionStarted) {
+  override fun onApplicationEvent(event: AbstractExecutionEvent) {
+    if (event is ExecutionStartedImpl) {
       startExecution(event.executionType, event.executionId)
-    } else if (event is ExecutionComplete) {
+    } else if (event is ExecutionCompletedImpl) {
       completeExecution(event.executionId)
     }
   }

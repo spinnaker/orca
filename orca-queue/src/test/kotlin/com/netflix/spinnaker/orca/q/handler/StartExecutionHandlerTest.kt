@@ -23,8 +23,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
-import com.netflix.spinnaker.orca.events.ExecutionComplete
-import com.netflix.spinnaker.orca.events.ExecutionStarted
+import com.netflix.spinnaker.orca.events.ExecutionCompletedImpl
+import com.netflix.spinnaker.orca.events.ExecutionStartedImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.StartExecution
@@ -102,7 +102,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<ExecutionStarted> {
+          check<ExecutionStartedImpl> {
             assertThat(it.executionType).isEqualTo(message.executionType)
             assertThat(it.executionId).isEqualTo(message.executionId)
           }
@@ -132,7 +132,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<ExecutionComplete> {
+          check<ExecutionCompletedImpl> {
             assertThat(it.executionType).isEqualTo(message.executionType)
             assertThat(it.executionId).isEqualTo(message.executionId)
             assertThat(it.status).isEqualTo(CANCELED)
@@ -167,7 +167,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<ExecutionComplete> {
+          check<ExecutionCompletedImpl> {
             assertThat(it.executionType).isEqualTo(message.executionType)
             assertThat(it.executionId).isEqualTo(message.executionId)
             assertThat(it.status).isEqualTo(NOT_STARTED)
@@ -267,7 +267,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
 
       it("publishes an event with TERMINAL status") {
         verify(publisher).publishEvent(
-          check<ExecutionComplete> {
+          check<ExecutionCompletedImpl> {
             assertThat(it.executionType).isEqualTo(message.executionType)
             assertThat(it.executionId).isEqualTo(message.executionId)
             assertThat(it.status).isEqualTo(TERMINAL)
