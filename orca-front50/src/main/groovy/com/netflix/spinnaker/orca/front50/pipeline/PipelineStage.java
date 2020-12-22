@@ -73,13 +73,9 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   }
 
   @Override
-  public void afterStages(@Nonnull StageExecution parent, @Nonnull StageGraphBuilder graph) {
-    if (parent
-        .getContext()
-        .getOrDefault("skipDownstreamOutput", "false")
-        .toString()
-        .equals("true")) {
-      parent.setOutputs(emptyMap());
+  public void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
+    if (shouldSkipDownstreamOutput(stage)) {
+      stage.setOutputs(emptyMap());
     }
   }
 
@@ -136,5 +132,13 @@ public class PipelineStage implements StageDefinitionBuilder, CancellableStage {
   @Override
   public boolean canManuallySkip(StageExecution stage) {
     return (Boolean) stage.getContext().getOrDefault("skippable", false);
+  }
+
+  private boolean shouldSkipDownstreamOutput(StageExecution stage) {
+    return stage
+        .getContext()
+        .getOrDefault("skipDownstreamOutput", "false")
+        .toString()
+        .equals("true");
   }
 }
