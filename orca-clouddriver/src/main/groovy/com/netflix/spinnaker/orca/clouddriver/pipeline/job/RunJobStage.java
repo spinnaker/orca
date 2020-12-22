@@ -79,6 +79,7 @@ public class RunJobStage implements StageDefinitionBuilder, CancellableStage {
     }
   }
 
+  @Override
   public void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     if (stage.getContext().getOrDefault("noOutput", "false").toString().equals("true")) {
       stage.setOutputs(emptyMap());
