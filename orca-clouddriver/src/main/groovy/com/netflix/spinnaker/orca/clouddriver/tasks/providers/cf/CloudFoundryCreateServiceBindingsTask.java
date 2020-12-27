@@ -20,13 +20,13 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CloudFoundryCreateServiceBindingTask extends AbstractCloudFoundryServiceTask {
-  public CloudFoundryCreateServiceBindingTask(KatoService kato) {
+public class CloudFoundryCreateServiceBindingsTask extends AbstractCloudFoundryServiceTask {
+  public CloudFoundryCreateServiceBindingsTask(KatoService kato) {
     super(kato);
   }
 
   @Override
   protected String getNotificationType() {
-    return "createServiceBinding";
+    return "createServiceBindings";
   }
 }

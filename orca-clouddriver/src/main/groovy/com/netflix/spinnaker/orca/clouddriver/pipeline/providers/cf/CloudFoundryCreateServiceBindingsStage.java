@@ -19,18 +19,18 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.providers.cf;
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryCreateServiceBindingTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryCreateServiceBindingsTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryMonitorKatoServicesTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
-class CloudFoundryCreateServiceBindingStage implements StageDefinitionBuilder, CloudProviderAware {
+class CloudFoundryCreateServiceBindingsStage implements StageDefinitionBuilder, CloudProviderAware {
   @Override
   public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
-        .withTask("createServiceBinding", CloudFoundryCreateServiceBindingTask.class)
-        .withTask("monitorCreateServiceBinding", CloudFoundryMonitorKatoServicesTask.class);
+        .withTask("createServiceBindings", CloudFoundryCreateServiceBindingsTask.class)
+        .withTask("monitorCreateServiceBindings", CloudFoundryMonitorKatoServicesTask.class);
   }
 }
