@@ -85,11 +85,21 @@ internal val ExecutionType.stagesTableName: Table<Record>
   }
 
 /**
+ * Converts a provided table to it's equivalent compressed executions table
+ */
+internal val Table<Record>.compressedExecTable: Table<Record>
+  get() = DSL.table("${this.name}_compressed_executions")
+
+/**
  * Selects all stages for an [executionType] and List [executionIds].
  */
 internal fun DSLContext.selectExecutionStages(executionType: ExecutionType, executionIds: Collection<String>) =
-  select(field("execution_id"), field("body"))
+  select(field("execution_id"),
+      field("body"),
+      field("compressed_body"),
+      field("compression_type"))
     .from(executionType.stagesTableName)
+    .leftJoin(executionType.stagesTableName.compressedExecTable).using(field("id"))
     .where(field("execution_id").`in`(*executionIds.toTypedArray()))
     .fetch()
     .intoResultSet()

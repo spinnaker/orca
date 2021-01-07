@@ -17,11 +17,14 @@ package com.netflix.spinnaker.orca.sql.pipeline.persistence
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.google.common.annotations.VisibleForTesting
+import com.netflix.spinnaker.config.CompressionType
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import java.sql.ResultSet
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
+import java.nio.charset.StandardCharsets
 
 /**
  * Converts a SQL [ResultSet] into an Execution.
@@ -36,13 +39,35 @@ class ExecutionMapper(
 
   private val log = LoggerFactory.getLogger(javaClass)
 
+  /**
+   * Conditionally decompresses a compressed execution body. if present, and provides the
+   * execution body content as a string
+   *
+   * @param rs [ResultSet] to pull the body from
+   *
+   * @return the decompressed execution body content
+   */
+  @VisibleForTesting
+  fun getDecompressedBody(rs: ResultSet): String {
+    val body = rs.getString("body")
+    return if (body.isNullOrEmpty()) {
+      val compressionType = CompressionType.valueOf(rs.getString("compression_type"))
+      val compressedBody = rs.getBytes("compressed_body")
+      compressionType.getInflator(compressedBody.inputStream())
+        .bufferedReader(StandardCharsets.UTF_8)
+        .use { it.readText() }
+    } else {
+      body
+    }
+  }
+
   fun map(rs: ResultSet, context: DSLContext): Collection<PipelineExecution> {
     val results = mutableListOf<PipelineExecution>()
     val executionMap = mutableMapOf<String, PipelineExecution>()
     val legacyMap = mutableMapOf<String, String>()
 
     while (rs.next()) {
-      mapper.readValue<PipelineExecution>(rs.getString("body"))
+      mapper.readValue<PipelineExecution>(getDecompressedBody(rs))
         .also {
           execution ->
           results.add(execution)
@@ -90,7 +115,7 @@ class ExecutionMapper(
     executions.getValue(executionId)
       .stages
       .add(
-        mapper.readValue<StageExecution>(rs.getString("body"))
+        mapper.readValue<StageExecution>(getDecompressedBody(rs))
           .apply {
             execution = executions.getValue(executionId)
           }
