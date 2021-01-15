@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.clouddriver.model.OperationContext
 import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult
 import com.netflix.spinnaker.orca.clouddriver.model.Task
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
+import com.netflix.spinnaker.orca.clouddriver.model.TaskOwner
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -95,6 +96,19 @@ class KatoService {
   @Nonnull
   TaskId resumeTask(@Nonnull String id) {
     katoRestService.resumeTask(id)
+  }
+
+  TaskOwner lookupTaskOwner(@Nonnull String cloudProvider, String id) {
+    return cloudDriverTaskStatusService.lookupTaskOwner(cloudProvider, id)
+  }
+
+  TaskId updateTaskRetryability(@Nonnull String cloudProvider, String id, boolean retry) {
+    return katoRestService.updateTask(cloudProvider, id, Map.of("retry", retry))
+  }
+
+  @Nonnull
+  TaskId restartTask(@Nonnull String cloudProvider, @Nonnull String id, Collection<? extends Map<String, Map>> operations) {
+    katoRestService.restartTaskViaOperations(cloudProvider, id, operations)
   }
 
   private static String requestId(Object payload) {

@@ -24,6 +24,7 @@ import retrofit.client.Response
 import retrofit.http.Body
 import retrofit.http.DELETE
 import retrofit.http.GET
+import retrofit.http.PATCH
 import retrofit.http.POST
 import retrofit.http.Path
 import retrofit.http.Query
@@ -51,6 +52,18 @@ interface KatoRestService {
                            @Path("cloudProvider") String cloudProvider,
                            @Path("operationName") String operationName,
                            @Body OperationContext operation);
+
+  @PATCH("/{cloudProvider}/task/{id}")
+  TaskId updateTask(@Path("cloudProvider") String cloudProvider,
+                    @Path("id") String id,
+                    @Body Map details)
+
+  @POST("/{cloudProvider}/task/{id}/restart")
+  @Retry(name = "katoRetrofitServiceWriter")
+  TaskId restartTaskViaOperations(@Path("cloudProvider") String cloudProvider,
+                                  @Path("id") String id,
+                                  @Body Collection<? extends Map<String, Map>> operations)
+
 
   @GET("/applications/{app}/jobs/{account}/{region}/{id}")
   Response collectJob(@Path("app") String app,
