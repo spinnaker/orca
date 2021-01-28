@@ -68,18 +68,22 @@ class PreconfiguredJobStage extends RunJobStage {
     
     // Solution patch to resolve spec.template.spec.container.resources.limit
     // and spec.template.spec.container.resources.requests parsed by io.kubernetes.client library
-    Map<String, Object> manifestMap= preconfiguredMap.get("manifest")
-    List<Map<String, Object>> containers = ((Map<String, Object>)((Map<String, Object>)((Map<String, Object>)manifestMap.get("spec")).get("template")).get("spec")).get("containers")
-
-        containers.stream()
-            .filter {e -> e.containsKey("resources") && e.get("resources")!= null}
-            .flatMap{e -> ((Map<String, Object>)e.get("resources")).entrySet().stream()}
-            .filter{e -> e.getKey().equals("limits") || e.getKey().equals("requests") }
-            .flatMap{e -> ((Map<String, Object>)e.getValue()).entrySet().stream()}
-            .forEach{e -> String number = ((Map<String, Object>) e.getValue()).get("number").toString()
-              e.setValue(number)};
-              
-    // till here
+    if (preconfiguredMap["manifest"] != null) {
+      Map<String, Object> manifestMap = preconfiguredMap.get("manifest")
+      if (manifestMap["spec"] != null){
+        List<Map<String, Object>> containers = ((Map<String, Object>) ((Map<String, Object>) ((Map<String, Object>) manifestMap.get("spec")).get("template")).get("spec")).get("containers")
+          containers.stream()
+            .filter { e -> e.containsKey("resources") && e.get("resources") != null }
+            .flatMap { e -> ((Map<String, Object>) e.get("resources")).entrySet().stream() }
+            .filter { e -> e.getKey().equals("limits") || e.getKey().equals("requests") }
+            .flatMap { e -> ((Map<String, Object>) e.getValue()).entrySet().stream() }
+            .forEach { e ->
+              String number = ((Map<String, Object>) e.getValue()).get("number").toString()
+              e.setValue(number)
+            }
+      }
+    }
+    //till here
 
     // if we don't specify an application for this preconfigured job, assign the current one.
     if (preconfiguredMap["cluster"] != null && preconfiguredMap["cluster"].application == null) {
