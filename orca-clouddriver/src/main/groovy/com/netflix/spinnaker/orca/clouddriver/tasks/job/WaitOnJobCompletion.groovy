@@ -26,7 +26,9 @@ import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService
+import com.netflix.spinnaker.orca.clouddriver.exception.JobFailedException
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -57,6 +59,9 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
 
   @Autowired
   JobUtils jobUtils
+
+  @Autowired
+  ExecutionRepository repository
 
   static final String REFRESH_TYPE = "Job"
   /**
@@ -130,6 +135,7 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
       outputs.jobStatus = job
 
       outputs.completionDetails = job.completionDetails
+
       switch ((String) job.jobState) {
         case "Succeeded":
           status = ExecutionStatus.SUCCEEDED
@@ -148,18 +154,48 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
             if (properties.size() == 0) {
               if (status == ExecutionStatus.SUCCEEDED) {
                 throw new ConfigurationException("Expected properties file ${stage.context.propertyFile} but it was either missing, empty or contained invalid syntax")
-              } else {
-                throw new ConfigurationException("Expected properties file ${stage.context.propertyFile} but it was either missing, empty or contained invalid syntax (this may be because the job failed)")
               }
             }
           }, 6, 5000, false) // retry for 30 seconds
-          outputs << properties
-          outputs.propertyFileContents = properties
+          if (properties.size() > 0) {
+            outputs << properties
+            outputs.propertyFileContents = properties
+          }
+        }
+
+        if (status == ExecutionStatus.TERMINAL) {
+          // bubble up the error, but first save the job result otherwise UI could show "Collecting Additional Details..."
+          // if the jobStatus isn't present in the stage context
+          processTaskOutput(stage, outputs)
+          processFailure(job)
         }
       }
-
     }
 
     TaskResult.builder(status).context(outputs).outputs(outputs).build()
+  }
+
+  void processTaskOutput(StageExecution stage, Map<String, Object> outputs) {
+    if (stage.context) {
+      stage.context.putAll(outputs)
+      stage.outputs.putAll(outputs)
+      repository.storeStage(stage)
+    }
+  }
+
+  void processFailure(Map job) {
+    String jobName = job.getOrDefault("name", "")
+    String message = job.getOrDefault("message", "")
+    String reason = job.getOrDefault("reason", "")
+    String summary = job.getOrDefault("summary", "")
+
+    String errorMessage = "No reason provided."
+    if (jobName && message && reason) {
+      errorMessage = "Job: ${jobName} failed. Reason: ${reason}. Details: ${message}."
+      if (summary) {
+        errorMessage += " Additional Details: ${summary}"
+      }
+    }
+    throw new JobFailedException(errorMessage)
   }
 }
