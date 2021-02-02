@@ -16,50 +16,37 @@
 
 package com.netflix.spinnaker.orca.events;
 
+import com.netflix.spinnaker.orca.api.pipeline.events.StageStarted;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution;
 import javax.annotation.Nonnull;
 
-public class TaskStarted extends ExecutionEvent {
+public final class StageStartedImpl extends AbstractExecutionEvent implements StageStarted {
   private final String stageId;
   private final String stageType;
   private final String stageName;
-  private final String taskId;
-  private final String taskType;
-  private final String taskName;
 
-  public TaskStarted(
+  public StageStartedImpl(
       @Nonnull Object source,
       @Nonnull ExecutionType executionType,
       @Nonnull String executionId,
       @Nonnull String stageId,
       @Nonnull String stageType,
-      @Nonnull String stageName,
-      @Nonnull String taskId,
-      @Nonnull String taskType,
-      @Nonnull String taskName) {
+      @Nonnull String stageName) {
     super(source, executionType, executionId);
     this.stageId = stageId;
     this.stageType = stageType;
     this.stageName = stageName;
-    this.taskId = taskId;
-    this.taskType = taskType;
-    this.taskName = taskName;
   }
 
-  public TaskStarted(
-      @Nonnull Object source, @Nonnull StageExecution stage, @Nonnull TaskExecution task) {
+  public StageStartedImpl(@Nonnull Object source, @Nonnull StageExecution stage) {
     this(
         source,
         stage.getExecution().getType(),
         stage.getExecution().getId(),
         stage.getId(),
         stage.getType(),
-        stage.getName(),
-        task.getId(),
-        task.getImplementingClass(),
-        task.getName());
+        stage.getName());
   }
 
   public @Nonnull String getStageId() {
@@ -72,17 +59,5 @@ public class TaskStarted extends ExecutionEvent {
 
   public @Nonnull String getStageName() {
     return stageName;
-  }
-
-  public @Nonnull String getTaskId() {
-    return taskId;
-  }
-
-  public @Nonnull String getTaskType() {
-    return taskType;
-  }
-
-  public @Nonnull String getTaskName() {
-    return taskName;
   }
 }

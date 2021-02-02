@@ -24,7 +24,7 @@ import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.echo.spring.EchoNotifyingExecutionListener
 import com.netflix.spinnaker.orca.echo.spring.EchoNotifyingStageListener
-import com.netflix.spinnaker.orca.events.ExecutionEvent
+import com.netflix.spinnaker.orca.events.AbstractExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter
 import com.netflix.spinnaker.orca.events.StageListenerAdapter
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -83,7 +83,7 @@ class EchoConfiguration {
   }
 
   @Bean
-  ApplicationListener<ExecutionEvent> echoNotifyingStageExecutionListenerAdapter(EchoNotifyingStageListener echoNotifyingStageListener, ExecutionRepository repository) {
+  ApplicationListener<AbstractExecutionEvent> echoNotifyingStageExecutionListenerAdapter(EchoNotifyingStageListener echoNotifyingStageListener, ExecutionRepository repository) {
     return new StageListenerAdapter(echoNotifyingStageListener, repository)
   }
 
@@ -102,7 +102,7 @@ class EchoConfiguration {
   }
 
   @Bean
-  ApplicationListener<ExecutionEvent> echoNotifyingPipelineExecutionListenerAdapter(EchoNotifyingExecutionListener echoNotifyingExecutionListener, ExecutionRepository repository) {
+  ApplicationListener<AbstractExecutionEvent> echoNotifyingPipelineExecutionListenerAdapter(EchoNotifyingExecutionListener echoNotifyingExecutionListener, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(echoNotifyingExecutionListener, repository)
   }
 }

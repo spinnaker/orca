@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
-import com.netflix.spinnaker.orca.events.TaskComplete
+import com.netflix.spinnaker.orca.events.TaskCompletedImpl
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.model.TaskExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -135,7 +135,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
         it("publishes an event") {
           verify(publisher).publishEvent(
-            check<TaskComplete> {
+            check<TaskCompletedImpl> {
               assertThat(it.executionType).isEqualTo(pipeline.type)
               assertThat(it.executionId).isEqualTo(pipeline.id)
               assertThat(it.stageId).isEqualTo(message.stageId)
@@ -313,7 +313,7 @@ object CompleteTaskHandlerTest : SubjectSpek<CompleteTaskHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<TaskComplete> {
+          check<TaskCompletedImpl> {
             assertThat(it.executionType).isEqualTo(pipeline.type)
             assertThat(it.executionId).isEqualTo(pipeline.id)
             assertThat(it.stageId).isEqualTo(message.stageId)

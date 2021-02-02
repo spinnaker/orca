@@ -22,7 +22,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.events.StageCompletedImpl
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
 import com.netflix.spinnaker.orca.ext.recursiveSyntheticStages
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -50,14 +50,14 @@ class SkipStageHandler(
               it.status = SKIPPED
               it.endTime = clock.millis()
               repository.storeStage(it)
-              publisher.publishEvent(StageComplete(this, it))
+              publisher.publishEvent(StageCompletedImpl(this, it))
             }
           }
         }
         stage.endTime = clock.millis()
         repository.storeStage(stage)
         stage.startNext()
-        publisher.publishEvent(StageComplete(this, stage))
+        publisher.publishEvent(StageCompletedImpl(this, stage))
       }
     }
   }

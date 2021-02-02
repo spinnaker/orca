@@ -28,7 +28,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.events.ExecutionComplete
+import com.netflix.spinnaker.orca.events.ExecutionCompletedImpl
 import com.netflix.spinnaker.orca.ext.allUpstreamStagesComplete
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelStage
@@ -64,7 +64,7 @@ class CompleteExecutionHandler(
         message.determineFinalStatus(execution) { status ->
           repository.updateStatus(execution.type, message.executionId, status)
           publisher.publishEvent(
-            ExecutionComplete(this, message.executionType, message.executionId, status)
+            ExecutionCompletedImpl(this, message.executionType, message.executionId, status)
           )
           registry.counter(
             completedId.withTags(

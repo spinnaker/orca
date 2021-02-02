@@ -20,7 +20,7 @@ import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.BUFFERED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
 import com.netflix.spinnaker.orca.api.test.pipeline
-import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist
+import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersistImpl
 import com.netflix.spinnaker.orca.qos.BufferAction.BUFFER
 import com.netflix.spinnaker.orca.qos.BufferAction.ENQUEUE
 import com.netflix.spinnaker.orca.qos.BufferState.ACTIVE
@@ -79,7 +79,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       afterGroup(::resetMocks)
 
       on("before initial persist event") {
-        subject.beforeInitialPersist(BeforeInitialExecutionPersist("orca-core", execution))
+        subject.beforeInitialPersist(BeforeInitialExecutionPersistImpl("orca-core", execution))
       }
 
       it("does nothing") {
@@ -111,7 +111,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       }
 
       on("before initial persist event") {
-        subject.beforeInitialPersist(BeforeInitialExecutionPersist("orca-core", execution))
+        subject.beforeInitialPersist(BeforeInitialExecutionPersistImpl("orca-core", execution))
       }
 
       it("does nothing") {
@@ -142,7 +142,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       }
 
       on("before initial persist event") {
-        subject.beforeInitialPersist(BeforeInitialExecutionPersist("orca-core", execution))
+        subject.beforeInitialPersist(BeforeInitialExecutionPersistImpl("orca-core", execution))
       }
 
       it("does nothing") {
@@ -173,7 +173,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       }
 
       on("before initial persist event") {
-        subject.beforeInitialPersist(BeforeInitialExecutionPersist("orca-core", execution))
+        subject.beforeInitialPersist(BeforeInitialExecutionPersistImpl("orca-core", execution))
       }
 
       it("does nothing") {
@@ -205,7 +205,7 @@ class ExecutionBufferActuatorTest : SubjectSpek<ExecutionBufferActuator>({
       }
 
       on("before initial persist event") {
-        subject.beforeInitialPersist(BeforeInitialExecutionPersist("orca-core", execution))
+        subject.beforeInitialPersist(BeforeInitialExecutionPersistImpl("orca-core", execution))
       }
 
       it("does nothing") {

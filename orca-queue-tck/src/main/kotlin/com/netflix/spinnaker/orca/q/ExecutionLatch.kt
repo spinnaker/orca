@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.events.ExecutionComplete
+import com.netflix.spinnaker.orca.events.ExecutionCompletedImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -32,12 +32,12 @@ import org.springframework.context.ConfigurableApplicationContext
  * An [ApplicationListener] implementation you can use to wait for an execution
  * to complete. Much better than `Thread.sleep(whatever)` in your tests.
  */
-class ExecutionLatch(private val predicate: Predicate<ExecutionComplete>) :
-  ApplicationListener<ExecutionComplete> {
+class ExecutionLatch(private val predicate: Predicate<ExecutionCompletedImpl>) :
+  ApplicationListener<ExecutionCompletedImpl> {
 
   private val latch = CountDownLatch(1)
 
-  override fun onApplicationEvent(event: ExecutionComplete) {
+  override fun onApplicationEvent(event: ExecutionCompletedImpl) {
     if (predicate.test(event)) {
       latch.countDown()
     }

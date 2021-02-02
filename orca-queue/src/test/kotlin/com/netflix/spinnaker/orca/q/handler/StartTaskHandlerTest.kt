@@ -24,8 +24,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
-import com.netflix.spinnaker.orca.events.TaskComplete
-import com.netflix.spinnaker.orca.events.TaskStarted
+import com.netflix.spinnaker.orca.events.TaskCompletedImpl
+import com.netflix.spinnaker.orca.events.TaskStartedImpl
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
@@ -123,7 +123,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
     }
 
     it("publishes a TaskStarted event") {
-      argumentCaptor<TaskStarted>().apply {
+      argumentCaptor<TaskStartedImpl>().apply {
         verify(publisher).publishEvent(capture())
         firstValue.apply {
           assertThat(executionType).isEqualTo(pipeline.type)
@@ -176,7 +176,7 @@ object StartTaskHandlerTest : SubjectSpek<StartTaskHandler>({
     }
 
     it("publishes a TaskComplete event") {
-      argumentCaptor<TaskComplete>().apply {
+      argumentCaptor<TaskCompletedImpl>().apply {
         verify(publisher).publishEvent(capture())
         firstValue.apply {
           assertThat(executionType).isEqualTo(pipeline.type)

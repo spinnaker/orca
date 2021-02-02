@@ -36,7 +36,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.api.test.task
-import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.events.StageCompletedImpl
 import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
@@ -256,7 +256,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           it("publishes an event") {
             verify(publisher).publishEvent(
-              check<StageComplete> {
+              check<StageCompletedImpl> {
                 assertThat(it.executionType).isEqualTo(pipeline.type)
                 assertThat(it.executionId).isEqualTo(pipeline.id)
                 assertThat(it.stageId).isEqualTo(message.stageId)
@@ -613,7 +613,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
         it("publishes an event") {
           verify(publisher).publishEvent(
-            check<StageComplete> {
+            check<StageCompletedImpl> {
               assertThat(it.executionType).isEqualTo(pipeline.type)
               assertThat(it.executionId).isEqualTo(pipeline.id)
               assertThat(it.stageId).isEqualTo(message.stageId)
@@ -682,7 +682,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
       it("publishes an event") {
         verify(publisher).publishEvent(
-          check<StageComplete> {
+          check<StageCompletedImpl> {
             assertThat(it.executionType).isEqualTo(pipeline.type)
             assertThat(it.executionId).isEqualTo(pipeline.id)
             assertThat(it.stageId).isEqualTo(message.stageId)

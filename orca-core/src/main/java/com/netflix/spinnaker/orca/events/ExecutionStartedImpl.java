@@ -16,23 +16,13 @@
 
 package com.netflix.spinnaker.orca.events;
 
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
+import com.netflix.spinnaker.orca.api.pipeline.events.ExecutionStarted;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import javax.annotation.Nonnull;
 
-public final class ExecutionComplete extends ExecutionEvent {
-  private final ExecutionStatus status;
-
-  public ExecutionComplete(
-      @Nonnull Object source,
-      @Nonnull ExecutionType executionType,
-      @Nonnull String executionId,
-      @Nonnull ExecutionStatus status) {
+public final class ExecutionStartedImpl extends AbstractExecutionEvent implements ExecutionStarted {
+  public ExecutionStartedImpl(
+      @Nonnull Object source, @Nonnull ExecutionType executionType, @Nonnull String executionId) {
     super(source, executionType, executionId);
-    this.status = status;
-  }
-
-  public @Nonnull ExecutionStatus getStatus() {
-    return status;
   }
 }

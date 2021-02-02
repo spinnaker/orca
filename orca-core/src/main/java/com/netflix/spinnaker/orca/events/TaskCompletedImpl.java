@@ -16,13 +16,14 @@
 
 package com.netflix.spinnaker.orca.events;
 
+import com.netflix.spinnaker.orca.api.pipeline.events.TaskCompleted;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution;
 import javax.annotation.Nonnull;
 
-public class TaskComplete extends ExecutionEvent {
+public class TaskCompletedImpl extends AbstractExecutionEvent implements TaskCompleted {
   private final String stageId;
   private final String stageType;
   private final String stageName;
@@ -31,7 +32,7 @@ public class TaskComplete extends ExecutionEvent {
   private final String taskName;
   private final ExecutionStatus status;
 
-  public TaskComplete(
+  public TaskCompletedImpl(
       @Nonnull Object source,
       @Nonnull ExecutionType executionType,
       @Nonnull String executionId,
@@ -52,7 +53,7 @@ public class TaskComplete extends ExecutionEvent {
     this.status = status;
   }
 
-  public TaskComplete(
+  public TaskCompletedImpl(
       @Nonnull Object source, @Nonnull StageExecution stage, @Nonnull TaskExecution task) {
     this(
         source,

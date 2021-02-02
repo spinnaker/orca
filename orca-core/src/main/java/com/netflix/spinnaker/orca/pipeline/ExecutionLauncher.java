@@ -30,7 +30,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
-import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
+import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersistImpl;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
@@ -275,7 +275,7 @@ public class ExecutionLauncher {
 
   /** Persist the initial execution configuration. */
   private void persistExecution(PipelineExecution execution) {
-    applicationEventPublisher.publishEvent(new BeforeInitialExecutionPersist(this, execution));
+    applicationEventPublisher.publishEvent(new BeforeInitialExecutionPersistImpl(this, execution));
     executionRepository.store(execution);
   }
 

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spinnaker.config.DefaultServiceEndpoint
 import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider
-import com.netflix.spinnaker.orca.events.ExecutionEvent
+import com.netflix.spinnaker.orca.events.AbstractExecutionEvent
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.spring.DependentPipelineExecutionListener
@@ -83,7 +83,7 @@ class Front50Configuration {
   }
 
   @Bean
-  ApplicationListener<ExecutionEvent> dependentPipelineExecutionListenerAdapter(DependentPipelineExecutionListener delegate, ExecutionRepository repository) {
+  ApplicationListener<AbstractExecutionEvent> dependentPipelineExecutionListenerAdapter(DependentPipelineExecutionListener delegate, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(delegate, repository)
   }
 }

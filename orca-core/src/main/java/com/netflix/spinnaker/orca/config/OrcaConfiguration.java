@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.TaskResolver;
 import com.netflix.spinnaker.orca.api.pipeline.Task;
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand;
-import com.netflix.spinnaker.orca.events.ExecutionEvent;
+import com.netflix.spinnaker.orca.events.AbstractExecutionEvent;
 import com.netflix.spinnaker.orca.events.ExecutionListenerAdapter;
 import com.netflix.spinnaker.orca.exceptions.DefaultExceptionHandler;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
@@ -118,7 +118,7 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  public ApplicationListener<ExecutionEvent> executionCleanupListenerAdapter(
+  public ApplicationListener<AbstractExecutionEvent> executionCleanupListenerAdapter(
       ExecutionListener executionCleanupListener, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(executionCleanupListener, repository);
   }
@@ -151,7 +151,7 @@ public class OrcaConfiguration {
   }
 
   @Bean
-  public ApplicationListener<ExecutionEvent> onCompleteMetricExecutionListenerAdapter(
+  public ApplicationListener<AbstractExecutionEvent> onCompleteMetricExecutionListenerAdapter(
       Registry registry, ExecutionRepository repository) {
     return new ExecutionListenerAdapter(new MetricsExecutionListener(registry), repository);
   }

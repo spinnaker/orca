@@ -18,7 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.PAUSED
-import com.netflix.spinnaker.orca.events.ExecutionComplete
+import com.netflix.spinnaker.orca.events.ExecutionCompletedImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.CancelExecution
 import com.netflix.spinnaker.orca.q.RescheduleExecution
@@ -52,7 +52,7 @@ class CancelExecutionHandler(
       // then, make sure those runTask messages get run right away
       queue.push(RescheduleExecution(execution))
 
-      publisher.publishEvent(ExecutionComplete(this, message.executionType, message.executionId, CANCELED))
+      publisher.publishEvent(ExecutionCompletedImpl(this, message.executionType, message.executionId, CANCELED))
     }
   }
 }

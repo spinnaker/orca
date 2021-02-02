@@ -23,7 +23,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
-import com.netflix.spinnaker.orca.events.StageComplete
+import com.netflix.spinnaker.orca.events.StageCompletedImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.q.AbortStage
 import com.netflix.spinnaker.orca.q.CancelStage
@@ -135,7 +135,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("emits an event") {
         verify(publisher).publishEvent(
-          check<StageComplete> {
+          check<StageCompletedImpl> {
             assertThat(it.status).isEqualTo(TERMINAL)
           }
         )
@@ -189,7 +189,7 @@ object AbortStageHandlerTest : SubjectSpek<AbortStageHandler>({
 
       it("emits an event") {
         verify(publisher).publishEvent(
-          check<StageComplete> {
+          check<StageCompletedImpl> {
             assertThat(it.status).isEqualTo(TERMINAL)
           }
         )
