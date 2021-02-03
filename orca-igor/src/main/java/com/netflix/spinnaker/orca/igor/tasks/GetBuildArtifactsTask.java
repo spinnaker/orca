@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,15 +49,14 @@ public class GetBuildArtifactsTask extends RetryableIgorTask<CIStageDefinition> 
     if (artifacts == null) {
       artifacts = new ArrayList<>();
     }
-    artifacts.addAll(
-        stageDefinition.getBuildInfo().getArtifacts().stream()
-            .filter(
-                artifact ->
-                    (boolean)
-                        Optional.ofNullable(artifact.getMetadata())
-                            .orElse(Collections.emptyMap())
-                            .getOrDefault("decorated", false))
-            .collect(Collectors.toList()));
+    stageDefinition.getBuildInfo().getArtifacts().stream()
+        .filter(
+            artifact ->
+                (boolean)
+                    Optional.ofNullable(artifact.getMetadata())
+                        .orElse(Collections.emptyMap())
+                        .getOrDefault("decorated", false))
+        .forEach(artifacts::add);
     Map<String, List<Artifact>> outputs = Collections.singletonMap("artifacts", artifacts);
     return TaskResult.builder(ExecutionStatus.SUCCEEDED)
         .context(Collections.emptyMap())
