@@ -427,6 +427,34 @@ class StartAwsCodeBuildTaskSpec extends Specification {
     }) >> igorResponse
   }
 
+  def "should override secondary sources version"() {
+    given:
+    def context = getDefaultContext(false)
+    context.put("secondarySourcesVersionOverride", [
+        [
+            sourceIdentifier: "secondary_source",
+            sourceVersion: "main",
+        ],
+    ] as Serializable)
+    def stage = new StageExecutionImpl(
+        execution,
+        "awsCodeBuild",
+        context
+    )
+
+    when:
+    task.execute(stage)
+
+    then:
+    1 * igorService.startAwsCodeBuild(ACCOUNT, {
+      it.get("secondarySourcesVersionOverride") == [[
+          sourceIdentifier: "secondary_source",
+          sourceVersion: "main",
+      ]]
+    }) >> igorResponse
+  }
+
+
   def getDefaultContext(Boolean sourceOverride = true) {
     [
         account       : ACCOUNT,

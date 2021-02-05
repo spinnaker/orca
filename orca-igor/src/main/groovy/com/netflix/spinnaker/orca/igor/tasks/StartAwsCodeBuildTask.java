@@ -24,6 +24,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.IgorService;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildExecution;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition;
+import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition.AwsCodeBuildSecondarySourceVersionOverride;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition.AwsCodeBuildSource;
 import com.netflix.spinnaker.orca.igor.model.AwsCodeBuildStageDefinition.AwsCodeBuildSourceArtifact;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
@@ -70,6 +71,8 @@ public class StartAwsCodeBuildTask implements Task {
     appendSource(requestInput, stage, stageDefinition.getSource());
 
     appendSecondarySources(requestInput, stage, stageDefinition.getSecondarySources());
+    appendSecondarySourcesVersionOverride(
+        requestInput, stage, stageDefinition.getSecondarySourcesVersionOverride());
 
     appendImage(requestInput, stageDefinition.getImage());
     appendEnvironmentVariables(requestInput, stageDefinition.getEnvironmentVariables());
@@ -154,6 +157,22 @@ public class StartAwsCodeBuildTask implements Task {
     secondarySources.add(source);
     if (!sourceVersion.isEmpty()) {
       secondarySourcesVersion.add(sourceVersion);
+    }
+  }
+
+  private void appendSecondarySourcesVersionOverride(
+      Map<String, Object> requestInput,
+      StageExecution stage,
+      List<AwsCodeBuildSecondarySourceVersionOverride> sources) {
+    if (sources != null) {
+      List<Map<String, String>> secondarySourcesVersion = new ArrayList<>();
+      for (AwsCodeBuildSecondarySourceVersionOverride source : sources) {
+        secondarySourcesVersion.add(
+            Map.ofEntries(
+                Map.entry(SECONDARY_SOURCE_IDENTIFIER, source.getSourceIdentifier()),
+                Map.entry(SECONDARY_SOURCE_VERSION, source.getSourceVersion())));
+      }
+      requestInput.put(SECONDARY_SOURCES_VERSION, secondarySourcesVersion);
     }
   }
 
