@@ -44,7 +44,7 @@ import javax.annotation.Nonnull;
 public interface StageDefinitionBuilder extends SpinnakerExtensionPoint {
 
   default @Nonnull TaskGraph buildTaskGraph(@Nonnull StageExecution stage) {
-    Builder graphBuilder = Builder(FULL);
+    Builder graphBuilder = TaskNode.newBuilder(FULL);
     taskGraph(stage, graphBuilder);
     return graphBuilder.build();
   }

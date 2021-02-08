@@ -20,7 +20,7 @@ import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.ext.withTask
 import com.netflix.spinnaker.orca.pipeline.StageExecutionFactory
@@ -28,7 +28,7 @@ import java.lang.RuntimeException
 
 val singleTaskStage = object : StageDefinitionBuilder {
   override fun getType() = "singleTaskStage"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 }
@@ -39,7 +39,7 @@ val zeroTaskStage = object : StageDefinitionBuilder {
 
 val multiTaskStage = object : StageDefinitionBuilder {
   override fun getType() = "multiTaskStage"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder
       .withTask<DummyTask>("dummy1")
       .withTask<DummyTask>("dummy2")
@@ -49,7 +49,7 @@ val multiTaskStage = object : StageDefinitionBuilder {
 
 val stageWithSyntheticBefore = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticBefore"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
@@ -61,7 +61,7 @@ val stageWithSyntheticBefore = object : StageDefinitionBuilder {
 
 val stageWithSyntheticOnFailure = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticOnFailure"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
@@ -101,7 +101,7 @@ val stageWithSyntheticBeforeAndAfterAndNoTasks = object : StageDefinitionBuilder
 
 val stageWithSyntheticAfter = object : StageDefinitionBuilder {
   override fun getType() = "stageWithSyntheticAfter"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
@@ -121,7 +121,7 @@ val stageWithSyntheticAfter = object : StageDefinitionBuilder {
 
 val stageWithParallelAfter = object : StageDefinitionBuilder {
   override fun getType() = "stageWithParallelAfter"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DummyTask>("dummy")
   }
 
@@ -167,14 +167,14 @@ val stageWithParallelBranches = object : StageDefinitionBuilder {
       }
   }
 
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DummyTask>("post-branch")
   }
 }
 
 val rollingPushStage = object : StageDefinitionBuilder {
   override fun getType() = "rolling"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder
       .withTask<DummyTask>("beforeLoop")
       .withLoop { subGraph ->
@@ -189,14 +189,14 @@ val rollingPushStage = object : StageDefinitionBuilder {
 
 val webhookStage = object : StageDefinitionBuilder {
   override fun getType() = "webhook"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DummyTask>("createWebhook")
   }
 }
 
 val failPlanningStage = object : StageDefinitionBuilder {
   override fun getType() = "failPlanning"
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     throw RuntimeException("o noes")
   }
 }

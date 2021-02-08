@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 class CloudFoundryShareServiceStagePreprocessorTest {
   @Test
   void ensureThatCorrectTasksAreAddedForSharingCloudFoundryService() {
-    TaskNode.Builder expectedBuilder = TaskNode.Builder(TaskNode.GraphType.FULL);
+    TaskNode.Builder expectedBuilder = TaskNode.newBuilder(TaskNode.GraphType.FULL);
     expectedBuilder
         .withTask("shareService", CloudFoundryShareServiceTask.class)
         .withTask("monitorShareService", CloudFoundryMonitorKatoServicesTask.class);

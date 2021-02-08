@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 class CloudFoundryDestroyServiceStagePreprocessorTest {
   @Test
   void ensureThatCorrectTasksAreAddedForDestroyingCloudFoundryService() {
-    TaskNode.Builder expectedBuilder = TaskNode.Builder(TaskNode.GraphType.FULL);
+    TaskNode.Builder expectedBuilder = TaskNode.newBuilder(TaskNode.GraphType.FULL);
     expectedBuilder
         .withTask("destroyService", CloudFoundryDestroyServiceTask.class)
         .withTask("monitorDestroyService", CloudFoundryMonitorKatoServicesTask.class)

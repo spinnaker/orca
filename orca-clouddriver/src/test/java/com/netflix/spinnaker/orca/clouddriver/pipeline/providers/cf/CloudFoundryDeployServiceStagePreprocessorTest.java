@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 class CloudFoundryDeployServiceStagePreprocessorTest {
   @Test
   void ensureThatCorrectTasksAreAddedForDeployingCloudFoundryService() {
-    TaskNode.Builder expectedBuilder = TaskNode.Builder(TaskNode.GraphType.FULL);
+    TaskNode.Builder expectedBuilder = TaskNode.newBuilder(TaskNode.GraphType.FULL);
     expectedBuilder
         .withTask("deployService", CloudFoundryDeployServiceTask.class)
         .withTask("monitorDeployService", CloudFoundryMonitorKatoServicesTask.class)

@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 class CloudFoundryUnshareServiceStagePreprocessorTest {
   @Test
   void ensureThatCorrectTasksAreAddedForUnsharingCloudFoundryService() {
-    TaskNode.Builder expectedBuilder = TaskNode.Builder(TaskNode.GraphType.FULL);
+    TaskNode.Builder expectedBuilder = TaskNode.newBuilder(TaskNode.GraphType.FULL);
     expectedBuilder
         .withTask("unshareService", CloudFoundryUnshareServiceTask.class)
         .withTask("monitorUnshareService", CloudFoundryMonitorKatoServicesTask.class);

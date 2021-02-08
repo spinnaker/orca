@@ -31,7 +31,7 @@ import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.FAILED_CONTINUE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED
@@ -874,7 +874,7 @@ class TestConfig {
 
   @Bean
   fun dummyStage() = object : StageDefinitionBuilder {
-    override fun taskGraph(stage: StageExecution, builder: Builder) {
+    override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
       builder.withTask<DummyTask>("dummy")
     }
 
@@ -898,7 +898,7 @@ class TestConfig {
   fun syntheticFailureStage() = object : StageDefinitionBuilder {
     override fun getType() = "syntheticFailure"
 
-    override fun taskGraph(stage: StageExecution, builder: Builder) {
+    override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
       builder.withTask<DummyTask>("dummy")
     }
 
@@ -920,7 +920,7 @@ class TestConfig {
   @Bean
   fun pipelineStage(@Autowired repository: ExecutionRepository): StageDefinitionBuilder =
     object : CancellableStage, StageDefinitionBuilder {
-      override fun taskGraph(stage: StageExecution, builder: Builder) {
+      override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
         builder.withTask<DummyTask>("dummy")
       }
 

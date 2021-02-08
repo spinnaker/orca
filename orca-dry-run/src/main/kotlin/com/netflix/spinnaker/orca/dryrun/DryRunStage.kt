@@ -18,13 +18,13 @@ package com.netflix.spinnaker.orca.dryrun
 
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageGraphBuilder
-import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode.Builder
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.ext.withTask
 
 class DryRunStage(private val delegate: StageDefinitionBuilder) : StageDefinitionBuilder {
 
-  override fun taskGraph(stage: StageExecution, builder: Builder) {
+  override fun taskGraph(stage: StageExecution, builder: TaskNode.Builder) {
     builder.withTask<DryRunTask>("dry run")
   }
 

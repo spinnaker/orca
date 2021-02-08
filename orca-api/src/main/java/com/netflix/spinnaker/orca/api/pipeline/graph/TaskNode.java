@@ -81,7 +81,7 @@ public interface TaskNode {
     return new TaskDefinition(name, implementingClass);
   }
 
-  static Builder Builder(GraphType type) {
+  static Builder newBuilder(GraphType type) {
     return new Builder(type);
   }
 
@@ -124,7 +124,7 @@ public interface TaskNode {
      * ExecutionStatus#SUCCEEDED} the sub-graph will exit.
      *
      * @param subGraph a lambda that defines the tasks for the sub-graph by adding them to a @{link
-     *     {@link TaskNode#Builder}.
+     *     {@link TaskNode#newBuilder}.
      * @return this builder with the sub-graph appended.
      */
     public Builder withLoop(Consumer<Builder> subGraph) {
