@@ -36,6 +36,11 @@ public class BuildService {
     return igorService.build(master, encode(jobName), queryParams, "");
   }
 
+  public Response build(
+      String master, String jobName, Map<String, String> queryParams, String startTime) {
+    return igorService.build(master, encode(jobName), queryParams, startTime);
+  }
+
   public String stop(String master, String jobName, String queuedBuild, Integer buildNumber) {
     return igorService.stop(master, jobName, queuedBuild, buildNumber, "");
   }
@@ -56,5 +61,10 @@ public class BuildService {
   public List<Artifact> getArtifacts(
       Integer buildNumber, String fileName, String master, String job) {
     return igorService.getArtifacts(buildNumber, fileName, master, encode(job));
+  }
+
+  public Response updateBuild(
+      String master, String jobName, Integer buildNumber, IgorService.UpdatedBuild updatedBuild) {
+    return igorService.update(master, jobName, buildNumber, updatedBuild);
   }
 }
