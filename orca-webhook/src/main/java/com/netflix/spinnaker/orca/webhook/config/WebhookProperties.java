@@ -36,7 +36,7 @@ import org.springframework.http.HttpMethod;
 @Slf4j
 public class WebhookProperties {
   private static List<String> IGNORE_FIELDS =
-      Arrays.asList(
+      List.of(
           "props",
           "enabled",
           "label",
@@ -46,7 +46,7 @@ public class WebhookProperties {
           "parameterValues",
           "permissions",
           "parameterData");
-  private static List<Field> ALL_FIELDS =
+  public static List<Field> ALL_FIELDS =
       Arrays.stream(PreconfiguredWebhook.class.getDeclaredFields())
           .filter(f -> !f.isSynthetic())
           .filter(f -> !IGNORE_FIELDS.contains(f.getName()))
@@ -57,7 +57,7 @@ public class WebhookProperties {
 
   private boolean verifyRedirects = true;
 
-  private int[] defaultRetryStatusCodes = {429};
+  private List<Integer> defaultRetryStatusCodes = List.of(429);
 
   @Data
   @NoArgsConstructor
