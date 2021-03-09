@@ -38,6 +38,7 @@ import com.netflix.spinnaker.orca.interlink.events.DeleteInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
+import com.netflix.spinnaker.orca.interlink.events.RestartStageInterlinkEvent
 import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -250,6 +251,12 @@ class SqlExecutionRepository(
           .where(id.toWhereCondition())
           .and(field("canceled").eq(true))
       )
+    }
+  }
+
+  override fun restartStage(executionId: String, stageId: String) {
+    doForeignAware(RestartStageInterlinkEvent(PIPELINE, executionId, stageId)) {
+      _, _ -> log.debug("restartStage is a no-op for local executions")
     }
   }
 
@@ -558,7 +565,9 @@ class SqlExecutionRepository(
   }
 
   override fun retrieveBufferedExecutions(): MutableList<PipelineExecution> =
-    ExecutionCriteria().setStatuses(BUFFERED)
+    ExecutionCriteria()
+      .setPageSize(100)
+      .setStatuses(BUFFERED)
       .let { criteria ->
         rx.Observable.merge(
           retrieve(ORCHESTRATION, criteria, partitionName),
