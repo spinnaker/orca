@@ -32,7 +32,6 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
@@ -109,8 +108,7 @@ public class WebhookResponseProcessor {
               status.value(), executionId, stageData.url);
       executionStatus = ExecutionStatus.TERMINAL;
     } else if (status.is5xxServerError()
-        || IntStream.of(webhookProperties.getDefaultRetryStatusCodes())
-            .anyMatch(i -> i == status.value())) {
+        || webhookProperties.getDefaultRetryStatusCodes().contains(status.value())) {
       errorMessage =
           format(
               "Error submitting webhook for pipeline %s to %s with status code %s, will retry.",
@@ -176,7 +174,7 @@ public class WebhookResponseProcessor {
     if (status.is2xxSuccessful() || status.is3xxRedirection()) {
 
       // Retrieve status check url
-      if (stageData.waitForCompletion != null && stageData.waitForCompletion) {
+      if (stageData.waitForCompletion) {
         String statusUrl;
         try {
           statusUrl = new WebhookStatusCheckUrlRetriever().getStatusCheckUrl(response, stageData);
