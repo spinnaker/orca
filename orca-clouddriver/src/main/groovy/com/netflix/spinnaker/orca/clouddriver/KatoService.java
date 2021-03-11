@@ -10,17 +10,16 @@ import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import com.netflix.spinnaker.orca.clouddriver.model.Task;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import retrofit.client.Response;
-
-import javax.annotation.Nonnull;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import retrofit.client.Response;
 
 @Component
 public class KatoService {
@@ -32,10 +31,11 @@ public class KatoService {
   private final RetrySupport retrySupport;
   private final ObjectMapper objectMapper;
 
-  public KatoService(KatoRestService katoRestService,
-                     CloudDriverTaskStatusService cloudDriverTaskStatusService,
-                     RetrySupport retrySupport,
-                     ObjectMapper objectMapper) {
+  public KatoService(
+      KatoRestService katoRestService,
+      CloudDriverTaskStatusService cloudDriverTaskStatusService,
+      RetrySupport retrySupport,
+      ObjectMapper objectMapper) {
     this.katoRestService = katoRestService;
     this.cloudDriverTaskStatusService = cloudDriverTaskStatusService;
     this.retrySupport = retrySupport;
@@ -43,19 +43,27 @@ public class KatoService {
   }
 
   public TaskId requestOperations(Collection<? extends Map<String, Map>> operations) {
-    return retrySupport.retry(() ->
-        katoRestService.requestOperations(requestId(operations), operations),
-        3, Duration.ofSeconds(1), false);
+    return retrySupport.retry(
+        () -> katoRestService.requestOperations(requestId(operations), operations),
+        3,
+        Duration.ofSeconds(1),
+        false);
   }
 
-  public TaskId requestOperations(String cloudProvider, Collection<? extends Map<String, Map>> operations) {
-    return retrySupport.retry(() ->
-            katoRestService.requestOperations(requestId(operations), cloudProvider, operations),
-        3, Duration.ofSeconds(1), false);
+  public TaskId requestOperations(
+      String cloudProvider, Collection<? extends Map<String, Map>> operations) {
+    return retrySupport.retry(
+        () -> katoRestService.requestOperations(requestId(operations), cloudProvider, operations),
+        3,
+        Duration.ofSeconds(1),
+        false);
   }
 
-  public SubmitOperationResult submitOperation(@Nonnull String cloudProvider, OperationContext operation) {
-    Response response = katoRestService.submitOperation(requestId(operation), cloudProvider, operation.getOperationType(), operation);
+  public SubmitOperationResult submitOperation(
+      @Nonnull String cloudProvider, OperationContext operation) {
+    Response response =
+        katoRestService.submitOperation(
+            requestId(operation), cloudProvider, operation.getOperationType(), operation);
 
     TaskId taskId;
     try {
@@ -98,17 +106,19 @@ public class KatoService {
     try {
       payloadBytes = OrcaObjectMapper.getInstance().writeValueAsBytes(payload);
     } catch (Exception e) {
-      log.warn("Unable to convert payload '{}' to byte array while computing request operation Id",
+      log.warn(
+          "Unable to convert payload '{}' to byte array while computing request operation Id",
           payload);
     }
 
-    return Hashing.sha256().hashBytes(
-        String.format(
-            "%s-%s-%s",
-            context.getStageId(),
-            context.getStageStartTime(),
-            Arrays.toString(payloadBytes)
-        ).getBytes()
-    ).toString();
+    return Hashing.sha256()
+        .hashBytes(
+            String.format(
+                    "%s-%s-%s",
+                    context.getStageId(),
+                    context.getStageStartTime(),
+                    Arrays.toString(payloadBytes))
+                .getBytes())
+        .toString();
   }
 }
