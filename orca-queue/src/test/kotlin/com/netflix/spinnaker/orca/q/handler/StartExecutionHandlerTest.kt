@@ -93,7 +93,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as running") {
-        verify(repository).updateStatus(pipeline, RUNNING)
+        assertThat(pipeline.status).isEqualTo(RUNNING)
+        verify(repository).updateStatus(pipeline)
       }
 
       it("starts the first stage") {
@@ -263,7 +264,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as TERMINAL") {
-        verify(repository, times(1)).updateStatus(pipeline, TERMINAL)
+        assertThat(pipeline.status).isEqualTo(TERMINAL)
+        verify(repository, times(1)).updateStatus(pipeline)
       }
 
       it("publishes an event with TERMINAL status") {
@@ -348,7 +350,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("does not start the new pipeline") {
-          verify(repository, never()).updateStatus(pipeline, RUNNING)
+          assertThat(pipeline.status).isNotEqualTo(RUNNING)
+          verify(repository, never()).updateStatus(pipeline)
           verify(queue, never()).push(isA<StartStage>())
         }
 
@@ -382,7 +385,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("starts the new pipeline") {
-          verify(repository).updateStatus(pipeline, RUNNING)
+          assertThat(pipeline.status).isEqualTo(RUNNING)
+          verify(repository).updateStatus(pipeline)
           verify(queue).push(isA<StartStage>())
         }
       }
@@ -409,7 +413,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("starts the new pipeline") {
-          verify(repository).updateStatus(pipeline, RUNNING)
+          assertThat(pipeline.status).isEqualTo(RUNNING)
+          verify(repository).updateStatus(pipeline)
           verify(queue).push(isA<StartStage>())
         }
       }

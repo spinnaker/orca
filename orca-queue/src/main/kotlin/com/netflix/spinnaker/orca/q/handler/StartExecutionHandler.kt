@@ -92,11 +92,11 @@ class StartExecutionHandler(
       if (initialStages.isEmpty()) {
         log.warn("No initial stages found (executionId: ${execution.id})")
         execution.updateStatus(TERMINAL)
-        repository.updateStatus(execution, TERMINAL)
+        repository.updateStatus(execution)
         publisher.publishEvent(ExecutionComplete(this, execution))
       } else {
         execution.updateStatus(RUNNING)
-        repository.updateStatus(execution, RUNNING)
+        repository.updateStatus(execution)
         initialStages.forEach { queue.push(StartStage(it)) }
         publisher.publishEvent(ExecutionStarted(this, execution))
       }

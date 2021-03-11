@@ -191,7 +191,7 @@ public class ExecutionLauncher {
       log.error("Failed to start {} {}", execution.getType(), execution.getId(), failure);
     }
     execution.updateStatus(TERMINAL);
-    executionRepository.updateStatus(execution, TERMINAL);
+    executionRepository.updateStatus(execution);
     executionRepository.cancel(execution.getType(), execution.getId(), canceledBy, reason);
     return executionRepository.retrieve(execution.getType(), execution.getId());
   }

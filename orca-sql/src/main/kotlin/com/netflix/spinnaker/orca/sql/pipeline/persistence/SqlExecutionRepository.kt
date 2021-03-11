@@ -260,12 +260,7 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun updateStatus(execution: PipelineExecution, status: ExecutionStatus) {
-    if (execution.status != status) {
-      throw SystemException("execution ${execution.id} with status ${execution.status} " +
-        "has not been updated with new status ${status}")
-    }
-
+  override fun updateStatus(execution: PipelineExecution) {
     withPool(poolName) {
       jooq.transactional {
         storeExecutionInternal(it, execution)
@@ -279,7 +274,7 @@ class SqlExecutionRepository(
         selectExecution(it, type, id)
           ?.let { execution ->
             execution.updateStatus(status)
-            updateStatus(execution, status)
+            updateStatus(execution)
           }
       }
     }

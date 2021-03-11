@@ -63,7 +63,7 @@ class CompleteExecutionHandler(
       } else {
         message.determineFinalStatus(execution) { status ->
           execution.updateStatus(status)
-          repository.updateStatus(execution, status)
+          repository.updateStatus(execution)
           publisher.publishEvent(ExecutionComplete(this, execution))
 
           registry.counter(

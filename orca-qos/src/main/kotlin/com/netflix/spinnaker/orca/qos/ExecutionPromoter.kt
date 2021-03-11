@@ -80,7 +80,7 @@ class DefaultExecutionPromoter(
           result.candidates.forEach {
             log.info("Promoting execution {} for work: {}", value("executionId", it.id), result.reason)
             it.updateStatus(NOT_STARTED)
-            executionRepository.updateStatus(it, NOT_STARTED)
+            executionRepository.updateStatus(it)
             executionLauncher.start(it)
           }
           registry.counter(promotedId).increment(result.candidates.size.toLong())

@@ -91,7 +91,8 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       }
 
       it("updates the execution") {
-        verify(repository).updateStatus(pipeline, stageStatus)
+        assertThat(pipeline.status).isEqualTo(stageStatus)
+        verify(repository).updateStatus(pipeline)
       }
 
       it("publishes an event") {
@@ -167,7 +168,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
       it("waits for the other branch(es)") {
         verify(repository, never()).updateStatus(eq(PIPELINE), eq(pipeline.id), any())
-        verify(repository, never()).updateStatus(any(), any())
+        verify(repository, never()).updateStatus(any())
       }
 
       it("does not publish any events") {
@@ -210,7 +211,8 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
       }
 
       it("updates the pipeline status") {
-        verify(repository).updateStatus(pipeline, stageStatus)
+        assertThat(pipeline.status).isEqualTo(stageStatus)
+        verify(repository).updateStatus(pipeline)
       }
 
       it("publishes an event") {
@@ -261,7 +263,8 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     }
 
     it("updates the execution") {
-      verify(repository).updateStatus(pipeline, TERMINAL)
+      assertThat(pipeline.status).isEqualTo(TERMINAL)
+      verify(repository).updateStatus(pipeline)
     }
 
     it("publishes an event") {
@@ -309,7 +312,8 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
     }
 
     it("updates the execution") {
-      verify(repository).updateStatus(pipeline, SUCCEEDED)
+      assertThat(pipeline.status).isEqualTo(SUCCEEDED)
+      verify(repository).updateStatus(pipeline)
     }
 
     it("publishes an event") {
@@ -364,7 +368,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
 
     it("does not complete the execution") {
       verify(repository, never()).updateStatus(eq(PIPELINE), any(), any())
-      verify(repository, never()).updateStatus(any(), any())
+      verify(repository, never()).updateStatus(any())
     }
 
     it("publishes no events") {
