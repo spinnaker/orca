@@ -141,6 +141,8 @@ public interface PipelineExecution {
 
   StageExecution stageByRef(String refId);
 
+  void updateStatus(@Nonnull ExecutionStatus terminal);
+
   class AuthenticationDetails {
 
     private String user;

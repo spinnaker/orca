@@ -260,19 +260,26 @@ class SqlExecutionRepository(
     }
   }
 
+  override fun updateStatus(execution: PipelineExecution, status: ExecutionStatus) {
+    if (execution.status != status) {
+      throw SystemException("execution ${execution.id} with status ${execution.status} " +
+        "has not been updated with new status ${status}")
+    }
+
+    withPool(poolName) {
+      jooq.transactional {
+        storeExecutionInternal(it, execution)
+      }
+    }
+  }
+
   override fun updateStatus(type: ExecutionType, id: String, status: ExecutionStatus) {
     withPool(poolName) {
       jooq.transactional {
         selectExecution(it, type, id)
           ?.let { execution ->
-            execution.status = status
-            if (status == RUNNING) {
-              execution.isCanceled = false
-              execution.startTime = currentTimeMillis()
-            } else if (status.isComplete && execution.startTime != null) {
-              execution.endTime = currentTimeMillis()
-            }
-            storeExecutionInternal(it, execution)
+            execution.updateStatus(status)
+            updateStatus(execution, status)
           }
       }
     }

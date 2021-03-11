@@ -93,7 +93,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as running") {
-        verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
+        verify(repository).updateStatus(pipeline, RUNNING)
       }
 
       it("starts the first stage") {
@@ -105,6 +105,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           check<ExecutionStarted> {
             assertThat(it.executionType).isEqualTo(message.executionType)
             assertThat(it.executionId).isEqualTo(message.executionId)
+            assertThat(it.execution.startTime).isNotNull()
           }
         )
       }
@@ -262,7 +263,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as TERMINAL") {
-        verify(repository, times(1)).updateStatus(PIPELINE, pipeline.id, TERMINAL)
+        verify(repository, times(1)).updateStatus(pipeline, TERMINAL)
       }
 
       it("publishes an event with TERMINAL status") {
@@ -347,7 +348,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("does not start the new pipeline") {
-          verify(repository, never()).updateStatus(PIPELINE, message.executionId, RUNNING)
+          verify(repository, never()).updateStatus(pipeline, RUNNING)
           verify(queue, never()).push(isA<StartStage>())
         }
 
@@ -381,7 +382,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("starts the new pipeline") {
-          verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
+          verify(repository).updateStatus(pipeline, RUNNING)
           verify(queue).push(isA<StartStage>())
         }
       }
@@ -408,7 +409,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("starts the new pipeline") {
-          verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
+          verify(repository).updateStatus(pipeline, RUNNING)
           verify(queue).push(isA<StartStage>())
         }
       }

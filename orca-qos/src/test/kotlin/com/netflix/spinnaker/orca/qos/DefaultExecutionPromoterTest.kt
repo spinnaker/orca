@@ -74,8 +74,8 @@ class DefaultExecutionPromoterTest : SubjectSpek<DefaultExecutionPromoter>({
         subject.tick()
 
         it("promotes all policy-selected candidate executions via status update") {
-          verify(executionRepository).updateStatus(execution1.type, execution1.id, ExecutionStatus.NOT_STARTED)
-          verify(executionRepository).updateStatus(execution2.type, execution2.id, ExecutionStatus.NOT_STARTED)
+          verify(executionRepository).updateStatus(execution1, ExecutionStatus.NOT_STARTED)
+          verify(executionRepository).updateStatus(execution2, ExecutionStatus.NOT_STARTED)
         }
 
         it("starts the executions immediately") {
