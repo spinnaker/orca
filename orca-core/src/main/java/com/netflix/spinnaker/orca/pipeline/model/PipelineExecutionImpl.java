@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
@@ -235,6 +236,18 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
 
   public void setStatus(@Nonnull ExecutionStatus status) {
     this.status = status;
+  }
+
+  private ExecutionEngine executionEngine = ExecutionEngine.DEFAULT;
+
+  @Override
+  public ExecutionEngine getExecutionEngine() {
+    return executionEngine;
+  }
+
+  @Override
+  public void setExecutionEngine(ExecutionEngine executionEngine) {
+    this.executionEngine = executionEngine;
   }
 
   private AuthenticationDetails authentication;

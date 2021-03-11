@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.DefaultStageResolver;
 import com.netflix.spinnaker.orca.DynamicStageResolver;
 import com.netflix.spinnaker.orca.StageResolver;
 import com.netflix.spinnaker.orca.TaskResolver;
+import com.netflix.spinnaker.orca.api.pipeline.ExecutionRunner;
 import com.netflix.spinnaker.orca.api.pipeline.Task;
 import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.commands.ForceExecutionCancellationCommand;
@@ -40,7 +41,7 @@ import com.netflix.spinnaker.orca.libdiffs.DefaultComparableLooseVersion;
 import com.netflix.spinnaker.orca.listeners.*;
 import com.netflix.spinnaker.orca.pipeline.CompoundExecutionOperator;
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory;
-import com.netflix.spinnaker.orca.pipeline.ExecutionRunner;
+import com.netflix.spinnaker.orca.pipeline.ExecutionEngineRunner;
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
@@ -237,8 +238,13 @@ public class OrcaConfiguration {
   }
 
   @Bean
+  public ExecutionEngineRunner executionEngineRunner(List<ExecutionRunner> executionRunners) {
+    return new ExecutionEngineRunner(executionRunners);
+  }
+
+  @Bean
   public CompoundExecutionOperator compoundExecutionOperator(
-      ExecutionRepository repository, ExecutionRunner runner, RetrySupport retrySupport) {
+      ExecutionRepository repository, ExecutionEngineRunner runner, RetrySupport retrySupport) {
     return new CompoundExecutionOperator(repository, runner, retrySupport);
   }
 }

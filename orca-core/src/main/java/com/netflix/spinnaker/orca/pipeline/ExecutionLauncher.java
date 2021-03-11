@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.exceptions.UserException;
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException;
+import com.netflix.spinnaker.orca.api.pipeline.ExecutionRunner;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
@@ -67,7 +69,7 @@ public class ExecutionLauncher {
   public ExecutionLauncher(
       ObjectMapper objectMapper,
       ExecutionRepository executionRepository,
-      ExecutionRunner executionRunner,
+      ExecutionEngineRunner executionRunner,
       Clock clock,
       ApplicationEventPublisher applicationEventPublisher,
       Optional<PipelineValidator> pipelineValidator,
@@ -215,6 +217,7 @@ public class ExecutionLauncher {
         .withStages((List<Map<String, Object>>) config.get("stages"))
         .withLimitConcurrent(getBoolean(config, "limitConcurrent"))
         .withKeepWaitingPipelines(getBoolean(config, "keepWaitingPipelines"))
+        .withExecutionEngine(getEnum(config, "executionEngine", ExecutionEngine.class))
         .withNotifications((List<Map<String, Object>>) config.get("notifications"))
         .withInitialConfig((Map<String, Object>) config.get("initialConfig"))
         .withOrigin(getString(config, "origin"))
@@ -239,6 +242,9 @@ public class ExecutionLauncher {
     }
     if (config.containsKey("description")) {
       orchestration.setDescription(getString(config, "description"));
+    }
+    if (config.containsKey("executionEngine")) {
+      orchestration.setExecutionEngine(getEnum(config, "executionEngine", ExecutionEngine.class));
     }
 
     for (Map<String, Object> context : getList(config, "stages")) {
@@ -299,6 +305,14 @@ public class ExecutionLauncher {
 
   private final <E extends Enum<E>> E getEnum(Map<String, ?> map, String key, Class<E> type) {
     String value = (String) map.get(key);
-    return value != null ? Enum.valueOf(type, value) : null;
+    if (value != null) {
+      try {
+        return Enum.valueOf(type, value);
+      } catch (IllegalArgumentException e) {
+        log.error(e.getMessage());
+        return null;
+      }
+    }
+    return null;
   }
 }

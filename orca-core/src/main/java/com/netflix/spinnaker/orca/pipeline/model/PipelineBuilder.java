@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import com.google.common.base.Strings;
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
 import java.util.Arrays;
@@ -114,6 +115,12 @@ public class PipelineBuilder {
 
   public PipelineBuilder withKeepWaitingPipelines(boolean waiting) {
     pipeline.setKeepWaitingPipelines(waiting);
+    return this;
+  }
+
+  public PipelineBuilder withExecutionEngine(ExecutionEngine executionEngine) {
+    pipeline.setExecutionEngine(
+        executionEngine != null ? executionEngine : ExecutionEngine.DEFAULT);
     return this;
   }
 

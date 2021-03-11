@@ -16,13 +16,16 @@
 
 package com.netflix.spinnaker.orca.q
 
+import com.netflix.spinnaker.orca.api.pipeline.ExecutionRunner
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngineVersion
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
-import com.netflix.spinnaker.orca.pipeline.ExecutionRunner
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionEngine.v3
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import org.springframework.stereotype.Component
 
 @Component
+@ExecutionEngineVersion(v3)
 class QueueExecutionRunner(
   private val queue: Queue
 ) : ExecutionRunner {

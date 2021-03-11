@@ -52,6 +52,10 @@ public class V1SchemaExecutionGenerator implements ExecutionGenerator {
         "name",
         Optional.ofNullable(configuration.getPipeline().getName()).orElse("Unnamed Execution"));
 
+    if (configuration.getPipeline().getExecutionEngine() != null) {
+      pipeline.put("executionEngine", configuration.getPipeline().getExecutionEngine());
+    }
+
     Configuration c = template.getConfiguration();
     if (c.getConcurrentExecutions().isEmpty()) {
       pipeline.put("limitConcurrent", request.isLimitConcurrent());
