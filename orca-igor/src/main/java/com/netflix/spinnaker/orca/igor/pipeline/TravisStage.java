@@ -15,12 +15,21 @@
  */
 package com.netflix.spinnaker.orca.igor.pipeline;
 
+import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.igor.tasks.StopJenkinsJobTask;
+import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TravisStage extends CIStage {
   public TravisStage(StopJenkinsJobTask stopJenkinsJobTask) {
     super(stopJenkinsJobTask);
+  }
+
+  @Override
+  public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
+    stage.getContext().putIfAbsent("propertyFile", "travis");
+    super.taskGraph(stage, builder);
   }
 }
