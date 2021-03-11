@@ -33,7 +33,7 @@ import java.time.Duration
 @Slf4j
 @Component
 class RunJobTask extends AbstractCloudProviderAwareTask implements RetryableTask {
-
+  public static final String TASK_NAME = "runJob";
   @Autowired
   KatoService kato
 

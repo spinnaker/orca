@@ -16,15 +16,13 @@
 
 package com.netflix.spinnaker.orca.clouddriver.model;
 
+import static com.netflix.spinnaker.orca.clouddriver.model.TestUtils.getResource;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.Resources;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -133,13 +131,5 @@ final class ManifestTest {
     assertThat(manifest.getStatus()).isNotNull();
     assertThat(manifest.getStatus().getStable()).isEqualTo(Manifest.Condition.emptyFalse());
     assertThat(manifest.getStatus().getFailed()).isEqualTo(Manifest.Condition.emptyFalse());
-  }
-
-  private static String getResource(String name) {
-    try {
-      return Resources.toString(ManifestTest.class.getResource(name), StandardCharsets.UTF_8);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }
