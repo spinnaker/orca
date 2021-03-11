@@ -717,25 +717,12 @@ class TaskController {
   }
 
   private OrchestrationViewModel convert(PipelineExecution orchestration) {
-    def variables = [:]
-    for (stage in orchestration.stages) {
-      for (entry in stage.context.entrySet()) {
-        if (shouldReplace(entry, variables)) {
-          variables[entry.key] = entry.value
-        }
-      }
-    }
     new OrchestrationViewModel(
       id: orchestration.id,
       name: orchestration.description,
       application: orchestration.application,
       status: orchestration.getStatus(),
-      variables: variables.collect { key, value ->
-        [
-          "key"  : key,
-          "value": value
-        ]
-      },
+      variables: [:],
       steps: orchestration.stages.tasks.flatten(),
       buildTime: orchestration.buildTime,
       startTime: orchestration.startTime,
