@@ -31,13 +31,11 @@ import com.netflix.spinnaker.orca.igor.ScmService
 import com.netflix.spinnaker.orca.keel.model.Commit
 import com.netflix.spinnaker.orca.keel.model.GitMetadata
 import com.netflix.spinnaker.orca.keel.model.Repo
-import com.netflix.spinnaker.orca.keel.model.SubmitDeliveryConfigBody
 import com.netflix.spinnaker.orca.keel.model.TriggerWithGitData
 import java.net.URL
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.info.ProjectInfoProperties
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
@@ -67,16 +65,16 @@ constructor(
       )
 
       if (context.sendGitInfo) {
+        //todo eb: make this normal and not behind this flag
+        val metadata: MutableMap<String, Any?> = objectMapper.convertValue(deliveryConfig.getOrDefault("metadata", emptyMap<String, Any?>()))
         val gitMetadata = processTriggerGitInfo(trigger, stage)
         log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user with git metadata")
-        keelService.publishDeliveryConfigWithGitMetadata(SubmitDeliveryConfigBody(
-          config = deliveryConfig,
-          gitMetadata = gitMetadata
-        ))
-      } else {
-        log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
-        keelService.publishDeliveryConfig(deliveryConfig)
+        metadata["gitMetadata"] = gitMetadata
+        deliveryConfig["metadata"] = metadata
       }
+
+      log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
+      keelService.publishDeliveryConfig(deliveryConfig)
       TaskResult.builder(ExecutionStatus.SUCCEEDED).context(emptyMap<String, Any?>()).build()
     } catch (e: RetrofitError) {
       handleRetryableFailures(e, context)

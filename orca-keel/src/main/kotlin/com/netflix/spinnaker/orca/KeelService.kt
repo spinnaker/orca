@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca
 
 import com.netflix.spinnaker.orca.keel.model.DeliveryConfig
-import com.netflix.spinnaker.orca.keel.model.SubmitDeliveryConfigBody
 import retrofit.client.Response
 import retrofit.http.Body
 import retrofit.http.DELETE
@@ -29,10 +28,6 @@ interface KeelService {
   @POST("/delivery-configs/")
   @Headers("Accept: application/json")
   fun publishDeliveryConfig(@Body deliveryConfig: DeliveryConfig): Response
-
-  @POST("/delivery-configs/withGitContext")
-  @Headers("Accept: application/json")
-  fun publishDeliveryConfigWithGitMetadata(@Body body: SubmitDeliveryConfigBody): Response
 
   @DELETE("/application/{application}/config")
   fun deleteDeliveryConfig(@Path("application") application: String): Response

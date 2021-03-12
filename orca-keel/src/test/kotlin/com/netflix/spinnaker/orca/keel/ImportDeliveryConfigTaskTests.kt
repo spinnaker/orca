@@ -27,8 +27,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.config.KeelConfiguration
 import com.netflix.spinnaker.orca.igor.ScmService
-import com.netflix.spinnaker.orca.keel.model.GitMetadata
-import com.netflix.spinnaker.orca.keel.model.SubmitDeliveryConfigBody
+import com.netflix.spinnaker.orca.keel.model.DeliveryConfig
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.SpringHttpError
@@ -99,9 +98,6 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
     val keelService: KeelService = mockk(relaxUnitFun = true) {
       every {
         publishDeliveryConfig(any())
-      } returns Response("http://keel", 200, "", emptyList(), null)
-      every {
-        publishDeliveryConfigWithGitMetadata(any())
       } returns Response("http://keel", 200, "", emptyList(), null)
     }
 
@@ -296,13 +292,15 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
       }
 
       context("parsing git metadata") {
-        test("parses corectly") {
-          val result = execute(mutableMapOf("sendGitInfo" to true))
-          val submittedConfig = slot<SubmitDeliveryConfigBody>()
+        test("parses correctly") {
+          execute(mutableMapOf("sendGitInfo" to true))
+          val submittedConfig = slot<DeliveryConfig>()
           verify(exactly = 1) {
-            keelService.publishDeliveryConfigWithGitMetadata(capture(submittedConfig))
+            keelService.publishDeliveryConfig(capture(submittedConfig))
           }
-          expectThat(submittedConfig.captured.gitMetadata).isNotEqualTo(null)
+          val m: Any = submittedConfig.captured.getOrDefault("metadata", emptyMap<String, Any?>())!!
+          val metadata: Map<String, Any?> = objectMapper.convertValue(m)
+          expectThat(metadata["gitMetadata"]).isNotEqualTo(null)
         }
       }
     }
