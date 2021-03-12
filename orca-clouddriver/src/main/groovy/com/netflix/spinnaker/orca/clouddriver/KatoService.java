@@ -64,15 +64,7 @@ public class KatoService {
             requestId(operation), cloudProvider, operation.getOperationType(), operation);
 
     TaskId taskId;
-    try {
-      InputStream body = null;
-      try {
-        body = response.getBody().in();
-      } finally {
-        if (body != null) {
-          body.close();
-        }
-      }
+    try (InputStream body = response.getBody().in()) {
       taskId = objectMapper.readValue(body, TaskId.class);
     } catch (Exception e) {
       throw new IntegrationException("Unable to read response from submitted operation.", e);
