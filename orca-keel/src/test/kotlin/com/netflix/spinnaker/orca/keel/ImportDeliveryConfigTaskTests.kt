@@ -27,6 +27,8 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.config.KeelConfiguration
 import com.netflix.spinnaker.orca.igor.ScmService
+import com.netflix.spinnaker.orca.keel.model.GitMetadata
+import com.netflix.spinnaker.orca.keel.model.SubmitDeliveryConfigBody
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.SpringHttpError
@@ -38,9 +40,8 @@ import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.FORBIDDEN
 import retrofit.RetrofitError
@@ -52,7 +53,10 @@ import strikt.api.expectThrows
 import strikt.assertions.contains
 import strikt.assertions.isA
 import strikt.assertions.isEqualTo
+import strikt.assertions.isNotEqualTo
 import strikt.assertions.isNotNull
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
   data class ManifestLocation(
@@ -95,6 +99,9 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
     val keelService: KeelService = mockk(relaxUnitFun = true) {
       every {
         publishDeliveryConfig(any())
+      } returns Response("http://keel", 200, "", emptyList(), null)
+      every {
+        publishDeliveryConfigWithGitMetadata(any())
       } returns Response("http://keel", 200, "", emptyList(), null)
     }
 
@@ -276,6 +283,26 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
               trigger.hash
             )
           }
+        }
+      }
+    }
+
+    context("with detailed git info in payload field") {
+      val trigger = objectMapper.readValue(javaClass.getResource("/trigger.json"), Trigger::class.java)
+      fixture {
+        Fixture(
+          trigger
+        )
+      }
+
+      context("parsing git metadata") {
+        test("parses corectly") {
+          val result = execute(mutableMapOf("sendGitInfo" to true))
+          val submittedConfig = slot<SubmitDeliveryConfigBody>()
+          verify(exactly = 1) {
+            keelService.publishDeliveryConfigWithGitMetadata(capture(submittedConfig))
+          }
+          expectThat(submittedConfig.captured.gitMetadata).isNotEqualTo(null)
         }
       }
     }

@@ -28,10 +28,16 @@ import com.netflix.spinnaker.orca.api.pipeline.models.SourceCodeTrigger
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.igor.ScmService
+import com.netflix.spinnaker.orca.keel.model.Commit
+import com.netflix.spinnaker.orca.keel.model.GitMetadata
+import com.netflix.spinnaker.orca.keel.model.Repo
+import com.netflix.spinnaker.orca.keel.model.SubmitDeliveryConfigBody
+import com.netflix.spinnaker.orca.keel.model.TriggerWithGitData
 import java.net.URL
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.info.ProjectInfoProperties
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
@@ -60,9 +66,17 @@ constructor(
         context.repoType, context.projectKey, context.repositorySlug, context.directory, context.manifest, context.ref
       )
 
-      log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
-      keelService.publishDeliveryConfig(deliveryConfig)
-
+      if (context.sendGitInfo) {
+        val gitMetadata = processTriggerGitInfo(trigger, stage)
+        log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user with git metadata")
+        keelService.publishDeliveryConfigWithGitMetadata(SubmitDeliveryConfigBody(
+          config = deliveryConfig,
+          gitMetadata = gitMetadata
+        ))
+      } else {
+        log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
+        keelService.publishDeliveryConfig(deliveryConfig)
+      }
       TaskResult.builder(ExecutionStatus.SUCCEEDED).context(emptyMap<String, Any?>()).build()
     } catch (e: RetrofitError) {
       handleRetryableFailures(e, context)
@@ -70,6 +84,33 @@ constructor(
       log.error("Unexpected exception while executing {}, aborting.", javaClass.simpleName, e)
       buildError(e.message ?: "Unknown error (${e.javaClass.simpleName})")
     }
+  }
+
+  private fun processTriggerGitInfo(trigger: Trigger, stage: StageExecution): GitMetadata? {
+    try {
+      val gitTrigger: TriggerWithGitData = objectMapper.convertValue(trigger)
+      with(gitTrigger) {
+        return GitMetadata(
+          commit = hash,
+          author = payload.causedBy.email,
+          project = project,
+          branch = branch,
+          repo = Repo(
+            name = payload.source.repoName,
+          ),
+          commitInfo = Commit(
+            sha = payload.source.sha,
+            link = payload.source.url,
+            message = payload.source.message
+          ),
+          pullRequest = if (payload.pullRequest.number != "-1") payload.pullRequest else null
+        )
+      }
+
+    } catch (e: Exception) {
+      log.debug("Can't pull enough git information out of trigger $trigger for execution ${stage.execution.id} and stage ${stage.id}: {}", e)
+    }
+    return null
   }
 
   /**
@@ -223,7 +264,8 @@ constructor(
     var ref: String? = null,
     var attempt: Int = 1,
     val maxRetries: Int? = MAX_RETRIES,
-    var errorFromLastAttempt: String? = null
+    var errorFromLastAttempt: String? = null,
+    var sendGitInfo: Boolean = false
   )
 
   fun ImportDeliveryConfigContext.incrementAttempt() = this.also { attempt += 1 }
