@@ -27,6 +27,7 @@ class Task {
   Status status
   List<Map> resultObjects
   List<StatusLine> history
+  List<Output> outputs
 
   @Immutable
   static class Status implements Serializable {
@@ -39,5 +40,13 @@ class Task {
   static class StatusLine implements Serializable {
     String phase
     String status
+  }
+
+  @Immutable
+  static class Output implements Serializable {
+    String manifest
+    String phase
+    String stdOut
+    String stdError
   }
 }
