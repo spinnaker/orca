@@ -81,7 +81,7 @@ abstract class AbstractUpdateLaunchSettingsTask implements Task, DeploymentDetai
     def operation = new HashMap(stage.context)
     operation.name = operation.asgName ?: operation.serverGroupName
 
-    operation.instanceTemplate.bootDiskSpec.diskSpec.imageId = getYandexImageId(stage)
+    operation.instanceTemplate.bootDiskSpec.diskSpec.imageId = operation.instanceTemplate.bootDiskSpec.diskSpec.imageId ?: getYandexImageId(stage)
     if (!operation.instanceTemplate.bootDiskSpec.diskSpec.imageId) {
       throw new IllegalStateException("No image could be found in ${stage.context.region}.")
     }
