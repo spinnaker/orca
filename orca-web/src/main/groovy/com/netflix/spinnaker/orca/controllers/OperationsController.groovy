@@ -467,26 +467,26 @@ class OperationsController {
       config = preprocessor.process(config)
     }
 
+    def json = objectMapper.writeValueAsString(config)
     def pipeline = null
     try {
       pipeline = executionLauncher.start(ORCHESTRATION, json)
     } finally {
-      log.info('started execution {} from requested task: {}', pipeline?.id, renderForLogs(config))
+      log.info('started execution {} from requested task: {}', pipeline?.id, renderForLogs(json))
     }
     [ref: "/tasks/${pipeline.id}".toString()]
   }
 
-  private String renderForLogs(Map config) {
+  private String renderForLogs(String json) {
     if (!log.isInfoEnabled()) {
       return
     }
 
-    def json = objectMapper.writeValueAsString(config)
     if (json.length() < 1_000_000) {
-      return json
+      return "(length: ${json.length()}) " + json
     }
 
-    return json[0..50_000] + " (...) " + json[-50_000..-1]
+    return "(original length: ${json.length()}, truncated to first and last 50k) " +json[0..50_000] + " (...) " + json[-50_000..-1]
   }
 
   private void injectPipelineOrigin(Map pipeline) {
