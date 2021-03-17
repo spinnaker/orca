@@ -24,6 +24,7 @@ import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.web.selector.DefaultServiceSelector
 import com.netflix.spinnaker.kork.web.selector.SelectableService
 import com.netflix.spinnaker.kork.web.selector.ServiceSelector
+import com.netflix.spinnaker.orca.api.operations.OperationsRunner
 import com.netflix.spinnaker.orca.clouddriver.*
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
@@ -168,6 +169,11 @@ class CloudDriverConfiguration {
                           RetrySupport retrySupport,
                           ObjectMapper objectMapper) {
     return new KatoService(katoRestService, cloudDriverTaskStatusService, retrySupport, objectMapper)
+  }
+
+  @Bean
+  OperationsRunner katoOperationsService(KatoService katoService) {
+    return new KatoOperationsRunner(katoService)
   }
 
   @Bean
