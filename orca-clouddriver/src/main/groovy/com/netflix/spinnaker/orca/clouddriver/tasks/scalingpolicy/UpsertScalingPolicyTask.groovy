@@ -36,10 +36,10 @@ class UpsertScalingPolicyTask extends AbstractCloudProviderAwareTask implements 
   long backoffPeriod = TimeUnit.SECONDS.toMillis(5)
   long timeout = TimeUnit.SECONDS.toMillis(100)
 
-  private final OperationsRunner operationsService
+  private final OperationsRunner operationsRunner
 
-  UpsertScalingPolicyTask(OperationsRunner operationsService) {
-    this.operationsService = operationsService
+  UpsertScalingPolicyTask(OperationsRunner operationsRunner) {
+    this.operationsRunner = operationsRunner
   }
 
   @Override
@@ -51,7 +51,7 @@ class UpsertScalingPolicyTask extends AbstractCloudProviderAwareTask implements 
           .stageExecution(stage)
           .build()
 
-      OperationsContext operationsContext = operationsService.run(operationsInput)
+      OperationsContext operationsContext = operationsRunner.run(operationsInput)
 
       return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(Map.of(
           operationsContext.contextKey(), operationsContext.contextValue(),

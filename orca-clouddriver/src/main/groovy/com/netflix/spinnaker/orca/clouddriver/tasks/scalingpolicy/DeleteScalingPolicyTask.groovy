@@ -31,10 +31,10 @@ import javax.annotation.Nonnull
 @Component
 class DeleteScalingPolicyTask extends AbstractCloudProviderAwareTask implements Task {
 
-  private final OperationsRunner operationsService
+  private final OperationsRunner operationsRunner
 
-  DeleteScalingPolicyTask(OperationsRunner operationsService) {
-    this.operationsService = operationsService
+  DeleteScalingPolicyTask(OperationsRunner operationsRunner) {
+    this.operationsRunner = operationsRunner
   }
 
   @Nonnull
@@ -46,7 +46,7 @@ class DeleteScalingPolicyTask extends AbstractCloudProviderAwareTask implements 
       .stageExecution(stage)
       .build()
 
-    OperationsContext operationsContext = operationsService.run(operationsInput)
+    OperationsContext operationsContext = operationsRunner.run(operationsInput)
 
     TaskResult.builder(ExecutionStatus.SUCCEEDED).context(Map.of(
         operationsContext.contextKey(), operationsContext.contextValue(),

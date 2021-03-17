@@ -173,7 +173,7 @@ class CloudDriverConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(OperationsRunner.class)
-  OperationsRunner katoOperationsService(KatoService katoService) {
+  OperationsRunner katoOperationsRunner(KatoService katoService) {
     return new KatoOperationsRunner(katoService)
   }
 
