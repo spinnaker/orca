@@ -25,7 +25,7 @@ trait ApplicationNameValidator {
   // just validate the characters and name length.
   Map<String, NameConstraint> cloudProviderNameConstraints = [
       'appengine'   : new NameConstraint(58, '^[a-z0-9]*$'),
-      'aws'         : new NameConstraint(250, '^[a-zA-Z_0-9.]*$'),
+      'aws'         : new NameConstraint(250, '^[a-zA-Z_0-9.-]*$'),
       'dcos'        : new NameConstraint(127, '^[a-z0-9]*$'),
       'gce'         : new NameConstraint(63, '^([a-zA-Z][a-zA-Z0-9]*)?$'),
       'kubernetes'  : new NameConstraint(63, '^([a-zA-Z][a-zA-Z0-9-]*)$'),
