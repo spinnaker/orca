@@ -172,6 +172,7 @@ class CloudDriverConfiguration {
   }
 
   @Bean
+  @ConditionalOnMissingBean(OperationsRunner.class)
   OperationsRunner katoOperationsService(KatoService katoService) {
     return new KatoOperationsRunner(katoService)
   }
