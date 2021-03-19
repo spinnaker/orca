@@ -18,13 +18,11 @@ import static com.netflix.spinnaker.orca.echo.spring.EchoNotifyingStageListener.
 class EchoNotifyingStageListenerSpec extends Specification {
 
   def echoService = Mock(EchoService)
-  def persister = Stub(Persister)
-  def repository = Mock(ExecutionRepository)
   def dynamicConfigService = Mock(DynamicConfigService)
   def contextParameterProcessor =  new ContextParameterProcessor()
 
   @Subject
-  def echoListener = new EchoNotifyingStageListener(echoService, repository, contextParameterProcessor, dynamicConfigService)
+  def echoListener = new EchoNotifyingStageListener(echoService, contextParameterProcessor, dynamicConfigService)
 
   @Shared
   def pipelineStage = new StageExecutionImpl(PipelineExecutionImpl.newPipeline("orca"), "test", "test", [:])
@@ -37,18 +35,15 @@ class EchoNotifyingStageListenerSpec extends Specification {
     def task = new TaskExecutionImpl(status: NOT_STARTED)
 
     when:
-    echoListener.beforeTask(persister, pipelineStage, task)
+    echoListener.beforeTask(pipelineStage, task)
 
     then:
     1 * echoService.recordEvent({ event -> event.details.type == "orca:task:starting" })
   }
 
   def "triggers an event when a stage starts"() {
-    given:
-    def task = new TaskExecutionImpl(stageStart: true)
-
     when:
-    echoListener.beforeStage(persister, pipelineStage)
+    echoListener.beforeStage(pipelineStage)
 
     then:
     1 * echoService.recordEvent({ event -> event.details.type == "orca:stage:starting" })
@@ -63,7 +58,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
     echoService.recordEvent(_) >> { events << it[0]; null }
 
     when:
-    echoListener.beforeTask(persister, pipelineStage, task)
+    echoListener.beforeTask(pipelineStage, task)
 
     then:
     events.size() == 1
@@ -74,22 +69,23 @@ class EchoNotifyingStageListenerSpec extends Specification {
   def "triggers an event when a task completes"() {
     given:
     def task = new TaskExecutionImpl(name: taskName, stageEnd: isEnd)
+    task.status = executionStatus
 
     when:
-    echoListener.afterTask(persister, stage, task, executionStatus, wasSuccessful)
+    echoListener.afterTask(stage, task)
 
     then:
     invocations * echoService.recordEvent(_)
 
     where:
-    invocations | stage              | executionStatus | wasSuccessful | isEnd
-    0           | orchestrationStage | RUNNING         | true          | false
-    1           | orchestrationStage | STOPPED         | true          | false
-    1           | orchestrationStage | SUCCEEDED       | true          | false
-    1           | pipelineStage      | SUCCEEDED       | true          | false
-    1           | pipelineStage      | SUCCEEDED       | true          | true
-    1           | pipelineStage      | TERMINAL        | false         | false
-    1           | orchestrationStage | SUCCEEDED       | true          | true
+    invocations | stage              | executionStatus | isEnd
+    0           | orchestrationStage | RUNNING         | false
+    1           | orchestrationStage | STOPPED         | false
+    1           | orchestrationStage | SUCCEEDED       | false
+    1           | pipelineStage      | SUCCEEDED       | false
+    1           | pipelineStage      | SUCCEEDED       | true
+    1           | pipelineStage      | TERMINAL        | false
+    1           | orchestrationStage | SUCCEEDED       | true
 
     taskName = "xxx"
   }
@@ -97,7 +93,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
   @Unroll
   def "triggers an end stage event"() {
     when:
-    echoListener.afterStage(persister, stage)
+    echoListener.afterStage(stage)
 
     then:
     1 * echoService.recordEvent(_)
@@ -112,6 +108,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
   def "sends the correct data to echo when the task completes"() {
     given:
     def task = new TaskExecutionImpl(name: taskName)
+    task.status = executionStatus
 
     and:
     def message
@@ -121,7 +118,7 @@ class EchoNotifyingStageListenerSpec extends Specification {
     }
 
     when:
-    echoListener.afterTask(persister, stage, task, executionStatus, wasSuccessful)
+    echoListener.afterTask(stage, task)
 
     then:
     1 * dynamicConfigService.getConfig(Boolean, INCLUDE_FULL_EXECUTION_PROPERTY, _) >> fullExecutionToggle
@@ -136,13 +133,13 @@ class EchoNotifyingStageListenerSpec extends Specification {
     (message.content.execution != null) == includesFullExecution
 
     where:
-    stage              | executionStatus | wasSuccessful | echoMessage | standalone | fullExecutionToggle | includesFullExecution
-    orchestrationStage | STOPPED         | true          | "complete"  | true       | true                | true
-    pipelineStage      | SUCCEEDED       | true          | "complete"  | false      | true                | true
-    pipelineStage      | TERMINAL        | false         | "failed"    | false      | true                | true
-    orchestrationStage | STOPPED         | true          | "complete"  | true       | false               | false
-    pipelineStage      | SUCCEEDED       | true          | "complete"  | false      | false               | false
-    pipelineStage      | TERMINAL        | false         | "failed"    | false      | false               | false
+    stage              | executionStatus | echoMessage | standalone | fullExecutionToggle | includesFullExecution
+    orchestrationStage | STOPPED         | "complete"  | true       | true                | true
+    pipelineStage      | SUCCEEDED       | "complete"  | false      | true                | true
+    pipelineStage      | TERMINAL        | "failed"    | false      | true                | true
+    orchestrationStage | STOPPED         | "complete"  | true       | false               | false
+    pipelineStage      | SUCCEEDED       | "complete"  | false      | false               | false
+    pipelineStage      | TERMINAL        | "failed"    | false      | false               | false
     taskName = "xxx"
   }
 }

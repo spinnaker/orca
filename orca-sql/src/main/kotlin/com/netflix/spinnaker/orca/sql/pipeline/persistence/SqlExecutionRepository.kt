@@ -260,22 +260,21 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun updateStatus(type: ExecutionType, id: String, status: ExecutionStatus) {
-    // this is an internal operation, we don't expect to send interlink events to update the status of an execution
-    validateHandledPartitionOrThrow(type, id)
+  override fun updateStatus(execution: PipelineExecution) {
+    withPool(poolName) {
+      jooq.transactional {
+        storeExecutionInternal(it, execution)
+      }
+    }
+  }
 
+  override fun updateStatus(type: ExecutionType, id: String, status: ExecutionStatus) {
     withPool(poolName) {
       jooq.transactional {
         selectExecution(it, type, id)
           ?.let { execution ->
-            execution.status = status
-            if (status == RUNNING) {
-              execution.isCanceled = false
-              execution.startTime = currentTimeMillis()
-            } else if (status.isComplete && execution.startTime != null) {
-              execution.endTime = currentTimeMillis()
-            }
-            storeExecutionInternal(it, execution)
+            execution.updateStatus(status)
+            updateStatus(execution)
           }
       }
     }
@@ -565,7 +564,9 @@ class SqlExecutionRepository(
   }
 
   override fun retrieveBufferedExecutions(): MutableList<PipelineExecution> =
-    ExecutionCriteria().setStatuses(BUFFERED)
+    ExecutionCriteria()
+      .setPageSize(100)
+      .setStatuses(BUFFERED)
       .let { criteria ->
         rx.Observable.merge(
           retrieve(ORCHESTRATION, criteria, partitionName),
@@ -1098,9 +1099,6 @@ class SqlExecutionRepository(
   override fun getPartition(): String? {
     return partitionName
   }
-
-  private fun validateHandledPartitionOrThrow(executionType: ExecutionType, id: String): Boolean =
-    isForeign(executionType, id, true)
 
   private fun validateHandledPartitionOrThrow(execution: PipelineExecution): Boolean =
     isForeign(execution, true)
