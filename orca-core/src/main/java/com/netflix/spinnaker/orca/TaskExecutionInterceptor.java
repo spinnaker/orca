@@ -50,4 +50,7 @@ public interface TaskExecutionInterceptor {
   default TaskResult afterTaskExecution(Task task, StageExecution stage, TaskResult taskResult) {
     return taskResult;
   }
+
+  default void finallyAfterTaskExecution(
+      Task task, StageExecution stage, TaskResult taskResult, Exception e) {}
 }
