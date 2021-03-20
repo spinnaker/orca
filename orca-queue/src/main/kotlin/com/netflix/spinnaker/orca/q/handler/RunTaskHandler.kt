@@ -174,6 +174,7 @@ class RunTaskHandler(
               }
             }
           } catch (e: Exception) {
+            taskException = e;
             val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
             if (exceptionDetails?.shouldRetry == true) {
               log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
@@ -190,7 +191,6 @@ class RunTaskHandler(
                   log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
                 }
               }
-              taskException = e;
               val status = stage.failureStatus(default = TERMINAL)
               stage.context["exception"] = exceptionDetails
               repository.storeStage(stage)
