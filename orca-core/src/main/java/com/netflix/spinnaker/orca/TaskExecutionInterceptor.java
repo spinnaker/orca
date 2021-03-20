@@ -51,6 +51,18 @@ public interface TaskExecutionInterceptor {
     return taskResult;
   }
 
+  /**
+   * hook that is guaranteed to be called, even when a task throws an exception which will cause
+   * afterTaskExecution to not be called.
+   *
+   * <p>As an example you can clear the security context here if you set it in the
+   * beforeTaskExecution hook.
+   *
+   * @param task The task that is being handled.
+   * @param stage The stage for the task execution.
+   * @param taskResult Will be null if the task failed with an exception.
+   * @param e Will be not null if the task failed with an exception.
+   */
   default void finallyAfterTaskExecution(
       Task task, StageExecution stage, TaskResult taskResult, Exception e) {}
 }
