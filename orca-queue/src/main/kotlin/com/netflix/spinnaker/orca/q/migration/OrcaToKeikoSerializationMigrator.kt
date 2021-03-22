@@ -33,7 +33,7 @@ internal val orcaToKeikoTypes = mapOf(
   ".PauseStage" to "pauseStage",
   ".RestartStage" to "restartStage",
   ".ResumeStage" to "resumeStage",
-  ".IgnoreStageFailure" to "ignoreStageFailure"
+  ".IgnoreStageFailure" to "ignoreStageFailure",
   ".CancelStage" to "cancelStage",
   ".StartExecution" to "startExecution",
   ".RescheduleExecution" to "rescheduleExecution",
