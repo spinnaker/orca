@@ -38,6 +38,10 @@ class QueueExecutionRunner(
     queue.push(RestartStage(execution, stageId, AuthenticatedRequest.getSpinnakerUser().orElse(null)))
   }
 
+  override fun ignoreFailure(execution: PipelineExecution, stageId: String) {
+    queue.push(IgnoreStageFailure(execution, stageId, AuthenticatedRequest.getSpinnakerUser().orElse(null)))
+  }
+
   override fun unpause(execution: PipelineExecution) {
     queue.push(ResumeExecution(execution))
   }

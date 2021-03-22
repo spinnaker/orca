@@ -119,6 +119,20 @@ public class CompoundExecutionOperator {
     return execution;
   }
 
+  public PipelineExecution ignoreStageFailure(
+      @Nonnull String executionId, @Nonnull String stageId) {
+    PipelineExecution execution = repository.retrieve(ExecutionType.PIPELINE, executionId);
+    if (repository.handlesPartition(execution.getPartition())) {
+      runner.ignoreFailure(execution, stageId);
+    } else {
+      log.info(
+          "Not pushing queue message action='ignoreFailure' for execution with foreign partition='{}'",
+          execution.getPartition());
+      repository.ignoreStageFailure(executionId, stageId);
+    }
+    return execution;
+  }
+
   private PipelineExecution doInternal(
       Consumer<PipelineExecution> runnerAction,
       Runnable repositoryAction,

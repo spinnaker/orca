@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
 
 import java.nio.charset.Charset
+import java.nio.file.AccessDeniedException
 import java.time.Clock
 import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
@@ -503,6 +504,18 @@ class TaskController {
   PipelineExecution retryPipelineStage(
     @PathVariable String id, @PathVariable String stageId) {
     return executionOperator.restartStage(id, stageId)
+  }
+
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
+  @RequestMapping(value = "/pipelines/{id}/stages/{stageId}/ignoreFailure", method = RequestMethod.PUT)
+  PipelineExecution ignoreFailureOfPipelineStage(
+      @PathVariable String id, @PathVariable String stageId) {
+    pipeline = executionRepository.retrieve(PIPELINE, id)
+    stage = pipeline.stageById(stageId)
+    if (!(boolean) stage.context.getCurrentOnly("allowIgnoreFailure", false)) {
+      throw AccessDeniedException("Stage does not allow ignoreFailure action")
+    }
+    return executionOperator.ignoreStageFailure(id, stageId)
   }
 
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'READ')")

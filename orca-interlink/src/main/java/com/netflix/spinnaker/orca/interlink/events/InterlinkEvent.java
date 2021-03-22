@@ -44,7 +44,8 @@ import javax.validation.constraints.NotNull;
   @JsonSubTypes.Type(value = ResumeInterlinkEvent.class, name = "RESUME"),
   @JsonSubTypes.Type(value = DeleteInterlinkEvent.class, name = "DELETE"),
   @JsonSubTypes.Type(value = PatchStageInterlinkEvent.class, name = "PATCH"),
-  @JsonSubTypes.Type(value = RestartStageInterlinkEvent.class, name = "RESTART")
+  @JsonSubTypes.Type(value = RestartStageInterlinkEvent.class, name = "RESTART"),
+  @JsonSubTypes.Type(value = IgnoreStageFailureInterlinkEvent.class, name = "IGNORE_FAILURE")
 })
 public interface InterlinkEvent {
   enum EventType {
@@ -53,7 +54,8 @@ public interface InterlinkEvent {
     DELETE,
     RESUME,
     PATCH,
-    RESTART
+    RESTART,
+    IGNORE_FAILURE
   }
 
   @JsonIgnore

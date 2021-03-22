@@ -27,6 +27,10 @@ public interface ExecutionRunner {
     throw new UnsupportedOperationException();
   }
 
+  default void ignoreFailure(@Nonnull PipelineExecution execution, @Nonnull String stageId) {
+    throw new UnsupportedOperationException();
+  }
+
   default void reschedule(@Nonnull PipelineExecution execution) {
     throw new UnsupportedOperationException();
   }
