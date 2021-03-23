@@ -146,6 +146,20 @@ class GetBuildPropertiesTaskSpec extends Specification {
     e.message == "Expected properties file $PROPERTY_FILE but it was either missing, empty or contained invalid syntax"
   }
 
+  def "does not fail stage even if properties are not returned from travis and build passed"() {
+    given:
+    def stage = createStage(PROPERTY_FILE, "travis-$MASTER")
+
+    and:
+    buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >> [:]
+
+    when:
+    TaskResult result = task.execute(stage)
+
+    then:
+    result.status == ExecutionStatus.SUCCEEDED
+  }
+
   def "does not fetch properties if the property file is empty"() {
     given:
     def stage = createStage("")
@@ -168,9 +182,9 @@ class GetBuildPropertiesTaskSpec extends Specification {
     0 * buildService.getPropertyFile(*_)
   }
 
-  def createStage(String propertyFile) {
+  def createStage(String propertyFile, String ciMaster = MASTER) {
     return new StageExecutionImpl(Stub(PipelineExecutionImpl), "jenkins", [
-      master: MASTER,
+      master: ciMaster,
       job: JOB,
       buildNumber: BUILD_NUMBER,
       propertyFile: propertyFile

@@ -62,6 +62,9 @@ public class GetBuildPropertiesTask extends RetryableIgorTask<CIStageDefinition>
             stageDefinition.getMaster(),
             stageDefinition.getJob());
     if (properties.size() == 0) {
+      if (stageDefinition.getMaster().startsWith("travis-")) {
+        return TaskResult.builder(ExecutionStatus.SUCCEEDED).build();
+      }
       throw new ConfigurationException(
           String.format(
               "Expected properties file %s but it was either missing, empty or contained invalid syntax",
