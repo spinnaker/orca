@@ -151,7 +151,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
     def stage = createStage(PROPERTY_FILE, "travis-$MASTER")
 
     and:
-    buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >> [:]
+    buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, "travis-$MASTER", JOB) >> [:]
 
     when:
     TaskResult result = task.execute(stage)
