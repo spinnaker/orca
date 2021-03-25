@@ -43,6 +43,7 @@ class IgnoreStageFailureHandler(
 
   override fun handle(message: IgnoreStageFailure) {
     message.withStage { stage ->
+
       if (!stage.status.isHalt) {
         log.warn("Attempting to ignore the failure of stage $stage which is not halted. Will ignore")
       } else if (stage.execution.shouldQueue()) {

@@ -307,11 +307,11 @@ object IgnoreStageFailureHandlerTest : SubjectSpek<IgnoreStageFailureHandler>({
     }
 
     it("Does not change the status of the pipeline because it's already running") {
-      verify(repository, never()).updateStatus()
+      verify(repository, never()).updateStatus(any())
     }
 
     it("sends a StartStage message for all downstream stages") {
-      verify(queue).push()
+      verify(queue).push(any<StartStage>())
     }
   }
 })
