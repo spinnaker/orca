@@ -54,7 +54,7 @@ class IgnoreStageFailureHandler(
         }
       } else {
         stage.status = FAILED_CONTINUE
-        stage.addIgnoreFailureDetails(message.user)
+        stage.addIgnoreFailureDetails(message.user, message.reason)
         repository.storeStage(stage)
 
         val topLevelStage = stage.topLevelStage
@@ -74,10 +74,11 @@ class IgnoreStageFailureHandler(
     }
   }
 
-  private fun StageExecution.addIgnoreFailureDetails(user: String?) {
+  private fun StageExecution.addIgnoreFailureDetails(user: String?, reason: String?) {
     context["ignoreFailureDetails"] = mapOf(
-      "failureIgnoredBy" to (user ?: "anonymous"),
-      "failureIgnoreTime" to clock.millis(),
+      "by" to (user ?: "anonymous"),
+      "reason" to (reason ?: "unspecified"),
+      "time" to clock.millis(),
       "previousException" to context.remove("exception")
     )
   }

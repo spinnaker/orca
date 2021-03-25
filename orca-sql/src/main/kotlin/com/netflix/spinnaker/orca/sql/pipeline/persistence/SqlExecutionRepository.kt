@@ -254,8 +254,8 @@ class SqlExecutionRepository(
     }
   }
 
-  override fun ignoreStageFailure(executionId: String, stageId: String) {
-    doForeignAware(IgnoreStageFailureInterlinkEvent(PIPELINE, executionId, stageId)) {
+  override fun ignoreStageFailure(executionId: String, stageId: String, reason: String?) {
+    doForeignAware(IgnoreStageFailureInterlinkEvent(PIPELINE, executionId, stageId, reason)) {
       _, _ -> log.debug("ignoreStageFailure is a no-op for local executions")
     }
   }

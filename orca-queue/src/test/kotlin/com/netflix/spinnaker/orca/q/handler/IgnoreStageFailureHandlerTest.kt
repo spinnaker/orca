@@ -115,7 +115,7 @@ object IgnoreStageFailureHandlerTest : SubjectSpek<IgnoreStageFailureHandler>({
           status = NOT_STARTED
         }
       }
-      val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com")
+      val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com", null)
 
       beforeGroup {
         whenever(repository.retrieve(message.executionType, message.executionId)) doReturn pipeline
@@ -152,7 +152,7 @@ object IgnoreStageFailureHandlerTest : SubjectSpek<IgnoreStageFailureHandler>({
         endTime = clock.instant().minus(59, MINUTES).toEpochMilli()
       }
     }
-    val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com")
+    val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com", null)
 
     beforeGroup {
       whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
@@ -220,7 +220,7 @@ object IgnoreStageFailureHandlerTest : SubjectSpek<IgnoreStageFailureHandler>({
         status = NOT_STARTED
       }
     }
-    val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com")
+    val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com", null)
 
     beforeGroup {
       whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
@@ -285,7 +285,7 @@ object IgnoreStageFailureHandlerTest : SubjectSpek<IgnoreStageFailureHandler>({
         startTime = clock.instant().minus(1, HOURS).toEpochMilli()
       }
     }
-    val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com")
+    val message = IgnoreStageFailure(pipeline.type, pipeline.id, "foo", pipeline.stageByRef("1").id, "aalhamali@coveo.com", null)
 
     beforeGroup {
       whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline

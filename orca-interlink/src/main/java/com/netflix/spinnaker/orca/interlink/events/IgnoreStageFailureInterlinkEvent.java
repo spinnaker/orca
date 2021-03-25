@@ -43,19 +43,24 @@ public class IgnoreStageFailureInterlinkEvent implements InterlinkEvent {
   @Nonnull ExecutionType executionType;
   @Nonnull String executionId;
   @Nonnull String stageId;
+  String reason;
 
   public IgnoreStageFailureInterlinkEvent(
-      @Nonnull ExecutionType executionType, @Nonnull String executionId, @Nonnull String stageId) {
+      @Nonnull ExecutionType executionType,
+      @Nonnull String executionId,
+      @Nonnull String stageId,
+      String reason) {
     // for the moment, only ExecutionType.PIPELINE can have ignored stages
     // but since we are defining the protocol on the wire here, let's be a bit future proof and
     // accept potentially different execution types
     this.executionType = executionType;
     this.executionId = executionId;
     this.stageId = stageId;
+    this.reason = reason;
   }
 
   @Override
   public void applyTo(CompoundExecutionOperator executionOperator) {
-    executionOperator.ignoreStageFailure(executionId, stageId);
+    executionOperator.ignoreStageFailure(executionId, stageId, reason);
   }
 }

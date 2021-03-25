@@ -256,13 +256,14 @@ data class IgnoreStageFailure(
   override val executionId: String,
   override val application: String,
   override val stageId: String,
-  val user: String?
+  val user: String?,
+  val reason: String?
 ) : Message(), StageLevel {
-  constructor(source: PipelineExecution, stageId: String, user: String?) :
-    this(source.type, source.id, source.application, stageId, user)
+  constructor(source: PipelineExecution, stageId: String, user: String?, reason: String?) :
+    this(source.type, source.id, source.application, stageId, user, reason)
 
-  constructor(stage: StageExecution, user: String?) :
-    this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id, user)
+  constructor(stage: StageExecution, user: String?, reason: String?) :
+    this(stage.execution.type, stage.execution.id, stage.execution.application, stage.id, user, reason)
 }
 
 @JsonTypeName("resumeStage")

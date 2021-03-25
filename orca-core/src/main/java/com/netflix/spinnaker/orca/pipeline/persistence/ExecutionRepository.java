@@ -186,7 +186,7 @@ public interface ExecutionRepository {
   // foreign executions
   default void restartStage(String executionId, String stageId) {}
 
-  default void ignoreStageFailure(String executionId, String stageId) {}
+  default void ignoreStageFailure(String executionId, String stageId, String reason) {}
 
   final class ExecutionCriteria {
     private int pageSize = 3500;
