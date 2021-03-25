@@ -20,9 +20,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spinnaker.config.DefaultServiceEndpoint
 import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.web.selector.DefaultServiceSelector
 import com.netflix.spinnaker.kork.web.selector.SelectableService
 import com.netflix.spinnaker.kork.web.selector.ServiceSelector
+import com.netflix.spinnaker.orca.api.operations.OperationsRunner
 import com.netflix.spinnaker.orca.clouddriver.*
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.retrofit.RetrofitConfiguration
@@ -159,6 +161,20 @@ class CloudDriverConfiguration {
   @Bean
   CloudDriverTaskStatusService cloudDriverTaskStatusService(ClouddriverRetrofitBuilder builder) {
     return new DelegatingCloudDriverTaskStatusService(builder.buildReadOnlyService(CloudDriverTaskStatusService))
+  }
+
+  @Bean
+  KatoService katoService(KatoRestService katoRestService,
+                          CloudDriverTaskStatusService cloudDriverTaskStatusService,
+                          RetrySupport retrySupport,
+                          ObjectMapper objectMapper) {
+    return new KatoService(katoRestService, cloudDriverTaskStatusService, retrySupport, objectMapper)
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(OperationsRunner.class)
+  OperationsRunner katoOperationsRunner(KatoService katoService) {
+    return new KatoOperationsRunner(katoService)
   }
 
   @Bean
