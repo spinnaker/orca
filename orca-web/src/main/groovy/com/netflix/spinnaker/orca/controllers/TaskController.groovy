@@ -510,8 +510,8 @@ class TaskController {
   @RequestMapping(value = "/pipelines/{id}/stages/{stageId}/ignoreFailure", method = RequestMethod.PUT)
   PipelineExecution ignoreFailureOfPipelineStage(
       @PathVariable String id, @PathVariable String stageId) {
-    pipeline = executionRepository.retrieve(PIPELINE, id)
-    stage = pipeline.stageById(stageId)
+    def pipeline = executionRepository.retrieve(PIPELINE, id)
+    def stage = pipeline.stageById(stageId)
     if (!(boolean) stage.context.getCurrentOnly("allowIgnoreFailure", false)) {
       throw AccessDeniedException("Stage does not allow ignoreFailure action")
     }
