@@ -45,7 +45,6 @@ import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
 
 import java.nio.charset.Charset
-import java.nio.file.AccessDeniedException
 import java.time.Clock
 import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
@@ -513,7 +512,7 @@ class TaskController {
     def pipeline = executionRepository.retrieve(PIPELINE, id)
     def stage = pipeline.stageById(stageId)
     if (!(boolean) stage.context.getCurrentOnly("allowIgnoreFailure", false)) {
-      throw AccessDeniedException("Stage does not allow ignoreFailure action")
+      throw new CannotUpdateExecutionStage("Stage does not allow ignoreFailure action")
     }
     return executionOperator.ignoreStageFailure(id, stageId)
   }
