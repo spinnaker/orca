@@ -64,10 +64,8 @@ class IgnoreStageFailureHandler(
         }
 
         val execution = topLevelStage.execution
-        if (execution.status.isHalt) {
-          stage.execution.updateStatus(RUNNING)
-          repository.updateStatus(execution)
-        }
+        stage.execution.updateStatus(RUNNING)
+        repository.updateStatus(execution)
 
         stage.startNext()
       }
