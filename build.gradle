@@ -25,7 +25,7 @@ plugins {
 allprojects {
   apply plugin: 'io.spinnaker.project'
 
-  group = "com.netflix.spinnaker.orca"
+  group = "io.spinnaker.orca"
 
   tasks.withType(JavaExec) {
     if (System.getProperty('DEBUG', 'false') == 'true') {
@@ -47,9 +47,9 @@ subprojects {
     apply plugin: "java-library"
 
     dependencies {
-      implementation(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
-      annotationProcessor(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
-      testAnnotationProcessor(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
+      implementation(platform("io.spinnaker.kork:kork-bom:$korkVersion"))
+      annotationProcessor(platform("io.spinnaker.kork:kork-bom:$korkVersion"))
+      testAnnotationProcessor(platform("io.spinnaker.kork:kork-bom:$korkVersion"))
       implementation("org.slf4j:slf4j-api")
     }
 
