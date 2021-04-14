@@ -51,7 +51,8 @@ import static retrofit.Endpoints.newFixedEndpoint
   "com.netflix.spinnaker.orca.oort.pipeline",
   "com.netflix.spinnaker.orca.oort.tasks",
   "com.netflix.spinnaker.orca.kato.pipeline",
-  "com.netflix.spinnaker.orca.kato.tasks"
+  "com.netflix.spinnaker.orca.kato.tasks",
+  "com.amazon.spinnaker.orca.aws.lambda"
 ])
 @CompileStatic
 @EnableConfigurationProperties([CloudDriverConfigurationProperties, PollerConfigurationProperties])
