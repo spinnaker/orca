@@ -53,8 +53,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.Execu
 import com.netflix.spinnaker.orca.pipeline.persistence.UnpausablePipelineException
 import com.netflix.spinnaker.orca.pipeline.persistence.UnresumablePipelineException
 import de.huxhorn.sulky.ulid.SpinULID
-import java.lang.System.currentTimeMillis
-import java.security.SecureRandom
 import java.time.Duration
 import org.jooq.DSLContext
 import org.jooq.DatePart
@@ -80,7 +78,32 @@ import org.jooq.impl.DSL.value
 import org.slf4j.LoggerFactory
 import rx.Observable
 import java.io.ByteArrayOutputStream
+import java.lang.System.currentTimeMillis
 import java.nio.charset.StandardCharsets
+import java.security.SecureRandom
+import kotlin.collections.Collection
+import kotlin.collections.Iterable
+import kotlin.collections.Iterator
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.MutableList
+import kotlin.collections.chunked
+import kotlin.collections.distinct
+import kotlin.collections.firstOrNull
+import kotlin.collections.forEach
+import kotlin.collections.isEmpty
+import kotlin.collections.isNotEmpty
+import kotlin.collections.listOf
+import kotlin.collections.map
+import kotlin.collections.mapOf
+import kotlin.collections.mutableListOf
+import kotlin.collections.mutableMapOf
+import kotlin.collections.plus
+import kotlin.collections.set
+import kotlin.collections.toList
+import kotlin.collections.toMutableList
+import kotlin.collections.toMutableMap
+import kotlin.collections.toTypedArray
 
 /**
  * A generic SQL [ExecutionRepository].
@@ -426,6 +449,102 @@ class SqlExecutionRepository(
         }
       )
     }
+
+  override fun retrievePipelineConfigIdsForApplication(application: String): List<String> =
+    withPool(poolName) {
+        return jooq.selectDistinct(field("config_id"))
+          .from(PIPELINE.tableName)
+          .where(field("application").eq(application))
+          .fetch(0, String::class.java)
+    }
+
+  /**
+   * this function is meant to support only the following ExecutionCriteria:
+   * 'limit', a.k.a page size and
+   * 'statuses'.
+   *
+   * It runs two queries:
+   * 1. get 'limit' number of executions for n pipeline config ids at a time.
+   * 2. get all the stage information for all the executions returned from 1.
+   *
+   * The first query with only limit execution criteria looks like this:
+      select id, body, compressed_body, compression_type, `partition` from (
+        select config_id, id, body, application, `partition` from (
+          select config_id, id, body, application, `partition`,
+                @row_number := IF(@prev = config_id, @row_number + 1, 1) AS row_number,
+                @prev := config_id // here prev is used to store a config id. row number is incremented based on how many rows are found that have the same config id
+          from pipelines
+          JOIN (SELECT @prev := NULL, @row_number := 0) AS vars)
+          on (application = "myapp" and config_id in ())
+          order by config_id, id desc
+        ) as limited_executions where row_number <= limit
+      ) as configs left outer join pipelines_compressed_executions using (`id`);
+
+
+  * The first query with limit and status execution criteria looks like this:
+      select id, body, compressed_body, compression_type, `partition` from (
+        select config_id, id, body, application, status, `partition` from (
+          select config_id, id, body, application, status, `partition`,
+            @row_number := IF(@prev = config_id, @row_number + 1, 1) AS row_number,
+            @prev := config_id
+          from pipelines
+          JOIN (SELECT @prev := NULL, @row_number := 0) AS vars)
+          on (application = "myapp" and config_id in () and status in ())
+          order by config_id, id desc
+        ) as limited_executions where row_number <=2
+      ) as configs left outer join pipelines_compressed_executions using (`id`);
+   */
+  override fun retrievePipelineExecutionsForApplication(
+    application: String,
+    pipelineConfigIds: List<String>,
+    criteria: ExecutionCriteria
+  ): Collection<PipelineExecution> {
+    // list of relevant fields to be returned
+    val innerFields = listOf(field("config_id"),
+      field("id"),
+      field("body"),
+      field("application"),
+      field("status"),
+      field(name("partition")))
+
+    val vars = listOf(field("@prev := NULL", Integer.TYPE),
+      field("@row_number := 0", Integer.TYPE)
+    )
+
+    // baseQueryPredicate for the flow where there are no statuses in the execution criteria
+    var baseQueryPredicate =  field("application").eq(application)
+      .and(field("config_id").`in`(*pipelineConfigIds.toTypedArray()))
+
+    // baseQueryPredicate for the flow with statuses
+    if (criteria.statuses.isNotEmpty() && criteria.statuses.size != ExecutionStatus.values().size) {
+      val statusStrings = criteria.statuses.map { it.toString() }
+      baseQueryPredicate = baseQueryPredicate
+        .and(field("status").`in`(*statusStrings.toTypedArray()))
+    }
+
+    log.info("getting execution ids")
+    val baseQuery = jooq.select(selectExecutionFields(compressionProperties))
+      .from(
+        jooq.select(innerFields)
+          .from(
+            jooq.select(innerFields +
+              field("@row_number := IF(@prev = config_id, @row_number + 1, 1)", Integer.TYPE) // keep a count of how many rows are found per config id
+                .`as`("row_number") +
+              field("@prev := config_id")
+            )
+              .from(PIPELINE.tableName)
+              .join(jooq.select(vars))
+              .on(baseQueryPredicate)
+              .orderBy(field("config_id"), field("id").desc())
+          )
+          .where(field("row_number").le(criteria.pageSize)) // filter using the count maintained above
+      )
+      .leftOuterJoin(PIPELINE.tableName.compressedExecTable).using(field("id"))
+      .fetch()
+
+    log.info("getting stage information for all the execution ids found")
+    return ExecutionMapper(mapper, stageReadSize,compressionProperties, pipelineRefEnabled).map(baseQuery.intoResultSet(), jooq)
+  }
 
   override fun retrievePipelinesForPipelineConfigId(
     pipelineConfigId: String,

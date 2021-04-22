@@ -92,6 +92,15 @@ public interface ExecutionRepository {
   Observable<PipelineExecution> retrievePipelinesForPipelineConfigId(
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
+  @Nonnull
+  Collection<String> retrievePipelineConfigIdsForApplication(@Nonnull String application);
+
+  @Nonnull
+  Collection<PipelineExecution> retrievePipelineExecutionsForApplication(
+      @Nonnull String application,
+      @Nonnull List<String> pipelineConfigIds,
+      @Nonnull ExecutionCriteria criteria);
+
   /**
    * Returns executions in the time boundary. Redis impl does not respect pageSize or offset params,
    * and returns all executions. Sql impl respects these params.

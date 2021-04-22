@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -374,6 +375,15 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
+  public @Nonnull List<String> retrievePipelineConfigIdsForApplication(
+      @Nonnull String application) {
+    // TODO: not implemented yet - this method, at present, is primarily meant for the
+    // SqlExecutionRepository
+    //  implementation.
+    return List.of();
+  }
+
+  @Override
   public @Nonnull Observable<PipelineExecution> retrievePipelinesForApplication(
       @Nonnull String application) {
     List<Observable<PipelineExecution>> observables =
@@ -477,6 +487,17 @@ public class RedisExecutionRepository implements ExecutionRepository {
     }
 
     return currentObservable;
+  }
+
+  @Override
+  public @NotNull List<PipelineExecution> retrievePipelineExecutionsForApplication(
+      @NotNull String application,
+      @NotNull List<String> pipelineConfigIds,
+      @NotNull ExecutionCriteria executionCriteria) {
+    List<Observable<PipelineExecution>> output = new ArrayList<>();
+    pipelineConfigIds.forEach(
+        configId -> output.add(retrievePipelinesForPipelineConfigId(configId, executionCriteria)));
+    return Observable.merge(output).subscribeOn(Schedulers.io()).toList().toBlocking().single();
   }
 
   /*
