@@ -97,6 +97,13 @@ dependencies {
   testImplementation ("com.squareup.retrofit2:retrofit-mock")
 }
 
+sourceSets {
+  main {
+    java { srcDirs = [] }    // no source dirs for the java compiler
+    groovy { srcDirs = ["src/main/java", "src/main/groovy"] }  // compile   everything in src/ with groovy
+  }
+}
+
 test {
   //The Implementation-Version is set in the MANIFEST.MF for the JAR produced via testing so that
   //assertions can be made against the version (see orca-plugins-test, for example).
