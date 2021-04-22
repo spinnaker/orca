@@ -63,8 +63,9 @@ class TaskControllerSpec extends Specification {
   def registry = new NoopRegistry()
 
   def clock = Clock.fixed(Instant.now(), UTC)
-  int daysOfExecutionHistory = 14
+  def taskControllerConfigurationProperties = new TaskControllerConfigurationProperties()
 
+  int daysOfExecutionHistory = taskControllerConfigurationProperties.getDaysOfExecutionHistory()
   ObjectMapper objectMapper = OrcaObjectMapper.newInstance()
 
   void setup() {
@@ -80,7 +81,7 @@ class TaskControllerSpec extends Specification {
             mapper,
             registry,
             Mock(StageDefinitionBuilderFactory),
-            new TaskControllerConfigurationProperties()
+            taskControllerConfigurationProperties
         )
     ).build()
   }

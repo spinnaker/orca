@@ -603,35 +603,72 @@ class TaskController {
       statuses: (statuses.split(",") as Collection)
     )
 
+    // get all relevant pipeline and strategy configs from front50
     def pipelineConfigIds = front50Service.getPipelines(application, false)*.id as List<String>
     log.info("received ${pipelineConfigIds.size()} pipelines for application: $application from front50")
     def strategyConfigIds = front50Service.getStrategies(application)*.id as List<String>
     log.info("received ${strategyConfigIds.size()} strategies for application: $application from front50")
-    def allIds = pipelineConfigIds + strategyConfigIds
+    def allFrontIds = pipelineConfigIds + strategyConfigIds
 
-    List<String> commonPipelineConfigIds
+    List<PipelineExecution> allPipelineExecutions = []
+
+    // this optimized flow is meant to speed up the execution retrieval process per pipeline config id. It does it in two
+    // steps:
+    // 1. it first compares the list of pipeline ids obtained from front50 with what is stored in orca db itself.
+    // There is no need to process config ids have no executions associated with them. The absence of
+    // a pipeline config id from the orca db indicates the same. So to reduce the number of config ids to process, we
+    // intersect the result obtained from front50 and orca db, which gives us the reduced list. Note: this could be
+    // further optimized by cutting front50 out from the picture completely. But I do not know what other side-effects
+    // that may cause, so am going ahead with the above logic.
+    //
+    // 2. We now process n pipeline configs at a time from this reduced set, since processing one config at a
+    // time was proving to be time consuming for applications with loads of pipelines and executions. In additon to this,
+    // we also make use of a thread pool to do this, so we can parallelize processing of multiple such batches. By doing
+    // this, we move away from the Rx Observable logic that was defined previously.
     if (this.configurationProperties.getOptimizeExecutionRetrieval()) {
-      log.info("running optimized execution retrieval process")
+      log.info("running optimized execution retrieval process with: " +
+          "${this.configurationProperties.getMaxExecutionRetrievalThreads()} threads and processing" +
+          " ${this.configurationProperties.getMaxNumberOfPipelineConfigIdsToProcess()} pipeline config ids at a time")
+
+      List<String> commonIdsInFront50AndOrca
       try {
-        List<String> pipelineConfigIdsInOrca = executionRepository.retrievePipelineConfigIdsForApplication(application)
-        log.info("found ${pipelineConfigIdsInOrca.size()} pipeline config ids for application: $application in orca")
-        commonPipelineConfigIds = allIds.intersect(pipelineConfigIdsInOrca)
-        log.info("found ${commonPipelineConfigIds.size()} pipeline config ids that are common in orca and front50 " +
+        List<String> allOrcaIds = executionRepository.retrievePipelineConfigIdsForApplication(application)
+        log.info("found ${allOrcaIds.size()} pipeline config ids for application: $application in orca")
+        commonIdsInFront50AndOrca = allFrontIds.intersect(allOrcaIds)
+        log.info("found ${commonIdsInFront50AndOrca.size()} pipeline config ids that are common in orca and front50 " +
             "for application: $application." +
-            " Saved ${allIds.size() - commonPipelineConfigIds.size()} extra pipeline config id queries")
+            " Saved ${allFrontIds.size() - commonIdsInFront50AndOrca.size()} extra pipeline config id queries")
       } catch (Exception e) {
         log.warn("retrieving pipeline config ids from orca db failed. using the result obtained from front50 ", e)
-        commonPipelineConfigIds = allIds
+        commonIdsInFront50AndOrca = allFrontIds
+      }
+      def executor = Executors.newFixedThreadPool(this.configurationProperties.getMaxExecutionRetrievalThreads(),
+          new ThreadFactoryBuilder()
+              .setNameFormat("taskcontroller" + "-%d")
+              .build())
+      def futures = new ArrayList(commonIdsInFront50AndOrca.size())
+
+      log.info("processing ${commonIdsInFront50AndOrca.size()} pipeline config ids")
+      commonIdsInFront50AndOrca
+          .collate(this.configurationProperties.getMaxNumberOfPipelineConfigIdsToProcess())
+          .each {
+            def chunkedList = it
+            futures.add(
+                executor.submit({
+                  executionRepository.retrievePipelineExecutionsForApplication(application, chunkedList, executionCriteria)
+                } as Callable))
+          }
+      futures.each {
+        allPipelineExecutions.addAll(it.get())
       }
     } else {
-      commonPipelineConfigIds = allIds
+      allPipelineExecutions = rx.Observable.merge(allFrontIds.collect {
+        log.debug("processing pipeline config id: $it")
+        executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
+      }).subscribeOn(Schedulers.io()).toList().toBlocking().single()
     }
 
-    List<PipelineExecution> allPipelineExecutions = rx.Observable.merge(commonPipelineConfigIds.collect {
-      log.info("processing pipeline config id: $it")
-      executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
-    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
-
+    allPipelineExecutions.sort(startTimeOrId)
     if (!expand) {
       log.info("unexpanding pipeline executions")
       unexpandPipelineExecutions(allPipelineExecutions)

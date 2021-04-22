@@ -192,6 +192,13 @@ class DualExecutionRepository(
     ).distinct { it.id }
   }
 
+  override fun retrievePipelineConfigIdsForApplication(application: String): List<String> {
+    return (
+      primary.retrievePipelineConfigIdsForApplication(application) +
+      previous.retrievePipelineConfigIdsForApplication(application)
+      ).distinct()
+  }
+
   override fun retrievePipelinesForPipelineConfigId(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
@@ -200,6 +207,17 @@ class DualExecutionRepository(
       primary.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria),
       previous.retrievePipelinesForPipelineConfigId(pipelineConfigId, criteria)
     ).distinct { it.id }
+  }
+
+  override fun retrievePipelineExecutionsForApplication(
+    application: String,
+    pipelineConfigIds: List<String>,
+    criteria: ExecutionCriteria
+  ): Collection<PipelineExecution> {
+    return (
+      primary.retrievePipelineExecutionsForApplication(application, pipelineConfigIds, criteria) +
+      previous.retrievePipelineExecutionsForApplication(application, pipelineConfigIds, criteria)
+      ).distinctBy { it.id }
   }
 
   override fun retrievePipelinesForPipelineConfigIdsBetweenBuildTimeBoundary(
