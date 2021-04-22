@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spinnaker.kork.sql.config.RetryProperties
+import com.netflix.spinnaker.kork.sql.test.SqlTestUtil
 import com.netflix.spinnaker.kork.sql.test.SqlTestUtil.TestDatabase
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
@@ -676,13 +677,13 @@ abstract class SqlPipelineExecutionRepositorySpec extends PipelineExecutionRepos
 class MySqlPipelineExecutionRepositorySpec extends SqlPipelineExecutionRepositorySpec {
   @Override
   TestDatabase getDatabase() {
-    return initDualTcMysqlDatabases()
+    return SqlTestUtil.initDualTcMysqlDatabases()
   }
 }
 
 class PgSqlPipelineExecutionRepositorySpec extends SqlPipelineExecutionRepositorySpec {
   @Override
   TestDatabase getDatabase() {
-    return initDualTcPostgresDatabases()
+    return SqlTestUtil.initDualTcPostgresDatabases()
   }
 }
