@@ -18,7 +18,7 @@ dependencies {
   implementation("com.fasterxml.jackson.core:jackson-databind")
   implementation("com.netflix.spectator:spectator-api")
   implementation("com.netflix.frigga:frigga")
-  implementation("com.netflix.spinnaker.kork:kork-exceptions")
+  implementation("io.spinnaker.kork:kork-exceptions")
   implementation("com.squareup.okhttp3:okhttp")
   implementation("commons-codec:commons-codec")
   implementation("javax.validation:validation-api")
@@ -29,5 +29,5 @@ dependencies {
   testImplementation("org.slf4j:slf4j-simple")
   testImplementation("org.spockframework:spock-unitils")
   testImplementation("org.codehaus.groovy:groovy-json")
-  testImplementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
+  testImplementation("io.spinnaker.fiat:fiat-core:$fiatVersion")
 }
