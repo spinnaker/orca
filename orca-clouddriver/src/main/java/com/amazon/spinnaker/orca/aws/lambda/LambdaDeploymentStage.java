@@ -19,7 +19,6 @@
 
 package com.amazon.spinnaker.orca.aws.lambda;
 
-import com.amazon.aws.spinnaker.orca.lambda.upsert.*;
 import com.amazon.spinnaker.orca.aws.lambda.eventconfig.LambdaUpdateEventConfigurationTask;
 import com.amazon.spinnaker.orca.aws.lambda.upsert.*;
 import com.amazon.spinnaker.orca.aws.lambda.verify.LambdaCacheRefreshTask;

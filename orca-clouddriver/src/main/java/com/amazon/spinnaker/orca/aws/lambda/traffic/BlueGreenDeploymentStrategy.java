@@ -19,7 +19,6 @@
 
 package com.amazon.spinnaker.orca.aws.lambda.traffic;
 
-import com.amazon.aws.spinnaker.orca.lambda.traffic.model.*;
 import com.amazon.spinnaker.orca.aws.lambda.CloudDriverProperties;
 import com.amazon.spinnaker.orca.aws.lambda.LambdaCloudOperationOutput;
 import com.amazon.spinnaker.orca.aws.lambda.model.LambdaDefinition;
