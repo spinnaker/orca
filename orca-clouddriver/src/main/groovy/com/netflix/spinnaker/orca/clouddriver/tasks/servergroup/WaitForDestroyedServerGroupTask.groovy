@@ -22,7 +22,8 @@ import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
+
 import com.netflix.spinnaker.orca.clouddriver.utils.ClusterDescriptor
 import com.netflix.spinnaker.orca.clouddriver.utils.ServerGroupDescriptor
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler
@@ -33,7 +34,7 @@ import retrofit.RetrofitError
 
 @Slf4j
 @Component
-class WaitForDestroyedServerGroupTask extends AbstractCloudProviderAwareTask implements RetryableTask {
+class WaitForDestroyedServerGroupTask implements CloudProviderAware, RetryableTask {
   long backoffPeriod = 10000
   long timeout = 1800000
 
@@ -47,6 +48,7 @@ class WaitForDestroyedServerGroupTask extends AbstractCloudProviderAwareTask imp
   TaskResult execute(StageExecution stage) {
     ClusterDescriptor clusterDescriptor = getClusterDescriptor(stage)
     try {
+      //TODO: figure out how to eliminate the response status code handling directly
       def response = oortService.getCluster(
           clusterDescriptor.app,
           clusterDescriptor.account,

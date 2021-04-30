@@ -16,12 +16,15 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
+import com.netflix.spinnaker.orca.api.operations.OperationsContext
+import com.netflix.spinnaker.orca.api.operations.OperationsInput
+import com.netflix.spinnaker.orca.api.operations.OperationsRunner
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
-import com.netflix.spinnaker.orca.clouddriver.KatoService
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
+
 import com.netflix.spinnaker.orca.clouddriver.utils.HealthHelper
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,10 +32,10 @@ import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
-class CreateServerGroupTask extends AbstractCloudProviderAwareTask implements RetryableTask {
+class CreateServerGroupTask implements CloudProviderAware, RetryableTask {
 
   @Autowired
-  KatoService kato
+  OperationsRunner operationsRunner
 
   @Autowired
   List<ServerGroupCreator> serverGroupCreators
@@ -50,13 +53,14 @@ class CreateServerGroupTask extends AbstractCloudProviderAwareTask implements Re
     }
 
     def ops = creator.getOperations(stage)
-    def taskId = kato.requestOperations(cloudProvider, ops)
+    OperationsInput operationsInput = OperationsInput.of(cloudProvider, ops, stage)
+    OperationsContext operationsContext = operationsRunner.run(operationsInput)
 
     Map outputs = [
-        "notification.type"   : "createdeploy",
-        "kato.result.expected": creator.katoResultExpected,
-        "kato.last.task.id"   : taskId,
-        "deploy.account.name" : credentials
+        "notification.type"             : "createdeploy",
+        "kato.result.expected"          : creator.katoResultExpected,
+        (operationsContext.contextKey()): operationsContext.contextValue(),
+        "deploy.account.name"           : credentials
     ]
 
     if (stage.context.suspendedProcesses?.contains("AddToLoadBalancer")) {
