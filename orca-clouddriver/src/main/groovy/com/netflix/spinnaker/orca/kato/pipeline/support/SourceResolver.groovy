@@ -20,7 +20,9 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
@@ -35,6 +37,7 @@ import retrofit.RetrofitError
 @Slf4j
 class SourceResolver {
 
+  @Autowired CloudDriverService cloudDriverService
   @Autowired OortService oortService
   @Autowired ObjectMapper mapper
 
@@ -99,7 +102,7 @@ class SourceResolver {
     }
 
     def targetRegion = stageData.region
-    def regionalAsgs = existingAsgs.findAll { it.region == targetRegion } as List<Map>
+    List<ServerGroup> regionalAsgs = existingAsgs.findAll { it.region == targetRegion }
     if (!regionalAsgs) {
       return null
     }
@@ -110,8 +113,8 @@ class SourceResolver {
       regionalAsgs = onlyEnabled
     }
 
-    def instanceSize = { Map asg -> (asg.instances as Collection)?.size() ?: 0 }
-    def created = { Map asg -> asg.createdTime as Long ?: 0 }
+    def instanceSize = { ServerGroup asg -> asg.instances?.size() ?: 0 }
+    def created = { ServerGroup asg -> asg.createdTime ?: 0 }
     if (stageData.useSourceCapacity) {
       regionalAsgs = regionalAsgs.sort { a1, a2 -> instanceSize(a1) <=> instanceSize(a2) ?: created(a2) <=> created(a1) }
     }
@@ -122,12 +125,10 @@ class SourceResolver {
     )
   }
 
-  List<Map> getExistingAsgs(String app, String account, String cluster, String cloudProvider) throws RetrofitError, JsonParseException, JsonMappingException {
+  List<ServerGroup> getExistingAsgs(String app, String account, String cluster, String cloudProvider) throws RetrofitError, JsonParseException, JsonMappingException {
     try {
-      def response = oortService.getCluster(app, account, cluster, cloudProvider)
-      def json = response.body.in().text
-      def map = mapper.readValue(json, Map)
-      (map.serverGroups as List<Map>).sort { it.createdTime }
+      def map = cloudDriverService.getCluster(app, account, cluster, cloudProvider)
+      map.serverGroups.sort { it.createdTime }
     } catch (RetrofitError re) {
       if (re.kind == RetrofitError.Kind.HTTP && re.response.status == 404) {
         return []

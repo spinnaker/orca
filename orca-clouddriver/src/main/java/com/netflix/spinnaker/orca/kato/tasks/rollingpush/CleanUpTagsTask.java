@@ -18,14 +18,15 @@ package com.netflix.spinnaker.orca.kato.tasks.rollingpush;
 
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
+import com.netflix.spinnaker.orca.clouddriver.model.EntityTags;
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId;
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper;
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver;
 import com.netflix.spinnaker.orca.kato.pipeline.support.StageData;
@@ -37,20 +38,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import retrofit.client.Response;
 
 @Component
-public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements RetryableTask {
+public class CleanUpTagsTask implements CloudProviderAware, RetryableTask {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
   @Autowired KatoService katoService;
 
-  @Autowired OortService oortService;
+  @Autowired CloudDriverService cloudDriverService;
 
   @Autowired SourceResolver sourceResolver;
-
-  @Autowired ObjectMapper objectMapper;
 
   @Autowired MonikerHelper monikerHelper;
 
@@ -62,8 +60,8 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
           Optional.ofNullable(source.getServerGroupName()).orElse(source.getAsgName());
       String cloudProvider = getCloudProvider(stage);
 
-      Response serverGroupResponse =
-          oortService.getServerGroupFromCluster(
+      ServerGroup serverGroup =
+          cloudDriverService.getServerGroupFromCluster(
               monikerHelper.getAppNameFromStage(stage, serverGroupName),
               source.getAccount(),
               monikerHelper.getClusterNameFromStage(stage, serverGroupName),
@@ -71,11 +69,10 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
               source.getRegion(),
               cloudProvider);
 
-      Map serverGroup = objectMapper.readValue(serverGroupResponse.getBody().in(), Map.class);
-      String imageId = (String) ((Map) serverGroup.get("launchConfig")).get("imageId");
+      String imageId = (String) serverGroup.getLaunchConfig().get("imageId");
 
-      List<Map> tags =
-          oortService.getEntityTags(
+      List<EntityTags> tags =
+          cloudDriverService.getEntityTags(
               cloudProvider,
               "servergroup",
               serverGroupName,
@@ -84,10 +81,10 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
 
       List<String> tagsToDelete =
           tags.stream()
-              .flatMap(entityTag -> ((List<Map>) entityTag.get("tags")).stream())
-              .filter(tag -> "astrid_rules".equals(tag.get("namespace")))
+              .flatMap(entityTag -> entityTag.tags.stream())
+              .filter(tag -> "astrid_rules".equals(tag.namespace))
               .filter(hasNonMatchingImageId(imageId))
-              .map(t -> (String) t.get("name"))
+              .map(t -> t.name)
               .collect(Collectors.toList());
 
       log.info("found tags to delete {}", tagsToDelete);
@@ -96,7 +93,7 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
       }
 
       // All IDs should be the same; use the first one
-      String entityId = (String) tags.get(0).get("id");
+      String entityId = tags.get(0).id;
 
       TaskId taskId =
           katoService.requestOperations(cloudProvider, operations(entityId, tagsToDelete));
@@ -121,12 +118,12 @@ public class CleanUpTagsTask extends AbstractCloudProviderAwareTask implements R
     }
   }
 
-  private Predicate<Map> hasNonMatchingImageId(String imageId) {
+  private Predicate<EntityTags.Tag> hasNonMatchingImageId(String imageId) {
     return tag -> {
-      if (!"object".equals(tag.get("valueType"))) {
+      if (EntityTags.ValueType.object != tag.valueType) {
         return false;
       }
-      Map value = ((Map) tag.getOrDefault("value", Collections.EMPTY_MAP));
+      Map value = tag.value instanceof Map ? (Map) tag.value : Collections.emptyMap();
       return value.containsKey("imageId") && !value.get("imageId").equals(imageId);
     };
   }
