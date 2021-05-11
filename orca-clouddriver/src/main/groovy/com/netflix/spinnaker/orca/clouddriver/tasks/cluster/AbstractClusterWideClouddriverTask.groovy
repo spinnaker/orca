@@ -16,19 +16,24 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
+import com.netflix.spinnaker.orca.api.pipeline.Task
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.KatoService
+import com.netflix.spinnaker.orca.clouddriver.model.Cluster
+import com.netflix.spinnaker.orca.clouddriver.model.HealthState
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWideClouddriverOperationStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.cluster.AbstractClusterWideClouddriverOperationStage.ClusterSelection
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CloneServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.CreateServerGroupStage
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
+
 import com.netflix.spinnaker.orca.clouddriver.utils.TrafficGuard
 import com.netflix.spinnaker.orca.kato.pipeline.CopyLastAsgStage
 import groovy.util.logging.Slf4j
@@ -38,7 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired
  * A task that operates on some subset of the ServerGroups in a cluster.
  */
 @Slf4j
-abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderAwareTask implements RetryableTask {
+abstract class AbstractClusterWideClouddriverTask implements RetryableTask, CloudProviderAware, Task {
 
   @Override
   public long getBackoffPeriod() {
@@ -56,9 +61,9 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
     return getClouddriverOperation().toLowerCase()
   }
 
-  @Autowired OortHelper oortHelper
   @Autowired KatoService katoService
   @Autowired TrafficGuard trafficGuard
+  @Autowired CloudDriverService cloudDriverService
 
   protected TaskResult missingClusterResult(StageExecution stage,
                                             ClusterSelection clusterSelection) {
@@ -66,7 +71,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
   }
 
   protected TaskResult emptyClusterResult(StageExecution stage,
-                                          ClusterSelection clusterSelection, Map cluster) {
+                                          ClusterSelection clusterSelection, Cluster cluster) {
     throw new IllegalStateException("No ServerGroups found in cluster $clusterSelection")
   }
 
@@ -74,7 +79,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
   @Override
   TaskResult execute(StageExecution stage) {
     def clusterSelection = stage.mapTo(ClusterSelection)
-    Optional<Map> cluster = oortHelper.getCluster(clusterSelection.getApplication(),
+    Optional<Cluster> cluster = cloudDriverService.maybeCluster(clusterSelection.getApplication(),
                                                   clusterSelection.credentials,
                                                   clusterSelection.cluster,
                                                   clusterSelection.cloudProvider)
@@ -85,7 +90,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
       return missingClusterResult(stage, clusterSelection)
     }
 
-    List<Map> serverGroups = cluster.get().serverGroups
+    List<ServerGroup> serverGroups = cluster.get().serverGroups
     log.debug("Server groups fetched from cluster (${cluster.get().name}): ${serverGroups*.name}")
 
     if (!serverGroups) {
@@ -95,7 +100,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
       return emptyClusterResult(stage, clusterSelection, cluster.get())
     }
 
-    def locations = AbstractClusterWideClouddriverOperationStage.locationsFromStage(stage.context)
+    List<Location> locations = AbstractClusterWideClouddriverOperationStage.locationsFromStage(stage.context)
 
     Location.Type exactLocationType = locations?.getAt(0)?.type
 
@@ -113,7 +118,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
     log.debug("Filtered cluster server groups (excluding parent deploys) in locations ${locations}: ${filteredServerGroups*.name}")
     Map<Location, List<TargetServerGroup>> filteredServerGroupsByLocation = filteredServerGroups.groupBy { it.getLocation(exactLocationType) }
 
-    List<Map<String, Map>> katoOps = filteredServerGroups.collect(this.&buildOperationPayloads.curry(stage)).flatten()
+    List<Map<String, Map>> katoOps = filteredServerGroups.collect { buildOperationPayloads(stage, it) }.flatten()
     log.debug("Kato ops for executionId (${stage.getExecution().getId()}): ${katoOps}")
     if (!katoOps) {
       log.warn("$stage.execution.id: No server groups to operate on from $serverGroupsByLocation in $locations")
@@ -258,7 +263,7 @@ abstract class AbstractClusterWideClouddriverTask extends AbstractCloudProviderA
   }
 
   static boolean isActive(TargetServerGroup serverGroup) {
-    return serverGroup.disabled == false || serverGroup.instances.any { it.healthState == 'Up' }
+    return serverGroup.disabled == false || serverGroup.instances.any { it.healthState == HealthState.Up }
   }
 
   static class IsActive implements Comparator<TargetServerGroup> {

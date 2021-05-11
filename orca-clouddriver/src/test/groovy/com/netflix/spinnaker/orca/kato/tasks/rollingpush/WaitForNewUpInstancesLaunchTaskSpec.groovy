@@ -16,19 +16,17 @@
 
 package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
-import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
+import com.netflix.spinnaker.orca.clouddriver.ModelUtils
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import retrofit.client.Response
-import retrofit.mime.TypedByteArray
 import spock.lang.Specification
 import spock.lang.Unroll
 
 class WaitForNewUpInstancesLaunchTaskSpec extends Specification {
-  def oortService = Mock(OortService)
-  def task = new WaitForNewUpInstancesLaunchTask(oortService: oortService, objectMapper: new ObjectMapper())
+  CloudDriverService cloudDriverService = Mock()
+  def task = new WaitForNewUpInstancesLaunchTask(cloudDriverService: cloudDriverService)
 
   @Unroll
   def 'waits for new instances to be launched and healthy'() {
@@ -46,7 +44,7 @@ class WaitForNewUpInstancesLaunchTaskSpec extends Specification {
 
     def stage = new StageExecutionImpl(PipelineExecutionImpl.newOrchestration("orca"), 'test', context)
 
-    def oortResponse = oortResponse([
+    def oortResponse = ModelUtils.serverGroup([
       instances: currentInstances.collect { [instanceId: it, health: [ [type: 'Discovery', state: healthState] ] ] }
     ])
 
@@ -54,7 +52,7 @@ class WaitForNewUpInstancesLaunchTaskSpec extends Specification {
     def response = task.execute(stage)
 
     then:
-    1 * oortService.getServerGroup(account, region, serverGroup) >> oortResponse
+    1 * cloudDriverService.getServerGroup(account, region, serverGroup) >> oortResponse
     response.status == expectedStatus
 
 
@@ -79,10 +77,4 @@ class WaitForNewUpInstancesLaunchTaskSpec extends Specification {
     cloudProvider = 'aws'
 
   }
-
-  Response oortResponse(Map response) {
-    def bytes = new TypedByteArray('application/json', task.objectMapper.writeValueAsBytes(response))
-    new Response('http://oortse.cx', 200, 'OK', [], bytes)
-  }
-
 }

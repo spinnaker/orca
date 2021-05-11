@@ -16,15 +16,16 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.instance
 
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup.Capacity
 import spock.lang.Specification
 import spock.lang.Unroll
 
-class AbstractWaitingForInstancesTaskSpec extends Specification {
+class WaitingForInstancesTaskHelperSpec extends Specification {
   @Unroll
   void "should correctly calculate #desiredPercentage% of #desired instances to enable/disable"() {
     given:
-    def capacity = [min: min, max: max, desired: desired]
-    def result = AbstractWaitingForInstancesTask.getDesiredInstanceCount(capacity, desiredPercentage)
+    def capacity = Capacity.builder().min(min).max(max).desired(desired).build()
+    def result = WaitingForInstancesTaskHelper.getDesiredInstanceCount(capacity, desiredPercentage)
 
     expect:
     // this is fewest enabled/disabled instances remaining after an autoscaling event
