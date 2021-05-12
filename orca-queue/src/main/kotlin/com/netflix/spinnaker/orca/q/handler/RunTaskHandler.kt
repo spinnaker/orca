@@ -60,6 +60,7 @@ import com.netflix.spinnaker.orca.time.toDuration
 import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import java.lang.Deprecated
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
@@ -103,10 +104,14 @@ class RunTaskHandler(
 
       stage.withAuth {
         stage.withLoggingContext(taskModel) {
+          if (task.javaClass.isAnnotationPresent(Deprecated::class.java)) {
+            log.warn("deprecated-task-run ${task.javaClass.simpleName}")
+          }
           val thisInvocationStartTimeMs = clock.millis()
           val execution = stage.execution
           var taskResult: TaskResult? = null
 
+          var taskException: Exception? = null
           try {
             taskExecutionInterceptors.forEach { t -> stage = t.beforeTaskExecution(task, stage) }
 
@@ -173,6 +178,7 @@ class RunTaskHandler(
               }
             }
           } catch (e: Exception) {
+            taskException = e;
             val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
             if (exceptionDetails?.shouldRetry == true) {
               log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
@@ -189,13 +195,14 @@ class RunTaskHandler(
                   log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
                 }
               }
-
               val status = stage.failureStatus(default = TERMINAL)
               stage.context["exception"] = exceptionDetails
               repository.storeStage(stage)
               queue.push(CompleteTask(message, status, TERMINAL))
               trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
             }
+          } finally {
+            taskExecutionInterceptors.forEach { t -> t.finallyAfterTaskExecution(task, stage, taskResult, taskException) }
           }
         }
       }

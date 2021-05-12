@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.pollers;
 import static com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.PinnedServerGroupTagGenerator.PINNED_CAPACITY_TAG;
 import static java.lang.String.format;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -28,15 +27,15 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService;
+import com.netflix.spinnaker.orca.clouddriver.model.EntityTags;
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup;
 import com.netflix.spinnaker.orca.notifications.AbstractPollingNotificationAgent;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
-import com.netflix.spinnaker.security.User;
-import groovy.util.logging.Slf4j;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -47,14 +46,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @ConditionalOnExpression(value = "${pollers.restore-pinned-server-groups.enabled:false}")
 public class RestorePinnedServerGroupsPoller extends AbstractPollingNotificationAgent {
   private static final Logger log = LoggerFactory.getLogger(RestorePinnedServerGroupsPoller.class);
 
   private final ObjectMapper objectMapper;
-  private final OortService oortService;
+  private final CloudDriverService cloudDriverService;
   private final RetrySupport retrySupport;
   private final ExecutionLauncher executionLauncher;
   private final ExecutionRepository executionRepository;
@@ -70,7 +68,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
   public RestorePinnedServerGroupsPoller(
       NotificationClusterLock notificationClusterLock,
       ObjectMapper objectMapper,
-      OortService oortService,
+      CloudDriverService cloudDriverService,
       RetrySupport retrySupport,
       Registry registry,
       ExecutionLauncher executionLauncher,
@@ -79,20 +77,20 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
     this(
         notificationClusterLock,
         objectMapper,
-        oortService,
+        cloudDriverService,
         retrySupport,
         registry,
         executionLauncher,
         executionRepository,
         username,
-        new PollerSupport(objectMapper, retrySupport, oortService));
+        new PollerSupport(retrySupport, cloudDriverService));
   }
 
   @VisibleForTesting
   public RestorePinnedServerGroupsPoller(
       NotificationClusterLock notificationClusterLock,
       ObjectMapper objectMapper,
-      OortService oortService,
+      CloudDriverService cloudDriverService,
       RetrySupport retrySupport,
       Registry registry,
       ExecutionLauncher executionLauncher,
@@ -102,7 +100,7 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
     super(notificationClusterLock);
 
     this.objectMapper = objectMapper;
-    this.oortService = oortService;
+    this.cloudDriverService = cloudDriverService;
     this.retrySupport = retrySupport;
     this.executionLauncher = executionLauncher;
     this.executionRepository = executionRepository;
@@ -151,19 +149,17 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
       try {
         List<Map<String, Object>> jobs = new ArrayList<>();
         jobs.add(buildDeleteEntityTagsOperation(pinnedServerGroupTag));
-
-        User systemUser = new User();
-        systemUser.setUsername(username);
-        systemUser.setAllowedAccounts(Collections.singletonList(pinnedServerGroupTag.account));
+        var allowedAccount = Collections.singletonList(pinnedServerGroupTag.account);
 
         Optional<ServerGroup> serverGroup =
-            AuthenticatedRequest.propagate(
+            AuthenticatedRequest.runAs(
+                    username,
+                    allowedAccount,
                     () ->
                         pollerSupport.fetchServerGroup(
                             pinnedServerGroupTag.account,
                             pinnedServerGroupTag.location,
-                            pinnedServerGroupTag.serverGroup),
-                    systemUser)
+                            pinnedServerGroupTag.serverGroup))
                 .call();
 
         serverGroup.ifPresent(
@@ -183,12 +179,13 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
             buildCleanupOperation(pinnedServerGroupTag, serverGroup, jobs);
         log.info((String) cleanupOperation.get("name"));
 
-        AuthenticatedRequest.propagate(
+        AuthenticatedRequest.runAs(
+                username,
+                allowedAccount,
                 () ->
                     executionLauncher.start(
                         ExecutionType.ORCHESTRATION,
-                        objectMapper.writeValueAsString(cleanupOperation)),
-                systemUser)
+                        objectMapper.writeValueAsString(cleanupOperation)))
             .call();
 
         triggeredCounter.increment();
@@ -206,13 +203,8 @@ public class RestorePinnedServerGroupsPoller extends AbstractPollingNotification
             () ->
                 retrySupport.retry(
                     () ->
-                        objectMapper.convertValue(
-                            oortService.getEntityTags(
-                                ImmutableMap.<String, String>builder()
-                                    .put("tag:" + PINNED_CAPACITY_TAG, "*")
-                                    .put("entityType", "servergroup")
-                                    .build()),
-                            new TypeReference<List<EntityTags>>() {}),
+                        cloudDriverService.getEntityTags(
+                            Map.of("tag:" + PINNED_CAPACITY_TAG, "*", "entityType", "servergroup")),
                     15,
                     2000,
                     false));
