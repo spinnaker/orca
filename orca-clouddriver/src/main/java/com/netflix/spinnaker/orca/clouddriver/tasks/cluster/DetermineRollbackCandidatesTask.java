@@ -29,12 +29,14 @@ import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.RollbackServerGroupStage;
+import com.netflix.spinnaker.orca.clouddriver.model.Cluster;
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup;
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup.Capacity;
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup.RollbackDetails;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback.PreviousImageRollbackSupport;
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import java.io.IOException;
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,7 +53,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import retrofit.client.Response;
 
 /**
  * The {@code DetermineRollbackCandidatesTask} task determines how one or more regions of a cluster
@@ -71,30 +72,28 @@ import retrofit.client.Response;
  * previous server group (if exists!)
  */
 @Component
-public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareTask
-    implements RetryableTask {
+public class DetermineRollbackCandidatesTask implements CloudProviderAware, RetryableTask {
   private static final Logger logger =
       LoggerFactory.getLogger(DetermineRollbackCandidatesTask.class);
 
   private static final TypeReference<List<ServerGroup>> listOfServerGroupsTypeReference =
-      new TypeReference<List<ServerGroup>>() {};
+      new TypeReference<>() {};
 
-  private final ObjectMapper objectMapper;
   private final RetrySupport retrySupport;
-  private final OortService oortService;
+  private final CloudDriverService cloudDriverService;
   private final PreviousImageRollbackSupport previousImageRollbackSupport;
 
   @Autowired
   public DetermineRollbackCandidatesTask(
       ObjectMapper objectMapper,
       RetrySupport retrySupport,
-      OortService oortService,
+      CloudDriverService cloudDriverService,
       FeaturesService featuresService) {
-    this.objectMapper = objectMapper;
     this.retrySupport = retrySupport;
-    this.oortService = oortService;
+    this.cloudDriverService = cloudDriverService;
     this.previousImageRollbackSupport =
-        new PreviousImageRollbackSupport(objectMapper, oortService, featuresService, retrySupport);
+        new PreviousImageRollbackSupport(
+            objectMapper, cloudDriverService, featuresService, retrySupport);
   }
 
   @Override
@@ -237,7 +236,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Retrieve the details for the best rollback candidate */
   @Nonnull
-  private DetermineRollbackCandidatesTask.RollbackDetails getBestCandidate(
+  private RollbackDetails getBestCandidate(
       String cluster,
       String region,
       ServerGroup serverGroupToRollBack,
@@ -273,18 +272,14 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   private List<ServerGroup> getServerGroups(
       Moniker moniker, String credentials, String cloudProvider) {
     return Optional.ofNullable(fetchClusterInfoWithRetry(moniker, credentials, cloudProvider))
-        .map(clusterInfo -> clusterInfo.get("serverGroups"))
-        .map(this::toServerGroups)
+        .map(Cluster::getServerGroups)
+        .map(
+            serverGroups ->
+                // The list is sorted by creation time, newest first
+                serverGroups.stream()
+                    .sorted(Comparator.comparing((ServerGroup o) -> o.createdTime).reversed())
+                    .collect(Collectors.toList()))
         .orElse(null);
-  }
-
-  /** Deserialize a list of server groups. The list is sorted by creation time, newest first */
-  @Nonnull
-  private List<ServerGroup> toServerGroups(Object obj) {
-    List<ServerGroup> serverGroups =
-        objectMapper.convertValue(obj, listOfServerGroupsTypeReference);
-    serverGroups.sort(Comparator.comparing((ServerGroup o) -> o.createdTime).reversed());
-    return serverGroups;
   }
 
   /** Verify that a rollback is actually possible */
@@ -347,7 +342,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
   }
 
   @Nonnull
-  private DetermineRollbackCandidatesTask.RollbackDetails getDetailsUsingPreviousServerGroups(
+  private RollbackDetails getDetailsUsingPreviousServerGroups(
       List<ServerGroup> candidateServerGroupsInRegion,
       ServerGroup serverGroupToRollBack,
       String cluster,
@@ -362,7 +357,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Check for rollback candidates based on entity tags */
   @Nonnull
-  private DetermineRollbackCandidatesTask.RollbackDetails getDetailsUsingEntityTags(
+  private RollbackDetails getDetailsUsingEntityTags(
       List<ServerGroup> candidateServerGroupsInRegion,
       ServerGroup serverGroupToRollBack,
       ImageDetails imageDetails,
@@ -390,11 +385,14 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
       Moniker moniker, String credentials, String region, String serverGroupName) {
     if (moniker == null && serverGroupName != null) {
       try {
-        Map<String, Object> serverGroup =
+        ServerGroup serverGroup =
             retrySupport.retry(
-                () -> fetchServerGroup(credentials, region, serverGroupName), 5, 1000, false);
+                () -> cloudDriverService.getServerGroup(credentials, region, serverGroupName),
+                5,
+                1000,
+                false);
 
-        moniker = objectMapper.convertValue(serverGroup.get("moniker"), Moniker.class);
+        return serverGroup.getMoniker();
       } catch (Exception e) {
         logger.warn(
             "Failed to fetch server group, retrying! (account: {}, region: {}, serverGroup: {})",
@@ -410,11 +408,13 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Get info about cluster */
   @Nullable
-  private Map<String, Object> fetchClusterInfoWithRetry(
+  private Cluster fetchClusterInfoWithRetry(
       Moniker moniker, String credentials, String cloudProvider) {
     try {
       return retrySupport.retry(
-          () -> fetchCluster(moniker.getApp(), credentials, moniker.getCluster(), cloudProvider),
+          () ->
+              cloudDriverService.getCluster(
+                  moniker.getApp(), credentials, moniker.getCluster(), cloudProvider),
           5,
           1000,
           false);
@@ -427,25 +427,6 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
           cloudProvider,
           e);
       return null;
-    }
-  }
-
-  private Map<String, Object> fetchCluster(
-      String application, String credentials, String cluster, String cloudProvider) {
-    try {
-      Response response = oortService.getCluster(application, credentials, cluster, cloudProvider);
-      return (Map<String, Object>) objectMapper.readValue(response.getBody().in(), Map.class);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private Map<String, Object> fetchServerGroup(String account, String region, String serverGroup) {
-    try {
-      Response response = oortService.getServerGroup(account, region, serverGroup);
-      return (Map<String, Object>) objectMapper.readValue(response.getBody().in(), Map.class);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
   }
 
@@ -539,7 +520,7 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
 
   /** Helper function useful for filtering streams */
   private static Predicate<ServerGroup> exclude(ServerGroup group) {
-    return s -> !(s.name.equalsIgnoreCase(group.name));
+    return s -> !s.getName().equalsIgnoreCase(group.getName());
   }
 
   private static class StageData {
@@ -552,67 +533,5 @@ public class DetermineRollbackCandidatesTask extends AbstractCloudProviderAwareT
     public Moniker moniker;
     public List<String> regions;
     public Map<String, Object> additionalRollbackContext;
-  }
-
-  private static class ServerGroup {
-    public String name;
-    public String region;
-    public Long createdTime;
-    public Boolean disabled;
-
-    public Capacity capacity;
-    public Image image;
-    public BuildInfo buildInfo;
-
-    public String getImageName() {
-      return (image != null && image.name != null) ? image.name : null;
-    }
-
-    public String getBuildNumber() {
-      return (buildInfo != null && buildInfo.jenkins != null) ? buildInfo.jenkins.number : null;
-    }
-  }
-
-  public static class Capacity {
-    public Integer min;
-    public Integer max;
-    public Integer desired;
-  }
-
-  private static class Image {
-    public String imageId;
-    public String name;
-  }
-
-  private static class BuildInfo {
-    public Jenkins jenkins;
-
-    private static class Jenkins {
-      public String number;
-    }
-  }
-
-  private static class RollbackDetails {
-    RollbackServerGroupStage.RollbackType rollbackType;
-    Map<String, String> rollbackContext;
-
-    String imageName;
-    String buildNumber;
-
-    RollbackDetails(
-        RollbackServerGroupStage.RollbackType rollbackType,
-        Map<String, String> rollbackContext,
-        String imageName,
-        String buildNumber) {
-      this.rollbackType = rollbackType;
-      this.rollbackContext = rollbackContext;
-      this.imageName = imageName;
-      this.buildNumber = buildNumber;
-    }
-
-    RollbackDetails(String imageName, String buildNumber) {
-      this.imageName = imageName;
-      this.buildNumber = buildNumber;
-    }
   }
 }
