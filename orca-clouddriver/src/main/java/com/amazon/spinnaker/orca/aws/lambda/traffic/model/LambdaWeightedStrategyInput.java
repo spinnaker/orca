@@ -20,14 +20,14 @@
 package com.amazon.spinnaker.orca.aws.lambda.traffic.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 @Data
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class LambdaWeightedStrategyInput extends LambdaBaseStrategyInput {
   String credentials, account, region;
   String appName;

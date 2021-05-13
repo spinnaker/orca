@@ -20,11 +20,15 @@
 package com.amazon.spinnaker.orca.aws.lambda.upsert.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LambdaUpdateCodeInput {
   private String account, appName, credentials, region, functionName, s3bucket, s3key;

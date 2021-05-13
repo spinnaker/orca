@@ -20,13 +20,13 @@
 package com.amazon.spinnaker.orca.aws.lambda.traffic.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class LambdaBlueGreenStrategyInput extends LambdaBaseStrategyInput {
 

@@ -21,11 +21,15 @@ package com.amazon.spinnaker.orca.aws.lambda.traffic.model;
 
 import com.amazon.spinnaker.orca.aws.lambda.LambdaCloudOperationOutput;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LambdaDeploymentStrategyOutput {
   LambdaCloudOperationOutput output;
