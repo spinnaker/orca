@@ -1,24 +1,16 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.kork.annotations.VisibleForTesting;
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask;
 import com.netflix.spinnaker.orca.api.pipeline.SkippableTask;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
-import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
-import com.netflix.spinnaker.orca.clouddriver.utils.ServerGroupDescriptor;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService;
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler;
-import java.io.IOException;
 import java.util.Collections;
-import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,24 +18,14 @@ import retrofit.RetrofitError;
 
 @Component
 @Slf4j
-public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTask
-    implements RetryableTask, SkippableTask {
-  private final OortService oortService;
-  private final ObjectMapper objectMapper;
-  private final ServerGroupFetcher serverGroupFetcher;
+public class WaitForDisabledServerGroupTask
+    implements CloudProviderAware, RetryableTask, SkippableTask {
+
+  private final CloudDriverService cloudDriverService;
 
   @Autowired
-  WaitForDisabledServerGroupTask(OortService oortService, ObjectMapper objectMapper) {
-    this(oortService, objectMapper, null);
-  }
-
-  @VisibleForTesting
-  WaitForDisabledServerGroupTask(
-      OortService oortService, ObjectMapper objectMapper, ServerGroupFetcher serverGroupFetcher) {
-    this.oortService = oortService;
-    this.objectMapper = objectMapper;
-    this.serverGroupFetcher =
-        serverGroupFetcher == null ? new ServerGroupFetcher() : serverGroupFetcher;
+  WaitForDisabledServerGroupTask(CloudDriverService cloudDriverService) {
+    this.cloudDriverService = cloudDriverService;
   }
 
   @Override
@@ -72,17 +54,17 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
 
     // we have established that this is a full disable, so we need to enforce that the server group
     // is actually disabled
-    val serverGroupDescriptor = getServerGroupDescriptor(stage);
+    var serverGroupDescriptor = getServerGroupDescriptor(stage);
     try {
-      var serverGroup = serverGroupFetcher.fetchServerGroup(serverGroupDescriptor);
-      return serverGroup.isDisabled() ? TaskResult.SUCCEEDED : TaskResult.RUNNING;
+      var serverGroup = cloudDriverService.getServerGroup(serverGroupDescriptor);
+      return serverGroup.getDisabled() ? TaskResult.SUCCEEDED : TaskResult.RUNNING;
     } catch (RetrofitError e) {
-      val retrofitErrorResponse = new RetrofitExceptionHandler().handle(stage.getName(), e);
+      var retrofitErrorResponse = new RetrofitExceptionHandler().handle(stage.getName(), e);
       log.error("Unexpected retrofit error {}", retrofitErrorResponse, e);
       return TaskResult.builder(ExecutionStatus.RUNNING)
           .context(Collections.singletonMap("lastRetrofitException", retrofitErrorResponse))
           .build();
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.error("Unexpected exception", e);
       return TaskResult.builder(ExecutionStatus.RUNNING)
           .context(Collections.singletonMap("lastException", e))
@@ -105,22 +87,6 @@ public class WaitForDisabledServerGroupTask extends AbstractCloudProviderAwareTa
         throw new IllegalArgumentException(
             "desiredPercentage is expected to be in [0, 100] but found " + desiredPercentage);
       }
-    }
-  }
-
-  // separating it out for testing purposes
-  class ServerGroupFetcher {
-    TargetServerGroup fetchServerGroup(ServerGroupDescriptor serverGroupDescriptor)
-        throws IOException {
-      val response =
-          oortService.getServerGroup(
-              serverGroupDescriptor.getAccount(),
-              serverGroupDescriptor.getRegion(),
-              serverGroupDescriptor.getName());
-      var serverGroupData =
-          objectMapper.readValue(
-              response.getBody().in(), new TypeReference<Map<String, Object>>() {});
-      return new TargetServerGroup(serverGroupData);
     }
   }
 }

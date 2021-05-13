@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.ServerGroupCreator
 import com.netflix.spinnaker.orca.clouddriver.tasks.servergroup.WaitForRequiredInstancesDownTask
@@ -71,7 +72,7 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
   @Override
   boolean isServerGroupOperationInProgress(StageExecution stage,
                                            List<Map> interestingHealthProviderNames,
-                                           Optional<TargetServerGroup> serverGroup) {
+                                           Optional<ServerGroup> serverGroup) {
     // null vs empty interestingHealthProviderNames do mean very different things to Spinnaker
     // a null value will result in Spinnaker waiting for discovery + platform, etc. whereas an empty will not wait for anything.
     if (interestingHealthProviderNames != null && interestingHealthProviderNames.isEmpty()) {
@@ -84,13 +85,14 @@ class WaitForClusterDisableTask extends AbstractWaitForClusterWideClouddriverTas
 
     // make sure that we wait for the disabled flag to be set
     def targetServerGroup = serverGroup.get()
-    if (environment.getProperty(TOGGLE, Boolean, false) && !targetServerGroup.isDisabled()) {
+    if (environment.getProperty(TOGGLE, Boolean, false) && !targetServerGroup.getDisabled()) {
       return RUNNING
     }
 
     // we want to make sure instances are down
     // to prevent downstream stages (e.g. scaleDownCluster) from having to deal with disabled-but-instances-up server groups
     // note that waitForRequiredInstancesDownTask knows how to deal with desiredPercentages, interestingHealthProviderNames, etc.
-    return !waitForRequiredInstancesDownTask.hasSucceeded(stage, targetServerGroup as Map, targetServerGroup.getInstances(), interestingHealthProviderNames)
+
+    return !waitForRequiredInstancesDownTask.hasSucceeded(stage, targetServerGroup, targetServerGroup.getInstances(), interestingHealthProviderNames)
   }
 }

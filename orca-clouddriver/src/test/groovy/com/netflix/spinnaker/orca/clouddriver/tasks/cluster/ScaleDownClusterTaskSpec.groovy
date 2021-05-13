@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 import java.util.concurrent.atomic.AtomicInteger
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
@@ -28,9 +27,8 @@ import spock.lang.Unroll
 
 class ScaleDownClusterTaskSpec extends Specification {
 
-  OortHelper oortHelper = Mock(OortHelper)
   @Subject
-  ScaleDownClusterTask task = new ScaleDownClusterTask(oortHelper: oortHelper)
+  ScaleDownClusterTask task = new ScaleDownClusterTask()
 
   @Unroll
   def 'extracts config from context'() {
@@ -74,7 +72,7 @@ class ScaleDownClusterTaskSpec extends Specification {
 
   TargetServerGroup sg(boolean disabled = false, int instances = 10) {
     new TargetServerGroup(name: 'foo-v' + inc.incrementAndGet(), region: 'us-east-1', createdTime: inc.incrementAndGet(), disabled: disabled, instances: (0..instances).collect {
-      [[id: 'i' + inc.incrementAndGet(), healthState: disabled ? 'OutOfService' : 'Up']]
+      [id: 'i' + inc.incrementAndGet(), healthState: (disabled ? 'OutOfService' : 'Up')]
     })
   }
 }

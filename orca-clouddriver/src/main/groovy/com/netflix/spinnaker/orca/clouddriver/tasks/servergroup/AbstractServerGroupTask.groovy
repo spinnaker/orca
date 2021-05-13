@@ -17,21 +17,24 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.netflix.spinnaker.moniker.Moniker
+import com.netflix.spinnaker.orca.api.operations.OperationsContext
+import com.netflix.spinnaker.orca.api.operations.OperationsInput
+import com.netflix.spinnaker.orca.api.operations.OperationsRunner
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
-import com.netflix.spinnaker.orca.clouddriver.KatoService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location.Type
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
+
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import org.springframework.beans.factory.annotation.Autowired
 
-abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask implements RetryableTask {
+abstract class AbstractServerGroupTask implements CloudProviderAware, RetryableTask {
 
   @Override
   long getBackoffPeriod() {
@@ -44,7 +47,7 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
   }
 
   @Autowired
-  KatoService kato
+  OperationsRunner operationsRunner
 
   @Autowired
   RetrySupport retrySupport
@@ -78,15 +81,16 @@ abstract class AbstractServerGroupTask extends AbstractCloudProviderAwareTask im
       return TaskResult.ofStatus(ExecutionStatus.SUCCEEDED)
     }
 
-    def taskId = kato.requestOperations(cloudProvider, [[(serverGroupAction): operation]])
+    OperationsInput operationsInput = OperationsInput.of(cloudProvider, [[(serverGroupAction): operation]], stage)
+    OperationsContext operationsContext = operationsRunner.run(operationsInput)
 
     def stageOutputs = [
-        "notification.type"   : serverGroupAction.toLowerCase(),
-        "kato.last.task.id"   : taskId,
-        "deploy.account.name" : account,
-        "asgName"             : operation.serverGroupName,
-        "serverGroupName"     : operation.serverGroupName,
-        "deploy.server.groups": deployServerGroups(operation)
+        "notification.type"             : serverGroupAction.toLowerCase(),
+        (operationsContext.contextKey()): operationsContext.contextValue(),
+        "deploy.account.name"           : account,
+        "asgName"                       : operation.serverGroupName,
+        "serverGroupName"               : operation.serverGroupName,
+        "deploy.server.groups"          : deployServerGroups(operation)
     ]
     if (addTargetOpOutputs) {
       stageOutputs = stageOutputs + [

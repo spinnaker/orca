@@ -1,15 +1,15 @@
 package com.netflix.spinnaker.orca.kato.tasks.rollingpush
 
-import com.fasterxml.jackson.databind.ObjectMapper
+
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.KatoService
-import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.clouddriver.ModelUtils
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.clouddriver.model.TaskId
 import com.netflix.spinnaker.orca.clouddriver.utils.MonikerHelper
 import com.netflix.spinnaker.orca.kato.pipeline.support.SourceResolver
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
-import retrofit.client.Response
-import retrofit.mime.TypedByteArray
 import spock.lang.Specification
 
 class CleanUpTagsTaskSpec extends Specification {
@@ -30,7 +30,7 @@ class CleanUpTagsTaskSpec extends Specification {
 
     and:
     def tags = [
-      [
+        ModelUtils.tags([
         tags: [
           [
             namespace: "astrid_rules",
@@ -49,8 +49,8 @@ class CleanUpTagsTaskSpec extends Specification {
             valueType: "object"
           ]
         ]
-      ],
-      [
+      ]),
+        ModelUtils.tags([
         tags: [
           [
             namespace: "astrid_rules",
@@ -65,19 +65,16 @@ class CleanUpTagsTaskSpec extends Specification {
             name     : "tagName3"
           ]
         ]
-      ]
+      ])
     ]
 
-    def serverGroup = new TypedByteArray('application/json', new ObjectMapper().writeValueAsBytes([
+    def serverGroup = new ServerGroup(
       launchConfig: [
         imageId: "imageId"
       ]
-    ]))
-
-    Response oortResponse = new Response('http://oort', 200, 'OK', [], serverGroup);
+    )
 
     List<Map> operations = []
-    task.objectMapper = new ObjectMapper();
     task.monikerHelper = Mock(MonikerHelper) {
       1* getAppNameFromStage(stage, "app-v00") >> {
         "app"
@@ -87,9 +84,9 @@ class CleanUpTagsTaskSpec extends Specification {
       }
       0 * _
     }
-    task.oortService = Mock(OortService) {
+    task.cloudDriverService = Mock(CloudDriverService) {
       1* getServerGroupFromCluster("app","test", "app", "app-v00", "us-east-1", "aws") >> {
-        oortResponse
+        serverGroup
       }
 
       1* getEntityTags("aws", "servergroup", "app-v00", "test", "us-east-1") >> {

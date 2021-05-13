@@ -16,11 +16,11 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline.support
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.frigga.Names
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.kato.pipeline.DetermineTargetReferenceStage
-import com.netflix.spinnaker.orca.clouddriver.OortService
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -30,11 +30,9 @@ import retrofit.RetrofitError
 @Component
 @Slf4j
 class TargetReferenceSupport {
-  @Autowired
-  ObjectMapper mapper
 
   @Autowired
-  OortService oort
+  CloudDriverService cloudDriverService
 
   /**
    * This method assumes that the caller will be looking to get a handle on an ASG by a reference key, in a cross-region
@@ -102,7 +100,7 @@ class TargetReferenceSupport {
 
     def serverGroupsByLocation = getServerGroupsByLocation(config, existingServerGroups)
     List<TargetReference> targetReferences = []
-    for (Map.Entry<String, List<Map>> entry in serverGroupsByLocation) {
+    for (Map.Entry<String, List<ServerGroup>> entry in serverGroupsByLocation) {
       def location = entry.key
       if (!config.locations || !config.locations.contains(location)) {
         continue
@@ -172,11 +170,11 @@ class TargetReferenceSupport {
     return a.id == b.parentStageId
   }
 
-  private Map<String, List<Map>> getServerGroupsByLocation(TargetReferenceConfiguration config, List<Map> existingServerGroups) {
+  private Map<String, List<ServerGroup>> getServerGroupsByLocation(TargetReferenceConfiguration config, List<ServerGroup> existingServerGroups) {
     if (config.cloudProvider == "gce") {
-      return existingServerGroups.groupBy { Map sg -> sg.zones[0] }
+      return existingServerGroups.groupBy { ServerGroup sg -> sg.zones[0] }
     }
-    return existingServerGroups.groupBy { Map sg -> sg.region }
+    return existingServerGroups.groupBy { ServerGroup sg -> sg.region }
   }
 
   boolean isDynamicallyBound(StageExecution stage) {
@@ -186,12 +184,10 @@ class TargetReferenceSupport {
       config.target == TargetReferenceConfiguration.Target.oldest_asg_dynamic
   }
 
-  List<Map> getExistingServerGroups(String app, String account, String cluster, String cloudProvider) {
+  List<ServerGroup> getExistingServerGroups(String app, String account, String cluster, String cloudProvider) {
     try {
-      def response = oort.getCluster(app, account, cluster, cloudProvider)
-      def json = response.body.in().text
-      def map = mapper.readValue(json, Map)
-      map.serverGroups as List<Map>
+      def map = cloudDriverService.getCluster(app, account, cluster, cloudProvider)
+      map.serverGroups
     } catch (RetrofitError e) {
       if (e.response.status == 404) {
         return null

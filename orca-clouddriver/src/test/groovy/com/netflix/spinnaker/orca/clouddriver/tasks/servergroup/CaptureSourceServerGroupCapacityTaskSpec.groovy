@@ -18,9 +18,10 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.servergroup
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.CaptureSourceServerGroupCapacityTask
+import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Capacity
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup
-import com.netflix.spinnaker.orca.clouddriver.utils.OortHelper
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import spock.lang.Specification
@@ -28,10 +29,10 @@ import spock.lang.Subject
 import spock.lang.Unroll
 
 class CaptureSourceServerGroupCapacityTaskSpec extends Specification {
-  def oortHelper = Mock(OortHelper)
+  CloudDriverService cloudDriverService = Mock()
 
   @Subject
-  def task = new CaptureSourceServerGroupCapacityTask(oortHelper: oortHelper, objectMapper: new ObjectMapper())
+  def task = new CaptureSourceServerGroupCapacityTask(cloudDriverService: cloudDriverService, objectMapper: new ObjectMapper())
 
   @Unroll
   void "should no-op if useSourceCapacity is false"() {
@@ -94,11 +95,10 @@ class CaptureSourceServerGroupCapacityTaskSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    1 * oortHelper.getTargetServerGroup(
+    1 * cloudDriverService.getTargetServerGroup(
       stage.context.source.account as String,
       stage.context.source.asgName as String,
-      stage.context.source.region as String,
-      stage.context.cloudProvider as String
+      stage.context.source.region as String
     ) >> Optional.of(targetServerGroup)
 
     result.context.useSourceCapacity == false
@@ -108,12 +108,11 @@ class CaptureSourceServerGroupCapacityTaskSpec extends Specification {
       desired: 5,
       max    : 10
     ]
-    result.context.sourceServerGroupCapacitySnapshot == [
-      min    : 0,
-      desired: 5,
-      max    : 10
-
-    ]
+    result.context.sourceServerGroupCapacitySnapshot == Capacity.builder()
+        .min(0)
+        .desired(5)
+        .max(10)
+        .build()
     result.outputs.isEmpty()
   }
 }
