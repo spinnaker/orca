@@ -22,8 +22,9 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
-import com.netflix.spinnaker.orca.clouddriver.OortService
-import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
+
 import com.netflix.spinnaker.orca.commands.InstanceUptimeCommand
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,7 +32,7 @@ import org.springframework.stereotype.Component
 
 @Slf4j
 @Component
-class VerifyInstanceUptimeTask extends AbstractCloudProviderAwareTask implements RetryableTask {
+class VerifyInstanceUptimeTask implements CloudProviderAware, RetryableTask {
   long backoffPeriod = 30000
   long timeout = 600000
 
@@ -39,7 +40,7 @@ class VerifyInstanceUptimeTask extends AbstractCloudProviderAwareTask implements
   InstanceUptimeCommand instanceUptimeCommand;
 
   @Autowired
-  OortService oortService
+  CloudDriverService cloudDriverService
 
   @Autowired
   ObjectMapper objectMapper
@@ -56,7 +57,7 @@ class VerifyInstanceUptimeTask extends AbstractCloudProviderAwareTask implements
 
     def instanceUptimes = stage.context.instanceUptimes as Map<String, Integer>
     def allInstancesHaveRebooted = instanceUptimes.every { String instanceId, int uptime ->
-      def instance = getInstance(account, region, instanceId);
+      def instance = cloudDriverService.getInstance(account, region, instanceId);
 
       try {
         InstanceUptimeCommand.InstanceUptimeResult result = instanceUptimeCommand.uptime(cloudProvider, instance)
@@ -68,10 +69,5 @@ class VerifyInstanceUptimeTask extends AbstractCloudProviderAwareTask implements
     }
 
     return TaskResult.ofStatus(allInstancesHaveRebooted ? ExecutionStatus.SUCCEEDED : ExecutionStatus.RUNNING)
-  }
-
-  protected Map getInstance(String account, String region, String instanceId) {
-    def response = oortService.getInstance(account, region, instanceId)
-    return objectMapper.readValue(response.body.in().text, Map)
   }
 }
