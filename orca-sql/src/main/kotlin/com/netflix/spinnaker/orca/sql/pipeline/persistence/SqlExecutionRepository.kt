@@ -146,6 +146,16 @@ class SqlExecutionRepository(
     storeStage(stage)
   }
 
+  override fun updateStageOthers(stage: StageExecution) {
+    storeStage(stage)
+  }
+
+  override fun deleteStageOthers(stage: StageExecution) {
+    val others = mapOf<String, Object>()
+    stage.others = others;
+    storeStage(stage)
+  }
+
   override fun removeStage(execution: PipelineExecution, stageId: String) {
     validateHandledPartitionOrThrow(execution)
 

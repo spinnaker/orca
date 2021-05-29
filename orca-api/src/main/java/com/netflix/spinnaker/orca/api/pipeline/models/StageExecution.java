@@ -86,6 +86,11 @@ public interface StageExecution {
 
   void setContext(@Nonnull Map<String, Object> context);
 
+  @Nonnull
+  Map<String, Object> getOthers();
+
+  void setOthers(@Nonnull Map<String, Object> others);
+
   /** TODO(rz): getOutputs(Class)? */
   @Nonnull
   Map<String, Object> getOutputs();

@@ -25,7 +25,9 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.echo.util.ManualJudgmentAuthorization
-import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
+import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
+import org.springframework.beans.factory.annotation.Value
 
 import javax.annotation.Nonnull
 import java.util.concurrent.TimeUnit
@@ -73,14 +75,20 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     final long backoffPeriod = 15000
     final long timeout = TimeUnit.DAYS.toMillis(3)
 
+    @Value('${spinnaker.manual-judgment-navigation:false}')
+    boolean manualJudgmentNavigation
+
     private final EchoService echoService
     private final ManualJudgmentAuthorization manualJudgmentAuthorization
+    private final ExecutionRepository executionRepository
 
     @Autowired
     WaitForManualJudgmentTask(Optional<EchoService> echoService,
-                              ManualJudgmentAuthorization manualJudgmentAuthorization) {
+                              ManualJudgmentAuthorization manualJudgmentAuthorization,
+                              ExecutionRepository executionRepository) {
       this.echoService = echoService.orElse(null)
       this.manualJudgmentAuthorization = manualJudgmentAuthorization
+      this.executionRepository = executionRepository
     }
 
     @Override
@@ -89,14 +97,24 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
       String notificationState
       ExecutionStatus executionStatus
 
+      if (manualJudgmentNavigation) {
+        checkForAnyParentExecutions(stage)
+      }
+
       switch (stageData.state) {
         case StageData.State.CONTINUE:
           notificationState = "manualJudgmentContinue"
           executionStatus = ExecutionStatus.SUCCEEDED
+          if (manualJudgmentNavigation) {
+            deleteLeafnodeAttributesFromTheParentExecutions(stage)
+          }
           break
         case StageData.State.STOP:
           notificationState = "manualJudgmentStop"
           executionStatus = ExecutionStatus.TERMINAL
+          if (manualJudgmentNavigation) {
+            deleteLeafnodeAttributesFromTheParentExecutions(stage)
+          }
           break
         default:
           notificationState = "manualJudgment"
@@ -118,6 +136,69 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
       Map outputs = processNotifications(stage, stageData, notificationState)
 
       return TaskResult.builder(executionStatus).context(outputs).build()
+    }
+
+    /**
+     * This method checks if this manual judgment stage is triggered by any other pipeline(parent execution).
+     * If yes, it fetches all the parent executions, which triggered this stage and sets the current
+     * running stage(manual judgment stage execution id and application name) to leafnode execution id and
+     * application name.
+     *
+     * p1 --> p2 --> p3 --> p4 (running manual judgment stage & waiting for judgment)
+     *
+     * p1 leafnodeExecutionId      : p4 execution id
+     * p1 leafnodeApplicationName  : p4 application name
+     *
+     * p2 leafnodeExecutionId      : p4 execution id
+     * p2 leafnodeApplicationName  : p4 application name
+     *
+     * p3 leafnodeExecutionId      : p4 execution id
+     * p3 leafnodeApplicationName  : p4 application name
+     *
+     * @param stage
+     */
+    void checkForAnyParentExecutions(StageExecution stage) {
+
+      def status = stage?.execution?.status
+      def trigger = stage?.execution?.trigger
+      def appName = stage?.execution?.application
+      def executionId = stage?.execution?.id
+      def stageId = stage?.execution?.id
+      while (ExecutionStatus.RUNNING.equals(status) && trigger && trigger.hasProperty("parentExecution")) {
+        PipelineExecution parentExecution = trigger?.parentExecution
+        parentExecution = executionRepository.retrieve(ExecutionType.PIPELINE, parentExecution.id)
+        parentExecution.getStages().each {
+          if (("pipeline").equals(it.getType()) && (ExecutionStatus.RUNNING.equals(it.getStatus()))) {
+            if (it.context && stageId.equals(it.context.executionId)) {
+              def others = [leafnodePipelineExecutionId: executionId, leafnodeApplicationName: appName]
+              it.setOthers(others)
+              stageId = it.execution.getId()
+              executionRepository.updateStageOthers(it)
+            }
+          }
+        }
+        trigger = parentExecution?.trigger
+      }
+    }
+
+    /**
+     * This method deletes the leafnode attributes from all the parent stage executions.
+     * @param stage
+     */
+    void deleteLeafnodeAttributesFromTheParentExecutions(StageExecution stage) {
+
+      def status = stage?.execution?.status
+      def trigger = stage?.execution?.trigger
+      while (ExecutionStatus.RUNNING.equals(status) && trigger && trigger.hasProperty("parentExecution")) {
+        PipelineExecution parentExecution = trigger?.parentExecution
+        PipelineExecution execution = executionRepository.retrieve(ExecutionType.PIPELINE, parentExecution.id)
+        execution.getStages().each {
+          if (ExecutionStatus.RUNNING.equals(it.getStatus())) {
+            executionRepository.deleteStageOthers(it)
+          }
+        }
+        trigger = parentExecution?.trigger
+      }
     }
 
     Map processNotifications(StageExecution stage, StageData stageData, String notificationState) {

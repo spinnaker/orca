@@ -35,6 +35,10 @@ public interface ExecutionRepository {
 
   void updateStageContext(@Nonnull StageExecution stage);
 
+  void updateStageOthers(@Nonnull StageExecution stage);
+
+  void deleteStageOthers(@Nonnull StageExecution stage);
+
   void removeStage(@Nonnull PipelineExecution execution, @Nonnull String stageId);
 
   void addStage(@Nonnull StageExecution stage);

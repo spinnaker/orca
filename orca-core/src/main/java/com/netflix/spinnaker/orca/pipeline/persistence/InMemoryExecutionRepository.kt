@@ -183,6 +183,14 @@ class InMemoryExecutionRepository : ExecutionRepository {
     // Do nothing
   }
 
+  override fun updateStageOthers(stage: StageExecution) {
+    // Do nothing
+  }
+
+  override fun deleteStageOthers(stage: StageExecution) {
+    // Do nothing
+  }
+
   override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
     return retrieveByCorrelationId(PIPELINE, correlationId)
   }
