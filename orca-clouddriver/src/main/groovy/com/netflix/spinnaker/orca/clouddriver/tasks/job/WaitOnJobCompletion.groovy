@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.job
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.frigga.Names
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -120,8 +119,7 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
       }
 
       def name = names[0]
-      def parsedName = Names.parseName(name)
-      String appName = stage.context.moniker?.app ?: stage.context.application ?: parsedName.app
+      String appName = stage.context.moniker?.app ?: stage.context.application ?: stage.execution.application
 
       InputStream jobStream
       retrySupport.retry({

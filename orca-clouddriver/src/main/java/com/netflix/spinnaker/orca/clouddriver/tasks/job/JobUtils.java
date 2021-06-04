@@ -17,7 +17,6 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.job;
 
-import com.netflix.frigga.Names;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.moniker.Moniker;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
@@ -57,14 +56,17 @@ public class JobUtils implements CloudProviderAware {
       }
 
       String name = names.get(0);
-      Names parsedName = Names.parseName(name);
       Moniker moniker = (Moniker) stage.getContext().get("moniker");
       String appName;
 
       if (moniker != null) {
         appName = moniker.getApp();
       } else {
-        appName = (String) stage.getContext().getOrDefault("application", parsedName.getApp());
+        appName =
+            (String)
+                stage
+                    .getContext()
+                    .getOrDefault("application", stage.getExecution().getApplication());
       }
 
       retrySupport.retry(
