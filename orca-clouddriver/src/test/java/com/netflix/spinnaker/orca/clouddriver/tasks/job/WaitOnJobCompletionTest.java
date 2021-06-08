@@ -28,8 +28,11 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService;
+import com.netflix.spinnaker.orca.front50.Front50Service;
+import com.netflix.spinnaker.orca.front50.model.Application;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.springframework.test.util.ReflectionTestUtils;
+import retrofit.RetrofitError;
 import retrofit.client.Response;
 import retrofit.mime.TypedByteArray;
 
@@ -62,6 +66,7 @@ public final class WaitOnJobCompletionTest {
   @Test
   void taskSearchJobByApplicationUsingContextApplication() {
     KatoRestService mockKatoRestService = mock(KatoRestService.class);
+    Front50Service mockFront50Service = mock(Front50Service.class);
     RetrySupport retrySupport = new RetrySupport();
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -70,6 +75,7 @@ public final class WaitOnJobCompletionTest {
     ReflectionTestUtils.setField(task, "retrySupport", retrySupport);
     ReflectionTestUtils.setField(task, "objectMapper", objectMapper);
     ReflectionTestUtils.setField(task, "katoRestService", mockKatoRestService);
+    ReflectionTestUtils.setField(task, "front50Service", mockFront50Service);
 
     Response mockResponse =
         new Response(
@@ -80,6 +86,7 @@ public final class WaitOnJobCompletionTest {
             new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
 
     when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
+    when(mockFront50Service.get(any())).thenReturn(new Application("mock-app"));
 
     StageExecutionImpl myStage =
         createStageWithContext(
@@ -99,12 +106,14 @@ public final class WaitOnJobCompletionTest {
     KatoRestService mockKatoRestService = mock(KatoRestService.class);
     RetrySupport retrySupport = new RetrySupport();
     ObjectMapper objectMapper = new ObjectMapper();
+    Front50Service mockFront50Service = mock(Front50Service.class);
 
     WaitOnJobCompletion task = new WaitOnJobCompletion();
 
     ReflectionTestUtils.setField(task, "retrySupport", retrySupport);
     ReflectionTestUtils.setField(task, "objectMapper", objectMapper);
     ReflectionTestUtils.setField(task, "katoRestService", mockKatoRestService);
+    ReflectionTestUtils.setField(task, "front50Service", mockFront50Service);
 
     Response mockResponse =
         new Response(
@@ -115,6 +124,7 @@ public final class WaitOnJobCompletionTest {
             new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
 
     when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
+    when(mockFront50Service.get(any())).thenReturn(new Application("mock-app"));
 
     StageExecutionImpl myStage =
         createStageWithContext(
@@ -128,16 +138,18 @@ public final class WaitOnJobCompletionTest {
   }
 
   @Test
-  void taskSearchJobByApplicationUsingDefault() {
+  void taskSearchJobByApplicationUsingParsedName() {
     KatoRestService mockKatoRestService = mock(KatoRestService.class);
     RetrySupport retrySupport = new RetrySupport();
     ObjectMapper objectMapper = new ObjectMapper();
+    Front50Service mockFront50Service = mock(Front50Service.class);
 
     WaitOnJobCompletion task = new WaitOnJobCompletion();
 
     ReflectionTestUtils.setField(task, "retrySupport", retrySupport);
     ReflectionTestUtils.setField(task, "objectMapper", objectMapper);
     ReflectionTestUtils.setField(task, "katoRestService", mockKatoRestService);
+    ReflectionTestUtils.setField(task, "front50Service", mockFront50Service);
 
     Response mockResponse =
         new Response(
@@ -148,6 +160,43 @@ public final class WaitOnJobCompletionTest {
             new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
 
     when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
+    when(mockFront50Service.get(any())).thenReturn(new Application("mock-app"));
+
+    StageExecutionImpl myStage =
+        createStageWithContext(
+            ImmutableMap.of(
+                "deploy.jobs", ImmutableMap.of("test", ImmutableList.of("atest-btest-ctest"))));
+
+    TaskResult result = task.execute(myStage);
+    AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
+    verify(mockKatoRestService, times(1)).collectJob(eq("atest"), any(), any(), any());
+  }
+
+  @Test
+  void taskSearchJobByApplicationUsingExecutionApp() {
+    KatoRestService mockKatoRestService = mock(KatoRestService.class);
+    RetrySupport retrySupport = new RetrySupport();
+    ObjectMapper objectMapper = new ObjectMapper();
+    Front50Service mockFront50Service = mock(Front50Service.class);
+
+    WaitOnJobCompletion task = new WaitOnJobCompletion();
+
+    ReflectionTestUtils.setField(task, "retrySupport", retrySupport);
+    ReflectionTestUtils.setField(task, "objectMapper", objectMapper);
+    ReflectionTestUtils.setField(task, "katoRestService", mockKatoRestService);
+    ReflectionTestUtils.setField(task, "front50Service", mockFront50Service);
+
+    Response mockResponse =
+        new Response(
+            "test-url",
+            200,
+            "test-reason",
+            Collections.emptyList(),
+            new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
+
+    when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
+    when(mockFront50Service.get(any()))
+        .thenThrow(RetrofitError.networkError("url", new IOException("application not found")));
 
     StageExecutionImpl myStage =
         createStageWithContext(

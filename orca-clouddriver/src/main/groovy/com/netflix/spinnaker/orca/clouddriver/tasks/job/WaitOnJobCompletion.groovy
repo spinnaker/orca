@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.job
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.frigga.Names
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
@@ -26,12 +27,13 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
-
+import com.netflix.spinnaker.orca.front50.Front50Service
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import retrofit.RetrofitError
 
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
@@ -57,6 +59,9 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
 
   @Autowired
   JobUtils jobUtils
+
+  @Autowired(required = false)
+  Front50Service front50Service
 
   static final String REFRESH_TYPE = "Job"
   /**
@@ -119,7 +124,12 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
       }
 
       def name = names[0]
-      String appName = stage.context.moniker?.app ?: stage.context.application ?: stage.execution.application
+      def parsedName = Names.parseName(name)
+      String appName = stage.context.moniker?.app ?: stage.context.application ?: parsedName.app
+
+      if (!applicationExists(appName)) {
+        appName = stage.execution.application
+      }
 
       InputStream jobStream
       retrySupport.retry({
@@ -160,5 +170,16 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
     }
 
     TaskResult.builder(status).context(outputs).outputs(outputs).build()
+  }
+
+  private Boolean applicationExists(String appName) {
+    if (appName == null || front50Service == null) {
+      return false
+    }
+    try {
+      return front50Service.get(appName) != null
+    } catch (RetrofitError e) {
+      return false
+    }
   }
 }
