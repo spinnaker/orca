@@ -72,11 +72,15 @@ public class JobUtils implements CloudProviderAware {
       if (moniker != null) {
         appName = moniker.getApp();
       } else {
-        appName = (String) stage.getContext().getOrDefault("application", parsedName.getApp());
+        appName =
+            (String)
+                stage
+                    .getContext()
+                    .getOrDefault("application", stage.getExecution().getApplication());
       }
 
-      if (!applicationExists(appName)) {
-        appName = stage.getExecution().getApplication();
+      if (appName == null && applicationExists(parsedName.getApp())) {
+        appName = parsedName.getApp();
       }
 
       validAppName = appName;
@@ -92,7 +96,7 @@ public class JobUtils implements CloudProviderAware {
     try {
       return front50Service.get(appName) != null;
     } catch (RetrofitError e) {
-      return false;
+      throw e;
     }
   }
 }

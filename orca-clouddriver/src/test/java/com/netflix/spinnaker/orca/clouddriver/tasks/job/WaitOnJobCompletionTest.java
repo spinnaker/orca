@@ -32,7 +32,6 @@ import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.Application;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.springframework.test.util.ReflectionTestUtils;
-import retrofit.RetrofitError;
 import retrofit.client.Response;
 import retrofit.mime.TypedByteArray;
 
@@ -86,7 +84,6 @@ public final class WaitOnJobCompletionTest {
             new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
 
     when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
-    when(mockFront50Service.get(any())).thenReturn(new Application("mock-app"));
 
     StageExecutionImpl myStage =
         createStageWithContext(
@@ -99,6 +96,7 @@ public final class WaitOnJobCompletionTest {
     TaskResult result = task.execute(myStage);
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
     verify(mockKatoRestService, times(1)).collectJob(eq("context-app"), any(), any(), any());
+    verify(mockFront50Service, times(0)).get(any());
   }
 
   @Test
@@ -124,17 +122,18 @@ public final class WaitOnJobCompletionTest {
             new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
 
     when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
-    when(mockFront50Service.get(any())).thenReturn(new Application("mock-app"));
 
     StageExecutionImpl myStage =
         createStageWithContext(
             ImmutableMap.of(
                 "moniker", ImmutableMap.of("app", "moniker-app"),
+                "application", "context-app",
                 "deploy.jobs", ImmutableMap.of("test", ImmutableList.of("job test"))));
 
     TaskResult result = task.execute(myStage);
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
     verify(mockKatoRestService, times(1)).collectJob(eq("moniker-app"), any(), any(), any());
+    verify(mockFront50Service, times(0)).get(any());
   }
 
   @Test
@@ -160,16 +159,17 @@ public final class WaitOnJobCompletionTest {
             new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
 
     when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
-    when(mockFront50Service.get(any())).thenReturn(new Application("mock-app"));
+    when(mockFront50Service.get(any())).thenReturn(new Application("atest"));
 
     StageExecutionImpl myStage =
-        createStageWithContext(
+        createStageWithContextWithoutExecutionApplication(
             ImmutableMap.of(
                 "deploy.jobs", ImmutableMap.of("test", ImmutableList.of("atest-btest-ctest"))));
 
     TaskResult result = task.execute(myStage);
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
     verify(mockKatoRestService, times(1)).collectJob(eq("atest"), any(), any(), any());
+    verify(mockFront50Service, times(1)).get(eq("atest"));
   }
 
   @Test
@@ -195,8 +195,6 @@ public final class WaitOnJobCompletionTest {
             new TypedByteArray("application/json", "{ \"jobState\": \"Succeeded\"}".getBytes()));
 
     when(mockKatoRestService.collectJob(any(), any(), any(), any())).thenReturn(mockResponse);
-    when(mockFront50Service.get(any()))
-        .thenThrow(RetrofitError.networkError("url", new IOException("application not found")));
 
     StageExecutionImpl myStage =
         createStageWithContext(
@@ -206,6 +204,7 @@ public final class WaitOnJobCompletionTest {
     TaskResult result = task.execute(myStage);
     AssertionsForClassTypes.assertThat(result.getStatus()).isEqualTo(ExecutionStatus.SUCCEEDED);
     verify(mockKatoRestService, times(1)).collectJob(eq("test-app"), any(), any(), any());
+    verify(mockFront50Service, times(0)).get(any());
   }
 
   private StageExecutionImpl createStageWithContext(Map<String, ?> context) {
@@ -213,5 +212,11 @@ public final class WaitOnJobCompletionTest {
         new PipelineExecutionImpl(ExecutionType.PIPELINE, "test-app"),
         "test",
         new HashMap<>(context));
+  }
+
+  private StageExecutionImpl createStageWithContextWithoutExecutionApplication(
+      Map<String, ?> context) {
+    return new StageExecutionImpl(
+        new PipelineExecutionImpl(ExecutionType.PIPELINE, null), "test", new HashMap<>(context));
   }
 }

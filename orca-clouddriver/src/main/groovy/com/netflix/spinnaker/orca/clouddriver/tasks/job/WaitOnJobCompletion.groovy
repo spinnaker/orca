@@ -125,10 +125,10 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
 
       def name = names[0]
       def parsedName = Names.parseName(name)
-      String appName = stage.context.moniker?.app ?: stage.context.application ?: parsedName.app
+      String appName = stage.context.moniker?.app ?: stage.context.application ?: stage.execution.application
 
-      if (!applicationExists(appName)) {
-        appName = stage.execution.application
+      if (appName == null && applicationExists(parsedName.app)) {
+        appName = parsedName.app
       }
 
       InputStream jobStream
@@ -179,7 +179,7 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
     try {
       return front50Service.get(appName) != null
     } catch (RetrofitError e) {
-      return false
+      throw e
     }
   }
 }
