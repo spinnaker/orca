@@ -19,8 +19,10 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.rollback;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService;
 import com.netflix.spinnaker.orca.clouddriver.FeaturesService;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
+import com.netflix.spinnaker.orca.clouddriver.model.EntityTags;
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup.BuildInfo;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,25 +34,25 @@ public class PreviousImageRollbackSupport {
   private final Logger log = LoggerFactory.getLogger(this.getClass());
 
   private final ObjectMapper objectMapper;
-  private final OortService oortService;
+  private final CloudDriverService cloudDriverService;
   private final FeaturesService featuresService;
   private final RetrySupport retrySupport;
 
   public PreviousImageRollbackSupport(
       ObjectMapper objectMapper,
-      OortService oortService,
+      CloudDriverService cloudDriverService,
       FeaturesService featuresService,
       RetrySupport retrySupport) {
     this.objectMapper =
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    this.oortService = oortService;
+    this.cloudDriverService = cloudDriverService;
     this.featuresService = featuresService;
     this.retrySupport = retrySupport;
   }
 
   public ImageDetails getImageDetailsFromEntityTags(
       String cloudProvider, String credentials, String region, String serverGroupName) {
-    List<Map> entityTags = null;
+    List<EntityTags> entityTags = null;
 
     try {
       entityTags =
@@ -60,7 +62,7 @@ public class PreviousImageRollbackSupport {
                   return Collections.emptyList();
                 }
 
-                return oortService.getEntityTags(
+                return cloudDriverService.getEntityTags(
                     cloudProvider, "serverGroup", serverGroupName, credentials, region);
               },
               15,
@@ -82,11 +84,11 @@ public class PreviousImageRollbackSupport {
       return null;
     }
 
-    List<Map> tags = (List<Map>) entityTags.get(0).get("tags");
+    List<EntityTags.Tag> tags = entityTags.get(0).tags;
     PreviousServerGroup previousServerGroup =
         tags.stream()
-            .filter(t -> "spinnaker:metadata".equalsIgnoreCase((String) t.get("name")))
-            .map(t -> (Map<String, Object>) ((Map) t.get("value")).get("previousServerGroup"))
+            .filter(t -> "spinnaker:metadata".equalsIgnoreCase(t.name))
+            .map(t -> (Map<String, Object>) ((Map) t.value).get("previousServerGroup"))
             .filter(Objects::nonNull)
             .map(m -> objectMapper.convertValue(m, PreviousServerGroup.class))
             .findFirst()
@@ -133,14 +135,6 @@ public class PreviousImageRollbackSupport {
 
     String getBuildNumber() {
       return (buildInfo == null || buildInfo.jenkins == null) ? null : buildInfo.jenkins.number;
-    }
-
-    static class BuildInfo {
-      public Jenkins jenkins;
-
-      static class Jenkins {
-        public String number;
-      }
     }
   }
 }
