@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.config;
 
 import com.netflix.spinnaker.orca.controllers.TaskController;
+import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepository;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +28,9 @@ import org.springframework.context.annotation.Configuration;
 public class TaskControllerConfigurationProperties {
   /**
    * flag to enable speeding up execution retrieval. This is applicable for the {@link
-   * TaskController#getPipelinesForApplication(String, int, String, Boolean)} endpoint
+   * TaskController#getPipelinesForApplication(String, int, String, Boolean)} endpoint. Only valid
+   * for {@link SqlExecutionRepository} currently. The implementation for all the other execution
+   * repositories needs to be added
    */
   boolean optimizeExecutionRetrieval = false;
 
@@ -36,17 +39,19 @@ public class TaskControllerConfigurationProperties {
    * process the queries to retrieve the executions. Needs to be tuned appropriately since this has
    * the potential to exhaust the connection pool size for the database.
    */
-  int maxExecutionRetrievalThreads = 10;
+  int maxExecutionRetrievalThreads = 20;
 
   /**
-   * only applicable if optimizeExecutionRetrieval = true. It specifies how many pipeline config ids
-   * should be processed at a time. 15 pipeline config ids was selected as the default after testing
+   * only applicable if optimizeExecutionRetrieval = true. It specifies how many pipeline executions
+   * should be processed at a time. 30 pipeline executions was selected as the default after testing
    * this number against an orca sql db that contained lots of pipelines and executions for a single
-   * application (about 1200 pipelines and 1000 executions). More than 15 resulted in a query that
-   * took too long to complete. It will have to be tuned though, since 50 config ids work for some
-   * other applications easily but not for others.
+   * application (about 1200 pipelines and 1000 executions). Each execution was 1 MB or more in
+   * size.
+   *
+   * <p>It can be further tuned, depending on your setup, since 30 executions work well for some
+   * applications but a higher number may be appropriate for others.
    */
-  int maxNumberOfPipelineConfigIdsToProcess = 15;
+  int maxNumberOfPipelineExecutionsToProcess = 30;
 
   /** moved this to here. Earlier definition was in the {@link TaskController} class */
   int daysOfExecutionHistory = 14;

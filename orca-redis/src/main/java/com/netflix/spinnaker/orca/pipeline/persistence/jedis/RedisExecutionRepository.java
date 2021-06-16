@@ -375,15 +375,6 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull List<String> retrievePipelineConfigIdsForApplication(
-      @Nonnull String application) {
-    // TODO: not implemented yet - this method, at present, is primarily meant for the
-    // SqlExecutionRepository
-    //  implementation.
-    return List.of();
-  }
-
-  @Override
   public @Nonnull Observable<PipelineExecution> retrievePipelinesForApplication(
       @Nonnull String application) {
     List<Observable<PipelineExecution>> observables =
@@ -490,14 +481,32 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @NotNull List<PipelineExecution> retrievePipelineExecutionsForApplication(
-      @NotNull String application,
-      @NotNull List<String> pipelineConfigIds,
-      @NotNull ExecutionCriteria executionCriteria) {
-    List<Observable<PipelineExecution>> output = new ArrayList<>();
-    pipelineConfigIds.forEach(
-        configId -> output.add(retrievePipelinesForPipelineConfigId(configId, executionCriteria)));
-    return Observable.merge(output).subscribeOn(Schedulers.io()).toList().toBlocking().single();
+  public @Nonnull List<String> retrievePipelineConfigIdsForApplication(
+      @Nonnull String application) {
+    // TODO: not implemented yet - this method, at present, is primarily meant for the
+    // SqlExecutionRepository
+    //  implementation.
+    return List.of();
+  }
+
+  @Override
+  public @Nonnull List<String> filterPipelineExecutionsForApplication(
+      @Nonnull String application,
+      @Nonnull List<String> pipelineConfigIds,
+      @Nonnull ExecutionCriteria criteria) {
+    // TODO: not implemented yet - this method, at present, is primarily meant for the
+    // SqlExecutionRepository
+    //  implementation.
+    return List.of();
+  }
+
+  @Override
+  public @NotNull List<PipelineExecution> retrievePipelineExecutionsDetailsForApplication(
+      @Nonnull String application, @NotNull List<String> pipelineExecutionIds) {
+    // TODO: not implemented yet - this method, at present, is primarily meant for the
+    // SqlExecutionRepository
+    //  implementation.
+    return List.of();
   }
 
   /*

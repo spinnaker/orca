@@ -30,6 +30,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 import rx.Observable
+import javax.annotation.Nonnull
 
 /**
  * Intended for performing red/black Orca deployments which do not share the
@@ -209,14 +210,19 @@ class DualExecutionRepository(
     ).distinct { it.id }
   }
 
-  override fun retrievePipelineExecutionsForApplication(
-    application: String,
-    pipelineConfigIds: List<String>,
-    criteria: ExecutionCriteria
-  ): Collection<PipelineExecution> {
+  override fun filterPipelineExecutionsForApplication(@Nonnull application: String,
+                                             @Nonnull pipelineConfigIds: List<String>,
+                                             @Nonnull criteria: ExecutionCriteria): List<String>{
+    return primary.filterPipelineExecutionsForApplication(application, pipelineConfigIds, criteria) +
+      previous.filterPipelineExecutionsForApplication(application,pipelineConfigIds, criteria)
+  }
+
+  override fun retrievePipelineExecutionsDetailsForApplication(
+    @Nonnull application: String,
+    pipelineConfigIds: List<String>): Collection<PipelineExecution> {
     return (
-      primary.retrievePipelineExecutionsForApplication(application, pipelineConfigIds, criteria) +
-      previous.retrievePipelineExecutionsForApplication(application, pipelineConfigIds, criteria)
+      primary.retrievePipelineExecutionsDetailsForApplication(application, pipelineConfigIds) +
+      previous.retrievePipelineExecutionsDetailsForApplication(application,pipelineConfigIds)
       ).distinctBy { it.id }
   }
 
