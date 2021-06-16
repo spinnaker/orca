@@ -96,10 +96,14 @@ public interface ExecutionRepository {
   Collection<String> retrievePipelineConfigIdsForApplication(@Nonnull String application);
 
   @Nonnull
-  Collection<PipelineExecution> retrievePipelineExecutionsForApplication(
+  Collection<String> filterPipelineExecutionsForApplication(
       @Nonnull String application,
       @Nonnull List<String> pipelineConfigIds,
       @Nonnull ExecutionCriteria criteria);
+
+  @Nonnull
+  Collection<PipelineExecution> retrievePipelineExecutionsDetailsForApplication(
+      @Nonnull String application, @Nonnull List<String> pipelineConfigIds);
 
   /**
    * Returns executions in the time boundary. Redis impl does not respect pageSize or offset params,
