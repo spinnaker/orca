@@ -35,7 +35,8 @@ public class CloudFoundryWaitForDeployServiceTask extends AbstractWaitForService
     return Optional.ofNullable(m)
         .map(
             myMap -> {
-              String state = Optional.ofNullable(myMap.get("status")).orElse("").toString();
+              String state =
+                  Optional.ofNullable(myMap.get("lastOperationState")).orElse("").toString();
               switch (state) {
                 case "FAILED":
                   return ExecutionStatus.TERMINAL;
