@@ -53,6 +53,12 @@ public class TaskControllerConfigurationProperties {
    */
   int maxNumberOfPipelineExecutionsToProcess = 30;
 
+  /**
+   * only applicable if optimizeExecutionRetrieval = true. No retrieval thread should take more than
+   * 60s to complete.
+   */
+  long executionRetrievalTimeoutSeconds = 60;
+
   /** moved this to here. Earlier definition was in the {@link TaskController} class */
   int daysOfExecutionHistory = 14;
 
