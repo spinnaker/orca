@@ -45,12 +45,15 @@ import org.springframework.security.access.prepost.PreFilter
 import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
 
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.nio.charset.Charset
 import java.time.Clock
 import java.time.ZoneOffset
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
@@ -77,8 +80,6 @@ class TaskController {
   TaskControllerConfigurationProperties configurationProperties
   Clock clock
 
-  ExecutorService executorService
-
   TaskController(@Nullable Front50Service front50Service,
                  ExecutionRepository executionRepository,
                  ExecutionRunner executionRunner,
@@ -103,10 +104,6 @@ class TaskController {
     this.stageDefinitionBuilderFactory = stageDefinitionBuilderFactory
     this.configurationProperties = configurationProperties
     this.clock = Clock.systemUTC()
-    this.executorService = Executors.newFixedThreadPool(this.configurationProperties.getMaxExecutionRetrievalThreads(),
-        new ThreadFactoryBuilder()
-            .setNameFormat("taskcontroller" + "-%d")
-            .build())
   }
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
@@ -930,23 +927,52 @@ class TaskController {
       return finalResult
     }
 
+    // need to define a new executor service since we want a dedicated set of threads to be made available for every
+    // new request for performance reasons
+    ExecutorService executorService = Executors.newFixedThreadPool(
+        this.configurationProperties.getMaxExecutionRetrievalThreads(),
+        new ThreadFactoryBuilder()
+            .setNameFormat("application-" + application  + "-%d")
+            .build())
 
-    def futures = new ArrayList(filteredPipelineExecutions.size())
+    try {
+      List<Future<Collection<PipelineExecution>>> futures = new ArrayList<>(filteredPipelineExecutions.size())
+      log.info("processing ${filteredPipelineExecutions.size()} pipeline executions")
 
-    log.info("processing ${filteredPipelineExecutions.size()} pipeline executions")
-    filteredPipelineExecutions
-        .collate(this.configurationProperties.getMaxNumberOfPipelineExecutionsToProcess())
-        .each {
-          def chunkedList = it
-          futures.add(
-              executorService.submit({
-                executionRepository.retrievePipelineExecutionsDetailsForApplication(application, chunkedList)
-              } as Callable))
-        }
-    futures.each {
-      finalResult.addAll(it.get())
+      // process a chunk of the executions at a time
+      filteredPipelineExecutions
+          .collate(this.configurationProperties.getMaxNumberOfPipelineExecutionsToProcess())
+          .each { List<String> chunkedExecutions ->
+            futures.add(
+                executorService.submit({
+                  List<PipelineExecution> result = executionRepository.retrievePipelineExecutionsDetailsForApplication(
+                      application, chunkedExecutions
+                  )
+                  log.debug("completed execution retrieval for ${result.size()} executions")
+                  return result
+                } as Callable<Collection<PipelineExecution>>)
+            )
+          }
+
+      futures.each {
+        Future<Collection<PipelineExecution>> future ->
+          try {
+            finalResult.addAll(
+                future.get(this.configurationProperties.getExecutionRetrievalTimeoutSeconds(), TimeUnit.SECONDS)
+            )
+          } catch (TimeoutException | CancellationException | InterruptedException e) {
+            log.warn("Task failed with unexpected error", e)
+          }
+      }
+      return finalResult
+    } finally {
+      // attempt to shutdown the executor service
+      try {
+        executorService.shutdownNow()
+      } catch (Exception e) {
+        log.warn("shutting down the executor service failed", e)
+      }
     }
-    return finalResult
   }
 
   @InheritConstructors

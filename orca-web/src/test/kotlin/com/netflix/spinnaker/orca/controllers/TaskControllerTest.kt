@@ -38,13 +38,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
+import strikt.assertions.isTrue
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 class TaskControllerTest : JUnit5Minutests {
-  data class Fixture(val optimizeExecution: Boolean) {
+  data class Fixture(val optimizeExecution: Boolean, val timeout: Double = 60.0) {
 
     private val clock: Clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
     val database: SqlTestUtil.TestDatabase = SqlTestUtil.initTcMysqlDatabase()!!
@@ -61,7 +62,10 @@ class TaskControllerTest : JUnit5Minutests {
     )
 
     private val taskControllerConfigurationProperties: TaskControllerConfigurationProperties = TaskControllerConfigurationProperties()
-      .apply { optimizeExecutionRetrieval = optimizeExecution }
+      .apply {
+        optimizeExecutionRetrieval = optimizeExecution
+        executionRetrievalTimeoutSeconds = timeout.toLong()
+      }
 
     private val daysOfExecutionHistory: Long = taskControllerConfigurationProperties.daysOfExecutionHistory.toLong()
 
@@ -155,7 +159,7 @@ class TaskControllerTest : JUnit5Minutests {
         .thenReturn(
           listOf(
             mapOf("id" to "1"),
-            mapOf("id" to "2")),
+            mapOf("id" to "2"))
         )
 
       Mockito.`when`(front50Service.getStrategies("test-app"))
@@ -231,6 +235,31 @@ class TaskControllerTest : JUnit5Minutests {
         results.forEach {
           assert(it.id in expectedOutput)
         }
+      }
+    }
+
+    context("execution retrieval with optimization having timeouts") {
+      fixture {
+        Fixture(true, 0.1)
+      }
+
+      before { setup() }
+      after { cleanUp() }
+
+      test("retrieve executions with limit = 2 & expand = false") {
+        expectThat(database.context.fetchCount(table("pipelines"))).isEqualTo(5)
+        val response = subject.perform(get("/applications/test-app/pipelines?limit=2&expand=false")).andReturn().response
+        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<List<PipelineExecution>>() {})
+        expectThat(results.isEmpty()).isTrue()
+      }
+
+      test("retrieve executions with limit = 2 & expand = false with statuses") {
+        expectThat(database.context.fetchCount(table("pipelines"))).isEqualTo(5)
+        val response = subject.perform(get(
+          "/applications/test-app/pipelines?limit=2&expand=false&statuses=RUNNING,SUSPENDED,PAUSED,NOT_STARTED")
+        ).andReturn().response
+        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<List<PipelineExecution>>() {})
+        expectThat(results.isEmpty()).isTrue()
       }
     }
   }
