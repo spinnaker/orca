@@ -612,16 +612,17 @@ class TaskController {
     log.info("received ${pipelineConfigIds.size()} pipelines for application: $application from front50")
     def strategyConfigIds = front50Service.getStrategies(application)*.id as List<String>
     log.info("received ${strategyConfigIds.size()} strategies for application: $application from front50")
-    def allFront50Ids = pipelineConfigIds + strategyConfigIds
+
+    def allFront50PipelineConfigIds = pipelineConfigIds + strategyConfigIds
 
     List<PipelineExecution> allPipelineExecutions = []
 
     if (this.configurationProperties.getOptimizeExecutionRetrieval()) {
       allPipelineExecutions.addAll(
-          optimizedGetPipelineExecutions(application, allFront50Ids, executionCriteria)
+          optimizedGetPipelineExecutions(application, allFront50PipelineConfigIds, executionCriteria)
       )
     } else {
-      allPipelineExecutions = rx.Observable.merge(allFront50Ids.collect {
+      allPipelineExecutions = rx.Observable.merge(allFront50PipelineConfigIds.collect {
         log.debug("processing pipeline config id: $it")
         executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
       }).subscribeOn(Schedulers.io()).toList().toBlocking().single()
@@ -897,32 +898,34 @@ class TaskController {
         "${this.configurationProperties.getMaxExecutionRetrievalThreads()} threads and processing" +
         " ${this.configurationProperties.getMaxNumberOfPipelineExecutionsToProcess()} pipeline executions at a time")
 
-    List<String> commonIdsInFront50AndOrca
+    List<String> commonPipelineConfigIdsInFront50AndOrca
     try {
-      List<String> allOrcaIds = executionRepository.retrievePipelineConfigIdsForApplication(application)
-      log.info("found ${allOrcaIds.size()} pipeline config ids for application: $application in orca")
-      commonIdsInFront50AndOrca = front50PipelineConfigIds.intersect(allOrcaIds)
-      log.info("found ${commonIdsInFront50AndOrca.size()} pipeline config ids that are common in orca and front50 " +
-          "for application: $application." +
-          " Saved ${front50PipelineConfigIds.size() - commonIdsInFront50AndOrca.size()} extra pipeline config id queries")
+      List<String> allOrcaPipelineConfigIds = executionRepository.retrievePipelineConfigIdsForApplication(application)
+      log.info("found ${allOrcaPipelineConfigIds.size()} pipeline config ids for application: $application in orca")
+      commonPipelineConfigIdsInFront50AndOrca = front50PipelineConfigIds.intersect(allOrcaPipelineConfigIds)
+      log.info("found ${commonPipelineConfigIdsInFront50AndOrca.size()} pipeline config ids that are common in orca " +
+          "and front50 for application: $application. " +
+          "Saved ${front50PipelineConfigIds.size() - commonPipelineConfigIdsInFront50AndOrca.size()} extra pipeline " +
+          "config id queries")
     } catch (Exception e) {
       log.warn("retrieving pipeline config ids from orca db failed. using the result obtained from front50 ", e)
-      commonIdsInFront50AndOrca = front50PipelineConfigIds
+      commonPipelineConfigIdsInFront50AndOrca = front50PipelineConfigIds
     }
 
-    if (commonIdsInFront50AndOrca.size() == 0 ) {
-      log.info("no pipelines found")
+    if (commonPipelineConfigIdsInFront50AndOrca.size() == 0 ) {
+      log.info("no pipeline config ids found.")
       return finalResult
     }
 
     // get complete list of executions based on the execution criteria
     log.info("filtering pipeline executions based on the execution criteria: " +
         "limit: ${executionCriteria.getPageSize()}, statuses: ${executionCriteria.getStatuses()}")
-    List<String> filteredPipelineExecutions = executionRepository.filterPipelineExecutionsForApplication(application,
-        commonIdsInFront50AndOrca,
+    List<String> filteredPipelineExecutionIds = executionRepository.retrieveAndFilterPipelineExecutionIdsForApplication(
+        application,
+        commonPipelineConfigIdsInFront50AndOrca,
         executionCriteria
     )
-    if (filteredPipelineExecutions.size() == 0) {
+    if (filteredPipelineExecutionIds.size() == 0) {
       log.info("no pipeline executions found")
       return finalResult
     }
@@ -936,16 +939,16 @@ class TaskController {
             .build())
 
     try {
-      List<Future<Collection<PipelineExecution>>> futures = new ArrayList<>(filteredPipelineExecutions.size())
-      log.info("processing ${filteredPipelineExecutions.size()} pipeline executions")
+      List<Future<Collection<PipelineExecution>>> futures = new ArrayList<>(filteredPipelineExecutionIds.size())
+      log.info("processing ${filteredPipelineExecutionIds.size()} pipeline executions")
 
       // process a chunk of the executions at a time
-      filteredPipelineExecutions
+      filteredPipelineExecutionIds
           .collate(this.configurationProperties.getMaxNumberOfPipelineExecutionsToProcess())
           .each { List<String> chunkedExecutions ->
             futures.add(
                 executorService.submit({
-                  List<PipelineExecution> result = executionRepository.retrievePipelineExecutionsDetailsForApplication(
+                  List<PipelineExecution> result = executionRepository.retrievePipelineExecutionDetailsForApplication(
                       application, chunkedExecutions
                   )
                   log.debug("completed execution retrieval for ${result.size()} executions")
@@ -960,8 +963,10 @@ class TaskController {
             finalResult.addAll(
                 future.get(this.configurationProperties.getExecutionRetrievalTimeoutSeconds(), TimeUnit.SECONDS)
             )
-          } catch (TimeoutException | CancellationException | InterruptedException e) {
-            log.warn("Task failed with unexpected error", e)
+          } catch (Exception e) {
+            // no need to fail the entire thing if one thread fails. This means the final output will simply not
+            // contain any of these failed executions.
+            log.error("Task failed with error", e)
           }
       }
       return finalResult
@@ -970,7 +975,7 @@ class TaskController {
       try {
         executorService.shutdownNow()
       } catch (Exception e) {
-        log.warn("shutting down the executor service failed", e)
+        log.error("shutting down the executor service failed", e)
       }
     }
   }

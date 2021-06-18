@@ -96,13 +96,13 @@ public interface ExecutionRepository {
   Collection<String> retrievePipelineConfigIdsForApplication(@Nonnull String application);
 
   @Nonnull
-  Collection<String> filterPipelineExecutionsForApplication(
+  Collection<String> retrieveAndFilterPipelineExecutionIdsForApplication(
       @Nonnull String application,
       @Nonnull List<String> pipelineConfigIds,
       @Nonnull ExecutionCriteria criteria);
 
   @Nonnull
-  Collection<PipelineExecution> retrievePipelineExecutionsDetailsForApplication(
+  Collection<PipelineExecution> retrievePipelineExecutionDetailsForApplication(
       @Nonnull String application, @Nonnull List<String> pipelineConfigIds);
 
   /**

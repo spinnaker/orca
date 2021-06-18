@@ -279,28 +279,29 @@ class InMemoryExecutionRepository : ExecutionRepository {
 
   override fun retrievePipelineConfigIdsForApplication(application: String): List<String> {
     return pipelines.values
-      .filter {  it.application == application }
+      .filter { it.application == application }
       .map { it.pipelineConfigId }
       .distinct()
   }
 
-  override fun filterPipelineExecutionsForApplication(@Nonnull application: String,
-                                                      @Nonnull pipelineConfigIds: List<String>,
-                                                      @Nonnull criteria: ExecutionCriteria): List<String> {
+  override fun retrieveAndFilterPipelineExecutionIdsForApplication(
+    @Nonnull application: String,
+    @Nonnull pipelineConfigIds: List<String>,
+    @Nonnull criteria: ExecutionCriteria
+  ): List<String> {
     return pipelines.values
-      .filter {  it.application == application && pipelineConfigIds.contains(it.pipelineConfigId) }
+      .filter { it.application == application && pipelineConfigIds.contains(it.pipelineConfigId) }
       .applyCriteria(criteria)
       .map { it.id }
   }
 
-  override fun retrievePipelineExecutionsDetailsForApplication(
+  override fun retrievePipelineExecutionDetailsForApplication(
     application: String,
     pipelineConfigIds: List<String>): Collection<PipelineExecution> {
     return pipelines.values
       .filter { it.application == application && pipelineConfigIds.contains(it.pipelineConfigId) }
       .distinctBy { it.id }
   }
-
 
   override fun retrieveOrchestrationForCorrelationId(correlationId: String): PipelineExecution {
     return retrieveByCorrelationId(ORCHESTRATION, correlationId)
