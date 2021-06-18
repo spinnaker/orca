@@ -210,19 +210,21 @@ class DualExecutionRepository(
     ).distinct { it.id }
   }
 
-  override fun filterPipelineExecutionsForApplication(@Nonnull application: String,
-                                             @Nonnull pipelineConfigIds: List<String>,
-                                             @Nonnull criteria: ExecutionCriteria): List<String>{
-    return primary.filterPipelineExecutionsForApplication(application, pipelineConfigIds, criteria) +
-      previous.filterPipelineExecutionsForApplication(application,pipelineConfigIds, criteria)
+  override fun retrieveAndFilterPipelineExecutionIdsForApplication(
+    @Nonnull application: String,
+    @Nonnull pipelineConfigIds: List<String>,
+    @Nonnull criteria: ExecutionCriteria
+  ): List<String> {
+    return primary.retrieveAndFilterPipelineExecutionIdsForApplication(application, pipelineConfigIds, criteria) +
+      previous.retrieveAndFilterPipelineExecutionIdsForApplication(application, pipelineConfigIds, criteria)
   }
 
-  override fun retrievePipelineExecutionsDetailsForApplication(
+  override fun retrievePipelineExecutionDetailsForApplication(
     @Nonnull application: String,
     pipelineConfigIds: List<String>): Collection<PipelineExecution> {
     return (
-      primary.retrievePipelineExecutionsDetailsForApplication(application, pipelineConfigIds) +
-      previous.retrievePipelineExecutionsDetailsForApplication(application,pipelineConfigIds)
+      primary.retrievePipelineExecutionDetailsForApplication(application, pipelineConfigIds) +
+      previous.retrievePipelineExecutionDetailsForApplication(application, pipelineConfigIds)
       ).distinctBy { it.id }
   }
 

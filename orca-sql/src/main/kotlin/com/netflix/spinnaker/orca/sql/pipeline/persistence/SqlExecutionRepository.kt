@@ -453,14 +453,14 @@ class SqlExecutionRepository(
 
   override fun retrievePipelineConfigIdsForApplication(application: String): List<String> =
     withPool(poolName) {
-        return jooq.selectDistinct(field("config_id"))
-          .from(PIPELINE.tableName) // not adding index here as it slowed down the query
-          .where(field("application").eq(application))
-          .fetch(0, String::class.java)
+      return jooq.selectDistinct(field("config_id"))
+        .from(PIPELINE.tableName)
+        .where(field("application").eq(application))
+        .fetch(0, String::class.java)
     }
 
   /**
-   *  this function supports the following ExecutionCriteria currently:
+   * this function supports the following ExecutionCriteria currently:
    * 'limit', a.k.a page size and
    * 'statuses'.
    *
@@ -470,13 +470,13 @@ class SqlExecutionRepository(
    * It does this by executing the following query:
    * - If the execution criteria does not contain any statuses:
    *    SELECT config_id, id
-        FROM pipelines force index (`pipeline_config_id_idx`)
+        FROM pipelines force index (`pipeline_application_idx`)
         WHERE application = "myapp"
         ORDER BY
         config_id;
    * - If the execution criteria contains statuses:
    *    SELECT config_id, id
-        FROM pipelines force index (`pipeline_config_id_idx`)
+        FROM pipelines force index (`pipeline_application_status_starttime_idx`)
         WHERE (
           application = "myapp" and
           status in ("status1", "status2)
@@ -485,33 +485,37 @@ class SqlExecutionRepository(
         config_id;
 
    * It then applies the limit execution criteria on the result set obtained above. We observed load issues in the db
-   * when running a query where the limit was calculated in the query itself . Thereforce, we are moving that logic to
+   * when running a query where the limit was calculated in the query itself. Therefore, we are moving that logic to
    * the code below to ease the burden on the db in such circumstances.
    */
-  override fun filterPipelineExecutionsForApplication(application: String,
-                                                      pipelineConfigIds: List<String>,
-                                                      criteria: ExecutionCriteria): List<String> {
+  override fun retrieveAndFilterPipelineExecutionIdsForApplication(
+    application: String,
+    pipelineConfigIds: List<String>,
+    criteria: ExecutionCriteria
+  ): List<String> {
 
     // baseQueryPredicate for the flow where there are no statuses in the execution criteria
     var baseQueryPredicate = field("application").eq(application)
       .and(field("config_id").`in`(*pipelineConfigIds.toTypedArray()))
 
+    var table = if (jooq.dialect() == SQLDialect.MYSQL) PIPELINE.tableName.forceIndex("pipeline_application_idx")
+    else PIPELINE.tableName
     // baseQueryPredicate for the flow with statuses
     if (criteria.statuses.isNotEmpty() && criteria.statuses.size != ExecutionStatus.values().size) {
       val statusStrings = criteria.statuses.map { it.toString() }
       baseQueryPredicate = baseQueryPredicate
         .and(field("status").`in`(*statusStrings.toTypedArray()))
+
+      table = if (jooq.dialect() == SQLDialect.MYSQL) PIPELINE.tableName.forceIndex("pipeline_application_status_starttime_idx")
+      else PIPELINE.tableName
     }
 
     val finalResult: MutableList<String> = mutableListOf()
 
     log.info("getting execution ids")
     withPool(poolName) {
-       val baseQuery = jooq.select(field("config_id"), field("id"))
-         .from(
-           if (jooq.dialect() == SQLDialect.MYSQL) PIPELINE.tableName.forceIndex("pipeline_config_id_idx")
-           else PIPELINE.tableName
-         )
+      val baseQuery = jooq.select(field("config_id"), field("id"))
+        .from(table)
         .where(baseQueryPredicate)
          .orderBy(field("config_id"))
          .fetch().intoGroups("config_id", "id")
@@ -536,7 +540,7 @@ class SqlExecutionRepository(
    * It executes the following query to get execution details for n executions at a time in a specific application
    *
    * SELECT id, body, compressed_body, compression_type, `partition`
-       FROM pipelines
+       FROM pipelines force index (`pipeline_application_idx`)
        left outer join
        pipelines_compressed_executions
        using (`id`)
@@ -545,14 +549,17 @@ class SqlExecutionRepository(
          id in ('id1', 'id2', 'id3')
        );
    *
-   * it then get all the stage information for all the executions returned from the above query.
+   * it then gets all the stage information for all the executions returned from the above query.
    */
-  override fun retrievePipelineExecutionsDetailsForApplication(
+  override fun retrievePipelineExecutionDetailsForApplication(
     application: String,
     pipelineExecutions: List<String>): Collection<PipelineExecution> {
     withPool(poolName) {
       val baseQuery = jooq.select(selectExecutionFields(compressionProperties))
-        .from(PIPELINE.tableName)
+        .from(
+          if (jooq.dialect() == SQLDialect.MYSQL) PIPELINE.tableName.forceIndex("pipeline_application_idx")
+          else PIPELINE.tableName
+        )
         .leftOuterJoin(PIPELINE.tableName.compressedExecTable).using(field("id"))
         .where(
           field("application").eq(application)

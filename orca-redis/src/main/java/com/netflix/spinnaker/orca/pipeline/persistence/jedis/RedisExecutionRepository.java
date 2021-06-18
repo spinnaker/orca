@@ -55,7 +55,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -490,7 +489,7 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @Nonnull List<String> filterPipelineExecutionsForApplication(
+  public @Nonnull List<String> retrieveAndFilterPipelineExecutionIdsForApplication(
       @Nonnull String application,
       @Nonnull List<String> pipelineConfigIds,
       @Nonnull ExecutionCriteria criteria) {
@@ -501,8 +500,8 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
-  public @NotNull List<PipelineExecution> retrievePipelineExecutionsDetailsForApplication(
-      @Nonnull String application, @NotNull List<String> pipelineExecutionIds) {
+  public @Nonnull List<PipelineExecution> retrievePipelineExecutionDetailsForApplication(
+      @Nonnull String application, @Nonnull List<String> pipelineExecutionIds) {
     // TODO: not implemented yet - this method, at present, is primarily meant for the
     // SqlExecutionRepository
     //  implementation.
