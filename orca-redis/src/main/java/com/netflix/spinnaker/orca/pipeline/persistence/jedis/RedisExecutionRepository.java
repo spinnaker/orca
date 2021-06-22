@@ -501,7 +501,9 @@ public class RedisExecutionRepository implements ExecutionRepository {
 
   @Override
   public @Nonnull List<PipelineExecution> retrievePipelineExecutionDetailsForApplication(
-      @Nonnull String application, @Nonnull List<String> pipelineExecutionIds) {
+      @Nonnull String application,
+      @Nonnull List<String> pipelineExecutionIds,
+      int queryTimeoutSeconds) {
     // TODO: not implemented yet - this method, at present, is primarily meant for the
     // SqlExecutionRepository
     //  implementation.

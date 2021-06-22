@@ -103,7 +103,9 @@ public interface ExecutionRepository {
 
   @Nonnull
   Collection<PipelineExecution> retrievePipelineExecutionDetailsForApplication(
-      @Nonnull String application, @Nonnull List<String> pipelineConfigIds);
+      @Nonnull String application,
+      @Nonnull List<String> pipelineConfigIds,
+      int queryTimeoutSeconds);
 
   /**
    * Returns executions in the time boundary. Redis impl does not respect pageSize or offset params,
