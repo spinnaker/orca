@@ -221,10 +221,12 @@ class DualExecutionRepository(
 
   override fun retrievePipelineExecutionDetailsForApplication(
     @Nonnull application: String,
-    pipelineConfigIds: List<String>): Collection<PipelineExecution> {
+    pipelineConfigIds: List<String>,
+    queryTimeoutSeconds: Int
+  ): Collection<PipelineExecution> {
     return (
-      primary.retrievePipelineExecutionDetailsForApplication(application, pipelineConfigIds) +
-      previous.retrievePipelineExecutionDetailsForApplication(application, pipelineConfigIds)
+      primary.retrievePipelineExecutionDetailsForApplication(application, pipelineConfigIds, queryTimeoutSeconds) +
+      previous.retrievePipelineExecutionDetailsForApplication(application, pipelineConfigIds, queryTimeoutSeconds)
       ).distinctBy { it.id }
   }
 

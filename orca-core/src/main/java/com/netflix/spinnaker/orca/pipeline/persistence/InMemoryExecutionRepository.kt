@@ -297,7 +297,9 @@ class InMemoryExecutionRepository : ExecutionRepository {
 
   override fun retrievePipelineExecutionDetailsForApplication(
     application: String,
-    pipelineConfigIds: List<String>): Collection<PipelineExecution> {
+    pipelineConfigIds: List<String>,
+    queryTimeoutSeconds: Int
+  ): Collection<PipelineExecution> {
     return pipelines.values
       .filter { it.application == application && pipelineConfigIds.contains(it.pipelineConfigId) }
       .distinctBy { it.id }

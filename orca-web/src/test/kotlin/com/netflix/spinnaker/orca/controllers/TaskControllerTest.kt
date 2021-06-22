@@ -30,27 +30,30 @@ import com.netflix.spinnaker.orca.sql.pipeline.persistence.SqlExecutionRepositor
 import com.nhaarman.mockito_kotlin.mock
 import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
+import org.jooq.exception.DataAccessException
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.table
+import org.junit.Assert.assertThrows
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import strikt.api.expectCatching
 import strikt.api.expectThat
+import strikt.assertions.isA
 import strikt.assertions.isEqualTo
-import strikt.assertions.isTrue
+import strikt.assertions.isFailure
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 class TaskControllerTest : JUnit5Minutests {
-  data class Fixture(val optimizeExecution: Boolean, val timeout: Double = 60.0) {
+  data class Fixture(val optimizeExecution: Boolean) {
 
     private val clock: Clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
     val database: SqlTestUtil.TestDatabase = SqlTestUtil.initTcMysqlDatabase()!!
-
-
 
     private val executionRepository: SqlExecutionRepository = SqlExecutionRepository(
       partitionName = "test",
@@ -64,7 +67,6 @@ class TaskControllerTest : JUnit5Minutests {
     private val taskControllerConfigurationProperties: TaskControllerConfigurationProperties = TaskControllerConfigurationProperties()
       .apply {
         optimizeExecutionRetrieval = optimizeExecution
-        executionRetrievalTimeoutSeconds = timeout.toLong()
       }
 
     private val daysOfExecutionHistory: Long = taskControllerConfigurationProperties.daysOfExecutionHistory.toLong()
@@ -238,28 +240,20 @@ class TaskControllerTest : JUnit5Minutests {
       }
     }
 
-    context("execution retrieval with optimization having timeouts") {
+    context("test query having explicit query timeouts") {
       fixture {
-        Fixture(true, 0.1)
+        Fixture(true)
       }
 
       before { setup() }
       after { cleanUp() }
 
-      test("retrieve executions with limit = 2 & expand = false") {
-        expectThat(database.context.fetchCount(table("pipelines"))).isEqualTo(5)
-        val response = subject.perform(get("/applications/test-app/pipelines?limit=2&expand=false")).andReturn().response
-        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<List<PipelineExecution>>() {})
-        expectThat(results.isEmpty()).isTrue()
-      }
-
-      test("retrieve executions with limit = 2 & expand = false with statuses") {
-        expectThat(database.context.fetchCount(table("pipelines"))).isEqualTo(5)
-        val response = subject.perform(get(
-          "/applications/test-app/pipelines?limit=2&expand=false&statuses=RUNNING,SUSPENDED,PAUSED,NOT_STARTED")
-        ).andReturn().response
-        val results = OrcaObjectMapper.getInstance().readValue(response.contentAsString, object : TypeReference<List<PipelineExecution>>() {})
-        expectThat(results.isEmpty()).isTrue()
+      test("it returns a DataAccessException on query timeout") {
+        expectCatching {
+          database.context.select(field("sleep(10)")).queryTimeout(1).execute()
+        }
+          .isFailure()
+          .isA<DataAccessException>()
       }
     }
   }

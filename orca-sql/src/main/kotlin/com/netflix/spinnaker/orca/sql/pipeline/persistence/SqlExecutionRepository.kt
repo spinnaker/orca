@@ -553,7 +553,9 @@ class SqlExecutionRepository(
    */
   override fun retrievePipelineExecutionDetailsForApplication(
     application: String,
-    pipelineExecutions: List<String>): Collection<PipelineExecution> {
+    pipelineExecutions: List<String>,
+    queryTimeoutSeconds: Int
+  ): Collection<PipelineExecution> {
     withPool(poolName) {
       val baseQuery = jooq.select(selectExecutionFields(compressionProperties))
         .from(
@@ -565,6 +567,7 @@ class SqlExecutionRepository(
           field("application").eq(application)
             .and(field("id").`in`(*pipelineExecutions.toTypedArray()))
         )
+        .queryTimeout(queryTimeoutSeconds) // add an explicit timeout so that the query doesn't run forever
         .fetch()
 
       log.info("getting stage information for all the executions found so far")

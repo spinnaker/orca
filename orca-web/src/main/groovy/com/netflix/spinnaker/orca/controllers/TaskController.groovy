@@ -49,11 +49,9 @@ import java.nio.charset.Charset
 import java.time.Clock
 import java.time.ZoneOffset
 import java.util.concurrent.Callable
-import java.util.concurrent.CancellationException
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
@@ -889,7 +887,7 @@ class TaskController {
    *
    *<p>
    *   3. It then processes n pipeline executions at a time to retrieve the complete execution details. In addition,
-   *      we make use of a configured thread pool so that multiple batches of n executions can be processed parallelly.
+   *      we make use of a configured thread pool to process multiple batches of n executions in parallel.
    */
   private List<PipelineExecution> optimizedGetPipelineExecutions(String application,
   List<String> front50PipelineConfigIds, ExecutionCriteria executionCriteria) {
@@ -946,34 +944,33 @@ class TaskController {
       filteredPipelineExecutionIds
           .collate(this.configurationProperties.getMaxNumberOfPipelineExecutionsToProcess())
           .each { List<String> chunkedExecutions ->
-            futures.add(
-                executorService.submit({
-                  List<PipelineExecution> result = executionRepository.retrievePipelineExecutionDetailsForApplication(
-                      application, chunkedExecutions
-                  )
-                  log.debug("completed execution retrieval for ${result.size()} executions")
-                  return result
-                } as Callable<Collection<PipelineExecution>>)
-            )
+            futures.add(executorService.submit({
+              try {
+                List<PipelineExecution> result = executionRepository.retrievePipelineExecutionDetailsForApplication(
+                    application,
+                    chunkedExecutions,
+                    this.configurationProperties.getExecutionRetrievalTimeoutSeconds()
+                )
+                log.debug("completed execution retrieval for ${result.size()} executions")
+                return result
+              } catch (Exception e) { // handle exceptions such as query timeouts etc.
+                log.error("error occurred while retrieving these executions: ${chunkedExecutions.toString()} " +
+                    "for application: ${application}.", e)
+                // in case of errors, this will return partial results. We are going with this best-effort approach
+                // because the UI keeps refreshing the executions view frequently. Hence, the user will eventually see
+                // these executions via one of the subsequent calls. Partial data is better than an exception at this
+                // point since the latter will result in a UI devoid of any executions.
+                //
+                return []
+              }
+            } as Callable<Collection<PipelineExecution>>))
           }
 
-      futures.each {
-        Future<Collection<PipelineExecution>> future ->
-          try {
-            finalResult.addAll(
-                future.get(this.configurationProperties.getExecutionRetrievalTimeoutSeconds(), TimeUnit.SECONDS)
-            )
-          } catch (Exception e) {
-            // no need to fail the entire thing if one thread fails. This means the final output will simply not
-            // contain any of these failed executions.
-            log.error("Task failed with error", e)
-          }
-      }
+      futures.each { Future<Collection<PipelineExecution>> future -> finalResult.addAll(future.get()) }
       return finalResult
     } finally {
-      // attempt to shutdown the executor service
       try {
-        executorService.shutdownNow()
+        executorService.shutdownNow()   // attempt to shutdown the executor service
       } catch (Exception e) {
         log.error("shutting down the executor service failed", e)
       }
