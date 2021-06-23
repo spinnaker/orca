@@ -46,18 +46,24 @@ public class CloudFoundryWaitForDeployServiceTask extends AbstractWaitForService
         oortService.getServiceInstance(account, cloudProvider, region, serviceInstanceName);
 
     ExecutionStatus status = oortStatusToTaskStatus(serviceInstance);
-    String lastOperationDescription =
-        Optional.ofNullable(serviceInstance.get("lastOperationDescription")).orElse("").toString();
-    TaskResult.TaskResultBuilder taskResultBuilder =
-        TaskResult.builder(status)
-            .output(
-                "lastOperationStatus",
-                Optional.ofNullable(serviceInstance.get("status")).orElse("").toString())
-            .output("lastOperationDescription", lastOperationDescription);
 
-    if (status == ExecutionStatus.TERMINAL) {
-      taskResultBuilder.output("failureMessage", lastOperationDescription);
-    }
+    TaskResult.TaskResultBuilder taskResultBuilder = TaskResult.builder(status);
+    Optional.ofNullable(serviceInstance)
+        .ifPresent(
+            (si) -> {
+              String lastOperationDescription =
+                  Optional.ofNullable(serviceInstance.get("lastOperationDescription"))
+                      .orElse("")
+                      .toString();
+              taskResultBuilder
+                  .output(
+                      "lastOperationStatus",
+                      Optional.ofNullable(serviceInstance.get("status")).orElse("").toString())
+                  .output("lastOperationDescription", lastOperationDescription);
+              if (status == ExecutionStatus.TERMINAL) {
+                taskResultBuilder.output("failureMessage", lastOperationDescription);
+              }
+            });
 
     return taskResultBuilder.build();
   }
