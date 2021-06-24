@@ -53,7 +53,7 @@ public class CloudFoundryWaitForDeployServiceTask extends AbstractWaitForService
             (si) -> {
               String lastOperationDescription =
                   Optional.ofNullable(serviceInstance.get("lastOperationDescription"))
-                      .orElse("")
+                      .orElse("Failed to get last operation description")
                       .toString();
               taskResultBuilder
                   .output(
