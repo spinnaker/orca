@@ -22,7 +22,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroup;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.TargetServerGroupResolver;
-import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,21 +33,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CloudFoundryDeleteServiceBindingTask extends AbstractCloudFoundryServiceTask {
+public class CloudFoundryDeleteServiceBindingsTask extends AbstractCloudFoundryServiceTask {
 
   private final TargetServerGroupResolver tsgResolver;
-  private final ArtifactUtils artifactUtils;
   private final ObjectMapper mapper;
 
   @Autowired
-  public CloudFoundryDeleteServiceBindingTask(
-      KatoService kato,
-      TargetServerGroupResolver tsgResolver,
-      ArtifactUtils artifactUtils,
-      ObjectMapper mapper) {
+  public CloudFoundryDeleteServiceBindingsTask(
+      KatoService kato, TargetServerGroupResolver tsgResolver, ObjectMapper mapper) {
     super(kato);
     this.tsgResolver = tsgResolver;
-    this.artifactUtils = artifactUtils;
     this.mapper = mapper;
   }
 

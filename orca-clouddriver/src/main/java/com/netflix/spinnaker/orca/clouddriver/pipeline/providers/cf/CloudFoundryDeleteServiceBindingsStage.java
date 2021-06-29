@@ -20,16 +20,18 @@ import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder;
 import com.netflix.spinnaker.orca.api.pipeline.graph.TaskNode;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryDeleteServiceBindingTask;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.cf.CloudFoundryDeleteServiceBindingsTask;
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import javax.annotation.Nonnull;
+import org.springframework.stereotype.Component;
 
+@Component
 public class CloudFoundryDeleteServiceBindingsStage
     implements StageDefinitionBuilder, CloudProviderAware {
   @Override
   public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
     builder
-        .withTask("deleteServiceBindings", CloudFoundryDeleteServiceBindingTask.class)
+        .withTask("deleteServiceBindings", CloudFoundryDeleteServiceBindingsTask.class)
         .withTask("monitorTask", MonitorKatoTask.class);
   }
 }
