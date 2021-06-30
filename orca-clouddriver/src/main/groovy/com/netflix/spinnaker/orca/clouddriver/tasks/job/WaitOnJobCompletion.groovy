@@ -27,11 +27,14 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
+import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
+import com.netflix.spinnaker.orca.front50.Front50Service
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import retrofit.RetrofitError
 
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
@@ -57,6 +60,9 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
 
   @Autowired
   JobUtils jobUtils
+
+  @Autowired(required = false)
+  Front50Service front50Service
 
   static final String REFRESH_TYPE = "Job"
   /**
@@ -120,7 +126,11 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
 
       def name = names[0]
       def parsedName = Names.parseName(name)
-      String appName = stage.context.moniker?.app ?: stage.context.application ?: parsedName.app
+      String appName = stage.context.moniker?.app ?: stage.context.application ?: stage.execution.application
+
+      if (appName == null && applicationExists(parsedName.app)) {
+        appName = parsedName.app
+      }
 
       InputStream jobStream
       retrySupport.retry({
@@ -161,5 +171,16 @@ public class WaitOnJobCompletion extends AbstractCloudProviderAwareTask implemen
     }
 
     TaskResult.builder(status).context(outputs).outputs(outputs).build()
+  }
+
+  private Boolean applicationExists(String appName) {
+    if (appName == null || front50Service == null) {
+      return false
+    }
+    try {
+      return front50Service.get(appName) != null
+    } catch (RetrofitError e) {
+      throw e
+    }
   }
 }
