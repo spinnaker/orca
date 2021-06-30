@@ -26,12 +26,9 @@ import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.clouddriver.KatoRestService
-<<<<<<< HEAD
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask
-=======
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.front50.Front50Service
->>>>>>> 67060a203 (fix(jobs): use stage.execution.application as default when looking job status (#4134))
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
