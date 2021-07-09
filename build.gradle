@@ -20,10 +20,12 @@ plugins {
   id "org.jetbrains.kotlin.plugin.allopen" version "$kotlinVersion" apply false
   id "io.gitlab.arturbosch.detekt" version "1.7.4" apply false
   id "org.jetbrains.dokka" version "1.4.10" apply false
+  id "nebula.maven-apache-license" version "17.3.2" apply false
 }
 
 allprojects {
   apply plugin: 'io.spinnaker.project'
+  apply plugin: 'nebula.maven-apache-license'
 
   group = "io.spinnaker.orca"
 
