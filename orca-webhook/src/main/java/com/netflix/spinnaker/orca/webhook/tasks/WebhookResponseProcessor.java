@@ -202,7 +202,8 @@ public class WebhookResponseProcessor {
       if (stageExecution.getContext().containsKey("expectedArtifacts")
           && !((List) stageExecution.getContext().get("expectedArtifacts")).isEmpty()) {
         try {
-          stageOutput.put("artifacts", JsonPath.parse(response.getBody()).read("artifacts"));
+          stageOutput.put(
+              "artifacts", JsonPath.parse(response.getBody().toString()).read("artifacts"));
         } catch (Exception e) {
           webhookOutput.setError(
               "Expected artifacts in webhook response couldn't be parsed: " + e.toString());
