@@ -160,6 +160,44 @@ public class RedisExecutionRepository implements ExecutionRepository {
   }
 
   @Override
+  public void updateStageOthers(@Nonnull StageExecution stage) {
+    RedisClientDelegate delegate = getRedisDelegate(stage);
+    String key = executionKey(stage);
+    String contextKey = format("stage.%s.others", stage.getId());
+    delegate.withCommandsClient(
+        c -> {
+          try {
+            c.hset(key, contextKey, mapper.writeValueAsString(stage.getOthers()));
+          } catch (JsonProcessingException e) {
+            throw new StageSerializationException(
+                format(
+                    "Failed serializing stage, executionId: %s, stageId: %s",
+                    stage.getExecution().getId(), stage.getId()),
+                e);
+          }
+        });
+  }
+
+  @Override
+  public void deleteStageOthers(@Nonnull StageExecution stage) {
+    RedisClientDelegate delegate = getRedisDelegate(stage);
+    String key = executionKey(stage);
+    String contextKey = format("stage.%s.others", stage.getId());
+    delegate.withCommandsClient(
+        c -> {
+          try {
+            c.hdel(key, contextKey, mapper.writeValueAsString(stage.getOthers()));
+          } catch (JsonProcessingException e) {
+            throw new StageSerializationException(
+                format(
+                    "Failed serializing stage, executionId: %s, stageId: %s",
+                    stage.getExecution().getId(), stage.getId()),
+                e);
+          }
+        });
+  }
+
+  @Override
   public void removeStage(@Nonnull PipelineExecution execution, @Nonnull String stageId) {
     RedisClientDelegate delegate = getRedisDelegate(execution);
     String key = executionKey(execution);
@@ -935,6 +973,11 @@ public class RedisExecutionRepository implements ExecutionRepository {
               stage.setOutputs(mapper.readValue(map.get(prefix + "outputs"), MAP_STRING_TO_OBJECT));
             } else {
               stage.setOutputs(emptyMap());
+            }
+            if (map.get(prefix + "others") != null) {
+              stage.setOthers(mapper.readValue(map.get(prefix + "others"), MAP_STRING_TO_OBJECT));
+            } else {
+              stage.setOthers(emptyMap());
             }
             if (map.get(prefix + "tasks") != null) {
               stage.setTasks(mapper.readValue(map.get(prefix + "tasks"), LIST_OF_TASKS));
