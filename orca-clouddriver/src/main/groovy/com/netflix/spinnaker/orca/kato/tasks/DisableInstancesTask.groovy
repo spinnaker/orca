@@ -47,6 +47,7 @@ class DisableInstancesTask implements CloudProviderAware, Task {
     String account = getCredentials(stage)
 
     def serverGroupName = stage.context.serverGroupName ?: stage.context.asgName
+    def interestingHealthProviderNames = HealthHelper.getInterestingHealthProviderNames(stage, ["Discovery", "LoadBalancer"])
 
     trafficGuard.verifyInstanceTermination(
       serverGroupName,
@@ -57,13 +58,16 @@ class DisableInstancesTask implements CloudProviderAware, Task {
       cloudProvider,
       "Disabling the requested instances in")
 
-    def actions = [[disableInstancesInDiscovery: stage.context], [deregisterInstancesFromLoadBalancer: stage.context]]
+    def actions = [[deregisterInstancesFromLoadBalancer: stage.context]]
+    if (interestingHealthProviderNames.contains("Discovery")) {
+      actions = [[disableInstancesInDiscovery: stage.context]] + actions
+    }
     def taskId = katoService.requestOperations(actions)
 
     TaskResult.builder(ExecutionStatus.SUCCEEDED).context([
       "notification.type"           : 'disableinstances',
       "kato.last.task.id"           : taskId,
-      interestingHealthProviderNames: HealthHelper.getInterestingHealthProviderNames(stage, ["Discovery", "LoadBalancer"])
+      interestingHealthProviderNames: interestingHealthProviderNames
     ]).build()
   }
 }
