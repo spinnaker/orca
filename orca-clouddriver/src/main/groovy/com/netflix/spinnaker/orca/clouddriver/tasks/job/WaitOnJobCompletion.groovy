@@ -53,8 +53,8 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
   private final ObjectMapper objectMapper
   private final RetrySupport retrySupport
   private final JobUtils jobUtils
-  Front50Service front50Service
   private final ExecutionRepository repository
+  Front50Service front50Service
 
   static final String REFRESH_TYPE = "Job"
   /**
@@ -166,7 +166,7 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
             }, 6, 5000, false) // retry for 30 seconds
           } catch (Exception e) {
             if (status == ExecutionStatus.SUCCEEDED) {
-              throw e
+              throw new ConfigurationException("Property File: ${stage.context.propertyFile} contents could not be retrieved. Error: " + e)
             }
             log.warn("failed to get file contents for ${appName}, account: ${account}, namespace: ${location}, " +
                 "manifest: ${name} from propertyFile: ${stage.context.propertyFile}. Error: ", e)
