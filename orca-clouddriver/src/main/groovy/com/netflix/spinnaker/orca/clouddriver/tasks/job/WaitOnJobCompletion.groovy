@@ -219,7 +219,7 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
   }
 
   /**
-   * this function is called into action when the job has failed. It returns a {@link JobFailedException} with all the
+   * this function is called into action when the job has failed. It throws a {@link JobFailedException} with all the
    * error details that it computes from the input parameter
    *
    * @param job - contains the job status
@@ -230,12 +230,15 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
     String reason = job.getOrDefault("reason", "")
     String failureDetails = job.getOrDefault("failureDetails", "")
 
-    String errorMessage = "No reason provided."
-    if (jobName && message && reason) {
-      errorMessage = "Job: '${jobName}' failed. Reason: ${reason}. Details: ${message}."
-      if (failureDetails) {
-        errorMessage += " Additional Details: ${failureDetails}"
-      }
+    String errorMessage = "Job: '${jobName}' failed."
+    if (reason) {
+      errorMessage += " Reason: ${reason}."
+    }
+    if (message) {
+      errorMessage += " Details: ${message}."
+    }
+    if (failureDetails) {
+      errorMessage += " Additional Details: ${failureDetails}"
     }
     throw new JobFailedException(errorMessage)
   }
