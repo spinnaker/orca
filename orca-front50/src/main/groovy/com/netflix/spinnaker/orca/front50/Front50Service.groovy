@@ -88,7 +88,7 @@ interface Front50Service {
 
   @DELETE("/pipelines/{applicationName}/{pipelineName}")
   Response deletePipeline(@Path("applicationName") String applicationName, @Path("pipelineName") String pipelineName)
-  
+
   @POST('/actions/strategies/reorder')
   Response reorderPipelineStrategies(@Body ReorderPipelinesCommand reorderPipelinesCommand)
 
@@ -158,6 +158,9 @@ interface Front50Service {
 
   @DELETE("/applications/{application}/deliveries/{id}")
   Response deleteDeliveryConfig(@Path("application") String application, @Path("id") String id)
+
+  @DELETE("/pipelines/{app}/{name}")
+  Response deletePipelineConfig(@Path("app") String app, @Path("name") String name, @Query("staleCheck") boolean staleCheck)
 
   static class Project {
     String id
