@@ -147,7 +147,11 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
       InputStream jobStream
       retrySupport.retry({
         jobStream = katoRestService.collectJob(appName, account, location, name).body.in()
-      }, 6, 5000, false) // retry for 30 seconds
+      },
+          configProperties.getJobStatusRetry().maxAttempts,
+          Duration.ofMillis(configProperties.getJobStatusRetry().getBackOffInMs()),
+          configProperties.getJobStatusRetry().exponentialBackoffEnabled
+      )
       Map job = objectMapper.readValue(jobStream, new TypeReference<Map>() {})
       outputs.jobStatus = job
 
@@ -169,7 +173,11 @@ public class WaitOnJobCompletion implements CloudProviderAware, OverridableTimeo
           try {
             retrySupport.retry({
               properties = katoRestService.getFileContents(appName, account, location, name, stage.context.propertyFile)
-            }, 6, 5000, false) // retry for 30 seconds
+            },
+                configProperties.getFileContentRetry().maxAttempts,
+                Duration.ofMillis(configProperties.getFileContentRetry().getBackOffInMs()),
+                configProperties.getFileContentRetry().exponentialBackoffEnabled
+            )
           } catch (Exception e) {
             if (status == ExecutionStatus.SUCCEEDED) {
               throw new ConfigurationException("Property File: ${stage.context.propertyFile} contents could not be retrieved. Error: " + e)

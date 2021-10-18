@@ -73,14 +73,21 @@ public final class WaitOnJobCompletionTest {
   public void setup() {
     objectMapper = new ObjectMapper();
     RetrySupport retrySupport = new RetrySupport();
-    configProperties = new TaskConfigurationProperties();
-    configProperties
-        .getWaitOnJobCompletionTask()
-        .setExcludeKeysFromOutputs(Set.of("completionDetails"));
     mockKatoRestService = mock(KatoRestService.class);
     JobUtils mockJobUtils = mock(JobUtils.class);
     mockExecutionRepository = mock(ExecutionRepository.class);
     mockFront50Service = mock(Front50Service.class);
+
+    configProperties = new TaskConfigurationProperties();
+    TaskConfigurationProperties.WaitOnJobCompletionTaskConfig.Retries retries =
+        new TaskConfigurationProperties.WaitOnJobCompletionTaskConfig.Retries();
+    retries.setMaxAttempts(3);
+    retries.setBackOffInMs(1);
+    configProperties.getWaitOnJobCompletionTask().setFileContentRetry(retries);
+    configProperties.getWaitOnJobCompletionTask().setJobStatusRetry(retries);
+    configProperties
+        .getWaitOnJobCompletionTask()
+        .setExcludeKeysFromOutputs(Set.of("completionDetails"));
 
     task =
         new WaitOnJobCompletion(
@@ -289,8 +296,13 @@ public final class WaitOnJobCompletionTest {
     verify(mockKatoRestService, times(1))
         .collectJob(eq("test-app"), eq("test-account"), eq("test"), eq("job testrep"));
 
-    // since there are 6 tries made for this call if it fails
-    verify(mockKatoRestService, times(6))
+    verify(
+            mockKatoRestService,
+            times(
+                configProperties
+                    .getWaitOnJobCompletionTask()
+                    .getFileContentRetry()
+                    .getMaxAttempts()))
         .getFileContents(
             eq("test-app"), eq("test-account"), eq("test"), eq("job testrep"), eq("testrep"));
 
@@ -448,10 +460,13 @@ public final class WaitOnJobCompletionTest {
     verify(mockKatoRestService, times(1))
         .collectJob(eq("test-app"), eq("test-account"), eq("test"), eq("job testrep"));
 
-    // since there are 6 tries made for this call if it fails - this is a slow call since retry
-    // config options are
-    // hard-coded
-    verify(mockKatoRestService, times(6))
+    verify(
+            mockKatoRestService,
+            times(
+                configProperties
+                    .getWaitOnJobCompletionTask()
+                    .getFileContentRetry()
+                    .getMaxAttempts()))
         .getFileContents(
             eq("test-app"), eq("test-account"), eq("test"), eq("job testrep"), eq("testrep"));
 
