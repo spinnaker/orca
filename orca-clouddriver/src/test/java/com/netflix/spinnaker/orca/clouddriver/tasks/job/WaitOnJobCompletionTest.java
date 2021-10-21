@@ -264,7 +264,9 @@ public final class WaitOnJobCompletionTest {
           thrown
               .getMessage()
               .matches(
-                  "Expected properties file testrep but it was either missing, empty or contained invalid syntax"));
+                  "Expected properties file: testrep in job: job testrep, application: test-app,"
+                      + " location: test, account: test-account but it was either missing, empty or"
+                      + " contained invalid syntax"));
     } else {
       assertNotNull(result);
       assertThat(result.getContext().containsKey("propertyFileContents")).isTrue();
@@ -315,8 +317,137 @@ public final class WaitOnJobCompletionTest {
         thrown
             .getMessage()
             .matches(
-                "Property File: testrep contents could not be retrieved. "
-                    + "Error: java.lang.RuntimeException: some exception"));
+                "Expected properties file: testrep in job: job testrep, application: test-app,"
+                    + " location: test, account: test-account but it was either missing, empty or contained"
+                    + " invalid syntax. Error: java.lang.RuntimeException: some exception"));
+  }
+
+  @DisplayName(
+      "test to parse properties file for a successful k8s job having 2 pods - first failed, and second succeeded. The"
+          + " properties file should be obtained from the getFileContents() call, if that is successful")
+  @Test
+  void
+      testParsePropertiesFileContentsForSuccessfulK8sJobWith2PodsWithSuccessfulGetFileContentsCall()
+          throws IOException {
+    // setup
+
+    // mocked JobStatus response from clouddriver
+    when(mockKatoRestService.collectJob("test-app", "test-account", "test", "job testrep"))
+        .thenReturn(
+            createJobStatusFromResource(
+                "clouddriver/tasks/job/kubernetes/successful-runjob-status-with-multiple-pods.json"));
+
+    // when
+    when(mockKatoRestService.getFileContents(
+            "test-app", "test-account", "test", "job testrep", "testrep"))
+        .thenReturn(Map.of("some-key", "some-value"));
+
+    TaskResult result =
+        task.execute(
+            createStageFromResource(
+                "clouddriver/tasks/job/kubernetes/runjob-stage-context-with-property-file.json"));
+
+    // then
+    assertThat(result.getOutputs()).isNotEmpty();
+    assertThat(result.getContext()).isNotEmpty();
+
+    assertThat(result.getOutputs().containsKey("some-key"));
+    assertThat(result.getOutputs().containsValue("some-value"));
+    verify(mockKatoRestService)
+        .getFileContents("test-app", "test-account", "test", "job testrep", "testrep");
+    // no need to get file contents from a specific pod if the getFileContents call was successful
+    verify(mockKatoRestService, never())
+        .getFileContentsFromKubernetesPod(
+            anyString(), anyString(), anyString(), anyString(), anyString());
+  }
+
+  @DisplayName(
+      "test to parse properties file for a successful k8s job having 2 pods - first failed, and second succeeded. The"
+          + " the properties file should be read directly from the succeeded pod if the getFileContents() call fails")
+  @Test
+  void testParsePropertiesFileContentsForSuccessfulK8sJobWith2PodsWithFailedGetFileContentsCall()
+      throws IOException {
+    // setup
+
+    // mocked JobStatus response from clouddriver
+    when(mockKatoRestService.collectJob("test-app", "test-account", "test", "job testrep"))
+        .thenReturn(
+            createJobStatusFromResource(
+                "clouddriver/tasks/job/kubernetes/successful-runjob-status-with-multiple-pods.json"));
+
+    // when
+    when(mockKatoRestService.getFileContents(
+            "test-app", "test-account", "test", "job testrep", "testrep"))
+        .thenReturn(Map.of());
+
+    when(mockKatoRestService.getFileContentsFromKubernetesPod(
+            "test-app", "test-account", "test", "testrep-rn5qt", "testrep"))
+        .thenReturn(Map.of("some-key", "some-value"));
+
+    TaskResult result =
+        task.execute(
+            createStageFromResource(
+                "clouddriver/tasks/job/kubernetes/runjob-stage-context-with-property-file.json"));
+
+    // then
+    assertThat(result.getOutputs()).isNotEmpty();
+    assertThat(result.getContext()).isNotEmpty();
+
+    assertThat(result.getOutputs().containsKey("some-key"));
+    assertThat(result.getOutputs().containsValue("some-value"));
+    verify(mockKatoRestService)
+        .getFileContents("test-app", "test-account", "test", "job testrep", "testrep");
+    verify(mockKatoRestService)
+        .getFileContentsFromKubernetesPod(
+            "test-app", "test-account", "test", "testrep-rn5qt", "testrep");
+  }
+
+  @DisplayName(
+      "test to parse properties file for a successful k8s job having 2 pods - first failed, and second succeeded. The"
+          + " the properties file should be read from the getFileContents() call first. If that fails, a call to "
+          + " get the properties from the getFileContentsFromPod() should be made. If that fails,"
+          + " an exception should be thrown")
+  @Test
+  void testParsePropertiesFileContentsErrorHandlingForSuccessfulK8sJobWith2Pods()
+      throws IOException {
+    // setup
+
+    // mocked JobStatus response from clouddriver
+    when(mockKatoRestService.collectJob("test-app", "test-account", "test", "job testrep"))
+        .thenReturn(
+            createJobStatusFromResource(
+                "clouddriver/tasks/job/kubernetes/successful-runjob-status-with-multiple-pods.json"));
+
+    // when
+    when(mockKatoRestService.getFileContents(
+            "test-app", "test-account", "test", "job testrep", "testrep"))
+        .thenReturn(Map.of());
+
+    when(mockKatoRestService.getFileContentsFromKubernetesPod(
+            "test-app", "test-account", "test", "testrep-rn5qt", "testrep"))
+        .thenReturn(Map.of());
+
+    // then
+    ConfigurationException thrown =
+        assertThrows(
+            ConfigurationException.class,
+            () ->
+                task.execute(
+                    createStageFromResource(
+                        "clouddriver/tasks/job/kubernetes/runjob-stage-context-with-property-file.json")));
+
+    verify(mockKatoRestService)
+        .getFileContents("test-app", "test-account", "test", "job testrep", "testrep");
+    verify(mockKatoRestService)
+        .getFileContentsFromKubernetesPod(
+            "test-app", "test-account", "test", "testrep-rn5qt", "testrep");
+    assertTrue(
+        thrown
+            .getMessage()
+            .matches(
+                "Expected properties file: testrep in job: job testrep, application: test-app,"
+                    + " location: test, account: test-account but it was either missing, empty or contained"
+                    + " invalid syntax"));
   }
 
   @DisplayName(
