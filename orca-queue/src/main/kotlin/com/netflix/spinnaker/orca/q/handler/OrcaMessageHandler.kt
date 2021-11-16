@@ -47,6 +47,7 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
     val mapper: ObjectMapper = OrcaObjectMapper.getInstance()
+    val MIN_PAGE_SIZE = 2
   }
 
   val repository: ExecutionRepository
@@ -119,20 +120,20 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
       configId == null -> false
       !isLimitConcurrent -> {
         return when {
-          getMaxConcurrentExecutions() <= 0 -> false
-          else -> {
-            val criteria = ExecutionCriteria().setPageSize(maxConcurrentExecutions+2).setStatuses(RUNNING)
+          maxConcurrentExecutions > 0 -> {
+            val criteria = ExecutionCriteria().setPageSize(maxConcurrentExecutions+MIN_PAGE_SIZE).setStatuses(RUNNING)
             repository
               .retrievePipelinesForPipelineConfigId(configId, criteria)
               .filter { it.id != id }
               .count()
               .toBlocking()
-              .first() >= getMaxConcurrentExecutions()
+              .first() >= maxConcurrentExecutions
           }
+          else -> false
         }
       }
       else -> {
-        val criteria = ExecutionCriteria().setPageSize(2).setStatuses(RUNNING)
+        val criteria = ExecutionCriteria().setPageSize(MIN_PAGE_SIZE).setStatuses(RUNNING)
         repository
           .retrievePipelinesForPipelineConfigId(configId, criteria)
           .filter { it.id != id }
