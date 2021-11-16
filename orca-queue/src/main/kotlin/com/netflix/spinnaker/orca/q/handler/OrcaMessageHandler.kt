@@ -116,8 +116,21 @@ internal interface OrcaMessageHandler<M : Message> : MessageHandler<M> {
   fun PipelineExecution.shouldQueue(): Boolean {
     val configId = pipelineConfigId
     return when {
-      !isLimitConcurrent -> false
       configId == null -> false
+      !isLimitConcurrent -> {
+        return when {
+          getMaxConcurrentExecutions() <= 0 -> false
+          else -> {
+            val criteria = ExecutionCriteria().setPageSize(maxConcurrentExecutions+2).setStatuses(RUNNING)
+            repository
+              .retrievePipelinesForPipelineConfigId(configId, criteria)
+              .filter { it.id != id }
+              .count()
+              .toBlocking()
+              .first() >= getMaxConcurrentExecutions()
+          }
+        }
+      }
       else -> {
         val criteria = ExecutionCriteria().setPageSize(2).setStatuses(RUNNING)
         repository
