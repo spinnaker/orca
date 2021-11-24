@@ -31,7 +31,9 @@ import com.netflix.spinnaker.kork.exceptions.SystemException;
 import com.netflix.spinnaker.kork.exceptions.UserException;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
+import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
+import com.netflix.spinnaker.orca.config.ExecutionConfigurationProperties;
 import com.netflix.spinnaker.orca.events.BeforeInitialExecutionPersist;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineBuilder;
 import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
@@ -48,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -62,6 +65,7 @@ public class ExecutionLauncher {
   private final Optional<PipelineValidator> pipelineValidator;
   private final Optional<Registry> registry;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final ExecutionConfigurationProperties executionConfigurationProperties;
 
   @Autowired
   public ExecutionLauncher(
@@ -71,7 +75,8 @@ public class ExecutionLauncher {
       Clock clock,
       ApplicationEventPublisher applicationEventPublisher,
       Optional<PipelineValidator> pipelineValidator,
-      Optional<Registry> registry) {
+      Optional<Registry> registry,
+      ExecutionConfigurationProperties executionConfigurationProperties) {
     this.objectMapper = objectMapper;
     this.executionRepository = executionRepository;
     this.executionRunner = executionRunner;
@@ -79,6 +84,7 @@ public class ExecutionLauncher {
     this.applicationEventPublisher = applicationEventPublisher;
     this.pipelineValidator = pipelineValidator;
     this.registry = registry;
+    this.executionConfigurationProperties = executionConfigurationProperties;
   }
 
   public PipelineExecution start(ExecutionType type, Map<String, Object> config) {
@@ -93,6 +99,23 @@ public class ExecutionLauncher {
     persistExecution(execution);
 
     try {
+      // for security reasons, we want to allow only a few ad-hoc operations. Every other operation
+      // should be blocked.
+      if (execution.getType() == ExecutionType.ORCHESTRATION
+          && executionConfigurationProperties.isBlockOrchestrationExecutions()) {
+        for (StageExecution stage : execution.getStages()) {
+          if (!executionConfigurationProperties
+              .getAllowedOrchestrationExecutions()
+              .contains(stage.getType())) {
+            log.warn(
+                "ad-hoc execution of type: {} has been explicitly disabled. Such actions can only be run "
+                    + "via spinnaker pipelines",
+                stage.getType());
+            throw new AccessDeniedException(
+                "ad-hoc execution of type: " + stage.getType() + " has been explicitly disabled");
+          }
+        }
+      }
       start(execution);
     } catch (Throwable t) {
       handleStartupFailure(execution, t);
