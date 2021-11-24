@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.servicebroker.AbstractWaitForServiceTask;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -56,12 +57,16 @@ public class CloudFoundryWaitForDeployServiceTask extends AbstractWaitForService
                       .orElse("Failed to get last operation description")
                       .toString();
               taskResultBuilder
-                  .output(
-                      "lastOperationStatus",
-                      Optional.ofNullable(serviceInstance.get("status")).orElse("").toString())
-                  .output("lastOperationDescription", lastOperationDescription);
+                  .outputs(
+                      Collections.singletonMap(
+                          "lastOperationStatus",
+                          Optional.ofNullable(serviceInstance.get("status")).orElse("").toString()))
+                  .outputs(
+                      Collections.singletonMap(
+                          "lastOperationDescription", lastOperationDescription));
               if (status == ExecutionStatus.TERMINAL) {
-                taskResultBuilder.output("failureMessage", lastOperationDescription);
+                taskResultBuilder.outputs(
+                    Collections.singletonMap("failureMessage", lastOperationDescription));
               }
             });
 

@@ -26,6 +26,7 @@ import com.netflix.spinnaker.orca.deploymentmonitor.DeploymentMonitorServiceProv
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthRequest;
 import com.netflix.spinnaker.orca.deploymentmonitor.models.EvaluateHealthResponse;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,7 +86,8 @@ public class EvaluateDeploymentHealthTask extends MonitoredDeployBaseTask {
     switch (directive) {
       case COMPLETE:
         // TODO(mvulfson): Actually implement this case in the stages
-        return TaskResult.builder(ExecutionStatus.SUCCEEDED).output("skipToPercentage", 100);
+        return TaskResult.builder(ExecutionStatus.SUCCEEDED)
+            .outputs(Collections.singletonMap("skipToPercentage", 100));
 
       case CONTINUE:
         return TaskResult.builder(ExecutionStatus.SUCCEEDED);
