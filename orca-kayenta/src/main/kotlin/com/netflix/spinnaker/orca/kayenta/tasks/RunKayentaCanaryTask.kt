@@ -25,7 +25,6 @@ import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.CanaryExecutionRequest
 import com.netflix.spinnaker.orca.kayenta.KayentaService
 import com.netflix.spinnaker.orca.kayenta.RunCanaryContext
-import java.util.Collections;
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -58,6 +57,6 @@ class RunKayentaCanaryTask(
       "canaryConfigId" to context.canaryConfigId
     )
 
-    return TaskResult.builder(SUCCEEDED).context(Collections.singletonMap("canaryPipelineExecutionId", canaryPipelineExecutionId)).outputs(outputs).build()
+    return TaskResult.builder(SUCCEEDED).context("canaryPipelineExecutionId", canaryPipelineExecutionId).outputs(outputs).build()
   }
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
+import lombok.Singular;
 
 /** Represents the state of a {@link TaskExecution}. */
 @Beta
@@ -48,7 +49,9 @@ public final class TaskResult {
    * <p>Data stored in the context will be available to other tasks within this stage, but not to
    * tasks in other stages.
    */
-  @Immutable private final Map<String, ?> context;
+  @Immutable
+  @Singular("context")
+  private final Map<String, ?> context;
 
   /**
    * Pipeline-scoped data.
@@ -56,7 +59,9 @@ public final class TaskResult {
    * <p>Data stored in outputs will be available (via {@link StageExecution#getContext()} to tasks
    * in later stages of the pipeline.
    */
-  @Immutable private final Map<String, ?> outputs;
+  @Immutable
+  @Singular("output")
+  private final Map<String, ?> outputs;
 
   /**
    * Creates a new TaskResult with the provided {@link ExecutionStatus}.

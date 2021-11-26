@@ -26,7 +26,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.validation.constraints.NotNull;
@@ -70,9 +69,7 @@ public class DependsOnExecutionTask implements OverridableTimeoutRetryableTask {
 
       if (status.isComplete()) {
         return TaskResult.builder(ExecutionStatus.CANCELED)
-            .context(
-                Collections.singletonMap(
-                    "reason", format("Depended-on execution completed with status %s", status)))
+            .context("reason", format("Depended-on execution completed with status %s", status))
             .build();
       }
 
@@ -80,10 +77,8 @@ public class DependsOnExecutionTask implements OverridableTimeoutRetryableTask {
     } catch (ExecutionNotFoundException e) {
       return TaskResult.builder(ExecutionStatus.TERMINAL)
           .context(
-              Collections.singletonMap(
-                  "error",
-                  format(
-                      "Execution (%s) %s not found.", context.executionType, context.executionId)))
+              "error",
+              format("Execution (%s) %s not found.", context.executionType, context.executionId))
           .build();
     }
   }

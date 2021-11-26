@@ -7,7 +7,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.ext.mapTo
 import com.netflix.spinnaker.orca.kayenta.KayentaService
-import java.util.Collections;
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -31,6 +30,6 @@ class ResolveKayentaConfigIdTask(
     } else if (candidates.size > 1) {
       throw UserException("Found more than one canary configId for configName $configName and application $currentApplication")
     }
-    return TaskResult.builder(SUCCEEDED).context(Collections.singletonMap("canaryConfigId", candidates[0].id)).build()
+    return TaskResult.builder(SUCCEEDED).context("canaryConfigId", candidates[0].id).build()
   }
 }

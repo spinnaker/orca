@@ -23,7 +23,6 @@ import com.netflix.spinnaker.orca.clouddriver.KatoService;
 import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
 import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import java.time.Duration;
-import java.util.Collections;
 import javax.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +44,7 @@ public class SubmitCloudOperationTask implements RetryableTask {
 
     TaskResult.TaskResultBuilder builder = TaskResult.builder(ExecutionStatus.SUCCEEDED);
     if (result.getId() != null) {
-      builder.context(Collections.singletonMap("kato.last.task.id", result.getId()));
+      builder.context("kato.last.task.id", result.getId());
     }
 
     return builder.build();

@@ -74,7 +74,7 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
         String changeSetName = (String) result.get("changeSetName");
         log.info("CloudFormation ChangeSet {} empty. Requesting to be deleted.", changeSetName);
         return TaskResult.builder(ExecutionStatus.SUCCEEDED)
-            .context(Collections.singletonMap("deleteChangeSet", true))
+            .context("deleteChangeSet", true)
             .outputs(stack)
             .build();
       }

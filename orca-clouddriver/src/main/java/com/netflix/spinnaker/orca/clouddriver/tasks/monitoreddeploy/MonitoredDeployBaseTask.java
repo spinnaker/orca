@@ -184,7 +184,7 @@ public class MonitoredDeployBaseTask implements RetryableTask {
             e);
 
         return TaskResult.builder(ExecutionStatus.RUNNING)
-            .context(Collections.singletonMap("deployMonitorHttpRetryCount", ++currentRetryCount))
+            .context("deployMonitorHttpRetryCount", ++currentRetryCount)
             .build();
       }
     }
@@ -246,18 +246,14 @@ public class MonitoredDeployBaseTask implements RetryableTask {
             response.getNextStep().getDirective(), "Health evaluation results are unknown");
     StatusExplanation explanation = new StatusExplanation(summary, response.getStatusReason());
 
-    return taskResultBuilder
-        .context(Collections.singletonMap("deploymentMonitorReasons", explanation))
-        .build();
+    return taskResultBuilder.context("deploymentMonitorReasons", explanation).build();
   }
 
   private TaskResult buildTaskResult(
       TaskResult.TaskResultBuilder taskResultBuilder, String summary) {
     StatusExplanation explanation = new StatusExplanation(summary);
 
-    return taskResultBuilder
-        .context(Collections.singletonMap("deploymentMonitorReasons", explanation))
-        .build();
+    return taskResultBuilder.context("deploymentMonitorReasons", explanation).build();
   }
 
   private DeploymentMonitorDefinition getDeploymentMonitorDefinition(StageExecution stage) {

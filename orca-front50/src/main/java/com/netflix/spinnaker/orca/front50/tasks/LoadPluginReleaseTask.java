@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.front50.Front50Service;
 import com.netflix.spinnaker.orca.front50.model.PluginInfo;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
@@ -59,16 +58,10 @@ public class LoadPluginReleaseTask implements RetryableTask {
     return pluginInfo.getReleases().stream()
         .filter(it -> it.getVersion().equals(version))
         .findFirst()
-        .map(
-            r ->
-                TaskResult.builder(ExecutionStatus.SUCCEEDED)
-                    .context(Collections.singletonMap("release", r))
-                    .build())
+        .map(r -> TaskResult.builder(ExecutionStatus.SUCCEEDED).context("release", r).build())
         .orElse(
             TaskResult.builder(ExecutionStatus.TERMINAL)
-                .outputs(
-                    Collections.singletonMap(
-                        "message", format("No release found for version '%s'", version)))
+                .output("message", format("No release found for version '%s'", version))
                 .build());
   }
 
