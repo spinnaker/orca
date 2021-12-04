@@ -28,6 +28,10 @@ import com.netflix.spinnaker.orca.api.pipeline.models.SourceCodeTrigger
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.igor.ScmService
+import com.netflix.spinnaker.orca.keel.model.Commit
+import com.netflix.spinnaker.orca.keel.model.GitMetadata
+import com.netflix.spinnaker.orca.keel.model.Repo
+import com.netflix.spinnaker.orca.keel.model.TriggerWithGitData
 import java.net.URL
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -60,6 +64,13 @@ constructor(
         context.repoType, context.projectKey, context.repositorySlug, context.directory, context.manifest, context.ref
       )
 
+      val metadata: MutableMap<String, Any?> = objectMapper.convertValue(deliveryConfig.getOrDefault("metadata", emptyMap<String, Any?>()))
+      val gitMetadata = processTriggerGitInfo(trigger, stage)
+      if (gitMetadata != null) {
+        metadata["gitMetadata"] = gitMetadata
+        deliveryConfig["metadata"] = metadata
+      }
+
       log.debug("Publishing manifest ${context.manifest} to keel on behalf of $user")
       keelService.publishDeliveryConfig(deliveryConfig)
 
@@ -70,6 +81,33 @@ constructor(
       log.error("Unexpected exception while executing {}, aborting.", javaClass.simpleName, e)
       buildError(e.message ?: "Unknown error (${e.javaClass.simpleName})")
     }
+  }
+
+  private fun processTriggerGitInfo(trigger: Trigger, stage: StageExecution): GitMetadata? {
+    try {
+      val gitTrigger: TriggerWithGitData = objectMapper.convertValue(trigger)
+      with(gitTrigger) {
+        return GitMetadata(
+          commit = hash,
+          author = payload.causedBy.email,
+          project = project,
+          branch = branch,
+          repo = Repo(
+            name = payload.source.repoName,
+          ),
+          commitInfo = Commit(
+            sha = payload.source.sha,
+            link = payload.source.url,
+            message = payload.source.message
+          ),
+          pullRequest = if (payload.pullRequest.number != "-1") payload.pullRequest else null
+        )
+      }
+
+    } catch (e: Exception) {
+      log.debug("Can't pull enough git information out of trigger $trigger for execution ${stage.execution.id} and stage ${stage.id}: {}", e)
+    }
+    return null
   }
 
   /**
@@ -104,6 +142,10 @@ constructor(
       if (context.repoType == null || context.projectKey == null || context.repositorySlug == null) {
         throw InvalidRequestException("repoType, projectKey and repositorySlug are required fields in the stage if there's no git trigger.")
       }
+    }
+
+    if (context.manifest.isNullOrBlank()) {
+      context.manifest = "spinnaker.yml"
     }
 
     // this is just a friend URI-like string to refer to the delivery config location in logs
@@ -215,7 +257,7 @@ constructor(
     var projectKey: String? = null,
     var repositorySlug: String? = null,
     var directory: String? = null, // as in, the directory *under* whatever manifest base path is configured in igor (e.g. ".netflix")
-    var manifest: String? = "spinnaker.yml",
+    var manifest: String? = null,
     var ref: String? = null,
     var attempt: Int = 1,
     val maxRetries: Int? = MAX_RETRIES,

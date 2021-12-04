@@ -21,7 +21,7 @@ dependencies {
   implementation(project(":orca-retrofit"))
   implementation(project(":orca-clouddriver"))
   implementation(project(":orca-front50"))
-  implementation("com.netflix.spinnaker.kork:kork-core")
+  implementation("io.spinnaker.kork:kork-core")
   implementation("org.springframework.boot:spring-boot-autoconfigure")
   implementation("org.yaml:snakeyaml")
 
@@ -30,5 +30,12 @@ dependencies {
 
   testImplementation(project(":orca-test-groovy"))
   testImplementation("org.springframework:spring-test")
-  testImplementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
+  testImplementation("io.spinnaker.fiat:fiat-core:$fiatVersion")
+}
+
+sourceSets {
+  main {
+    java { srcDirs = [] }    // no source dirs for the java compiler
+    groovy { srcDirs = ["src/main/java", "src/main/groovy"] }  // compile   everything in src/ with groovy
+  }
 }

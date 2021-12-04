@@ -22,10 +22,12 @@ import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.orca.KeelService
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.config.KeelConfiguration
 import com.netflix.spinnaker.orca.igor.ScmService
+import com.netflix.spinnaker.orca.keel.model.DeliveryConfig
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.Companion.UNAUTHORIZED_SCM_ACCESS_MESSAGE
 import com.netflix.spinnaker.orca.keel.task.ImportDeliveryConfigTask.SpringHttpError
@@ -37,9 +39,8 @@ import dev.minutest.junit.JUnit5Minutests
 import dev.minutest.rootContext
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.FORBIDDEN
 import retrofit.RetrofitError
@@ -51,7 +52,10 @@ import strikt.api.expectThrows
 import strikt.assertions.contains
 import strikt.assertions.isA
 import strikt.assertions.isEqualTo
+import strikt.assertions.isNotEqualTo
 import strikt.assertions.isNotNull
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
   data class ManifestLocation(
@@ -64,13 +68,8 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
   )
 
   data class Fixture(
-    val trigger: Trigger
-  ) {
-    companion object {
-      val objectMapper: ObjectMapper = KeelConfiguration().keelObjectMapper()
-    }
-
-    val manifestLocation = ManifestLocation(
+    val trigger: Trigger,
+    val manifestLocation: ManifestLocation = ManifestLocation(
       repoType = "stash",
       projectKey = "SPKR",
       repositorySlug = "keeldemo",
@@ -78,6 +77,10 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
       manifest = "spinnaker.yml",
       ref = "refs/heads/master"
     )
+  ) {
+    companion object {
+      val objectMapper: ObjectMapper = KeelConfiguration().keelObjectMapper()
+    }
 
     val manifest = mapOf(
       "name" to "keeldemo-manifest",
@@ -152,7 +155,7 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
       }
       test("successfully retrieves manifest from SCM and publishes to keel") {
         val result = execute(manifestLocation.toMap())
-        expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+        expectThat(result.status).isEqualTo(SUCCEEDED)
         verify(exactly = 1) {
           scmService.getDeliveryConfigManifest(
             manifestLocation.repoType,
@@ -193,7 +196,7 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
               it.remove("ref")
             }
           )
-          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          expectThat(result.status).isEqualTo(SUCCEEDED)
           verify(exactly = 1) {
             scmService.getDeliveryConfigManifest(
               manifestLocation.repoType,
@@ -225,7 +228,7 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
       context("with fully-populated stage context") {
         test("disregards trigger and uses context information to retrieve manifest from SCM") {
           val result = execute(manifestLocation.toMap())
-          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          expectThat(result.status).isEqualTo(SUCCEEDED)
           verify(exactly = 1) {
             scmService.getDeliveryConfigManifest(
               manifestLocation.repoType,
@@ -248,7 +251,7 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
               it.remove("ref")
             }
           )
-          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          expectThat(result.status).isEqualTo(SUCCEEDED)
           verify(exactly = 1) {
             scmService.getDeliveryConfigManifest(
               manifestLocation.repoType,
@@ -265,7 +268,7 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
       context("with no information in stage context") {
         test("uses trigger information and defaults to fill in the blanks") {
           val result = execute(mutableMapOf())
-          expectThat(result.status).isEqualTo(ExecutionStatus.SUCCEEDED)
+          expectThat(result.status).isEqualTo(SUCCEEDED)
           verify(exactly = 1) {
             scmService.getDeliveryConfigManifest(
               (trigger as GitTrigger).source,
@@ -276,6 +279,28 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
               trigger.hash
             )
           }
+        }
+      }
+    }
+
+    context("with detailed git info in payload field") {
+      val trigger = objectMapper.readValue(javaClass.getResource("/trigger.json"), Trigger::class.java)
+      fixture {
+        Fixture(
+          trigger
+        )
+      }
+
+      context("parsing git metadata") {
+        test("parses correctly") {
+          execute(mutableMapOf())
+          val submittedConfig = slot<DeliveryConfig>()
+          verify(exactly = 1) {
+            keelService.publishDeliveryConfig(capture(submittedConfig))
+          }
+          val m: Any = submittedConfig.captured.getOrDefault("metadata", emptyMap<String, Any?>())!!
+          val metadata: Map<String, Any?> = objectMapper.convertValue(m)
+          expectThat(metadata["gitMetadata"]).isNotEqualTo(null)
         }
       }
     }
@@ -441,6 +466,32 @@ internal class ImportDeliveryConfigTaskTests : JUnit5Minutests {
           }
           expectThat(result!!.context["errorFromLastAttempt"]).isNotNull()
           expectThat(result!!.context["error"] as String).contains(result!!.context["errorFromLastAttempt"] as String)
+        }
+      }
+    }
+
+    context("malformed input") {
+      fixture {
+        Fixture(
+          trigger = DefaultTrigger("manual"),
+          manifestLocation = ManifestLocation(
+            repoType = "stash",
+            projectKey = "SPKR",
+            repositorySlug = "keeldemo",
+            directory = ".",
+            manifest = "",
+            ref = "refs/heads/master"
+          )
+        )
+      }
+
+      test("successfully retrieves manifest from SCM and publishes to keel") {
+        val result = execute(manifestLocation.toMap())
+
+        expectThat(result.status) isEqualTo SUCCEEDED
+
+        verify(exactly = 1) {
+          scmService.getDeliveryConfigManifest(any(), any(), any(), any(), "spinnaker.yml", any())
         }
       }
     }

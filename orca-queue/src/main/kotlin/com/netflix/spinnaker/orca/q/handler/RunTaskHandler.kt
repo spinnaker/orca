@@ -20,7 +20,7 @@ import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.exceptions.UserException
-import com.netflix.spinnaker.orca.TaskExecutionInterceptor
+import com.netflix.spinnaker.orca.api.pipeline.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
 import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
@@ -60,6 +60,7 @@ import com.netflix.spinnaker.orca.time.toDuration
 import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import java.lang.Deprecated
 import java.time.Clock
 import java.time.Duration
 import java.time.Duration.ZERO
@@ -103,15 +104,21 @@ class RunTaskHandler(
 
       stage.withAuth {
         stage.withLoggingContext(taskModel) {
+          if (task.javaClass.isAnnotationPresent(Deprecated::class.java)) {
+            log.warn("deprecated-task-run ${task.javaClass.simpleName}")
+          }
           val thisInvocationStartTimeMs = clock.millis()
           val execution = stage.execution
           var taskResult: TaskResult? = null
 
+          var taskException: Exception? = null
           try {
             taskExecutionInterceptors.forEach { t -> stage = t.beforeTaskExecution(task, stage) }
 
             if (execution.isCanceled) {
-              task.onCancel(stage)
+              task.onCancelWithResult(stage)?.run {
+                stage.processTaskOutput(this)
+              }
               queue.push(CompleteTask(message, CANCELED))
             } else if (execution.status.isComplete) {
               queue.push(CompleteTask(message, CANCELED))
@@ -145,34 +152,38 @@ class RunTaskHandler(
               }
 
               taskResult!!.let { result: TaskResult ->
-                // TODO: rather send this data with CompleteTask message
-                stage.processTaskOutput(result)
                 when (result.status) {
                   RUNNING -> {
+                    stage.processTaskOutput(result)
                     queue.push(message, task.backoffPeriod(taskModel, stage))
                     trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
                   }
                   SUCCEEDED, REDIRECT, SKIPPED, FAILED_CONTINUE, STOPPED -> {
+                    stage.processTaskOutput(result)
                     queue.push(CompleteTask(message, result.status))
                     trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
                   }
                   CANCELED -> {
-                    task.onCancel(stage)
+                    stage.processTaskOutput(result.mergeOutputs(task.onCancelWithResult(stage)))
                     val status = stage.failureStatus(default = result.status)
                     queue.push(CompleteTask(message, status, result.status))
                     trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
                   }
                   TERMINAL -> {
+                    stage.processTaskOutput(result)
                     val status = stage.failureStatus(default = result.status)
                     queue.push(CompleteTask(message, status, result.status))
                     trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
                   }
-                  else ->
+                  else -> {
+                    stage.processTaskOutput(result)
                     TODO("Unhandled task status ${result.status}")
+                  }
                 }
               }
             }
           } catch (e: Exception) {
+            taskException = e;
             val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
             if (exceptionDetails?.shouldRetry == true) {
               log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
@@ -189,13 +200,14 @@ class RunTaskHandler(
                   log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
                 }
               }
-
               val status = stage.failureStatus(default = TERMINAL)
               stage.context["exception"] = exceptionDetails
               repository.storeStage(stage)
               queue.push(CompleteTask(message, status, TERMINAL))
               trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
             }
+          } finally {
+            taskExecutionInterceptors.forEach { t -> t.finallyAfterTaskExecution(task, stage, taskResult, taskException) }
           }
         }
       }
@@ -419,5 +431,24 @@ class RunTaskHandler(
       MDC.remove("taskType")
       MDC.remove("taskStartTime")
     }
+  }
+
+  private fun TaskResult.mergeOutputs(taskResult: TaskResult?): TaskResult {
+    if (taskResult == null) {
+      return this
+    }
+
+    return TaskResult.builder(this.status)
+      .outputs(
+        this.outputs.toMutableMap().also {
+          it.putAll(taskResult.outputs)
+        }
+      )
+      .context(
+        this.context.toMutableMap().also {
+          it.putAll(taskResult.context)
+        }
+      )
+      .build()
   }
 }
