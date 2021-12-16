@@ -84,12 +84,14 @@ public class PipelineBuilder {
   }
 
   public PipelineBuilder withStages(List<Map<String, Object>> stages) {
-    stages.forEach(
-        it -> {
-          String type = it.remove("type").toString();
-          String name = it.containsKey("name") ? it.remove("name").toString() : null;
-          withStage(type, name != null ? name : type, it);
-        });
+    if (stages != null) {
+      stages.forEach(
+          it -> {
+            String type = it.remove("type").toString();
+            String name = it.containsKey("name") ? it.remove("name").toString() : null;
+            withStage(type, name != null ? name : type, it);
+          });
+    }
     return this;
   }
 
@@ -109,6 +111,11 @@ public class PipelineBuilder {
 
   public PipelineBuilder withLimitConcurrent(boolean concurrent) {
     pipeline.setLimitConcurrent(concurrent);
+    return this;
+  }
+
+  public PipelineBuilder withMaxConcurrentExecutions(int maxConcurrentExecutions) {
+    pipeline.setMaxConcurrentExecutions(maxConcurrentExecutions);
     return this;
   }
 
