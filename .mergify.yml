@@ -1,7 +1,7 @@
-actions:
-  queue:
-    method: squash
-    name: default
+queue_rules:
+ - name: default
+   conditions:
+     - status-success=build
 
 pull_request_rules:
   - name: Automatically merge on CI success and review
