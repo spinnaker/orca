@@ -1,7 +1,7 @@
 actions:
-      queue:
-        method: squash
-        name: default
+  queue:
+    method: squash
+    name: default
 
 pull_request_rules:
   - name: Automatically merge on CI success and review
