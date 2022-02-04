@@ -134,8 +134,7 @@ public class UserConfiguredUrlRestrictions {
 
       if (StringUtils.isBlank(allowedHostnames.pattern())) {
         throw new IllegalArgumentException(
-            "Allowed Hostnames are not set, external HTTP requests are not enabled. Please configure 'user-configured-url-restrictions.allowedHostnamesRegex' in your orca config."
-        );
+            "Allowed Hostnames are not set, external HTTP requests are not enabled. Please configure 'user-configured-url-restrictions.allowedHostnamesRegex' in your orca config.");
       }
 
       if (!allowedHostnames.matcher(host).matches()) {

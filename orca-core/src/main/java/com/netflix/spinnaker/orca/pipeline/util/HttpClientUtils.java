@@ -121,8 +121,7 @@ public class HttpClientUtils {
   }
 
   private static CloseableHttpClient httpClientNoRetry() {
-    HttpClientBuilder httpClientBuilder =
-        HttpClients.custom().disableAutomaticRetries();
+    HttpClientBuilder httpClientBuilder = HttpClients.custom().disableAutomaticRetries();
     httpClientAddConfiguration(httpClientBuilder);
     return httpClientBuilder.build();
   }
