@@ -195,7 +195,7 @@ public class UrlExpressionFunctionProvider implements ExpressionFunctionProvider
   public static String fromUrl(String url) {
     try {
       URL u = helperFunctionUrlRestrictions.get().validateURI(url).toURL();
-      return HttpClientUtils.httpGetAsString(u.toString());
+      return HttpClientUtils.httpGetAsString(u.toString(), helperFunctionUrlRestrictions.get().isRetryEnabled());
     } catch (Exception e) {
       throw new SpelHelperFunctionException(format("#from(%s) failed", url), e);
     }

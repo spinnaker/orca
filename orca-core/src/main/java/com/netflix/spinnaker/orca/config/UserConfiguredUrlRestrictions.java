@@ -29,15 +29,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.web.util.matcher.IpAddressMatcher;
 
 public class UserConfiguredUrlRestrictions {
   @Data
   public static class Builder {
-    private String allowedHostnamesRegex = ".*";
+    private String allowedHostnamesRegex = "";
     private List<String> allowedSchemes = new ArrayList<>(Arrays.asList("http", "https"));
     private boolean rejectLocalhost = true;
     private boolean rejectLinkLocal = true;
+    private boolean enableRetry = false;
     private List<String> rejectedIps =
         new ArrayList<>(); // can contain IP addresses and/or IP ranges (CIDR block)
 
@@ -72,7 +74,8 @@ public class UserConfiguredUrlRestrictions {
           allowedSchemes,
           rejectLocalhost,
           rejectLinkLocal,
-          rejectedIps);
+          rejectedIps,
+          enableRetry);
     }
   }
 
@@ -81,13 +84,15 @@ public class UserConfiguredUrlRestrictions {
   private final boolean rejectLocalhost;
   private final boolean rejectLinkLocal;
   private final Set<String> rejectedIps;
+  private final boolean retry;
 
   public UserConfiguredUrlRestrictions(
       Pattern allowedHostnames,
       Collection<String> allowedSchemes,
       boolean rejectLocalhost,
       boolean rejectLinkLocal,
-      Collection<String> rejectedIps) {
+      Collection<String> rejectedIps,
+      boolean retry) {
     this.allowedHostnames = allowedHostnames;
     this.allowedSchemes =
         allowedSchemes == null
@@ -99,6 +104,7 @@ public class UserConfiguredUrlRestrictions {
         rejectedIps == null
             ? Collections.emptySet()
             : Collections.unmodifiableSet(new HashSet<>(rejectedIps));
+    this.retry = retry;
   }
 
   public URI validateURI(String url) throws IllegalArgumentException {
@@ -124,6 +130,12 @@ public class UserConfiguredUrlRestrictions {
 
       if (host == null) {
         throw new IllegalArgumentException("Unable to determine host for the url provided " + url);
+      }
+
+      if (StringUtils.isBlank(allowedHostnames.pattern())) {
+        throw new IllegalArgumentException(
+            "Allowed Hostnames are not set, external HTTP requests are not enabled. Please configure 'user-configured-url-restrictions.allowedHostnamesRegex' in your orca config."
+        );
       }
 
       if (!allowedHostnames.matcher(host).matches()) {
@@ -174,5 +186,9 @@ public class UserConfiguredUrlRestrictions {
 
   public boolean isRejectLinkLocal() {
     return rejectLinkLocal;
+  }
+
+  public boolean isRetryEnabled() {
+    return retry;
   }
 }

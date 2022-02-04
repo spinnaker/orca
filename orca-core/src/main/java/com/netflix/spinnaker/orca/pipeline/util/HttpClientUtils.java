@@ -53,7 +53,7 @@ public class HttpClientUtils {
           HttpStatus.SC_INTERNAL_SERVER_ERROR,
           HttpStatus.SC_GATEWAY_TIMEOUT);
 
-  private static CloseableHttpClient httpClient = httpClientWithServiceUnavailableRetryStrategy();
+  private static CloseableHttpClient httpClient = httpClientNoRetry();
 
   private static CloseableHttpClient httpClientWithServiceUnavailableRetryStrategy() {
     HttpClientBuilder httpClientBuilder =
@@ -116,6 +116,18 @@ public class HttpClientUtils {
           return executionCount <= MAX_RETRIES;
         });
 
+    httpClientAddConfiguration(httpClientBuilder);
+    return httpClientBuilder.build();
+  }
+
+  private static CloseableHttpClient httpClientNoRetry() {
+    HttpClientBuilder httpClientBuilder =
+        HttpClients.custom().disableAutomaticRetries();
+    httpClientAddConfiguration(httpClientBuilder);
+    return httpClientBuilder.build();
+  }
+
+  private static void httpClientAddConfiguration(HttpClientBuilder httpClientBuilder) {
     String proxyHostname = System.getProperty(JVM_HTTP_PROXY_HOST);
     if (proxyHostname != null) {
       int proxyPort =
@@ -136,11 +148,13 @@ public class HttpClientUtils {
             .setConnectTimeout(TIMEOUT_MILLIS)
             .setSocketTimeout(TIMEOUT_MILLIS)
             .build());
-
-    return httpClientBuilder.build();
   }
 
-  public static String httpGetAsString(String url) throws IOException {
+  public static String httpGetAsString(String url, Boolean retry) throws IOException {
+    if (retry) {
+      httpClient = httpClientWithServiceUnavailableRetryStrategy();
+    }
+
     try (CloseableHttpResponse response = httpClient.execute(new HttpGet(url))) {
       try (final Reader reader = new InputStreamReader(response.getEntity().getContent())) {
         return CharStreams.toString(reader);
