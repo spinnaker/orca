@@ -46,10 +46,12 @@ import retrofit.client.Response;
  * <p>If the application doesn't exist, the task fails.
  *
  * <p>The motivation for adding such a task is to prevent creation of any ad-hoc applications in
- * amazon deployment pipeline stages. Depending on what is the application value set in the moniker
- * and/or the cluster keys in such stages, any application that didn't previously exist can be
- * created on demand. This can have an adverse effect on the security of such applications since
- * these applications aren't created via a controlled process.
+ * amazon and kubernetes deployment pipeline stages.
+ *
+ * <p>Depending on what is the application value set in the moniker and/or the cluster keys in such
+ * stages, any application that isn't known to front50 can be created by clouddriver on demand. This
+ * can have an adverse effect on the security of such applications since these applications aren't
+ * created via a controlled process.
  */
 @Slf4j
 @Component
@@ -90,13 +92,27 @@ public abstract class AbstractCheckIfApplicationExistsTask implements Task {
         log.info("querying clouddriver for application: {}", applicationName);
         fetchedApplication = getApplicationFromClouddriver(applicationName);
         if (fetchedApplication == null) {
-          errorMessage += " and in clouddriver.";
+          errorMessage += " and in clouddriver";
         }
       }
     }
     if (fetchedApplication == null) {
-      log.error(errorMessage);
-      throw new NotFoundException(errorMessage);
+      if (this.config.isAuditModeEnabled()) {
+        String pipelineName = "unknown";
+        if (stage.getParent() != null) {
+          pipelineName = stage.getParent().getName();
+        }
+        log.warn(
+            "Warning: stage: {}, pipeline: {}, message: {}. "
+                + "This will be a terminal failure in the near future.",
+            errorMessage,
+            stage.getName(),
+            pipelineName);
+        outputs.put("checkIfApplicationExistsWarning", errorMessage);
+      } else {
+        log.error(errorMessage);
+        throw new NotFoundException(errorMessage);
+      }
     }
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(outputs).build();
   }

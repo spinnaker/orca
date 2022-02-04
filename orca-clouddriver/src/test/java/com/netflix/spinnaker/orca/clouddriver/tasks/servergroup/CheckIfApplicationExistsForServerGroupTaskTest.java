@@ -46,7 +46,6 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
@@ -135,10 +134,14 @@ public class CheckIfApplicationExistsForServerGroupTaskTest {
     assertEquals(result.getStatus(), ExecutionStatus.SUCCEEDED);
   }
 
-  @Test
-  public void testIfApplicationCannotBeRetrievedFromFront50AndCheckClouddriverIsFalse() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testIfApplicationCannotBeRetrievedFromFront50AndCheckClouddriverIsFalse(
+      boolean auditModeEnabled) {
     TaskConfigurationProperties configurationProperties = new TaskConfigurationProperties();
     configurationProperties.getCheckIfApplicationExistsTask().setCheckClouddriver(false);
+    configurationProperties.getCheckIfApplicationExistsTask().setAuditModeEnabled(auditModeEnabled);
+    final String expectedErrorMessage = "did not find application: testapp in front50";
     // setup:
     task =
         new CheckIfApplicationExistsForServerGroupTask(
@@ -147,22 +150,34 @@ public class CheckIfApplicationExistsForServerGroupTaskTest {
     stageExecution.setContext(getStageContext("application"));
 
     // then
-    NotFoundException thrown =
-        assertThrows(NotFoundException.class, () -> task.execute(stageExecution));
+    if (auditModeEnabled) {
+      TaskResult result = task.execute(stageExecution);
+      assertEquals(result.getStatus(), ExecutionStatus.SUCCEEDED);
+      assertEquals(
+          expectedErrorMessage, result.getOutputs().get("checkIfApplicationExistsWarning"));
+    } else {
+      NotFoundException thrown =
+          assertThrows(NotFoundException.class, () -> task.execute(stageExecution));
 
-    assertThat(thrown.getMessage()).contains("did not find application: testapp in front50");
+      assertThat(thrown.getMessage()).contains(expectedErrorMessage);
+    }
 
     verifyNoInteractions(front50Service);
     verifyNoInteractions(oortService);
   }
 
-  @Test
-  public void testAnApplicationWhichDoesNotExistInBothFront50AndClouddriver() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testAnApplicationWhichDoesNotExistInBothFront50AndClouddriver(
+      boolean auditModeEnabled) {
     // setup:
     task =
         new CheckIfApplicationExistsForServerGroupTask(
             null, oortService, objectMapper, retrySupport, configurationProperties);
+    configurationProperties.getCheckIfApplicationExistsTask().setAuditModeEnabled(auditModeEnabled);
 
+    final String expectedErrorMessage =
+        "did not find application: invalid app in front50 and in clouddriver";
     when(oortService.getApplication("invalid app"))
         .thenReturn(
             new Response(
@@ -175,13 +190,19 @@ public class CheckIfApplicationExistsForServerGroupTaskTest {
     Map<String, Object> stageContext = new HashMap<>();
     stageContext.put("application", "invalid app");
     stageExecution.setContext(stageContext);
-
     // then
-    NotFoundException thrown =
-        assertThrows(NotFoundException.class, () -> task.execute(stageExecution));
+    if (auditModeEnabled) {
+      TaskResult result = task.execute(stageExecution);
+      assertEquals(result.getStatus(), ExecutionStatus.SUCCEEDED);
+      assertEquals(
+          expectedErrorMessage, result.getOutputs().get("checkIfApplicationExistsWarning"));
+    } else {
+      // then
+      NotFoundException thrown =
+          assertThrows(NotFoundException.class, () -> task.execute(stageExecution));
 
-    assertThat(thrown.getMessage())
-        .contains("did not find application: invalid app in front50 and in clouddriver.");
+      assertThat(thrown.getMessage()).contains(expectedErrorMessage);
+    }
     verifyNoInteractions(front50Service);
     verify(oortService).getApplication("invalid app");
   }

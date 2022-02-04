@@ -23,6 +23,9 @@ public class CheckIfApplicationExistsTaskConfig {
   // controls whether clouddriver should be queried for an application or not. Defaults to true
   boolean checkClouddriver = true;
 
+  // controls whether the task should fail or simply log a warning
+  boolean auditModeEnabled = true;
+
   // front50 specific retry config. This is only applicable when services.front50.enabled: true
   private RetryConfig front50Retries = new RetryConfig();
 
