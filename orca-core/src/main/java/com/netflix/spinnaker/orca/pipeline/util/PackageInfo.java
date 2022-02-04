@@ -158,7 +158,7 @@ public class PackageInfo {
           && (trigger.get("buildInfo") != null || parentBuildInfo.isPresent())
           && artifacts.isEmpty()) {
         throw new IllegalStateException(
-            "Jenkins job detected but no artifacts found, please archive the packages in your job and try again.");
+            "CI job detected, but no artifacts found. Please archive the packages in your job and try again.");
       }
     }
 
@@ -325,7 +325,7 @@ public class PackageInfo {
         fileName.substring(
             fileName.indexOf(filePrefix) + filePrefix.length(),
             fileName.lastIndexOf(fileExtension));
-    if (version.contains(versionDelimiter)) {
+    if (version.contains(versionDelimiter) && !packageType.equals("nupkg")) {
       // further strip in case of _all is in the file name
       version = version.substring(0, version.indexOf(versionDelimiter));
     }
