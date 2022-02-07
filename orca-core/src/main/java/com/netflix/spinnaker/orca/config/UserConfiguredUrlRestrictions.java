@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -204,13 +203,9 @@ public class UserConfiguredUrlRestrictions {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class HttpClientProperties {
-    @lombok.Builder.Default
-    private boolean enableRetry = false;
-    @lombok.Builder.Default
-    private int maxRetryAttempts = 5;
-    @lombok.Builder.Default
-    private int retryInterval = 5000;
-    @lombok.Builder.Default
-    private int timeoutMillis = 30000;
+    @lombok.Builder.Default private boolean enableRetry = false;
+    @lombok.Builder.Default private int maxRetryAttempts = 5;
+    @lombok.Builder.Default private int retryInterval = 5000;
+    @lombok.Builder.Default private int timeoutMillis = 30000;
   }
 }

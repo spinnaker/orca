@@ -16,10 +16,14 @@
 
 package com.netflix.spinnaker.orca.pipeline.util;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.assertj.core.api.Fail.fail;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
+import java.io.IOException;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,23 +31,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.assertj.core.api.Fail.fail;
-
 @RunWith(JUnitPlatform.class)
 public class HttpClientUtilsTest {
 
   private final String host = "localhost";
   private final int port = 8080;
   private final String resource = "/v1/text";
-  private final UserConfiguredUrlRestrictions.Builder config = new UserConfiguredUrlRestrictions.Builder();
+  private final UserConfiguredUrlRestrictions.Builder config =
+      new UserConfiguredUrlRestrictions.Builder();
 
   WireMockServer wireMockServer = new WireMockServer();
 
-  @Rule
-  public WireMockRule wireMockRule = new WireMockRule(port);
+  @Rule public WireMockRule wireMockRule = new WireMockRule(port);
 
   @BeforeEach
   public void setup() {
@@ -60,8 +59,7 @@ public class HttpClientUtilsTest {
   public void testZeroRetryFor503StatusCode() {
     // given:
     HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-    stubFor(get(resource)
-        .willReturn(aResponse().withStatus(503)));
+    stubFor(get(resource).willReturn(aResponse().withStatus(503)));
 
     // when:
     try {
@@ -78,13 +76,9 @@ public class HttpClientUtilsTest {
   public void testDefaultRetryForSocketException() {
     // given:
     config.setHttpClientProperties(
-        UserConfiguredUrlRestrictions.HttpClientProperties.builder()
-            .enableRetry(true)
-            .build()
-    );
+        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(true).build());
     HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-    stubFor(get(resource)
-        .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    stubFor(get(resource).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
     // when:
     try {
@@ -104,11 +98,9 @@ public class HttpClientUtilsTest {
         UserConfiguredUrlRestrictions.HttpClientProperties.builder()
             .enableRetry(true)
             .maxRetryAttempts(2)
-            .build()
-    );
+            .build());
     HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
-    stubFor(get(resource)
-        .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    stubFor(get(resource).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
     // when:
     try {

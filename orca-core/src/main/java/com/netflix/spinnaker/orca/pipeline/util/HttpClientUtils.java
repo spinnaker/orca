@@ -18,13 +18,13 @@ package com.netflix.spinnaker.orca.pipeline.util;
 
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import com.netflix.spinnaker.orca.config.UserConfiguredUrlRestrictions;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -59,61 +59,64 @@ public class HttpClientUtils {
     this.httpClient = create(userConfiguredUrlRestrictions.getHttpClientProperties());
   }
 
-  private CloseableHttpClient create(UserConfiguredUrlRestrictions.HttpClientProperties httpClientProperties) {
+  private CloseableHttpClient create(
+      UserConfiguredUrlRestrictions.HttpClientProperties httpClientProperties) {
     HttpClientBuilder httpClientBuilder = HttpClients.custom();
 
     if (httpClientProperties.isEnableRetry()) {
-      httpClientBuilder
-          .setServiceUnavailableRetryStrategy(
-              new ServiceUnavailableRetryStrategy() {
-                @Override
-                public boolean retryRequest(
-                    HttpResponse response, int executionCount, HttpContext context) {
-                  int statusCode = response.getStatusLine().getStatusCode();
-                  HttpUriRequest currentReq =
-                      (HttpUriRequest) context.getAttribute(HttpCoreContext.HTTP_REQUEST);
-                  LOGGER.info("Response code {} for {}", statusCode, currentReq.getURI());
+      httpClientBuilder.setServiceUnavailableRetryStrategy(
+          new ServiceUnavailableRetryStrategy() {
+            @Override
+            public boolean retryRequest(
+                HttpResponse response, int executionCount, HttpContext context) {
+              int statusCode = response.getStatusLine().getStatusCode();
+              HttpUriRequest currentReq =
+                  (HttpUriRequest) context.getAttribute(HttpCoreContext.HTTP_REQUEST);
+              LOGGER.info("Response code {} for {}", statusCode, currentReq.getURI());
 
-                  if (statusCode >= HttpStatus.SC_OK && statusCode <= 299) {
-                    return false;
-                  }
+              if (statusCode >= HttpStatus.SC_OK && statusCode <= 299) {
+                return false;
+              }
 
-                  boolean shouldRetry =
-                      (statusCode == 429 || RETRYABLE_500_HTTP_STATUS_CODES.contains(statusCode))
-                          && executionCount <= httpClientProperties.getMaxRetryAttempts();
+              boolean shouldRetry =
+                  (statusCode == 429 || RETRYABLE_500_HTTP_STATUS_CODES.contains(statusCode))
+                      && executionCount <= httpClientProperties.getMaxRetryAttempts();
 
-                  if ((statusCode >= 300) && (statusCode <= 399)) {
-                    throw new RetryRequestException(
-                        String.format(
-                            "Attempted redirect from %s to %s which is not supported",
-                            currentReq.getURI(), response.getFirstHeader("LOCATION").getValue()));
-                  }
-                  if (!shouldRetry) {
-                    throw new RetryRequestException(
-                        String.format(
-                            "Not retrying %s. Count %d, Max %d",
-                            currentReq.getURI(), executionCount, httpClientProperties.getMaxRetryAttempts()));
-                  }
+              if ((statusCode >= 300) && (statusCode <= 399)) {
+                throw new RetryRequestException(
+                    String.format(
+                        "Attempted redirect from %s to %s which is not supported",
+                        currentReq.getURI(), response.getFirstHeader("LOCATION").getValue()));
+              }
+              if (!shouldRetry) {
+                throw new RetryRequestException(
+                    String.format(
+                        "Not retrying %s. Count %d, Max %d",
+                        currentReq.getURI(),
+                        executionCount,
+                        httpClientProperties.getMaxRetryAttempts()));
+              }
 
-                  LOGGER.error(
-                      "Retrying request on response status {}. Count {} Max is {}",
-                      statusCode,
-                      executionCount,
-                      httpClientProperties.getMaxRetryAttempts());
-                  return true;
-                }
+              LOGGER.error(
+                  "Retrying request on response status {}. Count {} Max is {}",
+                  statusCode,
+                  executionCount,
+                  httpClientProperties.getMaxRetryAttempts());
+              return true;
+            }
 
-                @Override
-                public long getRetryInterval() {
-                  return httpClientProperties.getRetryInterval();
-                }
-              });
+            @Override
+            public long getRetryInterval() {
+              return httpClientProperties.getRetryInterval();
+            }
+          });
 
       httpClientBuilder.setRetryHandler(
           (exception, executionCount, context) -> {
             HttpUriRequest currentReq =
                 (HttpUriRequest) context.getAttribute(HttpCoreContext.HTTP_REQUEST);
-            Uninterruptibles.sleepUninterruptibly(httpClientProperties.getRetryInterval(), TimeUnit.MILLISECONDS);
+            Uninterruptibles.sleepUninterruptibly(
+                httpClientProperties.getRetryInterval(), TimeUnit.MILLISECONDS);
             LOGGER.info(
                 "Encountered network error. Retrying request {},  Count {} Max is {}",
                 currentReq.getURI(),
