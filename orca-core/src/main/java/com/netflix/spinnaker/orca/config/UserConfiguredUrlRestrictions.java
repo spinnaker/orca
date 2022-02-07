@@ -28,7 +28,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.web.util.matcher.IpAddressMatcher;
 
@@ -39,7 +42,7 @@ public class UserConfiguredUrlRestrictions {
     private List<String> allowedSchemes = new ArrayList<>(Arrays.asList("http", "https"));
     private boolean rejectLocalhost = true;
     private boolean rejectLinkLocal = true;
-    private boolean enableRetry = false;
+    private HttpClientProperties httpClientProperties = new HttpClientProperties();
     private List<String> rejectedIps =
         new ArrayList<>(); // can contain IP addresses and/or IP ranges (CIDR block)
 
@@ -68,6 +71,11 @@ public class UserConfiguredUrlRestrictions {
       return this;
     }
 
+    public Builder withHttpClientProperties(HttpClientProperties httpClientProperties) {
+      setHttpClientProperties(httpClientProperties);
+      return this;
+    }
+
     public UserConfiguredUrlRestrictions build() {
       return new UserConfiguredUrlRestrictions(
           Pattern.compile(allowedHostnamesRegex),
@@ -75,7 +83,7 @@ public class UserConfiguredUrlRestrictions {
           rejectLocalhost,
           rejectLinkLocal,
           rejectedIps,
-          enableRetry);
+          httpClientProperties);
     }
   }
 
@@ -84,7 +92,7 @@ public class UserConfiguredUrlRestrictions {
   private final boolean rejectLocalhost;
   private final boolean rejectLinkLocal;
   private final Set<String> rejectedIps;
-  private final boolean retry;
+  private final HttpClientProperties clientProperties;
 
   public UserConfiguredUrlRestrictions(
       Pattern allowedHostnames,
@@ -92,7 +100,7 @@ public class UserConfiguredUrlRestrictions {
       boolean rejectLocalhost,
       boolean rejectLinkLocal,
       Collection<String> rejectedIps,
-      boolean retry) {
+      HttpClientProperties clientProperties) {
     this.allowedHostnames = allowedHostnames;
     this.allowedSchemes =
         allowedSchemes == null
@@ -104,7 +112,7 @@ public class UserConfiguredUrlRestrictions {
         rejectedIps == null
             ? Collections.emptySet()
             : Collections.unmodifiableSet(new HashSet<>(rejectedIps));
-    this.retry = retry;
+    this.clientProperties = clientProperties;
   }
 
   public URI validateURI(String url) throws IllegalArgumentException {
@@ -187,7 +195,22 @@ public class UserConfiguredUrlRestrictions {
     return rejectLinkLocal;
   }
 
-  public boolean isRetryEnabled() {
-    return retry;
+  public HttpClientProperties getHttpClientProperties() {
+    return clientProperties;
+  }
+
+  @Data
+  @lombok.Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class HttpClientProperties {
+    @lombok.Builder.Default
+    private boolean enableRetry = false;
+    @lombok.Builder.Default
+    private int maxRetryAttempts = 5;
+    @lombok.Builder.Default
+    private int retryInterval = 5000;
+    @lombok.Builder.Default
+    private int timeoutMillis = 30000;
   }
 }
