@@ -102,6 +102,7 @@ class EchoNotifyingStageListener implements StageListener {
     recordEvent(type, phase, stage, Optional.empty())
   }
 
+  @CompileDynamic
   private void recordEvent(String type, String phase, StageExecution stage, Optional<TaskExecution> maybeTask) {
     try {
       def event = [
