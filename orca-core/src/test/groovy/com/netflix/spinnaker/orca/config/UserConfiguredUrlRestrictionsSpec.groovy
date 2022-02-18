@@ -31,6 +31,7 @@ class UserConfiguredUrlRestrictionsSpec extends Specification {
   def 'should verify allowedHostnamesRegex is set'() {
     given:
     UserConfiguredUrlRestrictions config = new UserConfiguredUrlRestrictions.Builder()
+        .withAllowedHostnamesRegex("")
         .withRejectedIps([])
         .withAllowedSchemes(['https'])
         .withRejectLocalhost(false)
