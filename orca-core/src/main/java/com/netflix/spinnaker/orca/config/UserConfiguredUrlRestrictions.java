@@ -37,7 +37,7 @@ import org.springframework.security.web.util.matcher.IpAddressMatcher;
 public class UserConfiguredUrlRestrictions {
   @Data
   public static class Builder {
-    private String allowedHostnamesRegex = "";
+    private String allowedHostnamesRegex = ".*";
     private List<String> allowedSchemes = new ArrayList<>(Arrays.asList("http", "https"));
     private boolean rejectLocalhost = true;
     private boolean rejectLinkLocal = true;
@@ -203,8 +203,8 @@ public class UserConfiguredUrlRestrictions {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class HttpClientProperties {
-    @lombok.Builder.Default private boolean enableRetry = false;
-    @lombok.Builder.Default private int maxRetryAttempts = 5;
+    @lombok.Builder.Default private boolean enableRetry = true;
+    @lombok.Builder.Default private int maxRetryAttempts = 1;
     @lombok.Builder.Default private int retryInterval = 5000;
     @lombok.Builder.Default private int timeoutMillis = 30000;
   }

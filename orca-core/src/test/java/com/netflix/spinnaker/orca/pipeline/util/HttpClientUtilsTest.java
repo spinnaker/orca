@@ -58,6 +58,8 @@ public class HttpClientUtilsTest {
   @Test
   public void testZeroRetryFor503StatusCode() {
     // given:
+    config.setHttpClientProperties(
+        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(false).build());
     HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
     stubFor(get(resource).willReturn(aResponse().withStatus(503)));
 
@@ -75,8 +77,6 @@ public class HttpClientUtilsTest {
   @Test
   public void testDefaultRetryForSocketException() {
     // given:
-    config.setHttpClientProperties(
-        UserConfiguredUrlRestrictions.HttpClientProperties.builder().enableRetry(true).build());
     HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
     stubFor(get(resource).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
@@ -88,7 +88,7 @@ public class HttpClientUtilsTest {
     }
 
     // then:
-    verify(6, getRequestedFor(urlEqualTo(resource)));
+    verify(2, getRequestedFor(urlEqualTo(resource)));
   }
 
   @Test
