@@ -30,12 +30,16 @@ import lombok.Singular;
 @Beta
 @Data
 @Builder
+@SuppressWarnings("FallThrough")
 public final class TaskResult {
   /** A useful constant for a success result with no outputs. */
   public static final TaskResult SUCCEEDED = TaskResult.ofStatus(ExecutionStatus.SUCCEEDED);
 
   /** A useful constant for a running task with no outputs. */
   public static final TaskResult RUNNING = TaskResult.ofStatus(ExecutionStatus.RUNNING);
+
+  /** A useful constant for a running task with no outputs. */
+  public static final TaskResult TERMINAL = TaskResult.ofStatus(ExecutionStatus.TERMINAL);
 
   /** The execution status of the task. */
   @NonNull private final ExecutionStatus status;

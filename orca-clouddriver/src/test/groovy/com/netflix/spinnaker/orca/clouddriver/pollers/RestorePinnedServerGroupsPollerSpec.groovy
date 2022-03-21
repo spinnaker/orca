@@ -21,8 +21,10 @@ import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.core.RetrySupport
+import com.netflix.spinnaker.moniker.Moniker
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
-import com.netflix.spinnaker.orca.clouddriver.OortService
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverService
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -34,7 +36,7 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
     tryAcquireLock(_, _) >> true
   }
   def objectMapper = new ObjectMapper()
-  def oortService = Mock(OortService)
+  CloudDriverService cloudDriverService = Mock()
   def executionLauncher = Mock(ExecutionLauncher)
   def executionRepository = Mock(ExecutionRepository)
   def pollerSupport = Mock(PollerSupport)
@@ -58,8 +60,8 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
     executionType: ExecutionType.PIPELINE,
     executionId: "execution-id-1",
 
-    pinnedCapacity: new ServerGroup.Capacity(min: 3, max: 5, desired: 3),
-    unpinnedCapacity: new ServerGroup.Capacity(min: 2, max: 5, desired: 3)
+    pinnedCapacity: ServerGroup.Capacity.builder().min(3).max(5).desired(3).build(),
+    unpinnedCapacity: ServerGroup.Capacity.builder().min(2).max(5).desired(3).build()
   )
 
   def pinnedServerGroupTag2 = new RestorePinnedServerGroupsPoller.PinnedServerGroupTag(
@@ -74,8 +76,8 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
     executionType: ExecutionType.PIPELINE,
     executionId: "execution-id-2",
 
-    pinnedCapacity: new ServerGroup.Capacity(min: 3, max: 5, desired: 3),
-    unpinnedCapacity: new ServerGroup.Capacity(min: 2, max: 5, desired: 3)
+    pinnedCapacity: ServerGroup.Capacity.builder().min(3).max(5).desired(3).build(),
+    unpinnedCapacity: ServerGroup.Capacity.builder().min(2).max(5).desired(3).build()
   )
 
   @Subject
@@ -84,7 +86,7 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
     constructorArgs: [
       notificationClusterLock,
       objectMapper,
-      oortService,
+      cloudDriverService,
       retrySupport,
       registry,
       executionLauncher,
@@ -107,15 +109,13 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
     1 * pollerSupport.fetchServerGroup("test", "us-east-1", "app-stack-details-v001") >> {
       return Optional.of(
         new ServerGroup(
-          moniker: [app: "app"],
-          capacity: new ServerGroup.Capacity(min: 3, max: 5, desired: 3)
+          moniker: new Moniker(app: "app"),
+          capacity: ServerGroup.Capacity.builder().min(3).max(5).desired(3).build()
         )
       )
     }
-    1 * executionLauncher.start(ExecutionType.ORCHESTRATION, { String configJson ->
-      def config = objectMapper.readValue(configJson, Map)
+    1 * executionLauncher.start(ExecutionType.ORCHESTRATION, { Map config ->
       assert config.stages*.type == ["resizeServerGroup", "deleteEntityTags"]
-
       return true
     })
   }
@@ -137,16 +137,13 @@ class RestorePinnedServerGroupsPollerSpec extends Specification {
         new ServerGroup(
           moniker: [app: "app"],
           // current 'min' capacity no longer matches the pinned 'min' capacity, assume something else resized!
-          capacity: new ServerGroup.Capacity(min: 2, max: 5, desired: 3)
+          capacity: ServerGroup.Capacity.builder().min(2).max(5).desired(3).build()
         )
       )
     }
-    1 * executionLauncher.start(ExecutionType.ORCHESTRATION, { String configJson ->
-      def config = objectMapper.readValue(configJson, Map)
-
+    1 * executionLauncher.start(ExecutionType.ORCHESTRATION, { Map config ->
       // no resize necessary!
       assert config.stages*.type == ["deleteEntityTags"]
-
       return true
     })
   }

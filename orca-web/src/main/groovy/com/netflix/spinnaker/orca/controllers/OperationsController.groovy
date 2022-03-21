@@ -23,17 +23,16 @@ import com.netflix.spinnaker.fiat.shared.FiatService
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException
-import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
+import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.exceptions.OperationFailedException
 import com.netflix.spinnaker.orca.exceptions.PipelineTemplateValidationException
-import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
+import com.netflix.spinnaker.orca.api.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.PipelineModelMutator
 import com.netflix.spinnaker.orca.igor.BuildService
 import com.netflix.spinnaker.orca.pipeline.ExecutionLauncher
-import com.netflix.spinnaker.orca.api.pipeline.models.Trigger
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactUtils
@@ -44,19 +43,15 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.util.logging.Slf4j
 import javassist.NotFoundException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import retrofit.RetrofitError
 import retrofit.http.Query
 
 import javax.servlet.http.HttpServletResponse
 
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND
 import static net.logstash.logback.argument.StructuredArguments.value
 
 @RestController
@@ -172,7 +167,6 @@ class OperationsController {
 
   private Map<String, Object> orchestratePipeline(Map pipeline) {
     long startTime = System.currentTimeMillis()
-    def request = objectMapper.writeValueAsString(pipeline)
 
     Exception pipelineError = null
     try {
@@ -193,13 +187,13 @@ class OperationsController {
       log.info(
           "Started pipeline {} based on request body {} (took: {}ms)",
           id,
-          request,
+          renderForLogs(pipeline),
           System.currentTimeMillis() - startTime
       )
       return [ref: "/pipelines/" + id]
     } else {
       def id = markPipelineFailed(processedPipeline, pipelineError)
-      log.info("Failed to start pipeline {} based on request body {}", id, request)
+      log.info("Failed to start pipeline {} based on request body {}", id, renderForLogs(pipeline))
       throw pipelineError
     }
   }
@@ -233,12 +227,12 @@ class OperationsController {
     markPipelineFailed(processedPipeline, pipelineError)
   }
 
-  public Map parseAndValidatePipeline(Map pipeline) {
+  Map parseAndValidatePipeline(Map pipeline) {
     return parseAndValidatePipeline(pipeline, true)
   }
 
-  public Map parseAndValidatePipeline(Map pipeline, boolean resolveArtifacts) {
-    parsePipelineTrigger(executionRepository, buildService, pipeline, resolveArtifacts)
+  Map parseAndValidatePipeline(Map pipeline, boolean resolveArtifacts) {
+    parsePipelineTrigger(pipeline, resolveArtifacts)
 
     for (ExecutionPreprocessor preprocessor : executionPreprocessors.findAll {
       it.supports(pipeline, ExecutionPreprocessor.Type.PIPELINE)
@@ -261,7 +255,7 @@ class OperationsController {
     return pipeline
   }
 
-  private void parsePipelineTrigger(ExecutionRepository executionRepository, BuildService buildService, Map pipeline, boolean resolveArtifacts) {
+  private void parsePipelineTrigger(Map pipeline, boolean resolveArtifacts) {
     if (!(pipeline.trigger instanceof Map)) {
       pipeline.trigger = [:]
       if (pipeline.plan && pipeline.type == "templatedPipeline" && pipelineTemplateService != null) {
@@ -368,14 +362,14 @@ class OperationsController {
   @RequestMapping(value = "/ops", method = RequestMethod.POST)
   Map<String, String> ops(@RequestBody List<Map> input) {
     def execution = [application: null, name: null, stages: input]
-    parsePipelineTrigger(executionRepository, buildService, execution, true)
+    parsePipelineTrigger(execution, true)
     startTask(execution)
   }
 
   @RequestMapping(value = "/ops", consumes = "application/context+json", method = RequestMethod.POST)
   Map<String, String> ops(@RequestBody Map input) {
     def execution = [application: input.application, name: input.description, stages: input.job, trigger: input.trigger ?: [:]]
-    parsePipelineTrigger(executionRepository, buildService, execution, true)
+    parsePipelineTrigger(execution, true)
     startTask(execution)
   }
 
@@ -447,15 +441,13 @@ class OperationsController {
 
   private String startPipeline(Map config) {
     injectPipelineOrigin(config)
-    def json = objectMapper.writeValueAsString(config)
-    def pipeline = executionLauncher.start(PIPELINE, json)
+    def pipeline = executionLauncher.start(PIPELINE, config)
     return pipeline.id
   }
 
   private String markPipelineFailed(Map config, Exception e) {
     injectPipelineOrigin(config)
-    def json = objectMapper.writeValueAsString(config)
-    def pipeline = executionLauncher.fail(PIPELINE, json, e)
+    def pipeline = executionLauncher.fail(PIPELINE, config, e)
     return pipeline.id
   }
 
@@ -472,10 +464,26 @@ class OperationsController {
       config = preprocessor.process(config)
     }
 
-    def json = objectMapper.writeValueAsString(config)
-    log.info('requested task:{}', json)
-    def pipeline = executionLauncher.start(ORCHESTRATION, json)
+    def pipeline = null
+    try {
+      pipeline = executionLauncher.start(ORCHESTRATION, config)
+    } finally {
+      log.info('started execution {} from requested task: {}', pipeline?.id, renderForLogs(config))
+    }
     [ref: "/tasks/${pipeline.id}".toString()]
+  }
+
+  private String renderForLogs(Map config) {
+    if (!log.isInfoEnabled()) {
+      return
+    }
+
+    def json = objectMapper.writeValueAsString(config)
+    if (json.length() < 20_000) {
+      return "(length: ${json.length()}) " + json
+    }
+
+    return "(original length: ${json.length()}, truncated to first and last 10k) " +json[0..10_000] + " (...) " + json[-10_000..-1]
   }
 
   private void injectPipelineOrigin(Map pipeline) {

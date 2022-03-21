@@ -15,14 +15,14 @@
  */
 package com.netflix.spinnaker.orca.api.pipeline.models;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 
-import com.google.common.collect.ImmutableSet;
 import com.netflix.spinnaker.kork.annotations.Beta;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -64,6 +64,10 @@ public interface PipelineExecution {
   boolean isLimitConcurrent();
 
   void setLimitConcurrent(boolean limitConcurrent);
+
+  int getMaxConcurrentExecutions();
+
+  void setMaxConcurrentExecutions(int maxConcurrentExecutions);
 
   boolean isKeepWaitingPipelines();
 
@@ -141,6 +145,11 @@ public interface PipelineExecution {
 
   StageExecution stageByRef(String refId);
 
+  /**
+   * Based on the value of `status`, will also update synthetic fields like `canceled` and `endTime`
+   */
+  void updateStatus(ExecutionStatus status);
+
   class AuthenticationDetails {
 
     private String user;
@@ -156,18 +165,25 @@ public interface PipelineExecution {
     private Collection<String> allowedAccounts = emptySet();
 
     public Collection<String> getAllowedAccounts() {
-      return ImmutableSet.copyOf(allowedAccounts);
+      return allowedAccounts;
     }
 
     public void setAllowedAccounts(Collection<String> allowedAccounts) {
-      this.allowedAccounts = ImmutableSet.copyOf(allowedAccounts);
+      this.allowedAccounts = Set.copyOf(allowedAccounts);
     }
 
-    public AuthenticationDetails() {}
+    public AuthenticationDetails() {
+      this(null, Collections.emptySet());
+    }
 
     public AuthenticationDetails(String user, String... allowedAccounts) {
+      this(user, Set.of(allowedAccounts));
+    }
+
+    public AuthenticationDetails(String user, Collection<String> allowedAccounts) {
       this.user = user;
-      this.allowedAccounts = asList(allowedAccounts);
+      this.allowedAccounts =
+          allowedAccounts == null ? Collections.emptySet() : Set.copyOf(allowedAccounts);
     }
   }
 

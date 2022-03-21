@@ -19,7 +19,7 @@ package com.netflix.spinnaker.orca.q.handler
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.orca.DefaultStageResolver
-import com.netflix.spinnaker.orca.TaskExecutionInterceptor
+import com.netflix.spinnaker.orca.api.pipeline.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.Task
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
@@ -778,7 +778,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       it("it tries to cancel the task") {
-        verify(task).onCancel(any())
+        verify(task).onCancelWithResult(any())
       }
     }
 

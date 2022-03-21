@@ -17,8 +17,10 @@
 package com.netflix.spinnaker.orca.pipeline.model;
 
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.NOT_STARTED;
+import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING;
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.ORCHESTRATION;
 import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE;
+import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -31,7 +33,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.Trigger;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
-import com.netflix.spinnaker.security.User;
 import de.huxhorn.sulky.ulid.ULID;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -151,6 +152,16 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
     this.limitConcurrent = limitConcurrent;
   }
 
+  private int maxConcurrentExecutions = 0;
+
+  public int getMaxConcurrentExecutions() {
+    return maxConcurrentExecutions;
+  }
+
+  public void setMaxConcurrentExecutions(int maxConcurrentExecutions) {
+    this.maxConcurrentExecutions = maxConcurrentExecutions;
+  }
+
   private boolean keepWaitingPipelines = false;
 
   public boolean isKeepWaitingPipelines() {
@@ -235,6 +246,17 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
 
   public void setStatus(@Nonnull ExecutionStatus status) {
     this.status = status;
+  }
+
+  @Override
+  public void updateStatus(@Nonnull ExecutionStatus status) {
+    this.status = status;
+    if (status == RUNNING) {
+      canceled = false;
+      startTime = currentTimeMillis();
+    } else if (status.isComplete() && startTime != null) {
+      endTime = currentTimeMillis();
+    }
   }
 
   private AuthenticationDetails authentication;
@@ -421,18 +443,6 @@ public class PipelineExecutionImpl implements PipelineExecution, Serializable {
       }
 
       return Optional.empty();
-    }
-
-    public static Optional<User> toKorkUser(AuthenticationDetails authentication) {
-      return Optional.ofNullable(authentication)
-          .map(AuthenticationDetails::getUser)
-          .map(
-              it -> {
-                User user = new User();
-                user.setEmail(it);
-                user.setAllowedAccounts(authentication.getAllowedAccounts());
-                return user;
-              });
     }
   }
 }

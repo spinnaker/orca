@@ -22,19 +22,14 @@ jobs:
       - name: Checkout docs repo
         uses: actions/checkout@v2
         with:
-          repository: spinnaker/spinnaker.github.io
+          repository: spinnaker/spinnaker.io
           path: docs
 
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v2
         with:
           java-version: 11
-
-      - uses: actions/cache@v1
-        with:
-          path: ~/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          distribution: 'zulu'
+          cache: 'gradle'
 
       - name: Generate docs
         run: ./gradlew dokkaHtml --stacktrace
@@ -43,7 +38,7 @@ jobs:
       - name: Copy docs
         run: |
           SOURCE_DIR=service/orca-api/build/dokka/html/
-          TARGET_DIR=docs/reference/api/service-plugin-apis/orca-api/master/
+          TARGET_DIR=content/en/docs/reference/api/service-plugin-apis/orca-api/master/
 
           mkdir -p $TARGET_DIR
           cp -R $SOURCE_DIR $TARGET_DIR

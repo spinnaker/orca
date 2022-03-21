@@ -93,7 +93,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as running") {
-        verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
+        assertThat(pipeline.status).isEqualTo(RUNNING)
+        verify(repository).updateStatus(pipeline)
       }
 
       it("starts the first stage") {
@@ -105,6 +106,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
           check<ExecutionStarted> {
             assertThat(it.executionType).isEqualTo(message.executionType)
             assertThat(it.executionId).isEqualTo(message.executionId)
+            assertThat(it.execution.startTime).isNotNull()
           }
         )
       }
@@ -262,7 +264,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
       }
 
       it("marks the execution as TERMINAL") {
-        verify(repository, times(1)).updateStatus(PIPELINE, pipeline.id, TERMINAL)
+        assertThat(pipeline.status).isEqualTo(TERMINAL)
+        verify(repository, times(1)).updateStatus(pipeline)
       }
 
       it("publishes an event with TERMINAL status") {
@@ -347,7 +350,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("does not start the new pipeline") {
-          verify(repository, never()).updateStatus(PIPELINE, message.executionId, RUNNING)
+          assertThat(pipeline.status).isNotEqualTo(RUNNING)
+          verify(repository, never()).updateStatus(pipeline)
           verify(queue, never()).push(isA<StartStage>())
         }
 
@@ -381,7 +385,8 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("starts the new pipeline") {
-          verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
+          assertThat(pipeline.status).isEqualTo(RUNNING)
+          verify(repository).updateStatus(pipeline)
           verify(queue).push(isA<StartStage>())
         }
       }
@@ -390,6 +395,7 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         beforeGroup {
           pipeline.isLimitConcurrent = true
           runningPipeline.isLimitConcurrent = true
+          pipeline.status = NOT_STARTED
 
           whenever(
             repository.retrievePipelinesForPipelineConfigId(eq(configId), any())
@@ -407,10 +413,169 @@ object StartExecutionHandlerTest : SubjectSpek<StartExecutionHandler>({
         }
 
         it("starts the new pipeline") {
-          verify(repository).updateStatus(PIPELINE, message.executionId, RUNNING)
+          assertThat(pipeline.status).isEqualTo(RUNNING)
+          verify(repository).updateStatus(pipeline)
           verify(queue).push(isA<StartStage>())
         }
       }
+    }
+
+    given("a pipeline with maxConcurrentExecutions set to 3") {
+      val configId = UUID.randomUUID().toString()
+      val runningPipeline1 = pipeline {
+        pipelineConfigId = configId
+        isLimitConcurrent = false
+        maxConcurrentExecutions = 3
+        status = RUNNING
+        stage {
+          type = singleTaskStage.type
+          status = RUNNING
+        }
+      }
+      val runningPipeline2 = pipeline {
+        pipelineConfigId = configId
+        isLimitConcurrent = false
+        maxConcurrentExecutions = 3
+        status = RUNNING
+        stage {
+          type = singleTaskStage.type
+          status = RUNNING
+        }
+      }
+      val runningPipeline3 = pipeline {
+        pipelineConfigId = configId
+        isLimitConcurrent = false
+        maxConcurrentExecutions = 3
+        status = RUNNING
+        stage {
+          type = singleTaskStage.type
+          status = RUNNING
+        }
+      }
+      val pipeline = pipeline {
+        pipelineConfigId = configId
+        isLimitConcurrent = false
+        maxConcurrentExecutions = 3
+        status = NOT_STARTED
+        stage {
+          type = singleTaskStage.type
+          status = NOT_STARTED
+        }
+      }
+      val message = StartExecution(pipeline.type, pipeline.id, pipeline.application)
+
+      and("the pipeline is allowed to run if no executions are running") {
+        beforeGroup {
+          pipeline.status = NOT_STARTED
+
+          whenever(
+            repository.retrievePipelinesForPipelineConfigId(eq(configId), any())
+          ) doReturn just(pipeline)
+
+          whenever(
+            repository.retrieve(message.executionType, message.executionId)
+          ) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving a message") {
+          subject.handle(message)
+        }
+
+        it("starts the new pipeline") {
+          assertThat(pipeline.status).isEqualTo(RUNNING)
+          verify(repository).updateStatus(pipeline)
+          verify(queue).push(isA<StartStage>())
+        }
+      }
+
+      and("the pipeline is allowed to run if 1 execution is running") {
+        beforeGroup {
+          pipeline.status = NOT_STARTED
+
+          whenever(
+            repository.retrievePipelinesForPipelineConfigId(eq(configId), any())
+          ) doReturn just(runningPipeline1)
+
+          whenever(
+            repository.retrieve(message.executionType, message.executionId)
+          ) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving a message") {
+          subject.handle(message)
+        }
+
+        it("starts the new pipeline") {
+          assertThat(pipeline.status).isEqualTo(RUNNING)
+          verify(repository).updateStatus(pipeline)
+          verify(queue).push(isA<StartStage>())
+        }
+      }
+
+      and("the pipeline is allowed to run if 2 executions are running") {
+        beforeGroup {
+          pipeline.status = NOT_STARTED
+
+          whenever(
+            repository.retrievePipelinesForPipelineConfigId(eq(configId), any())
+          ) doReturn just(runningPipeline1,runningPipeline2)
+
+          whenever(
+            repository.retrieve(message.executionType, message.executionId)
+          ) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving a message") {
+          subject.handle(message)
+        }
+
+        it("starts the new pipeline") {
+          assertThat(pipeline.status).isEqualTo(RUNNING)
+          verify(repository).updateStatus(pipeline)
+          verify(queue).push(isA<StartStage>())
+        }
+      }
+
+      and("the pipeline should not run if 3 executions are running") {
+        beforeGroup {
+          pipeline.status = NOT_STARTED
+
+          whenever(
+            repository.retrievePipelinesForPipelineConfigId(eq(configId), any())
+          ) doReturn just(runningPipeline1,runningPipeline2,runningPipeline3)
+
+          whenever(
+            repository.retrieve(message.executionType, message.executionId)
+          ) doReturn pipeline
+        }
+
+        afterGroup(::resetMocks)
+
+        on("receiving a message") {
+          subject.handle(message)
+        }
+
+        it("does not start the new pipeline") {
+          assertThat(pipeline.status).isNotEqualTo(RUNNING)
+          verify(repository, never()).updateStatus(pipeline)
+          verify(queue, never()).push(isA<StartStage>())
+        }
+
+        it("does not push any messages to the queue") {
+          verifyNoMoreInteractions(queue)
+        }
+
+        it("does not publish any events") {
+          verifyNoMoreInteractions(publisher)
+        }
+      }
+
     }
   }
 })

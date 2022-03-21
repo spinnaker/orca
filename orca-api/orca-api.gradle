@@ -30,13 +30,13 @@ sourceSets {
 dependencies {
   errorprone("com.google.errorprone:error_prone_core:2.4.0")
 
-  implementation platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
-  annotationProcessor platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
+  implementation platform("io.spinnaker.kork:kork-bom:$korkVersion")
+  annotationProcessor platform("io.spinnaker.kork:kork-bom:$korkVersion")
 
-  api("com.netflix.spinnaker.kork:kork-plugins-api")
+  api("io.spinnaker.kork:kork-plugins-api")
 
   //TODO(jonsie): Remove this dependency
-  api("com.netflix.spinnaker.kork:kork-artifacts")
+  api("io.spinnaker.kork:kork-artifacts")
 
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
@@ -44,7 +44,7 @@ dependencies {
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-api")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
 
-  dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.4.10")
+  dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.4.32")
 
   sampleImplementation(sourceSets.main.runtimeClasspath)
 }

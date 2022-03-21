@@ -17,10 +17,6 @@
 apply from: "$rootDir/gradle/kotlin.gradle"
 apply from: "$rootDir/gradle/spek.gradle"
 
-repositories {
-  jcenter()
-}
-
 dependencies {
   implementation(project(":orca-core"))
   implementation(project(":orca-queue"))
@@ -34,7 +30,7 @@ dependencies {
   testImplementation(project(":orca-test-redis"))
   testImplementation("org.springframework:spring-test")
   testImplementation("org.springframework.boot:spring-boot-test")
-  testImplementation("com.netflix.spinnaker.kork:kork-jedis-test")
+  testImplementation("io.spinnaker.kork:kork-jedis-test")
 
-  testImplementation("com.netflix.spinnaker.kork:kork-core")
+  testImplementation("io.spinnaker.kork:kork-core")
 }

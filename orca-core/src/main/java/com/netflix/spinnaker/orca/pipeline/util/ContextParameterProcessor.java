@@ -63,7 +63,9 @@ public class ContextParameterProcessor {
             new DeployedServerGroupsExpressionFunctionProvider(),
             new ManifestLabelValueExpressionFunctionProvider(),
             new StageExpressionFunctionProvider(),
-            new UrlExpressionFunctionProvider(new UserConfiguredUrlRestrictions.Builder().build())),
+            new UrlExpressionFunctionProvider(
+                new UserConfiguredUrlRestrictions.Builder().build(),
+                new HttpClientUtils(new UserConfiguredUrlRestrictions.Builder().build()))),
         new DefaultPluginManager(),
         DynamicConfigService.NOOP);
   }
@@ -162,7 +164,7 @@ public class ContextParameterProcessor {
       // evaluation context here so that those vars can be processed and expanded when the stage
       // runs
       SpelEvaluatorVersion spelEvaluatorVersion =
-          getEffectiveSpelVersionToUse((String) execution.getSpelEvaluator());
+          getEffectiveSpelVersionToUse(execution.getSpelEvaluator());
 
       if (SpelEvaluatorVersion.V4.equals(spelEvaluatorVersion)) {
         Map templatedVariables = execution.getTemplateVariables();
