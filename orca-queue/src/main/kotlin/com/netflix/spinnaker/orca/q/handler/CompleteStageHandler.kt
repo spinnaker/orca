@@ -179,6 +179,10 @@ class CompleteStageHandler(
         stage.context["cloudProvider"]?.let {
           id.withTag("cloudProvider", it.toString())
         } ?: id
+      }.let { id ->
+        stage.metricTags?.let {
+          id.withTags(stage.metricTags)
+        } ?: id
       }
 
     // If startTime was not set, then assume this was instantaneous.

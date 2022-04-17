@@ -123,6 +123,11 @@ public interface StageExecution {
 
   void setLastModified(@Nullable LastModifiedDetails lastModified);
 
+  @Nullable
+  Map<String, String> getMetricTags();
+
+  void setMetricTags(@Nullable Map<String, String> metricTags);
+
   // ------------- InternalStageExecution?
   // A lot of these methods are used in a single place somewhere in Orca. I don't know why we
   // decided to put a bunch

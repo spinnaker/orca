@@ -343,6 +343,23 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     this.lastModified = lastModified;
   }
 
+  /**
+   * Additional tags to be used with stage metrics. This is useful to add extra dimensions to the
+   * metrics recorded for built-in or custom stages.
+   */
+  private Map<String, String> metricTags;
+
+  @Nullable
+  @Override
+  public Map<String, String> getMetricTags() {
+    return this.metricTags;
+  }
+
+  @Override
+  public void setMetricTags(@Nullable Map<String, String> metricTags) {
+    this.metricTags = metricTags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

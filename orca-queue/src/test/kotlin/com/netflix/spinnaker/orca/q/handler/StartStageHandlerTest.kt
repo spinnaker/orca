@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.assertj.assertSoftly
 import com.netflix.spinnaker.orca.DefaultStageResolver
@@ -66,6 +67,7 @@ import com.netflix.spinnaker.spek.and
 import com.netflix.spinnaker.time.fixedClock
 import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.anyOrNull
+import com.nhaarman.mockito_kotlin.atLeastOnce
 import com.nhaarman.mockito_kotlin.argumentCaptor
 import com.nhaarman.mockito_kotlin.check
 import com.nhaarman.mockito_kotlin.doReturn
@@ -75,6 +77,7 @@ import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.never
 import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.times
+import com.nhaarman.mockito_kotlin.spy
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.verifyZeroInteractions
@@ -99,7 +102,8 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
   val exceptionHandler: ExceptionHandler = mock()
   val objectMapper = ObjectMapper()
   val clock = fixedClock()
-  val registry = NoopRegistry()
+  val metricId: Id = mock()
+  val registry = spy(NoopRegistry())
   val retryDelay = Duration.ofSeconds(5)
 
   subject(GROUP) {
@@ -136,7 +140,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
     )
   }
 
-  fun resetMocks() = reset(queue, repository, publisher, exceptionHandler)
+  fun resetMocks() = reset(queue, repository, publisher, exceptionHandler, registry)
 
   describe("starting a stage") {
 
@@ -864,6 +868,79 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
 
         it("re-runs the task") {
           verify(queue).push(message, retryDelay)
+        }
+      }
+    }
+
+    given("the stage has additional metric tags") {
+      val pipeline = pipeline {
+        application = "foo"
+        stage {
+          type = singleTaskStage.type
+          metricTags = mapOf("tag1" to "value1", "tag2" to "value2")
+        }
+      }
+      val message = StartStage(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id)
+
+      beforeGroup {
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        whenever(metricId.withTag(any(), any<String>())) doReturn metricId
+        whenever(metricId.withTags(any<Map<String, String>>())) doReturn metricId
+        whenever(registry.createId(any())) doReturn metricId
+      }
+
+      afterGroup(::resetMocks)
+
+      on("receiving a message") {
+        subject.handle(message)
+      }
+
+      it("updates the stage status") {
+        verify(repository, times(2)).storeStage(
+          check {
+            assertThat(it.status).isEqualTo(RUNNING)
+            assertThat(it.startTime).isEqualTo(clock.millis())
+          }
+        )
+      }
+
+      it("attaches tasks to the stage") {
+        verify(repository, times(2)).storeStage(
+          check {
+            assertThat(it.tasks.size).isEqualTo(1)
+            it.tasks.first().apply {
+              assertThat(id).isEqualTo("1")
+              assertThat(name).isEqualTo("dummy")
+              assertThat(implementingClass).isEqualTo(DummyTask::class.java.name)
+              assertThat(isStageStart).isEqualTo(true)
+              assertThat(isStageEnd).isEqualTo(true)
+            }
+          }
+        )
+      }
+
+      it("starts the first task") {
+        verify(queue).push(StartTask(message, "1"))
+      }
+
+      it("publishes an event") {
+        verify(publisher).publishEvent(
+          check<StageStarted> {
+            assertThat(it.executionType).isEqualTo(pipeline.type)
+            assertThat(it.executionId).isEqualTo(pipeline.id)
+            assertThat(it.stage.id).isEqualTo(message.stageId)
+          }
+        )
+      }
+
+      it("tracks result with stage tags") {
+        verify(registry, atLeastOnce()).createId(any())
+        argumentCaptor<Map<String, String>>().let {
+          verify(metricId, atLeastOnce()).withTags(it.capture())
+          it.firstValue.apply {
+            assertThat(get("tag1")).isEqualTo("value1")
+            assertThat(get("tag2")).isEqualTo("value2")
+          }
         }
       }
     }
