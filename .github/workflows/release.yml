@@ -15,7 +15,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: git fetch --prune --unshallow
+        with:
+          fetch-depth: 0
+      # Given a tag, determine what branch we are on, so we can bump dependencies in the correct branch
+      - name: Get Branch
+        run: |
+          BRANCHES=$(git branch -r --contains ${{ github.ref }})
+          echo "BRANCHES is '${BRANCHES}'"
+          # Check for no branches explicitly...Otherwise echo adds a newline so wc thinks there's
+          # one branch.  And echo -n makes it appears that there's one less branch than there
+          # actually is.
+          if [ -z "$BRANCHES" ]; then
+            echo "exactly one branch required to release orca, but there are none"
+            exit 1
+          fi
+          NUM_BRANCHES=$(($(echo "$BRANCHES" | wc -l)))
+          echo "NUM_BRANCHES is '${NUM_BRANCHES}'"
+          if [ $NUM_BRANCHES -ne 1 ]; then
+            echo "exactly one branch required to release orca, but there are $NUM_BRANCHES ($BRANCHES)"
+            exit 1
+          fi
+          echo "exactly one branch ($BRANCHES)"
+          echo BRANCH=$BRANCHES >> $GITHUB_ENV
       - uses: actions/setup-java@v2
         with:
           java-version: 11
@@ -31,9 +52,11 @@ jobs:
           echo ::set-output name=SKIP_RELEASE::${SKIP_RELEASE}
           echo ::set-output name=IS_CANDIDATE::${IS_CANDIDATE}
           echo ::set-output name=RELEASE_VERSION::${RELEASE_VERSION}
-      - name: Extract repository name
-        id: extract_repo_name
-        run: echo ::set-output name=REPO::${GITHUB_REPOSITORY##*/}
+      - name: Prepare build variables
+        id: build_variables
+        run: |
+          echo ::set-output name=REPO::${GITHUB_REPOSITORY##*/}
+          echo ::set-output name=VERSION::"$(git rev-parse --short HEAD)-$(date --utc +'%Y%m%d%H%M')"
       - name: Release build
         env:
           ORG_GRADLE_PROJECT_version: ${{ steps.release_info.outputs.RELEASE_VERSION }}
@@ -43,7 +66,7 @@ jobs:
           ORG_GRADLE_PROJECT_nexusPgpSigningKey: ${{ secrets.NEXUS_PGP_SIGNING_KEY }}
           ORG_GRADLE_PROJECT_nexusPgpSigningPassword: ${{ secrets.NEXUS_PGP_SIGNING_PASSWORD }}
         run: |
-          ./gradlew --info build ${{ steps.extract_repo_name.outputs.REPO }}-web:installDist publishToNexus closeAndReleaseNexusStagingRepository
+          ./gradlew --info build ${{ steps.build_variables.outputs.REPO }}-web:installDist publishToNexus closeAndReleaseNexusStagingRepository
       - name: Publish apt packages to Google Artifact Registry
         env:
           ORG_GRADLE_PROJECT_version: ${{ steps.release_info.outputs.RELEASE_VERSION }}
@@ -51,9 +74,6 @@ jobs:
           GAR_JSON_KEY: ${{ secrets.GAR_JSON_KEY }}
         run: |
           ./gradlew --info publish
-      - name: Get date
-        id: get_date
-        run: echo ::set-output name=DATETIME::$(date --utc +'%Y%m%d%H%M')
       - name: Login to GAR
         # Only run this on repositories in the 'spinnaker' org, not on forks.
         if: startsWith(github.repository, 'spinnaker/')
@@ -72,9 +92,9 @@ jobs:
           file: Dockerfile.slim
           push: true
           tags: |
-            "${{ env.CONTAINER_REGISTRY }}/${{ steps.extract_repo_name.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-unvalidated"
-            "${{ env.CONTAINER_REGISTRY }}/${{ steps.extract_repo_name.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-unvalidated-slim"
-            "${{ env.CONTAINER_REGISTRY }}/${{ steps.extract_repo_name.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-${{ github.sha }}-${{ steps.get_date.outputs.DATETIME }}-unvalidated-slim"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-unvalidated"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-unvalidated-slim"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-${{ steps.build_variables.outputs.VERSION }}-unvalidated-slim"
       - name: Build and publish ubuntu container image
         # Only run this on repositories in the 'spinnaker' org, not on forks.
         if: startsWith(github.repository, 'spinnaker/')
@@ -84,20 +104,20 @@ jobs:
           file: Dockerfile.ubuntu
           push: true
           tags: |
-            "${{ env.CONTAINER_REGISTRY }}/${{ steps.extract_repo_name.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-unvalidated-ubuntu"
-            "${{ env.CONTAINER_REGISTRY }}/${{ steps.extract_repo_name.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-${{ github.sha }}-${{ steps.get_date.outputs.DATETIME }}-unvalidated-ubuntu"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-unvalidated-ubuntu"
+            "${{ env.CONTAINER_REGISTRY }}/${{ steps.build_variables.outputs.REPO }}:${{ steps.release_info.outputs.RELEASE_VERSION }}-${{ steps.build_variables.outputs.VERSION }}-unvalidated-ubuntu"
       - name: Create release
         if: steps.release_info.outputs.SKIP_RELEASE == 'false'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-           tag_name: ${{ github.ref }}
-           release_name: ${{ github.event.repository.name }} ${{ github.ref }}
-           body: |
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.event.repository.name }} ${{ github.ref }}
+          body: |
             ${{ steps.release_info.outputs.CHANGELOG }}
-           draft: false
-           prerelease: ${{ steps.release_info.outputs.IS_CANDIDATE }}
+          draft: false
+          prerelease: ${{ steps.release_info.outputs.IS_CANDIDATE }}
       - name: Pause before dependency bump
         run: sleep 900
       - name: Trigger dependency bump workflow
@@ -105,4 +125,4 @@ jobs:
         with:
           token: ${{ secrets.SPINNAKER_GITHUB_TOKEN }}
           event-type: bump-dependencies
-          client-payload: '{"ref": "${{ github.ref }}"}'
+          client-payload: '{"ref": "${{ github.ref }}", "branch": "${{ env.BRANCH}}"}'
