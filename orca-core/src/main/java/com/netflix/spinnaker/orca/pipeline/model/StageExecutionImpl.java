@@ -347,17 +347,17 @@ public class StageExecutionImpl implements StageExecution, Serializable {
    * Additional tags to be used with stage metrics. This is useful to add extra dimensions to the
    * metrics recorded for built-in or custom stages.
    */
-  private Map<String, String> metricTags;
+  private Map<String, String> additionalMetricTags;
 
   @Nullable
   @Override
-  public Map<String, String> getMetricTags() {
-    return this.metricTags;
+  public Map<String, String> getAdditionalMetricTags() {
+    return this.additionalMetricTags;
   }
 
   @Override
-  public void setMetricTags(@Nullable Map<String, String> metricTags) {
-    this.metricTags = metricTags;
+  public void setAdditionalMetricTags(Map<String, String> additionalMetricTags) {
+    this.additionalMetricTags = additionalMetricTags;
   }
 
   @Override

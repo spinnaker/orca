@@ -523,7 +523,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
               tasks[0].status = taskStatus
               status = RUNNING
               endTime = clock.instant().minusSeconds(2).toEpochMilli()
-              metricTags = mapOf("tag1" to "value1", "tag2" to "value2")
+              additionalMetricTags = mapOf("tag1" to "value1", "tag2" to "value2")
             }
           }
           val message = CompleteStage(pipeline.stageByRef("1"))

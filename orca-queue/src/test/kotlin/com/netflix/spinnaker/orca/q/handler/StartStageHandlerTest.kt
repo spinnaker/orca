@@ -877,7 +877,7 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
         application = "foo"
         stage {
           type = singleTaskStage.type
-          metricTags = mapOf("tag1" to "value1", "tag2" to "value2")
+          additionalMetricTags = mapOf("tag1" to "value1", "tag2" to "value2")
         }
       }
       val message = StartStage(pipeline.type, pipeline.id, "foo", pipeline.stages.first().id)
