@@ -17,7 +17,7 @@
 package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.Id
-import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spectator.api.DefaultRegistry
 import com.netflix.spinnaker.orca.DefaultStageResolver
 import com.netflix.spinnaker.orca.NoOpTaskImplementationResolver
 import com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_AFTER
@@ -104,8 +104,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   val publisher: ApplicationEventPublisher = mock()
   val exceptionHandler: ExceptionHandler = DefaultExceptionHandler()
   val clock = fixedClock()
-  val metricId: Id = mock()
-  val registry = spy(NoopRegistry())
+  val registry = spy(DefaultRegistry())
   val contextParameterProcessor: ContextParameterProcessor = mock()
 
   val emptyStage = object : StageDefinitionBuilder {
@@ -183,7 +182,7 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
     )
   }
 
-  fun resetMocks() = reset(queue, repository, publisher, registry, metricId)
+  fun resetMocks() = reset(queue, repository, publisher, registry)
 
   describe("completing top level stages") {
     setOf(SUCCEEDED, FAILED_CONTINUE).forEach { taskStatus ->
@@ -531,9 +530,6 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
 
           beforeGroup {
             whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-            whenever(metricId.withTag(any(), any<String>())) doReturn metricId
-            whenever(metricId.withTags(any<Map<String, String>>())) doReturn metricId
-            whenever(registry.createId(any())) doReturn metricId
           }
 
           afterGroup(::resetMocks)
@@ -543,12 +539,12 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
           }
 
           it("tracks result with stage tags") {
-            argumentCaptor<Map<String, String>>().let {
-              verify(metricId, atLeastOnce()).withTags(it.capture())
-              it.firstValue.apply {
-                assertThat(get("tag1")).isEqualTo("value1")
-                assertThat(get("tag2")).isEqualTo("value2")
-              }
+            argumentCaptor<Id>().let {
+              verify(registry, atLeastOnce()).timer(it.capture())
+              val metricId = it.firstValue
+              assertThat(metricId.name()).isEqualTo("stage.invocations.duration")
+              assertThat(metricId.tags().any{ t -> t.key() == "tag1" && t.value() == "value1" }).isTrue
+              assertThat(metricId.tags().any{ t -> t.key() == "tag2" && t.value() == "value2" }).isTrue
             }
           }
         }
