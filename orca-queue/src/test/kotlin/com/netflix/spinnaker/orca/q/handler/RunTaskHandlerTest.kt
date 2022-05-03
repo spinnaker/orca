@@ -1476,56 +1476,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
     }
 
-    describe("task failed with an exception ") {
-      val pipeline = pipeline {
-        stage {
-          refId = "1"
-          type = "whatever"
-          task {
-            id = "1"
-            startTime = clock.instant().toEpochMilli()
-          }
-        }
-      }
-      val stage = pipeline.stages.first()
-      val message = RunTask(pipeline.type, pipeline.id, "foo", stage.id, "1", DummyTask::class.java)
-      val taskResult = TaskResult.ofStatus(TERMINAL)
-
-      and("it is not recoverable") {
-        val exceptionDetails = ExceptionHandler.Response(
-          RuntimeException::class.qualifiedName,
-          "o noes",
-          ExceptionHandler.responseDetails("o noes"),
-          false
-        )
-
-
-        beforeGroup {
-          tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
-          taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
-          taskExecutionInterceptors.forEach { whenever(it.afterTaskExecution(task, stage, taskResult)) doThrow RuntimeException("o noes") }
-          whenever(task.execute(any())) doThrow RuntimeException("o noes")
-          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-          whenever(exceptionHandler.handles(any())) doReturn true
-          whenever(exceptionHandler.handle(anyOrNull(), any())) doReturn exceptionDetails
-        }
-
-        afterGroup(::resetMocks)
-
-        action("the handler receives a message") {
-          subject.handle(message)
-        }
-
-        it("attaches the exception to the stage context") {
-          verify(repository).storeStage(
-            check {
-              assertThat(it.context["exception"]).isEqualTo(exceptionDetails)
-              assertThat(it.tasks[0].taskExceptionDetails["exception"]).isEqualTo(exceptionDetails)
-            }
-          )
-        }
-      }
-    }
   }
 
   describe("expressions in the context") {
