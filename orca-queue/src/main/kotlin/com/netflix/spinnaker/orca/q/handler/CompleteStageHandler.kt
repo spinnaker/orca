@@ -127,19 +127,14 @@ class CompleteStageHandler(
               return@withStage
             }
           }
-
           stage.status = status
-          if (status in setOf(TERMINAL, FAILED_CONTINUE)) {
-            stage.context["exception"] = HashMap<String, Any>().apply {
-              this["details"] = HashMap<String, Any>().apply {
-                this["errors"] = ArrayList<String>().apply {
-                  stage.tasks.filter { t -> t.taskExceptionDetails.isNotEmpty() }.forEach {
-                    val details = (it.taskExceptionDetails["exception"] as HashMap<*, *>)["details"] as HashMap<*, *>
-                    this.add(it.name + ":")
-                    this.add(details["error"] as String)
-                    (details["errors"] as ArrayList<*>).forEach { t -> this.add(t as String) }
-                  }
-                }
+          if (status == FAILED_CONTINUE) {
+            (((stage.context["exception"] as? HashMap<*, *>)?.get("details") as? HashMap<*, *>)?.get("errors") as? ArrayList<Any>)
+              .apply { stage.tasks.filter { t -> t.taskExceptionDetails.isNotEmpty() }.forEach { y ->
+                val details = (y.taskExceptionDetails["exception"] as HashMap<*, *>)["details"] as HashMap<*, *>
+                this?.add(y.name + ":")
+                this?.add(details["error"] as String)
+                (details["errors"] as ArrayList<*>).forEach { t -> this?.add(t as String) }
               }
             }
           }

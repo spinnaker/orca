@@ -185,7 +185,6 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
   fun resetMocks() = reset(queue, repository, publisher, registry)
 
   describe("completing top level stages") {
-
     setOf(SUCCEEDED, FAILED_CONTINUE).forEach { taskStatus ->
       describe("when a stage's tasks complete with $taskStatus status") {
         and("it is already complete") {
@@ -549,6 +548,98 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
             }
           }
         }
+      }
+    }
+
+    describe("when a stage's task fails with FAILED_CONTINUE status and should add the taskException errors to stageContext exception") {
+      val pipeline = pipeline {
+        stage {
+          refId = "1"
+          type = multiTaskStage.type
+          multiTaskStage.plan(this)
+          tasks[0].status = FAILED_CONTINUE
+          tasks[0].taskExceptionDetails["exception"] = mapOf(
+            "timestamp" to "", "exceptionType" to "", "operation" to "", "details" to
+              mapOf(
+                "responseBody" to "",
+                "kind" to "",
+                "error" to "",
+                "errors" to arrayListOf("something"),
+                "url" to "",
+                "rootException" to "",
+                "status" to ""
+              ), "shouldRetry" to false
+          )
+          tasks[1].status = FAILED_CONTINUE
+          tasks[1].taskExceptionDetails["exception"] = mapOf(
+            "timestamp" to "", "exceptionType" to "", "operation" to "", "details" to
+              mapOf(
+                "responseBody" to "",
+                "kind" to "",
+                "error" to "",
+                "errors" to arrayListOf("one more"),
+                "url" to "",
+                "rootException" to "",
+                "status" to ""
+              ), "shouldRetry" to false
+          )
+          context["exception"]= mapOf(
+            "timestamp" to "", "exceptionType" to "", "operation" to "", "details" to
+              mapOf(
+                "responseBody" to "",
+                "kind" to "",
+                "error" to "",
+                "errors" to arrayListOf("one more"),
+                "url" to "",
+                "rootException" to "",
+                "status" to ""
+              ), "shouldRetry" to false
+          )
+          status = RUNNING
+        }
+      }
+      val message = CompleteStage(pipeline.stageByRef("1"))
+      val finalExceptionDetails=mapOf(
+        "timestamp" to "", "exceptionType" to "", "operation" to "", "details" to
+          mapOf(
+            "responseBody" to "",
+            "kind" to "",
+            "error" to "",
+            "errors" to arrayListOf("one more", "dummy1:", "", "something", "dummy2:", "", "one more"),
+            "url" to "",
+            "rootException" to "",
+            "status" to ""
+          ), "shouldRetry" to false
+      )
+
+      beforeGroup {
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+      }
+
+      afterGroup(::resetMocks)
+
+      on("receiving the message") {
+        subject.handle(message)
+      }
+
+      it("updates the stage context to store the task exception") {
+        verify(repository).storeStage(
+          check {
+            assertThat(it.status).isEqualTo(FAILED_CONTINUE)
+            assertThat(it.context["exception"]).isEqualTo(finalExceptionDetails)
+          }
+        )
+      }
+
+      it("publishes an event") {
+        verify(publisher).publishEvent(
+          check<StageComplete> {
+            assertThat(it.stage.execution.type).isEqualTo(pipeline.type)
+            assertThat(it.stage.execution.id).isEqualTo(pipeline.id)
+            assertThat(it.stage.id).isEqualTo(message.stageId)
+            assertThat(it.stage.status).isEqualTo(FAILED_CONTINUE)
+          }
+        )
       }
     }
 
@@ -1029,57 +1120,6 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
         verify(queue).push(StartStage(pipeline.stageByRef("2=1>1")))
       }
     }
-
-    setOf(TERMINAL, FAILED_CONTINUE).forEach { taskStatus ->
-      describe("when a stage's task fails with $taskStatus status and should assign the taskExceptionDetails to stageContext exception") {
-        val pipeline = pipeline {
-          stage {
-            refId = "1"
-            type = multiTaskStage.type
-            multiTaskStage.plan(this)
-            tasks[0].status = taskStatus
-            tasks[0].taskExceptionDetails["exception"] = mapOf("timestamp" to "", "exceptionType" to "", "operation" to "", "details" to
-              mapOf("responseBody" to "", "kind" to "", "error" to "", "errors" to arrayListOf("something"), "url" to "", "rootException" to "",
-                "status" to ""), "shouldRetry" to false)
-            status = RUNNING
-          }
-        }
-        val message = CompleteStage(pipeline.stageByRef("1"))
-
-        beforeGroup {
-          whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
-        }
-
-        afterGroup(::resetMocks)
-
-        on("receiving the message") {
-          subject.handle(message)
-        }
-
-        it("updates the stage context to store the task exception") {
-          verify(repository).storeStage(
-            check {
-              assertThat(it.status).isEqualTo(taskStatus)
-              assertThat(((((it.context["exception"] as Map<*, *>)["details"]) as Map<*, *>)["errors"] as ArrayList<*>)[2]).isEqualTo((((it.tasks[0].taskExceptionDetails["exception"] as Map<*, *>)["details"] as Map<*, *>)["errors"] as ArrayList<*>)[0])
-
-            }
-          )
-        }
-
-
-        it("publishes an event") {
-          verify(publisher).publishEvent(
-            check<StageComplete> {
-              assertThat(it.stage.execution.type).isEqualTo(pipeline.type)
-              assertThat(it.stage.execution.id).isEqualTo(pipeline.id)
-              assertThat(it.stage.id).isEqualTo(message.stageId)
-              assertThat(it.stage.status).isEqualTo(taskStatus)
-            }
-          )
-        }
-      }
-    }
-
   }
 
   describe("completing synthetic stages") {
@@ -1709,3 +1749,5 @@ object CompleteStageHandlerTest : SubjectSpek<CompleteStageHandler>({
     }
   }
 })
+
+
