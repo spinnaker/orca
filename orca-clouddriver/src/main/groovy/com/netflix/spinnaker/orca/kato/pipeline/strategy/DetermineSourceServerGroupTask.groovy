@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.kato.pipeline.strategy
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 
 import java.util.concurrent.TimeUnit
@@ -49,6 +51,15 @@ class DetermineSourceServerGroupTask implements RetryableTask {
 
   @Override
   TaskResult execute(StageExecution stage) {
+    ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
+    if (stage.getContext() != null && stage.getContext().get("configFiles") != null
+        && (!((List) stage.getContext().get("configFiles")).isEmpty())) {
+      Object yamlObj = yamlReader.readValue(stage.getContext().get("configFiles").get(0), Object.class);
+      if (yamlObj.get("metadata") != null && yamlObj.get("metadata").get("labels") != null
+          && yamlObj.get("metadata").get("labels").get("cloud.googleapis.com/location") != null) {
+        stage.getContext().put("region", yamlObj.get("metadata").get("labels").get("cloud.googleapis.com/location"))
+      }
+    }
     def stageData = stage.mapTo(StageData)
     Boolean isNotFound = false
     if (!stageData.source && !stageData.region && !stageData.availabilityZones) {
