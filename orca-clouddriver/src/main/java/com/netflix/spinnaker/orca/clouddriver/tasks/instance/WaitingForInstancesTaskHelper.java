@@ -96,11 +96,6 @@ public class WaitingForInstancesTaskHelper {
             .findFirst()
             .flatMap(Function.identity()) // unwrap the optional that was the stop looking signal
             .orElse((Map<String, List<String>>) context.get("deploy.server.groups"));
-    // TODO - temp fix
-    if (serverGroups.isEmpty()) {
-      serverGroups = new HashMap<>();
-      serverGroups.put("us-central", List.of("hellocloud-001"));
-    }
     return serverGroups;
   }
 }
