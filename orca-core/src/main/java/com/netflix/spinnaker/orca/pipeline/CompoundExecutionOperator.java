@@ -138,33 +138,36 @@ public class CompoundExecutionOperator {
     return execution;
   }
 
-  private PipelineExecution updatePreconditionStageExpression(
-      Map restartDetails, PipelineExecution execution) {
-    List<Map> preconditionList = getPreconditionsFromStage(restartDetails);
-    if (!preconditionList.isEmpty()) {
-      for (StageExecution stage : execution.getStages()) {
-        if (stage.getType() != null && !stage.getType().isEmpty()) {
-          if (stage.getType().equalsIgnoreCase("checkPreconditions")) {
-            if (stage.getContext().get("preconditions") != null) {
-              stage.getContext().replace("preconditions", preconditionList);
-              repository.storeStage(stage);
-              log.info("Updated preconditions for CheckPreconditions stage");
-            }
-          }
-        }
+  private PipelineExecution updatePreconditionStageExpression(Map restartDetails, PipelineExecution execution) {
+      List<Map> preconditionList = getPreconditionsFromStage(restartDetails);
+      if (preconditionList.isEmpty()) {
+          return execution;
       }
-    }
-    return execution;
-  }
+
+      for (StageExecution stage : execution.getStages()) {
+          if (stage.getType() != null && stage.getType().equalsIgnoreCase("checkPreconditions")) {
+              if (stage.getContext().get("preconditions") != null) {
+                  stage.getContext().replace("preconditions", preconditionList);
+                  repository.storeStage(stage);
+                  log.info("Updated preconditions for CheckPreconditions stage");
+              }
+          }
+      }
+  }return execution;
+
+}
 
   private List<Map> getPreconditionsFromStage(Map restartDetails) {
     List<Map> preconditionList = new ArrayList();
     Map pipelineConfigMap = new HashMap(restartDetails);
+    
     List<String> keysToRetain = new ArrayList();
     keysToRetain.add("stages");
+    
     pipelineConfigMap.keySet().retainAll(keysToRetain);
     Map<String, List<Map>> pipelineStageMap = new HashMap(pipelineConfigMap);
-    if (!pipelineStageMap.isEmpty() && pipelineStageMap != null) {
+    
+    if (pipelineStageMap != null && !pipelineStageMap.isEmpty()) {
       List<Map> pipelineStageList = pipelineStageMap.get(keysToRetain.get(0));
       for (Map stageMap : pipelineStageList) {
         if (stageMap.get("type").toString().equalsIgnoreCase("checkPreconditions")) {
