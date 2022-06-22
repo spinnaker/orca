@@ -138,35 +138,36 @@ public class CompoundExecutionOperator {
     return execution;
   }
 
-  private PipelineExecution updatePreconditionStageExpression(Map restartDetails, PipelineExecution execution) {
-      List<Map> preconditionList = getPreconditionsFromStage(restartDetails);
-      if (preconditionList.isEmpty()) {
-          return execution;
-      }
+  private PipelineExecution updatePreconditionStageExpression(
+      Map restartDetails, PipelineExecution execution) {
+    List<Map> preconditionList = getPreconditionsFromStage(restartDetails);
+    if (preconditionList.isEmpty()) {
+      return execution;
+    }
 
-      for (StageExecution stage : execution.getStages()) {
-          if (stage.getType() != null && stage.getType().equalsIgnoreCase("checkPreconditions")) {
-              if (stage.getContext().get("preconditions") != null) {
-                  stage.getContext().replace("preconditions", preconditionList);
-                  repository.storeStage(stage);
-                  log.info("Updated preconditions for CheckPreconditions stage");
-              }
-          }
+    for (StageExecution stage : execution.getStages()) {
+      if (stage.getType() != null && stage.getType().equalsIgnoreCase("checkPreconditions")) {
+        if (stage.getContext().get("preconditions") != null) {
+          stage.getContext().replace("preconditions", preconditionList);
+          repository.storeStage(stage);
+          log.info("Updated preconditions for CheckPreconditions stage");
+        }
       }
-  }return execution;
-
-}
+    }
+    return execution;
+  }
 
   private List<Map> getPreconditionsFromStage(Map restartDetails) {
     List<Map> preconditionList = new ArrayList();
     Map pipelineConfigMap = new HashMap(restartDetails);
-    
+
     List<String> keysToRetain = new ArrayList();
     keysToRetain.add("stages");
-    
+
     pipelineConfigMap.keySet().retainAll(keysToRetain);
+
     Map<String, List<Map>> pipelineStageMap = new HashMap(pipelineConfigMap);
-    
+
     if (pipelineStageMap != null && !pipelineStageMap.isEmpty()) {
       List<Map> pipelineStageList = pipelineStageMap.get(keysToRetain.get(0));
       for (Map stageMap : pipelineStageList) {
