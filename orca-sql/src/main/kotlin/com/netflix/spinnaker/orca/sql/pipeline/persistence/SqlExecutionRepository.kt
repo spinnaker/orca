@@ -33,13 +33,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.persistence.ExecutionRepositoryListener
 import com.netflix.spinnaker.orca.interlink.Interlink
-import com.netflix.spinnaker.orca.interlink.events.CancelInterlinkEvent
-import com.netflix.spinnaker.orca.interlink.events.DeleteInterlinkEvent
-import com.netflix.spinnaker.orca.interlink.events.InterlinkEvent
-import com.netflix.spinnaker.orca.interlink.events.PatchStageInterlinkEvent
-import com.netflix.spinnaker.orca.interlink.events.PauseInterlinkEvent
-import com.netflix.spinnaker.orca.interlink.events.RestartStageInterlinkEvent
-import com.netflix.spinnaker.orca.interlink.events.ResumeInterlinkEvent
+import com.netflix.spinnaker.orca.interlink.events.*
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionNotFoundException
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository.ExecutionComparator
@@ -257,6 +251,12 @@ class SqlExecutionRepository(
   override fun restartStage(executionId: String, stageId: String) {
     doForeignAware(RestartStageInterlinkEvent(PIPELINE, executionId, stageId)) {
       _, _ -> log.debug("restartStage is a no-op for local executions")
+    }
+  }
+
+  override fun ignoreStageFailure(executionId: String, stageId: String, reason: String?) {
+    doForeignAware(IgnoreStageFailureInterlinkEvent(PIPELINE, executionId, stageId, reason)) {
+      _, _ -> log.debug("ignoreStageFailure is a no-op for local executions")
     }
   }
 

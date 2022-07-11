@@ -505,6 +505,18 @@ class TaskController {
     return executionOperator.restartStage(id, stageId)
   }
 
+  @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'EXECUTE')")
+  @RequestMapping(value = "/pipelines/{id}/stages/{stageId}/ignoreFailure", method = RequestMethod.PUT)
+  PipelineExecution ignoreFailureOfPipelineStage(
+      @PathVariable String id, @PathVariable String stageId, @RequestBody Map details) {
+    def pipeline = executionRepository.retrieve(PIPELINE, id)
+    def stage = pipeline.stageById(stageId)
+    if (!(boolean) stage.context.getCurrentOnly("allowIgnoreFailure", false)) {
+      throw new CannotUpdateExecutionStage("Stage does not allow ignoreFailure action")
+    }
+    return executionOperator.ignoreStageFailure(id, stageId, details["reason"])
+  }
+
   @PreAuthorize("hasPermission(this.getPipeline(#id)?.application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/pipelines/{id}/evaluateExpression", method = RequestMethod.GET)
   Map evaluateExpressionForExecution(@PathVariable("id") String id,
