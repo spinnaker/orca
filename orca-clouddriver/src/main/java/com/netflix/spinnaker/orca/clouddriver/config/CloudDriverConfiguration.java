@@ -127,9 +127,7 @@ class CloudDriverConfiguration {
       if (urls.isEmpty()
           || urls.stream()
               .allMatch(
-                  url ->
-                      url.equals(
-                          cloudDriverConfigurationProperties.getCloudDriverBaseUrl()))) {
+                  url -> url.equals(cloudDriverConfigurationProperties.getCloudDriverBaseUrl()))) {
         log.info(
             "No readonly URLs configured for clouddriver, using default URL {} for {}",
             cloudDriverConfigurationProperties.getCloudDriverBaseUrl(),
