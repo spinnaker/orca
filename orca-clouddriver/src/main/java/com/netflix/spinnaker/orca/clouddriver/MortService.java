@@ -205,7 +205,7 @@ public interface MortService {
                       vpc.id.equalsIgnoreCase(sourceVpcIdOrName)
                           || (sourceVpcIdOrName.equalsIgnoreCase(vpc.name)
                               && vpc.region.equals(region)
-                              && vpc.account.equalsIgnoreCase(account)))
+                              && vpc.account.equals(account)))
               .findFirst()
               .orElse(null);
 
