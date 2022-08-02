@@ -129,7 +129,7 @@ class CloudDriverConfiguration {
               .allMatch(
                   url -> url.equals(cloudDriverConfigurationProperties.getCloudDriverBaseUrl()))) {
         log.info(
-            "No readonly URLs configured for clouddriver, using default URL {} for {}",
+            "readonly URL not configured for clouddriver, using writeable clouddriver {} for {}",
             cloudDriverConfigurationProperties.getCloudDriverBaseUrl(),
             type.getSimpleName());
       }
@@ -154,9 +154,10 @@ class CloudDriverConfiguration {
                                 selector.getService(), selector.getPriority(), url.getConfig());
                   } catch (Exception e) {
                     log.error(
-                        "Failed to create selector for class {}, using default service selector for URL {}",
-                        url.getConfig().get("selectorClass"),
-                        url.getBaseUrl());
+                        "Failed to create selector for class {}",
+                        url.getConfig().get("selectorClass"));
+
+                    throw new IllegalArgumentException(e);
                   }
                 }
 

@@ -19,20 +19,21 @@ package com.netflix.spinnaker.orca.clouddriver.config;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
 @ConfigurationProperties
 public class CloudDriverConfigurationProperties {
 
-  @Getter
-  @Setter
+  @Data
   public static class BaseUrl {
     private String baseUrl;
     private int priority = 1;
     private Map<String, Object> config;
+
+    BaseUrl(String baseUrl) {
+      this.baseUrl = baseUrl;
+    }
   }
 
   @Data
@@ -70,8 +71,7 @@ public class CloudDriverConfigurationProperties {
     if (clouddriver != null
         && clouddriver.readonly != null
         && clouddriver.readonly.baseUrl != null) {
-      BaseUrl url = new BaseUrl();
-      url.setBaseUrl(clouddriver.readonly.baseUrl);
+      BaseUrl url = new BaseUrl(clouddriver.readonly.baseUrl);
       return List.of(url);
     } else if (clouddriver != null
         && clouddriver.readonly != null
@@ -79,8 +79,7 @@ public class CloudDriverConfigurationProperties {
       return clouddriver.readonly.baseUrls;
     }
 
-    BaseUrl url = new BaseUrl();
-    url.setBaseUrl(getCloudDriverBaseUrl());
+    BaseUrl url = new BaseUrl(getCloudDriverBaseUrl());
     return List.of(url);
   }
 }

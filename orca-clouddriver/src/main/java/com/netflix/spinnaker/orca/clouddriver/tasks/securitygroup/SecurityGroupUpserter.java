@@ -25,7 +25,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 public interface SecurityGroupUpserter {
-  final String OPERATION = "upsertSecurityGroup";
+  String OPERATION = "upsertSecurityGroup";
 
   /**
    * @return the OperationContext object that contains the cloud provider-specific list of
@@ -58,5 +58,4 @@ public interface SecurityGroupUpserter {
     /** Each key/value pair in the returned map will be added to the task's output. */
     Map extraOutput;
   }
-  ;
 }
