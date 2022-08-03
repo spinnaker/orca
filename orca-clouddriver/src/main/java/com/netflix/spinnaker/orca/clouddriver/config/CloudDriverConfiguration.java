@@ -155,9 +155,10 @@ class CloudDriverConfiguration {
                   } catch (Exception e) {
                     log.error(
                         "Failed to create selector for class {}",
-                        url.getConfig().get("selectorClass"));
+                        url.getConfig().get("selectorClass")
+                    );
 
-                    throw new IllegalArgumentException(e);
+                    throw new RuntimeException(e);
                   }
                 }
 
