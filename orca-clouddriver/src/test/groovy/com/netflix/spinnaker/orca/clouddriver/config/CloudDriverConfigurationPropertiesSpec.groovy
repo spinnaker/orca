@@ -50,11 +50,7 @@ class CloudDriverConfigurationPropertiesSpec extends Specification {
 
     return new CloudDriverConfigurationProperties.MultiBaseUrl(
       baseUrl: null,
-      baseUrls: baseUrls.collect { it ->
-        def url = new CloudDriverConfigurationProperties.BaseUrl()
-        url.setBaseUrl(it)
-        url
-      }
+      baseUrls: baseUrls.collect { new CloudDriverConfigurationProperties.BaseUrl(it) }
     )
   }
 }
