@@ -28,10 +28,11 @@ interface AuthenticationAware {
   val stageNavigator: StageNavigator
 
   fun StageExecution.withAuth(block: () -> Unit) {
-    val authenticatedUser = stageNavigator
+    val firstAncestorOrNull = stageNavigator
       .ancestors(this)
       .firstOrNull { it.stageBuilder is AuthenticatedStage }
-      ?.let { (it.stageBuilder as AuthenticatedStage).authenticatedUser(it.stage).orElse(null) }
+    val authenticatedUser = firstAncestorOrNull
+      ?.let { (it.stageBuilder as AuthenticatedStage).authenticatedUser(solveSkippedStages(it.stage)).orElse(null) }
 
     val currentUser = authenticatedUser ?: execution.authentication
 
@@ -55,5 +56,24 @@ interface AuthenticationAware {
     } finally {
       ExecutionContext.clear()
     }
+  }
+  fun backtrackSkippedStages(stage: StageExecution): StageExecution {
+    if (stage.type == "manualJudgment" &&
+      stage.status.toString() != "SKIPPED" &&
+      stage.context.get("propagateAuthenticationContext") == "true") {
+        return stage;
+    }
+    else {
+      val previousStage = if (stage.ancestors().size > 1) stage.ancestors().get(1) else null
+      previousStage?: return stage
+      return backtrackSkippedStages(previousStage);
+    }
+  }
+
+  fun solveSkippedStages(stage: StageExecution): StageExecution {
+      return if (stage.type == "manualJudgment" &&
+        stage.status.toString() == "SKIPPED") backtrackSkippedStages(stage)
+      else
+        stage
   }
 }
