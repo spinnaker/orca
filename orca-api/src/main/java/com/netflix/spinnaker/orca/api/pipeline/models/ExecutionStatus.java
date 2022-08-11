@@ -71,6 +71,10 @@ public enum ExecutionStatus implements CharSequence {
     return complete;
   }
 
+  public final boolean isSkipped() {
+    return this.toString() == "SKIPPED";
+  }
+
   /** Indicates an abnormal completion so nothing downstream should run afterward. */
   public final boolean isHalt() {
     return halt;

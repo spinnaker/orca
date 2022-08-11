@@ -57,11 +57,12 @@ interface AuthenticationAware {
       ExecutionContext.clear()
     }
   }
+
   fun backtrackSkippedStages(stage: StageExecution): StageExecution {
-    if (stage.type == "manualJudgment" &&
-      stage.status.toString() != "SKIPPED" &&
-      stage.context.get("propagateAuthenticationContext") == "true") {
-        return stage;
+    if (stage.isManualJudgmentType &&
+      !stage.status.isSkipped &&
+      stage.withPropagateAuthentication()) {
+      return stage;
     }
     else {
       val previousStage = if (stage.ancestors().size > 1) stage.ancestors().get(1) else null
@@ -71,9 +72,9 @@ interface AuthenticationAware {
   }
 
   fun solveSkippedStages(stage: StageExecution): StageExecution {
-      return if (stage.type == "manualJudgment" &&
-        stage.status.toString() == "SKIPPED") backtrackSkippedStages(stage)
-      else
-        stage
+    return if (stage.isManualJudgmentType() &&
+      stage.status.isSkipped) backtrackSkippedStages(stage)
+    else
+      stage
   }
 }
