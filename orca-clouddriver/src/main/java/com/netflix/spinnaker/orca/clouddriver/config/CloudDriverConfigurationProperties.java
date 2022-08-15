@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.clouddriver.config;
 
 import java.util.List;
 import java.util.Map;
-
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,8 +25,9 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * NB: The explicit @Getter, @Setter and @NoArgsConstructor on some of these inner classes is required. Some
- * weird behaviour going on when using @Data prevented fields from being populated. See spinnaker/#6704.
+ * NB: The explicit @Getter, @Setter and @NoArgsConstructor on some of these inner classes is
+ * required. Some weird behaviour going on when using @Data prevented fields from being populated.
+ * See spinnaker/#6704.
  */
 @Data
 @ConfigurationProperties
