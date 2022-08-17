@@ -20,6 +20,12 @@ import com.netflix.spinnaker.kork.web.selector.SelectableService;
 import java.util.Map;
 import retrofit.client.Response;
 
+/**
+ * Wrapper around {@link CloudDriverCacheService} which selects an endpoint based on {@link
+ * SelectableService.Criteria}. This can be configured to send requests to a specific Clouddriver
+ * endpoint based upon predfined crtieria, for example cloud provider or account. Defaults to the
+ * default Clouddriver URL if no crtieria are configured.
+ */
 public class DelegatingClouddriverCacheService
     extends DelegatingClouddriverService<CloudDriverCacheService>
     implements CloudDriverCacheService {

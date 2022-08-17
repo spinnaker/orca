@@ -19,6 +19,10 @@ package com.netflix.spinnaker.orca.clouddriver;
 import com.netflix.spinnaker.kork.web.selector.SelectableService;
 import java.util.List;
 
+/**
+ * Wrapper around the {@link FeaturesRestService} which selects an endpoint based on {@link
+ * SelectableService.Criteria}.
+ */
 public class DelegatingFeaturesRestService extends DelegatingClouddriverService<FeaturesRestService>
     implements FeaturesRestService {
 
