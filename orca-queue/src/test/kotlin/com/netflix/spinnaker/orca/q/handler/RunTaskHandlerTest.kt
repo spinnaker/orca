@@ -32,6 +32,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution.PausedDetails
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.test.pipeline
@@ -46,17 +47,7 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import com.netflix.spinnaker.orca.q.CompleteTask
-import com.netflix.spinnaker.orca.q.DummyCloudProviderAwareTask
-import com.netflix.spinnaker.orca.q.DummyTask
-import com.netflix.spinnaker.orca.q.DummyTimeoutOverrideTask
-import com.netflix.spinnaker.orca.q.InvalidTask
-import com.netflix.spinnaker.orca.q.InvalidTaskType
-import com.netflix.spinnaker.orca.q.PauseTask
-import com.netflix.spinnaker.orca.q.RunTask
-import com.netflix.spinnaker.orca.q.StageDefinitionBuildersProvider
-import com.netflix.spinnaker.orca.q.TasksProvider
-import com.netflix.spinnaker.orca.q.singleTaskStage
+import com.netflix.spinnaker.orca.q.*
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.any
@@ -93,7 +84,8 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = mock()
+  val stageNavigator: StageNavigator = StageNavigator(mock())
+
   val task: DummyTask = mock {
     on { extensionClass } doReturn DummyTask::class.java
     on { aliases() } doReturn emptyList<String>()
@@ -1837,6 +1829,70 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           verify(queue).push(message, Duration.ofMillis(backOff.expectedMaxBackOffMs))
         }
       }
+    }
+  }
+
+  describe("when a stage had skipped manual judgment stage with auth propagated") {
+    given("a stage with a manual judgment type and auth propagated") {
+      val timeout = Duration.ofMinutes(5)
+      val lastModifiedUser = StageExecution.LastModifiedDetails()
+      lastModifiedUser.user = "user2"
+      val pipeline = pipeline {
+        stage {
+          refId = "1"
+          type = "manualJudgment"
+          status = SUCCEEDED
+          requisiteStageRefIds = setOf("1")
+          context["manualSkip"] = true
+          context["propagateAuthenticationContext"] = true
+          authentication = PipelineExecution.AuthenticationDetails("user1")
+        }
+        stage {
+          refId = "2"
+          type = "manualJudgment"
+          context["manualSkip"] = true
+          context["propagateAuthenticationContext"] = true
+          status = SKIPPED
+          authentication = PipelineExecution.AuthenticationDetails("user2")
+          requisiteStageRefIds = setOf("1")
+        }
+        stage {
+          refId = "3"
+          type = "deploy"
+          context = hashMapOf<String, Any>("markSuccessfulOnTimeout" to true)
+          requisiteStageRefIds = setOf("1", "2")
+          task {
+            id = "1"
+            status = RUNNING
+            startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
+          }
+        }
+      }
+      val stage = pipeline.stageByRef("3")
+      val message = RunTask(pipeline.type, pipeline.id, "foo", stage.id, "1", DummyTask::class.java)
+
+      beforeGroup {
+        tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
+        taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
+        whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
+        whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+      }
+
+      afterGroup(::resetMocks)
+
+      action("the handler receives a message") {
+        subject.handle(message)
+      }
+
+      it("marks the task as succeeded") {
+        verify(queue).push(CompleteTask(message, SUCCEEDED))
+      }
+
+      it("does not execute the task") {
+        verify(task, never()).execute(any())
+      }
+
+
     }
   }
 })
