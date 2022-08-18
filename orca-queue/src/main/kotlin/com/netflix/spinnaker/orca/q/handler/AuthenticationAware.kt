@@ -30,7 +30,6 @@ interface AuthenticationAware {
 
   fun StageExecution.withAuth(block: () -> Unit) {
     val currentUser = retrieveAuthenticatedUser(this) ?: execution.authentication
-
     try {
       ExecutionContext.set(
         ExecutionContext(
@@ -61,6 +60,9 @@ interface AuthenticationAware {
       }
   }
 
+
+  // When a first valid candidate is found in the ancestors chain is returned
+  // until the ancestor chain was iterated completely at the pipeline beginning
   fun backtrackSkippedStages(stage: StageExecution): StageExecution {
     if (stage.isManualJudgmentType &&
       !stage.status.isSkipped &&
@@ -68,8 +70,7 @@ interface AuthenticationAware {
       return stage;
     }
     val previousStage = if (stage.ancestors().size > 1) stage.ancestors().get(1) else null
-    previousStage?: return stage
-    return backtrackSkippedStages(previousStage);
+    return if (previousStage == null) stage else backtrackSkippedStages(previousStage)
   }
 
   //Next method will look by a possible stage with authentication propagated in case that previous
