@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spinnaker.orca.AuthenticatedStage
 import com.netflix.spinnaker.orca.ExecutionContext
+import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -28,13 +29,7 @@ interface AuthenticationAware {
   val stageNavigator: StageNavigator
 
   fun StageExecution.withAuth(block: () -> Unit) {
-    val firstAncestorOrNull = stageNavigator
-      .ancestors(this)
-      .firstOrNull { it.stageBuilder is AuthenticatedStage }
-    val authenticatedUser = firstAncestorOrNull
-      ?.let { (it.stageBuilder as AuthenticatedStage).authenticatedUser(solveSkippedStages(it.stage)).orElse(null) }
-
-    val currentUser = authenticatedUser ?: execution.authentication
+    val currentUser = retrieveAuthenticatedUser(this) ?: execution.authentication
 
     try {
       ExecutionContext.set(
@@ -56,6 +51,14 @@ interface AuthenticationAware {
     } finally {
       ExecutionContext.clear()
     }
+  }
+
+  fun retrieveAuthenticatedUser(stage: StageExecution) : PipelineExecution.AuthenticationDetails? {
+    return stageNavigator
+      .ancestors(stage)
+      .firstOrNull { it.stageBuilder is AuthenticatedStage } ?.let{
+        (it.stageBuilder as AuthenticatedStage).authenticatedUser(solveSkippedStages(it.stage)).orElse(null)
+      }
   }
 
   fun backtrackSkippedStages(stage: StageExecution): StageExecution {
