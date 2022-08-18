@@ -69,6 +69,9 @@ interface AuthenticationAware {
     return backtrackSkippedStages(previousStage);
   }
 
+  //Next method will look by a possible stage with authentication propagated in case that previous
+  //stage was skipped, iterating the stage ancestors. By the moment only MJ stages approved with
+  //auth propagated are considerated as candidates
   fun solveSkippedStages(stage: StageExecution): StageExecution {
     return if (stage.isManualJudgmentType() &&
       stage.status.isSkipped) backtrackSkippedStages(stage)

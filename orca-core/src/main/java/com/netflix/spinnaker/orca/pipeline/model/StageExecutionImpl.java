@@ -621,7 +621,8 @@ public class StageExecutionImpl implements StageExecution, Serializable {
 
   @Override
   public boolean withPropagateAuthentication() {
-    return Boolean.parseBoolean(context.get("propagateAuthenticationContext").toString());
+    return context.get("propagateAuthenticationContext") != null &&
+        Boolean.parseBoolean(context.get("propagateAuthenticationContext").toString());
   }
 
   @Nonnull
