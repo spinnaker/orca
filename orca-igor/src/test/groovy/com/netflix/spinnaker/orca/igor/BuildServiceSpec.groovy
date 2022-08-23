@@ -29,10 +29,11 @@ class BuildServiceSpec extends Specification {
   private static final JOB_NAME_ENCODED = "name/with/slashes%20and%20spaces"
   private static final PARAMS = ['key': 'value']
   private static final FILENAME = 'file.txt'
+  private static final QUEUE_BUILD = ''
 
   void setup() {
     igorService = Mock(IgorService)
-    buildService = new BuildService(igorService)
+    buildService = new BuildService(igorService, false)
   }
 
   void 'build method encodes the job name'() {
@@ -57,5 +58,23 @@ class BuildServiceSpec extends Specification {
 
     then:
     1 * igorService.getPropertyFile(BUILD_NUMBER, FILENAME, MASTER, JOB_NAME_ENCODED)
+  }
+
+  void 'stop method sends job name in path when flag is false'() {
+    when:
+    buildService.stop(MASTER, JOB_NAME, QUEUE_BUILD, BUILD_NUMBER )
+
+    then:
+    1 * igorService.stop(MASTER, JOB_NAME, QUEUE_BUILD, BUILD_NUMBER, '')
+  }
+
+  void 'stop method sends job name in query when flag is true'() {
+    buildService = new BuildService(igorService, true)
+
+    when:
+    buildService.stop(MASTER, JOB_NAME, QUEUE_BUILD, BUILD_NUMBER )
+
+    then:
+    1 * igorService.stopWithJobNameAsQueryParameter(MASTER, JOB_NAME, QUEUE_BUILD, BUILD_NUMBER, '')
   }
 }
