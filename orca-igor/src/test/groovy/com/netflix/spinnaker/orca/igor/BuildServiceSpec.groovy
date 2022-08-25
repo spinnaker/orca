@@ -29,7 +29,7 @@ class BuildServiceSpec extends Specification {
   private static final JOB_NAME_ENCODED = "name/with/slashes%20and%20spaces"
   private static final PARAMS = ['key': 'value']
   private static final FILENAME = 'file.txt'
-  private static final QUEUE_BUILD = ''
+  private static final QUEUE_BUILD = '12'
 
   void setup() {
     igorService = Mock(IgorService)
