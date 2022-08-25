@@ -18,21 +18,17 @@ package com.netflix.spinnaker.orca.igor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
 import retrofit.client.Response;
 
-@Component
 public class BuildService {
   private final IgorService igorService;
-  private final boolean jobNameAsQueryParameter;
+  private final IgorFeatureFlagProperties igorFeatureFlagProperties;
 
   public BuildService(
-      IgorService igorService,
-      @Value("${jobName.queryParameter:false}") boolean jobNameAsQueryParameter) {
+      IgorService igorService, IgorFeatureFlagProperties igorFeatureFlagProperties) {
     this.igorService = igorService;
-    this.jobNameAsQueryParameter = jobNameAsQueryParameter;
+    this.igorFeatureFlagProperties = igorFeatureFlagProperties;
   }
 
   private String encode(String uri) {
@@ -49,7 +45,7 @@ public class BuildService {
   }
 
   public String stop(String master, String jobName, String queuedBuild, Integer buildNumber) {
-    if (this.jobNameAsQueryParameter) {
+    if (this.igorFeatureFlagProperties.isJobNameAsQueryParameter()) {
       return igorService.stopWithJobNameAsQueryParameter(
           master, jobName, queuedBuild, buildNumber, "");
     }

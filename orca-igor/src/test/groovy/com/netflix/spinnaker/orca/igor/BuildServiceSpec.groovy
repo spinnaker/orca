@@ -33,7 +33,7 @@ class BuildServiceSpec extends Specification {
 
   void setup() {
     igorService = Mock(IgorService)
-    buildService = new BuildService(igorService, false)
+    buildService = new BuildService(igorService, new IgorFeatureFlagProperties())
   }
 
   void 'build method encodes the job name'() {
@@ -69,7 +69,9 @@ class BuildServiceSpec extends Specification {
   }
 
   void 'stop method sends job name in query when flag is true'() {
-    buildService = new BuildService(igorService, true)
+    IgorFeatureFlagProperties igorFeatureFlagProperties = new IgorFeatureFlagProperties()
+    igorFeatureFlagProperties.setJobNameAsQueryParameter(true)
+    buildService = new BuildService(igorService, igorFeatureFlagProperties)
 
     when:
     buildService.stop(MASTER, JOB_NAME, QUEUE_BUILD, BUILD_NUMBER )
