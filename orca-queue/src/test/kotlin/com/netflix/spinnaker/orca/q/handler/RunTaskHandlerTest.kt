@@ -18,11 +18,13 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
+import com.netflix.spinnaker.orca.AuthenticatedStage
 import com.netflix.spinnaker.orca.DefaultStageResolver
 import com.netflix.spinnaker.orca.api.pipeline.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.Task
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
+import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.FAILED_CONTINUE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.PAUSED
@@ -79,12 +81,12 @@ import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import org.threeten.extra.Minutes
+import java.util.*
 
 object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
   val queue: Queue = mock()
   val repository: ExecutionRepository = mock()
-  val stageNavigator: StageNavigator = StageNavigator(mock())
 
   val task: DummyTask = mock {
     on { extensionClass } doReturn DummyTask::class.java
@@ -97,6 +99,15 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
     on { extensionClass } doReturn DummyTimeoutOverrideTask::class.java
     on { aliases() } doReturn emptyList<String>()
   }
+
+  val manualJudgmentStage = object : StageDefinitionBuilder, AuthenticatedStage {
+    override fun getType() = "manualJudgment"
+    override fun authenticatedUser(stage: StageExecution?): Optional<PipelineExecution.AuthenticationDetails> {
+      return Optional.of(
+        PipelineExecution.AuthenticationDetails(stage?.lastModified!!.user, stage?.lastModified!!.allowedAccounts))
+    }
+  }
+
   val tasks = mutableListOf(task, cloudProviderAwareTask, timeoutOverrideTask)
   val exceptionHandler: ExceptionHandler = mock()
   // Stages store times as ms-since-epoch, and we do a lot of tests to make sure things run at the
@@ -106,7 +117,14 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   val contextParameterProcessor = ContextParameterProcessor()
   val dynamicConfigService: DynamicConfigService = mock()
   val taskExecutionInterceptors: List<TaskExecutionInterceptor> = listOf(mock())
-  val stageResolver = DefaultStageResolver(StageDefinitionBuildersProvider(emptyList()))
+  val stageResolver : DefaultStageResolver = mock()
+
+  whenever(stageResolver.getStageDefinitionBuilder(manualJudgmentStage.type, null)) doReturn manualJudgmentStage
+  whenever(stageResolver.getStageDefinitionBuilder(zeroTaskStage.type, null)) doReturn zeroTaskStage
+
+  val stageNavigator: StageNavigator = mock()
+
+
 
   subject(GROUP) {
     whenever(dynamicConfigService.getConfig(eq(Int::class.java), eq("tasks.warningInvocationTimeMs"), any())) doReturn 0
@@ -1835,47 +1853,60 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   describe("when a stage had skipped manual judgment stage with auth propagated") {
     given("a stage with a manual judgment type and auth propagated") {
       val timeout = Duration.ofMinutes(5)
-      val lastModifiedUser = StageExecution.LastModifiedDetails()
-      lastModifiedUser.user = "user2"
+      val lastModifiedUser1 = StageExecution.LastModifiedDetails()
+      lastModifiedUser1.user = "user1"
+      lastModifiedUser1.allowedAccounts = listOf("user1")
+      val lastModifiedUser2 = StageExecution.LastModifiedDetails()
+      lastModifiedUser2.user = "user2"
+      lastModifiedUser2.allowedAccounts = listOf("user2")
+
       val pipeline = pipeline {
         stage {
           refId = "1"
-          type = "manualJudgment"
+          type = manualJudgmentStage.type
+          manualJudgmentStage.plan(this)
           status = SUCCEEDED
-          requisiteStageRefIds = setOf("1")
           context["manualSkip"] = true
           context["propagateAuthenticationContext"] = true
-          authentication = PipelineExecution.AuthenticationDetails("user1")
+          lastModified = lastModifiedUser1
         }
         stage {
           refId = "2"
-          type = "manualJudgment"
+          type = manualJudgmentStage.type
+          manualJudgmentStage.plan(this)
           context["manualSkip"] = true
           context["propagateAuthenticationContext"] = true
           status = SKIPPED
-          authentication = PipelineExecution.AuthenticationDetails("user2")
+          lastModified = lastModifiedUser2
           requisiteStageRefIds = setOf("1")
-        }
-        stage {
-          refId = "3"
-          type = "deploy"
-          context = hashMapOf<String, Any>("markSuccessfulOnTimeout" to true)
-          requisiteStageRefIds = setOf("1", "2")
           task {
             id = "1"
             status = RUNNING
             startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
           }
         }
+        stage {
+          refId = "3"
+          type = zeroTaskStage.type
+          zeroTaskStage.plan(this)
+          context = hashMapOf<String, Any>("markSuccessfulOnTimeout" to true)
+          requisiteStageRefIds = setOf("1", "2")
+        }
       }
-      val stage = pipeline.stageByRef("3")
+
+      val stage = pipeline.stageByRef("2")
       val message = RunTask(pipeline.type, pipeline.id, "foo", stage.id, "1", DummyTask::class.java)
+
+      val stageResult : com.netflix.spinnaker.orca.pipeline.util.StageNavigator.Result = mock()
+      whenever(stageResult.stage) doReturn stage
+      whenever(stageResult.stageBuilder) doReturn manualJudgmentStage
 
       beforeGroup {
         tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
         taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
         whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
         whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
+        whenever(stageNavigator.ancestors(stage)) doReturn listOf(stageResult)
       }
 
       afterGroup(::resetMocks)
@@ -1885,11 +1916,11 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       it("marks the task as succeeded") {
-        verify(queue).push(CompleteTask(message, SUCCEEDED))
+        verify(queue).push(CompleteTask(message, SKIPPED))
       }
 
-      it("does not execute the task") {
-        verify(task, never()).execute(any())
+      it("verify stage backtracking times") {
+        verify(stageNavigator, times(2)).ancestors(stage)
       }
 
 

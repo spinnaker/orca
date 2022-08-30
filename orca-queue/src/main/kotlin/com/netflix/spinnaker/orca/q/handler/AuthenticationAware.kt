@@ -69,7 +69,7 @@ interface AuthenticationAware {
       stage.withPropagateAuthentication()) {
       return stage;
     }
-    val previousStage = if (stage.ancestors().size > 1) stage.ancestors().get(1) else null
+    val previousStage = if (stageNavigator.ancestors(stage).size > 1) stageNavigator.ancestors(stage).get(1).stage else null
     return if (previousStage == null) stage else backtrackSkippedStages(previousStage)
   }
 
