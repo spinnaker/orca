@@ -1850,7 +1850,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
     }
   }
 
-  describe("when a stage had skipped manual judgment stage with auth propagated") {
+  describe("when a previous stage was a skipped manual judgment stage with auth propagated") {
     given("a stage with a manual judgment type and auth propagated") {
       val timeout = Duration.ofMinutes(5)
       val lastModifiedUser1 = StageExecution.LastModifiedDetails()
