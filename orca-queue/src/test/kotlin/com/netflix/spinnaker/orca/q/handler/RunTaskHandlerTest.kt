@@ -80,6 +80,7 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
+import org.mockito.Mockito.atLeast
 import org.threeten.extra.Minutes
 import java.util.*
 
@@ -1920,7 +1921,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
 
       it("verify stage backtracking times") {
-        verify(stageNavigator, times(2)).ancestors(stage)
+        verify(stageNavigator, atLeast(2)).ancestors(stage)
       }
 
 
