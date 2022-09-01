@@ -40,6 +40,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.api.test.task
+import com.netflix.spinnaker.orca.echo.pipeline.ManualJudgmentStage
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
@@ -101,14 +102,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
     on { aliases() } doReturn emptyList<String>()
   }
 
-  val manualJudgmentStage = object : StageDefinitionBuilder, AuthenticatedStage {
-    override fun getType() = "manualJudgment"
-    override fun authenticatedUser(stage: StageExecution?): Optional<PipelineExecution.AuthenticationDetails> {
-      return Optional.of(
-        PipelineExecution.AuthenticationDetails(stage?.lastModified!!.user, stage?.lastModified!!.allowedAccounts))
-    }
-  }
-
   val tasks = mutableListOf(task, cloudProviderAwareTask, timeoutOverrideTask)
   val exceptionHandler: ExceptionHandler = mock()
   // Stages store times as ms-since-epoch, and we do a lot of tests to make sure things run at the
@@ -119,6 +112,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   val dynamicConfigService: DynamicConfigService = mock()
   val taskExecutionInterceptors: List<TaskExecutionInterceptor> = listOf(mock())
   val stageResolver : DefaultStageResolver = mock()
+  val manualJudgmentStage : ManualJudgmentStage = ManualJudgmentStage()
 
   whenever(stageResolver.getStageDefinitionBuilder(manualJudgmentStage.type, null)) doReturn manualJudgmentStage
   whenever(stageResolver.getStageDefinitionBuilder(zeroTaskStage.type, null)) doReturn zeroTaskStage
@@ -1854,12 +1848,9 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   describe("when a previous stage was a skipped manual judgment stage with auth propagated") {
     given("a stage with a manual judgment type and auth propagated") {
       val timeout = Duration.ofMinutes(5)
-      val lastModifiedUser1 = StageExecution.LastModifiedDetails()
-      lastModifiedUser1.user = "user1"
-      lastModifiedUser1.allowedAccounts = listOf("user1")
-      val lastModifiedUser2 = StageExecution.LastModifiedDetails()
-      lastModifiedUser2.user = "user2"
-      lastModifiedUser2.allowedAccounts = listOf("user2")
+      val lastModifiedUser = StageExecution.LastModifiedDetails()
+      lastModifiedUser.user = "user"
+      lastModifiedUser.allowedAccounts = listOf("user3")
 
       val pipeline = pipeline {
         stage {
@@ -1869,7 +1860,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           status = SUCCEEDED
           context["manualSkip"] = true
           context["propagateAuthenticationContext"] = true
-          lastModified = lastModifiedUser1
+          lastModified = lastModifiedUser
         }
         stage {
           refId = "2"
@@ -1878,20 +1869,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           context["manualSkip"] = true
           context["propagateAuthenticationContext"] = true
           status = SKIPPED
-          lastModified = lastModifiedUser2
           requisiteStageRefIds = setOf("1")
-          task {
-            id = "1"
-            status = RUNNING
-            startTime = clock.instant().minusMillis(timeout.toMillis() + 1).toEpochMilli()
-          }
-        }
-        stage {
-          refId = "3"
-          type = zeroTaskStage.type
-          zeroTaskStage.plan(this)
-          context = hashMapOf<String, Any>("markSuccessfulOnTimeout" to true)
-          requisiteStageRefIds = setOf("1", "2")
         }
       }
 
@@ -1916,14 +1894,13 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         subject.handle(message)
       }
 
-      it("marks the task as succeeded") {
+      it("marks the task as skipped") {
         verify(queue).push(CompleteTask(message, SKIPPED))
       }
 
       it("verify stage backtracking times") {
         verify(stageNavigator, atLeast(2)).ancestors(stage)
       }
-
 
     }
   }
