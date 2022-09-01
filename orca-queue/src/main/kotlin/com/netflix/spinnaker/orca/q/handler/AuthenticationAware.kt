@@ -77,9 +77,12 @@ interface AuthenticationAware {
   //stage was skipped, iterating the stage ancestors. By the moment only MJ stages approved with
   //auth propagated are considerated as candidates
   fun solveSkippedStages(stage: StageExecution): StageExecution {
-    return if (stage.isManualJudgmentType() &&
-      stage.status.isSkipped) backtrackSkippedStages(stage)
-    else
-      stage
+    if (stage.isManualJudgmentType() &&
+      stage.status.isSkipped) {
+      val result = backtrackSkippedStages(stage)
+      stage.lastModified = result.lastModified
+      return result
+    }
+    return stage
   }
 }

@@ -24,7 +24,6 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.Task
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult
-import com.netflix.spinnaker.orca.api.pipeline.graph.StageDefinitionBuilder
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.FAILED_CONTINUE
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.PAUSED
@@ -34,7 +33,6 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.STOPPED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPELINE
-import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution.PausedDetails
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.test.pipeline
@@ -81,7 +79,9 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.mockito.Mockito.atLeast
+import org.mockito.Mockito.spy
 import org.threeten.extra.Minutes
 import java.util.*
 
@@ -1850,7 +1850,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       val timeout = Duration.ofMinutes(5)
       val lastModifiedUser = StageExecution.LastModifiedDetails()
       lastModifiedUser.user = "user"
-      lastModifiedUser.allowedAccounts = listOf("user3")
+      lastModifiedUser.allowedAccounts = listOf("user")
 
       val pipeline = pipeline {
         stage {
@@ -1860,32 +1860,40 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           status = SUCCEEDED
           context["manualSkip"] = true
           context["propagateAuthenticationContext"] = true
+          context["judgmentStatus"] = "continue"
           lastModified = lastModifiedUser
         }
-        stage {
-          refId = "2"
-          type = manualJudgmentStage.type
-          manualJudgmentStage.plan(this)
-          context["manualSkip"] = true
-          context["propagateAuthenticationContext"] = true
-          status = SKIPPED
-          requisiteStageRefIds = setOf("1")
-        }
       }
+
+      val stageSkipped : StageExecution = stage {
+        refId = "2"
+        type = manualJudgmentStage.type
+        manualJudgmentStage.plan(this)
+        context["manualSkip"] = true
+        status = SKIPPED
+        requisiteStageRefIds = setOf("1")
+      }
+
+      val stageSpy = spy(stageSkipped)
+
+      val stageResult1 : com.netflix.spinnaker.orca.pipeline.util.StageNavigator.Result = mock()
+      whenever(stageResult1.stage) doReturn pipeline.stageByRef("1")
+      whenever(stageResult1.stageBuilder) doReturn manualJudgmentStage
+      val stageResult2 : com.netflix.spinnaker.orca.pipeline.util.StageNavigator.Result = mock()
+      whenever(stageResult2.stage) doReturn stageSpy
+      whenever(stageResult2.stageBuilder) doReturn manualJudgmentStage
+      pipeline.stages.add(stageSpy)
 
       val stage = pipeline.stageByRef("2")
       val message = RunTask(pipeline.type, pipeline.id, "foo", stage.id, "1", DummyTask::class.java)
 
-      val stageResult : com.netflix.spinnaker.orca.pipeline.util.StageNavigator.Result = mock()
-      whenever(stageResult.stage) doReturn stage
-      whenever(stageResult.stageBuilder) doReturn manualJudgmentStage
 
       beforeGroup {
         tasks.forEach { whenever(it.extensionClass) doReturn it::class.java }
         taskExecutionInterceptors.forEach { whenever(it.beforeTaskExecution(task, stage)) doReturn stage }
         whenever(repository.retrieve(PIPELINE, message.executionId)) doReturn pipeline
         whenever(task.getDynamicTimeout(any())) doReturn timeout.toMillis()
-        whenever(stageNavigator.ancestors(stage)) doReturn listOf(stageResult)
+        whenever(stageNavigator.ancestors(stage)) doReturn listOf(stageResult2, stageResult1)
       }
 
       afterGroup(::resetMocks)
@@ -1898,8 +1906,8 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         verify(queue).push(CompleteTask(message, SKIPPED))
       }
 
-      it("verify stage backtracking times") {
-        verify(stageNavigator, atLeast(2)).ancestors(stage)
+      it("verify if last authenticated user was retrieve from candidate stage") {
+        assertEquals(stageSpy.lastModified, lastModifiedUser)
       }
 
     }
