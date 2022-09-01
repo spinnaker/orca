@@ -80,10 +80,8 @@ import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.mockito.Mockito.atLeast
 import org.mockito.Mockito.spy
 import org.threeten.extra.Minutes
-import java.util.*
 
 object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
 
@@ -1906,7 +1904,7 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
         verify(queue).push(CompleteTask(message, SKIPPED))
       }
 
-      it("verify if last authenticated user was retrieve from candidate stage") {
+      it("verify if last authenticated user was retrieved from candidate stage") {
         assertEquals(stageSpy.lastModified, lastModifiedUser)
       }
 
