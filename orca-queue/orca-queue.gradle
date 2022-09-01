@@ -40,5 +40,4 @@ dependencies {
   testImplementation(project(":orca-queue-redis"))
   testImplementation(project(":orca-echo"))
   testImplementation("org.assertj:assertj-core")
-  testImplementation("org.codehaus.groovy:groovy-all:3.0.12")
 }

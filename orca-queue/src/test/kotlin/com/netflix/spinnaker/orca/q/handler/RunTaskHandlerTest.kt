@@ -18,7 +18,6 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
-import com.netflix.spinnaker.orca.AuthenticatedStage
 import com.netflix.spinnaker.orca.DefaultStageResolver
 import com.netflix.spinnaker.orca.api.pipeline.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
@@ -48,7 +47,16 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-import com.netflix.spinnaker.orca.q.*
+import com.netflix.spinnaker.orca.q.DummyTask
+import com.netflix.spinnaker.orca.q.singleTaskStage
+import com.netflix.spinnaker.orca.q.DummyCloudProviderAwareTask
+import com.netflix.spinnaker.orca.q.DummyTimeoutOverrideTask
+import com.netflix.spinnaker.orca.q.TasksProvider
+import com.netflix.spinnaker.orca.q.RunTask
+import com.netflix.spinnaker.orca.q.CompleteTask
+import com.netflix.spinnaker.orca.q.PauseTask
+import com.netflix.spinnaker.orca.q.InvalidTask
+import com.netflix.spinnaker.orca.q.InvalidTaskType
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.any
@@ -111,10 +119,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   val taskExecutionInterceptors: List<TaskExecutionInterceptor> = listOf(mock())
   val stageResolver : DefaultStageResolver = mock()
   val manualJudgmentStage : ManualJudgmentStage = ManualJudgmentStage()
-
-  whenever(stageResolver.getStageDefinitionBuilder(manualJudgmentStage.type, null)) doReturn manualJudgmentStage
-  whenever(stageResolver.getStageDefinitionBuilder(zeroTaskStage.type, null)) doReturn zeroTaskStage
-
   val stageNavigator: StageNavigator = mock()
 
 
@@ -1856,7 +1860,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
           type = manualJudgmentStage.type
           manualJudgmentStage.plan(this)
           status = SUCCEEDED
-          context["manualSkip"] = true
           context["propagateAuthenticationContext"] = true
           context["judgmentStatus"] = "continue"
           lastModified = lastModifiedUser
