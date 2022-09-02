@@ -614,17 +614,6 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     }
   }
 
-  @Override
-  public boolean isManualJudgmentType() {
-    return this.type.equals("manualJudgment");
-  }
-
-  @Override
-  public boolean withPropagateAuthentication() {
-    return context.get("propagateAuthenticationContext") != null &&
-        Boolean.parseBoolean(context.get("propagateAuthenticationContext").toString());
-  }
-
   @Nonnull
   public <O> O decodeBase64(@Nullable String pointer, @Nonnull Class<O> type) {
     return decodeBase64(pointer, type, objectMapper);
@@ -812,6 +801,17 @@ public class StageExecutionImpl implements StageExecution, Serializable {
   @JsonIgnore
   public boolean isJoin() {
     return getRequisiteStageRefIds().size() > 1;
+  }
+
+  @Override
+  public boolean isManualJudgmentType() {
+    return this.type.equals("manualJudgment");
+  }
+
+  @Override
+  public boolean withPropagateAuthentication() {
+    return context.get("propagateAuthenticationContext") != null &&
+        Boolean.parseBoolean(context.get("propagateAuthenticationContext").toString());
   }
 
   @Nonnull
