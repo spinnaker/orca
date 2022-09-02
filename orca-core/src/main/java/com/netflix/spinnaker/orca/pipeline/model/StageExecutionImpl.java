@@ -803,6 +803,7 @@ public class StageExecutionImpl implements StageExecution, Serializable {
     return getRequisiteStageRefIds().size() > 1;
   }
 
+  @JsonIgnore
   @Override
   public boolean isManualJudgmentType() {
     return Objects.equals(this.type, "manualJudgment");
