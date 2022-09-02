@@ -805,7 +805,7 @@ public class StageExecutionImpl implements StageExecution, Serializable {
 
   @Override
   public boolean isManualJudgmentType() {
-    return this.type.equals("manualJudgment");
+    return Objects.equals(this.type, "manualJudgment");
   }
 
   @Override
