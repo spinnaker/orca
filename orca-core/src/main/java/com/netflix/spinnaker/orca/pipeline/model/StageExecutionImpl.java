@@ -807,8 +807,13 @@ public class StageExecutionImpl implements StageExecution, Serializable {
   public boolean isManualJudgmentType() {
     return this.type.equals("manualJudgment");
   }
+
   @Override
-  public boolean withPropagateAuthentication() { return context.get("propagateAuthenticationContext") != null && Boolean.parseBoolean(context.get("propagateAuthenticationContext").toString()); }
+  public boolean withPropagateAuthentication() {
+    return context.get("propagateAuthenticationContext") != null
+        && Boolean.parseBoolean(context.get("propagateAuthenticationContext").toString());
+  }
+
   @Nonnull
   @JsonIgnore
   public List<StageExecution> downstreamStages() {
