@@ -70,6 +70,13 @@ final class ManifestTest {
   }
 
   @Test
+  void deserializesEvents() throws IOException {
+    String resource = getResource("clouddriver/model/manifests/stable.json");
+    Manifest manifest = objectMapper.readValue(resource, Manifest.class);
+    assertThat(manifest.getEvents()).isEmpty();
+  }
+
+  @Test
   void defaultsFields() throws IOException {
     String resource = getResource("clouddriver/model/manifests/empty.json");
     Manifest manifest = objectMapper.readValue(resource, Manifest.class);
@@ -78,6 +85,7 @@ final class ManifestTest {
     assertThat(manifest.getStatus()).isEqualTo(Manifest.Status.builder().build());
     assertThat(manifest.getName()).isEmpty();
     assertThat(manifest.getWarnings()).isEmpty();
+    assertThat(manifest.getEvents()).isEmpty();
   }
 
   @Test
