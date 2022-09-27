@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.front50.tasks
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.api.pipeline.Task
@@ -25,6 +26,7 @@ import com.netflix.spinnaker.orca.api.pipeline.TaskResult
 import com.netflix.spinnaker.orca.api.pipeline.ExecutionPreprocessor
 import com.netflix.spinnaker.orca.front50.DependentPipelineStarter
 import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipelinetemplate.V2Util
 import com.netflix.spinnaker.security.AuthenticatedRequest
@@ -64,6 +66,7 @@ class StartPipelineTask implements Task {
     String application = stage.context.pipelineApplication ?: stage.context.application
     Boolean isStrategy = stage.context.pipelineParameters?.strategy ?: false
     String pipelineId = isStrategy ? stage.context.pipelineId : stage.context.pipeline
+    Boolean isIsolated = stage.context.isolatedStreamExecution?: false
 
     List<Map<String, Object>> pipelines = isStrategy ? front50Service.getStrategies(application) : front50Service.getPipelines(application, false)
     Map<String, Object> pipelineConfig = pipelines.find { it.id == pipelineId }
@@ -104,6 +107,24 @@ class StartPipelineTask implements Task {
           }
         }
       }
+    }
+
+    if (isIsolated) {
+      ObjectMapper objectOrcaMapper = OrcaObjectMapper.getInstance()
+      PipelineExecution pipelineExecutionIsolated = objectOrcaMapper.readValue(objectOrcaMapper.writeValueAsString(stage.execution), PipelineExecution.class);
+      pipelineExecutionIsolated.getStages().clear()
+      pipelineExecutionIsolated.getStages().add(stage.getExecution().getStages().stream()
+          .filter({ s -> s.getId().equals(stage.getId()) }).findFirst().get())
+
+      def pipeline = dependentPipelineStarter.trigger(
+          pipelineConfig,
+          stage.context.user as String,
+          pipelineExecutionIsolated,
+          parameters,
+          stage.id,
+          getUser(stage.execution)
+      )
+      TaskResult.builder(ExecutionStatus.SUCCEEDED).context([executionId: pipeline.id, executionName: pipelineConfig.name]).build()
     }
 
     def pipeline = dependentPipelineStarter.trigger(
