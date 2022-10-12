@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline.expressions;
 import com.google.common.base.Strings;
 import com.netflix.spinnaker.kork.api.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionEvaluationSummary;
 import com.netflix.spinnaker.kork.expressions.ExpressionTransform;
 import com.netflix.spinnaker.kork.expressions.ExpressionsSupport;
@@ -137,9 +138,15 @@ public class PipelineExpressionEvaluator {
   @Getter private final Set<String> executionAwareFunctions = new HashSet<String>();
 
   public PipelineExpressionEvaluator(
-      List<ExpressionFunctionProvider> expressionFunctionProviders, PluginManager pluginManager) {
+      List<ExpressionFunctionProvider> expressionFunctionProviders,
+      PluginManager pluginManager,
+      DynamicConfigService dynamicConfigService) {
     this.support =
-        new ExpressionsSupport(extraAllowedReturnTypes, expressionFunctionProviders, pluginManager);
+        new ExpressionsSupport(
+            extraAllowedReturnTypes,
+            expressionFunctionProviders,
+            pluginManager,
+            dynamicConfigService);
     initExecutionAwareFunctions(expressionFunctionProviders);
   }
 

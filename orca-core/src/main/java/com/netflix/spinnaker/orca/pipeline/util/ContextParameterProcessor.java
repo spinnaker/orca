@@ -75,7 +75,8 @@ public class ContextParameterProcessor {
       PluginManager pluginManager,
       DynamicConfigService dynamicConfigService) {
     this.expressionEvaluator =
-        new PipelineExpressionEvaluator(expressionFunctionProviders, pluginManager);
+        new PipelineExpressionEvaluator(
+            expressionFunctionProviders, pluginManager, dynamicConfigService);
     this.dynamicConfigService = dynamicConfigService;
   }
 
