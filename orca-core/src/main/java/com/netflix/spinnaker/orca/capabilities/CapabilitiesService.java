@@ -18,8 +18,8 @@
 package com.netflix.spinnaker.orca.capabilities;
 
 import com.netflix.spinnaker.kork.api.expressions.ExpressionFunctionProvider;
-import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.kork.expressions.ExpressionsSupport;
+import com.netflix.spinnaker.kork.expressions.config.ExpressionProperties;
 import com.netflix.spinnaker.orca.capabilities.models.ExpressionCapabilityResult;
 import com.netflix.spinnaker.orca.capabilities.models.ExpressionFunctionDefinition;
 import com.netflix.spinnaker.orca.capabilities.models.ExpressionSpelEvaluatorDefinition;
@@ -38,10 +38,10 @@ public class CapabilitiesService {
   public CapabilitiesService(
       List<ExpressionFunctionProvider> expressionFunctionProviders,
       PluginManager pluginManager,
-      DynamicConfigService dynamicConfigService) {
+      ExpressionProperties expressionProperties) {
     this.expressionsSupport =
         new ExpressionsSupport(
-            new Class[] {}, expressionFunctionProviders, pluginManager, dynamicConfigService);
+            new Class[] {}, expressionFunctionProviders, pluginManager, expressionProperties);
   }
 
   public ExpressionCapabilityResult getExpressionCapabilities() {
