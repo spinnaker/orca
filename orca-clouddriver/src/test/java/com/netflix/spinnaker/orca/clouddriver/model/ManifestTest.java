@@ -73,7 +73,11 @@ final class ManifestTest {
   void deserializesEvents() throws IOException {
     String resource = getResource("clouddriver/model/manifests/stable.json");
     Manifest manifest = objectMapper.readValue(resource, Manifest.class);
-    assertThat(manifest.getEvents()).isEmpty();
+    assertThat(manifest.getEvents()).isNotNull();
+    assertThat((Map<String, Object>) manifest.getEvents().get(0))
+        .containsEntry("reason", "CreateInCluster");
+    assertThat((Map<String, Object>) manifest.getEvents().get(0))
+        .containsEntry("message", "A sample testing event in orca");
   }
 
   @Test
