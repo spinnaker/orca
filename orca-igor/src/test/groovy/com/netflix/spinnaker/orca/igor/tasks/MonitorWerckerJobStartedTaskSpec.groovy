@@ -28,7 +28,7 @@ class MonitorWerckerJobStartedTaskSpec extends Specification {
 
   def "should return running #expectedExecutionStatus if #result is not_built or #buildNumber missing"() {
     given:
-    def stage = new StageExecutionImpl(pipeline, "wercker", [master: "builds", job: "orca", queuedBuild: 4])
+    def stage = new StageExecutionImpl(pipeline, "wercker", [master: "builds", job: "orca", queuedBuild: '4'])
 
     and:
     task.buildService = Stub(BuildService) {
@@ -40,9 +40,9 @@ class MonitorWerckerJobStartedTaskSpec extends Specification {
 
     where:
     result      | buildNumber | expectedExecutionStatus
-    "not_built" | 4           | ExecutionStatus.RUNNING
+    "not_built" | '4'           | ExecutionStatus.RUNNING
     "success"   | null        | ExecutionStatus.RUNNING
-    "success"   | 4           | ExecutionStatus.SUCCEEDED
+    "success"   | '4'           | ExecutionStatus.SUCCEEDED
   }
 
 }

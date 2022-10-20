@@ -84,7 +84,7 @@ class TriggerDeserializer :
             get("strategy")?.booleanValue() == true,
             get("master").textValue(),
             get("job").textValue(),
-            get("buildNumber").intValue(),
+            get("buildNumber").textValue(),
             get("propertyFile")?.textValue()
           ).apply {
             buildInfo = get("buildInfo")?.parseValue(parser)

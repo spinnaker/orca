@@ -39,7 +39,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
   def artifactUtils = new ArtifactUtils(new ObjectMapper(), executionRepository, new ContextParameterProcessor())
   def buildService = Mock(BuildService)
 
-  def BUILD_NUMBER = 4
+  def BUILD_NUMBER = '4'
   def MASTER = "builds"
   def JOB = "orca"
   def PROPERTY_FILE = "sample.properties"
@@ -52,7 +52,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
 
   def "retrieves values from a property file if specified"() {
     given:
-    def stage = new StageExecutionImpl(execution, "jenkins", [master: MASTER, job: JOB, buildNumber: 4, propertyFile: PROPERTY_FILE])
+    def stage = new StageExecutionImpl(execution, "jenkins", [master: MASTER, job: JOB, buildNumber: '4', propertyFile: PROPERTY_FILE])
 
     and:
     1 * buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >> [val1: "one", val2: "two"]
@@ -67,7 +67,7 @@ class GetBuildPropertiesTaskSpec extends Specification {
 
   def "retrieves complex from a property file"() {
     given:
-    def stage = new StageExecutionImpl(execution, "jenkins", [master: "builds", job: "orca", buildNumber: 4, propertyFile: PROPERTY_FILE])
+    def stage = new StageExecutionImpl(execution, "jenkins", [master: "builds", job: "orca", buildNumber: '4', propertyFile: PROPERTY_FILE])
 
     and:
     1 * buildService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER, JOB) >>

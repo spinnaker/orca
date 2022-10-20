@@ -62,8 +62,8 @@ class PackageInfoSpec extends Specification {
 
     given:
     def execution = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null)
-      trigger.buildInfo = new JenkinsBuildInfo("name", 1, "http://jenkins", "SUCCESS", [new JenkinsArtifact("testFileName", ".")])
+      trigger = new JenkinsTrigger("master", "job", '1', null)
+      trigger.buildInfo = new JenkinsBuildInfo("name", '1', "http://jenkins", "SUCCESS", [new JenkinsArtifact("testFileName", ".")])
       stage {
         context = [buildInfo: [name: "someName"], package: "testPackageName"]
       }
@@ -220,7 +220,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "job",
-          number   : 1,
+          number   : '1',
           artifacts: [[fileName: "api_1.1.1-h02.sha123_all.deb", relativePath: "."]],
           scm      : []
         ]
@@ -276,7 +276,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "job",
-          number   : 1,
+          number   : '1',
           artifacts: [[fileName: "api_1.1.1-h01.sha123_all.deb", relativePath: "."]],
           scm      : []
         ]
@@ -289,7 +289,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "job",
-          number   : 1,
+          number   : '1',
           scm      : []
         ]
       }
@@ -325,7 +325,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "job",
-          number   : 1,
+          number   : '1',
           artifacts: [[fileName: "api_1.1.1-h01.sha123_all.deb", relativePath: "."]],
           scm      : []
         ]
@@ -360,7 +360,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "job",
-          number   : 1,
+          number   : '1',
           artifacts: [[fileName: "api_1.1.1-h01.sha123_all.deb", relativePath: "."]],
           scm      : []
         ]
@@ -393,8 +393,8 @@ class PackageInfoSpec extends Specification {
   def "findTargetPackage: allowing unmatched packages is guarded by the allowMissingPackageInstallation flag"() {
     given:
     def pipeline = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null)
-      trigger.buildInfo = new JenkinsBuildInfo("name", 1, "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")])
+      trigger = new JenkinsTrigger("master", "job", '1', null)
+      trigger.buildInfo = new JenkinsBuildInfo("name", '1', "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")])
       stage {
         refId = "1"
         context["package"] = "another_package"
@@ -429,8 +429,8 @@ class PackageInfoSpec extends Specification {
   def "findTargetPackage: stage execution instance of Pipeline with trigger and no buildInfo"() {
     given:
     def pipeline = pipeline {
-      trigger = new JenkinsTrigger("master", "job", 1, null)
-      trigger.buildInfo = new JenkinsBuildInfo("name", 1, "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_2.2.2-h02.sha321_all.deb", ".")])
+      trigger = new JenkinsTrigger("master", "job", '1', null)
+      trigger.buildInfo = new JenkinsBuildInfo("name", '1', "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_2.2.2-h02.sha321_all.deb", ".")])
       stage {
         context = [package: 'api']
       }
@@ -516,11 +516,11 @@ class PackageInfoSpec extends Specification {
     packageVersion = "1.1.1-h01.sha123"
     pipelineTrigger << [
       new PipelineTrigger(ExecutionBuilder.pipeline {
-        trigger = new JenkinsTrigger("master", "job", 1, null)
-        trigger.buildInfo = new JenkinsBuildInfo("name", 1, "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")])
+        trigger = new JenkinsTrigger("master", "job", '1', null)
+        trigger.buildInfo = new JenkinsBuildInfo("name", '1', "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")])
       }),
-      new JenkinsTrigger("master", "job", 1, null).with {
-        it.buildInfo = new JenkinsBuildInfo("name", 1, "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")])
+      new JenkinsTrigger("master", "job", '1', null).with {
+        it.buildInfo = new JenkinsBuildInfo("name", '1', "http://jenkins", "SUCCESS", [new JenkinsArtifact("api_1.1.1-h01.sha123_all.deb", ".")])
         it
       }
     ]
@@ -528,8 +528,8 @@ class PackageInfoSpec extends Specification {
 
   def "should fetch artifacts from upstream stage when not specified on pipeline trigger"() {
     given:
-    def jenkinsTrigger = new JenkinsTrigger("master", "job", 1, "propertyFile")
-    jenkinsTrigger.buildInfo = new JenkinsBuildInfo("name", 0, "url", "result")
+    def jenkinsTrigger = new JenkinsTrigger("master", "job", '1', "propertyFile")
+    jenkinsTrigger.buildInfo = new JenkinsBuildInfo("name", '0', "url", "result")
 
     def pipeline = pipeline {
       trigger = jenkinsTrigger    // has no artifacts!
@@ -791,7 +791,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "grandParentStage",
-          number   : 1,
+          number   : '1',
           artifacts: [[fileName: "artifact1_1.1.1-h01.grandParent.deb", relativePath: "."],
                       [fileName: "artifact2_1.1.1-h01.grandParent.deb", relativePath: "."]],
           scm      : []
@@ -825,7 +825,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "parentStage",
-          number   : 1,
+          number   : '1',
           artifacts: [[fileName: "artifact1_1.1.2-h02-parent.deb", relativePath: "."]],
           scm      : []
         ]
@@ -857,7 +857,7 @@ class PackageInfoSpec extends Specification {
           url      : "http://jenkins",
           master   : "master",
           name     : "childStage",
-          number   : 1,
+          number   : '1',
           artifacts: [[fileName: "blah_1.1.1-h01.child.deb", relativePath: "."]],
           scm      : []
         ]
@@ -893,7 +893,7 @@ class PackageInfoSpec extends Specification {
     then:
     noExceptionThrown()
     buildInfo1 == [packageVersion:"1.1.1-h01.child", package:"blah_1.1.1-h01.child",
-                  buildInfoUrl:"http://jenkins", job:"childStage", buildNumber:1]
+                  buildInfoUrl:"http://jenkins", job:"childStage", buildNumber:'1']
 
     when:
     PackageInfo packageInfo2 = new PackageInfo(
@@ -903,7 +903,7 @@ class PackageInfoSpec extends Specification {
     then:
     noExceptionThrown()
     buildInfo2 == [packageVersion:"1.1.2-h02-parent", package:"artifact1_1.1.2-h02-parent",
-                  buildInfoUrl:"http://jenkins", job:"parentStage", buildNumber:1]
+                  buildInfoUrl:"http://jenkins", job:"parentStage", buildNumber:'1']
 
     when:
     PackageInfo packageInfo3 = new PackageInfo(
@@ -913,6 +913,6 @@ class PackageInfoSpec extends Specification {
     then:
     noExceptionThrown()
     buildInfo3 == [packageVersion:"1.1.1-h01.grandParent", package:"artifact2_1.1.1-h01.grandParent",
-                   buildInfoUrl:"http://jenkins", job:"grandParentStage", buildNumber:1]
+                   buildInfoUrl:"http://jenkins", job:"grandParentStage", buildNumber:'1']
   }
 }

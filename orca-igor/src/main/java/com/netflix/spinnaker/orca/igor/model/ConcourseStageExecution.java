@@ -28,5 +28,5 @@ import lombok.RequiredArgsConstructor;
 public class ConcourseStageExecution {
   private final String stageId;
   private final String jobName;
-  private final Integer buildNumber;
+  private final String buildNumber;
 }

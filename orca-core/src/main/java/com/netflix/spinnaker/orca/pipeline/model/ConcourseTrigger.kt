@@ -90,7 +90,7 @@ class ConcourseBuildInfo
 @JsonCreator
 constructor(
   @param:JsonProperty("name") override val name: String?,
-  @param:JsonProperty("number") override val number: Int,
+  @param:JsonProperty("number") override val number: String?,
   @param:JsonProperty("url") override val url: String?,
   @param:JsonProperty("result") override val result: String?,
   @param:JsonProperty("artifacts") override val artifacts: List<JenkinsArtifact>?,

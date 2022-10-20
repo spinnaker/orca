@@ -39,7 +39,7 @@ public interface IgorService {
       @Path("name") String master,
       @Path(encode = false, value = "jobName") String jobName,
       @Path(encode = false, value = "queuedBuild") String queuedBuild,
-      @Path(encode = false, value = "buildNumber") Integer buildNumber,
+      @Path(encode = false, value = "buildNumber") String buildNumber,
       @Body String ignored);
 
   @PUT("/masters/{name}/jobs/stop/{queuedBuild}/{buildNumber}")
@@ -47,14 +47,14 @@ public interface IgorService {
       @Path("name") String master,
       @Query(value = "jobName") String jobName,
       @Path(encode = false, value = "queuedBuild") String queuedBuild,
-      @Path(encode = false, value = "buildNumber") Integer buildNumber,
+      @Path(encode = false, value = "buildNumber") String buildNumber,
       @Body String ignored);
 
   @PATCH("/masters/{name}/jobs/{jobName}/update/{buildNumber}")
   Response update(
       @Path("name") String master,
       @Path(encode = false, value = "jobName") String jobName,
-      @Path(encode = false, value = "buildNumber") Integer buildNumber,
+      @Path(encode = false, value = "buildNumber") String buildNumber,
       @Body UpdatedBuild updatedBuild);
 
   @GET("/builds/queue/{master}/{item}")
@@ -62,13 +62,13 @@ public interface IgorService {
 
   @GET("/builds/status/{buildNumber}/{master}/{job}")
   Map<String, Object> getBuild(
-      @Path("buildNumber") Integer buildNumber,
+      @Path("buildNumber") String buildNumber,
       @Path("master") String master,
       @Path(encode = false, value = "job") String job);
 
   @GET("/builds/properties/{buildNumber}/{fileName}/{master}/{job}")
   Map<String, Object> getPropertyFile(
-      @Path("buildNumber") Integer buildNumber,
+      @Path("buildNumber") String buildNumber,
       @Path("fileName") String fileName,
       @Path("master") String master,
       @Path(encode = false, value = "job") String job);
@@ -82,7 +82,7 @@ public interface IgorService {
 
   @GET("/builds/artifacts/{buildNumber}/{master}/{job}")
   List<Artifact> getArtifacts(
-      @Path("buildNumber") Integer buildNumber,
+      @Path("buildNumber") String buildNumber,
       @Query("propertyFile") String propertyFile,
       @Path("master") String master,
       @Path(value = "job", encode = false) String job);

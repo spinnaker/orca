@@ -223,7 +223,7 @@ abstract class PipelineExecutionRepositoryTck<T extends ExecutionRepository> ext
     def pipeline = pipeline {
       application = "orca"
       name = "dummy-pipeline"
-      trigger = new JenkinsTrigger("master", "job", 1, null)
+      trigger = new JenkinsTrigger("master", "job", '1', null)
       stage {
         type = "one"
         context = [foo: "foo"]

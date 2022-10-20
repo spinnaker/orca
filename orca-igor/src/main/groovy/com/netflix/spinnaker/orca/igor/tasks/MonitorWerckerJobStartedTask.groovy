@@ -34,7 +34,7 @@ class MonitorWerckerJobStartedTask implements OverridableTimeoutRetryableTask {
   TaskResult execute(@Nonnull final StageExecution stage) {
     String master = stage.context.master
     String job = stage.context.job
-    Integer buildNumber = Integer.valueOf(stage.context.queuedBuild)
+    String buildNumber = stage.context.queuedBuild
 
     try {
       Map<String, Object> build = buildService.getBuild(buildNumber, master, job)

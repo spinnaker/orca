@@ -35,7 +35,7 @@ data class JenkinsTrigger
   private var isStrategy: Boolean = false,
   val master: String,
   val job: String,
-  val buildNumber: Int,
+  val buildNumber: String?,
   val propertyFile: String?
 ) : Trigger {
 
@@ -102,7 +102,7 @@ class JenkinsBuildInfo
 @JsonCreator
 constructor(
   @param:JsonProperty("name") override val name: String?,
-  @param:JsonProperty("number") override val number: Int,
+  @param:JsonProperty("number") override val number: String?,
   @param:JsonProperty("url") override val url: String?,
   @param:JsonProperty("result") override val result: String?,
   @param:JsonProperty("artifacts") override val artifacts: List<JenkinsArtifact>?,
@@ -115,7 +115,7 @@ constructor(
   @JvmOverloads
   constructor(
     name: String,
-    number: Int,
+    number: String?,
     url: String,
     result: String,
     artifacts: List<JenkinsArtifact> = emptyList(),

@@ -44,7 +44,7 @@ public class BuildService {
     return igorService.build(master, encode(jobName), queryParams, startTime);
   }
 
-  public String stop(String master, String jobName, String queuedBuild, Integer buildNumber) {
+  public String stop(String master, String jobName, String queuedBuild, String buildNumber) {
     if (this.igorFeatureFlagProperties.isJobNameAsQueryParameter()) {
       return igorService.stopWithJobNameAsQueryParameter(
           master, jobName, queuedBuild, buildNumber, "");
@@ -56,22 +56,22 @@ public class BuildService {
     return igorService.queuedBuild(master, item);
   }
 
-  public Map<String, Object> getBuild(Integer buildNumber, String master, String job) {
+  public Map<String, Object> getBuild(String buildNumber, String master, String job) {
     return igorService.getBuild(buildNumber, master, encode(job));
   }
 
   public Map<String, Object> getPropertyFile(
-      Integer buildNumber, String fileName, String master, String job) {
+      String buildNumber, String fileName, String master, String job) {
     return igorService.getPropertyFile(buildNumber, fileName, master, encode(job));
   }
 
   public List<Artifact> getArtifacts(
-      Integer buildNumber, String fileName, String master, String job) {
+      String buildNumber, String fileName, String master, String job) {
     return igorService.getArtifacts(buildNumber, fileName, master, encode(job));
   }
 
   public Response updateBuild(
-      String master, String jobName, Integer buildNumber, IgorService.UpdatedBuild updatedBuild) {
+      String master, String jobName, String buildNumber, IgorService.UpdatedBuild updatedBuild) {
     return igorService.update(master, jobName, buildNumber, updatedBuild);
   }
 }

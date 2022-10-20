@@ -30,7 +30,7 @@ class GetBuildArtifactsTaskSpec extends Specification {
   def buildService = Mock(BuildService)
   def testArtifact = Artifact.builder().name("my-artifact").build()
 
-  def BUILD_NUMBER = 4
+  def BUILD_NUMBER = '4'
   def MASTER = "builds"
   def JOB = "orca"
   def PROPERTY_FILE = "my-file"

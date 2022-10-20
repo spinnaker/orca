@@ -112,7 +112,9 @@ public class BuildDetailExtractor {
       if (buildInfo == null || request == null) {
         return false;
       }
-      if (buildInfo.getUrl() != null && buildInfo.getName() != null && buildInfo.getNumber() > 0) {
+      if (buildInfo.getUrl() != null
+          && buildInfo.getName() != null
+          && buildInfo.getNumber() != null) {
         Map<String, Object> copyRequest = new HashMap<>();
         copyRequest.put("buildInfoUrl", buildInfo.getUrl());
         copyRequest.put("job", buildInfo.getName());
