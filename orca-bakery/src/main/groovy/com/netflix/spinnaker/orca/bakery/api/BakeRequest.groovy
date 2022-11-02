@@ -61,6 +61,12 @@ class BakeRequest {
   StoreType storeType
   Boolean enhancedNetworking
   String amiName
+  String account
+  String sku
+  String offer
+  String publisher
+  String osType
+  String custom_managed_image_name
   private String amiSuffix
 
   public void setAmiSuffix(String amiSuffix) {
