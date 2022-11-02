@@ -152,12 +152,12 @@ class CreateBakeTask implements RetryableTask {
 
   private BakeRequest bakeFromContext(StageExecution stage, SelectedService<BakeryService> bakery) {
     PackageType packageType
+    String os = getOs(stage)
     if (bakery.config.roscoApisEnabled) {
-      def baseImage = bakery.service.getBaseImage(stage.context.cloudProviderType as String,
-        stage.context.baseOs as String)
+      def baseImage = bakery.service.getBaseImage(stage.context.cloudProviderType as String, os)
       packageType = baseImage.packageType
     } else {
-      packageType = new OperatingSystem(stage.context.baseOs as String).getPackageType()
+      packageType = new OperatingSystem(os).getPackageType()
     }
 
     List<Artifact> artifacts = artifactUtils.getAllArtifacts(stage.getExecution())
@@ -193,5 +193,16 @@ class CreateBakeTask implements RetryableTask {
       request.other().clear()
     }
     return request
+  }
+
+  private String getOs(StageExecution stage) {
+    if (stage.context.baseOs as String != null) {
+      return stage.context.baseOs
+    }
+    if (stage.context.managedImage as String != null) {
+      return stage.context.managedImage
+    }
+    // stage.context.sku stage.context.offer stage.context.publisher
+    return null;
   }
 }
