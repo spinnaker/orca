@@ -393,12 +393,16 @@ class ArtifactUtilsSpec extends Specification {
   def "resolveArtifacts ignores expected artifacts from unrelated triggers"() {
     given:
     def matchArtifact = Artifact.builder().type("docker/.*").build()
-    def expectedArtifact = ExpectedArtifact.builder().id("543ef192-82a2-4805-8d0c-827f2f976a1c").matchArtifact(matchArtifact).build()
+    def expectedArtifact1 = ExpectedArtifact.builder().id("expected-artifact-id").matchArtifact(matchArtifact).build()
+    def expectedArtifact2 = ExpectedArtifact.builder().id("irrelevant-artifact-id").matchArtifact(matchArtifact).build()
     def receivedArtifact = Artifact.builder().name("my-artifact").type("docker/image").build()
     def pipeline = [
         id: "abc",
-        trigger: [:],
-        expectedArtifacts: [expectedArtifact],
+        trigger: [
+            type: "jenkins",
+            expectedArtifactIds: ["expected-artifact-id"]
+        ],
+        expectedArtifacts: [expectedArtifact1, expectedArtifact2],
         receivedArtifacts: [receivedArtifact],
     ]
     def artifactUtils = makeArtifactUtils()
@@ -410,7 +414,8 @@ class ArtifactUtilsSpec extends Specification {
         new TypeReference<List<ExpectedArtifact>>() {})
 
     then:
-    resolvedArtifacts.size() == 0
+    resolvedArtifacts.size() == 1
+    resolvedArtifacts.get(0).getBoundArtifact() == receivedArtifact
   }
 
   def "resolveArtifacts adds received artifacts to the trigger, skipping duplicates"() {
