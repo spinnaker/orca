@@ -369,11 +369,11 @@ class ArtifactUtilsSpec extends Specification {
   def "resolveArtifacts sets the bound artifact on an expected artifact"() {
     given:
     def matchArtifact = Artifact.builder().type("docker/.*").build()
-    def expectedArtifact = ExpectedArtifact.builder().matchArtifact(matchArtifact).build()
+    def expectedArtifact = ExpectedArtifact.builder().id("543ef192-82a2-4805-8d0c-827f2f976a1c").matchArtifact(matchArtifact).build()
     def receivedArtifact = Artifact.builder().name("my-artifact").type("docker/image").build()
     def pipeline = [
       id: "abc",
-      trigger: [:],
+      trigger: ["expectedArtifactIds": ["543ef192-82a2-4805-8d0c-827f2f976a1c"]],
       expectedArtifacts: [expectedArtifact],
       receivedArtifacts: [receivedArtifact],
     ]
@@ -388,6 +388,29 @@ class ArtifactUtilsSpec extends Specification {
     then:
     resolvedArtifacts.size() == 1
     resolvedArtifacts.get(0).getBoundArtifact() == receivedArtifact
+  }
+
+  def "resolveArtifacts ignores expected artifacts from unrelated triggers"() {
+    given:
+    def matchArtifact = Artifact.builder().type("docker/.*").build()
+    def expectedArtifact = ExpectedArtifact.builder().id("543ef192-82a2-4805-8d0c-827f2f976a1c").matchArtifact(matchArtifact).build()
+    def receivedArtifact = Artifact.builder().name("my-artifact").type("docker/image").build()
+    def pipeline = [
+        id: "abc",
+        trigger: [:],
+        expectedArtifacts: [expectedArtifact],
+        receivedArtifacts: [receivedArtifact],
+    ]
+    def artifactUtils = makeArtifactUtils()
+
+    when:
+    artifactUtils.resolveArtifacts(pipeline)
+    List<ExpectedArtifact> resolvedArtifacts = objectMapper.convertValue(
+        pipeline.trigger.resolvedExpectedArtifacts,
+        new TypeReference<List<ExpectedArtifact>>() {})
+
+    then:
+    resolvedArtifacts.size() == 0
   }
 
   def "resolveArtifacts adds received artifacts to the trigger, skipping duplicates"() {
