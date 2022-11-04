@@ -152,12 +152,22 @@ class CreateBakeTask implements RetryableTask {
 
   private BakeRequest bakeFromContext(StageExecution stage, SelectedService<BakeryService> bakery) {
     PackageType packageType
-    String os = getOs(stage)
-    if (bakery.config.roscoApisEnabled) {
-      def baseImage = bakery.service.getBaseImage(stage.context.cloudProviderType as String, os)
-      packageType = baseImage.packageType
+    def image
+    if (stage.context.baseOs as String != null) {
+      String os = stage.context.baseOs
+      if (bakery.config.roscoApisEnabled) {
+        image = bakery.service.getBaseImage(stage.context.cloudProviderType as String, os)
+        packageType = image.packageType
+      } else {
+        packageType = new OperatingSystem(os).getPackageType()
+      }
     } else {
-      packageType = new OperatingSystem(os).getPackageType()
+        String os = stage.context.managedImage
+        if (bakery.config.roscoApisEnabled && stage.context.osType == "linux") {
+          packageType = stage.context.packageType as PackageType
+        } else {
+          packageType = new OperatingSystem(os).getPackageType()
+        }
     }
 
     List<Artifact> artifacts = artifactUtils.getAllArtifacts(stage.getExecution())
@@ -188,21 +198,22 @@ class CreateBakeTask implements RetryableTask {
       requestMap.remove("baseName")
     }
 
+    if (stage.context.baseOs as String == null) {
+      requestMap.put("accountName", stage.context.account as String)
+      requestMap.put("os_type", stage.context.osType as String)
+      requestMap.put("custom_managed_image_name", stage.context.managedImage as String)
+      if (stage.context.managedImage as String != null) {
+        requestMap.put("sku", stage.context.sku as String)
+        requestMap.put("offer", stage.context.offer as String)
+        requestMap.put("publisher", stage.context.publisher as String)
+      }
+    }
+
     def request = mapper.convertValue(requestMap, BakeRequest)
     if (!bakery.config.roscoApisEnabled) {
       request.other().clear()
     }
-    return request
-  }
 
-  private String getOs(StageExecution stage) {
-    if (stage.context.baseOs as String != null) {
-      return stage.context.baseOs
-    }
-    if (stage.context.managedImage as String != null) {
-      return stage.context.managedImage
-    }
-    // stage.context.sku stage.context.offer stage.context.publisher
-    return null;
+    return request
   }
 }
