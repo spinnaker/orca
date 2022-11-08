@@ -198,11 +198,11 @@ class CreateBakeTask implements RetryableTask {
       requestMap.remove("baseName")
     }
 
+    requestMap.put("accountName", stage.context.account as String)
     if (stage.context.baseOs as String == null) {
-      requestMap.put("accountName", stage.context.account as String)
       requestMap.put("os_type", stage.context.osType as String)
       requestMap.put("custom_managed_image_name", stage.context.managedImage as String)
-      if (stage.context.managedImage as String != null) {
+      if (stage.context.managedImage as String == null) {
         requestMap.put("sku", stage.context.sku as String)
         requestMap.put("offer", stage.context.offer as String)
         requestMap.put("publisher", stage.context.publisher as String)
