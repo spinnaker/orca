@@ -152,23 +152,7 @@ class CreateBakeTask implements RetryableTask {
 
   private BakeRequest bakeFromContext(StageExecution stage, SelectedService<BakeryService> bakery) {
     PackageType packageType
-    def image
-    if (stage.context.baseOs as String != null) {
-      String os = stage.context.baseOs
-      if (bakery.config.roscoApisEnabled) {
-        image = bakery.service.getBaseImage(stage.context.cloudProviderType as String, os)
-        packageType = image.packageType
-      } else {
-        packageType = new OperatingSystem(os).getPackageType()
-      }
-    } else {
-        String os = stage.context.managedImage
-        if (bakery.config.roscoApisEnabled && stage.context.osType == "linux") {
-          packageType = stage.context.packageType as PackageType
-        } else {
-          packageType = new OperatingSystem(os).getPackageType()
-        }
-    }
+    packageType = stage.context.baseOs != null ? getBaseOsPackageType(bakery, stage) : getCustomPackageType(stage)
 
     List<Artifact> artifacts = artifactUtils.getAllArtifacts(stage.getExecution())
 
@@ -198,14 +182,12 @@ class CreateBakeTask implements RetryableTask {
       requestMap.remove("baseName")
     }
 
-    requestMap.put("accountName", stage.context.account as String)
-    if (stage.context.baseOs as String == null) {
-      requestMap.put("os_type", stage.context.osType as String)
-      requestMap.put("custom_managed_image_name", stage.context.managedImage as String)
+    if (stage.context.baseOs == null) {
+      requestMap.custom_managed_image_name = stage.context.managedImage as String
       if (stage.context.managedImage as String == null) {
-        requestMap.put("sku", stage.context.sku as String)
-        requestMap.put("offer", stage.context.offer as String)
-        requestMap.put("publisher", stage.context.publisher as String)
+        requestMap.sku = stage.context.sku as String
+        requestMap.offer = stage.context.offer as String
+        requestMap.publisher = stage.context.publisher as String
       }
     }
 
@@ -215,5 +197,15 @@ class CreateBakeTask implements RetryableTask {
     }
 
     return request
+  }
+
+  private static PackageType getCustomPackageType(StageExecution stage) {
+    stage.context.osType == "linux" ? (stage.context.packageType as PackageType) : PackageType.NUPKG
+  }
+
+  private static PackageType getBaseOsPackageType(SelectedService<BakeryService> bakery, StageExecution stage) {
+    bakery.config.roscoApisEnabled
+        ? bakery.service.getBaseImage(stage.context.cloudProviderType as String, stage.context.baseOs as String).packageType
+        : new OperatingSystem(stage.context.baseOs as String).getPackageType()
   }
 }
