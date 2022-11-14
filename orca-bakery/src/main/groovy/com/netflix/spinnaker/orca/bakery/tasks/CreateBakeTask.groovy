@@ -200,7 +200,17 @@ class CreateBakeTask implements RetryableTask {
   }
 
   private static PackageType getCustomPackageType(StageExecution stage) {
-    stage.context.osType == "linux" ? (stage.context.packageType as PackageType) : PackageType.NUPKG
+    PackageType type
+    if(stage.context.osType != "linux") {
+      type = PackageType.NUPKG
+    } else {
+      type = stage.context.packageType as PackageType
+      if (type == null) {
+        type = new OperatingSystem(stage.context.managedImage as String).getPackageType()
+      }
+    }
+
+    type
   }
 
   private static PackageType getBaseOsPackageType(SelectedService<BakeryService> bakery, StageExecution stage) {
