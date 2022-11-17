@@ -46,6 +46,7 @@ class BakeRequest {
 
   String user
   @JsonProperty("package") String packageName
+  String packageType
   List<Artifact> packageArtifacts
   String buildHost
   String job
