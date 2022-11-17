@@ -153,7 +153,7 @@ class CreateBakeTask implements RetryableTask {
   private BakeRequest bakeFromContext(StageExecution stage, SelectedService<BakeryService> bakery) {
     PackageType packageType
     packageType = stage.context.baseOs != null ? getBaseOsPackageType(bakery, stage) : getCustomPackageType(stage)
-
+    stage.context.packageType = packageType
     List<Artifact> artifacts = artifactUtils.getAllArtifacts(stage.getExecution())
 
     PackageInfo packageInfo = new PackageInfo(stage,
@@ -184,7 +184,7 @@ class CreateBakeTask implements RetryableTask {
 
     if (stage.context.baseOs == null) {
       requestMap.custom_managed_image_name = stage.context.managedImage as String
-      if (stage.context.managedImage as String == null) {
+      if (stage.context.managedImage == null) {
         requestMap.sku = stage.context.sku as String
         requestMap.offer = stage.context.offer as String
         requestMap.publisher = stage.context.publisher as String
@@ -200,14 +200,13 @@ class CreateBakeTask implements RetryableTask {
   }
 
   private static PackageType getCustomPackageType(StageExecution stage) {
-    PackageType type
     if(stage.context.osType != "linux") {
-      type = PackageType.NUPKG
-    } else {
-      type = stage.context.packageType as PackageType
-      if (type == null) {
-        type = new OperatingSystem(stage.context.managedImage as String).getPackageType()
-      }
+      return PackageType.NUPKG
+    }
+
+    PackageType type = stage.context.packageType as PackageType
+    if (type == null) {
+      type = new OperatingSystem(stage.context.managedImage as String).getPackageType()
     }
 
     type
