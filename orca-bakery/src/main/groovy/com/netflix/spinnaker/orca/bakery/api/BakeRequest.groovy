@@ -62,7 +62,7 @@ class BakeRequest {
   StoreType storeType
   Boolean enhancedNetworking
   String amiName
-  String account
+  String accountName
   String sku
   String offer
   String publisher

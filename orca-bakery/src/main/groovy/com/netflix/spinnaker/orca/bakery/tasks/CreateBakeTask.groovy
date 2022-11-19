@@ -166,6 +166,10 @@ class CreateBakeTask implements RetryableTask {
 
     Map requestMap = packageInfo.findTargetPackage(bakery.config.allowMissingPackageInstallation as Boolean)
 
+    if (stage.context.account) {
+      requestMap.accountName = stage.context.account as String
+    }
+
     // if the field "packageArtifactIds" is present in the context, because it was set in the UI,
     // this will resolve those ids into real artifacts and then put them in List<Artifact> packageArtifacts
     requestMap.packageArtifacts = stage.context.packageArtifactIds.collect { String artifactId ->
