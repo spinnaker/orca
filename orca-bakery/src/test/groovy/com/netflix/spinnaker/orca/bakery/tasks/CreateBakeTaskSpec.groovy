@@ -93,9 +93,9 @@ class CreateBakeTaskSpec extends Specification {
     cloudProviderType: "azure",
     baseLabel        : "release",
     osType           : "linux",
-    packageType      : "DEB",
-    managedImage     : "managed"
-
+    packageType      : "RPM",
+    managedImage     : "managed",
+    account          : "splat-azure"
   ]
 
   @Shared
@@ -105,7 +105,8 @@ class CreateBakeTaskSpec extends Specification {
     user             : "bran",
     cloudProviderType: "azure",
     baseOs           : "ubuntu",
-    baseLabel        : "release"
+    baseLabel        : "release",
+    account          : "splat-azure"
   ]
 
   @Shared
@@ -118,7 +119,8 @@ class CreateBakeTaskSpec extends Specification {
     sku              : "sky",
     offer            : "offer",
     publisher        : "pub",
-    baseLabel        : "release"
+    baseLabel        : "release",
+    account          : "splat-azure"
   ]
 
   @Shared
@@ -1061,6 +1063,7 @@ class CreateBakeTaskSpec extends Specification {
     bake.custom_managed_image_name == bakeConfigWithAzureManagedImage.managedImage
     bake.osType == bakeConfigWithAzureManagedImage.osType
     bake.packageType == bakeConfigWithAzureManagedImage.packageType as String
+    bake.accountName == bakeConfigWithAzureManagedImage.account
   }
 
   def "Azure defaultImage is propagated"() {
@@ -1103,6 +1106,7 @@ class CreateBakeTaskSpec extends Specification {
     bake.baseOs == bakeConfigWithAzureDefaultImage.baseOs
     bake.baseLabel == bakeConfigWithAzureDefaultImage.baseLabel
     bake.packageType == PackageType.DEB as String
+    bake.accountName == bakeConfigWithAzureManagedImage.account
   }
 
   def "Azure customImage is propagated"() {
@@ -1148,6 +1152,7 @@ class CreateBakeTaskSpec extends Specification {
     bake.publisher == bakeConfigWithAzureCustomImage.publisher
     bake.osType == bakeConfigWithAzureCustomImage.osType
     bake.packageType == PackageType.NUPKG as String
+    bake.accountName == bakeConfigWithAzureManagedImage.account
   }
 
   @Unroll
