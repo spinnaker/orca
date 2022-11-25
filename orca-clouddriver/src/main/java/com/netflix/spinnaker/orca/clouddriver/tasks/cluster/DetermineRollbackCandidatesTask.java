@@ -73,8 +73,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class DetermineRollbackCandidatesTask implements CloudProviderAware, RetryableTask {
-  private Integer timeout;
-
   private static final Logger logger =
       LoggerFactory.getLogger(DetermineRollbackCandidatesTask.class);
 
@@ -105,14 +103,21 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
 
   @Override
   public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(timeout == null ? 5 : timeout);
+    return TimeUnit.MINUTES.toMillis(5);
+  }
+
+  public long getDynamicTimeout(StageExecution stage) {
+    if (stage.getContext().containsKey("timeout")) {
+      return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("timeout"));
+    }
+
+    return getTimeout();
   }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
     StageData stageData = stage.mapTo(StageData.class);
-    timeout = stageData.timeout;
     Moniker moniker =
         populateMonikerWithServerGroupInfo(
             stageData.moniker,
@@ -530,7 +535,6 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
     public String credentials;
     public String cloudProvider;
     public String serverGroup;
-    public Integer timeout;
 
     public Integer targetHealthyRollbackPercentage;
 
