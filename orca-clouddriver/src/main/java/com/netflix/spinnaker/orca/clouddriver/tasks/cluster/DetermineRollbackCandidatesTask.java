@@ -107,8 +107,8 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   }
 
   public long getDynamicTimeout(StageExecution stage) {
-    if (stage.getContext().containsKey("timeout")) {
-      return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("timeout"));
+    if (stage.getContext().containsKey("rollbackTimeout")) {
+      return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("rollbackTimeout"));
     }
 
     return getTimeout();
