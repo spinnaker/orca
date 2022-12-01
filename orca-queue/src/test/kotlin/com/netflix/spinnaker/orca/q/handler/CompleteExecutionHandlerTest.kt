@@ -118,6 +118,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
         stage {
           refId = "1"
           status = stageStatus
+          isLimitConcurrent = true
         }
       }
       val message = CompleteExecution(pipeline)
@@ -132,7 +133,7 @@ object CompleteExecutionHandlerTest : SubjectSpek<CompleteExecutionHandler>({
         subject.handle(message)
       }
 
-      it("triggers any waiting pipelines") {
+      it("triggers any waiting pipelines with concurrent execution is disabled") {
         verify(queue).push(StartWaitingExecutions(configId, !pipeline.isKeepWaitingPipelines))
       }
 
