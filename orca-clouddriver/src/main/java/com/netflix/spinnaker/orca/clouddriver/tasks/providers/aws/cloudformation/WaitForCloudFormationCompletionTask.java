@@ -171,7 +171,9 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
     if (status instanceof String) {
       return ((String) status).endsWith(CloudFormationStates.CREATE_COMPLETE.toString())
           || ((String) status).endsWith(CloudFormationStates.UPDATE_COMPLETE.toString())
-          || ((String) status).endsWith(CloudFormationStates.DELETE_COMPLETE.toString());
+          || ((String) status).endsWith(CloudFormationStates.DELETE_COMPLETE.toString())
+          || ((String) status).endsWith(CloudFormationStates.UPDATE_ROLLBACK_COMPLETE.toString())
+          || ((String) status).endsWith(CloudFormationStates.IMPORT_COMPLETE.toString());
     } else {
       return false;
     }
@@ -205,7 +207,9 @@ public class WaitForCloudFormationCompletionTask implements OverridableTimeoutRe
     ROLLBACK_COMPLETE,
     DELETE_FAILED,
     ROLLBACK_FAILED,
+    UPDATE_ROLLBACK_COMPLETE,
     UPDATE_ROLLBACK_FAILED,
+    IMPORT_COMPLETE,
     FAILED,
     DELETE_IN_PROGRESS,
     DELETE_COMPLETE;
