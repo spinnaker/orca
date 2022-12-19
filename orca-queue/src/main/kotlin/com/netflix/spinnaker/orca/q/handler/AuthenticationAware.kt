@@ -78,7 +78,7 @@ interface AuthenticationAware {
   //auth propagated are considerated as candidates
   fun solveSkippedStages(stage: StageExecution): StageExecution {
     if (stage.isManualJudgmentType() &&
-      stage.status.isSkipped) {
+      (stage.status.isSkipped || !stage.withPropagateAuthentication())) {
       val result = backtrackSkippedStages(stage)
       stage.lastModified = result.lastModified
       return result
