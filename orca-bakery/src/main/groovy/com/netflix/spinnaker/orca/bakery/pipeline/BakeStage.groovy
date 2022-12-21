@@ -41,6 +41,7 @@ import org.springframework.stereotype.Component
 
 import javax.annotation.Nonnull
 import java.time.Clock
+import java.time.format.DateTimeFormatter
 import java.util.stream.Collectors
 
 import static com.netflix.spinnaker.orca.api.pipeline.SyntheticStageOwner.STAGE_BEFORE
@@ -115,7 +116,7 @@ class BakeStage implements StageDefinitionBuilder {
 
     log.info("Preparing package `${stage.context.package}` for bake in ${deployRegions.join(", ")}")
     if (!stage.context.amiSuffix) {
-      stage.context.amiSuffix = clock.instant().atZone(UTC).format("yyyyMMddHHmmss")
+      stage.context.amiSuffix = clock.instant().atZone(UTC).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
     }
     return deployRegions.collect {
       stage.context - ["regions": stage.context.regions, "skipRegionDetection": stage.context.skipRegionDetection] + ([
