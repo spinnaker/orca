@@ -84,16 +84,16 @@ class CompleteExecutionHandler(
           }
         }
       }
-      log.info("Execution ${execution.id} is with ${execution.status} status and  Disabled concurrent executions is ${execution.isLimitConcurrent}")
-        if (execution.isLimitConcurrent){
+      log.debug("Execution ${execution.id} is with ${execution.status} status and  Disabled concurrent executions is ${execution.isLimitConcurrent}")
+        if (execution.isLimitConcurrent) {
           if (execution.status != RUNNING) {
             execution.pipelineConfigId?.let {
               queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
             }
-          }else {
+          } else {
             log.info("Not starting waiting executions as execution ${execution.id} is currently RUNNING with Disabled concurrent executions.")
           }
-        } else{
+        } else {
             log.info("Execution ${execution.id} is not Disabled for concurrent executions, no need to run waiting executions")
         }
       }
