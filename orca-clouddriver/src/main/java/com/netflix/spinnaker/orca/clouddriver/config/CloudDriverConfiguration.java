@@ -143,7 +143,7 @@ public class CloudDriverConfiguration {
      * @return a {@link SelectableService} configured with the {@link ServiceSelector} instances
      *     from the profile
      */
-    private <T> SelectableService buildWriteableService(Class<T> type) {
+    public <T> SelectableService buildWriteableService(Class<T> type) {
       List<String> urls =
           cloudDriverConfigurationProperties.getCloudDriverWriteOnlyBaseUrls().stream()
               .map(CloudDriverConfigurationProperties.BaseUrl::getBaseUrl)
@@ -197,7 +197,7 @@ public class CloudDriverConfiguration {
       return serviceSelectors;
     }
 
-    private <T> T buildService(Class<T> type, String url) {
+    public <T> T buildService(Class<T> type, String url) {
       return new RestAdapter.Builder()
           .setRequestInterceptor(spinnakerRequestInterceptor)
           .setEndpoint(newFixedEndpoint(url))
