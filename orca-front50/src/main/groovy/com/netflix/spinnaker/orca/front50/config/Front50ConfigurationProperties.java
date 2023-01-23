@@ -25,4 +25,12 @@ public class Front50ConfigurationProperties {
   boolean enabled;
 
   String baseUrl;
+
+  /**
+   * Controls the front50 endpoint that DependentPipelineExecutionListener calls to retrieve
+   * pipelines.
+   *
+   * <p>When true: GET /pipelines/triggeredBy/{pipelineId}/{status} When false: GET /pipelines
+   */
+  boolean useTriggeredByEndpoint;
 }
