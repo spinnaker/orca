@@ -28,6 +28,7 @@ import com.netflix.spinnaker.orca.pipelinetemplate.loader.v2.V2TemplateLoader
 import com.netflix.spinnaker.orca.pipelinetemplate.v1schema.graph.v2.V2GraphMutator
 import com.netflix.spinnaker.orca.pipelinetemplate.v2schema.V2SchemaExecutionGenerator
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 
 @Component
@@ -36,7 +37,7 @@ class V2SchemaHandlerGroup
   private val templateLoader: V2TemplateLoader,
   private val objectMapper: ObjectMapper,
   private val contextParameterProcessor: ContextParameterProcessor,
-  private val artifactUtils: ArtifactUtils
+  @Lazy private val artifactUtils: ArtifactUtils
 ) : HandlerGroup {
 
   override fun getHandlers(): List<Handler> =

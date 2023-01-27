@@ -46,6 +46,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import rx.schedulers.Schedulers;
 
@@ -62,7 +63,7 @@ public class ArtifactUtils {
   @Autowired
   public ArtifactUtils(
       ObjectMapper objectMapper,
-      ExecutionRepository executionRepository,
+      @Lazy ExecutionRepository executionRepository,
       ContextParameterProcessor contextParameterProcessor) {
     this.objectMapper = objectMapper;
     this.executionRepository = executionRepository;
