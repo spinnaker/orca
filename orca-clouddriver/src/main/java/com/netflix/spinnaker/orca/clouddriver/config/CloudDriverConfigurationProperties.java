@@ -50,7 +50,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *       priority: 10
  *       config:
  *         selectorClass: com.netflix.spinnaker.kork.web.selector.ByCloudProviderServiceSelector
- *         cloudProviders: kubernetes
+ *         cloudProviders:
+ *           - kubernetes
  *     - baseUrl: https://clouddriver-write-other.example.com
  * </pre>
  */

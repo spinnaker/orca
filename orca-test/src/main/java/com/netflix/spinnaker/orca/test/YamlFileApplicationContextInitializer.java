@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.orca.pipeline;
+package com.netflix.spinnaker.orca.test;
 
-import java.io.IOException;
-import java.util.List;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.Resource;
+
+import java.io.IOException;
+import java.util.List;
 
 /** source: https://stackoverflow.com/a/49716343 */
 public abstract class YamlFileApplicationContextInitializer
