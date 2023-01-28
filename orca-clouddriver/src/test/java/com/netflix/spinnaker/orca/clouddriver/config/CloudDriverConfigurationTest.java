@@ -99,8 +99,8 @@ public class CloudDriverConfigurationTest extends YamlFileApplicationContextInit
      * (to match what Orca was providing), but then tried to cast the Object to a List. This test validates that Orca is
      * providing what Kork expects (a Map<String, Object>), and that the handling in Kork doesn't throw a ClassCastException.
      *
-     * Unfortunately, since services use reflection to instantiate the ServiceSelector instances, there's no easy
-     * way to test this in Kork without duplicating all the logic. Thus, this test lives in Orca.
+     * Unfortunately, since each service handles the creation of ServiceSelectors differently, there's no easy
+     * way to test this in Kork without duplicating all the logic from all the services. Thus, this test lives in Orca.
      */
     assertDoesNotThrow(
         () -> clouddriverRetrofitBuilder.buildWriteableService(KatoRestService.class));
