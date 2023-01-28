@@ -95,7 +95,7 @@ public class CloudDriverConfigurationTest extends YamlFileApplicationContextInit
     /*
      * Because the configuration of a ServiceSelector is a Map<String, Object>, Jackson converts a YAML list
      * to a LinkedHashMap. This caused issues in Kork where the ServiceSelector expected, and tried, to cast
-     * the config from the Object to a List. This test validates that Orca is proving what Kork expects
+     * the config from the Object to a List. This test validates that Orca is providing what Kork expects
      * (a Map<String, String>) in the case of a YAML list.
      */
     assertDoesNotThrow(
