@@ -93,9 +93,10 @@ public class CloudDriverConfigurationTest extends YamlFileApplicationContextInit
   @Test
   public void testConstructingSelectorsWithYAMLList() {
     /*
-     * Because the configuration of a ServiceSelector is a Map<String, Object>, Jackson converts a List
-     * to a LinkedHashMap. This test validates this by checking no ClassCastException is thrown trying to
-     * cast a LinkedHashMap to a List.
+     * Because the configuration of a ServiceSelector is a Map<String, Object>, Jackson converts a YAML list
+     * to a LinkedHashMap. This caused issues in Kork where the ServiceSelector expected, and tried, to cast
+     * the config from the Object to a List. This test validates that Orca is proving what Kork expects
+     * (a Map<String, String>) in the case of a YAML list.
      */
     assertDoesNotThrow(
         () -> clouddriverRetrofitBuilder.buildWriteableService(KatoRestService.class));
