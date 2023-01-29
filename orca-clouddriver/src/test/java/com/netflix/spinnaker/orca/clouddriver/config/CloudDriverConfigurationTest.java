@@ -94,10 +94,11 @@ public class CloudDriverConfigurationTest extends YamlFileApplicationContextInit
   public void testConstructingSelectorsWithYAMLList() {
     /*
      * Because the configuration of a BaseUrl in Orca is loosely typed as a Map<String, Object>, to allow variations of
-     * config that require different types, Jackson doesn't have enough type information and converts a YAML list to a
-     * LinkedHashMap. This caused issues in Kork where the ServiceSelector constructors expected a Map<String, Object>
-     * (to match what Orca was providing), but then tried to cast the Object to a List. This test validates that Orca is
-     * providing what Kork expects (a Map<String, Object>), and that the handling in Kork doesn't throw a ClassCastException.
+     * config for ServiceSelector classes that require different types (e.g. a Regex String or a List), Jackson doesn't have enough
+     * type information and converts a YAML list to a LinkedHashMap (values keyed by index). This caused issues in Kork where the
+     * ServiceSelector constructors expected the Object to be a List (to match the YAML format) but Jackson had converted
+     * it to a LinkedHashMap. This test validates that ServiceSelector implementations in Kork that use a YAML list for configuration
+     * correctly handle what Jackson is mapping the config to.
      *
      * Unfortunately, since each service handles the creation of ServiceSelectors differently, there's no easy
      * way to test this in Kork without duplicating all the logic from all the services. Thus, this test lives in Orca.
