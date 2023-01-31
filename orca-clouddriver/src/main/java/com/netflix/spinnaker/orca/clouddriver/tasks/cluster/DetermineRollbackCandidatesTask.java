@@ -103,7 +103,7 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
 
   @Override
   public long getTimeout() {
-    return TimeUnit.MINUTES.toMillis(5);
+    return TimeUnit.MINUTES.toMillis(20);
   }
 
   @Nonnull
