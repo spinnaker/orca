@@ -52,6 +52,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -78,6 +79,9 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
 
   private static final TypeReference<List<ServerGroup>> listOfServerGroupsTypeReference =
       new TypeReference<>() {};
+
+  @Value("${rollback.timeout.enabled:false}")
+  private static boolean stageRollbackTimeout;
 
   private final RetrySupport retrySupport;
   private final CloudDriverService cloudDriverService;
@@ -107,8 +111,10 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   }
 
   public long getDynamicTimeout(StageExecution stage) {
-    if (stage.getContext().containsKey("rollbackTimeout")) {
-      return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("rollbackTimeout"));
+    if (stageRollbackTimeout) {
+      if (stage.getContext().containsKey("rollbackTimeout")) {
+        return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("rollbackTimeout"));
+      }
     }
 
     return getTimeout();
