@@ -80,7 +80,7 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   private static final TypeReference<List<ServerGroup>> listOfServerGroupsTypeReference =
       new TypeReference<>() {};
 
-  private boolean dynamicRollbackTimeoutEnabled;
+  private final boolean dynamicRollbackTimeoutEnabled;
 
   private final RetrySupport retrySupport;
   private final CloudDriverService cloudDriverService;
