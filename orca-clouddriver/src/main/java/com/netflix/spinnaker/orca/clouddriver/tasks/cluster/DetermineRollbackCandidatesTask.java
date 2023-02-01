@@ -80,8 +80,7 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   private static final TypeReference<List<ServerGroup>> listOfServerGroupsTypeReference =
       new TypeReference<>() {};
 
-  @Value("${rollback.timeout.enabled:false}")
-  private static boolean stageRollbackTimeout;
+  private boolean dynamicRollbackTimeoutEnabled;
 
   private final RetrySupport retrySupport;
   private final CloudDriverService cloudDriverService;
@@ -92,12 +91,14 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
       ObjectMapper objectMapper,
       RetrySupport retrySupport,
       CloudDriverService cloudDriverService,
-      FeaturesService featuresService) {
+      FeaturesService featuresService,
+      @Value("${rollback.timeout.enabled:false}") boolean dynamicRollbackTimeoutEnabled) {
     this.retrySupport = retrySupport;
     this.cloudDriverService = cloudDriverService;
     this.previousImageRollbackSupport =
         new PreviousImageRollbackSupport(
             objectMapper, cloudDriverService, featuresService, retrySupport);
+    this.dynamicRollbackTimeoutEnabled = dynamicRollbackTimeoutEnabled;
   }
 
   @Override
@@ -111,10 +112,10 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   }
 
   public long getDynamicTimeout(StageExecution stage) {
-    if (stageRollbackTimeout) {
-      if (stage.getContext().containsKey("rollbackTimeout")) {
-        return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("rollbackTimeout"));
-      }
+    boolean shouldUseDynamicRollbackTimeout =
+        dynamicRollbackTimeoutEnabled && stage.getContext().containsKey("rollbackTimeout");
+    if (shouldUseDynamicRollbackTimeout) {
+      return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("rollbackTimeout"));
     }
 
     return getTimeout();
