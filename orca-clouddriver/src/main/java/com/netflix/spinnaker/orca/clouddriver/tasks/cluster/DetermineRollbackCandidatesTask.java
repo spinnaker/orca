@@ -52,6 +52,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -79,6 +80,8 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
   private static final TypeReference<List<ServerGroup>> listOfServerGroupsTypeReference =
       new TypeReference<>() {};
 
+  private final boolean dynamicRollbackTimeoutEnabled;
+
   private final RetrySupport retrySupport;
   private final CloudDriverService cloudDriverService;
   private final PreviousImageRollbackSupport previousImageRollbackSupport;
@@ -88,12 +91,14 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
       ObjectMapper objectMapper,
       RetrySupport retrySupport,
       CloudDriverService cloudDriverService,
-      FeaturesService featuresService) {
+      FeaturesService featuresService,
+      @Value("${rollback.timeout.enabled:false}") boolean dynamicRollbackTimeoutEnabled) {
     this.retrySupport = retrySupport;
     this.cloudDriverService = cloudDriverService;
     this.previousImageRollbackSupport =
         new PreviousImageRollbackSupport(
             objectMapper, cloudDriverService, featuresService, retrySupport);
+    this.dynamicRollbackTimeoutEnabled = dynamicRollbackTimeoutEnabled;
   }
 
   @Override
@@ -106,6 +111,19 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
     return TimeUnit.MINUTES.toMillis(5);
   }
 
+<<<<<<< HEAD
+=======
+  public long getDynamicTimeout(StageExecution stage) {
+    boolean shouldUseDynamicRollbackTimeout =
+        dynamicRollbackTimeoutEnabled && stage.getContext().containsKey("rollbackTimeout");
+    if (shouldUseDynamicRollbackTimeout) {
+      return TimeUnit.MINUTES.toMillis((int) stage.getContext().get("rollbackTimeout"));
+    }
+
+    return getTimeout();
+  }
+
+>>>>>>> f7f69a4c0 (fix(timeout): Added feature flag for rollback timeout ui input. (#4383))
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
