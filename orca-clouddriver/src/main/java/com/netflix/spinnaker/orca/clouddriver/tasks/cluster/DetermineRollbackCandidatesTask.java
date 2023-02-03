@@ -111,8 +111,6 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
     return TimeUnit.MINUTES.toMillis(5);
   }
 
-<<<<<<< HEAD
-=======
   public long getDynamicTimeout(StageExecution stage) {
     boolean shouldUseDynamicRollbackTimeout =
         dynamicRollbackTimeoutEnabled && stage.getContext().containsKey("rollbackTimeout");
@@ -123,7 +121,6 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
     return getTimeout();
   }
 
->>>>>>> f7f69a4c0 (fix(timeout): Added feature flag for rollback timeout ui input. (#4383))
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
