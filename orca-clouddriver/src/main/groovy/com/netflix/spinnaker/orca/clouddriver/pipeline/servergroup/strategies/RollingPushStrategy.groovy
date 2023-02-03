@@ -81,7 +81,7 @@ class RollingPushStrategy implements Strategy {
         ]
     ]
 
-    stages << StageExecutionFactory.newStage(
+    stages << StageExecutionFactory.newStagexx(
       stage.execution,
       stage.context.setLaunchTemplate ? updateLaunchTemplateStage.type : modifyAsgLaunchConfigurationStage.type,
       stage.context.setLaunchTemplate ? "updateLaunchTemplate" : "modifyLaunchConfiguration",
