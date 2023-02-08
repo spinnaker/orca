@@ -91,10 +91,10 @@ class CompleteExecutionHandler(
               queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
             }
           } else {
-            log.info("Not starting waiting executions as execution ${execution.id} is currently RUNNING with Disabled concurrent executions.")
+            log.debug("Not starting waiting executions as execution ${execution.id} is currently RUNNING with Disabled concurrent executions.")
           }
         } else {
-            log.info("Execution ${execution.id} is not Disabled for concurrent executions, no need to run waiting executions")
+            log.debug("Execution ${execution.id} is not Disabled for concurrent executions, no need to run waiting executions")
         }
       }
     }
