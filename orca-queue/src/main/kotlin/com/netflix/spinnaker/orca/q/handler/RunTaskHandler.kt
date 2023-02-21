@@ -20,6 +20,8 @@ import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.exceptions.UserException
+import com.netflix.spinnaker.kork.lock.LockManager
+import com.netflix.spinnaker.kork.lock.LockManager.LockOptions
 import com.netflix.spinnaker.orca.api.pipeline.TaskExecutionInterceptor
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
@@ -84,7 +86,8 @@ class RunTaskHandler(
   private val exceptionHandlers: List<ExceptionHandler>,
   private val taskExecutionInterceptors: List<TaskExecutionInterceptor>,
   private val registry: Registry,
-  private val dynamicConfigService: DynamicConfigService
+  private val dynamicConfigService: DynamicConfigService,
+  private val lockingManager: LockManager
 ) : OrcaMessageHandler<RunTask>, ExpressionAware, AuthenticationAware {
 
   /**
@@ -99,115 +102,134 @@ class RunTaskHandler(
   )
 
   override fun handle(message: RunTask) {
-    message.withTask { origStage, taskModel, task ->
-      var stage = origStage
 
-      stage.withAuth {
-        stage.withLoggingContext(taskModel) {
-          if (task.javaClass.isAnnotationPresent(Deprecated::class.java)) {
-            log.warn("deprecated-task-run ${task.javaClass.simpleName}")
-          }
-          val thisInvocationStartTimeMs = clock.millis()
-          val execution = stage.execution
-          var taskResult: TaskResult? = null
+    message.withLocking {
+      message.withTask { origStage, taskModel, task ->
+        var stage = origStage
+        stage.withAuth {
+          stage.withLoggingContext(taskModel) {
+            if (task.javaClass.isAnnotationPresent(Deprecated::class.java)) {
+              log.warn("deprecated-task-run ${task.javaClass.simpleName}")
+            }
+            val thisInvocationStartTimeMs = clock.millis()
+            val execution = stage.execution
+            var taskResult: TaskResult? = null
 
-          var taskException: Exception? = null
-          try {
-            taskExecutionInterceptors.forEach { t -> stage = t.beforeTaskExecution(task, stage) }
+            var taskException: Exception? = null
+            try {
+              taskExecutionInterceptors.forEach { t -> stage = t.beforeTaskExecution(task, stage) }
 
-            if (execution.isCanceled) {
-              task.onCancelWithResult(stage)?.run {
-                stage.processTaskOutput(this)
-              }
-              queue.push(CompleteTask(message, CANCELED))
-            } else if (execution.status.isComplete) {
-              queue.push(CompleteTask(message, CANCELED))
-            } else if (execution.status == PAUSED) {
-              queue.push(PauseTask(message))
-            } else if (stage.isManuallySkipped()) {
-              queue.push(CompleteTask(message, SKIPPED))
-            } else {
-              try {
-                task.checkForTimeout(stage, taskModel, message)
-              } catch (e: TimeoutException) {
-                registry
-                  .timeoutCounter(stage.execution.type, stage.execution.application, stage.type, taskModel.name)
-                  .increment()
-                taskResult = task.onTimeout(stage)
+              if (execution.isCanceled) {
+                task.onCancelWithResult(stage)?.run {
+                  stage.processTaskOutput(this)
+                }
+                queue.push(CompleteTask(message, CANCELED))
+              } else if (execution.status.isComplete) {
+                queue.push(CompleteTask(message, CANCELED))
+              } else if (execution.status == PAUSED) {
+                queue.push(PauseTask(message))
+              } else if (stage.isManuallySkipped()) {
+                queue.push(CompleteTask(message, SKIPPED))
+              } else {
+                try {
+                  task.checkForTimeout(stage, taskModel, message)
+                } catch (e: TimeoutException) {
+                  registry
+                    .timeoutCounter(stage.execution.type, stage.execution.application, stage.type, taskModel.name)
+                    .increment()
+                  taskResult = task.onTimeout(stage)
+
+                  if (taskResult == null) {
+                    // This means this task doesn't care to alter the timeout flow, just throw
+                    throw e
+                  }
+
+                  if (!setOf(TERMINAL, FAILED_CONTINUE).contains(taskResult.status)) {
+                    log.error("Task ${task.javaClass.name} returned invalid status (${taskResult.status}) for onTimeout")
+                    throw e
+                  }
+                }
 
                 if (taskResult == null) {
-                  // This means this task doesn't care to alter the timeout flow, just throw
-                  throw e
+                  taskResult = task.execute(stage.withMergedContext())
+                  taskExecutionInterceptors.forEach { t -> taskResult = t.afterTaskExecution(task, stage, taskResult) }
                 }
 
-                if (!setOf(TERMINAL, FAILED_CONTINUE).contains(taskResult.status)) {
-                  log.error("Task ${task.javaClass.name} returned invalid status (${taskResult.status}) for onTimeout")
-                  throw e
+                taskResult!!.let { result: TaskResult ->
+                  when (result.status) {
+                    RUNNING -> {
+                      stage.processTaskOutput(result)
+                      queue.push(message, task.backoffPeriod(taskModel, stage))
+                      trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
+                    }
+
+                    SUCCEEDED, REDIRECT, SKIPPED, FAILED_CONTINUE, STOPPED -> {
+                      stage.processTaskOutput(result)
+                      queue.push(CompleteTask(message, result.status))
+                      trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
+                    }
+
+                    CANCELED -> {
+                      stage.processTaskOutput(result.mergeOutputs(task.onCancelWithResult(stage)))
+                      val status = stage.failureStatus(default = result.status)
+                      queue.push(CompleteTask(message, status, result.status))
+                      trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
+                    }
+
+                    TERMINAL -> {
+                      stage.processTaskOutput(result)
+                      val status = stage.failureStatus(default = result.status)
+                      queue.push(CompleteTask(message, status, result.status))
+                      trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
+                    }
+
+                    else -> {
+                      stage.processTaskOutput(result)
+                      TODO("Unhandled task status ${result.status}")
+                    }
+                  }
                 }
               }
-
-              if (taskResult == null) {
-                taskResult = task.execute(stage.withMergedContext())
-                taskExecutionInterceptors.forEach { t -> taskResult = t.afterTaskExecution(task, stage, taskResult) }
-              }
-
-              taskResult!!.let { result: TaskResult ->
-                when (result.status) {
-                  RUNNING -> {
-                    stage.processTaskOutput(result)
-                    queue.push(message, task.backoffPeriod(taskModel, stage))
-                    trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
-                  }
-                  SUCCEEDED, REDIRECT, SKIPPED, FAILED_CONTINUE, STOPPED -> {
-                    stage.processTaskOutput(result)
-                    queue.push(CompleteTask(message, result.status))
-                    trackResult(stage, thisInvocationStartTimeMs, taskModel, result.status)
-                  }
-                  CANCELED -> {
-                    stage.processTaskOutput(result.mergeOutputs(task.onCancelWithResult(stage)))
-                    val status = stage.failureStatus(default = result.status)
-                    queue.push(CompleteTask(message, status, result.status))
-                    trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
-                  }
-                  TERMINAL -> {
-                    stage.processTaskOutput(result)
-                    val status = stage.failureStatus(default = result.status)
-                    queue.push(CompleteTask(message, status, result.status))
-                    trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
-                  }
-                  else -> {
-                    stage.processTaskOutput(result)
-                    TODO("Unhandled task status ${result.status}")
+            } catch (e: Exception) {
+              taskException = e;
+              val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
+              if (exceptionDetails?.shouldRetry == true) {
+                log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
+                queue.push(message, task.backoffPeriod(taskModel, stage))
+                trackResult(stage, thisInvocationStartTimeMs, taskModel, RUNNING)
+              } else if (e is TimeoutException && stage.context["markSuccessfulOnTimeout"] == true) {
+                trackResult(stage, thisInvocationStartTimeMs, taskModel, SUCCEEDED)
+                queue.push(CompleteTask(message, SUCCEEDED))
+              } else {
+                if (e !is TimeoutException) {
+                  if (e is UserException) {
+                    log.warn(
+                      "${message.taskType.simpleName} for ${message.executionType}[${message.executionId}] failed, likely due to user error",
+                      e
+                    )
+                  } else {
+                    log.error(
+                      "Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]",
+                      e
+                    )
                   }
                 }
+                val status = stage.failureStatus(default = TERMINAL)
+                stage.context["exception"] = exceptionDetails
+                repository.storeStage(stage)
+                queue.push(CompleteTask(message, status, TERMINAL))
+                trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
+              }
+            } finally {
+              taskExecutionInterceptors.forEach { t ->
+                t.finallyAfterTaskExecution(
+                  task,
+                  stage,
+                  taskResult,
+                  taskException
+                )
               }
             }
-          } catch (e: Exception) {
-            taskException = e;
-            val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
-            if (exceptionDetails?.shouldRetry == true) {
-              log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
-              queue.push(message, task.backoffPeriod(taskModel, stage))
-              trackResult(stage, thisInvocationStartTimeMs, taskModel, RUNNING)
-            } else if (e is TimeoutException && stage.context["markSuccessfulOnTimeout"] == true) {
-              trackResult(stage, thisInvocationStartTimeMs, taskModel, SUCCEEDED)
-              queue.push(CompleteTask(message, SUCCEEDED))
-            } else {
-              if (e !is TimeoutException) {
-                if (e is UserException) {
-                  log.warn("${message.taskType.simpleName} for ${message.executionType}[${message.executionId}] failed, likely due to user error", e)
-                } else {
-                  log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
-                }
-              }
-              val status = stage.failureStatus(default = TERMINAL)
-              stage.context["exception"] = exceptionDetails
-              repository.storeStage(stage)
-              queue.push(CompleteTask(message, status, TERMINAL))
-              trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
-            }
-          } finally {
-            taskExecutionInterceptors.forEach { t -> t.finallyAfterTaskExecution(task, stage, taskResult, taskException) }
           }
         }
       }
@@ -256,6 +278,15 @@ class RunTaskHandler(
         block.invoke(stage, taskModel, it)
       }
     }
+
+  private fun RunTask.withLocking(action: Runnable) {
+    var lockOptions = LockOptions()
+      .withLockName(this.stageId)
+      .withMaximumLockDuration(Duration.ofSeconds(5L))
+
+    lockingManager.acquireLock(lockOptions, Runnable { action.run() })
+
+  }
 
   private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecution): TemporalAmount =
     when (this) {

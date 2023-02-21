@@ -24,6 +24,7 @@ import com.netflix.spinnaker.config.PluginsAutoConfiguration;
 import com.netflix.spinnaker.kork.api.expressions.ExpressionFunctionProvider;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
+import com.netflix.spinnaker.kork.lock.LockManager;
 import com.netflix.spinnaker.orca.DefaultStageResolver;
 import com.netflix.spinnaker.orca.DynamicStageResolver;
 import com.netflix.spinnaker.orca.DynamicTaskImplementationResolver;
@@ -256,7 +257,10 @@ public class OrcaConfiguration {
 
   @Bean
   public CompoundExecutionOperator compoundExecutionOperator(
-      ExecutionRepository repository, ExecutionRunner runner, RetrySupport retrySupport) {
-    return new CompoundExecutionOperator(repository, runner, retrySupport);
+      ExecutionRepository repository,
+      ExecutionRunner runner,
+      RetrySupport retrySupport,
+      LockManager lockManager) {
+    return new CompoundExecutionOperator(repository, runner, retrySupport, lockManager);
   }
 }
