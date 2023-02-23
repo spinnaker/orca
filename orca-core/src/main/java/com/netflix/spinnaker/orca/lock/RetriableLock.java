@@ -19,7 +19,6 @@ package com.netflix.spinnaker.orca.lock;
 import static com.netflix.spinnaker.kork.lock.LockManager.LockStatus.ACQUIRED;
 
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.kork.exceptions.SpinnakerException;
 import com.netflix.spinnaker.kork.lock.LockManager;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -47,17 +46,19 @@ public class RetriableLock {
           var lockAcquired = ACQUIRED.equals(response.getLockStatus());
           if (lockAcquired) {
             log.debug("Successfully acquired lock: {}", lockName);
+            return true;
+          } else {
+            // This exception is caught inside the retrySupport.retry method $maxRetries times.
+            log.debug("Failed to acquired lock: {}", lockName);
+            throw new FailedToGetLockException(lockName);
           }
-          // This exception is caught inside the retrySupport.retry method
-          log.debug("Failed to acquired lock: {}", lockName);
-          throw new FailedToGetLockException(lockName);
         },
         maxRetries,
         interval,
         false);
   }
 
-  class FailedToGetLockException extends SpinnakerException {
+  static class FailedToGetLockException extends RuntimeException {
     public FailedToGetLockException(String lockName) {
       super("Failed to acquire lock: " + lockName);
     }
