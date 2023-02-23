@@ -18,30 +18,15 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.exceptions.UserException
 import com.netflix.spinnaker.kork.lock.LockManager
-import com.netflix.spinnaker.kork.lock.LockManager.LockOptions
-import com.netflix.spinnaker.orca.api.pipeline.TaskExecutionInterceptor
+import com.netflix.spinnaker.kork.lock.LockManager.*
 import com.netflix.spinnaker.orca.TaskResolver
-import com.netflix.spinnaker.orca.api.pipeline.OverridableTimeoutRetryableTask
-import com.netflix.spinnaker.orca.api.pipeline.RetryableTask
-import com.netflix.spinnaker.orca.api.pipeline.Task
-import com.netflix.spinnaker.orca.api.pipeline.TaskResult
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.CANCELED
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.FAILED_CONTINUE
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.PAUSED
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.REDIRECT
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.RUNNING
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SKIPPED
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.STOPPED
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.SUCCEEDED
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.TERMINAL
-import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType
-import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
-import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
-import com.netflix.spinnaker.orca.api.pipeline.models.TaskExecution
+import com.netflix.spinnaker.orca.api.pipeline.*
+import com.netflix.spinnaker.orca.api.pipeline.models.*
+import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus.*
 import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
 import com.netflix.spinnaker.orca.exceptions.TimeoutException
@@ -62,6 +47,9 @@ import com.netflix.spinnaker.orca.time.toDuration
 import com.netflix.spinnaker.orca.time.toInstant
 import com.netflix.spinnaker.q.Message
 import com.netflix.spinnaker.q.Queue
+import org.apache.commons.lang3.time.DurationFormatUtils
+import org.slf4j.MDC
+import org.springframework.stereotype.Component
 import java.lang.Deprecated
 import java.time.Clock
 import java.time.Duration
@@ -69,10 +57,21 @@ import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
+import kotlin.Exception
+import kotlin.IllegalStateException
+import kotlin.Int
+import kotlin.Long
+import kotlin.RuntimeException
+import kotlin.String
+import kotlin.TODO
+import kotlin.Unit
+import kotlin.also
 import kotlin.collections.set
-import org.apache.commons.lang3.time.DurationFormatUtils
-import org.slf4j.MDC
-import org.springframework.stereotype.Component
+import kotlin.let
+import kotlin.run
+import kotlin.to
+import kotlin.toString
 
 @Component
 class RunTaskHandler(
@@ -87,7 +86,8 @@ class RunTaskHandler(
   private val taskExecutionInterceptors: List<TaskExecutionInterceptor>,
   private val registry: Registry,
   private val dynamicConfigService: DynamicConfigService,
-  private val lockingManager: LockManager
+  private val lockingManager: LockManager,
+  private val retrySupport: RetrySupport
 ) : OrcaMessageHandler<RunTask>, ExpressionAware, AuthenticationAware {
 
   /**
@@ -280,12 +280,28 @@ class RunTaskHandler(
     }
 
   private fun RunTask.withLocking(action: Runnable) {
+
     var lockOptions = LockOptions()
       .withLockName(this.stageId)
-      .withMaximumLockDuration(Duration.ofSeconds(5L))
+      .withMaximumLockDuration(Duration.ofSeconds(1L))
 
-    lockingManager.acquireLock(lockOptions, Runnable { action.run() })
+    var runnable  = Runnable {
+      val response: AcquireLockResponse<Void> = lockingManager.acquireLock(lockOptions, action)
+      if (LockStatus.ACQUIRED != response.lockStatus) {
+        //Thrown exception is caught by runWithRetries method
+        throw RuntimeException("Failed to acquire lock")
+      }
+    }
 
+    retrySupport.retry(
+      Supplier {
+      runnable.run()
+        true
+      },
+      5,
+      Duration.ofSeconds(1),
+      false
+    )
   }
 
   private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecution): TemporalAmount =

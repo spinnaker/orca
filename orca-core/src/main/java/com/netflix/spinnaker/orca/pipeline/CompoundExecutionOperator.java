@@ -17,10 +17,10 @@
 package com.netflix.spinnaker.orca.pipeline;
 
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.kork.lock.LockManager;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.lock.RetriableLock;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.time.Duration;
@@ -39,7 +39,7 @@ public class CompoundExecutionOperator {
   ExecutionRepository repository;
   ExecutionRunner runner;
   RetrySupport retrySupport;
-  LockManager lockManager;
+  RetriableLock retriableLock;
 
   public void cancel(ExecutionType executionType, String executionId) {
     cancel(
@@ -92,19 +92,19 @@ public class CompoundExecutionOperator {
       @Nonnull String executionId,
       @Nonnull String stageId,
       @Nonnull Consumer<StageExecution> stageUpdater) {
+    Runnable repositoryAction =
+        () -> {
+          PipelineExecution execution = repository.retrieve(executionType, executionId);
+          StageExecution stage = execution.stageById(stageId);
+
+          // mutates stage in place
+          stageUpdater.accept(stage);
+
+          repository.storeStage(stage);
+        };
     return doInternal(
         runner::reschedule,
-        withLocking(
-            stageId,
-            () -> {
-              PipelineExecution execution = repository.retrieve(executionType, executionId);
-              StageExecution stage = execution.stageById(stageId);
-
-              // mutates stage in place
-              stageUpdater.accept(stage);
-
-              repository.storeStage(stage);
-            }),
+        () -> retriableLock.execute(stageId, repositoryAction, 5, Duration.ofMillis(300)),
         "reschedule",
         executionType,
         executionId);
@@ -171,15 +171,5 @@ public class CompoundExecutionOperator {
         5,
         Duration.ofMillis(100),
         false);
-  }
-
-  private Runnable withLocking(String stageExecutionId, Runnable runnable) {
-    return () -> {
-      var lockOptions =
-          new LockManager.LockOptions()
-              .withLockName(stageExecutionId)
-              .withMaximumLockDuration(Duration.ofSeconds(5L));
-      lockManager.acquireLock(lockOptions, runnable);
-    };
   }
 }
