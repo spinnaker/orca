@@ -115,18 +115,18 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
         }
       }
 
-      Map outputs = processNotifications(stage, stageData, notificationState)
+      processNotifications(stage, stageData, notificationState)
 
-      return TaskResult.builder(executionStatus).context(outputs).build()
+      return TaskResult.builder(executionStatus).build()
     }
 
-    Map processNotifications(StageExecution stage, StageData stageData, String notificationState) {
+    void processNotifications(StageExecution stage, StageData stageData, String notificationState) {
       if (echoService) {
         // sendNotifications will be true if using the new scheme for configuration notifications.
         // The new scheme matches the scheme used by the other stages.
         // If the deprecated scheme is in use, only the original 'awaiting judgment' notification is supported.
         if (notificationState != "manualJudgment" && !stage.context.sendNotifications) {
-          return [:]
+          return
         }
 
         stageData.notifications.findAll { it.shouldNotify(notificationState) }.each {
@@ -136,10 +136,6 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
             log.error("Unable to send notification (executionId: ${stage.execution.id}, address: ${it.address}, type: ${it.type})", e)
           }
         }
-
-        return [notifications: stageData.notifications]
-      } else {
-        return [:]
       }
     }
   }
