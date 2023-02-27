@@ -21,6 +21,7 @@ import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.lock.RetriableLock;
+import com.netflix.spinnaker.orca.lock.RetriableLock.RetriableLockOptions;
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.time.Duration;
@@ -102,9 +103,10 @@ public class CompoundExecutionOperator {
 
           repository.storeStage(stage);
         };
+    var options = new RetriableLockOptions(stageId);
     return doInternal(
         runner::reschedule,
-        () -> retriableLock.execute(stageId, repositoryAction, 5, Duration.ofMillis(300)),
+        () -> retriableLock.lock(options, repositoryAction),
         "reschedule",
         executionType,
         executionId);

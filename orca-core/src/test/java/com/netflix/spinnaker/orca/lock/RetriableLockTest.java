@@ -47,13 +47,13 @@ class RetriableLockTest {
   public void test1() {
     givenLockCannotBeAcquiredOnAnyAttempt();
 
-    var maxRetries = 3;
+    var options =
+        new RetriableLock.RetriableLockOptions(LOCK_NAME, 3, Duration.ofMillis(500), false, true);
 
     Assertions.assertThrows(
-        RetriableLock.FailedToGetLockException.class,
-        () -> retriableLock.execute(LOCK_NAME, () -> {}, maxRetries, Duration.ofMillis(100)));
+        RetriableLock.FailedToGetLockException.class, () -> retriableLock.lock(options, () -> {}));
 
-    assertLockAcquireAttempts(maxRetries);
+    assertLockAcquireAttempts(options.getMaxRetries());
   }
 
   @Test
@@ -61,7 +61,9 @@ class RetriableLockTest {
   void test2() {
     givenLockIsAcquired();
 
-    retriableLock.execute(LOCK_NAME, () -> {}, 1, Duration.ofMillis(100));
+    var options = new RetriableLock.RetriableLockOptions(LOCK_NAME);
+
+    retriableLock.lock(options, () -> {});
 
     assertLockAcquireAttempts(1);
   }

@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.pipeline
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
+import com.netflix.spinnaker.orca.lock.RetriableLock
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import org.slf4j.MDC
@@ -33,6 +34,8 @@ import static com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType.PIPEL
 class CompoundExecutionOperatorSpec extends Specification {
   ExecutionRepository repository = Mock(ExecutionRepository)
   ExecutionRunner runner = Mock(ExecutionRunner)
+  RetrySupport retrySupport = new RetrySupport()
+  RetriableLock retriableLock = Mock(RetriableLock)
   def execution = Mock(PipelineExecution)
   def stage = Mock(StageExecution)
 
@@ -41,7 +44,7 @@ class CompoundExecutionOperatorSpec extends Specification {
   }
 
   @Subject
-  CompoundExecutionOperator operator = new CompoundExecutionOperator(repository, runner, new RetrySupport())
+  CompoundExecutionOperator operator = new CompoundExecutionOperator(repository, runner, retrySupport, retriableLock)
 
   @Unroll
   def '#method call should not push messages on the queue for foreign executions'() {
@@ -57,6 +60,12 @@ class CompoundExecutionOperatorSpec extends Specification {
     1 * repository.handlesPartition("foreign") >> false
     1 * repository."$repoMethod"(*_)
     0 * runner._(*_)
+    if("$method" == "updateStage"){
+      1 * retriableLock.lock(_, _) >> { arguments ->
+        def runnable = (Runnable) arguments[1]
+        runnable.run()
+      }
+    }
 
     where:
     method        | repoMethod   | args
@@ -117,6 +126,10 @@ class CompoundExecutionOperatorSpec extends Specification {
         { it.setLastModified(new StageExecution.LastModifiedDetails(user: 'user')) })
 
     then:
+    1 * retriableLock.lock(_, _) >> { arguments ->
+      def runnable = (Runnable) arguments[1]
+      runnable.run()
+    }
     _ * repository.retrieve(PIPELINE, 'id') >> execution
     1 * execution.stageById('stageId') >> stage
     1 * repository.storeStage(stage)
