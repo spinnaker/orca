@@ -110,9 +110,7 @@ class ManualJudgmentStageSpec extends Specification {
 
     then:
     result.status == ExecutionStatus.RUNNING
-    result.context.notifications.findAll {
-      it.lastNotifiedByNotificationState["manualJudgment"]
-    }*.type == ["email", "hipchat", "sms", "pubsub"]
+    4 * echoService.create(_)
   }
 
   @Unroll
@@ -197,7 +195,7 @@ class ManualJudgmentStageSpec extends Specification {
   }
 
   @Unroll
-  void "should retain unknown fields in the notification context"() {
+  void "should not pass context to the task"() {
     given:
     def task = new WaitForManualJudgmentTask(Optional.of(echoService), manualJudgmentAuthorization)
 
@@ -218,8 +216,7 @@ class ManualJudgmentStageSpec extends Specification {
     def result = task.execute(stage)
 
     then:
-    result.context.notifications?.get(0)?.other?.customMessage == "hello slack"
-    result.context.notifications?.get(1)?.other?.customSubject == "hello email"
+    result.context.isEmpty()
   }
 
   @Unroll
