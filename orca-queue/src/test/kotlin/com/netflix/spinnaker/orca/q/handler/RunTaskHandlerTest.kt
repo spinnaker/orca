@@ -38,6 +38,7 @@ import com.netflix.spinnaker.orca.api.test.pipeline
 import com.netflix.spinnaker.orca.api.test.stage
 import com.netflix.spinnaker.orca.api.test.task
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
+import com.netflix.spinnaker.orca.lock.RetriableLock
 import com.netflix.spinnaker.orca.pipeline.DefaultStageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.model.DefaultTrigger
@@ -59,20 +60,7 @@ import com.netflix.spinnaker.orca.q.TasksProvider
 import com.netflix.spinnaker.orca.q.singleTaskStage
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
-import com.nhaarman.mockito_kotlin.any
-import com.nhaarman.mockito_kotlin.anyOrNull
-import com.nhaarman.mockito_kotlin.check
-import com.nhaarman.mockito_kotlin.doReturn
-import com.nhaarman.mockito_kotlin.doThrow
-import com.nhaarman.mockito_kotlin.eq
-import com.nhaarman.mockito_kotlin.isA
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.never
-import com.nhaarman.mockito_kotlin.reset
-import com.nhaarman.mockito_kotlin.times
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -113,11 +101,16 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
   val clock = Clock.fixed(Instant.now().truncatedTo(ChronoUnit.MILLIS), ZoneId.systemDefault())
   val contextParameterProcessor = ContextParameterProcessor()
   val dynamicConfigService: DynamicConfigService = mock()
+  val retriableLock: RetriableLock = mock()
   val taskExecutionInterceptors: List<TaskExecutionInterceptor> = listOf(mock())
   val stageResolver = DefaultStageResolver(StageDefinitionBuildersProvider(emptyList()))
 
   subject(GROUP) {
     whenever(dynamicConfigService.getConfig(eq(Int::class.java), eq("tasks.warningInvocationTimeMs"), any())) doReturn 0
+    val runnableCaptor = argumentCaptor<Runnable>()
+    whenever(retriableLock.lock(any(), runnableCaptor.capture())).thenAnswer {
+      runnableCaptor.firstValue.run()
+    }
 
     RunTaskHandler(
       queue,
@@ -130,11 +123,12 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       listOf(exceptionHandler),
       taskExecutionInterceptors,
       NoopRegistry(),
-      dynamicConfigService
+      dynamicConfigService,
+      retriableLock
     )
   }
 
-  fun resetMocks() = reset(queue, repository, task, timeoutOverrideTask, cloudProviderAwareTask, exceptionHandler)
+  fun resetMocks() = reset(queue, repository, task, timeoutOverrideTask, cloudProviderAwareTask, exceptionHandler, retriableLock)
 
   describe("running a task") {
 

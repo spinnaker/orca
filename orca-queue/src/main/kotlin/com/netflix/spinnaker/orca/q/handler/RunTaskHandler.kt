@@ -33,6 +33,8 @@ import com.netflix.spinnaker.orca.exceptions.TimeoutException
 import com.netflix.spinnaker.orca.ext.beforeStages
 import com.netflix.spinnaker.orca.ext.failureStatus
 import com.netflix.spinnaker.orca.ext.isManuallySkipped
+import com.netflix.spinnaker.orca.lock.RetriableLock
+import com.netflix.spinnaker.orca.lock.RetriableLock.RetriableLockOptions
 import com.netflix.spinnaker.orca.pipeline.RestrictExecutionDuringTimeWindow
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilderFactory
 import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
@@ -86,8 +88,7 @@ class RunTaskHandler(
   private val taskExecutionInterceptors: List<TaskExecutionInterceptor>,
   private val registry: Registry,
   private val dynamicConfigService: DynamicConfigService,
-  private val lockingManager: LockManager,
-  private val retrySupport: RetrySupport
+  private val retriableLock: RetriableLock,
 ) : OrcaMessageHandler<RunTask>, ExpressionAware, AuthenticationAware {
 
   /**
@@ -280,28 +281,8 @@ class RunTaskHandler(
     }
 
   private fun RunTask.withLocking(action: Runnable) {
-
-    var lockOptions = LockOptions()
-      .withLockName(this.stageId)
-      .withMaximumLockDuration(Duration.ofSeconds(1L))
-
-    var runnable  = Runnable {
-      val response: AcquireLockResponse<Void> = lockingManager.acquireLock(lockOptions, action)
-      if (LockStatus.ACQUIRED != response.lockStatus) {
-        //Thrown exception is caught by runWithRetries method
-        throw RuntimeException("Failed to acquire lock")
-      }
-    }
-
-    retrySupport.retry(
-      Supplier {
-      runnable.run()
-        true
-      },
-      5,
-      Duration.ofSeconds(1),
-      false
-    )
+    var lockOptions = RetriableLockOptions(this.stageId)
+    retriableLock.lock(lockOptions, action)
   }
 
   private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecution): TemporalAmount =
