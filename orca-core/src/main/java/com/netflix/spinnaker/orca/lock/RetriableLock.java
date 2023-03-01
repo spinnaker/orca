@@ -35,13 +35,15 @@ public class RetriableLock {
   private final LockManager lockManager;
   private final RetrySupport retrySupport;
 
-  public void lock(RetriableLockOptions rlOptions, Runnable action) {
+  public Boolean lock(RetriableLockOptions rlOptions, Runnable action) {
     try {
       retrySupport.retry(
           new LockAndRun(rlOptions, action, lockManager),
           rlOptions.getMaxRetries(),
           rlOptions.getInterval(),
           rlOptions.isExponential());
+      return true;
+
     } catch (FailedToGetLockException e) {
       log.error(
           "Tried {} times to acquire the lock {} and failed.",
@@ -50,10 +52,11 @@ public class RetriableLock {
       if (rlOptions.isThrowOnAcquireFailure()) {
         throw e;
       }
+      return false;
     }
   }
 
-  static class FailedToGetLockException extends RuntimeException {
+  public static class FailedToGetLockException extends RuntimeException {
     public FailedToGetLockException(String lockName) {
       super("Failed to acquire lock: " + lockName);
     }
@@ -78,7 +81,7 @@ public class RetriableLock {
       this.maxRetries = 5;
       this.interval = Duration.ofMillis(500);
       this.exponential = false;
-      this.throwOnAcquireFailure = true;
+      this.throwOnAcquireFailure = false;
     }
   }
 

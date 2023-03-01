@@ -18,11 +18,8 @@ package com.netflix.spinnaker.orca.q.handler
 
 import com.netflix.spectator.api.BasicTag
 import com.netflix.spectator.api.Registry
-import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService
 import com.netflix.spinnaker.kork.exceptions.UserException
-import com.netflix.spinnaker.kork.lock.LockManager
-import com.netflix.spinnaker.kork.lock.LockManager.*
 import com.netflix.spinnaker.orca.TaskResolver
 import com.netflix.spinnaker.orca.api.pipeline.*
 import com.netflix.spinnaker.orca.api.pipeline.models.*
@@ -59,12 +56,10 @@ import java.time.Duration.ZERO
 import java.time.Instant
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.TimeUnit
-import java.util.function.Supplier
 import kotlin.Exception
 import kotlin.IllegalStateException
 import kotlin.Int
 import kotlin.Long
-import kotlin.RuntimeException
 import kotlin.String
 import kotlin.TODO
 import kotlin.Unit
@@ -282,7 +277,11 @@ class RunTaskHandler(
 
   private fun RunTask.withLocking(action: Runnable) {
     var lockOptions = RetriableLockOptions(this.stageId)
-    retriableLock.lock(lockOptions, action)
+    val lockAcquired = retriableLock.lock(lockOptions, action)
+    if(!lockAcquired){
+      log.warn("Failed to obtain lock for stage: {}. Pushing original message back to queue");
+      queue.push(this)
+    }
   }
 
   private fun Task.backoffPeriod(taskModel: TaskExecution, stage: StageExecution): TemporalAmount =

@@ -64,6 +64,7 @@ class CompoundExecutionOperatorSpec extends Specification {
       1 * retriableLock.lock(_, _) >> { arguments ->
         def runnable = (Runnable) arguments[1]
         runnable.run()
+        return true
       }
     }
 
@@ -134,5 +135,20 @@ class CompoundExecutionOperatorSpec extends Specification {
     1 * execution.stageById('stageId') >> stage
     1 * repository.storeStage(stage)
     stage.getLastModified().getUser() == 'user'
+  }
+
+  def 'stage is not updated when lock cannot be acquired'(){
+    given:
+    StageExecutionImpl stage = new StageExecutionImpl(id: 'stageId')
+
+    when:
+    operator.updateStage(PIPELINE, 'id', 'stageId',
+        { it.setLastModified(new StageExecution.LastModifiedDetails(user: 'user')) })
+
+    then:
+    (1.._) * retriableLock.lock(_, _) >> false
+    0 * repository.retrieve(PIPELINE, 'id') >> execution
+    0 * execution.stageById('stageId') >> stage
+    0 * repository.storeStage(stage)
   }
 }
