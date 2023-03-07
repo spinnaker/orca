@@ -18,7 +18,10 @@ package com.netflix.spinnaker.orca.config;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.kork.jedis.JedisClientConfiguration;
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector;
+import com.netflix.spinnaker.kork.lock.LockManager;
 import com.netflix.spinnaker.kork.telemetry.InstrumentedProxy;
+import com.netflix.spinnaker.orca.lock.RunOnLockAcquired;
+import com.netflix.spinnaker.orca.lock.RunOnRedisLockAcquired;
 import com.netflix.spinnaker.orca.notifications.NotificationClusterLock;
 import com.netflix.spinnaker.orca.notifications.RedisClusterNotificationClusterLock;
 import com.netflix.spinnaker.orca.notifications.RedisNotificationClusterLock;
@@ -83,6 +86,13 @@ public class RedisConfiguration {
   @ConditionalOnMissingBean(NotificationClusterLock.class)
   public NotificationClusterLock redisClusterNotificationClusterLock(JedisCluster cluster) {
     return new RedisClusterNotificationClusterLock(cluster);
+  }
+
+  @Bean
+  @Primary
+  @ConditionalOnProperty(value = "redis.external-lock.enabled")
+  public RunOnLockAcquired redisRunOnLockAcquired(LockManager lockManager) {
+    return new RunOnRedisLockAcquired(lockManager);
   }
 
   @Bean

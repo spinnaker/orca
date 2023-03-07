@@ -19,9 +19,6 @@ package com.netflix.spinnaker.orca.lock;
 import static org.mockito.Mockito.*;
 
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.kork.lock.LockManager;
-import com.netflix.spinnaker.kork.lock.LockManager.AcquireLockResponse;
-import com.netflix.spinnaker.kork.lock.LockManager.LockStatus;
 import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
@@ -33,13 +30,13 @@ import org.mockito.ArgumentMatchers;
 class RetriableLockTest {
 
   private static final String LOCK_NAME = UUID.randomUUID().toString();
-  private LockManager lockManager;
+  private RunOnLockAcquired runOnLockAcquired;
   private RetriableLock retriableLock;
 
   @BeforeEach
   void setup() {
-    this.lockManager = mock(LockManager.class);
-    this.retriableLock = new RetriableLock(lockManager, new RetrySupport());
+    this.runOnLockAcquired = mock(RunOnLockAcquired.class);
+    this.retriableLock = new RetriableLock(runOnLockAcquired, new RetrySupport());
   }
 
   @Test
@@ -69,21 +66,21 @@ class RetriableLockTest {
   }
 
   void givenLockCannotBeAcquiredOnAnyAttempt() {
-    when(lockManager.acquireLock(ArgumentMatchers.any(), ArgumentMatchers.any(Runnable.class)))
-        .thenReturn(getResponseWithLockStatus(LockStatus.TAKEN));
+    when(runOnLockAcquired.execute(ArgumentMatchers.any(Runnable.class), ArgumentMatchers.any()))
+        .thenReturn(lockResult(false, false));
   }
 
   void givenLockIsAcquired() {
-    when(lockManager.acquireLock(ArgumentMatchers.any(), ArgumentMatchers.any(Runnable.class)))
-        .thenReturn(getResponseWithLockStatus(LockStatus.ACQUIRED));
+    when(runOnLockAcquired.execute(any(Runnable.class), ArgumentMatchers.any()))
+        .thenReturn(lockResult(true, true));
   }
 
   void assertLockAcquireAttempts(int times) {
-    verify(lockManager, times(times))
-        .acquireLock(ArgumentMatchers.any(), ArgumentMatchers.any(Runnable.class));
+    verify(runOnLockAcquired, times(times))
+        .execute(ArgumentMatchers.any(Runnable.class), ArgumentMatchers.any());
   }
 
-  AcquireLockResponse getResponseWithLockStatus(LockStatus status) {
-    return new AcquireLockResponse<>(null, null, status, null, false);
+  RunOnLockResult lockResult(boolean lockAcquired, boolean actionExecuted) {
+    return new RunOnLockResult(lockAcquired, actionExecuted, null, null);
   }
 }

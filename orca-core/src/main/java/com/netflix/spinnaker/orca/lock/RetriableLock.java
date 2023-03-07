@@ -16,29 +16,28 @@
 
 package com.netflix.spinnaker.orca.lock;
 
-import static com.netflix.spinnaker.kork.lock.LockManager.LockStatus.ACQUIRED;
-
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.kork.lock.LockManager;
 import com.netflix.spinnaker.kork.lock.LockManager.LockOptions;
 import java.time.Duration;
 import java.util.function.Supplier;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@RequiredArgsConstructor
-@Component
 public class RetriableLock {
 
-  private final LockManager lockManager;
+  private final RunOnLockAcquired lock;
   private final RetrySupport retrySupport;
+
+  public RetriableLock(RunOnLockAcquired lock, RetrySupport retrySupport) {
+    this.lock = lock;
+    this.retrySupport = retrySupport;
+  }
 
   public Boolean lock(RetriableLockOptions rlOptions, Runnable action) {
     try {
       retrySupport.retry(
-          new LockAndRun(rlOptions, action, lockManager),
+          new LockAndRun(rlOptions, action, lock),
           rlOptions.getMaxRetries(),
           rlOptions.getInterval(),
           rlOptions.isExponential());
@@ -95,7 +94,7 @@ public class RetriableLock {
 
     private final RetriableLockOptions options;
     private final Runnable action;
-    private final LockManager lockManager;
+    private final RunOnLockAcquired lockManager;
 
     /***
      * Method tries to acquire lock via {@code lockManager} and execute an action once lock is acquired,
@@ -113,10 +112,8 @@ public class RetriableLock {
               .withMaximumLockDuration(MAX_LOCK_DURATION);
 
       var lockName = options.getLockName();
-      log.debug("Attempt to acquire lock: {}", lockName);
-      var response = lockManager.acquireLock(options, action);
-      var lockAcquired = ACQUIRED.equals(response.getLockStatus());
-      if (lockAcquired) {
+      var response = lockManager.execute(action, lockName);
+      if (response.getLockAcquired()) {
         log.debug("Successfully acquired lock: {}", lockName);
         // The result of this method is nowhere used - we need it to satisfy RetrySupport contract
         return true;
