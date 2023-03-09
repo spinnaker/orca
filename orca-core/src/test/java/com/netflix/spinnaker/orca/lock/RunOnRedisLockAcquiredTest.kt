@@ -54,8 +54,8 @@ class RunOnRedisLockAcquiredTest {
     assertTrue(result.lockAcquired)
     assertTrue(result.actionExecuted)
     assertNull(result.exception)
-    assertEquals(result.result, this.callable.call())
     verify(callable).call()
+    assertEquals(result.result, this.callable.call())
   }
 
   @Test
