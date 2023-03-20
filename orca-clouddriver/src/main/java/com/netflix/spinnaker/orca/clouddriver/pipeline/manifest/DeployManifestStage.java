@@ -99,7 +99,7 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
   }
 
   private void addStagesForOldManifests(
-      Map<String, Object> parentContext, StageGraphBuilder graph, String stageType) {
+      Map<String, Object> parentContext, StageGraphBuilder graph, String defaultStageType) {
     List<Map<String, ?>> deployedManifests = getNewManifests(parentContext);
     String account = (String) parentContext.get("account");
     Map manifestMoniker = (Map) parentContext.get("moniker");
@@ -119,9 +119,14 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
               getOldManifestNames(application, account, clusterName, namespace, manifestName);
           previousManifestNames.forEach(
               name -> {
+                final boolean previousManifestWasNotDeployedSuccessfully =
+                    previousDeploymentNeitherStableNorFailed(account, name);
                 graph.append(
                     (stage) -> {
-                      stage.setType(stageType);
+                      stage.setType(
+                          previousManifestWasNotDeployedSuccessfully
+                              ? DeleteManifestStage.PIPELINE_CONFIG_TYPE
+                              : defaultStageType);
                       Map<String, Object> context = stage.getContext();
                       context.put("account", account);
                       context.put("app", application);
@@ -166,5 +171,20 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
       return false;
     }
     return true;
+  }
+
+  /*
+  During a B/G deployment, if the blue deployment fails to create pods (due to issues such as an incorrect image name),
+  the deployment will not fail, but will wait indefinitely to achieve stability.
+  This is indicated by status.failed=false and status.stable=false. This method checks for such a situation.
+   */
+  private boolean previousDeploymentNeitherStableNorFailed(String account, String name) {
+    var oldManifest = this.oortService.getManifest(account, name, false);
+
+    var status = oldManifest.getStatus();
+    var notStable = !status.getStable().isState();
+    var notFailed = !status.getFailed().isState();
+
+    return notFailed && notStable;
   }
 }
