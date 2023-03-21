@@ -38,12 +38,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,6 +53,7 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
 
   private final ManifestOperationsHelper manifestOperationsHelper;
   private final GetDeployedManifests deployedManifests;
+  private final OldManifestActionAppender oldManifestActionAppender;
 
   @Override
   public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
@@ -91,11 +91,11 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
       switch (trafficManagement.getOptions().getStrategy()) {
         case RED_BLACK:
         case BLUE_GREEN:
-          disableOldManifests(stage.getContext(), graph);
+          oldManifestActionAppender.deleteOrDisableOldManifest(stage.getContext(), graph);
           break;
         case HIGHLANDER:
-          disableOldManifests(stage.getContext(), graph);
-          deleteOldManifests(stage.getContext(), graph);
+          oldManifestActionAppender.disableOldManifest(stage.getContext(), graph);
+          oldManifestActionAppender.deleteOldManifest(stage.getContext(), graph);
           break;
         case NONE:
           // do nothing
@@ -106,53 +106,67 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     }
   }
 
-  private void disableOldManifests(Map<String, Object> parentContext, StageGraphBuilder graph) {
-    addStagesForOldManifests(parentContext, graph, DisableManifestStage.PIPELINE_CONFIG_TYPE);
-  }
+  @Component
+  @RequiredArgsConstructor
+  static class OldManifestActionAppender {
 
-  private void deleteOldManifests(Map<String, Object> parentContext, StageGraphBuilder graph) {
-    addStagesForOldManifests(parentContext, graph, DeleteManifestStage.PIPELINE_CONFIG_TYPE);
-  }
+    private final GetDeployedManifests deployedManifests;
+    private final ManifestOperationsHelper manifestOperationsHelper;
 
-  private void addStagesForOldManifests(
-      Map<String, Object> parentContext, StageGraphBuilder graph, String defaultStageType) {
+    private void deleteOldManifest(Map<String, Object> parentContext, StageGraphBuilder graph) {
+      applyAction(
+          parentContext,
+          (name, manifest) ->
+              appendStage(graph, manifest, name, DeleteManifestStage.PIPELINE_CONFIG_TYPE));
+    }
 
-    this.deployedManifests
-        .get(parentContext)
-        .forEach(
-            deployedManifest -> {
-              manifestOperationsHelper
-                  .getOldManifestNames(
-                      deployedManifest.getApplication(),
-                      deployedManifest.getAccount(),
-                      deployedManifest.getClusterName(),
-                      deployedManifest.getNamespace(),
-                      deployedManifest.getManifestName())
-                  .forEach(appendStageToOlderManifests(graph, defaultStageType, deployedManifest));
-            });
-  }
+    private void disableOldManifest(Map<String, Object> parentContext, StageGraphBuilder graph) {
+      applyAction(
+          parentContext,
+          (name, manifest) ->
+              appendStage(graph, manifest, name, DisableManifestStage.PIPELINE_CONFIG_TYPE));
+    }
 
-  @NotNull
-  private Consumer<String> appendStageToOlderManifests(
-      StageGraphBuilder graph, String defaultStageType, DeployedManifest dm) {
-    return name -> {
-      var oldManifestNotDeployed =
-          this.manifestOperationsHelper.previousDeploymentNeitherStableNorFailed(
-              dm.getAccount(), name);
+    private void deleteOrDisableOldManifest(
+        Map<String, Object> parentContext, StageGraphBuilder graph) {
+      applyAction(
+          parentContext,
+          (name, manifest) -> {
+            var wasUnsuccessfulDeployment =
+                this.manifestOperationsHelper.previousDeploymentNeitherStableNorFailed(
+                    manifest.getAccount(), name);
+            var nextStageType =
+                wasUnsuccessfulDeployment
+                    ? DeleteManifestStage.PIPELINE_CONFIG_TYPE
+                    : DisableManifestStage.PIPELINE_CONFIG_TYPE;
+            appendStage(graph, manifest, name, nextStageType);
+          });
+    }
+
+    private void applyAction(
+        Map<String, Object> parentContext, BiConsumer<String, DeployedManifest> action) {
+      this.deployedManifests
+          .get(parentContext)
+          .forEach(
+              deployedManifest ->
+                  manifestOperationsHelper
+                      .getOldManifestNames(deployedManifest)
+                      .forEach(name -> action.accept(name, deployedManifest)));
+    }
+
+    private void appendStage(
+        StageGraphBuilder graph, DeployedManifest manifest, String name, String stageType) {
       graph.append(
           (stage) -> {
-            stage.setType(
-                oldManifestNotDeployed
-                    ? DeleteManifestStage.PIPELINE_CONFIG_TYPE
-                    : defaultStageType);
+            stage.setType(stageType);
             Map<String, Object> context = stage.getContext();
-            context.put("account", dm.getAccount());
-            context.put("app", dm.getApplication());
-            context.put("cloudProvider", dm.getCloudProvider());
+            context.put("account", manifest.getAccount());
+            context.put("app", manifest.getApplication());
+            context.put("cloudProvider", manifest.getCloudProvider());
             context.put("manifestName", name);
-            context.put("location", dm.getNamespace());
+            context.put("location", manifest.getNamespace());
           });
-    };
+    }
   }
 
   @RequiredArgsConstructor
@@ -164,16 +178,16 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
 
     private final OortService oortService;
 
-    ImmutableList<String> getOldManifestNames(
-        String application,
-        String account,
-        String clusterName,
-        String namespace,
-        String newManifestName) {
+    ImmutableList<String> getOldManifestNames(DeployedManifest dm) {
       return oortService
-          .getClusterManifests(account, namespace, REPLICA_SET, application, clusterName)
+          .getClusterManifests(
+              dm.getAccount(),
+              dm.getNamespace(),
+              REPLICA_SET,
+              dm.getApplication(),
+              dm.getClusterName())
           .stream()
-          .filter(m -> !m.getFullResourceName().equals(newManifestName))
+          .filter(m -> !m.getFullResourceName().equals(dm.getManifestName()))
           .map(ManifestCoordinates::getFullResourceName)
           .collect(toImmutableList());
     }

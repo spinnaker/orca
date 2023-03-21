@@ -33,6 +33,7 @@ import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.ManifestCoordinates;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.manifest.DeployManifestStage.GetDeployedManifests;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.manifest.DeployManifestStage.ManifestOperationsHelper;
+import com.netflix.spinnaker.orca.clouddriver.pipeline.manifest.DeployManifestStage.OldManifestActionAppender;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeployManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeployManifestContext.TrafficManagement.ManifestStrategyType;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
@@ -57,6 +58,7 @@ final class DeployManifestStageTest {
   private ManifestOperationsHelper manifestOperationsHelper;
   private GetDeployedManifests getDeployedManifests;
   private DeployManifestStage deployManifestStage;
+  private OldManifestActionAppender oldManifestActionAppender;
 
   private static Map<String, Object> getContext(DeployManifestContext deployManifestContext) {
     Map<String, Object> context =
@@ -86,7 +88,11 @@ final class DeployManifestStageTest {
     oortService = mock(OortService.class);
     manifestOperationsHelper = new ManifestOperationsHelper(oortService);
     getDeployedManifests = new GetDeployedManifests(manifestOperationsHelper);
-    deployManifestStage = new DeployManifestStage(manifestOperationsHelper, getDeployedManifests);
+    oldManifestActionAppender =
+        new OldManifestActionAppender(getDeployedManifests, manifestOperationsHelper);
+    deployManifestStage =
+        new DeployManifestStage(
+            manifestOperationsHelper, getDeployedManifests, oldManifestActionAppender);
   }
 
   @Test
@@ -203,7 +209,6 @@ final class DeployManifestStageTest {
 
   @Test
   void rolloutStrategyHighlander() {
-    givenManifestIsStable();
     when(oortService.getClusterManifests(ACCOUNT, NAMESAPCE, "replicaSet", APPLICATION, CLUSTER))
         .thenReturn(
             ImmutableList.of(
