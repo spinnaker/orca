@@ -51,8 +51,6 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
 
   public static final String PIPELINE_CONFIG_TYPE = "deployManifest";
 
-  private final ManifestOperationsHelper manifestOperationsHelper;
-  private final GetDeployedManifests deployedManifests;
   private final OldManifestActionAppender oldManifestActionAppender;
 
   @Override
@@ -106,6 +104,7 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     }
   }
 
+  /** {@code OldManifestActionAppender} appends new stages to old manifests */
   @Component
   @RequiredArgsConstructor
   static class OldManifestActionAppender {
@@ -113,6 +112,12 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     private final GetDeployedManifests deployedManifests;
     private final ManifestOperationsHelper manifestOperationsHelper;
 
+    /**
+     * Append delete stages to already deployed manifests that preceded current stage manifest
+     *
+     * @param parentContext of currently executed stage
+     * @param graph stage execution graph
+     */
     private void deleteOldManifest(Map<String, Object> parentContext, StageGraphBuilder graph) {
       applyAction(
           parentContext,
@@ -120,6 +125,12 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
               appendStage(graph, manifest, name, DeleteManifestStage.PIPELINE_CONFIG_TYPE));
     }
 
+    /**
+     * Append disable stages to already deployed manifests that preceded current stage manifest
+     *
+     * @param parentContext of currently executed stage
+     * @param graph stage execution graph
+     */
     private void disableOldManifest(Map<String, Object> parentContext, StageGraphBuilder graph) {
       applyAction(
           parentContext,
@@ -127,6 +138,13 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
               appendStage(graph, manifest, name, DisableManifestStage.PIPELINE_CONFIG_TYPE));
     }
 
+    /**
+     * Append disable or delete stages to already deployed manifests that preceded current stage
+     * manifest Which stage is going to be appended depends on the status of previous deployment
+     *
+     * @param parentContext of currently executed stage
+     * @param graph stage execution graph
+     */
     private void deleteOrDisableOldManifest(
         Map<String, Object> parentContext, StageGraphBuilder graph) {
       applyAction(
@@ -169,6 +187,11 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     }
   }
 
+  /**
+   * Delegate class to handle all manifest-related actions in this file such as fetching manifest
+   * from external service or extracting manifest params from parentContext
+   */
+  @Component
   @RequiredArgsConstructor
   static class ManifestOperationsHelper {
 
@@ -178,6 +201,13 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
 
     private final OortService oortService;
 
+    /**
+     * Returns all replicaSet manifests from the cluster. Search is performed in external service,
+     * search parameters match manifest deployed in current stage.
+     *
+     * @param dm - deployment manifest of current stage
+     * @return list of all manifest already deployed to the cluster
+     */
     ImmutableList<String> getOldManifestNames(DeployedManifest dm) {
       return oortService
           .getClusterManifests(
@@ -192,6 +222,13 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
           .collect(toImmutableList());
     }
 
+    /**
+     * Returns replicaSet manifests from the {@code parentContext}
+     *
+     * @param parentContext of currently processed stage
+     * @return list of replicaSet manifests deployed in the cluster - obtained directly from the
+     *     {@code parentContext}
+     */
     List<Map<String, ?>> getNewManifests(Map<String, Object> parentContext) {
       var manifestsFromParentContext = (List<Map<String, ?>>) parentContext.get(OUTPUTS_MANIFEST);
       return manifestsFromParentContext.stream()
@@ -199,10 +236,15 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
           .collect(Collectors.toList());
     }
 
-    /*
-    During a B/G deployment, if the blue deployment fails to create pods (due to issues such as an incorrect image name),
-    the deployment will not fail, but will wait indefinitely to achieve stability.
-    This is indicated by status.failed=false and status.stable=false. This method checks for such a situation.
+    /**
+     * During a B/G deployment, if the blue deployment fails to create pods (due to issues such as
+     * an incorrect image name), the deployment will not fail, but will wait indefinitely to achieve
+     * stability. This is indicated by status.failed=false and status.stable=false. This method
+     * checks for such a situation.
+     *
+     * @param account used to run deployment
+     * @param name of the manifest
+     * @return true, if manifest was not deployed correctly and waits to get stable, false otherwise
      */
     boolean previousDeploymentNeitherStableNorFailed(String account, String name) {
       var oldManifest = this.oortService.getManifest(account, name, false);
@@ -215,12 +257,20 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     }
   }
 
+  /** Delegate class to fetch and map manifests deployed in the cluster */
   @Component
   @RequiredArgsConstructor
   static class GetDeployedManifests {
 
     private final ManifestOperationsHelper manifestOperationsHelper;
 
+    /**
+     * This method encapsulates fetching deployed manifests and mapping to new designated type
+     * {@code DeployedManifest}
+     *
+     * @param parentContext is the context of currently processed stage
+     * @return list of replicaSet manifests deployed in currently processed stage
+     */
     List<DeployedManifest> get(Map<String, Object> parentContext) {
 
       var deployedManifests = new ArrayList<DeployedManifest>();
