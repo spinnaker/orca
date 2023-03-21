@@ -31,28 +31,29 @@ import com.netflix.spinnaker.orca.clouddriver.tasks.MonitorKatoTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.artifacts.CleanupArtifactsTask;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.*;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeployManifestContext.TrafficManagement;
-import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ResolveDeploySourceManifestTask;
 import com.netflix.spinnaker.orca.pipeline.ExpressionAwareStageDefinitionBuilder;
 import com.netflix.spinnaker.orca.pipeline.tasks.artifacts.BindProducedArtifactsTask;
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
+
   public static final String PIPELINE_CONFIG_TYPE = "deployManifest";
 
-  private final OortService oortService;
-
-  @Autowired
-  public DeployManifestStage(OortService oortService) {
-    this.oortService = oortService;
-  }
+  private final ManifestOperationsHelper manifestOperationsHelper;
+  private final GetDeployedManifests deployedManifests;
 
   @Override
   public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
@@ -68,6 +69,21 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
         .withTask(BindProducedArtifactsTask.TASK_NAME, BindProducedArtifactsTask.class);
   }
 
+  @Override
+  public boolean processExpressions(
+      @Nonnull StageExecution stage,
+      @Nonnull ContextParameterProcessor contextParameterProcessor,
+      @Nonnull ExpressionEvaluationSummary summary) {
+    DeployManifestContext context = stage.mapTo(DeployManifestContext.class);
+    if (context.isSkipExpressionEvaluation()) {
+      processDefaultEntries(
+          stage, contextParameterProcessor, summary, Collections.singletonList("manifests"));
+      return false;
+    }
+    return true;
+  }
+
+  @Override
   public void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
     TrafficManagement trafficManagement =
         stage.mapTo(DeployManifestContext.class).getTrafficManagement();
@@ -100,91 +116,138 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
 
   private void addStagesForOldManifests(
       Map<String, Object> parentContext, StageGraphBuilder graph, String defaultStageType) {
-    List<Map<String, ?>> deployedManifests = getNewManifests(parentContext);
-    String account = (String) parentContext.get("account");
-    Map manifestMoniker = (Map) parentContext.get("moniker");
-    String application = (String) manifestMoniker.get("app");
 
-    deployedManifests.forEach(
-        manifest -> {
-          Map manifestMetadata = (Map) manifest.get("metadata");
-          String manifestName =
-              String.format("replicaSet %s", (String) manifestMetadata.get("name"));
-          String namespace = (String) manifestMetadata.get("namespace");
-          Map annotations = (Map) manifestMetadata.get("annotations");
-          String clusterName = (String) annotations.get("moniker.spinnaker.io/cluster");
-          String cloudProvider = "kubernetes";
-
-          ImmutableList<String> previousManifestNames =
-              getOldManifestNames(application, account, clusterName, namespace, manifestName);
-          previousManifestNames.forEach(
-              name -> {
-                final boolean previousManifestWasNotDeployedSuccessfully =
-                    previousDeploymentNeitherStableNorFailed(account, name);
-                graph.append(
-                    (stage) -> {
-                      stage.setType(
-                          previousManifestWasNotDeployedSuccessfully
-                              ? DeleteManifestStage.PIPELINE_CONFIG_TYPE
-                              : defaultStageType);
-                      Map<String, Object> context = stage.getContext();
-                      context.put("account", account);
-                      context.put("app", application);
-                      context.put("cloudProvider", cloudProvider);
-                      context.put("manifestName", name);
-                      context.put("location", namespace);
-                    });
-              });
-        });
+    this.deployedManifests
+        .get(parentContext)
+        .forEach(
+            deployedManifest -> {
+              manifestOperationsHelper
+                  .getOldManifestNames(
+                      deployedManifest.getApplication(),
+                      deployedManifest.getAccount(),
+                      deployedManifest.getClusterName(),
+                      deployedManifest.getNamespace(),
+                      deployedManifest.getManifestName())
+                  .forEach(appendStageToOlderManifests(graph, defaultStageType, deployedManifest));
+            });
   }
 
-  private List<Map<String, ?>> getNewManifests(Map<String, Object> parentContext) {
-    List<Map<String, ?>> manifests = (List<Map<String, ?>>) parentContext.get("outputs.manifests");
-    return manifests.stream()
-        .filter(manifest -> manifest.get("kind").equals("ReplicaSet"))
-        .collect(Collectors.toList());
+  @NotNull
+  private Consumer<String> appendStageToOlderManifests(
+      StageGraphBuilder graph, String defaultStageType, DeployedManifest dm) {
+    return name -> {
+      var oldManifestNotDeployed =
+          this.manifestOperationsHelper.previousDeploymentNeitherStableNorFailed(
+              dm.getAccount(), name);
+      graph.append(
+          (stage) -> {
+            stage.setType(
+                oldManifestNotDeployed
+                    ? DeleteManifestStage.PIPELINE_CONFIG_TYPE
+                    : defaultStageType);
+            Map<String, Object> context = stage.getContext();
+            context.put("account", dm.getAccount());
+            context.put("app", dm.getApplication());
+            context.put("cloudProvider", dm.getCloudProvider());
+            context.put("manifestName", name);
+            context.put("location", dm.getNamespace());
+          });
+    };
   }
 
-  private ImmutableList<String> getOldManifestNames(
-      String application,
-      String account,
-      String clusterName,
-      String namespace,
-      String newManifestName) {
-    return oortService
-        .getClusterManifests(account, namespace, "replicaSet", application, clusterName)
-        .stream()
-        .filter(m -> !m.getFullResourceName().equals(newManifestName))
-        .map(ManifestCoordinates::getFullResourceName)
-        .collect(toImmutableList());
-  }
+  @RequiredArgsConstructor
+  static class ManifestOperationsHelper {
 
-  @Override
-  public boolean processExpressions(
-      @Nonnull StageExecution stage,
-      @Nonnull ContextParameterProcessor contextParameterProcessor,
-      @Nonnull ExpressionEvaluationSummary summary) {
-    DeployManifestContext context = stage.mapTo(DeployManifestContext.class);
-    if (context.isSkipExpressionEvaluation()) {
-      processDefaultEntries(
-          stage, contextParameterProcessor, summary, Collections.singletonList("manifests"));
-      return false;
+    private static final String REPLICA_SET = "replicaSet";
+    private static final String KIND = "kind";
+    private static final String OUTPUTS_MANIFEST = "outputs.manifests";
+
+    private final OortService oortService;
+
+    ImmutableList<String> getOldManifestNames(
+        String application,
+        String account,
+        String clusterName,
+        String namespace,
+        String newManifestName) {
+      return oortService
+          .getClusterManifests(account, namespace, REPLICA_SET, application, clusterName)
+          .stream()
+          .filter(m -> !m.getFullResourceName().equals(newManifestName))
+          .map(ManifestCoordinates::getFullResourceName)
+          .collect(toImmutableList());
     }
-    return true;
+
+    List<Map<String, ?>> getNewManifests(Map<String, Object> parentContext) {
+      var manifestsFromParentContext = (List<Map<String, ?>>) parentContext.get(OUTPUTS_MANIFEST);
+      return manifestsFromParentContext.stream()
+          .filter(manifest -> REPLICA_SET.equalsIgnoreCase((String) manifest.get(KIND)))
+          .collect(Collectors.toList());
+    }
+
+    /*
+    During a B/G deployment, if the blue deployment fails to create pods (due to issues such as an incorrect image name),
+    the deployment will not fail, but will wait indefinitely to achieve stability.
+    This is indicated by status.failed=false and status.stable=false. This method checks for such a situation.
+     */
+    boolean previousDeploymentNeitherStableNorFailed(String account, String name) {
+      var oldManifest = this.oortService.getManifest(account, name, false);
+
+      var status = oldManifest.getStatus();
+      var notStable = !status.getStable().isState();
+      var notFailed = !status.getFailed().isState();
+
+      return notFailed && notStable;
+    }
   }
 
-  /*
-  During a B/G deployment, if the blue deployment fails to create pods (due to issues such as an incorrect image name),
-  the deployment will not fail, but will wait indefinitely to achieve stability.
-  This is indicated by status.failed=false and status.stable=false. This method checks for such a situation.
-   */
-  private boolean previousDeploymentNeitherStableNorFailed(String account, String name) {
-    var oldManifest = this.oortService.getManifest(account, name, false);
+  @Component
+  @RequiredArgsConstructor
+  static class GetDeployedManifests {
 
-    var status = oldManifest.getStatus();
-    var notStable = !status.getStable().isState();
-    var notFailed = !status.getFailed().isState();
+    private final ManifestOperationsHelper manifestOperationsHelper;
 
-    return notFailed && notStable;
+    List<DeployedManifest> get(Map<String, Object> parentContext) {
+
+      var deployedManifests = new ArrayList<DeployedManifest>();
+      var account = (String) parentContext.get("account");
+      var manifestMoniker = (Map) parentContext.get("moniker");
+      var application = (String) manifestMoniker.get("app");
+
+      this.manifestOperationsHelper
+          .getNewManifests(parentContext)
+          .forEach(
+              manifest -> {
+                var manifestMetadata = (Map) manifest.get("metadata");
+                var annotations = (Map) manifestMetadata.get("annotations");
+
+                deployedManifests.add(
+                    new DeployedManifest(
+                        account,
+                        manifestMoniker,
+                        application,
+                        (Map) manifest.get("metadata"),
+                        String.format("replicaSet %s", manifestMetadata.get("name")),
+                        (String) manifestMetadata.get("namespace"),
+                        (Map) manifestMetadata.get("annotations"),
+                        (String) annotations.get("moniker.spinnaker.io/cluster"),
+                        "kubernetes"));
+              });
+      return deployedManifests;
+    }
+  }
+
+  @Getter
+  @RequiredArgsConstructor
+  static class DeployedManifest {
+    private final String account;
+    private final Map manifestMoniker;
+    private final String application;
+    private final Map manifestMetadata;
+    private final String manifestName;
+    private final String namespace;
+    private final Map annotations;
+    private final String clusterName;
+    private final String cloudProvider;
   }
 }

@@ -17,6 +17,9 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.manifest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -26,7 +29,10 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionType;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
+import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.ManifestCoordinates;
+import com.netflix.spinnaker.orca.clouddriver.pipeline.manifest.DeployManifestStage.GetDeployedManifests;
+import com.netflix.spinnaker.orca.clouddriver.pipeline.manifest.DeployManifestStage.ManifestOperationsHelper;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeployManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.DeployManifestContext.TrafficManagement.ManifestStrategyType;
 import com.netflix.spinnaker.orca.jackson.OrcaObjectMapper;
@@ -37,7 +43,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,12 +53,40 @@ final class DeployManifestStageTest {
   private static final String CLUSTER = "replicaSet my-rs";
   private static final String NAMESAPCE = "my-ns";
 
-  @Mock private OortService oortService;
+  private OortService oortService;
+  private ManifestOperationsHelper manifestOperationsHelper;
+  private GetDeployedManifests getDeployedManifests;
   private DeployManifestStage deployManifestStage;
+
+  private static Map<String, Object> getContext(DeployManifestContext deployManifestContext) {
+    Map<String, Object> context =
+        objectMapper.convertValue(
+            deployManifestContext, new TypeReference<Map<String, Object>>() {});
+    context.put("moniker", ImmutableMap.of("app", APPLICATION));
+    context.put("account", ACCOUNT);
+    context.put(
+        "outputs.manifests",
+        ImmutableList.of(
+            ImmutableMap.of(
+                "kind",
+                "ReplicaSet",
+                "metadata",
+                ImmutableMap.of(
+                    "name",
+                    "my-rs-v001",
+                    "namespace",
+                    NAMESAPCE,
+                    "annotations",
+                    ImmutableMap.of("moniker.spinnaker.io/cluster", CLUSTER)))));
+    return context;
+  }
 
   @BeforeEach
   void setUp() {
-    deployManifestStage = new DeployManifestStage(oortService);
+    oortService = mock(OortService.class);
+    manifestOperationsHelper = new ManifestOperationsHelper(oortService);
+    getDeployedManifests = new GetDeployedManifests(manifestOperationsHelper);
+    deployManifestStage = new DeployManifestStage(manifestOperationsHelper, getDeployedManifests);
   }
 
   @Test
@@ -70,6 +103,7 @@ final class DeployManifestStageTest {
 
   @Test
   void rolloutStrategyRedBlack() {
+    givenManifestIsStable();
     when(oortService.getClusterManifests(ACCOUNT, NAMESAPCE, "replicaSet", APPLICATION, CLUSTER))
         .thenReturn(
             ImmutableList.of(
@@ -119,6 +153,7 @@ final class DeployManifestStageTest {
 
   @Test
   void rolloutStrategyBlueGreen() {
+    givenManifestIsStable();
     when(oortService.getClusterManifests(ACCOUNT, NAMESAPCE, "replicaSet", APPLICATION, CLUSTER))
         .thenReturn(
             ImmutableList.of(
@@ -168,6 +203,7 @@ final class DeployManifestStageTest {
 
   @Test
   void rolloutStrategyHighlander() {
+    givenManifestIsStable();
     when(oortService.getClusterManifests(ACCOUNT, NAMESAPCE, "replicaSet", APPLICATION, CLUSTER))
         .thenReturn(
             ImmutableList.of(
@@ -282,26 +318,17 @@ final class DeployManifestStageTest {
     return graph.build();
   }
 
-  private static Map<String, Object> getContext(DeployManifestContext deployManifestContext) {
-    Map<String, Object> context =
-        objectMapper.convertValue(
-            deployManifestContext, new TypeReference<Map<String, Object>>() {});
-    context.put("moniker", ImmutableMap.of("app", APPLICATION));
-    context.put("account", ACCOUNT);
-    context.put(
-        "outputs.manifests",
-        ImmutableList.of(
-            ImmutableMap.of(
-                "kind",
-                "ReplicaSet",
-                "metadata",
-                ImmutableMap.of(
-                    "name",
-                    "my-rs-v001",
-                    "namespace",
-                    NAMESAPCE,
-                    "annotations",
-                    ImmutableMap.of("moniker.spinnaker.io/cluster", CLUSTER)))));
-    return context;
+  private void givenManifestIsStable() {
+
+    var manifest =
+        Manifest.builder()
+            .status(
+                Manifest.Status.builder()
+                    .stable(Manifest.Condition.emptyTrue())
+                    .failed(Manifest.Condition.emptyFalse())
+                    .build())
+            .build();
+
+    when(oortService.getManifest(anyString(), anyString(), anyBoolean())).thenReturn(manifest);
   }
 }
