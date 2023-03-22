@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -52,6 +53,10 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
   public static final String PIPELINE_CONFIG_TYPE = "deployManifest";
 
   private final OldManifestActionAppender oldManifestActionAppender;
+
+  private static boolean shouldRemoveStageOutputs(@NotNull StageExecution stage) {
+    return stage.getContext().getOrDefault("noOutput", "false").toString().equals("true");
+  }
 
   @Override
   public void taskGraph(@Nonnull StageExecution stage, @Nonnull TaskNode.Builder builder) {
@@ -99,7 +104,7 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
           // do nothing
       }
     }
-    if (stage.getContext().getOrDefault("noOutput", "false").toString().equals("true")) {
+    if (shouldRemoveStageOutputs(stage)) {
       stage.setOutputs(emptyMap());
     }
   }
@@ -113,7 +118,7 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     private final ManifestOperationsHelper manifestOperationsHelper;
 
     /**
-     * Append delete stages to already deployed manifests that preceded current stage manifest
+     * Appends delete stages to already deployed manifests that preceded the current stage manifest
      *
      * @param parentContext of currently executed stage
      * @param graph stage execution graph
@@ -126,7 +131,7 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     }
 
     /**
-     * Append disable stages to already deployed manifests that preceded current stage manifest
+     * Appends disable stages to already deployed manifests that preceded the current stage manifest
      *
      * @param parentContext of currently executed stage
      * @param graph stage execution graph
@@ -139,8 +144,9 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     }
 
     /**
-     * Append disable or delete stages to already deployed manifests that preceded current stage
-     * manifest Which stage is going to be appended depends on the status of previous deployment
+     * Appends disable or delete stages to already deployed manifests that preceded the current
+     * stage manifest. The specific stage that will be appended depends on the status of the
+     * previous deployment.
      *
      * @param parentContext of currently executed stage
      * @param graph stage execution graph
@@ -150,11 +156,11 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
       applyAction(
           parentContext,
           (name, manifest) -> {
-            var wasUnsuccessfulDeployment =
+            var oldManifestIsUnstable =
                 this.manifestOperationsHelper.previousDeploymentNeitherStableNorFailed(
                     manifest.getAccount(), name);
             var nextStageType =
-                wasUnsuccessfulDeployment
+                oldManifestIsUnstable
                     ? DeleteManifestStage.PIPELINE_CONFIG_TYPE
                     : DisableManifestStage.PIPELINE_CONFIG_TYPE;
             appendStage(graph, manifest, name, nextStageType);
@@ -166,10 +172,12 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
       this.deployedManifests
           .get(parentContext)
           .forEach(
-              deployedManifest ->
+              currentlyDeployedManifest ->
                   manifestOperationsHelper
-                      .getOldManifestNames(deployedManifest)
-                      .forEach(name -> action.accept(name, deployedManifest)));
+                      .getOldManifestNames(currentlyDeployedManifest)
+                      .forEach(
+                          oldManifestName ->
+                              action.accept(oldManifestName, currentlyDeployedManifest)));
     }
 
     private void appendStage(
@@ -202,8 +210,8 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     private final OortService oortService;
 
     /**
-     * Returns all replicaSet manifests from the cluster. Search is performed in external service,
-     * search parameters match manifest deployed in current stage.
+     * This returns all replicaSet manifests from the cluster. The search is performed in an
+     * external service, and search parameters match manifests deployed in the current stage.
      *
      * @param dm - deployment manifest of current stage
      * @return list of all manifest already deployed to the cluster
@@ -257,7 +265,7 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     }
   }
 
-  /** Delegate class to fetch and map manifests deployed in the cluster */
+  /** Delegate class for fetching and mapping manifests deployed in the cluster */
   @Component
   @RequiredArgsConstructor
   static class GetDeployedManifests {
@@ -265,8 +273,8 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     private final ManifestOperationsHelper manifestOperationsHelper;
 
     /**
-     * This method encapsulates fetching deployed manifests and mapping to new designated type
-     * {@code DeployedManifest}
+     * This method encapsulates fetching deployed manifests and mapping them to a new designated
+     * type, {@code DeployedManifest}
      *
      * @param parentContext is the context of currently processed stage
      * @return list of replicaSet manifests deployed in currently processed stage

@@ -42,6 +42,7 @@ import com.netflix.spinnaker.orca.pipeline.model.PipelineExecutionImpl;
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -90,9 +91,7 @@ final class DeployManifestStageTest {
     getDeployedManifests = new GetDeployedManifests(manifestOperationsHelper);
     oldManifestActionAppender =
         new OldManifestActionAppender(getDeployedManifests, manifestOperationsHelper);
-    deployManifestStage =
-        new DeployManifestStage(
-            manifestOperationsHelper, getDeployedManifests, oldManifestActionAppender);
+    deployManifestStage = new DeployManifestStage(oldManifestActionAppender);
   }
 
   @Test
@@ -193,6 +192,57 @@ final class DeployManifestStageTest {
     assertThat(getAfterStages(stage))
         .extracting(StageExecution::getType)
         .containsExactly(DisableManifestStage.PIPELINE_CONFIG_TYPE);
+    assertThat(getAfterStages(stage))
+        .extracting(s -> s.getContext().get("account"))
+        .containsExactly(ACCOUNT);
+    assertThat(getAfterStages(stage))
+        .extracting(s -> s.getContext().get("app"))
+        .containsExactly(APPLICATION);
+    assertThat(getAfterStages(stage))
+        .extracting(s -> s.getContext().get("location"))
+        .containsExactly(NAMESAPCE);
+    assertThat(getAfterStages(stage))
+        .extracting(s -> s.getContext().get("manifestName"))
+        .containsExactly("replicaSet my-rs-v000");
+  }
+
+  @Test
+  @DisplayName("blue/green deployment should trigger old manifest deletion if it was failed")
+  void rolloutBlueGreenStrategyDeletesOldManifest() {
+    givenManifestIsNotStable();
+    when(oortService.getClusterManifests(ACCOUNT, NAMESAPCE, "replicaSet", APPLICATION, CLUSTER))
+        .thenReturn(
+            ImmutableList.of(
+                ManifestCoordinates.builder()
+                    .name("my-rs-v000")
+                    .kind("replicaSet")
+                    .namespace(NAMESAPCE)
+                    .build(),
+                ManifestCoordinates.builder()
+                    .name("my-rs-v001")
+                    .kind("replicaSet")
+                    .namespace(NAMESAPCE)
+                    .build()));
+    Map<String, Object> context =
+        getContext(
+            DeployManifestContext.builder()
+                .trafficManagement(
+                    DeployManifestContext.TrafficManagement.builder()
+                        .enabled(true)
+                        .options(
+                            DeployManifestContext.TrafficManagement.Options.builder()
+                                .strategy(ManifestStrategyType.BLUE_GREEN)
+                                .build())
+                        .build())
+                .build());
+    StageExecutionImpl stage =
+        new StageExecutionImpl(
+            new PipelineExecutionImpl(ExecutionType.PIPELINE, APPLICATION),
+            DeployManifestStage.PIPELINE_CONFIG_TYPE,
+            context);
+    assertThat(getAfterStages(stage))
+        .extracting(StageExecution::getType)
+        .containsExactly(DeleteManifestStage.PIPELINE_CONFIG_TYPE);
     assertThat(getAfterStages(stage))
         .extracting(s -> s.getContext().get("account"))
         .containsExactly(ACCOUNT);
@@ -334,6 +384,23 @@ final class DeployManifestStageTest {
                     .build())
             .build();
 
+    givenManifestIs(manifest);
+  }
+
+  private void givenManifestIsNotStable() {
+    var manifest =
+        Manifest.builder()
+            .status(
+                Manifest.Status.builder()
+                    .stable(Manifest.Condition.emptyFalse())
+                    .failed(Manifest.Condition.emptyFalse())
+                    .build())
+            .build();
+
+    givenManifestIs(manifest);
+  }
+
+  private void givenManifestIs(Manifest manifest) {
     when(oortService.getManifest(anyString(), anyString(), anyBoolean())).thenReturn(manifest);
   }
 }
