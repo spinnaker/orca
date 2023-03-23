@@ -28,12 +28,36 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.concurrent.Callable
 
+/**
+ * Postpones the execution of an action until an external lock has been obtained
+ */
 interface RunOnLockAcquired {
+
+  /**
+   * Executes an action after lock identified by {@code keyName} was obtained
+   *
+   * @param action  action to execute once lock is acquired
+   * @param keyName  name of a lock
+   *
+   * @return result of attempting to acquire a lock
+   */
   fun execute(action: Runnable, keyName: String): RunOnLockResult<Void>
+
+  /**
+   * Executes an action after lock identified by {@code keyName} was obtained
+   *
+   * @param action  action to execute once lock is acquired
+   * @param keyName  name of a lock
+   *
+   * @return result of attempting to acquire a lock and result of action execution
+   */
   fun <R> execute(action: Callable<R>, keyName: String): RunOnLockResult<R?>
 
 }
 
+/**
+ * This is a container object that stores the result of attempting to acquire a lock and executing an action if the lock is obtained.
+ */
 data class RunOnLockResult<R>(
   val lockAcquired: Boolean = false,
   val actionExecuted: Boolean = false,
@@ -41,6 +65,10 @@ data class RunOnLockResult<R>(
   val result: R? = null
 )
 
+/**
+ * Implementation of {@code RunOnLockAcquired}. Delegates the locking attempt to LockProvider.
+ * Executes action until shedlock has been obtained
+ */
 class RunOnShedLockAcquired(
   private val shedLockProvider: LockProvider
 ) : RunOnLockAcquired {
@@ -76,7 +104,7 @@ class RunOnShedLockAcquired(
 
     return try {
       log.debug("Executing action with a lock for key: {}", keyName)
-      val callableResult = action.call();
+      val callableResult = action.call()
       log.debug("Finished action execution with a lock for key: {}", keyName)
       RunOnLockResult(lockAcquired = true, actionExecuted = true, result = callableResult)
 
@@ -102,6 +130,11 @@ class RunOnShedLockAcquired(
 
 }
 
+
+/**
+ * Implementation of {@code RunOnLockAcquired}. Delegates the locking attempt to LockManager.
+ * Executes action until redis lock has been obtained
+ */
 class RunOnRedisLockAcquired(
   private val lockManager: LockManager
 ) : RunOnLockAcquired {
@@ -146,6 +179,9 @@ class RunOnRedisLockAcquired(
 
 }
 
+/**
+ * Implementation of {@code RunOnLockAcquired}. Doesn't try to obtain any lock, executes action right away
+ */
 class NoOpRunOnLockAcquired : RunOnLockAcquired {
 
   private val log = LoggerFactory.getLogger(javaClass)

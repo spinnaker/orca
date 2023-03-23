@@ -23,6 +23,11 @@ import java.util.function.Supplier;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * This class is a wrapper for the RunOnLockAcquired implementation. If the implementation fails to
+ * obtain a lock, this class keeps a count of the failed attempts and tries as many times as
+ * specified by the user.
+ */
 @Slf4j
 public class RetriableLock {
 
@@ -34,6 +39,19 @@ public class RetriableLock {
     this.retrySupport = retrySupport;
   }
 
+  /**
+   * This method blocks the current thread and delegates locking and function execution to
+   * RunOnLockAcquired. If the lock cannot be acquired, this method will try a number of times
+   * specified by the user in the {@code options.maxRetries} object. If the lock cannot be obtained
+   * within the specified number of attempts, either an exception will be thrown (if {@code
+   * options.throwOnAcquireFailure} is true) or false will be returned.
+   *
+   * @param rlOptions aggregates all the parameters that influence the process of obtaining a lock.
+   * @param action action to execute once lock is acquired
+   * @return true, if lock was acquired and action was executed correctly; false if not obtained
+   * @throws FailedToGetLockException if lock was not obtained and {@code
+   *     options.throwOnAcquireFailure} is true
+   */
   public Boolean lock(RetriableLockOptions rlOptions, Runnable action) {
     try {
       retrySupport.retry(
