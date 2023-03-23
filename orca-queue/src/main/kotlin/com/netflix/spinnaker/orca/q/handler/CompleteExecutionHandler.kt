@@ -90,10 +90,10 @@ class CompleteExecutionHandler(
           queue.push(StartWaitingExecutions(it, purgeQueue = !execution.isKeepWaitingPipelines))
         }
       } else {
-        log.debug("Not starting waiting executions as execution ${execution.id} is currently RUNNING.")
-      }
+          log.debug("Not starting waiting executions as execution ${execution.id} is currently RUNNING.")
       }
     }
+  }
 
 
   private fun CompleteExecution.determineFinalStatus(
