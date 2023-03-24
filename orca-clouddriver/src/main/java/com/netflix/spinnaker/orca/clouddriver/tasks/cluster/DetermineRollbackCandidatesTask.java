@@ -92,7 +92,7 @@ public class DetermineRollbackCandidatesTask implements CloudProviderAware, Retr
       RetrySupport retrySupport,
       CloudDriverService cloudDriverService,
       FeaturesService featuresService,
-      @Value("${rollback.timeout.enabled:false}") boolean dynamicRollbackTimeoutEnabled) {
+      @Value("${rollback.timeout.enabled:true}") boolean dynamicRollbackTimeoutEnabled) {
     this.retrySupport = retrySupport;
     this.cloudDriverService = cloudDriverService;
     this.previousImageRollbackSupport =
