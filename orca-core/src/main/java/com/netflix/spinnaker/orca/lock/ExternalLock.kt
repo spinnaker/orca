@@ -120,7 +120,7 @@ class RunOnShedLockAcquired(
   private fun getLock(keyName: String): Optional<SimpleLock> {
     try {
       log.debug("Attempt to acquire shedlock for key: {}", keyName)
-      return shedLockProvider.lock(LockConfiguration(keyName, Instant.now().plus(1, ChronoUnit.SECONDS)))
+      return shedLockProvider.lock(LockConfiguration(Instant.now(), keyName, Duration.ofSeconds(1), Duration.ofMillis(200)))
     } catch (e: Exception) {
       log.error("An exception occurred during an attempt to acquire shedlock for key: {}", keyName)
       log.error(e.message)
