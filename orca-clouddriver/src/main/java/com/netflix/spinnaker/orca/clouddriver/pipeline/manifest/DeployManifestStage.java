@@ -71,91 +71,6 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
         .withTask(BindProducedArtifactsTask.TASK_NAME, BindProducedArtifactsTask.class);
   }
 
-<<<<<<< HEAD
-  public void afterStages(@Nonnull StageExecution stage, @Nonnull StageGraphBuilder graph) {
-    TrafficManagement trafficManagement =
-        stage.mapTo(DeployManifestContext.class).getTrafficManagement();
-    if (trafficManagement.isEnabled()) {
-      switch (trafficManagement.getOptions().getStrategy()) {
-        case RED_BLACK:
-          disableOldManifests(stage.getContext(), graph);
-          break;
-        case HIGHLANDER:
-          disableOldManifests(stage.getContext(), graph);
-          deleteOldManifests(stage.getContext(), graph);
-          break;
-        case NONE:
-          // do nothing
-      }
-    }
-  }
-
-  private void disableOldManifests(Map<String, Object> parentContext, StageGraphBuilder graph) {
-    addStagesForOldManifests(parentContext, graph, DisableManifestStage.PIPELINE_CONFIG_TYPE);
-  }
-
-  private void deleteOldManifests(Map<String, Object> parentContext, StageGraphBuilder graph) {
-    addStagesForOldManifests(parentContext, graph, DeleteManifestStage.PIPELINE_CONFIG_TYPE);
-  }
-
-  private void addStagesForOldManifests(
-      Map<String, Object> parentContext, StageGraphBuilder graph, String stageType) {
-    List<Map<String, ?>> deployedManifests = getNewManifests(parentContext);
-    String account = (String) parentContext.get("account");
-    Map manifestMoniker = (Map) parentContext.get("moniker");
-    String application = (String) manifestMoniker.get("app");
-
-    deployedManifests.forEach(
-        manifest -> {
-          Map manifestMetadata = (Map) manifest.get("metadata");
-          String manifestName =
-              String.format("replicaSet %s", (String) manifestMetadata.get("name"));
-          String namespace = (String) manifestMetadata.get("namespace");
-          Map annotations = (Map) manifestMetadata.get("annotations");
-          String clusterName = (String) annotations.get("moniker.spinnaker.io/cluster");
-          String cloudProvider = "kubernetes";
-
-          ImmutableList<String> previousManifestNames =
-              getOldManifestNames(application, account, clusterName, namespace, manifestName);
-          previousManifestNames.forEach(
-              name -> {
-                graph.append(
-                    (stage) -> {
-                      stage.setType(stageType);
-                      Map<String, Object> context = stage.getContext();
-                      context.put("account", account);
-                      context.put("app", application);
-                      context.put("cloudProvider", cloudProvider);
-                      context.put("manifestName", name);
-                      context.put("location", namespace);
-                    });
-              });
-        });
-  }
-
-  private List<Map<String, ?>> getNewManifests(Map<String, Object> parentContext) {
-    List<Map<String, ?>> manifests = (List<Map<String, ?>>) parentContext.get("outputs.manifests");
-    return manifests.stream()
-        .filter(manifest -> manifest.get("kind").equals("ReplicaSet"))
-        .collect(Collectors.toList());
-  }
-
-  private ImmutableList<String> getOldManifestNames(
-      String application,
-      String account,
-      String clusterName,
-      String namespace,
-      String newManifestName) {
-    return oortService
-        .getClusterManifests(account, namespace, "replicaSet", application, clusterName)
-        .stream()
-        .filter(m -> !m.getFullResourceName().equals(newManifestName))
-        .map(ManifestCoordinates::getFullResourceName)
-        .collect(toImmutableList());
-  }
-
-=======
->>>>>>> 5156eecb3 (Fix/blue green deploy (#4414))
   @Override
   public boolean processExpressions(
       @Nonnull StageExecution stage,
@@ -177,7 +92,6 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
     if (trafficManagement.isEnabled()) {
       switch (trafficManagement.getOptions().getStrategy()) {
         case RED_BLACK:
-        case BLUE_GREEN:
           oldManifestActionAppender.deleteOrDisableOldManifest(stage.getContext(), graph);
           break;
         case HIGHLANDER:
@@ -187,9 +101,6 @@ public class DeployManifestStage extends ExpressionAwareStageDefinitionBuilder {
         case NONE:
           // do nothing
       }
-    }
-    if (shouldRemoveStageOutputs(stage)) {
-      stage.setOutputs(emptyMap());
     }
   }
 
