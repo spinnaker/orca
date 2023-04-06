@@ -269,7 +269,7 @@ class SqlQueue(
      * [MaxAttemptsAttribute] has been set to a positive integer. Otherwise,
      * [AttemptsAttribute] is unused.
      */
-    val candidates = jooq.select(idField)
+    var candidates = jooq.select(idField)
       .from(queueTable)
       .where(deliveryField.le(now), lockedField.eq("0"))
       .orderBy(deliveryField.asc())
@@ -281,7 +281,7 @@ class SqlQueue(
       return
     }
 
-    candidates.shuffle()
+    candidates = candidates.sorted()
 
     var position = 0
     var passes = 0
