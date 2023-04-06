@@ -18,14 +18,6 @@ apply from: "$rootDir/gradle/groovy.gradle"
 apply from: "$rootDir/gradle/kotlin.gradle"
 apply plugin: 'io.spinnaker.package'
 
-ext {
-  springConfigLocation = System.getProperty('spring.config.additional-location', "${System.getProperty('user.home')}/.spinnaker/".toString())
-}
-
-run {
-  systemProperty('spring.config.additional-location', project.springConfigLocation)
-}
-
 mainClassName = 'com.netflix.spinnaker.orca.Main'
 
 dependencies {
@@ -64,6 +56,7 @@ dependencies {
   implementation(project(":orca-remote-stage"))
   implementation(project(":orca-sql"))
   implementation(project(":orca-webhook"))
+  implementation("io.spinnaker.kork:kork-config")
   implementation("io.spinnaker.kork:kork-exceptions")
   implementation("io.spinnaker.kork:kork-web")
   implementation("io.spinnaker.kork:kork-plugins")
