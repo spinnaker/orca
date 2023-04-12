@@ -281,6 +281,7 @@ class SqlQueue(
       return
     }
 
+    // Ordering is essential to prevent Deadlock in PostgreSQL datasource.
     candidates = candidates.sorted()
 
     var position = 0
