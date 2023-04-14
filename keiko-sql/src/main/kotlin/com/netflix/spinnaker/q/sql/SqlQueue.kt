@@ -263,6 +263,7 @@ class SqlQueue(
       return
     }
 
+    // Must use one query per id to avoid Dead Lock in PostgreSQL
     candidates.parallelStream().forEach {
       changed.addAndGet(jooq.update(queueTable)
         .set(lockedField, "$lockId:$now")
