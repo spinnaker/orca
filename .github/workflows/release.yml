@@ -14,7 +14,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       # Given a tag, determine what branch we are on, so we can bump dependencies in the correct branch
@@ -142,7 +142,7 @@ jobs:
       - name: Pause before dependency bump
         run: sleep 900
       - name: Trigger dependency bump workflow
-        uses: peter-evans/repository-dispatch@v1
+        uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.SPINNAKER_GITHUB_TOKEN }}
           event-type: bump-dependencies
