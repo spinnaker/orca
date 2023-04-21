@@ -68,20 +68,19 @@ class Front50Configuration {
   @Autowired
   RequestInterceptor spinnakerRequestInterceptor
 
-  @Value('${okhttp.timeout:10}')
-  Integer okhttpTimeout
-
   @Bean
   Endpoint front50Endpoint(Front50ConfigurationProperties front50ConfigurationProperties) {
     newFixedEndpoint(front50ConfigurationProperties.getBaseUrl())
   }
 
   @Bean
-  Front50Service front50Service(Endpoint front50Endpoint, ObjectMapper mapper) {
-    OkHttpClient okHttpClient = clientProvider.getClient(new DefaultServiceEndpoint("front50", front50Endpoint.getUrl())); println(' timeout : ' + okhttpTimeout)
-    okHttpClient = okHttpClient.newBuilder().readTimeout(okhttpTimeout, TimeUnit.SECONDS)
-        .writeTimeout(okhttpTimeout, TimeUnit.SECONDS)
-        .connectTimeout(okhttpTimeout, TimeUnit.SECONDS).build();
+  Front50Service front50Service(Endpoint front50Endpoint, ObjectMapper mapper, Front50ConfigurationProperties front50ConfigurationProperties) {
+    OkHttpClient okHttpClient = clientProvider.getClient(new DefaultServiceEndpoint("front50", front50Endpoint.getUrl()));
+    okHttpClient = okHttpClient.newBuilder()
+        .readTimeout(front50ConfigurationProperties.okhttp.readTimeoutMs, TimeUnit.MILLISECONDS)
+        .writeTimeout(front50ConfigurationProperties.okhttp.writeTimeoutMs, TimeUnit.MILLISECONDS)
+        .connectTimeout(front50ConfigurationProperties.okhttp.connectTimeoutMs, TimeUnit.MILLISECONDS)
+        .build();
     new RestAdapter.Builder()
       .setRequestInterceptor(spinnakerRequestInterceptor)
       .setEndpoint(front50Endpoint)
