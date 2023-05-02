@@ -277,6 +277,23 @@ final class ManifestEvaluatorTest {
   }
 
   @Test
+  void shouldThrowExceptionWhenArtifactIdAndAccountBothSet() {
+    StageExecutionImpl stage = new StageExecutionImpl();
+
+    DeployManifestContext context =
+        DeployManifestContext.builder()
+            .manifestArtifactId("my-manifest-artifact-id")
+            .manifestArtifactAccount("some-other-account")
+            .skipExpressionEvaluation(false)
+            .source(Source.Artifact)
+            .build();
+
+    assertThatThrownBy(() -> manifestEvaluator.evaluate(stage, context))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(oortService);
+  }
+
+  @Test
   void shouldThrowExceptionWhenFailedEvaluatingManifestExpressions() {
     StageExecutionImpl stage = new StageExecutionImpl();
     stage.getContext().put("failOnFailedExpressions", true);
