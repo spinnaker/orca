@@ -32,6 +32,11 @@ allprojects {
       jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8183'
     }
   }
+
+  // both Jar (e.g. sourceJar) and ProcessResources tasks inherit from AbstractCopyTask
+  tasks.withType(AbstractCopyTask).all {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+  }
 }
 
 subprojects {
