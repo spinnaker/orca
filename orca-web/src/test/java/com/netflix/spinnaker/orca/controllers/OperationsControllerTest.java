@@ -125,7 +125,6 @@ class OperationsControllerTest {
                 .characterEncoding(StandardCharsets.UTF_8.toString())
                 .content(objectMapper.writeValueAsString(pipelineWithStageWithoutType)))
         .andDo(print())
-        // NB: this is a bug.  Expect a bad request so callers don't retry.
-        .andExpect(status().isInternalServerError());
+        .andExpect(status().isBadRequest());
   }
 }

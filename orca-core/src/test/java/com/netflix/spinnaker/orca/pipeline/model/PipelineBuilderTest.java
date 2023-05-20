@@ -28,9 +28,7 @@ class PipelineBuilderTest {
   @Test
   void withStagesChecksForNull() {
     PipelineBuilder pipelineBuilder = new PipelineBuilder("my-application");
-    // There's no exception, but also no indication that the caller is likely
-    // doing something wrong by passing null.
-    pipelineBuilder.withStages(null);
+    assertThrows(IllegalArgumentException.class, () -> pipelineBuilder.withStages(null));
   }
 
   @Test
@@ -38,9 +36,8 @@ class PipelineBuilderTest {
     PipelineBuilder pipelineBuilder = new PipelineBuilder("my-application");
     Map<String, Object> stageWithoutType = new HashMap<>();
     stageWithoutType.put("name", "my-pipeline-stage");
-    // NullPointerException is unfortunate since the input is bad.  It
-    // translates to a 500 http response code, so callers retry.
     assertThrows(
-        NullPointerException.class, () -> pipelineBuilder.withStages(List.of(stageWithoutType)));
+        IllegalArgumentException.class,
+        () -> pipelineBuilder.withStages(List.of(stageWithoutType)));
   }
 }
