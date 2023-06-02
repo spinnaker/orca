@@ -41,8 +41,7 @@ class V1TemplateLoaderHandler(
 
     // Allow template inlining to perform plans without publishing the template
     if (context.getRequest().plan && context.getRequest().template != null) {
-      val template = objectMapper.convertValue(context.getRequest().template, PipelineTemplate::class.java)
-      val templates = templateLoader.load(template)
+      val templates = templateLoader.load(context.getRequest().template, config, context.getRequest().trigger)
       context.setSchemaContext(V1PipelineTemplateContext(config, TemplateMerge.merge(templates)))
       return
     }
@@ -64,17 +63,13 @@ class V1TemplateLoaderHandler(
           .collect(Collectors.toList())
       }
     } else {
-      val templates = templateLoader.load(config.pipeline.template)
+      val templates = templateLoader.load(config.pipeline.template, config, context.getRequest().trigger)
       template = TemplateMerge.merge(templates)
 
       if (template.source == null) {
         template.source = config.pipeline.template.source
       }
     }
-
-    // ensure that any expressions contained with template variables are rendered
-    val renderContext = RenderUtil.createDefaultRenderContext(template, config, trigger)
-    renderTemplateVariables(renderContext, template)
 
     context.setSchemaContext(
       V1PipelineTemplateContext(
@@ -84,12 +79,12 @@ class V1TemplateLoaderHandler(
     )
   }
 
-  private fun renderTemplateVariables(renderContext: RenderContext, pipelineTemplate: PipelineTemplate) {
-    if (pipelineTemplate.variables == null) {
+  private fun renderTemplateVariables(renderContext: RenderContext, variables: List<PipelineTemplate.Variable>?) {
+    if (variables == null) {
       return
     }
 
-    pipelineTemplate.variables.forEach { v ->
+    variables.forEach { v ->
       val value = v.defaultValue
       if (v.isNullable() && value == null) {
         renderContext.variables.putIfAbsent(v.name, v.defaultValue)

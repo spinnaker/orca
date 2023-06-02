@@ -37,7 +37,7 @@ class V1TemplateLoaderHandlerSpec extends Specification {
 
   Renderer renderer = new JinjaRenderer(objectMapper, Mock(Front50Service), [])
 
-  TemplateLoader templateLoader = new TemplateLoader([new FileTemplateSchemeLoader(objectMapper)])
+  TemplateLoader templateLoader = new TemplateLoader([new FileTemplateSchemeLoader(objectMapper)], objectMapper, renderer)
 
   @Subject
   def subject = new V1TemplateLoaderHandler(templateLoader, renderer, objectMapper)
@@ -101,7 +101,7 @@ class V1TemplateLoaderHandlerSpec extends Specification {
     ])
 
     when:
-    subject.renderTemplateVariables(renderContext, pipelineTemplate)
+    subject.renderTemplateVariables(renderContext, pipelineTemplate.variables)
 
     then:
     pipelineTemplate.variables*.defaultValue == expectedDefaultValues
