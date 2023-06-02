@@ -78,9 +78,11 @@ import org.jooq.impl.DSL.table
 import org.jooq.impl.DSL.timestampSub
 import org.jooq.impl.DSL.value
 import org.slf4j.LoggerFactory
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource
 import rx.Observable
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import javax.sql.DataSource
 
 /**
  * A generic SQL [ExecutionRepository].
@@ -96,10 +98,12 @@ class SqlExecutionRepository(
   private val batchReadSize: Int = 10,
   private val stageReadSize: Int = 200,
   private val poolName: String = "default",
+  internal var readPoolName: String = "read", /* internal for testing */
   private val interlink: Interlink? = null,
   private val executionRepositoryListeners: Collection<ExecutionRepositoryListener> = emptyList(),
   private val compressionProperties: ExecutionCompressionProperties,
-  private val pipelineRefEnabled: Boolean
+  private val pipelineRefEnabled: Boolean,
+  private val dataSource: DataSource
 ) : ExecutionRepository, ExecutionStatisticsRepository {
   companion object {
     val ulid = SpinULID(SecureRandom())
@@ -109,7 +113,13 @@ class SqlExecutionRepository(
   private val log = LoggerFactory.getLogger(javaClass)
 
   init {
-    log.info("Creating SqlExecutionRepository with partition=$partitionName and pool=$poolName")
+    // If there's no read pool configured, fall back to the default pool
+    if ((dataSource !is AbstractRoutingDataSource)
+      || (dataSource.resolvedDataSources[readPoolName] == null)) {
+      readPoolName = poolName
+    }
+
+    log.info("Creating SqlExecutionRepository with partition=$partitionName, pool=$poolName, readPool=$readPoolName")
 
     try {
       withPool(poolName) {
