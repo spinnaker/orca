@@ -145,6 +145,7 @@ public class TemplateLoader {
     return pipelineTemplates.stream()
         .peek(
             template -> {
+              template.put("variables", variables);
               if (template.get("stages") instanceof String) {
                 try {
                   String renderedTemplate =

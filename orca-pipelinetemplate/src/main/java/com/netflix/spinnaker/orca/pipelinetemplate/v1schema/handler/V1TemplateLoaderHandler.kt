@@ -79,22 +79,6 @@ class V1TemplateLoaderHandler(
     )
   }
 
-  private fun renderTemplateVariables(renderContext: RenderContext, variables: List<PipelineTemplate.Variable>?) {
-    if (variables == null) {
-      return
-    }
-
-    variables.forEach { v ->
-      val value = v.defaultValue
-      if (v.isNullable() && value == null) {
-        renderContext.variables.putIfAbsent(v.name, v.defaultValue)
-      } else if (value != null && value is String) {
-        v.defaultValue = renderer.renderGraph(value.toString(), renderContext)
-        renderContext.variables.putIfAbsent(v.name, v.defaultValue)
-      }
-    }
-  }
-
   private fun setTemplateSourceWithJinja(tc: TemplateConfiguration, trigger: MutableMap<String, Any>?) {
     if (trigger == null || tc.pipeline.template == null) {
       return
