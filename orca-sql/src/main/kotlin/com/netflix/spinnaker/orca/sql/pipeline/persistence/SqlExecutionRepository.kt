@@ -168,10 +168,8 @@ class SqlExecutionRepository(
     validateHandledPartitionOrThrow(execution)
 
     withPool(poolName) {
-      jooq.transactional {
-        it.delete(execution.type.stagesTableName)
-          .where(stageId.toWhereCondition()).execute()
-      }
+      jooq.delete(execution.type.stagesTableName)
+        .where(stageId.toWhereCondition()).execute()
     }
   }
 
@@ -552,9 +550,7 @@ class SqlExecutionRepository(
     // If we get here, there's an execution with the given correlation id, but
     // it's complete, so clean up the correlation_ids table.
     withPool(poolName) {
-      jooq.transactional {
-        it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
-      }
+      jooq.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
     }
 
     // Treat a completed execution similar to not finding one at all.
@@ -588,9 +584,7 @@ class SqlExecutionRepository(
     // If we get here, there's an execution with the given correlation id, but
     // it's complete, so clean up the correlation_ids table.
     withPool(poolName) {
-      jooq.transactional {
-        it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
-      }
+      jooq.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
     }
 
     throw ExecutionNotFoundException("Complete Pipeline found for correlation ID $correlationId")
