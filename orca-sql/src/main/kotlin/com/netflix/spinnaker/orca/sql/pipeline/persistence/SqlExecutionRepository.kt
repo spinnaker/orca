@@ -687,17 +687,25 @@ class SqlExecutionRepository(
         )
         .fetchExecution()
 
-      if (execution != null) {
-        if (!execution.status.isComplete) {
-          return execution
-        }
-        jooq.transactional {
-          it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
-        }
+      if (execution == null) {
+        throw ExecutionNotFoundException("No Orchestration found for correlation ID $correlationId")
       }
 
-      throw ExecutionNotFoundException("No Orchestration found for correlation ID $correlationId")
+      if (!execution.status.isComplete) {
+        return execution
+      }
     }
+
+    // If we get here, there's an execution with the given correlation id, but
+    // it's complete, so clean up the correlation_ids table.
+    withPool(poolName) {
+      jooq.transactional {
+        it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
+      }
+    }
+
+    // Treat a completed execution similar to not finding one at all.
+    throw ExecutionNotFoundException("Complete Orchestration found for correlation ID $correlationId")
   }
 
   override fun retrievePipelineForCorrelationId(correlationId: String): PipelineExecution {
@@ -715,17 +723,24 @@ class SqlExecutionRepository(
         )
         .fetchExecution()
 
-      if (execution != null) {
-        if (!execution.status.isComplete) {
-          return execution
-        }
-        jooq.transactional {
-          it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
-        }
+      if (execution == null) {
+        throw ExecutionNotFoundException("No Pipeline found for correlation ID $correlationId")
       }
 
-      throw ExecutionNotFoundException("No Pipeline found for correlation ID $correlationId")
+      if (!execution.status.isComplete) {
+        return execution
+      }
     }
+
+    // If we get here, there's an execution with the given correlation id, but
+    // it's complete, so clean up the correlation_ids table.
+    withPool(poolName) {
+      jooq.transactional {
+        it.deleteFrom(table("correlation_ids")).where(field("id").eq(correlationId)).execute()
+      }
+    }
+
+    throw ExecutionNotFoundException("Complete Pipeline found for correlation ID $correlationId")
   }
 
   override fun retrieveBufferedExecutions(): MutableList<PipelineExecution> =
