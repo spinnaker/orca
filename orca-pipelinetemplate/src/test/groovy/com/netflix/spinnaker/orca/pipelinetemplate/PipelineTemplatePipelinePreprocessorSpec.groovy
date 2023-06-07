@@ -338,7 +338,7 @@ class PipelineTemplatePipelinePreprocessorSpec extends Specification {
     result.limitConcurrent == false
   }
 
-  def "should render stages dynamically with jinja"() {
+  def "should render stages dynamically with jinja if the stages block is a single string"() {
     when:
     def template =  createTemplateRequest('dynamic-stages-001.yml')
     def result = subject.process(template)

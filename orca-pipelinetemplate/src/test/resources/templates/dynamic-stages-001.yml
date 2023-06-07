@@ -7,7 +7,7 @@ variables:
       - cluster-1
       - cluster-2
       - cluster-3
-stages: |
+stages: | # Note the pipe here - it makes the block a string, which is needed to render Jinja expressions at the top level
   - id: wait
     name: Wait
     type: wait
