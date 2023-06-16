@@ -88,6 +88,11 @@ interface Queue {
   fun retry() {}
 
   /**
+   * Used for testing zombie executions. Wipes all messages from the queue.
+   */
+  fun clear() {}
+
+  /**
    * The expired time after which un-acknowledged messages will be retried.
    */
   val ackTimeout: TemporalAmount

@@ -229,6 +229,12 @@ class RedisQueue(
     }
   }
 
+  override fun clear() {
+    pool.resource.use { redis ->
+      redis.del(messagesKey)
+    }
+  }
+
   override fun readState(): QueueState =
     pool.resource.use { redis ->
       redis.multi {
