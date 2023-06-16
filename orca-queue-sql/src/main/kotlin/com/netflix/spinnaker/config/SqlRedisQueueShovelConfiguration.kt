@@ -155,6 +155,7 @@ class SqlRedisQueueShovelConfiguration {
       lockTtlSeconds = sqlQueueProperties.lockTtlSeconds,
       mapper = mapper,
       serializationMigrator = serializationMigrator,
+      resetAttemptsOnAck = sqlQueueProperties.resetAttemptsOnAck,
       deadMessageHandlers = emptyList(),
       publisher = publisher,
       sqlRetryProperties = sqlQueueProperties.retries

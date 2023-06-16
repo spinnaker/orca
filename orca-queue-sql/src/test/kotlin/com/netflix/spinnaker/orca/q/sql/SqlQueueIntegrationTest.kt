@@ -106,6 +106,7 @@ class SqlTestConfig {
       1,
       mapper,
       Optional.empty(),
+      true,
       Duration.ofSeconds(1),
       emptyList(),
       true,

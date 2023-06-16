@@ -46,6 +46,7 @@ class SqlQueueConfiguration {
       lockTtlSeconds = properties.lockTtlSeconds,
       mapper = mapper,
       serializationMigrator = serializationMigrator,
+      resetAttemptsOnAck = properties.resetAttemptsOnAck,
       ackTimeout = properties.ackTimeout,
       deadMessageHandlers = listOf(deadMessageHandler),
       publisher = publisher,

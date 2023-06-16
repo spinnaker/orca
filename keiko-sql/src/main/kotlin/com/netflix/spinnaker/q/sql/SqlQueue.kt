@@ -71,6 +71,7 @@ class SqlQueue(
   private val lockTtlSeconds: Int,
   private val mapper: ObjectMapper,
   private val serializationMigrator: Optional<SerializationMigrator>,
+  private val resetAttemptsOnAck: Boolean = true,
   override val ackTimeout: Duration = Duration.ofMinutes(5),
   override val deadMessageHandlers: List<DeadMessageCallback>,
   override val canPollMany: Boolean = true,
@@ -354,7 +355,7 @@ class SqlQueue(
                 atTime(ackTimeout)
               },
               maxAttempts = message.getAttribute<MaxAttemptsAttribute>()?.maxAttempts ?: 0,
-              ackCallback = this::ackMessage.partially1(fingerprint)
+              ackCallback = this::ackMessage.partially1(fingerprint) // partial application, still needs an up-to-date version of the message
             )
           )
         } catch (e: Exception) {
@@ -441,7 +442,7 @@ class SqlQueue(
         .filterNot { toRelease.contains(it.queueId) }
         .forEach {
           fire(MessageProcessing(it.message, it.scheduledTime, clock.instant()))
-          callback(it.message, it.ackCallback)
+          callback(it.message, { it.ackCallback(it.message) })
         }
     }
 
@@ -700,7 +701,8 @@ class SqlQueue(
         if (ackAttemptsAttribute.ackAttempts >= Queue.maxRetries ||
           (maxAttempts > 0 && attempts > maxAttempts)
         ) {
-          log.warn("Message $fingerprint with payload $message exceeded max ack retries")
+          log.warn("Message $fingerprint with payload $message exceeded max ack retries," +
+            " moving to DLQ attempts=$attempts acks=$acks maxAttempts=$maxAttempts")
           dlq = true
         }
       } catch (e: Exception) {
@@ -842,7 +844,10 @@ class SqlQueue(
     }
   }
 
-  private fun ackMessage(fingerprint: String) {
+  private fun ackMessage(fingerprint: String, message: Message) {
+    if (log.isDebugEnabled) {
+      log.debug("Acking message $fingerprint")
+    }
     withPool(poolName) {
       withRetry(WRITE) {
         jooq.deleteFrom(unackedTable)
@@ -850,15 +855,49 @@ class SqlQueue(
           .execute()
       }
 
-      withRetry(WRITE) {
-        jooq.update(messagesTable)
-          .set(updatedAtField, clock.millis())
-          .where(fingerprintField.eq(fingerprint))
-          .execute()
+      if (resetAttemptsOnAck) {
+        resetAcksAndMarkUpdated(fingerprint, message)
+      } else {
+        markMessageUpdatedOptBody(fingerprint, null) // only set updatedAt
       }
     }
 
     fire(MessageAcknowledged)
+  }
+
+  /**
+   * Mark the message as updated by setting its updateAt field.
+   * Optionally update the message body if provided.
+   */
+  private fun markMessageUpdatedOptBody(fingerprint: String, message: Message?) =
+    withRetry(WRITE) {
+      val step = jooq.update(messagesTable)
+        .set(updatedAtField, clock.millis())
+      if (message != null) {
+        step.set(bodyField, mapper.writeValueAsString(message))
+      }
+      step.where(fingerprintField.eq(fingerprint))
+        .execute()
+    }
+
+  /**
+   * Mark the message as updated, and reset ackAttempts to 0 if needed.
+   * This is to avoid messages gradually growing their ackAttempts value over time
+   * due to sporadic failures until they are dropped. Since we're acking the message,
+   * we also reset this counter here if it was non-zero.
+   */
+  private fun resetAcksAndMarkUpdated(fingerprint: String, message: Message) {
+    val ackAttemptsAttribute = (message.getAttribute() ?: AckAttemptsAttribute())
+    val updateMessage = ackAttemptsAttribute.ackAttempts > 0
+    if (updateMessage) {
+      log.info(
+        "Resetting ackAttempts for message {}, was {}", // at INFO since this is somewhat unusual
+        fingerprint, ackAttemptsAttribute.ackAttempts
+      )
+      ackAttemptsAttribute.ackAttempts = 0
+      message.setAttribute(ackAttemptsAttribute)
+    }
+    markMessageUpdatedOptBody(fingerprint, message)
   }
 
   private fun deleteAll(fingerprint: String) {
@@ -963,6 +1002,6 @@ class SqlQueue(
     val message: Message,
     val expiry: Long,
     val maxAttempts: Int,
-    val ackCallback: () -> Unit
+    val ackCallback: (Message) -> Unit
   )
 }

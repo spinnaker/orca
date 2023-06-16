@@ -56,6 +56,7 @@ private fun createQueue(clock: Clock,
       )
     },
     serializationMigrator = Optional.empty(),
+    resetAttemptsOnAck = true,
     ackTimeout = Duration.ofSeconds(60),
     deadMessageHandlers = listOf(deadLetterCallback),
     publisher = publisher ?: (
