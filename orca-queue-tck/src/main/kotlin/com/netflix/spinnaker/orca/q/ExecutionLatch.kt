@@ -66,6 +66,7 @@ fun ConfigurableApplicationContext.runToCompletion(execution: PipelineExecution,
   )
   addApplicationListener(latch)
   launcher.invoke(execution)
+  assert(latch.await()) { "Pipeline did not complete" }
 
   repository.waitForAllStagesToComplete(execution)
 }
