@@ -62,7 +62,7 @@ interface Queue {
   fun push(message: Message, delay: TemporalAmount): Unit
 
   /**
-   * Update [message] if it exists for immediate delivery.
+   * Update [message] if it exists for immediate delivery. No-op if the [message] does not exist.
    */
   fun reschedule(message: Message): Unit = reschedule(message, ZERO)
 
