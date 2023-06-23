@@ -206,7 +206,7 @@ public class ExecutionLauncherTest extends YamlFileApplicationContextInitializer
   @DisplayName(
       "when includeAllowedAccounts: true, then the orchestration should contain Spinnaker accounts")
   @Test
-  public void testIncludeSpinnakerAccounts() throws Exception {
+  public void testIncludeSpinnakerAccountsInOrchestration() throws Exception {
     // given
     MDC.put(Header.USER.getHeader(), "SpinnakerUser");
     MDC.put(Header.ACCOUNTS.getHeader(), "Account1,Account2");
@@ -242,7 +242,7 @@ public class ExecutionLauncherTest extends YamlFileApplicationContextInitializer
   @DisplayName(
       "when includeAllowedAccounts: false, then the orchestration should not contain Spinnaker accounts")
   @Test
-  public void testExcludeSpinnakerAccounts() throws Exception {
+  public void testExcludeSpinnakerAccountsFromOrchestration() throws Exception {
     // given
     MDC.put(Header.USER.getHeader(), "SpinnakerUser");
     MDC.put(Header.ACCOUNTS.getHeader(), "Account1,Account2");
@@ -268,6 +268,62 @@ public class ExecutionLauncherTest extends YamlFileApplicationContextInitializer
     PipelineExecution pipelineExecution =
         executionLauncher.start(
             ExecutionType.ORCHESTRATION, getConfigJson("ad-hoc/deploy-manifest.json"));
+
+    // then
+    // verify that the execution runner attempted to start the execution as expected
+    verify(executionRunner).start(pipelineExecution);
+    // verify that accounts are not set in the pipeline execution
+    assertThat(pipelineExecution.getAuthentication().getAllowedAccounts()).isEqualTo(Set.of());
+  }
+
+  @DisplayName(
+      "when includeAllowedAccounts: true, then the pipeline should contain Spinnaker accounts")
+  @Test
+  public void testIncludeSpinnakerAccountsInPipeline() throws Exception {
+    // given
+    MDC.put(Header.USER.getHeader(), "SpinnakerUser");
+    MDC.put(Header.ACCOUNTS.getHeader(), "Account1,Account2");
+
+    // when
+    PipelineExecution pipelineExecution =
+        executionLauncher.start(
+            ExecutionType.PIPELINE, getConfigJson("ad-hoc/deploy-manifest.json"));
+
+    // then
+    // verify that the execution runner attempted to start the execution as expected
+    verify(executionRunner).start(pipelineExecution);
+    // verify that accounts are set in the pipeline execution
+    assertThat(pipelineExecution.getAuthentication().getAllowedAccounts())
+        .isEqualTo(Set.of("Account1", "Account2"));
+  }
+
+  @DisplayName(
+      "when includeAllowedAccounts: false, then the pipeline should not contain Spinnaker accounts")
+  @Test
+  public void testExcludeSpinnakerAccountsFromPipeline() throws Exception {
+    // given
+    MDC.put(Header.USER.getHeader(), "SpinnakerUser");
+    MDC.put(Header.ACCOUNTS.getHeader(), "Account1,Account2");
+
+    // override properties to set includeAllowedAccounts to false
+    ExecutionConfigurationProperties executionConfigurationProperties =
+        new ExecutionConfigurationProperties();
+    executionConfigurationProperties.setIncludeAllowedAccounts(false);
+    executionLauncher =
+        new ExecutionLauncher(
+            objectMapper,
+            executionRepository,
+            executionRunner,
+            clock,
+            applicationEventPublisher,
+            pipelineValidator,
+            registry,
+            executionConfigurationProperties);
+
+    // when
+    PipelineExecution pipelineExecution =
+        executionLauncher.start(
+            ExecutionType.PIPELINE, getConfigJson("ad-hoc/deploy-manifest.json"));
 
     // then
     // verify that the execution runner attempted to start the execution as expected
