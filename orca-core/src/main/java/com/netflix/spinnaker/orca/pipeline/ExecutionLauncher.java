@@ -230,6 +230,7 @@ public class ExecutionLauncher {
                     config.get("source"), PipelineExecution.PipelineSource.class))
         .withSpelEvaluator(getString(config, "spelEvaluator"))
         .withTemplateVariables(getMap(config, "templateVariables"))
+        .withIncludeAllowedAccounts(executionConfigurationProperties.isIncludeAllowedAccounts())
         .build();
   }
 
