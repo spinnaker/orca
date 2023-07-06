@@ -37,7 +37,13 @@ private val createQueueNoPublisher = { clock: Clock,
 
 private fun createQueue(clock: Clock,
                         deadLetterCallback: DeadMessageCallback,
-                        publisher: EventPublisher?): SqlQueue {
+                        publisher: EventPublisher?): SqlQueue =
+  createQueueWithResetAck(clock, deadLetterCallback, publisher, true)
+
+internal fun createQueueWithResetAck(clock: Clock,
+                         deadLetterCallback: DeadMessageCallback,
+                         publisher: EventPublisher?,
+                         resetAttemptsOnAck: Boolean): SqlQueue {
   return SqlQueue(
     queueName = "test",
     schemaVersion = 1,
@@ -56,7 +62,7 @@ private fun createQueue(clock: Clock,
       )
     },
     serializationMigrator = Optional.empty(),
-    resetAttemptsOnAck = true,
+    resetAttemptsOnAck = resetAttemptsOnAck,
     ackTimeout = Duration.ofSeconds(60),
     deadMessageHandlers = listOf(deadLetterCallback),
     publisher = publisher ?: (
