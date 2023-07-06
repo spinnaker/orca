@@ -61,6 +61,7 @@ import org.jooq.impl.DSL.table
 import org.jooq.util.mysql.MySQLDSL
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
+import java.util.concurrent.atomic.AtomicInteger
 
 @KotlinOpen
 class SqlQueue(
@@ -233,30 +234,11 @@ class SqlQueue(
    */
   private fun doPoll(maxMessages: Int, callback: (Message, () -> Unit) -> Unit) {
     val now = clock.instant().toEpochMilli()
-    var changed = 0
+    val changed = AtomicInteger()
 
     /**
      * Selects the primary key ulid's of up to ([maxMessages] * 3) ready and unlocked messages,
      * sorted by delivery time.
-     *
-     * To minimize lock contention, this is a non-locking read. The id's returned may be
-     * locked or removed by another instance before we can acquire them. We read more id's
-     * than [maxMessages] and shuffle them to decrease the likelihood that multiple instances
-     * polling concurrently are all competing for the oldest ready messages when many more
-     * than [maxMessages] are read.
-     *
-     * Candidate rows are locked via an autocommit update query by primary key that will
-     * only modify unlocked rows. When (candidates > maxMessages), a sliding window is used
-     * to traverse the shuffled candidates, sized to (maxMessages - changed) with up-to 3
-     * attempts (and update queries) to grab [maxMessages].
-     *
-     * I.e. if maxMessage == 5 and
-     * candidates == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].shuffle() == [9, 3, 7, 1, 10, 8, 5, 2, 6, 4]
-     *
-     * - pass1: attempts to claim [9, 3, 7, 1, 10], locks 3 messages
-     * - pass2: attempts to claim [8, 5], locks 1 message
-     * - pass3: attempt to claim [2], succeeds but if not, there are no further attempts
-     * - proceeds to process 5 messages locked via 3 update queries.
      *
      * This makes a trade-off between grabbing the maximum number of ready messages per poll cycle
      * vs. minimizing [poll] runtime which is also critical to throughput. In testing a scenario
@@ -281,26 +263,15 @@ class SqlQueue(
       return
     }
 
-    candidates.shuffle()
-
-    var position = 0
-    var passes = 0
-    while (changed < maxMessages && position < candidates.size && passes < 3) {
-      passes++
-      val sliceNext = min(maxMessages - 1 - changed, candidates.size - 1 - position)
-      val ids = candidates.slice(IntRange(position, position + sliceNext))
-      when (sliceNext) {
-        0 -> position++
-        else -> position += sliceNext
-      }
-
-      changed += jooq.update(queueTable)
+    // Must use one query per id to avoid Dead Lock in PostgreSQL
+    candidates.parallelStream().forEach {
+      changed.addAndGet(jooq.update(queueTable)
         .set(lockedField, "$lockId:$now")
-        .where(idField.`in`(*ids.toTypedArray()), lockedField.eq("0"))
-        .execute()
+        .where(idField.eq(it), lockedField.eq("0"))
+        .execute())
     }
 
-    if (changed > 0) {
+    if (changed.get() > 0) {
       val rs = withRetry(READ) {
         jooq.select(
           field("q.id").`as`("id"),

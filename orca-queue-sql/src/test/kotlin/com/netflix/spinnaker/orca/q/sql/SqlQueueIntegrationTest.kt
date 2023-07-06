@@ -47,23 +47,29 @@ import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.q.metrics.EventPublisher
 import com.netflix.spinnaker.q.metrics.MonitorableQueue
 import com.netflix.spinnaker.q.sql.SqlQueue
+import com.zaxxer.hikari.HikariConfig
 import de.huxhorn.sulky.ulid.ULID
-import java.time.Clock
-import java.time.Duration
-import java.util.Optional
 import org.jooq.DSLContext
+import org.jooq.SQLDialect
 import org.junit.runner.RunWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.junit4.SpringRunner
+import java.time.Clock
+import java.time.Duration
+import java.util.*
 
 @Configuration
 class SqlTestConfig {
   @Bean
   fun jooq(): DSLContext {
-    val testDatabase = SqlTestUtil.initTcMysqlDatabase()
+    val hikariConfig = HikariConfig()
+    hikariConfig.jdbcUrl = SqlTestUtil.tcJdbcUrl
+    hikariConfig.maximumPoolSize = 10
+
+    val testDatabase = SqlTestUtil.initDatabase(hikariConfig, SQLDialect.MYSQL, "test")
     return testDatabase.context
   }
 
