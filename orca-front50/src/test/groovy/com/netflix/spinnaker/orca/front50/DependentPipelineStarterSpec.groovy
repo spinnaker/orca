@@ -19,7 +19,9 @@ package com.netflix.spinnaker.orca.front50
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.kork.artifacts.ArtifactTypes
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
+import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution
 import com.netflix.spinnaker.orca.api.pipeline.ExecutionPreprocessor
@@ -497,6 +499,83 @@ class DependentPipelineStarterSpec extends Specification {
     result.trigger.resolvedExpectedArtifacts.size() == 0
   }
 
+  def "should find expected artifacts from parent pipeline trigger if triggered by pipeline stage"() {
+    given:
+    def triggeredPipelineConfig = [
+        name: "triggered",
+        id: "triggered",
+        expectedArtifacts: [],
+        triggers: [],
+    ]
+    Artifact testArtifact1 = Artifact.builder().type("gcs/object").name("gs://test/file.yaml").build()
+    Artifact testArtifact2 = Artifact.builder().type("docker/image").name("gcr.io/project/image").version("42").build()
+    Artifact testArtifact3 = Artifact.builder().type("docker/image").name("gcr.io/project/image").version("1337").build()
+    def parentPipeline = pipeline {
+      name = "parent"
+      trigger = new DefaultTrigger("webhook", null, "test", [:], [testArtifact1, testArtifact2])
+      authentication = new PipelineExecution.AuthenticationDetails("parentUser", "acct1", "acct2")
+      pipelineConfigId = "5e96d1e8-a3c0-4458-b3a4-fda17e0d5ab5"
+      stage {
+        id = "stage1"
+        refId = "1"
+      }
+      stage {
+        id = "stage2"
+        refId = "2"
+        requisiteStageRefIds = ["1"]
+      }
+    }
+    parentPipeline.stageByRef("1").setOutputs([artifacts: [testArtifact3]])
+
+    def uuid = "8f241d2a-7fee-4a95-8d84-0a508222032c"
+    def expectedImage = Artifact.builder().type("docker/image").name("gcr.io/project/image").build()
+    ArrayList<ExpectedArtifact> expectedArtifacts = [
+        ExpectedArtifact.builder().id(uuid).matchArtifact(expectedImage).build()
+    ]
+    parentPipeline.trigger.setOther("expectedArtifacts", expectedArtifacts)
+    parentPipeline.trigger.resolvedExpectedArtifacts = expectedArtifacts
+    def executionLauncher = Mock(ExecutionLauncher)
+    def applicationContext = new StaticApplicationContext()
+    applicationContext.beanFactory.registerSingleton("pipelineLauncher", executionLauncher)
+    dependentPipelineStarter = new DependentPipelineStarter(
+        applicationContext,
+        mapper,
+        new ContextParameterProcessor(),
+        Optional.empty(),
+        Optional.of(artifactUtils),
+        new NoopRegistry()
+    )
+
+    and:
+    executionLauncher.start(*_) >> { _, p ->
+      return pipeline {
+        name = p.name
+        id = p.name
+        trigger = mapper.convertValue(p.trigger, Trigger)
+      }
+    }
+    artifactUtils.getArtifactsForPipelineId(*_) >> {
+      return new ArrayList<Artifact>();
+    }
+
+    when:
+    def result = dependentPipelineStarter.trigger(
+        triggeredPipelineConfig,
+        null,
+        parentPipeline,
+        [:],
+        "stage2",
+        buildAuthenticatedUser("user", [])
+    )
+
+    then:
+    result.trigger.artifacts.size() == 3
+    result.trigger.artifacts*.name.contains(testArtifact1.name)
+    result.trigger.artifacts*.name.contains(testArtifact2.name)
+    result.trigger.artifacts*.name.contains(testArtifact3.name)
+    result.trigger.artifacts.findAll { it.name == "gcr.io/project/image" }.version.containsAll(["42", "1337"])
+  }
+
   def "should resolve expressions in trigger"() {
     given:
     def triggeredPipelineConfig = [name: "triggered", id: "triggered", parameterConfig: [[name: 'a', default: '${2 == 2}']]]
@@ -691,7 +770,7 @@ class DependentPipelineStarterSpec extends Specification {
         stages.addAll(mapper.convertValue(p.stages, type))
       }
     }
-    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource) >> [triggeredPipelineTemplate]
+    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource, _, _) >> [triggeredPipelineTemplate]
     1 * executionRepository.retrievePipelinesForPipelineConfigId("triggered", _ as ExecutionRepository.ExecutionCriteria) >>
       Observable.just(priorExecution)
 
@@ -770,7 +849,7 @@ class DependentPipelineStarterSpec extends Specification {
                                          matchArtifact: [
                                            kind: "base64",
                                            name: "baked-manifest",
-                                           type: "embedded/base64"
+                                           type: ArtifactTypes.EMBEDDED_BASE64.getMimeType()
                                          ],
                                          useDefaultArtifact: false
                                        ]],
@@ -830,7 +909,7 @@ class DependentPipelineStarterSpec extends Specification {
         stages.addAll(mapper.convertValue(execution.stages, type))
       }
     }
-    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource) >> [triggeredPipelineTemplate]
+    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource, _, _) >> [triggeredPipelineTemplate]
 
     artifactUtils.getArtifactsForPipelineId(*_) >> {
       return new ArrayList<>()
