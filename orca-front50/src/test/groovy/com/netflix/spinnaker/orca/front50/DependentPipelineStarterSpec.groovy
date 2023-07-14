@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.front50
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.kork.artifacts.ArtifactTypes
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution
@@ -769,7 +770,7 @@ class DependentPipelineStarterSpec extends Specification {
         stages.addAll(mapper.convertValue(p.stages, type))
       }
     }
-    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource) >> [triggeredPipelineTemplate]
+    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource, _, _) >> [triggeredPipelineTemplate]
     1 * executionRepository.retrievePipelinesForPipelineConfigId("triggered", _ as ExecutionRepository.ExecutionCriteria) >>
       Observable.just(priorExecution)
 
@@ -848,7 +849,7 @@ class DependentPipelineStarterSpec extends Specification {
                                          matchArtifact: [
                                            kind: "base64",
                                            name: "baked-manifest",
-                                           type: "embedded/base64"
+                                           type: ArtifactTypes.EMBEDDED_BASE64.getMimeType()
                                          ],
                                          useDefaultArtifact: false
                                        ]],
@@ -908,7 +909,7 @@ class DependentPipelineStarterSpec extends Specification {
         stages.addAll(mapper.convertValue(execution.stages, type))
       }
     }
-    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource) >> [triggeredPipelineTemplate]
+    1 * templateLoader.load(_ as TemplateConfiguration.TemplateSource, _, _) >> [triggeredPipelineTemplate]
 
     artifactUtils.getArtifactsForPipelineId(*_) >> {
       return new ArrayList<>()
