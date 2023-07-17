@@ -112,6 +112,10 @@ public class CreateBakeManifestTask implements RetryableTask {
     }
 
     String outputArtifactName = expectedArtifacts.get(0).getMatchArtifact().getName();
+    if (context.getOutputName() == null || !context.getOutputName().equals(outputArtifactName)) {
+      throw new IllegalArgumentException(
+          "The name of the output manifest is required and it must match the artifact name in the Produces Artifact section.");
+    }
 
     // TODO(ethanfrogers): encapsulate this into the HelmBakeManifestRequest
     Map<String, Object> overrides = context.getOverrides();
