@@ -237,10 +237,14 @@ public class ArtifactUtils {
             .orElse(Stream.empty())
             .map(it -> objectMapper.convertValue(it, ExpectedArtifact.class))
             .filter(
-                artifact ->
-                    expectedArtifactIds.contains(artifact.getId())
-                        || artifact.isUseDefaultArtifact()
-                        || artifact.isUsePriorArtifact())
+                // artifacts coming from a parent pipeline are always expected
+                trigger.get("parentPipelineStageId") != null
+                    ? artifact -> true
+                    // artifacts coming from an automated trigger should be constrained
+                    : artifact ->
+                        (expectedArtifactIds.contains(artifact.getId()))
+                            || artifact.isUseDefaultArtifact()
+                            || artifact.isUsePriorArtifact())
             .collect(toImmutableList());
 
     ImmutableSet<Artifact> receivedArtifacts =

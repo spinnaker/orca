@@ -462,6 +462,55 @@ class ArtifactUtilsSpec extends Specification {
     resolvedArtifacts*.getBoundArtifact() == [receivedArtifact, anotherArtifact]
   }
 
+  def "resolveArtifacts when trigger is from pipeline stage"() {
+    given:
+    def matchArtifact = Artifact.builder()
+        .type("docker/image")
+        .name("docker.io/mycompany/myimage")
+        .build()
+    def expectedArtifact1 = ExpectedArtifact.builder()
+        .id("expected-artifact-id")
+        .matchArtifact(matchArtifact)
+        .build()
+    def anotherArtifact = Artifact.builder()
+        .type("http/file")
+        .build()
+    def expectedArtifact3 = ExpectedArtifact.builder()
+        .id("expected-artifact-id-2")
+        .matchArtifact(anotherArtifact)
+        .build()
+    def receivedArtifact1 = Artifact.builder()
+        .name("docker.io/mycompany/myimage")
+        .type("docker/image")
+        .reference("docker.io/mycompany/myimage:mytag")
+        .build()
+    def receivedArtifact2 = Artifact.builder()
+        .name("my-artifact-2")
+        .type("http/file")
+        .build()
+
+    def pipeline = [
+        id: "abc",
+        trigger: [
+            type: "pipeline",
+            parentPipelineStageId: "0bd9ae0f-2871-4fd4-80f5-aeb1c48a2ed6",
+            artifacts: [receivedArtifact1, receivedArtifact2]
+        ],
+        expectedArtifacts: [expectedArtifact1, expectedArtifact3]
+    ]
+    def artifactUtils = makeArtifactUtils()
+
+    when:
+    artifactUtils.resolveArtifacts(pipeline)
+    List<ExpectedArtifact> resolvedArtifacts = objectMapper.convertValue(
+        pipeline.trigger.resolvedExpectedArtifacts,
+        new TypeReference<List<ExpectedArtifact>>() {})
+
+    then:
+    resolvedArtifacts.size() == 2
+    resolvedArtifacts*.getBoundArtifact() == [receivedArtifact1, receivedArtifact2]
+  }
+
   def "resolveArtifacts adds received artifacts to the trigger, skipping duplicates"() {
     given:
     def matchArtifact = Artifact.builder().name("my-pipeline-artifact").type("docker/.*").build()
