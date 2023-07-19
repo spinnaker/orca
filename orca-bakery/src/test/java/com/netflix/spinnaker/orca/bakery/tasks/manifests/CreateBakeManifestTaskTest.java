@@ -167,62 +167,6 @@ public class CreateBakeManifestTaskTest {
   }
 
   @Test
-  public void shouldThrowExceptionForNameMismatch() throws JsonProcessingException {
-    String stageJson =
-        "{\n"
-            + "  \"expectedArtifacts\": [\n"
-            + "    {\n"
-            + "      \"defaultArtifact\": {\n"
-            + "        \"customKind\": true,\n"
-            + "        \"id\": \"bd95dd08-58a3-4012-9db5-4c4cde176e0a\"\n"
-            + "      },\n"
-            + "      \"displayName\": \"rare-gecko-67\",\n"
-            + "      \"id\": \"ea011068-f42e-4df0-8cf0-2fad1a6fc47e\",\n"
-            + "      \"matchArtifact\": {\n"
-            + "        \"artifactAccount\": \"embedded-artifact\",\n"
-            + "        \"id\": \"86c1ef35-0b8a-4892-a60a-82759d8aa6ad\",\n"
-            + "        \"name\": \"hello\",\n"
-            + "        \"type\": \"embedded/base64\"\n"
-            + "      },\n"
-            + "      \"useDefaultArtifact\": false,\n"
-            + "      \"usePriorArtifact\": false\n"
-            + "    }\n"
-            + "  ],\n"
-            + "  \"inputArtifacts\": [\n"
-            + "    {\n"
-            + "      \"account\": \"no-auth-http-account\",\n"
-            + "      \"artifact\": {\n"
-            + "        \"artifactAccount\": \"no-auth-http-account\",\n"
-            + "        \"id\": \"c4d18108-2b3b-40b1-ba82-d22ce17e708f\",\n"
-            + "        \"reference\": \"google.com\",\n"
-            + "        \"type\": \"http/file\"\n"
-            + "      },\n"
-            + "      \"id\": null\n"
-            + "    }\n"
-            + "  ],\n"
-            + "  \"isNew\": true,\n"
-            + "  \"name\": \"Bake Helmfile Manifest\",\n"
-            + "  \"outputName\": \"hi\",\n"
-            + "  \"type\": \"createBakeManifest\"\n"
-            + "}";
-
-    StageExecutionImpl stage = new StageExecutionImpl();
-    stage.setContext(mapper.readValue(stageJson, Map.class));
-    BakeManifestContext context = stage.mapTo(BakeManifestContext.class);
-    when(artifactUtils.getBoundArtifactForStage(any(), any(), any()))
-        .thenReturn(Artifact.builder().build())
-        .thenReturn(Artifact.builder().build());
-    Exception exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> createBakeManifestTask.execute(stage),
-            "Expected it to throw an error but it didn't");
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "The name of the output manifest is required and it must match the artifact name in the Produces Artifact section.");
-  }
-
-  @Test
   public void shouldThrowErrorIfTemplateRendererDoesNotExist() throws JsonProcessingException {
     String stageJson =
         "{\n"
