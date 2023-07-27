@@ -19,25 +19,27 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.l
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaTrafficUpdateStrategyInjector {
-  private static final Logger logger =
-      LoggerFactory.getLogger(LambdaTrafficUpdateStrategyInjector.class);
 
-  @Autowired private LambdaSimpleDeploymentStrategy simpleStrat;
-  @Autowired private LambdaWeightedDeploymentStrategy weightedStrat;
-  @Autowired private LambdaBlueGreenDeploymentStrategy blueGreenStrat;
+  private final LambdaSimpleDeploymentStrategy simpleStrat;
+  private final LambdaWeightedDeploymentStrategy weightedStrat;
+  private final LambdaBlueGreenDeploymentStrategy blueGreenStrat;
 
   private final Map<LambdaDeploymentStrategyEnum, BaseLambdaDeploymentStrategy> factoryMap =
       new HashMap<>();
 
-  public LambdaTrafficUpdateStrategyInjector() {
-    logger.debug("Start strategy injector");
+  public LambdaTrafficUpdateStrategyInjector(
+      LambdaSimpleDeploymentStrategy simpleStrat,
+      LambdaWeightedDeploymentStrategy weightedStrat,
+      LambdaBlueGreenDeploymentStrategy blueGreenStrat) {
+    this.simpleStrat = simpleStrat;
+    this.weightedStrat = weightedStrat;
+    this.blueGreenStrat = blueGreenStrat;
   }
 
   public BaseLambdaDeploymentStrategy getStrategy(LambdaDeploymentStrategyEnum inp) {

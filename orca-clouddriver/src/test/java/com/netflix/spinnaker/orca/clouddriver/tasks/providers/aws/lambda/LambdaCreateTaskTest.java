@@ -17,98 +17,93 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaDeploymentInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaGetInput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import ru.lanwen.wiremock.ext.WiremockResolver;
-import ru.lanwen.wiremock.ext.WiremockUriResolver;
+import org.mockito.*;
 
-@ExtendWith({WiremockResolver.class, WiremockUriResolver.class})
 public class LambdaCreateTaskTest {
-
-  WireMockServer wireMockServer;
 
   @InjectMocks private LambdaCreateTask lambdaCreateTask;
 
-  @Mock private CloudDriverConfigurationProperties propsMock;
+  @Mock private LambdaUtils lambdaUtils;
 
-  @Mock private LambdaCloudDriverUtils lambdaCloudDriverUtilsMock;
+  @Mock private KatoService katoService;
 
   @Mock private StageExecution stageExecution;
 
   @Mock private PipelineExecution pipelineExecution;
 
+  @Spy private ObjectMapper objectMapper;
+
   @BeforeEach
-  void init(
-      @WiremockResolver.Wiremock WireMockServer wireMockServer,
-      @WiremockUriResolver.WiremockUri String uri) {
-    this.wireMockServer = wireMockServer;
-    MockitoAnnotations.initMocks(this);
-    Mockito.when(propsMock.getCloudDriverBaseUrl()).thenReturn(uri);
+  void init() {
+    MockitoAnnotations.openMocks(this);
+
     pipelineExecution.setApplication("lambdaApp");
     Mockito.when(stageExecution.getExecution()).thenReturn(pipelineExecution);
     Mockito.when(stageExecution.getContext()).thenReturn(new HashMap<>());
-    LambdaDeploymentInput ldi =
-        LambdaDeploymentInput.builder().functionName("functionName").build();
-    Mockito.when(
-            lambdaCloudDriverUtilsMock.validateUpsertLambdaInput(Mockito.any(), Mockito.anyList()))
-        .thenReturn(true);
-    Mockito.when(lambdaCloudDriverUtilsMock.getInput(stageExecution, LambdaDeploymentInput.class))
-        .thenReturn(ldi);
-    LambdaGetInput lgi = LambdaGetInput.builder().build();
-    Mockito.when(lambdaCloudDriverUtilsMock.getInput(stageExecution, LambdaGetInput.class))
-        .thenReturn(lgi);
-    Mockito.when(lambdaCloudDriverUtilsMock.asString(ldi)).thenReturn("asString");
+
+    Mockito.when(stageExecution.mapTo(LambdaDeploymentInput.class))
+        .thenReturn(mockLambdaDeploymentInput());
+    LambdaGetInput input = LambdaGetInput.builder().appName("lambdaApp").build();
+    Mockito.when(stageExecution.mapTo(LambdaGetInput.class)).thenReturn(input);
   }
 
   @Test
   public void execute_InsertLambda_SUCCEEDED() {
-    Mockito.when(lambdaCloudDriverUtilsMock.retrieveLambdaFromCache(stageExecution, false))
-        .thenReturn(null);
-    LambdaCloudDriverResponse lambdaCloudDriverResponse =
-        LambdaCloudDriverResponse.builder().resourceUri("/resourceUri").build();
-    Mockito.when(lambdaCloudDriverUtilsMock.postToCloudDriver(Mockito.any(), Mockito.any()))
-        .thenReturn(lambdaCloudDriverResponse);
+    Mockito.when(lambdaUtils.validateUpsertLambdaInput(any(), any())).thenReturn(true);
+    Mockito.when(lambdaUtils.retrieveLambdaFromCache(any())).thenReturn(null);
+
+    SubmitOperationResult result = new SubmitOperationResult();
+    result.setResourceUri("/resourceUri");
+    Mockito.when(katoService.submitOperation(any(), any())).thenReturn(result);
+
     assertEquals(ExecutionStatus.SUCCEEDED, lambdaCreateTask.execute(stageExecution).getStatus());
   }
 
   @Test
   public void execute_UpsertLambda_SUCCEEDED() {
-    Map<String, String> revisions = new HashMap<>();
-    revisions.put("revision", "1");
+    Mockito.when(lambdaUtils.validateUpsertLambdaInput(any(), any())).thenReturn(true);
+
+    Map<String, String> revisions = Map.of("revision", "1");
     LambdaDefinition ld = LambdaDefinition.builder().revisions(revisions).build();
-    Mockito.when(lambdaCloudDriverUtilsMock.retrieveLambdaFromCache(stageExecution, false))
-        .thenReturn(ld);
+    Mockito.when(lambdaUtils.retrieveLambdaFromCache(any())).thenReturn(ld);
+
     assertEquals(ExecutionStatus.SUCCEEDED, lambdaCreateTask.execute(stageExecution).getStatus());
   }
 
   @Test
   public void execute_InvalidUpsertLambdaInput_TERMINAL() {
-    Map<String, String> revisions = new HashMap<>();
-    revisions.put("revision", "1");
-    LambdaDefinition ld = LambdaDefinition.builder().revisions(revisions).build();
-    Mockito.when(lambdaCloudDriverUtilsMock.retrieveLambdaFromCache(stageExecution, false))
-        .thenReturn(ld);
-    Mockito.when(
-            lambdaCloudDriverUtilsMock.validateUpsertLambdaInput(Mockito.any(), Mockito.anyList()))
-        .thenReturn(false);
+    Mockito.when(lambdaUtils.validateUpsertLambdaInput(any(), any())).thenReturn(false);
     assertEquals(ExecutionStatus.TERMINAL, lambdaCreateTask.execute(stageExecution).getStatus());
+  }
+
+  private LambdaDeploymentInput mockLambdaDeploymentInput() {
+    return LambdaDeploymentInput.builder()
+        .appName("lambdaApp")
+        .functionName("functionName")
+        .account("account")
+        .credentials("credentials")
+        .region("us-east-1")
+        .runtime("java17")
+        .s3bucket("bucket")
+        .s3key("key")
+        .handler("handler")
+        .role("role")
+        .build();
   }
 }

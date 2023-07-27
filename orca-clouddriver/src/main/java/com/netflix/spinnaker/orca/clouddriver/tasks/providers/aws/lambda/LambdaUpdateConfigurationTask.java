@@ -16,52 +16,59 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaDeploymentInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaUpdateConfigurationTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaUpdateConfigurationTask.class);
-  private static final String CLOUDDRIVER_UPDATE_CONFIG_PATH =
-      "/aws/ops/updateLambdaFunctionConfiguration";
 
-  @Autowired CloudDriverConfigurationProperties props;
-  private String cloudDriverUrl;
+  private final LambdaUtils utils;
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaUpdateConfigurationTask(
+      LambdaUtils utils, KatoService katoService, ObjectMapper objectMapper) {
+    this.utils = utils;
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaUpdateConfigurationTask...");
-    cloudDriverUrl = props.getCloudDriverBaseUrl();
+    log.debug("Executing LambdaUpdateConfigurationTask...");
     prepareTask(stage);
+
     Boolean justCreated =
         (Boolean)
             stage.getContext().getOrDefault(LambdaStageConstants.lambaCreatedKey, Boolean.FALSE);
     if (justCreated) {
       return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(stage.getContext()).build();
     }
+
     List<String> errors = new ArrayList<>();
-    LambdaDeploymentInput ldi = utils.getInput(stage, LambdaDeploymentInput.class);
+    LambdaDeploymentInput ldi = stage.mapTo(LambdaDeploymentInput.class);
     if (!utils.validateUpsertLambdaInput(ldi, errors)) {
       return this.formErrorListTaskResult(stage, errors);
     }
+
     LambdaCloudOperationOutput output = this.updateLambdaConfig(stage, ldi);
     addCloudOperationToContext(stage, output, LambdaStageConstants.updateConfigUrlKey);
     addToTaskContext(stage, LambdaStageConstants.lambaConfigurationUpdatedKey, Boolean.TRUE);
@@ -72,12 +79,15 @@ public class LambdaUpdateConfigurationTask implements LambdaStageBaseTask {
       StageExecution stage, LambdaDeploymentInput ldi) {
     ldi.setAppName(stage.getExecution().getApplication());
     ldi.setCredentials(ldi.getAccount());
-    String rawString = utils.asString(ldi);
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_UPDATE_CONFIG_PATH;
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for updateLambdaConfig: " + url);
-    return LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
+
+    OperationContext context = objectMapper.convertValue(ldi, new TypeReference<>() {});
+    context.setOperationType("updateLambdaFunctionConfiguration");
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
   @Nullable
@@ -85,7 +95,4 @@ public class LambdaUpdateConfigurationTask implements LambdaStageBaseTask {
   public TaskResult onTimeout(@Nonnull StageExecution stage) {
     return TaskResult.builder(ExecutionStatus.SKIPPED).build();
   }
-
-  @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
 }

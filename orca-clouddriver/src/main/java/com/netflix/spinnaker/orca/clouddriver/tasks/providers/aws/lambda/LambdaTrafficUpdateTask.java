@@ -18,57 +18,51 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda.BaseLambdaDeploymentStrategy;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda.LambdaDeploymentStrategyEnum;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda.LambdaTrafficUpdateStrategyInjector;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaBaseStrategyInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaDeploymentStrategyOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.pf4j.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaTrafficUpdateTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaTrafficUpdateTask.class);
 
-  @Autowired LambdaTrafficUpdateStrategyInjector injector;
+  private final LambdaTrafficUpdateStrategyInjector injector;
 
-  @Autowired CloudDriverConfigurationProperties props;
-
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaTrafficUpdateTask(LambdaTrafficUpdateStrategyInjector injector) {
+    this.injector = injector;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaTrafficUpdateTask...");
+    log.debug("Executing LambdaTrafficUpdateTask...");
     prepareTask(stage);
+
     LambdaDeploymentStrategyOutput result;
     BaseLambdaDeploymentStrategy deploymentStrategy = getDeploymentStrategy(stage);
+
     List<String> validationErrors = new ArrayList<>();
     if (!validateInput(stage, validationErrors)) {
-      logger.error("Validation failed for traffic update task");
-      return this.formErrorListTaskResult(stage, validationErrors);
+      log.error("Validation failed for traffic update task");
+      return formErrorListTaskResult(stage, validationErrors);
     }
+
     LambdaBaseStrategyInput input = deploymentStrategy.setupInput(stage);
     result = deploymentStrategy.deploy(input);
     if (!result.isSucceeded()) {
       return formErrorTaskResult(stage, result.getErrorMessage());
     }
+
     final StageExecution tmpStage = stage;
-    result
-        .getOutput()
-        .getOutputMap()
-        .forEach(
-            (x, y) -> {
-              addToTaskContext(tmpStage, x, y);
-            });
+    result.getOutput().getOutputMap().forEach((x, y) -> addToTaskContext(tmpStage, x, y));
 
     addCloudOperationToContext(stage, result.getOutput(), "url");
     return taskComplete(stage);
@@ -100,7 +94,4 @@ public class LambdaTrafficUpdateTask implements LambdaStageBaseTask {
   public TaskResult onTimeout(@Nonnull StageExecution stage) {
     return null;
   }
-
-  @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
 }

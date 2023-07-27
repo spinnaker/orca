@@ -17,130 +17,113 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.client.WireMock;
+import com.netflix.spinnaker.orca.TestUtils;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
-import com.netflix.spinnaker.orca.clouddriver.config.LambdaConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService;
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaCacheRefreshInput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import okhttp3.Headers;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import ru.lanwen.wiremock.ext.WiremockResolver;
-import ru.lanwen.wiremock.ext.WiremockUriResolver;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import retrofit.client.Header;
+import retrofit.client.Response;
+import retrofit.converter.Converter;
+import retrofit.converter.JacksonConverter;
+import retrofit.mime.TypedInput;
 
-@ExtendWith({WiremockResolver.class, WiremockUriResolver.class})
 public class LambdaCacheRefreshTaskTest {
-
-  WireMockServer wireMockServer;
 
   @InjectMocks private LambdaCacheRefreshTask lambdaCacheRefreshTask;
 
-  @Mock private CloudDriverConfigurationProperties propsMock;
+  @Mock private CloudDriverCacheService cloudDriverCacheService;
+
+  @Mock private CloudDriverCacheStatusService cloudDriverCacheStatusService;
 
   @Mock private StageExecution stageExecution;
 
   @Mock private PipelineExecution pipelineExecution;
 
-  @Mock private LambdaCloudDriverUtils lambdaCloudDriverUtilsMock;
+  @Mock private ObjectMapper objectMapper;
 
-  @Mock private LambdaConfigurationProperties config;
+  private final Converter converter = new JacksonConverter(objectMapper);
+  private final List<Header> responseHeaders =
+      List.of(new Header(HttpHeaders.CONTENT_TYPE, "application/json"));
 
   @BeforeEach
-  void init(
-      @WiremockResolver.Wiremock WireMockServer wireMockServer,
-      @WiremockUriResolver.WiremockUri String uri) {
-    this.wireMockServer = wireMockServer;
-    MockitoAnnotations.initMocks(this);
-    Mockito.when(propsMock.getCloudDriverBaseUrl()).thenReturn(uri);
+  void init() {
+    MockitoAnnotations.openMocks(this);
+
     pipelineExecution.setApplication("lambdaApp");
     Mockito.when(stageExecution.getExecution()).thenReturn(pipelineExecution);
-
-    LambdaCacheRefreshInput inp = LambdaCacheRefreshInput.builder().account("account").build();
-
     Mockito.when(stageExecution.getContext()).thenReturn(new HashMap<>());
-    Mockito.when(lambdaCloudDriverUtilsMock.getInput(Mockito.any(), Mockito.any())).thenReturn(inp);
-    Mockito.when(lambdaCloudDriverUtilsMock.asString(Mockito.any()))
-        .thenReturn("LambdaCacheRefreshInput");
-    Mockito.when(lambdaCloudDriverUtilsMock.buildHeaders())
-        .thenReturn(Headers.of("Content-Disposition", "form-data; name=\"fs_exp\""));
 
-    String responseDefinitionBuilderJson =
-        "{\"cachedIdentifiersByType\":{\"onDemand\":[\"123456789\"]}}";
-    ResponseDefinitionBuilder mockResponse =
-        new ResponseDefinitionBuilder().withStatus(202).withBody(responseDefinitionBuilderJson);
+    // would rather just call the real method here, but StageExecution ends up being
+    // an abstract class, so forced to mock
+    LambdaCacheRefreshInput input = LambdaCacheRefreshInput.builder().appName("lambdaApp").build();
+    Mockito.when(stageExecution.mapTo(any())).thenReturn(input);
 
-    this.wireMockServer.stubFor(WireMock.post("/cache/aws/function").willReturn(mockResponse));
+    TypedInput mockTypedInput = new TestUtils.MockTypedInput(converter, Map.of());
+    Response response =
+        new Response("", HttpStatus.OK.value(), "", responseHeaders, mockTypedInput);
+    Mockito.when(cloudDriverCacheService.forceCacheUpdate(any(), any(), any()))
+        .thenReturn(response);
   }
 
   @Test
   public void execute_ShouldForceCacheRefreshAndGet200Code_SUCCEDED() {
-    ResponseDefinitionBuilder mockResponse =
-        new ResponseDefinitionBuilder().withStatus(200).withBody("Success");
+    Map<String, Object> map = Map.of();
+    Mockito.when(cloudDriverCacheStatusService.pendingForceCacheUpdatesById(any(), any(), any()))
+        .thenReturn(List.of(map));
 
-    wireMockServer.stubFor(WireMock.post("/cache/aws/function").willReturn(mockResponse));
     assertEquals(
         ExecutionStatus.SUCCEEDED, lambdaCacheRefreshTask.execute(stageExecution).getStatus());
   }
 
   @Test
-  public void execute_ShouldWaitForCacheToComplete_CachingShouldBeCompleted_SUCCEEDED()
-      throws JsonProcessingException {
-    Map<String, Object> map = new HashMap<>();
-    map.put("processedCount", 1);
-    // increase 15 seconds
-    map.put("cacheTime", System.currentTimeMillis() + 15 * 1000);
-    String getFromCloudDriverJson = new ObjectMapper().writeValueAsString(List.of(map));
-    Mockito.when(lambdaCloudDriverUtilsMock.getFromCloudDriver(Mockito.any()))
-        .thenReturn(getFromCloudDriverJson);
-    assertEquals(
-        ExecutionStatus.SUCCEEDED, lambdaCacheRefreshTask.execute(stageExecution).getStatus());
-  }
+  public void execute_ShouldWaitForCacheToComplete_CachingShouldBeCompleted_SUCCEEDED() {
+    Map<String, Object> map =
+        Map.of("processedCount", 1, "cacheTime", System.currentTimeMillis() + 15 * 1000);
+    Mockito.when(cloudDriverCacheStatusService.pendingForceCacheUpdatesById(any(), any(), any()))
+        .thenReturn(List.of(map));
 
-  @Test
-  public void
-      forceCacheRefresh_waitForCacheToComplete_NotFoundAndThenCachingShouldBeCompleted_SUCCEEDED()
-          throws JsonProcessingException {
-    Map<String, Object> mapSecondCall = new HashMap<>();
-    mapSecondCall.put("processedCount", 1);
-    // increase 15 seconds
-    mapSecondCall.put("cacheTime", System.currentTimeMillis() + 15 * 1000);
-    String secondCallJson = new ObjectMapper().writeValueAsString(List.of(mapSecondCall));
-
-    Mockito.when(lambdaCloudDriverUtilsMock.getFromCloudDriver(Mockito.any()))
-        .thenReturn("[]")
-        .thenReturn(secondCallJson);
     assertEquals(
         ExecutionStatus.SUCCEEDED, lambdaCacheRefreshTask.execute(stageExecution).getStatus());
   }
 
   @Test
   public void
-      forceCacheRefresh_waitForCacheToComplete_ShouldRetryAndThenCachingShouldBeCompleted_SUCCEEDED()
-          throws JsonProcessingException {
-    Map<String, Object> mapSecondCall = new HashMap<>();
-    mapSecondCall.put("processedCount", 1);
-    mapSecondCall.put("cacheTime", System.currentTimeMillis() + 15 * 1000);
-    String secondCallJson = new ObjectMapper().writeValueAsString(List.of(mapSecondCall));
+      forceCacheRefresh_waitForCacheToComplete_NotFoundAndThenCachingShouldBeCompleted_SUCCEEDED() {
+    Map<String, Object> mapSecondCall =
+        Map.of("processedCount", 1, "cacheTime", System.currentTimeMillis() + 15 * 1000);
+    Mockito.when(cloudDriverCacheStatusService.pendingForceCacheUpdatesById(any(), any(), any()))
+        .thenReturn(List.of())
+        .thenReturn(List.of(mapSecondCall));
 
-    Mockito.when(lambdaCloudDriverUtilsMock.getFromCloudDriver(Mockito.any()))
-        .thenReturn("[{\"processedCount\":0}]")
-        .thenReturn(secondCallJson);
+    assertEquals(
+        ExecutionStatus.SUCCEEDED, lambdaCacheRefreshTask.execute(stageExecution).getStatus());
+  }
+
+  @Test
+  public void
+      forceCacheRefresh_waitForCacheToComplete_ShouldRetryAndThenCachingShouldBeCompleted_SUCCEEDED() {
+    Map<String, Object> mapFirstCall = Map.of("processedCount", 0);
+    Map<String, Object> mapSecondCall =
+        Map.of("processedCount", 1, "cacheTime", System.currentTimeMillis() + 15 * 1000);
+    Mockito.when(cloudDriverCacheStatusService.pendingForceCacheUpdatesById(any(), any(), any()))
+        .thenReturn(List.of(mapFirstCall))
+        .thenReturn(List.of(mapSecondCall));
+
     assertEquals(
         ExecutionStatus.SUCCEEDED, lambdaCacheRefreshTask.execute(stageExecution).getStatus());
   }

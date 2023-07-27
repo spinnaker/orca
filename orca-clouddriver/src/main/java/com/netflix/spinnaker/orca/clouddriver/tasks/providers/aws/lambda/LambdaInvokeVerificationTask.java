@@ -19,39 +19,37 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverInvokeOperationResults;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverTaskResults;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaInvokeStageInput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.pf4j.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaInvokeVerificationTask implements LambdaStageBaseTask {
 
-  private static final Logger logger = LoggerFactory.getLogger(LambdaInvokeVerificationTask.class);
+  private final LambdaUtils utils;
 
-  @Autowired CloudDriverConfigurationProperties props;
-
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaInvokeVerificationTask(LambdaUtils utils) {
+    this.utils = utils;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaInvokeVerificationTask...");
+    log.debug("Executing LambdaInvokeVerificationTask...");
     prepareTask(stage);
     try {
       return doVerify(stage);
     } catch (Throwable e) {
-      logger.error("Exception verifying task", e);
+      log.error("Exception verifying task", e);
       logException(stage, e);
       addExceptionToOutput(stage, e);
       return formErrorTaskResult(stage, "Exception during task verification");
@@ -94,8 +92,8 @@ public class LambdaInvokeVerificationTask implements LambdaStageBaseTask {
           });
     }
 
-    LambdaInvokeStageInput ldi = utils.getInput(stage, LambdaInvokeStageInput.class);
-    List<Map<String, Object>> invokeResultsList = new ArrayList<Map<String, Object>>();
+    LambdaInvokeStageInput ldi = stage.mapTo(LambdaInvokeStageInput.class);
+    List<Map<String, Object>> invokeResultsList = new ArrayList<>();
     listOfTaskResults.forEach(
         op -> {
           Map<String, Object> invokeResults = null;
@@ -138,7 +136,7 @@ public class LambdaInvokeVerificationTask implements LambdaStageBaseTask {
         utils.await();
         timeout -= sleepTime;
       } catch (Throwable e) {
-        logger.error("Error waiting for lambda invocation to complete");
+        log.error("Error waiting for lambda invocation to complete");
       }
     }
 
@@ -165,8 +163,6 @@ public class LambdaInvokeVerificationTask implements LambdaStageBaseTask {
 
   @Override
   public Collection<String> aliases() {
-    List<String> ss = new ArrayList<>();
-    ss.add("lambdaInvokeVerificationTask");
-    return ss;
+    return List.of("lambdaInvokeVerificationTask");
   }
 }

@@ -29,6 +29,10 @@ import org.apache.commons.lang3.StringUtils;
 
 public interface LambdaStageBaseTask extends Task {
 
+  default String getCloudProvider() {
+    return "aws";
+  }
+
   default boolean validateInput(StageExecution stage, List<String> errors) {
     return true;
   }

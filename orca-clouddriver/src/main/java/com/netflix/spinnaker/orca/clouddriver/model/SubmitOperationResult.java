@@ -20,5 +20,6 @@ import lombok.Data;
 @Data
 public class SubmitOperationResult {
   private String id;
+  private String resourceUri;
   private int status;
 }

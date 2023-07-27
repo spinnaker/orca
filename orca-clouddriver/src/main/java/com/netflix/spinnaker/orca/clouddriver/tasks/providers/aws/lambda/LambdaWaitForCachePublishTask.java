@@ -18,30 +18,29 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.time.Duration;
 import java.util.Map;
 import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaWaitForCachePublishTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaWaitForCachePublishTask.class);
 
-  @Autowired CloudDriverConfigurationProperties props;
+  private final LambdaUtils utils;
 
-  @Autowired private LambdaCloudDriverUtils utils;
+  public LambdaWaitForCachePublishTask(LambdaUtils utils) {
+    this.utils = utils;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaWaitForCachePublishTask...");
+    log.debug("Executing LambdaWaitForCachePublishTask...");
     return waitForCacheUpdate(stage);
   }
 
@@ -51,7 +50,7 @@ public class LambdaWaitForCachePublishTask implements LambdaStageBaseTask {
           (String) stage.getContext().get(LambdaStageConstants.publishVersionUrlKey);
       String version = utils.getPublishedVersion(publishUrl);
       for (int i = 0; i < 10; i++) {
-        LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, true);
+        LambdaDefinition lf = utils.retrieveLambdaFromCache(stage);
         if (lf != null) {
           Map<String, String> revisions = lf.getRevisions();
           if (revisions.containsValue(version)) {

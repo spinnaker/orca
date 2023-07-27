@@ -85,6 +85,10 @@ public class KatoService {
     return cloudDriverTaskStatusService.lookupTask(id);
   }
 
+  public Task lookupTaskWithUri(String uri) {
+    return cloudDriverTaskStatusService.lookupTask(uri);
+  }
+
   @Nonnull
   public TaskId resumeTask(@Nonnull String id) {
     return katoRestService.resumeTask(id);

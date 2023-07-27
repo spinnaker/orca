@@ -17,63 +17,62 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
 import com.amazonaws.services.lambda.model.EventSourceMappingConfiguration;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.*;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaDeleteEventTaskInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaUpdateEventConfigurationTaskInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaUpdateEventConfigurationTaskOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.apache.commons.lang3.tuple.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.pf4j.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaUpdateEventConfigurationTask implements LambdaStageBaseTask {
-  private static final Logger logger =
-      LoggerFactory.getLogger(LambdaUpdateEventConfigurationTask.class);
-  private static final String CLOUDDRIVER_UPDATE_EVENT_CONFIGURATION_LAMBDA_PATH =
-      "/aws/ops/upsertLambdaFunctionEventMapping";
-  private static final String CLOUDDRIVER_DELETE_EVENT_CONFIGURATION_LAMBDA_PATH =
-      "/aws/ops/deleteLambdaFunctionEventMapping";
+
+  private static final String DEFAULT_STARTING_POSITION = "LATEST";
   private static final String DYNAMO_EVENT_PREFIX = "arn:aws:dynamodb:";
   private static final String KINESIS_EVENT_PREFIX = "arn:aws:kinesis";
 
-  String cloudDriverUrl;
+  private final LambdaUtils utils;
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired CloudDriverConfigurationProperties props;
-
-  @Autowired LambdaCloudDriverUtils utils;
-
-  private static final String DEFAULT_STARTING_POSITION = "LATEST";
+  public LambdaUpdateEventConfigurationTask(
+      LambdaUtils utils, KatoService katoService, ObjectMapper objectMapper) {
+    this.utils = utils;
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaUpdateEventConfigurationTask");
-    cloudDriverUrl = props.getCloudDriverBaseUrl();
+    log.debug("Executing LambdaUpdateEventConfigurationTask");
     LambdaUpdateEventConfigurationTaskInput taskInput =
-        utils.getInput(stage, LambdaUpdateEventConfigurationTaskInput.class);
+        stage.mapTo(LambdaUpdateEventConfigurationTaskInput.class);
     taskInput.setAppName(stage.getExecution().getApplication());
-    Boolean justCreated =
-        (Boolean) stage.getContext().getOrDefault(LambdaStageConstants.lambaCreatedKey, false);
-    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, justCreated);
+
+    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage);
     if (lf == null) {
       return formErrorTaskResult(stage, "Could not find lambda to update event config for");
     }
     String functionArn = lf.getFunctionArn();
     if (StringUtils.isNotNullOrEmpty(taskInput.getAliasName())) {
-      logger.debug("LambdaUpdateEventConfigurationTask for alias");
+      log.debug("LambdaUpdateEventConfigurationTask for alias");
       functionArn = String.format("%s:%s", lf.getFunctionArn(), taskInput.getAliasName());
       taskInput.setQualifier(taskInput.getAliasName());
     }
@@ -88,8 +87,7 @@ public class LambdaUpdateEventConfigurationTask implements LambdaStageBaseTask {
       return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
     }
     deleteRemovedAndChangedEvents(taskInput, lf, functionArn);
-    LambdaUpdateEventConfigurationTaskOutput ldso =
-        updateEventConfiguration(taskInput, lf, functionArn);
+    LambdaUpdateEventConfigurationTaskOutput ldso = updateEventConfiguration(taskInput);
     Map<String, Object> context = buildContextOutput(ldso);
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).context(context).build();
   }
@@ -97,9 +95,6 @@ public class LambdaUpdateEventConfigurationTask implements LambdaStageBaseTask {
   /**
    * New configuration has zero events. So find all existing events in the lambda cache and delete
    * them all.
-   *
-   * @param taskInput
-   * @param lf
    */
   private void deleteAllExistingEvents(
       LambdaUpdateEventConfigurationTaskInput taskInput, LambdaDefinition lf, String targetArn) {
@@ -110,21 +105,14 @@ public class LambdaUpdateEventConfigurationTask implements LambdaStageBaseTask {
   /**
    * For each eventTriggerArn that already exists at backend: delete from backend if it does not
    * exist in input
-   *
-   * @param taskInput
-   * @param lf
    */
-  private LambdaUpdateEventConfigurationTaskOutput deleteRemovedAndChangedEvents(
+  private void deleteRemovedAndChangedEvents(
       LambdaUpdateEventConfigurationTaskInput taskInput, LambdaDefinition lf, String targetArn) {
-    LambdaUpdateEventConfigurationTaskOutput ans =
-        LambdaUpdateEventConfigurationTaskOutput.builder().build();
-    ans.setEventOutputs(new ArrayList<>());
     List<String> eventArnList = getExistingEvents(lf, targetArn);
     // Does not deal with change in batch size(s)
     eventArnList.stream()
         .filter(x -> !taskInput.getTriggerArns().contains(x))
         .forEach(eventArn -> deleteEvent(eventArn, taskInput, lf, targetArn));
-    return ans;
   }
 
   List<String> getExistingEvents(LambdaDefinition lf, String targetArn) {
@@ -139,23 +127,12 @@ public class LambdaUpdateEventConfigurationTask implements LambdaStageBaseTask {
         .collect(Collectors.toList());
   }
 
-  List<Pair<String, Integer>> getExistingEventsDetails(LambdaDefinition lf) {
-    List<EventSourceMappingConfiguration> esmList = lf.getEventSourceMappings();
-    if (esmList == null) {
-      return new ArrayList<>();
-    }
-    return esmList.stream()
-        .filter(x -> StringUtils.isNotNullOrEmpty(x.getEventSourceArn()))
-        .map(x -> Pair.of(x.getEventSourceArn(), x.getBatchSize()))
-        .collect(Collectors.toList());
-  }
-
   private void deleteEvent(
       String eventArn,
       LambdaUpdateEventConfigurationTaskInput ti,
       LambdaDefinition lgo,
       String aliasOrFunctionArn) {
-    logger.debug("To be deleted: " + eventArn);
+    log.debug("To be deleted: " + eventArn);
     List<EventSourceMappingConfiguration> esmList = lgo.getEventSourceMappings();
     Optional<EventSourceMappingConfiguration> oo =
         esmList.stream()
@@ -186,27 +163,26 @@ public class LambdaUpdateEventConfigurationTask implements LambdaStageBaseTask {
   }
 
   private LambdaUpdateEventConfigurationTaskOutput updateEventConfiguration(
-      LambdaUpdateEventConfigurationTaskInput taskInput, LambdaDefinition lf, String targetArn) {
+      LambdaUpdateEventConfigurationTaskInput taskInput) {
     LambdaUpdateEventConfigurationTaskOutput ans =
         LambdaUpdateEventConfigurationTaskOutput.builder().build();
-    ans.setEventOutputs(new ArrayList<>());
+    ans.setEventOutputs(List.of());
     taskInput.setCredentials(taskInput.getAccount());
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_UPDATE_EVENT_CONFIGURATION_LAMBDA_PATH;
 
     taskInput
         .getTriggerArns()
         .forEach(
             curr -> {
               LambdaEventConfigurationDescription singleEvent = formEventObject(curr, taskInput);
-              String rawString = utils.asString(singleEvent);
-              LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-              String url = cloudDriverUrl + respObj.getResourceUri();
-              logger.debug("Posted to cloudDriver for updateEventConfiguration: " + url);
+
+              OperationContext context =
+                  objectMapper.convertValue(singleEvent, new TypeReference<>() {});
+              context.setOperationType("upsertLambdaFunctionEventMapping");
+              SubmitOperationResult result =
+                  katoService.submitOperation(getCloudProvider(), context);
+
               LambdaCloudOperationOutput z =
-                  LambdaCloudOperationOutput.builder()
-                      .url(url)
-                      .resourceId(respObj.getResourceUri())
-                      .build();
+                  LambdaCloudOperationOutput.builder().resourceId(result.getResourceUri()).build();
               ans.getEventOutputs().add(z);
             });
 
@@ -289,14 +265,12 @@ public class LambdaUpdateEventConfigurationTask implements LambdaStageBaseTask {
     return destinationConfig;
   }
 
-  private LambdaCloudOperationOutput deleteLambdaEventConfig(LambdaDeleteEventTaskInput inp) {
+  private void deleteLambdaEventConfig(LambdaDeleteEventTaskInput inp) {
     inp.setCredentials(inp.getAccount());
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_DELETE_EVENT_CONFIGURATION_LAMBDA_PATH;
-    String rawString = utils.asString(inp);
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for deleteLambdaEventConfig: " + url);
-    return LambdaCloudOperationOutput.builder().url(url).build();
+
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("deleteLambdaFunctionEventMapping");
+    katoService.submitOperation(getCloudProvider(), context);
   }
 
   /** Fill up with values required for next task */

@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /*
@@ -40,9 +39,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class LambdaFunctionTask implements CloudProviderAware, Task {
 
-  @Autowired KatoService katoService;
-
   public static final String TASK_NAME = "lambdaFunction";
+  private final KatoService katoService;
+
+  public LambdaFunctionTask(KatoService katoService) {
+    this.katoService = katoService;
+  }
 
   @Nonnull
   @Override

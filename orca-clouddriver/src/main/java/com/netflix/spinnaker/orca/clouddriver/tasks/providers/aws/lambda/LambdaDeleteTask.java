@@ -16,45 +16,49 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaDefinition;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaDeleteStageInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.*;
 import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaDeleteTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaDeleteTask.class);
 
-  private String cloudDriverUrl;
+  private final LambdaUtils utils;
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired CloudDriverConfigurationProperties props;
-
-  @Autowired private LambdaCloudDriverUtils utils;
-
-  private static final String CLOUDDRIVER_DELETE_LAMBDA_PATH = "/aws/ops/deleteLambdaFunction";
+  public LambdaDeleteTask(
+      LambdaUtils lambdaUtils, KatoService katoService, ObjectMapper objectMapper) {
+    this.utils = lambdaUtils;
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaDeletionTask...");
-    cloudDriverUrl = props.getCloudDriverBaseUrl();
+    log.debug("Executing LambdaDeletionTask...");
     prepareTask(stage);
-    LambdaDeleteStageInput ldi = utils.getInput(stage, LambdaDeleteStageInput.class);
+
+    LambdaDeleteStageInput ldi = stage.mapTo(LambdaDeleteStageInput.class);
     ldi.setAppName(stage.getExecution().getApplication());
 
     if (ldi.getVersion().equals("$ALL")) {
       addToTaskContext(stage, "deleteTask:deleteVersion", ldi.getVersion());
-      return formTaskResult(stage, deleteLambda(ldi), stage.getOutputs());
+      return formTaskResult(stage, deleteLambda(stage), stage.getOutputs());
     }
 
     String versionToDelete = getVersion(stage, ldi);
@@ -69,7 +73,7 @@ public class LambdaDeleteTask implements LambdaStageBaseTask {
 
     if (!versionToDelete.contains(",")) {
       ldi.setQualifier(versionToDelete);
-      return formTaskResult(stage, deleteLambda(ldi), stage.getOutputs());
+      return formTaskResult(stage, deleteLambda(stage), stage.getOutputs());
     }
 
     String[] allVersionsList = versionToDelete.split(",");
@@ -77,7 +81,7 @@ public class LambdaDeleteTask implements LambdaStageBaseTask {
 
     for (String currVersion : allVersionsList) {
       ldi.setQualifier(currVersion);
-      LambdaCloudOperationOutput ldso = deleteLambda(ldi);
+      LambdaCloudOperationOutput ldso = deleteLambda(stage);
       urlList.add(ldso.getUrl());
     }
     addToTaskContext(stage, "urlList", urlList);
@@ -96,7 +100,7 @@ public class LambdaDeleteTask implements LambdaStageBaseTask {
       return ldi.getVersionNumber();
     }
 
-    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, true);
+    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage);
     if (lf != null) {
       return utils.getCanonicalVersion(
           lf, ldi.getVersion(), ldi.getVersionNumber(), ldi.getRetentionNumber());
@@ -104,13 +108,14 @@ public class LambdaDeleteTask implements LambdaStageBaseTask {
     return null;
   }
 
-  private LambdaCloudOperationOutput deleteLambda(LambdaDeleteStageInput inp) {
+  private LambdaCloudOperationOutput deleteLambda(StageExecution stage) {
+    LambdaDeleteStageInput inp = stage.mapTo(LambdaDeleteStageInput.class);
     inp.setCredentials(inp.getAccount());
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_DELETE_LAMBDA_PATH;
-    String rawString = utils.asString(inp);
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for deleteLambda: " + url);
-    return LambdaCloudOperationOutput.builder().url(url).build();
+
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("deleteLambdaFunction");
+    SubmitOperationResult result = katoService.submitOperation("aws", context);
+
+    return LambdaCloudOperationOutput.builder().url(result.getResourceUri()).build();
   }
 }

@@ -25,17 +25,19 @@ import com.netflix.spinnaker.orca.clouddriver.utils.CloudProviderAware;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class LambdaFunctionForceRefreshTask implements CloudProviderAware, Task {
-
-  static final String REFRESH_TYPE = "Function";
+public class LambdaFunctionForceRefreshTask implements Task, CloudProviderAware {
 
   public static final String TASK_NAME = "forceCacheRefresh";
+  private static final String REFRESH_TYPE = "Function";
 
-  @Autowired private CloudDriverCacheService cacheService;
+  private final CloudDriverCacheService cacheService;
+
+  public LambdaFunctionForceRefreshTask(CloudDriverCacheService cacheService) {
+    this.cacheService = cacheService;
+  }
 
   @Nonnull
   @Override
@@ -46,7 +48,6 @@ public class LambdaFunctionForceRefreshTask implements CloudProviderAware, Task 
     task.put("appName", stage.getExecution().getApplication());
 
     cacheService.forceCacheUpdate(cloudProvider, REFRESH_TYPE, task);
-
     return TaskResult.ofStatus(ExecutionStatus.SUCCEEDED);
   }
 }

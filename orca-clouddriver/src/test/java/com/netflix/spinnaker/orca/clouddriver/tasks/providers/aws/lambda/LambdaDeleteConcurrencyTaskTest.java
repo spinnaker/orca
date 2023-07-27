@@ -17,83 +17,74 @@
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.PipelineExecution;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaConcurrencyInput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import ru.lanwen.wiremock.ext.WiremockResolver;
-import ru.lanwen.wiremock.ext.WiremockUriResolver;
+import org.mockito.*;
 
-@ExtendWith({WiremockResolver.class, WiremockUriResolver.class})
 public class LambdaDeleteConcurrencyTaskTest {
-
-  WireMockServer wireMockServer;
 
   @InjectMocks private LambdaDeleteConcurrencyTask lambdaDeleteConcurrencyTask;
 
-  @Mock private CloudDriverConfigurationProperties propsMock;
+  @Mock private KatoService katoService;
 
-  @Mock private LambdaCloudDriverUtils lambdaCloudDriverUtilsMock;
+  @Mock private LambdaUtils lambdaUtils;
 
   @Mock private StageExecution stageExecution;
 
   @Mock private PipelineExecution pipelineExecution;
 
+  @Spy private ObjectMapper objectMapper;
+
   @BeforeEach
-  void init(
-      @WiremockResolver.Wiremock WireMockServer wireMockServer,
-      @WiremockUriResolver.WiremockUri String uri) {
-    this.wireMockServer = wireMockServer;
-    MockitoAnnotations.initMocks(this);
-    Mockito.when(propsMock.getCloudDriverBaseUrl()).thenReturn(uri);
+  void init() {
+    MockitoAnnotations.openMocks(this);
+
     pipelineExecution.setApplication("lambdaApp");
     Mockito.when(stageExecution.getExecution()).thenReturn(pipelineExecution);
     Mockito.when(stageExecution.getContext()).thenReturn(new HashMap<>());
     Mockito.when(stageExecution.getOutputs()).thenReturn(new HashMap<>());
+
+    Mockito.when(lambdaUtils.validateUpsertLambdaInput(any(), any())).thenReturn(true);
+
     LambdaConcurrencyInput ldi =
         LambdaConcurrencyInput.builder().functionName("functionName").build();
-    Mockito.when(
-            lambdaCloudDriverUtilsMock.validateUpsertLambdaInput(Mockito.any(), Mockito.anyList()))
-        .thenReturn(true);
-    Mockito.when(lambdaCloudDriverUtilsMock.getInput(stageExecution, LambdaConcurrencyInput.class))
-        .thenReturn(ldi);
+    Mockito.when(stageExecution.mapTo(LambdaConcurrencyInput.class)).thenReturn(ldi);
   }
 
   @Test
   public void execute_DeleteReservedConcurrency_SUCCEEDED() {
     Mockito.when(stageExecution.getType()).thenReturn("Aws.LambdaDeploymentStage");
-    LambdaCloudDriverResponse lambdaCloudDriverResponse =
-        LambdaCloudDriverResponse.builder().resourceUri("/resourceUri").build();
-    Mockito.when(lambdaCloudDriverUtilsMock.postToCloudDriver(Mockito.any(), Mockito.any()))
-        .thenReturn(lambdaCloudDriverResponse);
+
+    SubmitOperationResult result = new SubmitOperationResult();
+    result.setResourceUri("/resourceUri");
+    Mockito.when(katoService.submitOperation(any(), any())).thenReturn(result);
+
     assertEquals(
         ExecutionStatus.SUCCEEDED, lambdaDeleteConcurrencyTask.execute(stageExecution).getStatus());
   }
 
   @Test
   public void execute_DeleteReservedConcurrency_NOTHING_TO_DELETE() {
+    Mockito.when(stageExecution.getType()).thenReturn("Aws.LambdaDeploymentStage");
+
     LambdaConcurrencyInput ldi =
         LambdaConcurrencyInput.builder()
             .functionName("functionName")
             .reservedConcurrentExecutions(10)
             .build();
-    Mockito.when(lambdaCloudDriverUtilsMock.getInput(stageExecution, LambdaConcurrencyInput.class))
-        .thenReturn(ldi);
+    Mockito.when(stageExecution.mapTo(LambdaConcurrencyInput.class)).thenReturn(ldi);
 
-    Mockito.when(stageExecution.getType()).thenReturn("Aws.LambdaDeploymentStage");
     assertEquals(
         ExecutionStatus.SUCCEEDED, lambdaDeleteConcurrencyTask.execute(stageExecution).getStatus());
     assertEquals(
@@ -104,25 +95,26 @@ public class LambdaDeleteConcurrencyTaskTest {
   @Test
   public void execute_DeleteProvisionedConcurrency_SUCCEEDED() {
     Mockito.when(stageExecution.getType()).thenReturn("Aws.LambdaTrafficRoutingStage");
-    LambdaCloudDriverResponse lambdaCloudDriverResponse =
-        LambdaCloudDriverResponse.builder().resourceUri("/resourceUri").build();
-    Mockito.when(lambdaCloudDriverUtilsMock.postToCloudDriver(Mockito.any(), Mockito.any()))
-        .thenReturn(lambdaCloudDriverResponse);
+
+    SubmitOperationResult result = new SubmitOperationResult();
+    result.setResourceUri("/resourceUri");
+    Mockito.when(katoService.submitOperation(any(), any())).thenReturn(result);
+
     assertEquals(
         ExecutionStatus.SUCCEEDED, lambdaDeleteConcurrencyTask.execute(stageExecution).getStatus());
   }
 
   @Test
   public void execute_DeleteProvisionedConcurrency_NOTHING_TO_DELETE() {
+    Mockito.when(stageExecution.getType()).thenReturn("Aws.LambdaTrafficRoutingStage");
+
     LambdaConcurrencyInput ldi =
         LambdaConcurrencyInput.builder()
             .functionName("functionName")
             .provisionedConcurrentExecutions(10)
             .build();
-    Mockito.when(lambdaCloudDriverUtilsMock.getInput(stageExecution, LambdaConcurrencyInput.class))
-        .thenReturn(ldi);
+    Mockito.when(stageExecution.mapTo(LambdaConcurrencyInput.class)).thenReturn(ldi);
 
-    Mockito.when(stageExecution.getType()).thenReturn("Aws.LambdaTrafficRoutingStage");
     assertEquals(
         ExecutionStatus.SUCCEEDED, lambdaDeleteConcurrencyTask.execute(stageExecution).getStatus());
     assertEquals(

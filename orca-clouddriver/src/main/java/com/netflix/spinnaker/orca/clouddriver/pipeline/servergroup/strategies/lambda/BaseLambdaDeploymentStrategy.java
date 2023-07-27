@@ -16,40 +16,49 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.*;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaBaseStrategyInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaDeploymentStrategyOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public class BaseLambdaDeploymentStrategy<T extends LambdaBaseStrategyInput> {
-  private static final Logger logger = LoggerFactory.getLogger(BaseLambdaDeploymentStrategy.class);
-  static String CLOUDDRIVER_UPSERT_ALIAS_PATH = "/aws/ops/upsertLambdaFunctionAlias";
+  private static final String CLOUD_PROVIDER = "aws";
 
-  @Autowired protected LambdaCloudDriverUtils utils;
+  protected final LambdaUtils lambdaUtils;
+  protected final KatoService katoService;
+  protected final ObjectMapper objectMapper;
+
+  public BaseLambdaDeploymentStrategy(
+      LambdaUtils lambdaUtils, KatoService katoService, ObjectMapper objectMapper) {
+    this.lambdaUtils = lambdaUtils;
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   public LambdaDeploymentStrategyOutput deploy(T inp) {
     throw new RuntimeException("Not Implemented");
   }
 
-  public LambdaCloudOperationOutput postToCloudDriver(
-      LambdaBaseStrategyInput inp, String cloudDriverUrl, LambdaCloudDriverUtils utils) {
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_UPSERT_ALIAS_PATH;
-    String rawString = utils.asString(inp);
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for deployment: " + url);
-    LambdaCloudOperationOutput out =
-        LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
-    return out;
+  public LambdaCloudOperationOutput updateAlias(LambdaBaseStrategyInput inp) {
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("upsertLambdaFunctionAlias");
+    SubmitOperationResult result = katoService.submitOperation(CLOUD_PROVIDER, context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
-  public LambdaCloudDriverUtils getUtils() {
-    return null;
+  public LambdaUtils getUtils() {
+    return lambdaUtils;
   }
 
   public T setupInput(StageExecution stage) {
@@ -65,7 +74,7 @@ public class BaseLambdaDeploymentStrategy<T extends LambdaBaseStrategyInput> {
       return versionNumberProvided;
     }
 
-    LambdaDefinition lf = utils.retrieveLambdaFromCache(stage, true);
-    return getUtils().getCanonicalVersion(lf, version, versionNumberProvided, 0);
+    LambdaDefinition lf = lambdaUtils.retrieveLambdaFromCache(stage);
+    return lambdaUtils.getCanonicalVersion(lf, version, versionNumberProvided, 0);
   }
 }

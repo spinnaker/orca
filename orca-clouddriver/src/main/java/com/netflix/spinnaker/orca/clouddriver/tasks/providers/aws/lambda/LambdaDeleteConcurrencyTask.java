@@ -15,45 +15,43 @@
  */
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.TaskResult;
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.model.OperationContext;
+import com.netflix.spinnaker.orca.clouddriver.model.SubmitOperationResult;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.providers.aws.lambda.LambdaStageConstants;
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda.LambdaDeploymentStrategyEnum;
-import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.LambdaCloudDriverResponse;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaConcurrencyInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class LambdaDeleteConcurrencyTask implements LambdaStageBaseTask {
-  private static final Logger logger = LoggerFactory.getLogger(LambdaDeleteConcurrencyTask.class);
 
-  private static final String CLOUDDRIVER_DELETE_PROVISIONED_CONCURRENCY_PATH =
-      "/aws/ops/deleteLambdaProvisionedConcurrency";
-  private static final String CLOUDDRIVER_DELETE_RESERVED_CONCURRENCY_PATH =
-      "/aws/ops/deleteLambdaReservedConcurrency";
+  private final KatoService katoService;
+  private final ObjectMapper objectMapper;
 
-  @Autowired CloudDriverConfigurationProperties props;
-
-  @Autowired private LambdaCloudDriverUtils utils;
-  private String cloudDriverUrl;
+  public LambdaDeleteConcurrencyTask(KatoService katoService, ObjectMapper objectMapper) {
+    this.katoService = katoService;
+    this.objectMapper = objectMapper;
+  }
 
   @Nonnull
   @Override
   public TaskResult execute(@Nonnull StageExecution stage) {
-    logger.debug("Executing LambdaDeleteConcurrencyTask...");
-    cloudDriverUrl = props.getCloudDriverBaseUrl();
+    log.debug("Executing LambdaDeleteConcurrencyTask...");
     prepareTask(stage);
-    LambdaConcurrencyInput inp = utils.getInput(stage, LambdaConcurrencyInput.class);
+
+    LambdaConcurrencyInput inp = stage.mapTo(LambdaConcurrencyInput.class);
     inp.setAppName(stage.getExecution().getApplication());
 
     LambdaCloudOperationOutput output;
@@ -77,21 +75,26 @@ public class LambdaDeleteConcurrencyTask implements LambdaStageBaseTask {
 
   private LambdaCloudOperationOutput deleteProvisionedConcurrency(LambdaConcurrencyInput inp) {
     inp.setQualifier(inp.getAliasName());
-    String rawString = utils.asString(inp);
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_DELETE_PROVISIONED_CONCURRENCY_PATH;
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for deleteProvisionedConcurrency: " + url);
-    return LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
+
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("deleteLambdaProvisionedConcurrency");
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
   private LambdaCloudOperationOutput deleteReservedConcurrency(LambdaConcurrencyInput inp) {
-    String rawString = utils.asString(inp);
-    String endPoint = cloudDriverUrl + CLOUDDRIVER_DELETE_RESERVED_CONCURRENCY_PATH;
-    LambdaCloudDriverResponse respObj = utils.postToCloudDriver(endPoint, rawString);
-    String url = cloudDriverUrl + respObj.getResourceUri();
-    logger.debug("Posted to cloudDriver for deleteReservedConcurrency: " + url);
-    return LambdaCloudOperationOutput.builder().resourceId(respObj.getId()).url(url).build();
+    OperationContext context = objectMapper.convertValue(inp, new TypeReference<>() {});
+    context.setOperationType("deleteLambdaReservedConcurrency");
+    SubmitOperationResult result = katoService.submitOperation(getCloudProvider(), context);
+
+    return LambdaCloudOperationOutput.builder()
+        .resourceId(result.getId())
+        .url(result.getResourceUri())
+        .build();
   }
 
   @Nullable
@@ -99,7 +102,4 @@ public class LambdaDeleteConcurrencyTask implements LambdaStageBaseTask {
   public TaskResult onTimeout(@Nonnull StageExecution stage) {
     return TaskResult.builder(ExecutionStatus.SKIPPED).build();
   }
-
-  @Override
-  public void onCancel(@Nonnull StageExecution stage) {}
 }

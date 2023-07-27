@@ -1,0 +1,16 @@
+{
+  "status": {
+    "completed": true,
+    "retryable": false,
+    "failed": false
+  },
+  "resultObjects": [
+    {
+      "responseString": "{\"statusCode\": 200, \"body\": \"something\"}",
+      "statusCode": "200",
+      "body": "something",
+      "errorMessage": "errorMessage",
+      "hasErrors": false
+    }
+  ]
+}

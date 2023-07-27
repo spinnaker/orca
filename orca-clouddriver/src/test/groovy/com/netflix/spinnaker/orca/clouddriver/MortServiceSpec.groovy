@@ -17,12 +17,11 @@
 package com.netflix.spinnaker.orca.clouddriver
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.TestUtils
 import retrofit.RestAdapter
 import retrofit.client.Client
 import retrofit.client.Response
-import retrofit.converter.Converter
 import retrofit.converter.JacksonConverter
-import retrofit.mime.TypedInput
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -206,7 +205,7 @@ class MortServiceSpec extends Specification {
       200,
       "OK",
       [],
-      new MockTypedInput(converter, [
+      new TestUtils.MockTypedInput(converter, [
           accountName: "account",
           description: [
               "account": null,
@@ -243,7 +242,7 @@ class MortServiceSpec extends Specification {
       200,
       "OK",
       [],
-      new MockTypedInput(converter, [
+      new TestUtils.MockTypedInput(converter, [
         accountName: "account",
         description: "simple description",
         name: "sg1",
@@ -253,44 +252,4 @@ class MortServiceSpec extends Specification {
 
     )
   }
-
-  static class MockTypedInput implements TypedInput {
-    private final Converter converter
-    private final Object body
-
-    private byte[] bytes
-
-    MockTypedInput(Converter converter, Object body) {
-      this.converter = converter
-      this.body = body
-    }
-
-    @Override String mimeType() {
-      return "application/unknown"
-    }
-
-    @Override long length() {
-      try {
-        initBytes()
-      } catch (IOException e) {
-        throw new RuntimeException(e)
-      }
-      return bytes.length
-    }
-
-    @Override InputStream "in"() throws IOException {
-      initBytes()
-      return new ByteArrayInputStream(bytes)
-    }
-
-    private synchronized void initBytes() throws IOException {
-      if (bytes == null) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream()
-        converter.toBody(body).writeTo(out)
-        bytes = out.toByteArray()
-      }
-    }
-  }
-
-
 }

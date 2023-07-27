@@ -16,54 +16,46 @@
 
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.strategies.lambda;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.orca.api.pipeline.models.StageExecution;
-import com.netflix.spinnaker.orca.clouddriver.config.CloudDriverConfigurationProperties;
+import com.netflix.spinnaker.orca.clouddriver.KatoService;
+import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.LambdaUtils;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.input.LambdaSimpleStrategyInput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaCloudOperationOutput;
 import com.netflix.spinnaker.orca.clouddriver.tasks.providers.aws.lambda.model.output.LambdaDeploymentStrategyOutput;
-import com.netflix.spinnaker.orca.clouddriver.utils.LambdaCloudDriverUtils;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class LambdaSimpleDeploymentStrategy
     extends BaseLambdaDeploymentStrategy<LambdaSimpleStrategyInput> {
 
-  @Autowired private LambdaCloudDriverUtils utils;
-
-  @Autowired CloudDriverConfigurationProperties props;
+  public LambdaSimpleDeploymentStrategy(
+      LambdaUtils lambdaUtils, KatoService katoService, ObjectMapper objectMapper) {
+    super(lambdaUtils, katoService, objectMapper);
+  }
 
   @Override
   public LambdaDeploymentStrategyOutput deploy(LambdaSimpleStrategyInput inp) {
-    String cloudDriverUrl = props.getCloudDriverBaseUrl();
-    Map<String, Object> outputMap = new HashMap<String, Object>();
+    Map<String, Object> outputMap = new HashMap<>();
     outputMap.put("deployment:majorVersionDeployed", inp.getMajorFunctionVersion());
     outputMap.put("deployment:strategyUsed", "SimpleDeploymentStrategy");
     outputMap.put("deployment:aliasDeployed", inp.getAliasName());
-    LambdaCloudOperationOutput out = postToCloudDriver(inp, cloudDriverUrl, utils);
+
+    LambdaCloudOperationOutput out = updateAlias(inp);
     out.setOutputMap(outputMap);
-    LambdaDeploymentStrategyOutput deployOutput = LambdaDeploymentStrategyOutput.builder().build();
-    deployOutput.setSucceeded(true);
-    deployOutput.setOutput(out);
-    return deployOutput;
+
+    return LambdaDeploymentStrategyOutput.builder().succeeded(true).output(out).build();
   }
 
   @Override
   public LambdaSimpleStrategyInput setupInput(StageExecution stage) {
-    LambdaSimpleStrategyInput aliasInp = utils.getInput(stage, LambdaSimpleStrategyInput.class);
-
+    LambdaSimpleStrategyInput aliasInp = stage.mapTo(LambdaSimpleStrategyInput.class);
     aliasInp.setCredentials(aliasInp.getAccount());
     aliasInp.setAppName(stage.getExecution().getApplication());
-
     aliasInp.setMajorFunctionVersion(
         getVersion(stage, aliasInp.getVersionNameA(), aliasInp.getVersionNumberA()));
     return aliasInp;
-  }
-
-  @Override
-  public LambdaCloudDriverUtils getUtils() {
-    return utils;
   }
 }
