@@ -242,35 +242,6 @@ class RunTaskHandler(
                 )
               }
             }
-<<<<<<< HEAD
-          } catch (e: Exception) {
-            taskException = e;
-            val exceptionDetails = exceptionHandlers.shouldRetry(e, taskModel.name)
-            if (exceptionDetails?.shouldRetry == true) {
-              log.warn("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]")
-              queue.push(message, task.backoffPeriod(taskModel, stage))
-              trackResult(stage, thisInvocationStartTimeMs, taskModel, RUNNING)
-            } else if (e is TimeoutException && stage.context["markSuccessfulOnTimeout"] == true) {
-              trackResult(stage, thisInvocationStartTimeMs, taskModel, SUCCEEDED)
-              queue.push(CompleteTask(message, SUCCEEDED))
-            } else {
-              if (e !is TimeoutException) {
-                if (e is UserException) {
-                  log.warn("${message.taskType.simpleName} for ${message.executionType}[${message.executionId}] failed, likely due to user error", e)
-                } else {
-                  log.error("Error running ${message.taskType.simpleName} for ${message.executionType}[${message.executionId}]", e)
-                }
-              }
-              val status = stage.failureStatus(default = TERMINAL)
-              stage.context["exception"] = exceptionDetails
-              repository.storeStage(stage)
-              queue.push(CompleteTask(message, status, TERMINAL))
-              trackResult(stage, thisInvocationStartTimeMs, taskModel, status)
-            }
-          } finally {
-            taskExecutionInterceptors.forEach { t -> t.finallyAfterTaskExecution(task, stage, taskResult, taskException) }
-=======
->>>>>>> 706ffb425 (Fix/manual judgment concurrent execution (#4410))
           }
         }
       }
