@@ -40,7 +40,6 @@ import com.netflix.spinnaker.orca.pipeline.persistence.ExecutionRepository
 import com.netflix.spinnaker.orca.pipeline.tasks.WaitTask
 import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.orca.pipeline.util.StageNavigator
-<<<<<<< HEAD
 import com.netflix.spinnaker.orca.q.CompleteTask
 import com.netflix.spinnaker.orca.q.DummyCloudProviderAwareTask
 import com.netflix.spinnaker.orca.q.DummyTask
@@ -52,9 +51,7 @@ import com.netflix.spinnaker.orca.q.RunTask
 import com.netflix.spinnaker.orca.q.StageDefinitionBuildersProvider
 import com.netflix.spinnaker.orca.q.TasksProvider
 import com.netflix.spinnaker.orca.q.singleTaskStage
-=======
 import com.netflix.spinnaker.orca.q.*
->>>>>>> 706ffb425 (Fix/manual judgment concurrent execution (#4410))
 import com.netflix.spinnaker.q.Queue
 import com.netflix.spinnaker.spek.and
 import com.nhaarman.mockito_kotlin.*
@@ -65,10 +62,7 @@ import org.jetbrains.spek.api.dsl.it
 import org.jetbrains.spek.api.dsl.on
 import org.jetbrains.spek.api.lifecycle.CachingMode.GROUP
 import org.jetbrains.spek.subject.SubjectSpek
-<<<<<<< HEAD
-=======
 import org.mockito.stubbing.Answer
->>>>>>> 706ffb425 (Fix/manual judgment concurrent execution (#4410))
 import org.threeten.extra.Minutes
 import java.time.Clock
 import java.time.Duration
@@ -1873,8 +1867,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
     }
   }
-<<<<<<< HEAD
-=======
 
   describe("locking stage before handing a task") {
     given("lock is already taken and thread cannot acquire it") {
@@ -1908,7 +1900,6 @@ object RunTaskHandlerTest : SubjectSpek<RunTaskHandler>({
       }
     }
   }
->>>>>>> 706ffb425 (Fix/manual judgment concurrent execution (#4410))
 })
 
 fun setupRetriableLock(acquireLock: Boolean, lock: RetriableLock){
