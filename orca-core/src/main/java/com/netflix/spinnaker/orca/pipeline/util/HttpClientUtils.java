@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.RedirectStrategy;
 import org.apache.http.client.ServiceUnavailableRetryStrategy;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -36,6 +37,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
 import org.slf4j.Logger;
@@ -62,6 +64,8 @@ public class HttpClientUtils {
   private CloseableHttpClient create(
       UserConfiguredUrlRestrictions.HttpClientProperties httpClientProperties) {
     HttpClientBuilder httpClientBuilder = HttpClients.custom();
+    httpClientBuilder.setRedirectStrategy(new CustomRedirect()
+        .getLaxRedirectStrategy());
 
     if (httpClientProperties.isEnableRetry()) {
       httpClientBuilder.setServiceUnavailableRetryStrategy(
@@ -83,10 +87,11 @@ public class HttpClientUtils {
                       && executionCount <= httpClientProperties.getMaxRetryAttempts();
 
               if ((statusCode >= 300) && (statusCode <= 399)) {
-                throw new RetryRequestException(
-                    String.format(
-                        "Attempted redirect from %s to %s which is not supported",
-                        currentReq.getURI(), response.getFirstHeader("LOCATION").getValue()));
+                LOGGER.info(
+                    "Attempt redirect from {} to {} ",
+                    currentReq.getURI(),
+                    response.getFirstHeader("LOCATION").getValue());
+                return false; // Don't allow retry for redirection
               }
               if (!shouldRetry) {
                 throw new RetryRequestException(
@@ -130,10 +135,7 @@ public class HttpClientUtils {
 
     String proxyHostname = System.getProperty(JVM_HTTP_PROXY_HOST);
     if (proxyHostname != null) {
-      int proxyPort =
-          System.getProperty(JVM_HTTP_PROXY_PORT) != null
-              ? Integer.parseInt(System.getProperty(JVM_HTTP_PROXY_PORT))
-              : 8080;
+      int proxyPort = getProxyPort();
       LOGGER.info(
           "Found system properties for proxy configuration. Setting up http client to use proxy with "
               + "hostname {} and port {}",
@@ -160,9 +162,32 @@ public class HttpClientUtils {
     }
   }
 
+  private int getProxyPort() {
+    String proxyPort = System.getProperty(JVM_HTTP_PROXY_PORT);
+    int defaultProxyPort = 8080;
+
+    if (proxyPort != null) {
+      try {
+        return Integer.parseInt(proxyPort);
+      } catch (NumberFormatException e) {
+        LOGGER.warn(
+            "Invalid proxy port number: {}. Using default port: {}",
+            proxyPort,
+            defaultProxyPort);
+      }
+    }
+    return defaultProxyPort;
+  }
+
   class RetryRequestException extends RuntimeException {
     RetryRequestException(String cause) {
       super(cause);
+    }
+  }
+
+  class CustomRedirect {
+    public RedirectStrategy getLaxRedirectStrategy(){
+      return new LaxRedirectStrategy();
     }
   }
 }

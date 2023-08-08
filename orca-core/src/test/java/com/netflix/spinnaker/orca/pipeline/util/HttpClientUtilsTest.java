@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.pipeline.util;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Fail.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
@@ -32,6 +33,7 @@ public class HttpClientUtilsTest {
   private final String host = "localhost";
   private final int port = 8080;
   private final String resource = "/v1/text";
+  private final String redirectUrl = "https://armory.jfrog.io/artifactory/";
   private final UserConfiguredUrlRestrictions.Builder config =
       new UserConfiguredUrlRestrictions.Builder();
 
@@ -104,5 +106,57 @@ public class HttpClientUtilsTest {
 
     // then:
     verify(3, getRequestedFor(urlEqualTo(resource)));
+  }
+
+  @Test
+  public void testRedirectWith301StatusAndRetryEnabled() throws IOException {
+    // Set up the configuration to enable retry functionality
+    config.setHttpClientProperties(
+        UserConfiguredUrlRestrictions.HttpClientProperties.builder()
+            .enableRetry(true)
+            .build());
+    // Create the HttpClientUtils instance with the configuration
+    HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
+
+    // Configure WireMock to return a 301 status code with a redirect location
+    stubFor(
+        get(resource)
+            .willReturn(aResponse()
+                .withStatus(301)
+                .withHeader("Location", redirectUrl))
+    );
+
+    // when:
+    String response = httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
+
+    // then:
+    verify(1, getRequestedFor(urlEqualTo(resource)));
+    assertNotNull(response);
+  }
+
+  @Test
+  public void testRedirectWith302StatusAndRetryEnabled() throws IOException {
+    // Set up the configuration to enable retry functionality
+    config.setHttpClientProperties(
+        UserConfiguredUrlRestrictions.HttpClientProperties.builder()
+            .enableRetry(true)
+            .build());
+    // Create the HttpClientUtils instance with the configuration
+    HttpClientUtils httpClientUtils = new HttpClientUtils(config.build());
+
+    // Configure WireMock to return a 302 status code with a redirect location
+    stubFor(
+        get(resource)
+            .willReturn(aResponse()
+                .withStatus(302)
+                .withHeader("Location", redirectUrl))
+    );
+
+    // when:
+    String response = httpClientUtils.httpGetAsString(String.format("http://%s:%s%s", host, port, resource));
+
+    // then:
+    verify(1, getRequestedFor(urlEqualTo(resource)));
+    assertNotNull(response);
   }
 }
