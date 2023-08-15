@@ -126,6 +126,15 @@ class RetrofitExceptionHandler implements ExceptionHandler {
       } catch (ClassNotFoundException e) {
         // inner class or something non-accessible
         return null
+      } catch (MissingMethodException e) {
+        // While testing with RunTaskHandler, there's some case where this code fails with
+        //
+        // groovy.lang.MissingMethodException: No signature of method:
+        // com.netflix.spinnaker.orca.retrofit.exceptions.RetrofitExceptionHandler$_findHttpMethodAnnotation_closure2$_closure3.doCall()
+        // is applicable for argument types: (Optional) values: [Optional.empty]
+        //
+        // so treat this as having no annotation
+        return null
       }
     }
   }

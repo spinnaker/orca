@@ -35,6 +35,7 @@ dependencies {
 
   testImplementation("io.spinnaker.kork:kork-jedis-test")
   testImplementation(project(":orca-api-tck"))
+  testImplementation(project(":orca-retrofit"))
   testImplementation(project(":orca-test-kotlin"))
   testImplementation(project(":orca-queue-tck"))
   testImplementation(project(":orca-queue-redis"))
