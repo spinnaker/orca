@@ -799,6 +799,14 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
               }
             )
           }
+
+          it("updates the stage with a non-default start time") {
+            verify(repository).storeStage(
+              check {
+                assertThat(it.startTime).isPositive()
+              }
+            )
+          }
         }
 
         and("only the branch should fail") {
@@ -839,6 +847,14 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
               }
             )
           }
+
+          it("updates the stage with a non-default start time") {
+            verify(repository).storeStage(
+              check {
+                assertThat(it.startTime).isPositive()
+              }
+            )
+          }
         }
 
         and("the branch should be allowed to continue") {
@@ -876,6 +892,14 @@ object StartStageHandlerTest : SubjectSpek<StartStageHandler>({
             verify(repository, times(2)).storeStage(
               check {
                 assertThat(it.context["beforeStagePlanningFailed"]).isEqualTo(true)
+              }
+            )
+          }
+
+          it("updates the stage with a non-default start time") {
+            verify(repository).storeStage(
+              check {
+                assertThat(it.startTime).isPositive()
               }
             )
           }
