@@ -25,9 +25,7 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
+import org.apache.http.*;
 import org.apache.http.client.RedirectStrategy;
 import org.apache.http.client.ServiceUnavailableRetryStrategy;
 import org.apache.http.client.config.RequestConfig;
@@ -51,6 +49,7 @@ public class HttpClientUtils {
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientUtils.class);
   private static final String JVM_HTTP_PROXY_HOST = "http.proxyHost";
   private static final String JVM_HTTP_PROXY_PORT = "http.proxyPort";
+  private static final String LOCATION_HEADER = "Location";
   private static List<Integer> RETRYABLE_500_HTTP_STATUS_CODES =
       Arrays.asList(
           HttpStatus.SC_SERVICE_UNAVAILABLE,
@@ -64,8 +63,6 @@ public class HttpClientUtils {
   private CloseableHttpClient create(
       UserConfiguredUrlRestrictions.HttpClientProperties httpClientProperties) {
     HttpClientBuilder httpClientBuilder = HttpClients.custom();
-    httpClientBuilder.setRedirectStrategy(new CustomRedirect()
-        .getLaxRedirectStrategy());
 
     if (httpClientProperties.isEnableRetry()) {
       httpClientBuilder.setServiceUnavailableRetryStrategy(
@@ -86,12 +83,28 @@ public class HttpClientUtils {
                   (statusCode == 429 || RETRYABLE_500_HTTP_STATUS_CODES.contains(statusCode))
                       && executionCount <= httpClientProperties.getMaxRetryAttempts();
 
-              if ((statusCode >= 300) && (statusCode <= 399)) {
-                LOGGER.info(
-                    "Attempt redirect from {} to {} ",
-                    currentReq.getURI(),
-                    response.getFirstHeader("LOCATION").getValue());
-                return false; // Don't allow retry for redirection
+              try {
+                RedirectStrategy laxRedirectStrategy =
+                    new CustomRedirectStrategy().getLaxRedirectStrategy();
+
+                boolean isRedirected =
+                    laxRedirectStrategy.isRedirected(currentReq, response, context);
+
+                if (isRedirected) {
+                  LOGGER.info(
+                      "Attempt redirect from {} to {} ",
+                      currentReq.getURI(),
+                      response.getFirstHeader(LOCATION_HEADER).getValue());
+
+                  httpClientBuilder.setRedirectStrategy(laxRedirectStrategy).build();
+                  return false; // Don't allow retry for redirection
+                }
+              } catch (ProtocolException protocolException) {
+                LOGGER.error(
+                    "Failed redirect from {} to {}. Error: {}",
+                    currentReq.getRequestLine().getUri(),
+                    response.getFirstHeader(LOCATION_HEADER).getValue(),
+                    protocolException.getMessage());
               }
               if (!shouldRetry) {
                 throw new RetryRequestException(
@@ -185,9 +198,21 @@ public class HttpClientUtils {
     }
   }
 
-  class CustomRedirect {
-    public RedirectStrategy getLaxRedirectStrategy(){
-      return new LaxRedirectStrategy();
+  class CustomRedirectStrategy {
+    public RedirectStrategy getLaxRedirectStrategy() {
+      return new LaxRedirectStrategy() {
+        @Override
+        public boolean isRedirected(
+            HttpRequest request, HttpResponse response, HttpContext context) {
+
+          int statusCode = response.getStatusLine().getStatusCode();
+          if ((statusCode >= 300) && (statusCode <= 399)) {
+            return response.getFirstHeader(LOCATION_HEADER).getValue() != null
+                && !response.getFirstHeader(LOCATION_HEADER).getValue().isEmpty();
+          }
+          return false;
+        }
+      };
     }
   }
 }
