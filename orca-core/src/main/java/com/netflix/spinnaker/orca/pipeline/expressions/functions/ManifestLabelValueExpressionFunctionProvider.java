@@ -108,7 +108,7 @@ public class ManifestLabelValueExpressionFunctionProvider implements ExpressionF
     }
 
     Map manifest = manifestOpt.get();
-    String labelPath = format("$.spec.template.metadata.labels.%s", labelKey);
+    String labelPath = format("$.spec.template.metadata.labels['%s']", labelKey);
     String labelValue;
 
     try {
