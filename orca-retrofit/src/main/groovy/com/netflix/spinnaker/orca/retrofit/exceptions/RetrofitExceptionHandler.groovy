@@ -60,7 +60,7 @@ class RetrofitExceptionHandler extends BaseRetrofitExceptionHandler {
       responseDetails.status = properties.status ?: null
       responseDetails.url = properties.url ?: null
 
-      return new ExceptionHandler.Response(e.class.simpleName, stepName, responseDetails, shouldRetry(e, e.kind, e.response?.status))
+      return new ExceptionHandler.Response(e.class.simpleName, stepName, responseDetails, shouldRetry(e, e.kind.toString(), e.response?.status))
     }
   }
 }

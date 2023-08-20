@@ -36,10 +36,10 @@ class BaseRetrofitExceptionHandlerSpec extends Specification {
 
     @Override
     Response handle(String taskName, Exception e) {
-      RetrofitError.Kind kind = null
+      String kind = null
       Integer responseCode = null
       if (e instanceof RetrofitError) {
-        kind = e.kind
+        kind = e.kind.toString()
         responseCode = e.response?.status
       }
       boolean retry = shouldRetry(e, kind, responseCode)

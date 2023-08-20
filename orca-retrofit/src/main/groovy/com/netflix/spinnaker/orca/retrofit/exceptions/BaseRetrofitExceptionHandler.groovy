@@ -19,44 +19,40 @@ package com.netflix.spinnaker.orca.retrofit.exceptions
 import java.lang.annotation.Annotation
 import java.lang.reflect.Method
 import com.netflix.spinnaker.orca.exceptions.ExceptionHandler
-import retrofit.RetrofitError
 import retrofit.http.RestMethod
 import static java.net.HttpURLConnection.*
-import static retrofit.RetrofitError.Kind.HTTP
-import static retrofit.RetrofitError.Kind.NETWORK
-import static retrofit.RetrofitError.Kind.UNEXPECTED
 
 abstract class BaseRetrofitExceptionHandler implements ExceptionHandler {
-  boolean shouldRetry(Exception e, RetrofitError.Kind kind, Integer responseCode) {
+  boolean shouldRetry(Exception e, String kind, Integer responseCode) {
     if (isMalformedRequest(kind, e.getMessage())) {
       return false
     }
 
     // retry on 503 even for non-idempotent requests
-    if (kind == HTTP && responseCode == HTTP_UNAVAILABLE) {
+    if ("HTTP".equals(kind) && responseCode == HTTP_UNAVAILABLE) {
       return true
     }
 
     return isIdempotentRequest(e) && (isNetworkError(kind) || isGatewayErrorCode(kind, responseCode) || isThrottle(kind, responseCode))
   }
 
-  private boolean isGatewayErrorCode(RetrofitError.Kind kind, Integer responseCode) {
-    kind == HTTP && responseCode in [HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT]
+  private boolean isGatewayErrorCode(String kind, Integer responseCode) {
+    "HTTP".equals(kind) && responseCode in [HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT]
   }
 
   private static final int HTTP_TOO_MANY_REQUESTS = 429
 
-  boolean isThrottle(RetrofitError.Kind kind, Integer responseCode) {
-    kind == HTTP && responseCode == HTTP_TOO_MANY_REQUESTS
+  boolean isThrottle(String kind, Integer responseCode) {
+    "HTTP".equals(kind) && responseCode == HTTP_TOO_MANY_REQUESTS
   }
 
-  private boolean isNetworkError(RetrofitError.Kind kind) {
-    kind == NETWORK
+  private boolean isNetworkError(kind) {
+    "NETWORK".equals(kind)
   }
 
-  private boolean isMalformedRequest(RetrofitError.Kind kind, String exceptionMessage) {
+  private boolean isMalformedRequest(String kind, String exceptionMessage) {
     // We never want to retry errors like "Path parameter "blah" value must not be null.
-    return kind == UNEXPECTED && exceptionMessage?.contains("Path parameter")
+    return "UNEXPECTED".equals(kind) && exceptionMessage?.contains("Path parameter")
   }
 
   private static boolean isIdempotentRequest(Exception e) {
