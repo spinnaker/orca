@@ -36,7 +36,13 @@ class BaseRetrofitExceptionHandlerSpec extends Specification {
 
     @Override
     Response handle(String taskName, Exception e) {
-      boolean retry = e instanceof RetrofitError ? shouldRetry(e) : false
+      RetrofitError.Kind kind = null
+      Integer responseCode = null
+      if (e instanceof RetrofitError) {
+        kind = e.kind
+        responseCode = e.response?.status
+      }
+      boolean retry = shouldRetry(e, kind, responseCode)
       new Response(e.class.simpleName, taskName, responseDetails("test"), retry)
     }
   }

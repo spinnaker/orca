@@ -27,43 +27,43 @@ import static retrofit.RetrofitError.Kind.NETWORK
 import static retrofit.RetrofitError.Kind.UNEXPECTED
 
 abstract class BaseRetrofitExceptionHandler implements ExceptionHandler {
-  boolean shouldRetry(RetrofitError e) {
-    if (isMalformedRequest(e)) {
+  boolean shouldRetry(Exception e, RetrofitError.Kind kind, Integer responseCode) {
+    if (isMalformedRequest(kind, e.getMessage())) {
       return false
     }
 
     // retry on 503 even for non-idempotent requests
-    if (e.kind == HTTP && e.response?.status == HTTP_UNAVAILABLE) {
+    if (kind == HTTP && responseCode == HTTP_UNAVAILABLE) {
       return true
     }
 
-    return isIdempotentRequest(e) && (isNetworkError(e) || isGatewayErrorCode(e) || isThrottle(e))
+    return isIdempotentRequest(e) && (isNetworkError(kind) || isGatewayErrorCode(kind, responseCode) || isThrottle(kind, responseCode))
   }
 
-  private boolean isGatewayErrorCode(RetrofitError e) {
-    e.kind == HTTP && e.response?.status in [HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT]
+  private boolean isGatewayErrorCode(RetrofitError.Kind kind, Integer responseCode) {
+    kind == HTTP && responseCode in [HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT]
   }
 
   private static final int HTTP_TOO_MANY_REQUESTS = 429
 
-  boolean isThrottle(RetrofitError e) {
-    e.kind == HTTP && e.response?.status == HTTP_TOO_MANY_REQUESTS
+  boolean isThrottle(RetrofitError.Kind kind, Integer responseCode) {
+    kind == HTTP && responseCode == HTTP_TOO_MANY_REQUESTS
   }
 
-  private boolean isNetworkError(RetrofitError e) {
-    e.kind == NETWORK
+  private boolean isNetworkError(RetrofitError.Kind kind) {
+    kind == NETWORK
   }
 
-  private boolean isMalformedRequest(RetrofitError e) {
+  private boolean isMalformedRequest(RetrofitError.Kind kind, String exceptionMessage) {
     // We never want to retry errors like "Path parameter "blah" value must not be null.
-    return e.kind == UNEXPECTED && e.message?.contains("Path parameter")
+    return kind == UNEXPECTED && exceptionMessage?.contains("Path parameter")
   }
 
-  private static boolean isIdempotentRequest(RetrofitError e) {
+  private static boolean isIdempotentRequest(Exception e) {
     findHttpMethodAnnotation(e) in ["GET", "HEAD", "DELETE", "PUT"]
   }
 
-  private static String findHttpMethodAnnotation(RetrofitError exception) {
+  private static String findHttpMethodAnnotation(Exception exception) {
     exception.stackTrace.findResult { StackTraceElement frame ->
       try {
         Class.forName(frame.className)
