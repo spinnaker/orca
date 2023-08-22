@@ -18,6 +18,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.cluster
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.orca.api.pipeline.models.ExecutionStatus
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support.Location
@@ -214,7 +215,7 @@ class FindImageFromClusterTaskSpec extends Specification {
       "LARGEST", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> oortResponse1
     findCalls * oortService.getServerGroupSummary("foo", "test", "foo-test", cloudProvider, location2.value,
       "LARGEST", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
-      throw RetrofitError.httpError("http://clouddriver", new Response("http://clouddriver", 404, 'Not Found', [], new TypedString("{}")), gsonConverter, Map)
+      throw new SpinnakerHttpException(RetrofitError.httpError("http://clouddriver", new Response("http://clouddriver", 404, 'Not Found', [], new TypedString("{}")), gsonConverter, Map))
     }
     findCalls * oortService.findImage(cloudProvider, "ami-012-name-ebs*", "test", null, null) >> imageSearchResult
     findCalls * regionCollector.getRegionsFromChildStages(stage) >> regionCollectorResponse
@@ -293,7 +294,7 @@ class FindImageFromClusterTaskSpec extends Specification {
       "LARGEST", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> oortResponse1
     1 * oortService.getServerGroupSummary("foo", "test", "foo-test", "cloudProvider", location2.value,
       "LARGEST", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
-      throw RetrofitError.httpError("http://clouddriver", new Response("http://clouddriver", 404, 'Not Found', [], new TypedString("{}")), gsonConverter, Map)
+      throw new SpinnakerHttpException(RetrofitError.httpError("http://clouddriver", new Response("http://clouddriver", 404, 'Not Found', [], new TypedString("{}")), gsonConverter, Map))
     }
     1 * oortService.findImage("cloudProvider", "ami-012-name-ebs*", "test", null, null) >> imageSearchResult
     assertNorth(result.outputs?.deploymentDetails?.find {
@@ -356,7 +357,7 @@ class FindImageFromClusterTaskSpec extends Specification {
       "LARGEST", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> oortResponse1
     1 * oortService.getServerGroupSummary("foo", "test", "foo-test", "aws", location2.value,
       "LARGEST", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
-      throw RetrofitError.httpError("http://clouddriver", new Response("http://clouddriver", 404, 'Not Found', [], new TypedString("{}")), gsonConverter, Map)
+      throw new SpinnakerHttpException(RetrofitError.httpError("http://clouddriver", new Response("http://clouddriver", 404, 'Not Found', [], new TypedString("{}")), gsonConverter, Map))
     }
     1 * oortService.findImage("aws", "ami-012-name-ebs*", "test", null, null) >> null
     1 * oortService.findImage("aws", "ami-012-name-ebs*", "bakery", null, null) >> imageSearchResult
@@ -420,7 +421,7 @@ class FindImageFromClusterTaskSpec extends Specification {
     then:
     1 * oortService.getServerGroupSummary("foo", "test", "foo-test", "cloudProvider", location.value,
       "FAIL", FindImageFromClusterTask.SUMMARY_TYPE, false.toString()) >> {
-      throw RetrofitError.httpError("http://oort", response, gsonConverter, String.class)
+      throw new SpinnakerHttpException(RetrofitError.httpError("http://oort", response, gsonConverter, String.class))
     }
     IllegalStateException ise = thrown()
     ise.message == "Multiple possible server groups present in ${location.value}".toString()
