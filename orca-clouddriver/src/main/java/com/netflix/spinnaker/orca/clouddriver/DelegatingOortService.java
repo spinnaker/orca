@@ -21,6 +21,7 @@ import com.netflix.spinnaker.kork.web.selector.SelectableService;
 import com.netflix.spinnaker.orca.clouddriver.model.Ami;
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest;
 import com.netflix.spinnaker.orca.clouddriver.model.ManifestCoordinates;
+import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +76,13 @@ public class DelegatingOortService extends DelegatingClouddriverService<OortServ
   }
 
   @Override
+  public List<ServerGroup> getServerGroupsFromClusterTyped(
+      String app, String account, String cluster, String serverGroup, String cloudProvider) {
+    return getService()
+        .getServerGroupsFromClusterTyped(app, account, cluster, serverGroup, cloudProvider);
+  }
+
+  @Override
   public Response getServerGroups(String app) {
     return getService().getServerGroups(app);
   }
@@ -99,6 +107,18 @@ public class DelegatingOortService extends DelegatingClouddriverService<OortServ
       String scope,
       String target) {
     return getService().getTargetServerGroup(app, account, cluster, cloudProvider, scope, target);
+  }
+
+  @Override
+  public ServerGroup getTargetServerGroupTyped(
+      String app,
+      String account,
+      String cluster,
+      String cloudProvider,
+      String scope,
+      String target) {
+    return getService()
+        .getTargetServerGroupTyped(app, account, cluster, cloudProvider, scope, target);
   }
 
   @Override
