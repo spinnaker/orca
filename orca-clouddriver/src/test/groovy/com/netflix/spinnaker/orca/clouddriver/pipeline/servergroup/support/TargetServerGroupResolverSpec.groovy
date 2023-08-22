@@ -44,6 +44,62 @@ class TargetServerGroupResolverSpec extends Specification {
     retrySupport: retrySupport
   )
 
+  @Unroll
+  def "resolveByParams(target) throws a ConversionError with an invalid response (#description)"() {
+    when:
+    def tsgs = subject.resolveByParams(new TargetServerGroup.Params(
+      cloudProvider: "abc",
+      cluster: "test-app",
+      credentials: "testCreds",
+      locations: [new Location(type: Location.Type.REGION, value: "north-pole")],
+      target: TargetServerGroup.Params.Target.current_asg,
+    ))
+
+    then:
+    // Expect multiple invocations due to retries.
+    15 * oort.getTargetServerGroup("test", "testCreds", "test-app", "abc", "north-pole", "current_asg") >>
+      new Response("clouddriver", 200, 'ok', [], new TypedString(responseBody))
+
+    RetrofitError retrofitError = thrown(RetrofitError)
+    retrofitError.kind == RetrofitError.Kind.CONVERSION
+
+    where:
+    // Another kind of invalid is something that deserializes into a map, but
+    // from which it's not possible to construct a TargetServerGroup.  That's a
+    // different test though, as it doesn't generate a conversion error.
+    description         | responseBody
+    "non-json response" | "non-json response"
+    "not a map"         | "[ \"list-element\": 5 ]"
+  }
+
+  @Unroll
+  def "resolveByParams(serverGroupName) throws a ConversionError with an invalid response (#description)"() {
+    when:
+    def tsgs = subject.resolveByParams(new TargetServerGroup.Params(
+      cloudProvider: "gce",
+      serverGroupName: "test-app-v010",
+      credentials: "testCreds",
+      locations: [new Location(type: Location.Type.REGION, value: "north-pole")]
+    ))
+
+    then:
+    // Expect multiple invocations due to retries.
+    15 * oort.getServerGroupFromCluster("test", "testCreds", "test-app", "test-app-v010", null, "gce") >>
+      new Response("clouddriver", 200, 'ok', [], new TypedString(responseBody))
+
+    RetrofitError retrofitError = thrown(RetrofitError)
+    retrofitError.kind == RetrofitError.Kind.CONVERSION
+
+    where:
+    // Another kind of invalid is something that deserializes into a list, but
+    // from which it's not possible to construct a TargetServerGroup from the
+    // appropriate element.  That's a different test though, as it doesn't
+    // generate a conversion error.
+    description         | responseBody
+    "non-json response" | "non-json response"
+    "not a list"        | "{ \"some-property\": 5 }"
+  }
+
   def "should resolve to target server groups"() {
     when:
     def tsgs = subject.resolveByParams(new TargetServerGroup.Params(
