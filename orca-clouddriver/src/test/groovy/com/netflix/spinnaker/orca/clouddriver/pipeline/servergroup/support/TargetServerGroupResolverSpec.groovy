@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.gson.Gson
 import com.netflix.spinnaker.kork.core.RetrySupport
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
@@ -25,14 +26,18 @@ import retrofit.RestAdapter
 import retrofit.RetrofitError
 import retrofit.client.Client
 import retrofit.client.Response
+import retrofit.converter.GsonConverter
 import retrofit.mime.TypedString
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.pipeline
 import static com.netflix.spinnaker.orca.test.model.ExecutionBuilder.stage
+import static org.spockframework.util.Assert.fail
 
 class TargetServerGroupResolverSpec extends Specification {
+
+  private static final GsonConverter gsonConverter = new GsonConverter(new Gson())
 
   OortService oort = Mock(OortService)
   ObjectMapper mapper = new ObjectMapper()
@@ -299,9 +304,23 @@ class TargetServerGroupResolverSpec extends Specification {
   }
 
   RetrofitError retrofitError(RetrofitError.Kind kind, int status) {
-    return new RetrofitError(
-      null, null,
-      kind != RetrofitError.Kind.NETWORK ? new Response("http://blah.com", status, "", [], null) : null,
-      null, null, kind, null)
+    String url = "http://some-url"
+    switch (kind) {
+        case RetrofitError.Kind.NETWORK:
+          return RetrofitError.networkError(url, new IOException("arbitrary exception"))
+        case RetrofitError.Kind.HTTP:
+        Response response =
+          new Response(
+            url,
+            status,
+            "arbitrary reason",
+            List.of(),
+            new TypedString("{ message: \"arbitrary message\" }"));
+          return RetrofitError.httpError(url, response, gsonConverter, String.class)
+        case RetrofitError.Kind.UNEXPECTED:
+          return RetrofitError.unexpectedError(url, new RuntimeException("arbitrary exception"));
+        default:
+          fail("can't make RetrofitError of unknown kind: ${kind}")
+    }
   }
 }
