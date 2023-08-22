@@ -19,6 +19,9 @@ package com.netflix.spinnaker.orca.clouddriver.pipeline.servergroup.support
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.netflix.spinnaker.kork.core.RetrySupport
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerConversionException
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerRetrofitErrorHandler
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import com.netflix.spinnaker.orca.clouddriver.OortService
 import com.netflix.spinnaker.orca.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.orca.pipeline.model.StageExecutionImpl
@@ -26,6 +29,7 @@ import retrofit.RestAdapter
 import retrofit.RetrofitError
 import retrofit.client.Client
 import retrofit.client.Response
+import retrofit.converter.ConversionException
 import retrofit.converter.GsonConverter
 import retrofit.mime.TypedString
 import spock.lang.Specification
@@ -38,6 +42,8 @@ import static org.spockframework.util.Assert.fail
 class TargetServerGroupResolverSpec extends Specification {
 
   private static final GsonConverter gsonConverter = new GsonConverter(new Gson())
+
+  private static final SpinnakerRetrofitErrorHandler spinnakerRetrofitErrorHandler = SpinnakerRetrofitErrorHandler.newInstance()
 
   OortService oort = Mock(OortService)
   ObjectMapper mapper = new ObjectMapper()
@@ -61,6 +67,7 @@ class TargetServerGroupResolverSpec extends Specification {
         new RestAdapter.Builder()
             .setEndpoint("clouddriver")
             .setClient(client)
+            .setErrorHandler(spinnakerRetrofitErrorHandler)
             .build()
             .create(OortService.class);
 
@@ -80,11 +87,9 @@ class TargetServerGroupResolverSpec extends Specification {
     ))
 
     then:
-    // Expect multiple invocations due to retries.
-    15 * client.execute(_) >> new Response("clouddriver", 200, 'ok', [], new TypedString(responseBody))
+    1 * client.execute(_) >> new Response("clouddriver", 200, 'ok', [], new TypedString(responseBody))
 
-    RetrofitError retrofitError = thrown(RetrofitError)
-    retrofitError.kind == RetrofitError.Kind.CONVERSION
+    thrown(SpinnakerConversionException)
 
     where:
     // Another kind of invalid is something that deserializes into a map, but
@@ -104,6 +109,7 @@ class TargetServerGroupResolverSpec extends Specification {
         new RestAdapter.Builder()
             .setEndpoint("clouddriver")
             .setClient(client)
+            .setErrorHandler(spinnakerRetrofitErrorHandler)
             .build()
             .create(OortService.class);
 
@@ -122,11 +128,9 @@ class TargetServerGroupResolverSpec extends Specification {
     ))
 
     then:
-    // Expect multiple invocations due to retries.
-    15 * client.execute(_) >> new Response("clouddriver", 200, 'ok', [], new TypedString(responseBody))
+    1 * client.execute(_) >> new Response("clouddriver", 200, 'ok', [], new TypedString(responseBody))
 
-    RetrofitError retrofitError = thrown(RetrofitError)
-    retrofitError.kind == RetrofitError.Kind.CONVERSION
+    thrown(SpinnakerConversionException)
 
     where:
     // Another kind of invalid is something that deserializes into a list, but
@@ -294,13 +298,17 @@ class TargetServerGroupResolverSpec extends Specification {
     invocationCount == expectedInvocationCount
 
     where:
-    exception                                         || expectNull || expectedInvocationCount
-    new IllegalStateException("should retry")         || false      || TargetServerGroupResolver.NUM_RETRIES
-    retrofitError(RetrofitError.Kind.UNEXPECTED, 400) || false      || TargetServerGroupResolver.NUM_RETRIES
-    retrofitError(RetrofitError.Kind.HTTP, 500)       || false      || TargetServerGroupResolver.NUM_RETRIES
-    retrofitError(RetrofitError.Kind.HTTP, 404)       || true       || 1      // a 404 should short-circuit and return null
-    retrofitError(RetrofitError.Kind.NETWORK, 0)      || false      || TargetServerGroupResolver.NUM_RETRIES
-    retrofitError(RetrofitError.Kind.HTTP, 429)       || false      || TargetServerGroupResolver.NUM_RETRIES
+    exception                                                                       || expectNull || expectedInvocationCount
+    new IllegalStateException("should retry")                                       || false      || TargetServerGroupResolver.NUM_RETRIES
+    makeSpinnakerServerException(retrofitError(RetrofitError.Kind.UNEXPECTED, 400)) || false      || TargetServerGroupResolver.NUM_RETRIES
+    makeSpinnakerServerException(retrofitError(RetrofitError.Kind.HTTP, 500))       || false      || TargetServerGroupResolver.NUM_RETRIES
+    makeSpinnakerServerException(retrofitError(RetrofitError.Kind.HTTP, 404))       || true       || 1      // a 404 should short-circuit and return null
+    makeSpinnakerServerException(retrofitError(RetrofitError.Kind.NETWORK, 0))      || false      || TargetServerGroupResolver.NUM_RETRIES
+    makeSpinnakerServerException(retrofitError(RetrofitError.Kind.HTTP, 429))       || false      || TargetServerGroupResolver.NUM_RETRIES
+  }
+
+  Throwable makeSpinnakerServerException(RetrofitError retrofitError) {
+    return spinnakerRetrofitErrorHandler.handleError(retrofitError)
   }
 
   RetrofitError retrofitError(RetrofitError.Kind kind, int status) {
